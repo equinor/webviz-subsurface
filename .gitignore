@@ -1,0 +1,9 @@
+.eggs
+*.egg-info
+__pycache__
+node_modules
+venv
+.vscode
+.pytest_cache
+*.pyc
+.DS_Store

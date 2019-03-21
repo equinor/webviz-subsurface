@@ -1,0 +1,46 @@
+# This file demonstrates the most basic usage of webviz in a FMU setting
+# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+
+title: Reek Webviz Demonstration
+username: some_username
+password: some_password
+
+container_settings:
+  scratch_ensembles:
+    iter-0: /scratch/myfield/realization-*/iter-0
+    iter-1: /scratch/myfield/realization-*/iter-1
+
+pages:
+
+ - title: Front page
+   content:
+    - Webviz created from configuration file
+ - title: Summary vectors
+   content: 
+    - Some text...
+    - container: SummaryStats
+      ensemble: iter-0
+    - ...some other text
+ - title: Parameter distribution
+   content: 
+    - Some text...
+    - container: ParameterDistribution
+      ensemble: iter-0
+    - ...some other text
+ - title: Subsurface map
+   content: 
+    - container: SubsurfaceMap
+      ensemble: iter-0
+      map_value: PERMX
+      flow_value: FLOWAT
+      time_step: 26
+ - title: History match
+   content: 
+    - container: HistoryMatch
+      ensembles: 
+       - iter-0
+       - iter-1
+      observation_file: some_observation_file.yaml
+ - title: Another page
+   content:
+    - Some basic text with special characters... Åre, Smørbukk Sør.
