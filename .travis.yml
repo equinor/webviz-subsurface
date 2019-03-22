@@ -26,6 +26,7 @@ install:
   - git clone https://github.com/equinor/webviz-subsurface-components
   - cd webviz-subsurface-components
   - pip install -r requirements.txt
+  - pip install .
   - cd ..
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
