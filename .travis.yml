@@ -22,6 +22,11 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 
 install:
+  - pip install webviz_components webviz_plotly
+  - git clone https://github.com/equinor/webviz-subsurface-components
+  - cd webviz-subsurface-components
+  - pip install -r requirements
+  - cd ..
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
   - wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip

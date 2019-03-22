@@ -10,3 +10,4 @@ selenium
 flake8
 pylint
 pytest-dash>=2.1.1
+mock
