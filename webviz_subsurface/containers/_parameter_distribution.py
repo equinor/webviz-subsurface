@@ -32,36 +32,36 @@ and correlation between the parameters as a correlation matrix.
         # Finding all parameters:
         self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
         self.parameter_columns = sorted(list(
-                                  get_parameters(self.ensemble_path).columns))
+            get_parameters(self.ensemble_path).columns))
 
         self.set_callbacks(app)
 
     @property
     def layout(self):
         return html.Div([
-                   html.H2(self.title),
-                   html.P('Plot type:', style={'font-weight': 'bold'}),
-                   dcc.RadioItems(id=self.radio_plot_type_id,
-                              options=[{'label': i, 'value': i} for i in
-                                       ['Histogram', 'Pairwise correlation']],
-                              value='Histogram'),
-                   html.Div(id=self.histogram_div_id,
-                            children=[
-                                html.P('Parameter:',
-                                       style={'font-weight': 'bold'}),
-                                dcc.Dropdown(id=self.dropdown_vector_id,
-                                         clearable=False,
-                                         options=[{'label': i, 'value': i} for
-                                                  i in self.parameter_columns],
-                                         value=self.parameter_columns[0]),
-                            ]),
-                   dcc.Graph(id=self.chart_id,
-                             config={
-                                'displaylogo': False,
-                                'modeBarButtonsToRemove': ['sendDataToCloud']
-                                    }
-                             )
-               ])
+            html.H2(self.title),
+            html.P('Plot type:', style={'font-weight': 'bold'}),
+            dcc.RadioItems(id=self.radio_plot_type_id,
+                           options=[{'label': i, 'value': i} for i in
+                                    ['Histogram', 'Pairwise correlation']],
+                           value='Histogram'),
+            html.Div(id=self.histogram_div_id,
+                     children=[
+                         html.P('Parameter:',
+                                style={'font-weight': 'bold'}),
+                         dcc.Dropdown(id=self.dropdown_vector_id,
+                                      clearable=False,
+                                      options=[{'label': i, 'value': i} for
+                                               i in self.parameter_columns],
+                                      value=self.parameter_columns[0]),
+                     ]),
+            dcc.Graph(id=self.chart_id,
+                      config={
+                          'displaylogo': False,
+                          'modeBarButtonsToRemove': ['sendDataToCloud']
+                      }
+                      )
+        ])
 
     def set_callbacks(self, app):
         @app.callback(Output(self.chart_id, 'figure'),
@@ -96,17 +96,17 @@ def get_parameters(ensemble_path) -> pd.DataFrame:
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_histogram(ensemble_path, parameter):
     data = {
-            'x': get_parameters(ensemble_path)[parameter],
-            'type': 'histogram'
-           }
+        'x': get_parameters(ensemble_path)[parameter],
+        'type': 'histogram'
+    }
 
     layout = {
-              'bargap': 0.05,
-              'font': {'family': 'Equinor'},
-              'xaxis': {'family': 'Equinor'},
-              'yaxis': {'family': 'Equinor'},
-              'hoverlabel': {'font': {'family': 'Equinor'}}
-             }
+        'bargap': 0.05,
+        'font': {'family': 'Equinor'},
+        'xaxis': {'family': 'Equinor'},
+        'yaxis': {'family': 'Equinor'},
+        'hoverlabel': {'font': {'family': 'Equinor'}}
+    }
 
     return {'data': [data], 'layout': layout}
 
@@ -118,18 +118,18 @@ def render_matrix(ensemble_path):
     values = list(data.corr().values)
 
     data = {
-            'type': 'heatmap',
-            'x': data.columns,
-            'y': data.columns,
-            'z': values
-           }
+        'type': 'heatmap',
+        'x': data.columns,
+        'y': data.columns,
+        'z': values
+    }
 
     layout = {
-              'margin': {'l': 200},
-              'font': {'family': 'Equinor'},
-              'xaxis': {'family': 'Equinor'},
-              'yaxis': {'family': 'Equinor'},
-              'hoverlabel': {'font': {'family': 'Equinor'}}
-             }
+        'margin': {'l': 200},
+        'font': {'family': 'Equinor'},
+        'xaxis': {'family': 'Equinor'},
+        'yaxis': {'family': 'Equinor'},
+        'hoverlabel': {'font': {'family': 'Equinor'}}
+    }
 
     return {'data': [data], 'layout': layout}

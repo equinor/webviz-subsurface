@@ -24,7 +24,7 @@ This container visualizes the quality of the history match.
 '''
 
     def __init__(self, container_settings, ensembles, observation_file: Path,
-                 title: str='History Match'):
+                 title: str = 'History Match'):
 
         self.observation_file = observation_file
         self.title = title
