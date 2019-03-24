@@ -37,4 +37,4 @@ install:
 script:
   - pip install .
   - pycodestyle webviz_subsurface/containers/ webviz_subsurface/datainput/
-  - pytest tests
+  #- pytest tests
