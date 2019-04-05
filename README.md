@@ -1,11 +1,9 @@
-# Webviz subsurface configuration 
-
+## Webviz subsurface configuration 
 
 ### Introduction
 
 This repository contains subsurface specific standard webviz containers, which are used as
 plugins in [webviz-config](https://github.com/equinor/webviz-config).
-
 
 ### Installation
 
@@ -37,13 +35,11 @@ For general usage, see the documentation on
 Take a look at [this configuration example](./examples/basic_example.yaml)
 for something subsurface specific.
 
-
 ### Creating new elements
 
 If you are interested in creating new elements which can be configured through
 the configuration file, take a look at the
 [webviz-config contribution guide](https://github.com/equinor/webviz-config).
-
 
 ### Disclaimer
 
