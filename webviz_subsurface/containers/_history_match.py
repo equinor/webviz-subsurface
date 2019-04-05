@@ -1,15 +1,10 @@
 import json
 import numpy as np
-import pandas as pd
 from uuid import uuid4
 from pathlib import Path
 from scipy.stats import chi2
 import dash_html_components as html
-
 from webviz_subsurface_components import HistoryMatch
-from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-
 from ..datainput import extract_mismatch
 
 
@@ -34,6 +29,8 @@ This container visualizes the quality of the history match.
 
         data = extract_mismatch(self.ens_paths, self.observation_file)
         self.hm_data = json.dumps(self._prepareData(data))
+
+        self.hm_id = 'hm-id-{}'.format(uuid4())
 
     def add_webvizstore(self):
         return [(extract_mismatch, [{'ens_paths': self.ens_paths,
@@ -100,7 +97,7 @@ This container visualizes the quality of the history match.
     def layout(self):
         return html.Div([
                   html.H2(self.title),
-                  HistoryMatch(id='hm', data=self.hm_data)
+                  HistoryMatch(id=self.hm_id, data=self.hm_data)
                ])
 
 
