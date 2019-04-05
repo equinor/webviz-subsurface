@@ -4,7 +4,7 @@ from uuid import uuid4
 from pathlib import Path
 from scipy.stats import chi2
 import dash_html_components as html
-from webviz_subsurface_components import HistoryMatch
+import webviz_subsurface_components as wsc
 from ..datainput import extract_mismatch
 
 
@@ -97,7 +97,7 @@ This container visualizes the quality of the history match.
     def layout(self):
         return html.Div([
                   html.H2(self.title),
-                  HistoryMatch(id=self.hm_id, data=self.hm_data)
+                  wsc.HistoryMatch(id=self.hm_id, data=self.hm_data)
                ])
 
 
