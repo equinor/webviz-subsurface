@@ -23,7 +23,7 @@ install:
 script:
   - pip install .
   - pip install .[tests]
-  - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput
+  - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
 
 deploy:
