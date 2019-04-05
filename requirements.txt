@@ -1,4 +1,0 @@
-scipy>=1.2.1
-webviz-plotly>=0.0.1
-webviz-subsurface-components>=0.0.2
-webviz-config>=0.0.2
