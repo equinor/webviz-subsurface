@@ -1,5 +1,8 @@
 from setuptools import setup, find_packages
 
+with open('README.md', 'r') as fh:
+    long_description = fh.read()
+
 tests_require = [
     'chromedriver-binary',
     'dash>=0.38.0',
@@ -14,8 +17,9 @@ tests_require = [
 
 setup(
     name='webviz-subsurface',
-    version='0.0.1',
     description='Webviz config containers for subsurface data',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/equinor/webviz-subsurface',
     author='R&T Equinor',
     packages=find_packages(exclude=['tests']),
