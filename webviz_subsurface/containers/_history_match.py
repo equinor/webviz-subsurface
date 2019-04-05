@@ -51,10 +51,10 @@ This container visualizes the quality of the history match.
             df = data[data.ensemble_name == ensemble]
             iterations.append(df.groupby('obs_group_name').mean())
 
-        sorted_iterations = self._sortIterations(iterations)
+        sorted_iterations = HistoryMatch._sortIterations(iterations)
 
-        iterations_dict = self._iterations_to_dict(sorted_iterations,
-                                                   ensemble_labels)
+        iterations_dict = HistoryMatch._iterations_to_dict(sorted_iterations,
+                                                           ensemble_labels)
 
         confidence_sorted = _get_sorted_edges(num_obs_groups)
         confidence_unsorted = _get_unsorted_edges()
@@ -66,7 +66,8 @@ This container visualizes the quality of the history match.
 
         return data
 
-    def _sortIterations(self, iterations):
+    @staticmethod
+    def _sortIterations(iterations):
         sorted_data = []
 
         for df in iterations:
@@ -80,7 +81,8 @@ This container visualizes the quality of the history match.
 
         return sorted_data
 
-    def _iterations_to_dict(self, iterations, labels):
+    @staticmethod
+    def _iterations_to_dict(iterations, labels):
         retval = []
 
         for iteration, label in zip(iterations, labels):
