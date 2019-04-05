@@ -1,15 +1,10 @@
 import json
 import numpy as np
-import pandas as pd
 from uuid import uuid4
 from pathlib import Path
 from scipy.stats import chi2
 import dash_html_components as html
-
-from webviz_subsurface_components import HistoryMatch
-from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-
+import webviz_subsurface_components as wsc
 from ..datainput import extract_mismatch
 
 
@@ -35,6 +30,8 @@ This container visualizes the quality of the history match.
         data = extract_mismatch(self.ens_paths, self.observation_file)
         self.hm_data = json.dumps(self._prepareData(data))
 
+        self.hm_id = 'hm-id-{}'.format(uuid4())
+
     def add_webvizstore(self):
         return [(extract_mismatch, [{'ens_paths': self.ens_paths,
                                      'observation_file': self.observation_file
@@ -54,10 +51,10 @@ This container visualizes the quality of the history match.
             df = data[data.ensemble_name == ensemble]
             iterations.append(df.groupby('obs_group_name').mean())
 
-        sorted_iterations = self._sortIterations(iterations)
+        sorted_iterations = HistoryMatch._sortIterations(iterations)
 
-        iterations_dict = self._iterations_to_dict(sorted_iterations,
-                                                   ensemble_labels)
+        iterations_dict = HistoryMatch._iterations_to_dict(sorted_iterations,
+                                                           ensemble_labels)
 
         confidence_sorted = _get_sorted_edges(num_obs_groups)
         confidence_unsorted = _get_unsorted_edges()
@@ -69,7 +66,8 @@ This container visualizes the quality of the history match.
 
         return data
 
-    def _sortIterations(self, iterations):
+    @staticmethod
+    def _sortIterations(iterations):
         sorted_data = []
 
         for df in iterations:
@@ -83,7 +81,8 @@ This container visualizes the quality of the history match.
 
         return sorted_data
 
-    def _iterations_to_dict(self, iterations, labels):
+    @staticmethod
+    def _iterations_to_dict(iterations, labels):
         retval = []
 
         for iteration, label in zip(iterations, labels):
@@ -100,7 +99,7 @@ This container visualizes the quality of the history match.
     def layout(self):
         return html.Div([
                   html.H2(self.title),
-                  HistoryMatch(id='hm', data=self.hm_data)
+                  wsc.HistoryMatch(id=self.hm_id, data=self.hm_data)
                ])
 
 
