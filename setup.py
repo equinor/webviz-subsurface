@@ -34,7 +34,7 @@ setup(
         'webviz-subsurface-components>=0.0.2',
         'webviz-config>=0.0.2'
     ],
-    tests_require=tests_requires,
+    tests_require=tests_require,
     extras_require={'tests': tests_require},
     setup_requires=['setuptools_scm>=3.2.0'],
     use_scm_version=True,
