@@ -1,4 +1,4 @@
-# Webviz Subsurface configuration 
+# Webviz subsurface configuration 
 
 
 ### Introduction
@@ -10,17 +10,19 @@ plugins in [webviz-config](https://github.com/equinor/webviz-config).
 ### Installation
 
 As Dash is using Python3-only functionality, you should create a Python3
-virtual environment before installation. One way of doing this in Equinor is
+virtual environment before installation. One way of doing this is
 ```bash
-export PYTHON_VERSION=3.7.1
-source /prog/sdpsoft/env.sh
-
 PATH_TO_VENV='./my_new_venv'
 python3 -m virtualenv $PATH_TO_VENV
 source $PATH_TO_VENV/bin/activate
 ```
 
-In order to install the utility, run
+The easiest way of installing this package is to run
+```bash
+pip install webviz-subsurface
+```
+
+If you want to install the latest code you can instead run
 ```bash
 git clone git@github.com:Equinor/webviz-subsurface.git
 cd webviz-subsurface
@@ -32,7 +34,8 @@ pip install .
 For general usage, see the documentation on
 [webviz-config](https://github.com/equinor/webviz-config).
 
-Take a look at this configuration example for something subsurface specific.
+Take a look at [this configuration example](./examples/basic_example.yaml)
+for something subsurface specific.
 
 
 ### Creating new elements

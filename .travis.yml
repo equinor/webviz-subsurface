@@ -1,0 +1,35 @@
+language: python
+cache: pip
+
+addons:
+    chrome: stable
+
+python:
+  - "3.6"
+
+matrix:
+  fast_finish: true
+
+before_install:
+  - sudo apt-get -qq update
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+
+install:
+  - wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
+  - unzip chromedriver_linux64.zip
+  - export PATH=$PATH:$PWD
+
+script:
+  - pip install .
+  - pip install .[tests]
+  - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
+  - pytest tests
+
+deploy:
+  - provider: pypi
+    user: webviz
+    password:
+      secure: raZvnkESL4A7R2s/IW0amym1p4rOvg3WeJ1hpnS13+97OPWnj3QgusHFmxlbU8JV1LzeotDrLJKDFtNxUSJlqi52SuM1MnaGA4zrngF4yHCgfCNHIRNMYRh53jcEra8vE0QVMv3k+0uQHV2bHnvCkFDTa3ktJo6ovCIrBH+RBRSukz2KlzNiUToNZvvUX5fI9jBCk7vDarWOc9YJqew5gsKzeOPp7pdvis5Em3T0psB6Y3Gg56w8jZ/NrpEwtJ+otxBlgk+Qrwg4c/7PqJ8Ib8JHXmnLMKHv/SXdBpJObq+2lI8bdgxM8RDKXGwi+5/p29B5tmzaS37fmJZ25Js7ZfnND3hjvEnnJMiDKjBT4qEqsIA7wSZfbBVczRjd3uf8BoqVAE/O9/kG9LJn+zcvLy3+Neb4Gi7e1bgJ20DgPupRU6D6UR7TiFtkiksF97pjfcOYRQ5iM/y+y6Uhj1BT2mONg4XMgUa6PO/JF3OanOwbcz5EfEa3fAvQu90CV71o150hvIrarQiGhKoD7B533Ehh+gSWgvN8TF6rR26UvqIntqyaVGAbAzcGGFQmF1pE0ZRtrSlk9xShH4jxD5EPRnx7G9ip+sU/cfneNFRKG/HAPIh6AOiWqnKlZx0oDaF7eWB78/wGAk4K5YFb1C7nM6fyLzCDDxrJrgvtNXovTgw=
+    on:
+      tags: true

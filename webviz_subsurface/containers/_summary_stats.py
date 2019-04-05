@@ -20,8 +20,13 @@ statistical plots (min, max, mean, p10, p90).
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, app, container_settings, ensemble,
-                 sampling: str='monthly', title: str='Simulation time series'):
+    def __init__(
+            self,
+            app,
+            container_settings,
+            ensemble,
+            sampling: str = 'monthly',
+            title: str = 'Simulation time series'):
 
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
@@ -42,25 +47,25 @@ statistical plots (min, max, mean, p10, p90).
     @property
     def layout(self):
         return html.Div([
-                  html.H2(self.title),
-                  html.P('Summary Vector:', style={'font-weight': 'bold'}),
-                  dcc.Dropdown(id=self.dropwdown_vector_id,
-                           clearable=False,
+            html.H2(self.title),
+            html.P('Summary Vector:', style={'font-weight': 'bold'}),
+            dcc.Dropdown(id=self.dropwdown_vector_id,
+                         clearable=False,
+                         options=[{'label': i, 'value': i}
+                                  for i in self.smry_columns],
+                         value=self.smry_columns[0]),
+            html.P('Plot type:', style={'font-weight': 'bold'}),
+            dcc.RadioItems(id=self.radio_plot_type_id,
                            options=[{'label': i, 'value': i}
-                                    for i in self.smry_columns],
-                           value=self.smry_columns[0]),
-                  html.P('Plot type:', style={'font-weight': 'bold'}),
-                  dcc.RadioItems(id=self.radio_plot_type_id,
-                             options=[{'label': i, 'value': i}
-                                      for i in ['Realizations', 'Statistics']],
-                             value='Realizations'),
-                  dcc.Graph(id=self.chart_id,
-                            config={
-                                'displaylogo': False,
-                                'modeBarButtonsToRemove': ['sendDataToCloud']
-                                   }
-                            )
-               ])
+                                    for i in ['Realizations', 'Statistics']],
+                           value='Realizations'),
+            dcc.Graph(id=self.chart_id,
+                      config={
+                          'displaylogo': False,
+                          'modeBarButtonsToRemove': ['sendDataToCloud']
+                      }
+                      )
+        ])
 
     def set_callbacks(self, app):
         @app.callback(Output(self.chart_id, 'figure'),
@@ -69,12 +74,12 @@ statistical plots (min, max, mean, p10, p90).
         def update_plot(vector, summary_plot_type):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
-                  self.ensemble_path,
-                  self.sampling, vector)
+                    self.ensemble_path,
+                    self.sampling, vector)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
-                  self.ensemble_path,
-                  self.sampling, vector)
+                    self.ensemble_path,
+                    self.sampling, vector)
 
     def add_webvizstore(self):
         return [(get_summary_data, [{'ensemble_path': self.ensemble_path,
@@ -104,22 +109,22 @@ def render_realization_plot(ensemble_path, sampling, vector):
                             sampling)[['REAL', 'DATE', vector]]
 
     traces = [{
-               'x': df['DATE'],
-               'customdata': df['REAL'],
-               'y': df[vector],
-               'name': name,
-               'type': 'line'
-               } for name, df in data.groupby('REAL') if name != 'DATE']
+        'x': df['DATE'],
+        'customdata': df['REAL'],
+        'y': df[vector],
+        'name': name,
+        'type': 'line'
+    } for name, df in data.groupby('REAL') if name != 'DATE']
 
     layout = {
-              'hovermode': 'closest',
-              'barmode': 'overlay',
-              'bargap': 0.05,
-              'xaxis': {'title': 'Date', 'family': 'Equinor'},
-              'yaxis': {'title': vector, 'family': 'Equinor'},
-              'font': {'family': 'Equinor'},
-              'hoverlabel': {'font': {'family': 'Equinor'}},
-             }
+        'hovermode': 'closest',
+        'barmode': 'overlay',
+        'bargap': 0.05,
+        'xaxis': {'title': 'Date', 'family': 'Equinor'},
+        'yaxis': {'title': vector, 'family': 'Equinor'},
+        'font': {'family': 'Equinor'},
+        'hoverlabel': {'font': {'family': 'Equinor'}},
+    }
 
     return {'data': traces, 'layout': layout}
 
