@@ -1,13 +1,8 @@
-language : python
+language: python
 cache: pip
-
-sudo: true
 
 addons:
     chrome: stable
-
-services:
-  - docker
 
 python:
   - "3.6"
@@ -17,22 +12,10 @@ matrix:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install node
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
 
 install:
-  - pip install webviz_components webviz_plotly
-  - git clone https://github.com/equinor/webviz-subsurface-components
-  - cd webviz-subsurface-components
-  - pip install -r requirements.txt
-  - pip install .
-  - cd ..
-  - git clone https://github.com/equinor/webviz-config
-  - cd webviz-config
-  - pip install -r requirements.txt
-  - pip install .
-  - cd ..
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
   - wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
@@ -41,5 +24,5 @@ install:
 
 script:
   - pip install .
-  - pycodestyle webviz_subsurface/containers/ webviz_subsurface/datainput/
+  - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput
   - pytest tests
