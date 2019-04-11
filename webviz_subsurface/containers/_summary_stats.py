@@ -16,32 +16,59 @@ class SummaryStats(WebvizContainer):
 This container visualizes simulation profiles, both per realization and
 statistical plots (min, max, mean, p10, p90).
 
-* `ensemble`: Which ensemble in `container_settings` to visualize.
+Args:
+* `ensemble`: Which ensembles in `container_settings` to visualize.
+  -> list of ensemble paths (can be only one)
+* `column_keys`: list of pre defined vectors to visualize. Default is `none`
 * `sampling`: Optional. Either `monthly` or `yearly`. Default is `monthly`.
 * `title`: Optional title for the container.
+
+Logic:
+  Data:
+    Ensembles are stored as a big concated dataframe (one df per ensemble).
+  Loading data:
+    get_summary_data or get_summary_stats load data from scratch. After the
+    functions got called the first time the result gets cached.
+  Accessing data:
+    Calling get_summary_data with the same input parameter will return the
+    memoized dataframe.
+  Staistics plot:
+    render_stat_plot retunrs a list of divs containing FanChart-objs. Dash
+    can plot lists of divs but not of Graph-objs directly. 
 '''
 
     def __init__(
             self,
             app,
             container_settings,
-            ensemble,
+            ensembles,
+            column_keys=None,
             sampling: str = 'monthly',
             title: str = 'Simulation time series'):
 
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
+        self.column_keys = column_keys
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
 
         # Finding all summary vectors:
-        self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
+        self.ensemble_paths = []
+        for i in range(len(ensembles)):
+            self.ensemble_paths.append(
+                container_settings['scratch_ensembles'][ensembles[i]])
 
-        self.smry_columns = sorted(list(get_summary_data(self.ensemble_path,
-                                                         self.sampling)
-                                        .drop(columns=['DATE', 'REAL'])
-                                        .columns))
+        self.smry_columns = sorted(
+            list(
+                get_summary_data(
+                    ensemble_paths=self.ensemble_paths,
+                    sampling=self.sampling,
+                    column_keys=self.column_keys) .drop(
+                    columns=[
+                        'DATE',
+                        'REAL',
+                        'ENS']) .columns))
 
         self.set_callbacks(app)
 
@@ -60,54 +87,82 @@ statistical plots (min, max, mean, p10, p90).
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
                            value='Realizations'),
-            dcc.Graph(id=self.chart_id,
-                      config={
-                          'displaylogo': False,
-                          'modeBarButtonsToRemove': ['sendDataToCloud']
-                      }
-                      )
+            html.Div(id=self.chart_id)
         ])
 
     def set_callbacks(self, app):
-        @app.callback(Output(self.chart_id, 'figure'),
+        @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value')])
         def update_plot(vector, summary_plot_type):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
-                    self.ensemble_path,
+                    self.ensemble_paths,
+                    self.column_keys,
                     self.sampling, vector)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
-                    self.ensemble_path,
+                    self.ensemble_paths,
+                    self.column_keys,
                     self.sampling, vector)
 
     def add_webvizstore(self):
-        return [(get_summary_data, [{'ensemble_path': self.ensemble_path,
-                                     'sampling': self.sampling,
-                                     'statistics': False}]),
-                (get_summary_data, [{'ensemble_path': self.ensemble_path,
-                                     'sampling': self.sampling,
-                                     'statistics': True}])]
+        return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
+                                     'column_keys': self.column_keys,
+                                     'sampling': self.sampling}]),
+                (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
+                                     'column_keys': self.column_keys,
+                                     'sampling': self.sampling}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_data(ensemble_path, sampling,
-                     statistics=False) -> pd.DataFrame:
+def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
+    """ Loops over given ensemble paths, extracts smry-data and concates them
+    into one big df. An additional column ENS gets added for eacht ens-path
+    to seperate the ensambles.
 
-    ens = scratch_ensemble('', ensemble_path)
-    if statistics:
-        return ens.get_smry_stats(time_index=sampling)
-    else:
-        return ens.get_smry(time_index=sampling)
+    Dash functions take positional args., so order matters. """
+
+    ens_data_dfs = []
+
+    for ensemble_path in ensemble_paths:
+        ensemble_df = scratch_ensemble('', ensemble_path).get_smry(
+            time_index=sampling, column_keys=column_keys)
+        ensemble_df['ENS'] = ensemble_path.replace(
+            '/scratch/troll_fmu/', '')
+        ens_data_dfs.append(ensemble_df)
+    
+    return pd.concat(ens_data_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_path, sampling, vector):
+@webvizstore
+def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
+    """ Loops over given ensemble paths, extracts smry-data and concates them
+    into one big df. An additional column ENS gets added for eacht ens-path
+    to seperate the ensambles.
 
-    data = get_summary_data(ensemble_path,
-                            sampling)[['REAL', 'DATE', vector]]
+    Dash functions take positional args., so order matters. """
+
+    df_ens_set = []
+
+    for path in ensemble_paths:
+        stats = scratch_ensemble('', path).get_smry_stats(
+            time_index=sampling, column_keys=column_keys)        
+        stats['ENS'] = path.replace(
+                         '/scratch/troll_fmu/', '')        
+        df_ens_set.append(stats)
+    
+    return pd.concat(df_ens_set)
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
+    """ returns a single dcc.Graph """
+
+    summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
+                            )[['REAL', 'DATE', 'ENS', vector]]
 
     traces = [{
         'x': df['DATE'],
@@ -115,7 +170,7 @@ def render_realization_plot(ensemble_path, sampling, vector):
         'y': df[vector],
         'name': name,
         'type': 'line'
-    } for name, df in data.groupby('REAL') if name != 'DATE']
+    } for name, df in summary_stats.groupby('ENS')]
 
     layout = {
         'hovermode': 'closest',
@@ -127,17 +182,40 @@ def render_realization_plot(ensemble_path, sampling, vector):
         'hoverlabel': {'font': {'family': 'Equinor'}},
     }
 
-    return {'data': traces, 'layout': layout}
+    return dcc.Graph(figure={'data': traces, 'layout': layout},
+                     config={
+                         'displaylogo': False,
+                         'modeBarButtonsToRemove': ['sendDataToCloud']
+                     })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_stat_plot(ensemble_path, sampling, vector):
+def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
+    """returns a list of html.Divs (required by dash). One div per ensemble.
+    Eachdiv includes a dcc.Graph(id, figure, config)."""
 
-    data = get_summary_data(ensemble_path, sampling,
-                            statistics=True)[vector].unstack().transpose()
+    # get data
+    data = get_summary_stats(ensemble_paths, sampling, column_keys)
 
-    data['name'] = vector
-    data.rename(index=str, inplace=True,
-                columns={"minimum": "min", "maximum": "max"})
+    # create a list of FanCharts to be plotted
+    fan_chart_divs = []
+    for ens in data.ENS.unique():
+        vector_stats = data[data['ENS'] == ens][vector].unstack().transpose()
+        vector_stats['name'] = vector
+        vector_stats.rename(index=str, inplace=True,
+                            columns={"minimum": "min", "maximum": "max"})
+        fan_chart_divs.append(html.H5(ens))
+        fan_chart_divs.append(
+            html.Div(
+                dcc.Graph(
+                    id='graph-{}'.format(ens),
+                    figure=FanChart(vector_stats.iterrows()),
+                    config={
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['sendDataToCloud']
+                    }
+                )
+            )
+        )
 
-    return FanChart(data.iterrows())
+    return fan_chart_divs
