@@ -10,6 +10,8 @@ from ..datainput import scratch_ensemble
 
 
 class SummaryStats:
+
+
 """
 Summary statistics
 ==================
@@ -42,7 +44,7 @@ Logic:
     memoized dataframe.
 """
 
-    def __init__(
+   def __init__(
             self,
             app,
             container_settings,
@@ -116,8 +118,8 @@ Logic:
                                      'column_keys': self.column_keys,
                                      'sampling': self.sampling}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': self.column_keys,
-                                     'sampling': self.sampling}])]
+                                      'column_keys': self.column_keys,
+                                      'sampling': self.sampling}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -137,7 +139,7 @@ def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
         ensemble_df['ENS'] = ensemble_path.replace(
             '/scratch/troll_fmu/', '')
         ens_data_dfs.append(ensemble_df)
-    
+
     return pd.concat(ens_data_dfs)
 
 
@@ -154,11 +156,11 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
     for path in ensemble_paths:
         stats = scratch_ensemble('', path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)        
+                time_index=sampling, column_keys=column_keys)
         stats['ENS'] = path.replace(
-                       '/scratch/troll_fmu/', '')        
+                       '/scratch/troll_fmu/', '')
         df_ens_set.append(stats)
-    
+
     return pd.concat(df_ens_set)
 
 
@@ -167,7 +169,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
-                                    )[['REAL', 'DATE', 'ENS', vector]]
+                                     )[['REAL', 'DATE', 'ENS', vector]]
 
     traces = [{
         'x': df['DATE'],
@@ -191,7 +193,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-                     })
+        })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
