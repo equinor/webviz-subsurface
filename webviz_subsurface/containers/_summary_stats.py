@@ -10,31 +10,37 @@ from ..datainput import scratch_ensemble
 
 
 class SummaryStats:
-    '''### Summary statistics
+"""
+Summary statistics
+==================
 
-This container visualizes simulation profiles, both per realization and
-statistical plots (min, max, mean, p10, p90).
+Provides:
+  1. Summary data plot (y: vector, x: timeseries, traces: realization-i)
+  2. Statistics plot (y: vector, x: timeseries, fanchart of ensemble-i
+                      min, max, mean, p10, p90)
 
 Args:
-* `ensemble`: Which ensembles in `container_settings` to visualize.
-  -> list of ensemble paths (can be only one)
-* `column_keys`: list of pre defined vectors to visualize. Default is `none`
-* `sampling`: Optional. Either `monthly` or `yearly`. Default is `monthly`.
-* `title`: Optional title for the container.
+-----
+  * `ensemble`: Which ensembles in `container_settings` to visualize.
+    -> list of ensemble paths (can be only one)
+  * `column_keys`: list of pre defined vectors to visualize. Default is `none`
+  * `sampling`: Optional. Either `monthly` or `yearly`. Default is `monthly`.
+  * `title`: Optional title for the container.
 
 Logic:
+------
   Data:
-    Ensembles are stored as a big concated dataframe (one df per ensemble).
+    Ensembles are stored as one big concated dataframe including a columns
+    "ENS" to identify them.
+
   Loading data:
     get_summary_data or get_summary_stats load data from scratch. After the
     functions got called the first time the result gets cached.
+
   Accessing data:
     Calling get_summary_data with the same input parameter will return the
     memoized dataframe.
-  Staistics plot:
-    render_stat_plot retunrs a list of divs containing FanChart-objs. Dash
-    can plot lists of divs but not of Graph-objs directly. 
-'''
+"""
 
     def __init__(
             self,
@@ -148,9 +154,9 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
     for path in ensemble_paths:
         stats = scratch_ensemble('', path).get_smry_stats(
-            time_index=sampling, column_keys=column_keys)        
+                time_index=sampling, column_keys=column_keys)        
         stats['ENS'] = path.replace(
-                         '/scratch/troll_fmu/', '')        
+                       '/scratch/troll_fmu/', '')        
         df_ens_set.append(stats)
     
     return pd.concat(df_ens_set)
@@ -161,7 +167,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
-                            )[['REAL', 'DATE', 'ENS', vector]]
+                                    )[['REAL', 'DATE', 'ENS', vector]]
 
     traces = [{
         'x': df['DATE'],
