@@ -63,9 +63,9 @@ Logic:
 
         # Finding all summary vectors:
         self.ensemble_paths = []
-        for i in range(len(ensembles)):
+        for c, val in enumerate(ensembles, 0):
             self.ensemble_paths.append(
-                container_settings['scratch_ensembles'][ensembles[i]])
+                container_settings['scratch_ensembles'][ensembles[c]])
 
         self.smry_columns = sorted(
             list(
