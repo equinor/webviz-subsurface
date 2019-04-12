@@ -11,6 +11,8 @@ from ..datainput import scratch_ensemble
 
 
 class SummaryStats(WebvizContainer):
+
+
 """
 Summary statistics
 ==================
@@ -43,7 +45,7 @@ Logic:
     memoized dataframe.
 """
 
-    def __init__(
+   def __init__(
             self,
             app,
             container_settings,
@@ -117,8 +119,8 @@ Logic:
                                      'column_keys': self.column_keys,
                                      'sampling': self.sampling}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': self.column_keys,
-                                     'sampling': self.sampling}])]
+                                      'column_keys': self.column_keys,
+                                      'sampling': self.sampling}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -168,7 +170,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
-                                    )[['REAL', 'DATE', 'ENS', vector]]
+                                     )[['REAL', 'DATE', 'ENS', vector]]
 
     traces = [{
         'x': df['DATE'],
@@ -192,7 +194,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-                     })
+        })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
