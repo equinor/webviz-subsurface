@@ -11,38 +11,39 @@ from ..datainput import scratch_ensemble
 
 class SummaryStats:
 
+    """
+    Summary statistics
+    ==================
 
-"""
-Summary statistics
-==================
+    Provides:
+      1. Summary data plot (y: vector, x: timeseries, traces: realization-i)
+      2. Statistics plot (y: vector, x: timeseries, fanchart of ensemble-i
+                          min, max, mean, p10, p90)
 
-Provides:
-  1. Summary data plot (y: vector, x: timeseries, traces: realization-i)
-  2. Statistics plot (y: vector, x: timeseries, fanchart of ensemble-i
-                      min, max, mean, p10, p90)
+    Args:
+    -----
+      * `ensemble`: Which ensembles in `container_settings` to visualize.
+        -> list of ensemble paths (can be only one)
+      * `column_keys`: list of pre defined vectors to visualize. Default is
+        `none`
+      * `sampling`: Optional. Either `monthly` or `yearly`. Default is
+        `monthly`.
+      * `title`: Optional title for the container.
 
-Args:
------
-  * `ensemble`: Which ensembles in `container_settings` to visualize.
-    -> list of ensemble paths (can be only one)
-  * `column_keys`: list of pre defined vectors to visualize. Default is `none`
-  * `sampling`: Optional. Either `monthly` or `yearly`. Default is `monthly`.
-  * `title`: Optional title for the container.
+    Logic:
+    ------
+      Data:
+        Ensembles are stored as one big concated dataframe including a columns
+        "ENS" to identify them.
 
-Logic:
-------
-  Data:
-    Ensembles are stored as one big concated dataframe including a columns
-    "ENS" to identify them.
+      Loading data:
+        get_summary_data or get_summary_stats load data from scratch. After the
+        functions got called the first time the result gets cached.
 
-  Loading data:
-    get_summary_data or get_summary_stats load data from scratch. After the
-    functions got called the first time the result gets cached.
-
-  Accessing data:
-    Calling get_summary_data with the same input parameter will return the
-    memoized dataframe.
-"""
+      Accessing data:
+        Calling get_summary_data with the same input parameter will return the
+        memoized dataframe.
+    """
 
    def __init__(
             self,
