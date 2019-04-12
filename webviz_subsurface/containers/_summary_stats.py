@@ -46,7 +46,7 @@ class SummaryStats(WebvizContainer):
         memoized dataframe.
     """
 
-   def __init__(
+    def __init__(
             self,
             app,
             container_settings,
@@ -54,20 +54,17 @@ class SummaryStats(WebvizContainer):
             column_keys=None,
             sampling: str = 'monthly',
             title: str = 'Simulation time series'):
-
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
         self.column_keys = column_keys
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
-
         # Finding all summary vectors:
         self.ensemble_paths = []
         for c, val in enumerate(ensembles, 0):
             self.ensemble_paths.append(
                 container_settings['scratch_ensembles'][ensembles[c]])
-
         self.smry_columns = sorted(
             list(
                 get_summary_data(
@@ -78,7 +75,6 @@ class SummaryStats(WebvizContainer):
                         'DATE',
                         'REAL',
                         'ENS']) .columns))
-
         self.set_callbacks(app)
 
     @property
