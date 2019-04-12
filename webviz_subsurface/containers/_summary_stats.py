@@ -61,7 +61,7 @@ class SummaryStats:
         self.chart_id = 'chart-id-{}'.format(uuid4())
         # Finding all summary vectors:
         self.ensemble_paths = []
-        for c, val in enumerate(ensembles, 0):
+        for c in enumerate(ensembles, 0):
             self.ensemble_paths.append(
                 container_settings['scratch_ensembles'][ensembles[c]])
         self.smry_columns = sorted(
@@ -221,5 +221,6 @@ def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
                 )
             )
         )
+
 
     return fan_chart_divs
