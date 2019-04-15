@@ -1,0 +1,18 @@
+title: vizvaz
+username: a
+password: b
+
+
+pages:
+ - title: Syntax highlighting example
+   content:
+    - container: SyntaxHighlighter
+      filename: ./view3d_example.yaml
+ - title: Depth Model Reek
+   content:
+    - container: View3D
+      config: ../../webviz-subsurface-data/reek_viz.yaml
+ - title: Depth Model Volve
+   content:
+    - container: View3D
+      config: ../../webviz-subsurface-data/volve_viz.yaml

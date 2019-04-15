@@ -29,7 +29,8 @@ setup(
             'ParameterDistribution = webviz_subsurface.containers:ParameterDistribution',
             'DiskUsage = webviz_subsurface.containers:DiskUsage',
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
-            'HistoryMatch = webviz_subsurface.containers:HistoryMatch'
+            'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
+            'View3D = webviz_subsurface.containers:View3D'
         ]
     },
     install_requires=[

@@ -28,10 +28,11 @@ from ._parameter_distribution import ParameterDistribution
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
-
+from ._view3d import View3D
 
 __all__ = ['SummaryStats',
            'ParameterDistribution',
            'DiskUsage',
            'SubsurfaceMap',
-           'HistoryMatch']
+           'HistoryMatch',
+           'View3D']
