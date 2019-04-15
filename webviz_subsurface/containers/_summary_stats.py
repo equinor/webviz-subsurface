@@ -222,5 +222,4 @@ def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
             )
         )
 
-
     return fan_chart_divs
