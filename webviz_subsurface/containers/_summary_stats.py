@@ -164,8 +164,10 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
-    summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
+    summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                      )[['REAL', 'DATE', 'ENSEMBLE', vector]]
+    
+    summary_data.dropna(subset=[vector])
 
     traces = [{
         'x': df['DATE'],
@@ -173,7 +175,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         'y': df[vector],
         'name': name,
         'type': 'line'
-    } for name, df in summary_stats.groupby('ENSEMBLE')]
+    } for name, df in summary_data.groupby('ENSEMBLE')]
 
     layout = {
         'hovermode': 'closest',
