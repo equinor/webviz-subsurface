@@ -34,7 +34,7 @@ class SummaryStats:
     ------
       Data:
         Ensembles are stored as one big concated dataframe including a columns
-        "ENS" to identify them.
+        "ENSEMBLE" to identify them.
 
       Loading data:
         get_summary_data or get_summary_stats load data from scratch. After the
@@ -59,11 +59,12 @@ class SummaryStats:
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
-        # Finding all summary vectors:
-        self.ensemble_paths = []
-        for c in enumerate(ensembles, 0):
-            self.ensemble_paths.append(
-                container_settings['scratch_ensembles'][ensembles[c]])
+
+        self.ensemble_paths = tuple(
+            (ensemble,
+             container_settings['scratch_ensembles'][ensemble])
+            for ensemble in ensembles)
+
         self.smry_columns = sorted(
             list(
                 get_summary_data(
@@ -73,7 +74,7 @@ class SummaryStats:
                     columns=[
                         'DATE',
                         'REAL',
-                        'ENS']) .columns))
+                        'ENSEMBLE']) .columns))
         self.set_callbacks(app)
 
     @property
@@ -123,18 +124,17 @@ class SummaryStats:
 @webvizstore
 def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENS gets added for eacht ens-path
+    into one big df. An additional column ENSEMBLE gets added for eacht ens-path
     to seperate the ensambles.
 
     Dash functions take positional args., so order matters. """
 
     ens_data_dfs = []
 
-    for ensemble_path in ensemble_paths:
-        ensemble_df = scratch_ensemble('', ensemble_path).get_smry(
+    for ensemble, ensemble_path in ensemble_paths:
+        ensemble_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
             time_index=sampling, column_keys=column_keys)
-        ensemble_df['ENS'] = ensemble_path.replace(
-            '/scratch/troll_fmu/', '')
+        ensemble_df['ENSEMBLE'] = ensemble
         ens_data_dfs.append(ensemble_df)
 
     return pd.concat(ens_data_dfs)
@@ -151,11 +151,10 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
     df_ens_set = []
 
-    for path in ensemble_paths:
-        stats = scratch_ensemble('', path).get_smry_stats(
+    for ensemble, path in ensemble_paths:
+        stats = scratch_ensemble(ensemble, path).get_smry_stats(
                 time_index=sampling, column_keys=column_keys)
-        stats['ENS'] = path.replace(
-                       '/scratch/troll_fmu/', '')
+        stats['ENSEMBLE'] = ensemble
         df_ens_set.append(stats)
 
     return pd.concat(df_ens_set)
@@ -166,7 +165,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
-                                     )[['REAL', 'DATE', 'ENS', vector]]
+                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     traces = [{
         'x': df['DATE'],
@@ -174,7 +173,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         'y': df[vector],
         'name': name,
         'type': 'line'
-    } for name, df in summary_stats.groupby('ENS')]
+    } for name, df in summary_stats.groupby('ENSEMBLE')]
 
     layout = {
         'hovermode': 'closest',
@@ -203,16 +202,16 @@ def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
 
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
-    for ens in data.ENS.unique():
-        vector_stats = data[data['ENS'] == ens][vector].unstack().transpose()
+    for ensemble in data.ENSEMBLE.unique():
+        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack().transpose()
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
-        fan_chart_divs.append(html.H5(ens))
+        fan_chart_divs.append(html.H5(ensemble))
         fan_chart_divs.append(
             html.Div(
                 dcc.Graph(
-                    id='graph-{}'.format(ens),
+                    id='graph-{}'.format(ensemble),
                     figure=FanChart(vector_stats.iterrows()),
                     config={
                         'displaylogo': False,
