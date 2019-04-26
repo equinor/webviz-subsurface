@@ -10,31 +10,40 @@ from ..datainput import scratch_ensemble
 
 
 class SummaryStats:
-    '''### Summary statistics
 
-This container visualizes simulation profiles, both per realization and
-statistical plots (min, max, mean, p10, p90).
+    """
+    Summary statistics
+    ==================
 
-Args:
-* `ensemble`: Which ensembles in `container_settings` to visualize.
-  -> list of ensemble paths (can be only one)
-* `column_keys`: list of pre defined vectors to visualize. Default is `none`
-* `sampling`: Optional. Either `monthly` or `yearly`. Default is `monthly`.
-* `title`: Optional title for the container.
+    Provides:
+      1. Summary data plot (y: vector, x: timeseries, traces: realization-i)
+      2. Statistics plot (y: vector, x: timeseries, fanchart of ensemble-i
+                          min, max, mean, p10, p90)
 
-Logic:
-  Data:
-    Ensembles are stored as a big concated dataframe (one df per ensemble).
-  Loading data:
-    get_summary_data or get_summary_stats load data from scratch. After the
-    functions got called the first time the result gets cached.
-  Accessing data:
-    Calling get_summary_data with the same input parameter will return the
-    memoized dataframe.
-  Staistics plot:
-    render_stat_plot retunrs a list of divs containing FanChart-objs. Dash
-    can plot lists of divs but not of Graph-objs directly. 
-'''
+    Args:
+    -----
+      * `ensemble`: Which ensembles in `container_settings` to visualize.
+        -> list of ensemble paths (can be only one)
+      * `column_keys`: list of pre defined vectors to visualize. Default is
+        `none`
+      * `sampling`: Optional. Either `monthly` or `yearly`. Default is
+        `monthly`.
+      * `title`: Optional title for the container.
+
+    Logic:
+    ------
+      Data:
+        Ensembles are stored as one big concated dataframe including a columns
+        "ENSEMBLE" to identify them.
+
+      Loading data:
+        get_summary_data or get_summary_stats load data from scratch. After the
+        functions got called the first time the result gets cached.
+
+      Accessing data:
+        Calling get_summary_data with the same input parameter will return the
+        memoized dataframe.
+    """
 
     def __init__(
             self,
@@ -44,7 +53,6 @@ Logic:
             column_keys=None,
             sampling: str = 'monthly',
             title: str = 'Simulation time series'):
-
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
         self.column_keys = column_keys
@@ -52,11 +60,10 @@ Logic:
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
 
-        # Finding all summary vectors:
-        self.ensemble_paths = []
-        for i in range(len(ensembles)):
-            self.ensemble_paths.append(
-                container_settings['scratch_ensembles'][ensembles[i]])
+        self.ensemble_paths = tuple(
+            (ensemble,
+             container_settings['scratch_ensembles'][ensemble])
+            for ensemble in ensembles)
 
         self.smry_columns = sorted(
             list(
@@ -67,8 +74,7 @@ Logic:
                     columns=[
                         'DATE',
                         'REAL',
-                        'ENS']) .columns))
-
+                        'ENSEMBLE']) .columns))
         self.set_callbacks(app)
 
     @property
@@ -110,28 +116,27 @@ Logic:
                                      'column_keys': self.column_keys,
                                      'sampling': self.sampling}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': self.column_keys,
-                                     'sampling': self.sampling}])]
+                                      'column_keys': self.column_keys,
+                                      'sampling': self.sampling}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENS gets added for eacht ens-path
+    into one big df. An additional column ENSEMBLE gets added for eacht ens-path
     to seperate the ensambles.
 
     Dash functions take positional args., so order matters. """
 
     ens_data_dfs = []
 
-    for ensemble_path in ensemble_paths:
-        ensemble_df = scratch_ensemble('', ensemble_path).get_smry(
+    for ensemble, ensemble_path in ensemble_paths:
+        ensemble_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
             time_index=sampling, column_keys=column_keys)
-        ensemble_df['ENS'] = ensemble_path.replace(
-            '/scratch/troll_fmu/', '')
+        ensemble_df['ENSEMBLE'] = ensemble
         ens_data_dfs.append(ensemble_df)
-    
+
     return pd.concat(ens_data_dfs)
 
 
@@ -146,13 +151,12 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
     df_ens_set = []
 
-    for path in ensemble_paths:
-        stats = scratch_ensemble('', path).get_smry_stats(
-            time_index=sampling, column_keys=column_keys)        
-        stats['ENS'] = path.replace(
-                         '/scratch/troll_fmu/', '')        
+    for ensemble, path in ensemble_paths:
+        stats = scratch_ensemble(ensemble, path).get_smry_stats(
+                time_index=sampling, column_keys=column_keys)
+        stats['ENSEMBLE'] = ensemble
         df_ens_set.append(stats)
-    
+
     return pd.concat(df_ens_set)
 
 
@@ -161,7 +165,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_stats = get_summary_data(ensemble_paths, column_keys, sampling
-                            )[['REAL', 'DATE', 'ENS', vector]]
+                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     traces = [{
         'x': df['DATE'],
@@ -169,7 +173,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         'y': df[vector],
         'name': name,
         'type': 'line'
-    } for name, df in summary_stats.groupby('ENS')]
+    } for name, df in summary_stats.groupby('ENSEMBLE')]
 
     layout = {
         'hovermode': 'closest',
@@ -185,7 +189,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-                     })
+        })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -198,16 +202,16 @@ def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
 
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
-    for ens in data.ENS.unique():
-        vector_stats = data[data['ENS'] == ens][vector].unstack().transpose()
+    for ensemble in data.ENSEMBLE.unique():
+        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack().transpose()
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
-        fan_chart_divs.append(html.H5(ens))
+        fan_chart_divs.append(html.H5(ensemble))
         fan_chart_divs.append(
             html.Div(
                 dcc.Graph(
-                    id='graph-{}'.format(ens),
+                    id='graph-{}'.format(ensemble),
                     figure=FanChart(vector_stats.iterrows()),
                     config={
                         'displaylogo': False,
