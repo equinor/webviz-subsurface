@@ -160,14 +160,15 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
     return pd.concat(df_ens_set)
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+#@cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    summary_data.dropna(subset=[vector])
+    # summary_data.dropna(subset=[vector]) => does not seem to work
+    summary_data = summary_data.dropna(subset=[vector])
 
     traces = [{
         'x': df['DATE'],
