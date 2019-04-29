@@ -7,4 +7,4 @@ venv
 .pytest_cache
 *.pyc
 .DS_Store
-dist
+troll_example

@@ -153,7 +153,7 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
     for ensemble, path in ensemble_paths:
         stats = scratch_ensemble(ensemble, path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)
+            time_index=sampling, column_keys=column_keys)
         stats['ENSEMBLE'] = ensemble
         df_ens_set.append(stats)
 
@@ -165,8 +165,8 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
-                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
-    
+                                    )[['REAL', 'DATE', 'ENSEMBLE', vector]]
+
     summary_data.dropna(subset=[vector])
 
     traces = [{
@@ -191,7 +191,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-        })
+    })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -205,7 +205,8 @@ def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
     for ensemble in data.ENSEMBLE.unique():
-        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack().transpose()
+        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack(
+        ).transpose()
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
