@@ -7,40 +7,48 @@ password: some_password
 
 container_settings:
   scratch_ensembles:
-    iter-0: /scratch/myfield/realization-*/iter-0
-    iter-1: /scratch/myfield/realization-*/iter-1
+    iter-0: /scratch/troll_fmu/rnyb/09_troll_r003/realization-*/iter-0
+    iter-1: /scratch/troll_fmu/rnyb/15_troll_r004/realization-*/iter-0
 
 pages:
 
  - title: Front page
    content:
     - Webviz created from configuration file
- - title: Summary vectors
-   content: 
-    - Some text...
-    - container: SummaryStats
-      ensemble: iter-0
-    - ...some other text
- - title: Parameter distribution
-   content: 
-    - Some text...
-    - container: ParameterDistribution
-      ensemble: iter-0
-    - ...some other text
- - title: Subsurface map
-   content: 
-    - container: SubsurfaceMap
-      ensemble: iter-0
-      map_value: PERMX
-      flow_value: FLOWAT
-      time_step: 26
- - title: History match
-   content: 
-    - container: HistoryMatch
+ # - title: Summary vectors
+ #   content: 
+ #    - Some text...
+ #    - container: SummaryStats
+ #      ensembles: [iter-0, iter-1]
+ #      column_keys: ['FOP*', 'FGP*']
+ #    - ...some other text
+ - title: Volumetrics
+   content:
+    - container: Volumetrics
       ensembles: 
-       - iter-0
-       - iter-1
-      observation_file: some_observation_file.yaml
+        - iter-0
+        - iter-1
+      volfile: share/results/volumes/geogrid_volume.csv
+ # - title: Parameter distribution
+ #   content: 
+ #    - Some text...
+ #    - container: ParameterDistribution
+ #      ensemble: iter-0
+ #    - ...some other text
+ # - title: Subsurface map
+ #   content: 
+ #    - container: SubsurfaceMap
+ #      ensemble: iter-0
+ #      map_value: PERMX
+ #      flow_value: FLOWAT
+ #      time_step: 26
+ # - title: History match
+ #   content: 
+ #    - container: HistoryMatch
+ #      ensembles: 
+ #       - iter-0
+ #       - iter-1
+ #      observation_file: some_observation_file.yaml
  - title: Another page
    content:
     - Some basic text with special characters... Åre, Smørbukk Sør.

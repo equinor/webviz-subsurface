@@ -8,3 +8,6 @@ venv
 *.pyc
 .DS_Store
 troll_example
+summary_data
+*.ipynb
+_volumetrics_hans
