@@ -13,3 +13,5 @@ summary_data
 _volumetrics_hans
 porto/
 .mypy_cache/
+dist
+.ipynb_checkpoints/
