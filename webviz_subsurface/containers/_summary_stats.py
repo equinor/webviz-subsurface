@@ -111,23 +111,32 @@ class SummaryStats:
                     self.column_keys,
                     self.sampling, vector)
 
+    print('check types b ==============================================================')
+
     def add_webvizstore(self):
+        # column_keys-list unhashable, therefore column_keys-tuple
+        """The webviz store stores all decorated functions and thier output as
+        files. The filenames are hashes of the function arguments."""
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': self.column_keys,
+                                     'column_keys': tuple(self.column_keys),
                                      'sampling': self.sampling}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                      'column_keys': self.column_keys,
-                                      'sampling': self.sampling}])]
+                                      'column_keys': tuple(self.column_keys),
+                                      'sampling': (self.sampling)}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
+def get_summary_data(ensemble_paths: tuple,
+                     sampling: str,
+                     column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE gets added for eacht ens-path
     to seperate the ensambles.
-
     Dash functions take positional args., so order matters. """
+
+    # convert column_keys-tuple back to list
+    column_keys = list(column_keys)
 
     ens_data_dfs = []
 
@@ -142,12 +151,16 @@ def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
+def get_summary_stats(ensemble_paths: tuple,
+                      column_keys: tuple,
+                      sampling: str) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENS gets added for eacht ens-path
     to seperate the ensambles.
-
     Dash functions take positional args., so order matters. """
+
+    # convert column_keys-tuple back to list
+    column_keys = list(column_keys)
 
     df_ens_set = []
 
@@ -160,14 +173,14 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
     return pd.concat(df_ens_set)
 
 
-#@cache.memoize(timeout=cache.TIMEOUT)
+# @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    # summary_data.dropna(subset=[vector]) => does not seem to work
+    # summary_data.dropna(subset=[vector]) ... does not seem to work
     summary_data = summary_data.dropna(subset=[vector])
 
     traces = [{
