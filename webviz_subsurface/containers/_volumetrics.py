@@ -11,7 +11,11 @@ This container visualizes RMS in-place volumetrics results
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, app, container_settings, ensembles: list, volfile: str,
+    def __init__(self,
+                 app,
+                 container_settings,
+                 ensembles: list,
+                 volfile: str,
                  title: str = 'Volumetrics'):
 
         self.title = title
