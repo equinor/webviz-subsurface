@@ -111,8 +111,6 @@ class SummaryStats:
                     self.column_keys,
                     self.sampling, vector)
 
-    print('check types b ==============================================================')
-
     def add_webvizstore(self):
         # column_keys-list unhashable, therefore column_keys-tuple
         """The webviz store stores all decorated functions and thier output as
