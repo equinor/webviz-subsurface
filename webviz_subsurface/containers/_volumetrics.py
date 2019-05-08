@@ -10,7 +10,6 @@ from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
 from ..datainput import scratch_ensemble
 
-
 class Volumetrics:
     """
     ### Volumetrics
@@ -18,8 +17,6 @@ class Volumetrics:
 
 
     """
-    print('init Volumetrics =================================================')
-
     def __init__(self,
                  app,
                  container_settings,
@@ -32,9 +29,7 @@ class Volumetrics:
         self.ensemble_paths = tuple(
             (ens,
              container_settings['scratch_ensembles'][ens])
-            for ens in ensembles)
-        print('self.ensemble_paths: ', self.ensemble_paths)
-        print('volfile: ', volfile)
+             for ens in ensembles)
 
         ensemble_dfs = []
         for ens, path in self.ensemble_paths:
@@ -42,8 +37,6 @@ class Volumetrics:
             ensemble_i_df['ENSEMBLE'] = ens
             ensemble_dfs.append(ensemble_i_df)
         self.volumes = pd.concat(ensemble_dfs)
-        print('concated dataframe dtypes: ', self.volumes.dtypes)
-        print('concated dataframe shape: ', self.volumes.shape)
 
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.response_id = 'response-{}'.format(uuid4())
@@ -319,7 +312,6 @@ def plot_data(plot_type, dframe, response, name):
             }
         except KeyError:
             return None
-
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def plot_layout(plot_type):
