@@ -137,13 +137,11 @@ def get_summary_data(ensemble_paths: tuple,
     column_keys = list(column_keys)
 
     ens_data_dfs = []
-
     for ensemble, ensemble_path in ensemble_paths:
         ensemble_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
             time_index=sampling, column_keys=column_keys)
         ensemble_df['ENSEMBLE'] = ensemble
         ens_data_dfs.append(ensemble_df)
-
     return pd.concat(ens_data_dfs)
 
 
@@ -162,17 +160,16 @@ def get_summary_stats(ensemble_paths: tuple,
 
     df_ens_set = []
 
-
     for ensemble, path in ensemble_paths:
         stats = scratch_ensemble(ensemble, path).get_smry_stats(
             time_index=sampling, column_keys=column_keys)
-
+        stats['ENSEMBLE'] = ensemble
         df_ens_set.append(stats)
 
     return pd.concat(df_ens_set)
 
 
-# @cache.memoize(timeout=cache.TIMEOUT)
+@cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     """ returns a single dcc.Graph """
 
