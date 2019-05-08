@@ -10,6 +10,7 @@ from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
 from ..datainput import scratch_ensemble
 
+
 class Volumetrics:
     """
     ### Volumetrics
@@ -18,6 +19,7 @@ class Volumetrics:
 
     """
     print('init Volumetrics =================================================')
+
     def __init__(self,
                  app,
                  container_settings,
@@ -30,7 +32,7 @@ class Volumetrics:
         self.ensemble_paths = tuple(
             (ens,
              container_settings['scratch_ensembles'][ens])
-             for ens in ensembles)
+            for ens in ensembles)
         print('self.ensemble_paths: ', self.ensemble_paths)
         print('volfile: ', volfile)
 
