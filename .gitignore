@@ -10,9 +10,9 @@ venv
 troll_example
 summary_data
 *.ipynb
-_volumetrics_hans
 porto/
 .mypy_cache/
 dist
 .ipynb_checkpoints/
 dev_example.yaml
+_volumetrics_alpha.py

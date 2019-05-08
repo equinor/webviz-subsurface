@@ -1,16 +1,23 @@
+from uuid import uuid4
+import os
+import numpy as np
 import pandas as pd
-
+import dash_html_components as html
+import dash_core_components as dcc
+import dash_table
+from dash.dependencies import Input, Output
+from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
+from ..datainput import scratch_ensemble
 
 class Volumetrics:
-    '''### Volumetrics
+    """
+    ### Volumetrics
 
-This container visualizes RMS in-place volumetrics results
 
-* `ensembles`: Which ensembles in `container_settings` to visualize.
-* `volfile`:  Local realization path to the RMS volumetrics file
-* `title`: Optional title for the container.
-'''
 
+    """
+    print('init Volumetrics =================================================')
     def __init__(self,
                  app,
                  container_settings,
@@ -23,10 +30,17 @@ This container visualizes RMS in-place volumetrics results
         self.ensemble_paths = tuple(
             (ens,
              container_settings['scratch_ensembles'][ens])
-            for ens in ensembles)
+             for ens in ensembles)
+        print('self.ensemble_paths: ', self.ensemble_paths)
+        print('volfile: ', volfile)
 
-        self.volume_dfs = pd.concat(
-            [pd.read_csv(ensemble_path + volfile)
-             for ensemble_path in self.ensemble_paths])
+        ensemble_dfs = []
+        for ens, path in self.ensemble_paths:
+            ensemble_i_df = scratch_ensemble(ens, path).load_csv(volfile)
+            ensemble_i_df['ENSEMBLE'] = ens
+            ensemble_dfs.append(ensemble_i_df)
+        self.volume_dfs = pd.concat(ensemble_dfs)
 
-        print(self.volume_dfs)
+
+        print('concated dataframe dtypes: ', self.volume_dfs.dtypes)
+        print('concated dataframe shape: ', self.volume_dfs.shape)
