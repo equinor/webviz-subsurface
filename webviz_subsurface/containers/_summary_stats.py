@@ -162,10 +162,11 @@ def get_summary_stats(ensemble_paths: tuple,
 
     df_ens_set = []
 
+
     for ensemble, path in ensemble_paths:
         stats = scratch_ensemble(ensemble, path).get_smry_stats(
             time_index=sampling, column_keys=column_keys)
-        stats['ENSEMBLE'] = ensemble
+
         df_ens_set.append(stats)
 
     return pd.concat(df_ens_set)
