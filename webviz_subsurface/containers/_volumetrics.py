@@ -46,54 +46,80 @@ class Volumetrics:
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.response_id = 'response-{}'.format(uuid4())
         self.chart_id = 'chart-{}'.format(uuid4())
-        self.radio_selector_ids = 'radio-selectors-{}'.format(uuid4())
-        self.selector_ids = {selector_id: str(uuid4())
-                             for selector_id in self.selectors}
-        self.table_cols = ["response", "selector", "mean", "stddev", "minimum",
-                           "p90", "p10", "maximum"]
+        self.radio_selectors_id = 'radio-selectors-{}'.format(uuid4())
+        self.selectors_id = {
+            x: str(uuid4())
+            for x in self.selectors}
+        self.table_cols = ["response", "selector", "mean",
+                           "stddev", "minimum", "p90", "p10", "maximum"]
 
-    print('add properties ---------------------------------------------------')
+        self.set_callbacks(app)
+
+    def add_webvizstore(self):
+        return [(extract_volumes, [
+            {
+                'ensemble_paths': self.ensemble_paths,
+                'volfile': self.volfile
+            }])]
 
     @property
     def vol_columns(self):
+        '''List of all columns in dataframe'''
         return list(self.volumes.columns)
 
     @property
     def all_selectors(self):
+        '''List of all possible selectors'''
         return ['ENSEMBLE', 'ZONE', 'REGION', 'FACIES', 'LICENSE']
 
     @property
     def plot_types(self):
+        '''List of available plots'''
         return ['Histogram', 'Per Realization', 'Box Plot', 'Table']
 
     @property
     def selectors(self):
-        return [selector
-                for selector in self.all_selectors
-                if selector in self.vol_columns]
+        '''List of available selector columns in dframe'''
+        return [x
+                for x in self.all_selectors
+                if x in self.vol_columns]
 
     @property
     def responses(self):
-        return [response
-                for response in self.vol_columns
-                if response not in self.selectors and response != 'REAL']
+        '''List of available volume responses in dframe'''
+        return [x
+                for x in self.vol_columns
+                if x not in self.selectors and x != 'REAL']
 
     @property
     def vol_callback_inputs(self):
+        '''Returns all Dash inputs for selecting and filtering volumes
+        The number of inputs will vary depending on the available
+        selector columns in the volumes dataframe
+        '''
         inputs = []
         inputs.append(Input(self.response_id, 'value'))
         inputs.append(Input(self.radio_plot_type_id, 'value'))
-        inputs.append(Input(self.radio_selector_ids, 'value'))
+        inputs.append(Input(self.radio_selectors_id, 'value'))
         for selector in self.selectors:
-            inputs.append(Input(self.selector_ids[selector], 'value'))
+            inputs.append(Input(
+                self.selectors_id[selector], 'value'))
         return inputs
 
     @property
     def selector_dropdowns(self):
+        '''Makes dropdowns for each selector.
+        Args:
+            dframe - Volumetrics Dataframe
+            selectors - List of selector columns
+        Return:
+            dcc.Dropdown objects
+        '''
         dropdowns = []
         for selector in self.selectors:
             elements = list(self.volumes[selector].unique())
             multi = True
+
             value = elements
             if selector == 'ENSEMBLE':
                 value = elements[0]
@@ -102,7 +128,7 @@ class Volumetrics:
                     html.Details(children=[
                         html.Summary(selector),
                         dcc.Dropdown(
-                            id=self.selector_ids[selector],
+                            id=self.selectors_id[selector],
                             options=[{'label': i, 'value': i}
                                      for i in elements],
                             value=value,
@@ -114,6 +140,7 @@ class Volumetrics:
 
     @property
     def style_plot_options(self):
+        '''Simple grid layout for the selector row'''
         return {
             'display': 'grid',
             'align-content': 'space-around',
@@ -123,6 +150,7 @@ class Volumetrics:
 
     @property
     def style_layout(self):
+        '''Simple grid layout for the main elements'''
         return {
             'display': 'grid',
             'align-content': 'space-around',
@@ -131,13 +159,18 @@ class Volumetrics:
         }
 
     def group_radio_options(self, selectors):
+        '''Returns options for a radio button used for grouping
+        volume results on a dataframe column. There is one
+        The option 'NONE' is added to allow no grouping
+        '''
         options = ['NONE']
         options.extend(selectors)
         return [{'label': i, 'value': i} for i in options]
 
     @property
     def plot_options_layout(self):
-        return html.Div(style=self.style_plot_options,children=[
+        '''Row layout of dropdowns for plot options'''
+        return html.Div(style=self.style_plot_options, children=[
                         html.Div(children=[
                             html.P('Response:', style={
                                 'font-weight': 'bold'}),
@@ -160,15 +193,15 @@ class Volumetrics:
                             html.P('Group by:', style={
                                 'font-weight': 'bold'}),
                             dcc.Dropdown(
-                                id=self.radio_selector_ids,
+                                id=self.radio_selectors_id,
                                 options=self.group_radio_options(
                                     self.selectors),
                                 value='NONE')]),
                         ])
 
-    print('layout ===========================================================')
     @property
     def layout(self):
+        '''Main layout'''
         return html.Div([
             html.H2(self.title),
             html.Div(style=self.style_layout, children=[
@@ -182,15 +215,26 @@ class Volumetrics:
                         children=self.selector_dropdowns
                     ),
                 ])
+
             ]),
         ])
 
-    print('callback ---------------------------------------------------------')
     def set_callbacks(self, app):
         @app.callback(
             Output(self.chart_id, 'children'),
             self.vol_callback_inputs)
         def render_vol_chart(*args):
+            '''Renders a volume visualization which could either by a dcc.Graph
+            or a Dash table object.
+            The arguments are given by the vol_callback_inputs property
+            Args:
+                response: The volumetrics response to plot
+                plot_type: The type of graph/table to plot
+                group: The selector to group the data by
+                selections: Active values from the selector columns
+            Return:
+                dcc.Graph/dash_table.DataTable
+            '''
             response = args[0]
             plot_type = args[1]
             group = args[2]
@@ -224,8 +268,8 @@ class Volumetrics:
                 )
 
         @app.callback(
-            Output(self.selector_ids['ENSEMBLE'], 'multi'),
-            [Input(self.radio_selector_ids, 'value')])
+            Output(self.selectors_id['ENSEMBLE'], 'multi'),
+            [Input(self.radio_selectors_id, 'value')])
         def set_iteration_selector(group):
             '''If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
@@ -235,7 +279,7 @@ class Volumetrics:
             else:
                 return False
 
-    print('cache ------------------------------------------------------------')
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def plot_data(plot_type, dframe, response, name):
     values = dframe[response]
