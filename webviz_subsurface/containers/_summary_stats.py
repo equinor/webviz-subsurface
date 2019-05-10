@@ -177,15 +177,13 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     # summary_data.dropna(subset=[vector]) ... does not seem to work
-    summary_data = summary_data.dropna(subset=[vector])
+    df = summary_data.dropna(subset=[vector])
 
     traces = [{
-        'x': df['DATE'],
-        'customdata': df['REAL'],
-        'y': df[vector],
-        'name': name,
+        'x': df[df['REAL'] == real]['DATE'],
+        'y': df[df['REAL'] == real][vector],
         'type': 'line'
-    } for name, df in summary_data.groupby('ENSEMBLE')]
+    } for real in df.REAL.unique()]
 
     layout = {
         'hovermode': 'closest',
