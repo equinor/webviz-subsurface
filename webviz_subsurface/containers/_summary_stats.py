@@ -131,8 +131,8 @@ def get_summary_data(ensemble_paths: tuple,
                      sampling: str,
                      column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENSEMBLE gets added for eacht ens-path
-    to seperate the ensambles.
+    into one big df. An additional column ENSEMBLE gets added for eacht
+    ens-path to seperate the ensambles.
     note: Dash functions take positional args., so order matters. """
 
     # convert column_keys-tuple back to list
