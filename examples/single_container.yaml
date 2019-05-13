@@ -1,0 +1,21 @@
+title: Webviz subsurface example of usage
+username: some_username
+password: some_password
+
+container_settings:
+  scratch_ensembles:
+    ens-0: /scratch/fmu/stcr/3_r001_reek/realization-*/iter-0
+    ens-1: /scratch/fmu/stcr/3_r001_reek/realization-*/iter-1
+
+pages:
+ - title: Front page
+   content:
+    - container: BannerImage
+      image: ./example_banner.png
+      title: My banner image
+    - Webviz created from configuration file.
+ - title: Summary stats
+   content:
+   - container: SummaryStats
+     ensembles: [ens-0, ens-1]
+     column_keys: ['FOP*', 'FGP*']
