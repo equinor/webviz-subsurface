@@ -8,7 +8,7 @@ tests_require = [
     'dash>=0.38.0',
     'ipdb',
     'percy',
-    'selenium',
+    'selenium>=3.141.0',
     'flake8',
     'pylint',
     'pytest-dash>=2.1.1',
