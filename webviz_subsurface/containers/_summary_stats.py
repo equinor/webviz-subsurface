@@ -173,7 +173,8 @@ def get_summary_stats(ensemble_paths: tuple,
 
 # @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
-    """ Returns a dcc.Graph. Data a plotted from df returned by
+    """
+    Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
     attribute. Rest is defined in the config or part of the code.
     Rows including NaN values in the vector columns get dropped.
@@ -187,6 +188,10 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     of traces. Theses traces have showlegend set to false to avid an overly
     populated legend.
     """
+    populated legend.
+
+    # "cycle" in case n_ensembles > n_DEFAULT_PLOTLY_COLORS
+    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
@@ -195,7 +200,6 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
     traces = []
-
     # outer loop over enesmbles
     for ens in df.ENSEMBLE.unique():
         df_i = df[df['ENSEMBLE'] == ens]
