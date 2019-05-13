@@ -7,6 +7,8 @@ from webviz_plotly.graph_objs import FanChart
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from ..datainput import scratch_ensemble
+from plotly.colors import DEFAULT_PLOTLY_COLORS
+import itertools
 
 
 class SummaryStats:
@@ -177,15 +179,37 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     df = summary_data.dropna(subset=[vector])
+    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS) 
 
     traces = []
     for ens in df.ENSEMBLE.unique():
         df_i = df[df['ENSEMBLE'] == ens]
-        for real in df.REAL.unique():
+        color = next(cycle_list)
+
+        first_trace = {
+                'x': df_i[df_i['REAL'] == df.REAL.unique()[0]]['DATE'],
+                'y': df_i[df_i['REAL'] == df.REAL.unique()[0]][vector],
+                'legendgroup': ens,
+                'name': ens,
+                'type': 'line',
+                'marker': {
+                    'color': color
+                },
+                'showlegend': True            
+        }
+        traces.append(first_trace)
+
+        for real in df.REAL.unique()[1:]:
             trace = {
                 'x': df_i[df_i['REAL'] == real]['DATE'],
                 'y': df_i[df_i['REAL'] == real][vector],
-                'type': 'line'
+                'legendgroup': ens,
+                'name': ens,
+                'type': 'line',
+                'marker': {
+                    'color': color
+                },
+                'showlegend': False
             }
             traces.append(trace)
 
