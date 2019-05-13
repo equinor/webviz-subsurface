@@ -4,7 +4,7 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 tests_require = [
-    'chromedriver-binary',
+    'chromedriver-binary>=74.0.3729.6.0',
     'dash>=0.38.0',
     'ipdb',
     'percy',
