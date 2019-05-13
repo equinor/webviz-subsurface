@@ -153,7 +153,7 @@ def get_summary_stats(ensemble_paths: tuple,
                       column_keys: tuple,
                       sampling: str) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENSEMBLE gets added for each 
+    into one big df. An additional column ENSEMBLE gets added for each
     enesmble-path to seperate the ensambles.
     note: Dash functions take positional args., so order matters. """
 
@@ -171,7 +171,8 @@ def get_summary_stats(ensemble_paths: tuple,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
-    """ Returns a dcc.Graph. Data a plotted from df returned by
+    """
+    Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
     attribute. Rest is defined in the config or part of the code.
     Rows including NaN values in the vector columns get dropped.
@@ -182,18 +183,18 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     The first trace is created with showlegend set to True to get be shown
     in the legend. The inner-loop creates traces by looping over the
     realizations within the filtered df_i and appends them to the total list
-    of traces. Theses traces have showlegend set to false to avid an overly 
-    populated legend. 
-    """
+    of traces. Theses traces have showlegend set to false to avid an overly
+    populated legend."""
 
+    # "cycle" in case n_ensembles > n_DEFAULT_PLOTLY_COLORS
+    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
+    
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     df = summary_data.dropna(subset=[vector])
-    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS) 
 
     traces = []
-
     # outer loop over enesmbles
     for ens in df.ENSEMBLE.unique():
         df_i = df[df['ENSEMBLE'] == ens]
@@ -208,7 +209,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                 'marker': {
                     'color': color
                 },
-                'showlegend': True            
+                'showlegend': True
         }
         traces.append(first_trace)
         # inner loop over traces within a legendgroup
