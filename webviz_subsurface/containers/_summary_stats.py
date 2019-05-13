@@ -189,7 +189,6 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
             }
             traces.append(trace)
 
-
     layout = {
         'hovermode': 'closest',
         'barmode': 'overlay',
