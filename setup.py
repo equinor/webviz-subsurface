@@ -11,7 +11,7 @@ tests_require = [
     'selenium>=3.141.0',
     'flake8',
     'pylint',
-    'pytest-dash>=2.1.1',
+    'pytest-dash',
     'mock'
 ]
 
