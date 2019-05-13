@@ -188,10 +188,8 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
 
     # "cycle" in case n_ensembles > n_DEFAULT_PLOTLY_COLORS
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
-    
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
-
     df = summary_data.dropna(subset=[vector])
 
     traces = []
