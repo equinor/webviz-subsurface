@@ -33,9 +33,9 @@ setup(
     },
     install_requires=[
         'scipy>=1.2.1',
+        'webviz-config==0.0.4',
         'webviz-plotly>=0.0.1',
-        'webviz-subsurface-components>=0.0.2',
-        'webviz-config>=0.0.4'
+        'webviz-subsurface-components>=0.0.2'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
