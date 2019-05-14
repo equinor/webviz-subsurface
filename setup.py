@@ -4,14 +4,13 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 tests_require = [
-    'chromedriver-binary',
-    'dash>=0.38.0',
+    'chromedriver-binary>=74.0.3729.6.0',
     'ipdb',
     'percy',
-    'selenium',
+    'selenium>=3.141.0',
     'flake8',
     'pylint',
-    'pytest-dash>=2.1.1',
+    'pytest-dash>=2.1.2',
     'mock'
 ]
 
@@ -35,9 +34,9 @@ setup(
     },
     install_requires=[
         'scipy>=1.2.1',
+        'webviz-config==0.0.4',
         'webviz-plotly>=0.0.1',
-        'webviz-subsurface-components>=0.0.2',
-        'webviz-config>=0.0.2'
+        'webviz-subsurface-components>=0.0.2'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
