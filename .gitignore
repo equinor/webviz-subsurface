@@ -14,6 +14,9 @@ porto/
 .mypy_cache/
 dist
 .ipynb_checkpoints/
+<<<<<<< HEAD
 dev_example.yaml
+=======
+>>>>>>> 8ffdce3589d84bb9f70324380c07a149d15526c3
 _volumetrics_alpha.py
 dev_example.yaml

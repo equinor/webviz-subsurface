@@ -160,22 +160,17 @@ def get_summary_stats(ensemble_paths: tuple,
     enesmble-path to seperate the ensambles.
     note: Dash functions take positional args., so order matters. """
 
-    print('get_summary_stats ================================================')
     # convert column_keys-tuple back to list
     column_keys = list(column_keys)
 
-    print('loop over ensembles')
     summary_stats_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
-        print(ensemble)
         summary_stats_df = scratch_ensemble(
             ensemble, ensemble_path).get_smry_stats(
-            time_index=sampling, column_keys=column_keys)
-        print('summary_stats_df shape: ', summary_stats_df.shape)
+                time_index=sampling, column_keys=column_keys)
         summary_stats_df['ENSEMBLE'] = ensemble
         summary_stats_dfs.append(summary_stats_df)
 
-    print('return')
     return pd.concat(summary_stats_dfs)
 
 
@@ -201,17 +196,19 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
-    df = summary_data.dropna(subset=[vector])
+    summary_data = summary_data.dropna(subset=[vector])
 
     traces = []
     # outer loop over enesmbles
-    for ens in df.ENSEMBLE.unique():
-        df_i = df[df['ENSEMBLE'] == ens]
+    for ens in summary_data.ENSEMBLE.unique():
+        summary_data_i = summary_data[summary_data['ENSEMBLE'] == ens]
         color = next(cycle_list)
         # 1st trace of a legendgroup with 'showlegend': True
         first_trace = {
-            'x': df_i[df_i['REAL'] == df_i.REAL.unique()[0]]['DATE'],
-            'y': df_i[df_i['REAL'] == df_i.REAL.unique()[0]][vector],
+            'x': summary_data_i[summary_data_i['REAL']
+                                == summary_data_i.REAL.unique()[0]]['DATE'],
+            'y': summary_data_i[summary_data_i['REAL']
+                                == summary_data_i.REAL.unique()[0]][vector],
             'legendgroup': ens,
             'name': ens,
             'type': 'line',
@@ -222,10 +219,10 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         }
         traces.append(first_trace)
         # inner loop over traces within a legendgroup
-        for real in df_i.REAL.unique()[1:]:
+        for real in summary_data_i.REAL.unique()[1:]:
             trace = {
-                'x': df_i[df_i['REAL'] == real]['DATE'],
-                'y': df_i[df_i['REAL'] == real][vector],
+                'x': summary_data_i[summary_data_i['REAL'] == real]['DATE'],
+                'y': summary_data_i[summary_data_i['REAL'] == real][vector],
                 'legendgroup': ens,
                 'name': ens,
                 'type': 'line',
@@ -257,20 +254,15 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
 def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
     """returns a list of html.Divs (required by dash). One div per ensemble.
     Eachdiv includes a dcc.Graph(id, figure, config)."""
-    print('render_stat_plot =================================================')
 
-    print('get summary_stats')
     # get summary_stats
     summary_stats = get_summary_stats(ensemble_paths, sampling, column_keys)
 
-    print('create divs')
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
     for ensemble in summary_stats.ENSEMBLE.unique():
-        print('div :', ensemble)
         vector_stats = summary_stats[summary_stats['ENSEMBLE']
                                      == ensemble][vector].unstack().transpose()
-        print('unstacked and transposed')
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
