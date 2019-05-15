@@ -138,8 +138,7 @@ def get_summary_data(ensemble_paths: tuple,
     # convert column_keys-tuple back to list
     column_keys = list(column_keys)
 
-    """ create a list containing ensemble-dataframs + column describing
-    the ensemble they belong to."""
+    # create a list containing ensemble-dataframs + ['ENSEMBLE'] column
     summary_data_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
         summary_data_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
