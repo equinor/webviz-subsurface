@@ -138,15 +138,16 @@ def get_summary_data(ensemble_paths: tuple,
     # convert column_keys-tuple back to list
     column_keys = list(column_keys)
 
-    ens_data_dfs = []
-
+    """ create a list containing ensemble-dataframs + column describing
+    the ensemble they belong to."""
+    summary_data_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
-        ensemble_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
+        summary_data_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
             time_index=sampling, column_keys=column_keys)
-        ensemble_df['ENSEMBLE'] = ensemble
-        ens_data_dfs.append(ensemble_df)
+        summary_data_df['ENSEMBLE'] = ensemble
+        summary_data_dfs.append(summary_data_df)
 
-    return pd.concat(ens_data_dfs)
+    return pd.concat(summary_data_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -159,16 +160,23 @@ def get_summary_stats(ensemble_paths: tuple,
     enesmble-path to seperate the ensambles.
     note: Dash functions take positional args., so order matters. """
 
+    print('get_summary_stats ================================================')
     # convert column_keys-tuple back to list
     column_keys = list(column_keys)
 
-    df_ens_set = []
-    for ensemble, path in ensemble_paths:
-        stats = scratch_ensemble(ensemble, path).get_smry_stats(
+    print('loop over ensembles')
+    summary_stats_dfs = []
+    for ensemble, ensemble_path in ensemble_paths:
+        print(ensemble)
+        summary_stats_df = scratch_ensemble(
+            ensemble, ensemble_path).get_smry_stats(
             time_index=sampling, column_keys=column_keys)
+        print('summary_stats_df shape: ', summary_stats_df.shape)
+        summary_stats_df['ENSEMBLE'] = ensemble
+        summary_stats_dfs.append(summary_stats_df)
 
-        df_ens_set.append(stats)
-    return pd.concat(df_ens_set)
+    print('return')
+    return pd.concat(summary_stats_dfs)
 
 
 # @cache.memoize(timeout=cache.TIMEOUT)
@@ -188,7 +196,6 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     of traces. Theses traces have showlegend set to false to avid an overly
     populated legend.
     """
-
     # "cycle" in case n_ensembles > n_DEFAULT_PLOTLY_COLORS
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
@@ -203,8 +210,8 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         color = next(cycle_list)
         # 1st trace of a legendgroup with 'showlegend': True
         first_trace = {
-            'x': df_i[df_i['REAL'] == df.REAL.unique()[0]]['DATE'],
-            'y': df_i[df_i['REAL'] == df.REAL.unique()[0]][vector],
+            'x': df_i[df_i['REAL'] == df_i.REAL.unique()[0]]['DATE'],
+            'y': df_i[df_i['REAL'] == df_i.REAL.unique()[0]][vector],
             'legendgroup': ens,
             'name': ens,
             'type': 'line',
@@ -215,7 +222,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
         }
         traces.append(first_trace)
         # inner loop over traces within a legendgroup
-        for real in df.REAL.unique()[1:]:
+        for real in df_i.REAL.unique()[1:]:
             trace = {
                 'x': df_i[df_i['REAL'] == real]['DATE'],
                 'y': df_i[df_i['REAL'] == real][vector],
@@ -250,15 +257,20 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
 def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
     """returns a list of html.Divs (required by dash). One div per ensemble.
     Eachdiv includes a dcc.Graph(id, figure, config)."""
+    print('render_stat_plot =================================================')
 
-    # get data
-    data = get_summary_stats(ensemble_paths, sampling, column_keys)
+    print('get summary_stats')
+    # get summary_stats
+    summary_stats = get_summary_stats(ensemble_paths, sampling, column_keys)
 
+    print('create divs')
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
-    for ensemble in data.ENSEMBLE.unique():
-        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack(
-        ).transpose()
+    for ensemble in summary_stats.ENSEMBLE.unique():
+        print('div :', ensemble)
+        vector_stats = summary_stats[summary_stats['ENSEMBLE']
+                                     == ensemble][vector].unstack().transpose()
+        print('unstacked and transposed')
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
