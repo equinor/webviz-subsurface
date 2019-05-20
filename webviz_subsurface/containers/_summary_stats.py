@@ -66,7 +66,7 @@ class SummaryStats:
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
-            for ensemble in ensembles)
+             for ensemble in ensembles)
 
         self.smry_columns = sorted(
             list(
@@ -144,7 +144,9 @@ def get_summary_data(ensemble_paths: tuple,
         summary_data_df['ENSEMBLE'] = ensemble
         summary_data_dfs.append(summary_data_df)
 
-    return pd.concat(summary_data_dfs)
+    summary_data_df = pd.concat(summary_data_dfs)
+
+    return summary_data_df[summary_data_df.columns[~summary_data_df.columns.str.endswith('H')]]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
