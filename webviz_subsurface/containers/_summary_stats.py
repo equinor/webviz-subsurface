@@ -68,16 +68,19 @@ class SummaryStats:
              container_settings['scratch_ensembles'][ensemble])
              for ensemble in ensembles)
 
-        self.smry_columns = sorted(
-            list(
-                get_summary_data(
-                    ensemble_paths=self.ensemble_paths,
-                    sampling=self.sampling,
-                    column_keys=self.column_keys) .drop(
-                    columns=[
-                        'DATE',
-                        'REAL',
-                        'ENSEMBLE']) .columns))
+        self.smry_columns = [col for col in 
+                                sorted(
+                                    list(
+                                        get_summary_data(
+                                            ensemble_paths=self.ensemble_paths,
+                                            sampling=self.sampling,
+                                            column_keys=self.column_keys).drop(
+                                            columns=[
+                                                'DATE',
+                                                'REAL',
+                                                'ENSEMBLE']).columns))
+                             if not col.endswith('H')]
+
         self.set_callbacks(app)
 
     @property
@@ -146,7 +149,7 @@ def get_summary_data(ensemble_paths: tuple,
 
     summary_data_df = pd.concat(summary_data_dfs)
 
-    return summary_data_df[summary_data_df.columns[~summary_data_df.columns.str.endswith('H')]]
+    return pd.concat(summary_data_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
