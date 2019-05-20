@@ -57,7 +57,7 @@ class SummaryStats:
             title: str = 'Simulation time series'):
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
-        self.column_keys = column_keys
+        self.column_keys = tuple(column_keys)
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
