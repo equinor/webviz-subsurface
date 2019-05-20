@@ -115,14 +115,11 @@ class SummaryStats:
                     self.sampling, vector)
 
     def add_webvizstore(self):
-        # column_keys-list unhashable, therefore column_keys-tuple
-        """The webviz store stores all decorated functions and thier output as
-        files. The filenames are hashes of the function arguments."""
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': tuple(self.column_keys),
+                                     'column_keys': self.column_keys,
                                      'sampling': self.sampling}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                      'column_keys': tuple(self.column_keys),
+                                      'column_keys': self.column_keys,
                                       'sampling': (self.sampling)}])]
 
 
