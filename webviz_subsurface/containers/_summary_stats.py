@@ -57,7 +57,8 @@ class SummaryStats:
             title: str = 'Simulation time series'):
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
-        self.column_keys = tuple(column_keys)
+        self.column_keys = tuple(column_keys) if isinstance(column_keys, (list, tuple)
+                            ) else None
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
@@ -136,7 +137,7 @@ def get_summary_data(ensemble_paths: tuple,
     note: Dash functions take positional args., so order matters. """
 
     # convert column_keys-tuple back to list
-    column_keys = list(column_keys)
+    column_keys = list(column_keys) if isinstance(column_keys, tuple) else None
 
     # create a list containing ensemble-dataframs + ['ENSEMBLE'] column
     summary_data_dfs = []
@@ -160,7 +161,7 @@ def get_summary_stats(ensemble_paths: tuple,
     note: Dash functions take positional args., so order matters. """
 
     # convert column_keys-tuple back to list
-    column_keys = list(column_keys)
+    column_keys = list(column_keys) if isinstance(column_keys, tuple) else None
 
     summary_stats_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
