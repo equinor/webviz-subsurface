@@ -2,7 +2,7 @@ from uuid import uuid4
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from webviz_plotly.graph_objs import FanChart
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
@@ -101,11 +101,12 @@ class SummaryStats:
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
                            value='Realizations'),
-            dcc.Checklist(id=self.checklist_show_H_id,
+            dcc.Checklist(
+                id=self.checklist_show_H_id,
                 options=[
-                    {'label': 'Show *H', 'value': 'SHOWING_H'},
+                    {'label': 'Show *H', 'value': 'SHOW_H'}
                 ],
-                values=['SHOWING_H'],
+                values=[],
             ),
             html.Div(id=self.chart_id)
         ])
@@ -113,15 +114,17 @@ class SummaryStats:
     def set_callbacks(self, app):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
-                       Input(self.radio_plot_type_id, 'value')])
-        def update_plot(vector, summary_plot_type):
+                       Input(self.radio_plot_type_id, 'value'),
+                       Input(self.checklist_show_H_id, 'values')])
+        def update_plot(vector, summary_plot_type, checklist_show_H_id):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
                     self.ensemble_paths,
                     self.column_keys,
                     self.sampling,
                     self.smry_columns_H,
-                    vector)
+                    vector,
+                    checklist_show_H_id)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
                     self.ensemble_paths,
@@ -191,7 +194,7 @@ def get_summary_stats(ensemble_paths: tuple,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys,
-                            smry_columns_H, vector):
+                            smry_columns_H, vector, checklist_show_H_id):
     """
     Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
@@ -211,6 +214,14 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
     vector_H = (vector + 'H')
+
+    print('==================================================================')
+    print(checklist_show_H_id)
+
+    if 'SHOW_H' in checklist_show_H_id:
+        print('*** TRUE ***')
+    else:
+        print('*** FALSE ***')
 
     if vector_H in smry_columns_H:
         summary_data = get_summary_data(ensemble_paths, column_keys, sampling)[
@@ -257,7 +268,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
                 'showlegend': False
             }
             traces.append(trace)
-    if vector_H in smry_columns_H: 
+    if (vector_H in smry_columns_H and 'SHOW_H' in checklist_show_H_id): 
         H_trace = {
             'x': summary_data_i[summary_data_i['REAL']
                                 == summary_data_i.REAL.unique()[0]]['DATE'],
