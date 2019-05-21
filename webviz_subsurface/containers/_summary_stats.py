@@ -68,18 +68,20 @@ class SummaryStats:
              container_settings['scratch_ensembles'][ensemble])
              for ensemble in ensembles)
 
-        self.smry_columns = [col for col in 
-                                sorted(
-                                    list(
-                                        get_summary_data(
-                                            ensemble_paths=self.ensemble_paths,
-                                            sampling=self.sampling,
-                                            column_keys=self.column_keys).drop(
-                                            columns=[
-                                                'DATE',
-                                                'REAL',
-                                                'ENSEMBLE']).columns))
-                             if not col.endswith('H')]
+        smry_columns_lst = sorted(
+                            list(
+                                get_summary_data(
+                                    ensemble_paths=self.ensemble_paths,
+                                    sampling=self.sampling,
+                                    column_keys=self.column_keys).drop(
+                                    columns=[
+                                        'DATE',
+                                        'REAL',
+                                        'ENSEMBLE']).columns))
+        self.smry_columns = [column for column in smry_columns_lst
+                             if not column.endswith('H')]
+        self.smry_columns_H = [column for column in smry_columns_lst
+                               if column.endswith('H')]
 
         self.set_callbacks(app)
 
@@ -110,17 +112,21 @@ class SummaryStats:
                 return render_realization_plot(
                     self.ensemble_paths,
                     self.column_keys,
-                    self.sampling, vector)
+                    self.sampling,
+                    self.smry_columns_H,
+                    vector)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
                     self.ensemble_paths,
                     self.column_keys,
-                    self.sampling, vector)
+                    self.sampling,
+                    vector)
 
     def add_webvizstore(self):
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
                                      'column_keys': self.column_keys,
-                                     'sampling': self.sampling}]),
+                                     'sampling': self.sampling,
+                                     'smry_columns_H': self.smry_columns_H}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
                                       'column_keys': self.column_keys,
                                       'sampling': (self.sampling)}])]
@@ -176,8 +182,9 @@ def get_summary_stats(ensemble_paths: tuple,
     return pd.concat(summary_stats_dfs)
 
 
-# @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_realization_plot(ensemble_paths, sampling, column_keys,
+                            smry_columns_H, vector):
     """
     Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
@@ -196,9 +203,18 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
     # "cycle" in case n_ensembles > n_DEFAULT_PLOTLY_COLORS
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
-    summary_data = get_summary_data(ensemble_paths, column_keys, sampling
-                                    )[['REAL', 'DATE', 'ENSEMBLE', vector]]
-    summary_data = summary_data.dropna(subset=[vector])
+    vector_H = (vector + 'H')
+
+    if vector_H in smry_columns_H:
+        summary_data = get_summary_data(ensemble_paths, column_keys, sampling)[
+                                        ['REAL', 'DATE', 'ENSEMBLE',
+                                         vector, vector_H]
+                                        ].dropna(subset=[vector])
+                
+    else:
+        summary_data = get_summary_data(ensemble_paths, column_keys, sampling)[
+                                        ['REAL', 'DATE', 'ENSEMBLE', vector]
+                                        ].dropna(subset=[vector])
 
     traces = []
     # outer loop over enesmbles
@@ -213,7 +229,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                                 == summary_data_i.REAL.unique()[0]][vector],
             'legendgroup': ens,
             'name': ens,
-            'type': 'line',
+            'type': 'markers',
             'marker': {
                     'color': color
             },
@@ -234,6 +250,21 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                 'showlegend': False
             }
             traces.append(trace)
+    if vector_H in smry_columns_H: 
+        H_trace = {
+            'x': summary_data_i[summary_data_i['REAL']
+                                == summary_data_i.REAL.unique()[0]]['DATE'],
+            'y': summary_data_i[summary_data_i['REAL']
+                                == summary_data_i.REAL.unique()[0]][vector],
+            'legendgroup': '*H',
+            'name': '*H',
+            'type': 'markers',
+            'marker': {
+                    'color': 'black'
+            },
+            'showlegend': True
+        }
+        traces.append(H_trace)
 
     layout = {
         'hovermode': 'closest',
