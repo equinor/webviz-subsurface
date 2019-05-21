@@ -56,6 +56,7 @@ class SummaryStats:
             sampling: str = 'monthly',
             title: str = 'Simulation time series'):
         self.title = title
+        self.checklist_show_H_id = 'checklist-show-H-{}'.format(uuid4())
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
         self.column_keys = tuple(column_keys) if isinstance(column_keys, (list, tuple)
                             ) else None
@@ -100,6 +101,12 @@ class SummaryStats:
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
                            value='Realizations'),
+            dcc.Checklist(id=self.checklist_show_H_id,
+                options=[
+                    {'label': 'Show *H', 'value': 'SHOWING_H'},
+                ],
+                values=['SHOWING_H'],
+            ),
             html.Div(id=self.chart_id)
         ])
 
