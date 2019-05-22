@@ -2,7 +2,7 @@ from uuid import uuid4
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
@@ -215,26 +215,20 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
 
     vector_H = (vector + 'H')
 
-    print('==================================================================')
-    print(checklist_show_H_id)
-
-    if 'SHOW_H' in checklist_show_H_id:
-        print('*** TRUE ***')
-    else:
-        print('*** FALSE ***')
+    summary_data_unfiltered = get_summary_data(ensemble_paths, column_keys, sampling)
 
     if vector_H in smry_columns_H:
-        summary_data = get_summary_data(ensemble_paths, column_keys, sampling)[
-                                        ['REAL', 'DATE', 'ENSEMBLE',
-                                         vector, vector_H]
-                                        ].dropna(subset=[vector])
+        summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
+                                                vector, vector_H]
+                                              ].dropna(subset=[vector])
                 
     else:
-        summary_data = get_summary_data(ensemble_paths, column_keys, sampling)[
-                                        ['REAL', 'DATE', 'ENSEMBLE', vector]
-                                        ].dropna(subset=[vector])
+        summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
+                                                vector]
+                                              ].dropna(subset=[vector])
 
     traces = []
+    # vector traces
     # outer loop over enesmbles
     for ens in summary_data.ENSEMBLE.unique():
         summary_data_i = summary_data[summary_data['ENSEMBLE'] == ens]
@@ -254,7 +248,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
             'showlegend': True
         }
         traces.append(first_trace)
-        # inner loop over traces within a legendgroup
+        # inner loop over traces within a legendgroup/enesmble
         for real in summary_data_i.REAL.unique()[1:]:
             trace = {
                 'x': summary_data_i[summary_data_i['REAL'] == real]['DATE'],
@@ -268,7 +262,8 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
                 'showlegend': False
             }
             traces.append(trace)
-    if (vector_H in smry_columns_H and 'SHOW_H' in checklist_show_H_id): 
+    # *H trace 
+    if (vector_H in smry_columns_H and 'SHOW_H' in checklist_show_H_id):
         H_trace = {
             'x': summary_data_i[summary_data_i['REAL']
                                 == summary_data_i.REAL.unique()[0]]['DATE'],
