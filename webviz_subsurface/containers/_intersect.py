@@ -209,7 +209,6 @@ class Intersect():
                     dcc.Graph(style={'height': '80vh'}, id='graph'),
                     html.Div(style=self.style_fence_options, children=[
                         html.P('Start depth:', style={'font-weight': 'bold'}),
-                        # html.P('Horizontal extent:', style={'font-weight': 'bold'}),
                         html.P('Graph zoom level:', style={
                                'font-weight': 'bold'}),
                         dcc.Input(style={'overflow': 'auto'},
@@ -222,7 +221,6 @@ class Intersect():
                                      'Reset on new data': False}.items()],
                             value=True,
                         ),
-                        # dcc.Input(style={'overflow':'auto'}, id='well-extent', type='number', value=2000)
                     ])
 
                 ])
