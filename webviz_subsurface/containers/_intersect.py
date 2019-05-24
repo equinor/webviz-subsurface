@@ -67,33 +67,11 @@ class Intersect():
     #     return agg
 
     @cache.memoize(timeout=cache.TIMEOUT)
-    def make_surface_traces(self, well, reals, surf_name, cat, color):
-        '''Creates surface traces for graph'''
-        plot_data = []
-        x = [trace[3] for trace in get_wfence(well).values]
-        for j, real in enumerate(reals):
-
-            surf = load_surface(surf_name, real, cat)
-            showlegend = True if j == 0 else False
-            plot_data.append(
-                {
-                    'x': x,
-                    'y': get_hfence(well, surf)[:, 2].copy().tolist(),
-                    'name': surf_name,
-                    'hoverinfo': 'none',
-                    'legendgroup': surf_name,
-                    'showlegend': showlegend,
-                    'real': real,
-                    'marker': {'color': color}
-                })
-        return pd.DataFrame(plot_data)
-
-    @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
         traces = []
         for s_name in surf_names:
             traces.extend(
-                self.make_surface_traces(
+                make_surface_traces(
                     well, reals, s_name, self.surface_cat,
                     self.surface_colors[s_name]).to_dict('rows'))
         traces.append(make_well_trace(well, tvdmin))
@@ -210,19 +188,19 @@ class Intersect():
              Input('surf_list', 'value'),
              Input('well-tvd', 'value'),
              Input('ui_revision', 'value')])
-        def set_fence(well_path, reals, surfs, tvdmin, keep_zoom_state):
-            if not isinstance(surfs, list):
-                surfs = [surfs]
-            if not isinstance(reals, list):
-                reals = [reals]
-            if reals == []:
-                reals = list(self.realizations.keys())
-            if surfs == []:
-                surfs = self.surface_names
-            s_names = [s for s in self.surface_names if s in surfs]
-            xsect = self.plot_xsection(well_path, reals, s_names, tvdmin)
+        def set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
+            if not isinstance(_surfs, list):
+                _surfs = [_surfs]
+            if not isinstance(_reals, list):
+                _reals = [_reals]
+            if _reals == []:
+                _reals = list(self.realizations.keys())
+            if _surfs == []:
+                _surfs = self.surface_names
+            s_names = [s for s in self.surface_names if s in _surfs]
+            xsect = self.plot_xsection(_well_path, _reals, s_names, _tvdmin)
             layout = self.graph_layout
-            if keep_zoom_state:
+            if _keep_zoom_state:
                 layout['uirevision'] = 'keep'
             return {'data': xsect, 'layout': layout}
 
@@ -230,9 +208,9 @@ class Intersect():
                       [Input('graph', 'hoverData')],
                       [State('graph', 'figure'),
                        State('surf_list', 'value')])
-        def hover(data, fig, surfaces):
+        def hover(_data, _fig, _surfaces):
             try:
-                graph = fig['data']
+                graph = _fig['data']
             except TypeError:
                 return [{
                     'TVDmin': None,
@@ -241,14 +219,14 @@ class Intersect():
                     'TVDstddev': None,
                     'Name': None
                 }]
-            if not isinstance(surfaces, list):
-                surfaces = [surfaces]
-            if surfaces == []:
-                surfaces = self.surface_names
+            if not isinstance(_surfaces, list):
+                _surfaces = [_surfaces]
+            if _surfaces == []:
+                _surfaces = self.surface_names
             names = {s: {'vals': [], 'min': None, 'max': None}
-                     for s in surfaces}
+                     for s in _surfaces}
 
-            for i, p in enumerate(data['points']):
+            for i, p in enumerate(_data['points']):
                 try:
                     s_name = graph[i]['name']
                     real = self.realizations[graph[i]['real']]
@@ -295,3 +273,25 @@ def make_well_trace(well, tvdmin=0):
         'fill': None,
         'marker': {'color': 'black'}
     }
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def make_surface_traces(well, reals, surf_name, cat, color):
+    '''Creates surface traces for graph'''
+    plot_data = []
+    x = [trace[3] for trace in get_wfence(well).values]
+    for j, real in enumerate(reals):
+        surf = load_surface(surf_name, real, cat)
+        showlegend = True if j == 0 else False
+        plot_data.append(
+            {
+                'x': x,
+                'y': get_hfence(well, surf)[:, 2].copy().tolist(),
+                'name': surf_name,
+                'hoverinfo': 'none',
+                'legendgroup': surf_name,
+                'showlegend': showlegend,
+                'real': real,
+                'marker': {'color': color}
+            })
+    return pd.DataFrame(plot_data)
