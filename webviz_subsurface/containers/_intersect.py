@@ -1,15 +1,14 @@
+from glob import glob
+from pathlib import PurePath as path
+from collections import OrderedDict
+import numpy as np
+import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
-import numpy as np
-from pathlib import PurePath as path
-from glob import glob
-import pandas as pd
-from collections import OrderedDict
-from fmu.ensemble import ScratchEnsemble as Ens
 from webviz_config.common_cache import cache
-from ..datainput import load_surface, get_wfence, get_hfence
+from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
 
 
 class Intersect():
@@ -22,7 +21,7 @@ class Intersect():
 
         self.well_path = well_path
         self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.ensemble = Ens(ensemble, self.ensemble_path)
+        self.ensemble = scratch_ensemble(ensemble, self.ensemble_path)
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat
         self.surface_names = surface_names
