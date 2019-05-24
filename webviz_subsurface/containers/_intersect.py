@@ -1,19 +1,13 @@
-
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
-import xtgeo
-import numpy.ma as ma
 import numpy as np
-import os
 from pathlib import PurePath as path
 from glob import glob
-import json
 import pandas as pd
 from collections import OrderedDict
 from fmu.ensemble import ScratchEnsemble as Ens
-from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from ..datainput import load_surface, get_wfence, get_hfence
 
@@ -74,13 +68,13 @@ class Intersect():
     #     return agg
 
     @cache.memoize(timeout=cache.TIMEOUT)
-    def make_surface_traces(self, well, reals, surf_name, use_fill=False):
+    def make_surface_traces(self, well, reals, surf_name, cat, color):
         '''Creates surface traces for graph'''
         plot_data = []
         x = [trace[3] for trace in get_wfence(well).values]
         for j, real in enumerate(reals):
 
-            surf = load_surface(surf_name, real, self.surface_cat)
+            surf = load_surface(surf_name, real, cat)
             showlegend = True if j == 0 else False
             plot_data.append(
                 {
@@ -91,37 +85,19 @@ class Intersect():
                     'legendgroup': surf_name,
                     'showlegend': showlegend,
                     'real': real,
-                    'marker': {'color': self.surface_colors[surf_name]}
+                    'marker': {'color': color}
                 })
         return pd.DataFrame(plot_data)
-
-    @cache.memoize(timeout=cache.TIMEOUT)
-    def make_well_trace(self, well, tvdmin=0):
-        '''Creates well trace for graph'''
-        x = [trace[3] for trace in get_wfence(well, extend=2).values]
-        y = [trace[2] for trace in get_wfence(well, extend=2).values]
-
-        # Filter out elements less than tvdmin
-        # https://stackoverflow.com/questions/17995302/filtering-two-lists-simultaneously
-        try:
-            y, x = zip(*((y_el, x) for y_el, x in zip(y, x) if y_el >= tvdmin))
-        except ValueError:
-            pass
-        return {
-            'x': x,
-            'y': y,
-            'name': path(well).stem,
-            'fill': None,
-            'marker': {'color': 'black'}
-        }
 
     @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
         traces = []
         for s_name in surf_names:
-            traces.extend(self.make_surface_traces(
-                well, reals, s_name).to_dict('rows'))
-        traces.append(self.make_well_trace(well, tvdmin))
+            traces.extend(
+                self.make_surface_traces(
+                    well, reals, s_name, self.surface_cat,
+                    self.surface_colors[s_name]).to_dict('rows'))
+        traces.append(make_well_trace(well, tvdmin))
         return traces
 
     @property
@@ -300,3 +276,23 @@ class Intersect():
                 'TVDstddev': f'{np.std(val["vals"]):.2f}',
                 'Name': name}
                 for name, val in names.items()]
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def make_well_trace(well, tvdmin=0):
+    '''Creates well trace for graph'''
+    x = [trace[3] for trace in get_wfence(well, extend=2).values]
+    y = [trace[2] for trace in get_wfence(well, extend=2).values]
+    # Filter out elements less than tvdmin
+    # https://stackoverflow.com/questions/17995302/filtering-two-lists-simultaneously
+    try:
+        y, x = zip(*((y_el, x) for y_el, x in zip(y, x) if y_el >= tvdmin))
+    except ValueError:
+        pass
+    return {
+        'x': x,
+        'y': y,
+        'name': path(well).stem,
+        'fill': None,
+        'marker': {'color': 'black'}
+    }
