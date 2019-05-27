@@ -60,7 +60,7 @@ def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
                                    )\
                       .reset_index()\
                       .fillna(0)\
-                      .drop(columns=[0])\
+                      .drop(columns=[0], errors='ignore')\
                       .merge(df_count, on='OBSKEY', how='left')\
                       .rename(columns={'OBSKEY': 'obs_group_name',
                                        'REAL': 'realization',
