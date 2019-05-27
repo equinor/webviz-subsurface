@@ -58,8 +58,8 @@ class SummaryStats:
         self.title = title
         self.checklist_show_H_id = 'checklist-show-H-{}'.format(uuid4())
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
-        self.column_keys = tuple(column_keys) if isinstance(column_keys, (list, tuple)
-                            ) else None
+        self.column_keys = tuple(column_keys) if isinstance(
+            column_keys, (list, tuple)) else None
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
@@ -67,18 +67,18 @@ class SummaryStats:
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
-             for ensemble in ensembles)
+            for ensemble in ensembles)
 
         smry_columns_lst = sorted(
-                            list(
-                                get_summary_data(
-                                    ensemble_paths=self.ensemble_paths,
-                                    sampling=self.sampling,
-                                    column_keys=self.column_keys).drop(
-                                    columns=[
-                                        'DATE',
-                                        'REAL',
-                                        'ENSEMBLE']).columns))
+            list(
+                get_summary_data(
+                    ensemble_paths=self.ensemble_paths,
+                    sampling=self.sampling,
+                    column_keys=self.column_keys).drop(
+                    columns=[
+                        'DATE',
+                        'REAL',
+                        'ENSEMBLE']).columns))
         self.smry_columns = [column for column in smry_columns_lst
                              if not column.endswith('H')]
         self.smry_columns_H = [column for column in smry_columns_lst
@@ -119,18 +119,18 @@ class SummaryStats:
         def update_plot(vector, summary_plot_type, checklist_show_H_id):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
-                    self.ensemble_paths,
-                    self.column_keys,
-                    self.sampling,
-                    self.smry_columns_H,
-                    vector,
-                    checklist_show_H_id)
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    sampling=self.sampling,
+                    smry_columns_H=self.smry_columns_H,
+                    vector=vector,
+                    checklist_show_H_id=checklist_show_H_id)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
-                    self.ensemble_paths,
-                    self.column_keys,
-                    self.sampling,
-                    vector)
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    sampling=self.sampling,
+                    vector=vector)
 
     def add_webvizstore(self):
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
@@ -144,8 +144,7 @@ class SummaryStats:
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_data(ensemble_paths: tuple,
-                     sampling: str,
+def get_summary_data(ensemble_paths: tuple, sampling: str,
                      column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE gets added for eacht
@@ -170,9 +169,8 @@ def get_summary_data(ensemble_paths: tuple,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_stats(ensemble_paths: tuple,
-                      column_keys: tuple,
-                      sampling: str) -> pd.DataFrame:
+def get_summary_stats(ensemble_paths: tuple, sampling: str,
+                      column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE gets added for each
     enesmble-path to seperate the ensambles.
@@ -184,8 +182,8 @@ def get_summary_stats(ensemble_paths: tuple,
     summary_stats_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
         summary_stats_df = scratch_ensemble(
-            ensemble, ensemble_path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)
+            ensemble, ensemble_path).get_smry_stats(time_index=sampling,
+                                                    column_keys=column_keys)
         summary_stats_df['ENSEMBLE'] = ensemble
         summary_stats_dfs.append(summary_stats_df)
 
@@ -193,8 +191,9 @@ def get_summary_stats(ensemble_paths: tuple,
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_paths, sampling, column_keys,
-                            smry_columns_H, vector, checklist_show_H_id):
+def render_realization_plot(ensemble_paths: tuple, sampling: str,
+                            column_keys: tuple, smry_columns_H: list,
+                            vector: str, checklist_show_H_id: str):
     """
     Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
@@ -215,25 +214,24 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
 
     vector_H = (vector + 'H')
 
-    summary_data_unfiltered = get_summary_data(ensemble_paths, column_keys, sampling)
+    summary_data_unfiltered = get_summary_data(ensemble_paths=ensemble_paths,
+                                               column_keys=column_keys,
+                                               sampling=sampling)
 
     if vector_H in smry_columns_H:
         summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
                                                 vector, vector_H]
-                                              ].dropna(subset=[vector])
-                
+                                               ].dropna(subset=[vector])
+
     else:
         summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
                                                 vector]
-                                              ].dropna(subset=[vector])
+                                               ].dropna(subset=[vector])
 
     traces = []
-    # vector traces
-    # outer loop over enesmbles
     for ens in summary_data.ENSEMBLE.unique():
         summary_data_i = summary_data[summary_data['ENSEMBLE'] == ens]
         color = next(cycle_list)
-        # 1st trace of a legendgroup with 'showlegend': True
         first_trace = {
             'x': summary_data_i[summary_data_i['REAL']
                                 == summary_data_i.REAL.unique()[0]]['DATE'],
@@ -248,7 +246,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
             'showlegend': True
         }
         traces.append(first_trace)
-        # inner loop over traces within a legendgroup/enesmble
+
         for real in summary_data_i.REAL.unique()[1:]:
             trace = {
                 'x': summary_data_i[summary_data_i['REAL'] == real]['DATE'],
@@ -262,7 +260,7 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
                 'showlegend': False
             }
             traces.append(trace)
-    # *H trace 
+
     if (vector_H in smry_columns_H and 'SHOW_H' in checklist_show_H_id):
         H_trace = {
             'x': summary_data_i[summary_data_i['REAL']
@@ -297,12 +295,15 @@ def render_realization_plot(ensemble_paths, sampling, column_keys,
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
+def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
+                     vector: str):
     """returns a list of html.Divs (required by dash). One div per ensemble.
     Eachdiv includes a dcc.Graph(id, figure, config)."""
 
     # get summary_stats
-    summary_stats = get_summary_stats(ensemble_paths, sampling, column_keys)
+    summary_stats = get_summary_stats(ensemble_paths=ensemble_paths,
+                                      column_keys=column_keys,
+                                      sampling=sampling,)
 
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
