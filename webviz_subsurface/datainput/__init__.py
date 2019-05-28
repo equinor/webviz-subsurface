@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 '''### _Subsurface data input_
 Contains data processing functions used in the containers.
 Some of the scripts are dependent on FMU postprocessing scripts
@@ -18,17 +19,19 @@ try:
     import fmu.ensemble
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
     pass             # for a portable webviz instance, it is never used.
+=======
+'''### _Subsurface data input_
+>>>>>>> Reorganized data input (#19)
 
-import pandas as pd
-from pathlib import Path
-from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
+Contains data processing functions used in the containers.
+Some of the scripts are dependent on FMU postprocessing scripts
+that will be made open source in the near future.
+'''
+
+from ._history_match import extract_mismatch, scratch_ensemble
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
-def scratch_ensemble(ensemble_name, ensemble_path):
-    return fmu.ensemble.ScratchEnsemble(ensemble_name, ensemble_path)
-
+<<<<<<< HEAD
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
@@ -85,3 +88,6 @@ def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
                                        1: 'total_pos',
                                        -1: 'total_neg'})
 >>>>>>> Do not expect df column named 0 (#16)
+=======
+__all__ = ['scratch_ensemble', 'extract_mismatch']
+>>>>>>> Reorganized data input (#19)
