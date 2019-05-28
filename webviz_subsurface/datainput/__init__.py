@@ -6,7 +6,7 @@ that will be made open source in the near future.
 '''
 
 
-from ._mismatch import scratch_ensemble, extract_mismatch
+from ._history_match import scratch_ensemble, extract_mismatch
 from ._intersect import load_surface, get_wfence, get_hfence
 
 __all__ = ['scratch_ensemble',
