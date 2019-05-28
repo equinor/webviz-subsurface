@@ -14,20 +14,28 @@ from ..datainput import extract_volumes
 class InplaceVolumes:
     '''### Volumetrics
 
-This container visualizes RMS in-place volumetrics results
+This container visualizes inplace volumetrics results-
 
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensemble`: Which ensemble in `container_settings` to visualize.
 * `volfile`:  Local realization path to the RMS volumetrics file
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, app, container_settings, ensemble: str,
-                 title: str = 'In-place volumes'):
+    def __init__(self, app, container_settings, ensembles: list,
+                 volfiles: list, title: str = 'In-place volumes',
+                 volfolder: str = 'share/results/volumes',
+                 response: str = 'STOIIP_OIL'):
 
         self.title = title
-        self.ensemble_name = ensemble
-        self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.volumes = extract_volumes(self.ensemble_path, self.ensemble_name)
+        self.ens_paths = tuple((ens,
+                                container_settings['scratch_ensembles'][ens])
+                               for ens in ensembles)
+        self.volfiles = tuple(volfiles)
+        self.volfolder = volfolder
+        self.initial_response = response
+        self.volumes = extract_volumes(self.ens_paths,
+                                       self.volfolder,
+                                       self.volfiles)
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.response_id = 'response-{}'.format(uuid4())
         self.chart_id = 'chart-{}'.format(uuid4())
@@ -43,8 +51,9 @@ This container visualizes RMS in-place volumetrics results
     def add_webvizstore(self):
         return [(extract_volumes, [
             {
-                'ensemble_path': self.ensemble_path,
-                'ensemble_name' : self.ensemble_name
+                'ensemble_paths': self.ens_paths,
+                'volfolder': self.volfolder,
+                'volfiles': self.volfiles
             }])]
 
     @property
@@ -55,7 +64,7 @@ This container visualizes RMS in-place volumetrics results
     @property
     def all_selectors(self):
         '''List of all possible selectors'''
-        return ['ENSEMBLE', 'ZONE', 'REGION', 'FACIES', 'LICENSE']
+        return ['SOURCE', 'ENSEMBLE', 'ZONE', 'REGION', 'FACIES', 'LICENSE']
 
     @property
     def plot_types(self):
@@ -106,11 +115,11 @@ This container visualizes RMS in-place volumetrics results
             multi = True
 
             value = elements
-            if selector == 'ENSEMBLE':
+            if selector == 'ENSEMBLE' or selector == 'SOURCE':
                 value = elements[0]
             dropdowns.append(
                 html.Div(children=[
-                    html.Details(children=[
+                    html.Details(open=True, children=[
                         html.Summary(selector),
                         dcc.Dropdown(
                             id=self.selectors_id[selector],
@@ -163,7 +172,9 @@ This container visualizes RMS in-place volumetrics results
                                 id=self.response_id,
                                 options=[{'label': i, 'value': i}
                                          for i in self.responses],
-                                value=self.responses[0])
+                                value='STOIIP_OIL' 
+                                      if 'STOIIP_OIL' in self.responses
+                                      else self.responses[0])
                         ]),
                         html.Div(children=[
                             html.P('Plot type:', style={
@@ -224,7 +235,6 @@ This container visualizes RMS in-place volumetrics results
             plot_type = args[1]
             group = args[2]
             selections = args[3:]
-            # data = filter_dataframe(self.volumes, ['REAL'], [reals])
             data = self.volumes
             data = filter_dataframe(data, self.selectors, selections)
             # If not grouped make one trace
@@ -251,24 +261,37 @@ This container visualizes RMS in-place volumetrics results
                     'data': traces,
                     'layout': plot_layout(plot_type, response)}
                 )
-
+        
         @app.callback(
-            Output(self.selectors_id['ENSEMBLE'], 'multi'),
+            [Output(self.selectors_id['ENSEMBLE'], 'multi'),
+             Output(self.selectors_id['ENSEMBLE'], 'value')],
             [Input(self.radio_selectors_id, 'value')])
-        def set_iteration_selector(group):
+        def set_iteration_selector(group_by):
             '''If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             '''
-            if group == 'ENSEMBLE':
-                return True
+            if group_by == 'ENSEMBLE':
+                return True, list(self.volumes['ENSEMBLE'].unique())
             else:
-                return False
-
+                return False, list(self.volumes['ENSEMBLE'].unique())[0]
+ 
+        @app.callback(
+            [Output(self.selectors_id['SOURCE'], 'multi'),
+             Output(self.selectors_id['SOURCE'], 'value')],
+            [Input(self.radio_selectors_id, 'value')])
+        def set_iteration_selector(group_by):
+            '''If iteration is selected as group by set the iteration
+            selector to allow multiple selections, else use single selection
+            '''
+            if group_by == 'SOURCE':
+                return True, list(self.volumes['SOURCE'].unique())
+            else:
+                return False, list(self.volumes['SOURCE'].unique())[0]       
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def plot_data(plot_type, dframe, response, name):    
+def plot_data(plot_type, dframe, response, name):
     values = dframe[response]
-    
+
     if plot_type == 'Histogram':
         if values.nunique() == 1:
             values = values[0]
@@ -310,16 +333,16 @@ def plot_data(plot_type, dframe, response, name):
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def plot_layout(plot_type, response):
-    
+
     if plot_type == 'Histogram':
         return {
             'barmode': 'overlay',
             'bargap': 0.05,
-            'xaxis' : {'title': response},
-            'yaxis' : {'title': 'Count'}
+            'xaxis': {'title': response},
+            'yaxis': {'title': 'Count'}
         }
     if plot_type == 'Box Plot':
-        return {'yaxis' : {'title': response}}
+        return {'yaxis': {'title': response}}
 
     if plot_type == 'Per Realization':
         return {
@@ -329,8 +352,8 @@ def plot_layout(plot_type, response):
                 'b': 30,
                 't': 10},
             'barmode': 'stack',
-            'yaxis' : {'title': response},
-            'xaxis' : {'title': 'Realization'}}
+            'yaxis': {'title': response},
+            'xaxis': {'title': 'Realization'}}
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
