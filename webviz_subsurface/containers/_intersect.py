@@ -1,5 +1,5 @@
 from glob import glob
-from pathlib import PurePath as path
+from pathlib import PurePath
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -126,7 +126,7 @@ class Intersect():
                     html.P('Well:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
                         id='well_list',
-                        options=[{'label': path(well).stem, 'value': well}
+                        options=[{'label': PurePath(well).stem, 'value': well}
                                  for well in self.well_names],
                         value=self.well_names[0]
                     ),
@@ -269,7 +269,7 @@ def make_well_trace(well, tvdmin=0):
     return {
         'x': x,
         'y': y,
-        'name': path(well).stem,
+        'name': PurePath(well).stem,
         'fill': None,
         'marker': {'color': 'black'}
     }
