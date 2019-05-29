@@ -172,9 +172,9 @@ This container visualizes inplace volumetrics results-
                                 id=self.response_id,
                                 options=[{'label': i, 'value': i}
                                          for i in self.responses],
-                                value='STOIIP_OIL' 
-                                      if 'STOIIP_OIL' in self.responses
-                                      else self.responses[0])
+                                value=self.initial_response
+                                if self.initial_response in self.responses
+                                else self.responses[0])
                         ]),
                         html.Div(children=[
                             html.P('Plot type:', style={
@@ -261,7 +261,7 @@ This container visualizes inplace volumetrics results-
                     'data': traces,
                     'layout': plot_layout(plot_type, response)}
                 )
-        
+
         @app.callback(
             [Output(self.selectors_id['ENSEMBLE'], 'multi'),
              Output(self.selectors_id['ENSEMBLE'], 'value')],
@@ -274,7 +274,7 @@ This container visualizes inplace volumetrics results-
                 return True, list(self.volumes['ENSEMBLE'].unique())
             else:
                 return False, list(self.volumes['ENSEMBLE'].unique())[0]
- 
+
         @app.callback(
             [Output(self.selectors_id['SOURCE'], 'multi'),
              Output(self.selectors_id['SOURCE'], 'value')],
@@ -286,7 +286,8 @@ This container visualizes inplace volumetrics results-
             if group_by == 'SOURCE':
                 return True, list(self.volumes['SOURCE'].unique())
             else:
-                return False, list(self.volumes['SOURCE'].unique())[0]       
+                return False, list(self.volumes['SOURCE'].unique())[0]
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def plot_data(plot_type, dframe, response, name):
