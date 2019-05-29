@@ -71,30 +71,28 @@ def get_map_data(ensemble_path, map_value, flow_value,
     grid = grid[INDICES_COL + X_COL + Y_COL + ['value'] + FLOW_COL]
     grid = grid[grid['value'] > 0]
 
-    xmin = grid[X_COL].values.min()
-    xmax = grid[X_COL].values.max()
-    ymin = grid[Y_COL].values.min()
-    ymax = grid[Y_COL].values.max()
-    flowmin = grid[FLOW_COL].values.min()
-    flowmax = grid[FLOW_COL].values.max()
-    valmin = grid['value'].min()
-    valmax = grid['value'].max()
+    xmin, xmax = grid[X_COL].values.min(), grid[X_COL].values.max()
+    ymin, ymax = grid[Y_COL].values.min(), grid[Y_COL].values.max()
+
+    flowmin, flowmax = grid[FLOW_COL].values.min(), grid[FLOW_COL].values.max()
+
+    valmin, valmax = grid['value'].min(), grid['value'].max()
 
     if (xmax - xmin) > (ymax - ymin):
         coord_scale = RESOLUTION/(xmax - xmin)
     else:
         coord_scale = RESOLUTION/(ymax - ymin)
 
-    grid[X_COL] = (grid[X_COL] - xmin)*coord_scale
-    grid[Y_COL] = (grid[Y_COL] - ymin)*coord_scale
+    grid[X_COL] = (grid[X_COL] - xmin) * coord_scale
+    grid[Y_COL] = (grid[Y_COL] - ymin) * coord_scale
     grid[X_COL + Y_COL] = grid[X_COL + Y_COL].astype(int)
 
     flow_scale = RESOLUTION/(flowmax - flowmin)
-    grid[FLOW_COL] = (grid[FLOW_COL] - flowmin)*flow_scale
+    grid[FLOW_COL] = (grid[FLOW_COL] - flowmin) * flow_scale
     grid[FLOW_COL] = grid[FLOW_COL].astype(int)
 
     val_scale = RESOLUTION/(valmax - valmin)
-    grid['value'] = (grid['value'] - valmin)*val_scale
+    grid['value'] = (grid['value'] - valmin) * val_scale
     grid['value'] = grid['value'].astype(int)
 
     grid[INDICES_COL] = grid[INDICES_COL].astype(int)
