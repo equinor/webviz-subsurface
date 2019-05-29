@@ -47,14 +47,10 @@ class SummaryStats:
         memoized dataframe.
     """
 
-    def __init__(
-            self,
-            app,
-            container_settings,
-            ensembles,
-            column_keys=None,
-            sampling: str = 'monthly',
-            title: str = 'Simulation time series'):
+    def __init__(self, app, container_settings, ensembles, column_keys=None,
+                 history_uncertainty: bool = False, sampling: str = 'monthly',
+                 title: str = 'Simulation time series'):
+
         self.title = title
         self.checklist_show_H_id = 'checklist-show-H-{}'.format(uuid4())
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
@@ -63,6 +59,7 @@ class SummaryStats:
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
+        self.H_vctr_uncertainty = history_uncertainty
 
         self.ensemble_paths = tuple(
             (ensemble,
@@ -124,7 +121,8 @@ class SummaryStats:
                     sampling=self.sampling,
                     smry_columns_H=self.smry_columns_H,
                     vector=vector,
-                    checklist_show_H_id=checklist_show_H_id)
+                    checklist_show_H_id=checklist_show_H_id,
+                    H_vctr_uncertainty=self.H_vctr_uncertainty)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
@@ -155,16 +153,16 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
     column_keys = list(column_keys) if isinstance(column_keys, tuple) else None
 
     # create a list containing ensemble-dataframs + ['ENSEMBLE'] column
-    summary_data_dfs = []
+    smry_data_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
-        summary_data_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
+        smry_data_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
             time_index=sampling, column_keys=column_keys)
-        summary_data_df['ENSEMBLE'] = ensemble
-        summary_data_dfs.append(summary_data_df)
+        smry_data_df['ENSEMBLE'] = ensemble
+        smry_data_dfs.append(smry_data_df)
 
-    summary_data_df = pd.concat(summary_data_dfs)
+    smry_data_df = pd.concat(smry_data_dfs)
 
-    return pd.concat(summary_data_dfs)
+    return pd.concat(smry_data_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -179,21 +177,22 @@ def get_summary_stats(ensemble_paths: tuple, sampling: str,
     # convert column_keys-tuple back to list
     column_keys = list(column_keys) if isinstance(column_keys, tuple) else None
 
-    summary_stats_dfs = []
+    smry_stats_dfs = []
     for ensemble, ensemble_path in ensemble_paths:
-        summary_stats_df = scratch_ensemble(
+        smry_stats_df = scratch_ensemble(
             ensemble, ensemble_path).get_smry_stats(time_index=sampling,
                                                     column_keys=column_keys)
-        summary_stats_df['ENSEMBLE'] = ensemble
-        summary_stats_dfs.append(summary_stats_df)
+        smry_stats_df['ENSEMBLE'] = ensemble
+        smry_stats_dfs.append(smry_stats_df)
 
-    return pd.concat(summary_stats_dfs)
+    return pd.concat(smry_stats_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths: tuple, sampling: str,
                             column_keys: tuple, smry_columns_H: list,
-                            vector: str, checklist_show_H_id: str):
+                            vector: str, checklist_show_H_id: str,
+                            H_vctr_uncertainty: bool):
     """
     Returns a dcc.Graph. Data a plotted from df returned by
     get_summary_data() Callback from dropwdown_vector_id changes the vector
@@ -214,29 +213,29 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 
     vector_H = (vector + 'H')
 
-    summary_data_unfiltered = get_summary_data(ensemble_paths=ensemble_paths,
-                                               column_keys=column_keys,
-                                               sampling=sampling)
+    smry_data_unfiltered = get_summary_data(ensemble_paths=ensemble_paths,
+                                            column_keys=column_keys,
+                                            sampling=sampling)
 
     if vector_H in smry_columns_H:
-        summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
-                                                vector, vector_H]
-                                               ].dropna(subset=[vector])
+        smry_data_filtered = smry_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
+                                                   vector, vector_H]
+                                                  ].dropna(subset=[vector])
 
     else:
-        summary_data = summary_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
-                                                vector]
-                                               ].dropna(subset=[vector])
+        smry_data_filtered = smry_data_unfiltered[['REAL', 'DATE', 'ENSEMBLE',
+                                                   vector]
+                                                  ].dropna(subset=[vector])
 
     traces = []
-    for ens in summary_data.ENSEMBLE.unique():
-        summary_data_i = summary_data[summary_data['ENSEMBLE'] == ens]
+    for ens in smry_data_filtered.ENSEMBLE.unique():
+        smry_data_i = smry_data_filtered[smry_data_filtered['ENSEMBLE'] == ens]
         color = next(cycle_list)
         first_trace = {
-            'x': summary_data_i[summary_data_i['REAL']
-                                == summary_data_i.REAL.unique()[0]]['DATE'],
-            'y': summary_data_i[summary_data_i['REAL']
-                                == summary_data_i.REAL.unique()[0]][vector],
+            'x': smry_data_i[smry_data_i['REAL']
+                             == smry_data_i.REAL.unique()[0]]['DATE'],
+            'y': smry_data_i[smry_data_i['REAL']
+                             == smry_data_i.REAL.unique()[0]][vector],
             'legendgroup': ens,
             'name': ens,
             'type': 'markers',
@@ -247,10 +246,10 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
         }
         traces.append(first_trace)
 
-        for real in summary_data_i.REAL.unique()[1:]:
+        for real in smry_data_i.REAL.unique()[1:]:
             trace = {
-                'x': summary_data_i[summary_data_i['REAL'] == real]['DATE'],
-                'y': summary_data_i[summary_data_i['REAL'] == real][vector],
+                'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
+                'y': smry_data_i[smry_data_i['REAL'] == real][vector],
                 'legendgroup': ens,
                 'name': ens,
                 'type': 'line',
@@ -262,20 +261,54 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
             traces.append(trace)
 
     if (vector_H in smry_columns_H and 'SHOW_H' in checklist_show_H_id):
-        H_trace = {
-            'x': summary_data_i[summary_data_i['REAL']
-                                == summary_data_i.REAL.unique()[0]]['DATE'],
-            'y': summary_data_i[summary_data_i['REAL']
-                                == summary_data_i.REAL.unique()[0]][vector],
-            'legendgroup': '*H',
-            'name': '*H',
-            'type': 'markers',
-            'marker': {
+
+        if H_vctr_uncertainty:
+
+            H_trace = {
+                'x': smry_data_i[smry_data_i['REAL']
+                                 == smry_data_i.REAL.unique()[0]]['DATE'],
+                'y': smry_data_i[smry_data_i['REAL']
+                                 == smry_data_i.REAL.unique()[0]][vector],
+                'legendgroup': '*H',
+                'name': '*H',
+                'type': 'markers',
+                'marker': {
+                        'color': 'black'
+                },
+                'showlegend': True
+            }
+            traces.append(H_trace)
+
+        for real in smry_data_i.REAL.unique()[1:]:
+            H_trace = {
+                'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
+                'y': smry_data_i[smry_data_i['REAL'] == real][vector],
+                'legendgroup': ens,
+                'name': ens,
+                'type': 'line',
+                'marker': {
                     'color': 'black'
-            },
-            'showlegend': True
-        }
-        traces.append(H_trace)
+                },
+                'showlegend': False
+            }
+            traces.append(trace)
+
+        else:
+
+            H_trace = {
+                'x': smry_data_i[smry_data_i['REAL']
+                                 == smry_data_i.REAL.unique()[0]]['DATE'],
+                'y': smry_data_i[smry_data_i['REAL']
+                                 == smry_data_i.REAL.unique()[0]][vector_H],
+                'legendgroup': '*H',
+                'name': '*H',
+                'type': 'markers',
+                'marker': {
+                        'color': 'black'
+                },
+                'showlegend': True
+            }
+            traces.append(H_trace)
 
     layout = {
         'hovermode': 'closest',
@@ -300,16 +333,16 @@ def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
     """returns a list of html.Divs (required by dash). One div per ensemble.
     Eachdiv includes a dcc.Graph(id, figure, config)."""
 
-    # get summary_stats
-    summary_stats = get_summary_stats(ensemble_paths=ensemble_paths,
-                                      column_keys=column_keys,
-                                      sampling=sampling,)
+    # get smry_stats
+    smry_stats = get_summary_stats(ensemble_paths=ensemble_paths,
+                                   column_keys=column_keys,
+                                   sampling=sampling,)
 
     # create a list of FanCharts to be plotted
     fan_chart_divs = []
-    for ensemble in summary_stats.ENSEMBLE.unique():
-        vector_stats = summary_stats[summary_stats['ENSEMBLE']
-                                     == ensemble][vector].unstack().transpose()
+    for ensemble in smry_stats.ENSEMBLE.unique():
+        vector_stats = smry_stats[smry_stats['ENSEMBLE']
+                                  == ensemble][vector].unstack().transpose()
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
