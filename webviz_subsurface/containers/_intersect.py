@@ -297,7 +297,10 @@ def make_surface_traces(well, reals, surf_name, cat, color):
     plot_data = []
     x = [trace[3] for trace in get_wfence(well).values]
     for j, real in enumerate(reals):
-        surf = load_surface(surf_name, real, cat)
+        try:
+            surf = load_surface(surf_name, real, cat)
+        except IOError:
+            continue
         showlegend = True if j == 0 else False
         plot_data.append(
             {
