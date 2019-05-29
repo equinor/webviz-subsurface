@@ -11,15 +11,11 @@ from webviz_subsurface_components import Morris
 class MorrisPlot:
     '''### Morris
 
-This container visualizes the subsurface. Currently only supporting reservoir
-model grid maps. In addition to show a map, it can visualize the flow pattern
-in the simulation output using streamlines.
+This container renders a visualization of the Morris sampling method.
+The Morris sampling method is a balance of local and global sensitivity analysis
+The Morris method reveals interaction effects and help to screen parameters
 
-* `ensemble`: Which ensemble in `container_settings` to visualize.
-* `map_value`: Which property to show in the map (e.g. `PERMX`).
-* `flow_value`: Which property to use for the streamlines animation
-  (e.g. `FLOWAT`).
-* `time_step`: Which report or time step to use in the simulation output.
+* `csv_file`: Input data
 * `title`: Optional title for the container.
 '''
 
