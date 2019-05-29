@@ -30,6 +30,26 @@ and a folder of well files stored in RMS well format.
               '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
               '#35978f', '#01665e', '#003c30']
 
+    LAYOUT_STYLE = {
+        'display': 'grid',
+        'align-content': 'space-around',
+        'justify-content': 'space-between',
+        'grid-template-columns': '2fr 6fr',
+    }
+
+    FENCE_OPTION_STYLE = {
+        'display': 'grid',
+        'align-content': 'space-around',
+        'justify-content': 'space-between',
+        'grid-template-columns': '1fr 1fr',
+        'max-width': '50%'
+    }
+
+    TABLE_STYLE = {
+        'maxHeight': '300',
+        'overflowY': 'auto'
+    }
+
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
                  well_suffix='.rmswell'):
@@ -101,40 +121,9 @@ and a folder of well files stored in RMS well format.
         }
 
     @property
-    def table_layout(self):
-        '''Limit table height'''
-        return {
-            'maxHeight': '300',
-            'overflowY': 'auto'
-        }
-
-    @property
-    def style_layout(self):
-        '''Simple grid layout for the main elements'''
-        return {
-            'display': 'grid',
-            'align-content': 'space-around',
-            'justify-content': 'space-between',
-            'grid-template-columns': '2fr 6fr',
-
-        }
-
-    @property
-    def style_fence_options(self):
-        '''Style options toolbar below intersection graph'''
-        return {
-            'display': 'grid',
-            'align-content': 'space-around',
-            'justify-content': 'space-between',
-            'grid-template-columns': '1fr 1fr',
-            'max-width': '50%'
-
-        }
-
-    @property
     def layout(self):
         return html.Div([
-            html.Div(style=self.style_layout, children=[
+            html.Div(style=Intersect.LAYOUT_STYLE, children=[
                 html.Div([
                     html.P('Well:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
@@ -163,7 +152,7 @@ and a folder of well files stored in RMS well format.
                         multi=True,
                         placeholder='All surfaces'
                     ),
-                    html.Div(style=self.table_layout, children=[
+                    html.Div(style=Intersect.TABLE_STYLE, children=[
                         DataTable(
                             id=self.table_id,
                             columns=[{"name": i, "id": i}
@@ -175,7 +164,7 @@ and a folder of well files stored in RMS well format.
                 html.Div(style={'height': '80vh'}, children=[
                     dcc.Graph(style={'height': '80vh'},
                               id=self.intersection_id),
-                    html.Div(style=self.style_fence_options, children=[
+                    html.Div(style=Intersect.FENCE_OPTION_STYLE, children=[
                         html.P('Start depth:', style={'font-weight': 'bold'}),
                         html.P('Graph zoom level:', style={
                                'font-weight': 'bold'}),
