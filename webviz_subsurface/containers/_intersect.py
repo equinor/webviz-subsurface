@@ -17,7 +17,7 @@ class Intersect():
 
 This container visualizes surfaces intersected along a well path.
 The input are surfaces from a FMU ensemble stored on standardized
-format with standardized naming (share/results/maps/surface_name--surface_cat.gri) 
+format with standardized naming (share/results/maps/name--category.gri)
 and a folder of well files stored in RMS well format.
 
 * `ensemble`: Which ensemble in `container_settings` to visualize.
