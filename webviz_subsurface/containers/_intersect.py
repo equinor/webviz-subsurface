@@ -141,7 +141,8 @@ and a folder of well files stored in RMS well format.
                         id=self.well_list_id,
                         options=[{'label': PurePath(well).stem, 'value': well}
                                  for well in self.well_names],
-                        value=self.well_names[0]
+                        value=self.well_names[0],
+                        clearable=False
                     ),
                     html.P('Realization:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
