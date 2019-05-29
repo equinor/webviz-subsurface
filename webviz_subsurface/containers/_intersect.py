@@ -209,9 +209,9 @@ and a folder of well files stored in RMS well format.
                 _surfs = [_surfs]
             if not isinstance(_reals, list):
                 _reals = [_reals]
-            if _reals == []:
+            if not _reals:
                 _reals = list(self.realizations.keys())
-            if _surfs == []:
+            if not _surfs:
                 _surfs = self.surface_names
             s_names = [s for s in self.surface_names if s in _surfs]
             xsect = self.plot_xsection(_well_path, _reals, s_names, _tvdmin)
@@ -238,7 +238,7 @@ and a folder of well files stored in RMS well format.
                 }]
             if not isinstance(_surfaces, list):
                 _surfaces = [_surfaces]
-            if _surfaces == []:
+            if not _surfaces:
                 _surfaces = self.surface_names
             names = {s: {'vals': [], 'min': None, 'max': None}
                      for s in _surfaces}
