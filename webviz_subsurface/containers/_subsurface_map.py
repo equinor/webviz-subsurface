@@ -44,35 +44,22 @@ in the simulation output using streamlines.
                ])
 
     def add_webvizstore(self):
-        return [(get_map_data, [{'ensemble_path': self.ensemble_path,
-                                 'map_value': self.map_value,
-                                 'flow_value': self.flow_value,
-                                 'time_step': self.time_step}])]
+        return [(get_uncompressed_data, [{'ensemble_path': self.ensemble_path,
+                                          'map_value': self.map_value,
+                                          'flow_value': self.flow_value,
+                                          'time_step': self.time_step}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-#@webvizstore
 def get_map_data(ensemble_path, map_value, flow_value,
-                 time_step) -> str:
+                 time_step):
+    '''Returns map data in the format of a JSON string, suitable for the
+    corresponding subsurface map component in
+    https://github.com/equinor/webviz-subsurface-components
+    '''
 
-    ens = scratch_ensemble('', ensemble_path)
-
-    properties = [map_value, f'{flow_value}I+', f'{flow_value}J+']
-    if 'PERMX' not in properties:
-        properties.append('PERMX')
-
-    grid = ens.get_eclgrid(properties, report=time_step)
-
-    grid = grid[grid['PERMX'] > 0]  # Remove inactive grid cells
-
-    grid['value'] = grid[map_value]
-    grid['FLOWI+'] = grid[f'{flow_value}I+']
-    grid['FLOWJ+'] = grid[f'{flow_value}J+']
-
-    # Webviz map component uses different corner point terminology than libecl
-    for (new, old) in [('x0', 'x1'), ('x1', 'x2'), ('x2', 'x4'),
-                       ('y0', 'y1'), ('y1', 'y2'), ('y2', 'y4')]:
-        grid[new] = grid[old]
+    grid = get_uncompressed_data(ensemble_path, map_value, flow_value,
+                                 time_step)
 
     INDICES_COL = ['i', 'j', 'k']
     X_COL = ['x0', 'x1', 'x2', 'x3']
@@ -122,3 +109,29 @@ def get_map_data(ensemble_path, map_value, flow_value,
             }
 
     return json.dumps(data, separators=(',', ':'))
+
+
+@webvizstore
+def get_uncompressed_data(ensemble_path, map_value, flow_value,
+                 time_step) -> pd.DataFrame:
+
+    ens = scratch_ensemble('', ensemble_path)
+
+    properties = [map_value, f'{flow_value}I+', f'{flow_value}J+']
+    if 'PERMX' not in properties:
+        properties.append('PERMX')
+
+    grid = ens.get_eclgrid(properties, report=time_step)
+
+    grid = grid[grid['PERMX'] > 0]  # Remove inactive grid cells
+
+    grid['value'] = grid[map_value]
+    grid['FLOWI+'] = grid[f'{flow_value}I+']
+    grid['FLOWJ+'] = grid[f'{flow_value}J+']
+
+    # Webviz map component uses different corner point terminology than libecl
+    for (new, old) in [('x0', 'x1'), ('x1', 'x2'), ('x2', 'x4'),
+                       ('y0', 'y1'), ('y1', 'y2'), ('y2', 'y4')]:
+        grid[new] = grid[old]
+
+    return grid
