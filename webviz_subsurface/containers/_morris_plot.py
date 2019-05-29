@@ -8,11 +8,12 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_subsurface_components import Morris
 
+
 class MorrisPlot:
     '''### Morris
 
 This container renders a visualization of the Morris sampling method.
-The Morris sampling method is a balance of local and global sensitivity analysis
+The Morris method is a balance of local and global sensitivity analysis
 The Morris method reveals interaction effects and help to screen parameters
 
 * `csv_file`: Input data
@@ -26,22 +27,22 @@ The Morris method reveals interaction effects and help to screen parameters
         self.graph_id = 'graph-{}'.format(uuid4())
         self.vector_id = 'vector-{}'.format(uuid4())
         self.csv_file = csv_file
-        self.morris_data = read_csv(self.csv_file)
-        self.vector_names = self.morris_data['name'].unique()
+        self.data = read_csv(self.csv_file)
+        self.vector_names = self.data['name'].unique()
         self.set_callbacks(app)
 
     @property
     def layout(self):
         return html.Div([
-                   html.H2(self.title),
-                    dcc.Dropdown(id=self.vector_id,
+            html.H2(self.title),
+            dcc.Dropdown(id=self.vector_id,
                          clearable=False,
                          options=[{'label': i, 'value': i}
                                   for i in list(self.vector_names)],
                          value=self.vector_names[0]),
-                   Morris(
-                    id=self.graph_id)
-               ])
+            Morris(
+                id=self.graph_id)
+        ])
 
     def add_webvizstore(self):
         return [(read_csv, [{'csv_file': self.csv_file}])]
@@ -53,25 +54,25 @@ The Morris method reveals interaction effects and help to screen parameters
             Output(self.graph_id, 'parameters')],
             [Input(self.vector_id, 'value')])
         def update_plot(vector):
-            df = self.morris_data[self.morris_data['name'] == vector]
+            df = self.data[self.data['name'] == vector]
             df = df.sort_values('time')
             output = df[['mean', 'max', 'min', 'time']]
             output = output.drop_duplicates()
             output = output.to_dict(orient='records')
             parameters = []
 
-            for name in self.morris_data['name'].unique():
+            for name in self.data['name'].unique():
                 if name != vector:
-                    name_df = self.morris_data[self.morris_data['name'] == name]
+                    name_df = self.data[self.data['name'] == name]
                     parameters.append({
                         'main': list(name_df['morris_main']),
                         'name': str(name),
                         'interactions': list(name_df['morris_interaction'])
-                        })
+                    })
             return output, vector, parameters
 
 
-cache.memoize(timeout=cache.TIMEOUT)
+@cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file)
