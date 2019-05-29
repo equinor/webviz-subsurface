@@ -4,8 +4,10 @@ try:
     import xtgeo
 except ImportError:
     pass
+from webviz_config.common_cache import cache
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def load_well(well_name):
     return xtgeo.well.Well(well_name)
 
@@ -19,6 +21,7 @@ def load_surface(s_name, real_path, surface_cat):
         raise IOError
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_wfence(well_name, extend=200, tvdmin=0):
     well = load_well(well_name)
     data = well.get_fence_polyline(sampling=20, extend=extend, tvdmin=tvdmin)
@@ -27,5 +30,6 @@ def get_wfence(well_name, extend=200, tvdmin=0):
     return df
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_hfence(well, surface):
     return surface.get_fence(get_wfence(well).values.copy())
