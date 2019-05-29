@@ -1,3 +1,4 @@
+from uuid import uuid4
 from glob import glob
 from pathlib import PurePath
 from collections import OrderedDict
@@ -15,8 +16,9 @@ class Intersect():
     '''### Intersect
 
 This container visualizes surfaces intersected along a well path.
-The input are surfaces from a standardized FMU ensemble and a 
-folder of well files stored in RMS well format.
+The input are surfaces from a FMU ensemble stored on standardized
+format with standardized naming (share/results/maps/surface_name--surface_cat.gri) 
+and a folder of well files stored in RMS well format.
 
 * `ensemble`: Which ensemble in `container_settings` to visualize.
 * `well_path`: File folder with wells in rmswell format
@@ -38,6 +40,14 @@ folder of well files stored in RMS well format.
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat
         self.surface_names = surface_names
+        self.unique_id = f'{uuid4()}'
+        self.well_list_id = f'well-list-id-{self.unique_id}'
+        self.real_list_id = f'real-list-id-{self.unique_id}'
+        self.surf_list_id = f'surf-list-id-{self.unique_id}'
+        self.table_id = f'table-id-{self.unique_id}'
+        self.well_tvd_id = f'well-tvd-id-{self.unique_id}'
+        self.zoom_state_id = f'ui-state-id-{self.unique_id}'
+        self.intersection_id = f'intersection-id-{self.unique_id}'
         self.set_callbacks(app)
 
     @property
@@ -69,6 +79,7 @@ folder of well files stored in RMS well format.
 
     @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
+        '''Plots all lines in intersection'''
         traces = []
         for s_name in surf_names:
             traces.extend(
@@ -91,6 +102,7 @@ folder of well files stored in RMS well format.
 
     @property
     def table_layout(self):
+        '''Limit table height'''
         return {
             'maxHeight': '300',
             'overflowY': 'auto'
@@ -109,7 +121,7 @@ folder of well files stored in RMS well format.
 
     @property
     def style_fence_options(self):
-        '''Simple grid layout for the main elements'''
+        '''Style options toolbar below intersection graph'''
         return {
             'display': 'grid',
             'align-content': 'space-around',
@@ -126,14 +138,14 @@ folder of well files stored in RMS well format.
                 html.Div([
                     html.P('Well:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        id='well_list',
+                        id=self.well_list_id,
                         options=[{'label': PurePath(well).stem, 'value': well}
                                  for well in self.well_names],
                         value=self.well_names[0]
                     ),
                     html.P('Realization:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        id='real_list',
+                        id=self.real_list_id,
                         options=[{'label': real, 'value': path}
                                  for path, real in self.realizations.items()],
                         value=list(self.realizations.keys())[0],
@@ -143,7 +155,7 @@ folder of well files stored in RMS well format.
 
                     html.P('Surfaces:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        id='surf_list',
+                        id=self.surf_list_id,
                         options=[{'label': r, 'value': r}
                                  for r in self.surface_names],
                         value=self.surface_names[0],
@@ -152,7 +164,7 @@ folder of well files stored in RMS well format.
                     ),
                     html.Div(style=self.table_layout, children=[
                         DataTable(
-                            id='table',
+                            id=self.table_id,
                             columns=[{"name": i, "id": i}
                                      for i in ['Name', 'TVDmin', 'TVDmean',
                                                'TVDmax', 'TVDstddev']]
@@ -160,15 +172,16 @@ folder of well files stored in RMS well format.
                     ])
                 ]),
                 html.Div(style={'height': '80vh'}, children=[
-                    dcc.Graph(style={'height': '80vh'}, id='graph'),
+                    dcc.Graph(style={'height': '80vh'},
+                              id=self.intersection_id),
                     html.Div(style=self.style_fence_options, children=[
                         html.P('Start depth:', style={'font-weight': 'bold'}),
                         html.P('Graph zoom level:', style={
                                'font-weight': 'bold'}),
                         dcc.Input(style={'overflow': 'auto'},
-                                  id='well-tvd', type='number', value=0),
+                                  id=self.well_tvd_id, type='number', value=0),
                         dcc.RadioItems(
-                            id='ui_revision',
+                            id=self.zoom_state_id,
                             options=[{'label': k, 'value': v}
                                      for k, v in {
                                      'Keep on new data': True,
@@ -183,13 +196,14 @@ folder of well files stored in RMS well format.
 
     def set_callbacks(self, app):
         @app.callback(
-            Output('graph', 'figure'),
-            [Input('well_list', 'value'),
-             Input('real_list', 'value'),
-             Input('surf_list', 'value'),
-             Input('well-tvd', 'value'),
-             Input('ui_revision', 'value')])
+            Output(self.intersection_id, 'figure'),
+            [Input(self.well_list_id, 'value'),
+             Input(self.real_list_id, 'value'),
+             Input(self.surf_list_id, 'value'),
+             Input(self.well_tvd_id, 'value'),
+             Input(self.zoom_state_id, 'value')])
         def set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
+            '''Callback to update intersection on data change'''
             if not isinstance(_surfs, list):
                 _surfs = [_surfs]
             if not isinstance(_reals, list):
@@ -205,11 +219,12 @@ folder of well files stored in RMS well format.
                 layout['uirevision'] = 'keep'
             return {'data': xsect, 'layout': layout}
 
-        @app.callback(Output('table', 'data'),
-                      [Input('graph', 'hoverData')],
-                      [State('graph', 'figure'),
-                       State('surf_list', 'value')])
+        @app.callback(Output(self.table_id, 'data'),
+                      [Input(self.intersection_id, 'hoverData')],
+                      [State(self.intersection_id, 'figure'),
+                       State(self.surf_list_id, 'value')])
         def hover(_data, _fig, _surfaces):
+            '''Callback to update table on mouse over'''
             try:
                 graph = _fig['data']
             except TypeError:
