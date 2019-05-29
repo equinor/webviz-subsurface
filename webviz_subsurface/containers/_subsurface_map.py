@@ -1,4 +1,5 @@
 from uuid import uuid4
+import json
 import pandas as pd
 import dash_html_components as html
 from webviz_config.webviz_store import webvizstore
@@ -39,7 +40,7 @@ in the simulation output using streamlines.
     def layout(self):
         return html.Div([
                    html.H2(self.title),
-                   Map(id=self.map_id, data=self.map_data.to_json())
+                   Map(id=self.map_id, data=self.map_data)
                ])
 
     def add_webvizstore(self):
@@ -50,14 +51,19 @@ in the simulation output using streamlines.
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-@webvizstore
+#@webvizstore
 def get_map_data(ensemble_path, map_value, flow_value,
-                 time_step) -> pd.DataFrame:
+                 time_step) -> str:
 
     ens = scratch_ensemble('', ensemble_path)
 
-    grid = ens.get_eclgrid([map_value, f'{flow_value}I+', f'{flow_value}J+'],
-                           report=time_step)
+    properties = [map_value, f'{flow_value}I+', f'{flow_value}J+']
+    if 'PERMX' not in properties:
+        properties.append('PERMX')
+
+    grid = ens.get_eclgrid(properties, report=time_step)
+
+    grid = grid[grid['PERMX'] > 0]  # Remove inactive grid cells
 
     grid['value'] = grid[map_value]
     grid['FLOWI+'] = grid[f'{flow_value}I+']
@@ -68,4 +74,51 @@ def get_map_data(ensemble_path, map_value, flow_value,
                        ('y0', 'y1'), ('y1', 'y2'), ('y2', 'y4')]:
         grid[new] = grid[old]
 
-    return grid
+    INDICES_COL = ['i', 'j', 'k']
+    X_COL = ['x0', 'x1', 'x2', 'x3']
+    Y_COL = ['y0', 'y1', 'y2', 'y3']
+    FLOW_COL = ['FLOWI+', 'FLOWJ+']
+
+    RESOLUTION = 1000
+
+    grid = grid[INDICES_COL + X_COL + Y_COL + ['value'] + FLOW_COL]
+    grid = grid[grid['value'] > 0]
+
+    xmin = grid[X_COL].values.min()
+    xmax = grid[X_COL].values.max()
+    ymin = grid[Y_COL].values.min()
+    ymax = grid[Y_COL].values.max()
+    flowmin = grid[FLOW_COL].values.min()
+    flowmax = grid[FLOW_COL].values.max()
+    valmin = grid['value'].min()
+    valmax = grid['value'].max()
+
+    if (xmax - xmin) > (ymax - ymin):
+        coord_scale = RESOLUTION/(xmax - xmin)
+    else:
+        coord_scale = RESOLUTION/(ymax - ymin)
+
+    grid[X_COL] = (grid[X_COL] - xmin)*coord_scale
+    grid[Y_COL] = (grid[Y_COL] - ymin)*coord_scale
+    grid[X_COL + Y_COL] = grid[X_COL + Y_COL].astype(int)
+
+    flow_scale = RESOLUTION/(flowmax - flowmin)
+    grid[FLOW_COL] = (grid[FLOW_COL] - flowmin)*flow_scale
+    grid[FLOW_COL] = grid[FLOW_COL].astype(int)
+
+    val_scale = RESOLUTION/(valmax - valmin)
+    grid['value'] = (grid['value'] - valmin)*val_scale
+    grid['value'] = grid['value'].astype(int)
+
+    grid[INDICES_COL] = grid[INDICES_COL].astype(int)
+
+    data = {
+            'values': grid.values.tolist(),
+            'linearscales': {
+                'coord': [float(coord_scale), float(xmin), float(ymin)],
+                'value': [float(val_scale), float(valmin)],
+                'flow': [float(flow_scale), float(flowmin)]
+                            }
+            }
+
+    return json.dumps(data, separators=(',', ':'))
