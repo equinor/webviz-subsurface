@@ -24,6 +24,9 @@ folder of well files stored in RMS well format.
 * `surface_names`: List of surface names to look for in the file names
 * `well_suffix`:  Optional suffix for well files. Default is .rmswell
 '''
+    COLORS = ['#543005', '#8c510a', '#bf812d', '#dfc27d',
+              '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
+              '#35978f', '#01665e', '#003c30']
 
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
@@ -49,20 +52,8 @@ folder of well files stored in RMS well format.
         return sorted([well for well in glob(well_folder)])
 
     @property
-    def colors(self):
-        return ['#543005', '#8c510a', '#bf812d', '#dfc27d',
-                '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
-                '#35978f', '#01665e', '#003c30', '#543005',
-                '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3',
-                '#f5f5f5', '#c7eae5', '#80cdc1',
-                '#35978f', '#01665e', '#003c30',  '#543005',
-                '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3',
-                '#f5f5f5', '#c7eae5', '#80cdc1',
-                '#35978f', '#01665e', '#003c30']
-
-    @property
     def surface_colors(self):
-        return {surf: self.colors[i]
+        return {surf: Intersect.COLORS[i % len(Intersect.COLORS)]
                 for i, surf in enumerate(self.surface_names)}
 
     # @cache.memoize(timeout=cache.TIMEOUT)
