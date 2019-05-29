@@ -12,8 +12,18 @@ from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
 
 
 class Intersect():
-    '''Simple example to calculate a well fence using Xtgeo
-    and plotting using Plotly graph object'''
+    '''### Intersect
+
+This container visualizes surfaces intersected along a well path.
+The input are surfaces from a standardized FMU ensemble and a 
+folder of well files stored in RMS well format.
+
+* `ensemble`: Which ensemble in `container_settings` to visualize.
+* `well_path`: File folder with wells in rmswell format
+* `surface_cat`: Surface category to look for in the file names
+* `surface_names`: List of surface names to look for in the file names
+* `well_suffix`:  Optional suffix for well files. Default is .rmswell
+'''
 
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
