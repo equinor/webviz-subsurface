@@ -113,7 +113,7 @@ def get_map_data(ensemble_path, map_value, flow_value,
 
 @webvizstore
 def get_uncompressed_data(ensemble_path, map_value, flow_value,
-                 time_step) -> pd.DataFrame:
+                          time_step) -> pd.DataFrame:
 
     ens = scratch_ensemble('', ensemble_path)
 
