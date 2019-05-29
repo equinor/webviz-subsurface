@@ -29,12 +29,13 @@ setup(
             'DiskUsage = webviz_subsurface.containers:DiskUsage',
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
+            'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot'
         ]
     },
     install_requires=[
         'scipy>=1.2.1',
-        'webviz-config==0.0.4',
+        'webviz-config>=0.0.4',
         'webviz-plotly>=0.0.1',
         'webviz-subsurface-components>=0.0.2'
     ],
