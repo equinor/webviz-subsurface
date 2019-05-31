@@ -7,7 +7,7 @@
 
 ### Introduction
 
-This repository contains subsurface specific standard webviz containers, which are used as
+This repository contains subsurface specific standard `webviz` containers, which are used as
 plugins in [webviz-config](https://github.com/equinor/webviz-config).
 
 ### Installation
@@ -32,13 +32,16 @@ cd webviz-subsurface
 pip install .
 ```
 
-### Usage
+### Usage and documentation
 
 For general usage, see the documentation on
-[webviz-config](https://github.com/equinor/webviz-config).
-
-Take a look at [this configuration example](./examples/basic_example.yaml)
+[webviz-config](https://github.com/equinor/webviz-config). Take a look at
+[this configuration example](./examples/basic_example.yaml)
 for something subsurface specific.
+
+End-user documentation for the subsurface containers are automatically built
+and hosted on the [github pages](https://equinor.github.io/webviz-subsurface/)
+for this repository.
 
 ### Creating new elements
 
