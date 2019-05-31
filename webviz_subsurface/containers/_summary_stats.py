@@ -8,6 +8,8 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from ..datainput import scratch_ensemble
+from plotly.colors import DEFAULT_PLOTLY_COLORS
+import itertools
 
 
 class SummaryStats(WebvizContainer):
@@ -152,20 +154,49 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
+def render_realization_plot(ensemble_paths: tuple, sampling: str,
+                            column_keys: tuple, vector: str):
 
-    summary_data = get_summary_data(ensemble_paths, column_keys, sampling
-                                    )[['REAL', 'DATE', 'ENSEMBLE', vector]]
+    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
-    summary_data.dropna(subset=[vector])
+    smry_data = get_summary_data(
+        ensemble_paths, column_keys, sampling)[
+            ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    traces = [{
-        'x': df['DATE'],
-        'customdata': df['REAL'],
-        'y': df[vector],
-        'name': name,
-        'type': 'line'
-    } for name, df in summary_data.groupby('ENSEMBLE')]
+    smry_data.dropna(subset=[vector])
+
+    traces = []
+    for ens in smry_data.ENSEMBLE.unique():
+        smry_data_i = smry_data[smry_data['ENSEMBLE'] == ens]
+        color = next(cycle_list)
+        first_trace = {
+            'x': smry_data_i[smry_data_i['REAL']
+                             == smry_data_i.REAL.unique()[0]]['DATE'],
+            'y': smry_data_i[smry_data_i['REAL']
+                             == smry_data_i.REAL.unique()[0]][vector],
+            'legendgroup': ens,
+            'name': ens,
+            'type': 'markers',
+            'marker': {
+                    'color': color
+            },
+            'showlegend': True
+        }
+        traces.append(first_trace)
+
+        for real in smry_data_i.REAL.unique()[1:]:
+            trace = {
+                'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
+                'y': smry_data_i[smry_data_i['REAL'] == real][vector],
+                'legendgroup': ens,
+                'name': ens,
+                'type': 'line',
+                'marker': {
+                    'color': color
+                },
+                'showlegend': False
+            }
+            traces.append(trace)
 
     layout = {
         'hovermode': 'closest',
