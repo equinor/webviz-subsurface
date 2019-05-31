@@ -58,16 +58,15 @@ class SummaryStats(WebvizContainer):
             title: str = 'Simulation time series'):
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
-        self.column_keys = column_keys
+        self.column_keys = tuple(column_keys) if isinstance(
+            column_keys, (list, tuple)) else None
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
-
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
-
         self.smry_columns = sorted(
             list(
                 get_summary_data(
@@ -94,7 +93,7 @@ class SummaryStats(WebvizContainer):
             dcc.RadioItems(id=self.radio_plot_type_id,
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
-                           value='Statistics'),
+                           value='Realizations'),
             html.Div(id=self.chart_id)
         ])
 
@@ -130,6 +129,8 @@ class SummaryStats(WebvizContainer):
 def get_summary_data(ensemble_paths: tuple, sampling: str,
                      column_keys: tuple) -> pd.DataFrame:
 
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
+
     smry_data = []
     for ens, ens_path in ensemble_paths:
         ens_smry_data = scratch_ensemble(
@@ -144,6 +145,8 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
 @webvizstore
 def get_summary_stats(ensemble_paths: tuple, sampling: str,
                       column_keys: tuple) -> pd.DataFrame:
+
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     smry_stats = []
     for ens, ens_path in ensemble_paths:
@@ -163,7 +166,9 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
     smry_data = get_summary_data(
-        ensemble_paths, column_keys, sampling)[
+        ensemble_paths=ensemble_paths,
+        column_keys=column_keys,
+        sampling=sampling)[
             ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     smry_data.dropna(subset=[vector])
@@ -225,7 +230,7 @@ def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
     smry_stats = get_summary_stats(
         ensemble_paths=ensemble_paths,
         column_keys=column_keys,
-        sampling=sampling,)
+        sampling=sampling)
 
     fan_chart_divs = []
     for ens in smry_stats.ENSEMBLE.unique():
