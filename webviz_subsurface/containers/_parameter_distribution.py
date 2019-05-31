@@ -8,6 +8,16 @@ from webviz_config.common_cache import cache
 from ..datainput import scratch_ensemble
 
 
+class Widgets:
+
+    @staticmethod
+    def dropdown_from_dict(dom_id, d):
+        return dcc.Dropdown(id=dom_id,
+                            options=[{'label': k, 'value': v}
+                                     for k, v in d.items()],
+                            value=list(d.values())[0])
+
+
 class ParameterDistribution:
     '''### Parameter distribution
 
@@ -17,79 +27,244 @@ and correlation between the parameters as a correlation matrix.
 * `ensemble`: Which ensemble in `container_settings` to visualize.
 * `title`: Optional title for the container.
 '''
+    LAYOUT_STYLE = {
+        'display': 'grid',
+        'grid-template-areas':
+            'matrix matrix controls controls'
+            'matrix matrix scatter scatter '
+            'p1 p2 scatter scatter'
+    }
+    GRAPH_STYPE = {
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr 1fr 1fr',
+    }
 
-    def __init__(self, app, container_settings, ensemble,
+    def __init__(self, app, container_settings, ensembles,
                  title: str = 'Parameter Distribution'):
 
         self.title = title
-
-        self.dropdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
-        self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
-        self.chart_id = 'chart-id-{}'.format(uuid4())
-        self.histogram_div_id = 'histogram-div-{}'.format(uuid4())
-
-        # Finding all parameters:
-        self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.parameter_columns = sorted(list(
-            get_parameters(self.ensemble_path).columns))
+        self.ensembles = {ens: container_settings['scratch_ensembles'][ens]
+                          for ens in ensembles}
+        self.uid = f'{uuid4()}'
+        self.p1_drop_id = f'p1-dropd-{self.uid}'
+        self.p1_graph = f'p1-graph-{self.uid}'
+        self.p2_drop_id = f'p2-dropd-{self.uid}'
+        self.p2_graph = f'p2-graph-{self.uid}'
+        self.scatter_id = f'scatter-id-{self.uid}'
+        self.scatter_color_id = f'scatter-color-id-{self.uid}'
+        self.scatter_size_id = f'scatter-size-id-{self.uid}'
+        self.matrix_id = f'chart-id-{self.uid}'
+        self.ens_matrix_id = f'ens-matrix-id-{self.uid}'
+        self.ens_p1_id = f'ens-p1-id-{self.uid}'
+        self.ens_p2_id = f'ens-p2-id-{self.uid}'
 
         self.set_callbacks(app)
 
     @property
+    def parameter_columns(self):
+        dfs = [get_parameters(ens) for ens in self.ensembles.values()]
+        return sorted(list(pd.concat(dfs).columns))
+
+    @property
+    def matrix_plot(self):
+        return dcc.Graph(
+            id=self.matrix_id,
+            clickData={'points': [
+                {'x': self.parameter_columns[0]},
+                {'y': self.parameter_columns[0]}]},
+            config={
+                'displaylogo': False,
+                'modeBarButtonsToRemove': ['sendDataToCloud']
+            })
+
+    @property
+    def control_div(self):
+        return html.Div(
+            className='controls',
+            style={'padding-top': 10, 'padding-left': 100},
+            children=[
+                html.Div(
+                    children=[
+                        html.Label('Set ensemble in all plots:',
+                                   style={'font-weight': 'bold'}),
+                        html.Div(style={'padding-bottom': 20},
+                                 children=[
+                            Widgets.dropdown_from_dict(
+                                self.ens_matrix_id, self.ensembles)
+                        ]),
+                        html.Label('Parameter 1', style={
+                            'font-weight': 'bold'}),
+                        html.Div(
+                            style={'padding-bottom': 20},
+                            children=[
+                                dcc.Dropdown(
+                                    id=self.p1_drop_id,
+                                    options=[{'label': p, 'value': p}
+                                             for p in self.parameter_columns],
+                                    value=self.parameter_columns[0]),
+                                Widgets.dropdown_from_dict(
+                                    self.ens_p1_id, self.ensembles),
+                            ]),
+                        html.Label('Parameter 2', style={
+                            'font-weight': 'bold'}),
+                        html.Div(style={'padding-bottom': 20},
+                                 children=[
+                            dcc.Dropdown(
+                                id=self.p2_drop_id,
+                                options=[{'label': p, 'value': p}
+                                         for p in self.parameter_columns],
+                                value=self.parameter_columns[0]),
+                            Widgets.dropdown_from_dict(
+                                self.ens_p2_id, self.ensembles)
+                        ]),
+                        html.Label('Color scatter by', style={
+                            'font-weight': 'bold'}),
+                        html.Div(style={'padding-bottom': 20},
+                                 children=[
+                            dcc.Dropdown(
+                                id=self.scatter_color_id,
+                                options=[{'label': p, 'value': p}
+                                         for p in self.parameter_columns])
+                        ])
+                    ])
+            ])
+
+    @property
     def layout(self):
-        return html.Div([
-            html.H2(self.title),
-            html.P('Plot type:', style={'font-weight': 'bold'}),
-            dcc.RadioItems(id=self.radio_plot_type_id,
-                           options=[{'label': i, 'value': i} for i in
-                                    ['Histogram', 'Pairwise correlation']],
-                           value='Histogram'),
-            html.Div(id=self.histogram_div_id,
-                     children=[
-                         html.P('Parameter:',
-                                style={'font-weight': 'bold'}),
-                         dcc.Dropdown(id=self.dropdown_vector_id,
-                                      clearable=False,
-                                      options=[{'label': i, 'value': i} for
-                                               i in self.parameter_columns],
-                                      value=self.parameter_columns[0]),
-                     ]),
-            dcc.Graph(id=self.chart_id,
-                      config={
-                          'displaylogo': False,
-                          'modeBarButtonsToRemove': ['sendDataToCloud']
-                      }
-                      )
-        ])
+        return html.Div(
+            className="grid_container",
+            children=[
+                html.Div(
+                    className='matrix',
+                    children=[self.matrix_plot]),
+                self.control_div,
+                html.Div(
+                    className='p1',
+                    children=[
+                        dcc.Graph(
+                            id=self.p1_graph,
+                            config={
+                                'displaylogo': False,
+                                'modeBarButtonsToRemove': ['sendDataToCloud']
+                            }),
+                    ]),
+                html.Div(
+                    className='p2',
+                    children=[
+                        dcc.Graph(
+                            id=self.p2_graph,
+                            config={
+                                'displaylogo': False,
+                                'modeBarButtonsToRemove': ['sendDataToCloud']
+                            }),
+                    ]),
+                html.Div(
+                    className='scatter',
+                    children=[
+                        dcc.Graph(
+                            id=self.scatter_id,
+                            config={
+                                'displaylogo': False,
+                                'modeBarButtonsToRemove': ['sendDataToCloud']
+                            })
+                    ])
+
+            ])
 
     def set_callbacks(self, app):
-        @app.callback(Output(self.chart_id, 'figure'),
-                      [Input(self.dropdown_vector_id, 'value'),
-                       Input(self.radio_plot_type_id, 'value')])
-        def update_plot(parameter, plot_type):
-            if plot_type == 'Histogram':
-                return render_histogram(self.ensemble_path, parameter)
-            if plot_type == 'Pairwise correlation':
-                return render_matrix(self.ensemble_path)
+        @app.callback(Output(self.matrix_id, 'figure'),
+                      [Input(self.ens_matrix_id, 'value')])
+        def update_matrix(ens):
+            return render_matrix(ens)
 
-        @app.callback(Output(self.histogram_div_id, 'style'),
-                      [Input(self.radio_plot_type_id, 'value')])
-        def toggle_parameter_selector(plot_type):
-            if plot_type == 'Histogram':
-                return {'display': 'block'}
-            if plot_type == 'Pairwise correlation':
-                return {'display': 'none'}
+        @app.callback(Output(self.p1_graph, 'figure'),
+                      [Input(self.ens_p1_id, 'value'),
+                       Input(self.p1_drop_id, 'value')])
+        def update_p1(ens, p):
+            return render_histogram(ens, p)
+
+        @app.callback(Output(self.p2_graph, 'figure'),
+                      [Input(self.ens_p2_id, 'value'),
+                       Input(self.p2_drop_id, 'value')])
+        def update_p2(ens, p):
+            return render_histogram(ens, p)
+
+        @app.callback(Output(self.scatter_id, 'figure'),
+                      [Input(self.ens_p1_id, 'value'),
+                       Input(self.p1_drop_id, 'value'),
+                       Input(self.ens_p2_id, 'value'),
+                       Input(self.p2_drop_id, 'value'),
+                       Input(self.scatter_color_id, 'value')])
+        def update_scatter(ens1, p1, ens2, p2, color):
+            return render_scatter(ens1, p1, ens2, p2, color)
+
+        @app.callback([Output(self.p1_drop_id, 'value'),
+                       Output(self.p2_drop_id, 'value'),
+                       Output(self.ens_p1_id, 'value'),
+                       Output(self.ens_p2_id, 'value')],
+                      [Input(self.matrix_id, 'clickData'),
+                       Input(self.ens_matrix_id, 'value')])
+        def update_from_click(cd, ens):
+            try:
+                points = cd['points'][0]
+            except TypeError:
+
+                return [None for i in range(4)]
+            return [points['x'], points['y'], ens, ens]
 
     def add_webvizstore(self):
-        return [(get_parameters, [{'ensemble_path': self.ensemble_path}])]
+        return [([get_parameters, [{'ensemble_path': v}
+                                   for v in self.ensembles.values()]])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def get_parameters(ensemble_path) -> pd.DataFrame:
-    ens = scratch_ensemble('', ensemble_path)
 
-    return ens.parameters
+    return scratch_ensemble('', ensemble_path).parameters
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_scatter(ens1, x, ens2, y, color):
+    if ens1 == ens2:
+        real_text = [f'Realization:{r}'
+                     for r in get_parameters(ens1)['REAL']]
+    else:
+        real_text = [f'Realization:{r}(x)'
+                     for r in get_parameters(ens2)['REAL']]
+    print(color)
+    data = {
+        'x': get_parameters(ens1)[x],
+        'y': get_parameters(ens2)[y],
+        'marker': {
+            'color': get_parameters(ens1)[color] if color else None
+        },
+        'text': real_text,
+        'type': 'scatter',
+        'mode': 'markers'
+    }
+    layout = {
+        'margin': {'t': 50, 'b': 50},
+        'xaxis': {'title': x},
+        'yaxis': {'title': y},
+    }
+    return {'data': [data], 'layout': layout}
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_bar(ens, y):
+    data = {
+        'y': get_parameters(ens)[y],
+        'x': [r for r in get_parameters(ens)['REAL']],
+        'type': 'bar',
+        # 'mode': 'markers'
+    }
+    layout = {
+        'margin': {'t': 50, 'b': 50},
+        'xaxis': {'title': 'Realization'},
+        'yaxis': {'title': y},
+    }
+    return {'data': [data], 'layout': layout}
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -100,11 +275,9 @@ def render_histogram(ensemble_path, parameter):
     }
 
     layout = {
+        'margin': {'t': 50, 'b': 50},
         'bargap': 0.05,
-        'font': {'family': 'Equinor'},
-        'xaxis': {'family': 'Equinor'},
-        'yaxis': {'family': 'Equinor'},
-        'hoverlabel': {'font': {'family': 'Equinor'}}
+        'xaxis': {'title': parameter},
     }
 
     return {'data': [data], 'layout': layout}
@@ -124,11 +297,10 @@ def render_matrix(ensemble_path):
     }
 
     layout = {
-        'margin': {'l': 200},
-        'font': {'family': 'Equinor'},
-        'xaxis': {'family': 'Equinor'},
-        'yaxis': {'family': 'Equinor'},
-        'hoverlabel': {'font': {'family': 'Equinor'}}
+        'title': 'Correlation matrix',
+        'margin': {'t': 50, 'b': 50},
+        'xaxis': {'showticklabels': False},
+        'yaxis': {'showticklabels': False},
     }
 
     return {'data': [data], 'layout': layout}
