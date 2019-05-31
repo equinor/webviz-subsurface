@@ -25,8 +25,19 @@ script:
   - pip install .[tests]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
+  - git clone https://github.com/equinor/webviz-config.git
+  - pushd ./webviz-config/docs; python build_docs.py; popd
 
 deploy:
+  - provider: pages
+    skip_cleanup: true
+    local_dir: ./webviz-config/docs/_build
+    github_token:
+      secure: SOME_TOKEN
+    keep_history: true
+    on:
+      branch: master
+
   - provider: pypi
     user: webviz
     password:
