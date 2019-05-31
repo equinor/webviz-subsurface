@@ -94,7 +94,7 @@ class SummaryStats(WebvizContainer):
             dcc.RadioItems(id=self.radio_plot_type_id,
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
-                           value='Realizations'),
+                           value='Statistics'),
             html.Div(id=self.chart_id)
         ])
 
@@ -105,14 +105,16 @@ class SummaryStats(WebvizContainer):
         def update_plot(vector, summary_plot_type):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
-                    self.ensemble_paths,
-                    self.column_keys,
-                    self.sampling, vector)
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    sampling=self.sampling,
+                    vector=vector)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
-                    self.ensemble_paths,
-                    self.column_keys,
-                    self.sampling, vector)
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    sampling=self.sampling,
+                    vector=vector)
 
     def add_webvizstore(self):
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
@@ -140,17 +142,18 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
+def get_summary_stats(ensemble_paths: tuple, sampling: str,
+                      column_keys: tuple) -> pd.DataFrame:
 
-    df_ens_set = []
+    smry_stats = []
+    for ens, ens_path in ensemble_paths:
+        ens_smry_stats = scratch_ensemble(
+            ens, ens_path).get_smry_stats(
+                time_index=sampling, column_keys=column_keys)
+        ens_smry_stats['ENSEMBLE'] = ens
+        smry_stats.append(ens_smry_stats)
 
-    for ensemble, path in ensemble_paths:
-        stats = scratch_ensemble(ensemble, path).get_smry_stats(
-            time_index=sampling, column_keys=column_keys)
-        stats['ENSEMBLE'] = ensemble
-        df_ens_set.append(stats)
-
-    return pd.concat(df_ens_set)
+    return pd.concat(smry_stats)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -216,21 +219,27 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
+def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
+                     vector: str):
 
-    data = get_summary_stats(ensemble_paths, sampling, column_keys)
+    smry_stats = get_summary_stats(
+        ensemble_paths=ensemble_paths,
+        column_keys=column_keys,
+        sampling=sampling,)
 
     fan_chart_divs = []
-    for ensemble in data.ENSEMBLE.unique():
-        vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack().transpose()
+    for ens in smry_stats.ENSEMBLE.unique():
+        vector_stats = smry_stats[
+            smry_stats['ENSEMBLE'] == ens][
+                vector].unstack().transpose()
         vector_stats['name'] = vector
         vector_stats.rename(index=str, inplace=True,
                             columns={"minimum": "min", "maximum": "max"})
-        fan_chart_divs.append(html.H5(ensemble))
+        fan_chart_divs.append(html.H5(ens))
         fan_chart_divs.append(
             html.Div(
                 dcc.Graph(
-                    id='graph-{}'.format(ensemble),
+                    id='graph-{}'.format(ens),
                     figure=FanChart(vector_stats.iterrows()),
                     config={
                         'displaylogo': False,
