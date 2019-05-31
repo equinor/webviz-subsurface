@@ -58,9 +58,9 @@ effect with other parameters.
         def update_plot(vector):
             df = self.data[self.data['name'] == vector]
             df = df.sort_values('time')
-            output = df[['mean', 'max', 'min', 'time']]
-            output = output.drop_duplicates()
-            output = output.to_dict(orient='records')
+            output = df[['mean', 'max', 'min', 'time']]\
+                .drop_duplicates()\
+                .to_dict(orient='records')
             parameters = []
 
             for name in self.data['name'].unique():
