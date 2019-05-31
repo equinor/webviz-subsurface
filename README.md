@@ -47,7 +47,7 @@ for this repository.
 
 If you are interested in creating new elements which can be configured through
 the configuration file, take a look at the
-[webviz-config contribution guide](https://github.com/equinor/webviz-config).
+[webviz-config contribution guide](https://github.com/equinor/webviz-config/blob/master/CONTRIBUTING.md).
 
 ### Disclaimer
 
