@@ -34,9 +34,9 @@ The Morris method reveals interaction effects and help to screen parameters
     @property
     def layout(self):
         return html.Div([
-                   html.H2(self.title),
-                   html.Label('Vector', style={'font-size': '2rem'}),
-                    dcc.Dropdown(id=self.vector_id,
+            html.H2(self.title),
+            html.Label('Vector', style={'font-size': '2rem'}),
+            dcc.Dropdown(id=self.vector_id,
                          clearable=False,
                          options=[{'label': i, 'value': i}
                                   for i in list(self.vector_names)],
