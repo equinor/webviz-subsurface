@@ -123,38 +123,28 @@ class SummaryStats(WebvizContainer):
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_data(ensemble_paths, sampling, column_keys) -> pd.DataFrame:
-    """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENSEMBLE gets added for eacht ens-path
-    to seperate the ensambles.
+def get_summary_data(ensemble_paths: tuple, sampling: str,
+                     column_keys: tuple) -> pd.DataFrame:
 
-    Dash functions take positional args., so order matters. """
-
-    ens_data_dfs = []
-
-    for ensemble, ensemble_path in ensemble_paths:
-        ensemble_df = scratch_ensemble(ensemble, ensemble_path).get_smry(
-            time_index=sampling, column_keys=column_keys)
-        ensemble_df['ENSEMBLE'] = ensemble
-        ens_data_dfs.append(ensemble_df)
-
-    return pd.concat(ens_data_dfs)
+    smry_data = []
+    for ens, ens_path in ensemble_paths:
+        ens_smry_data = scratch_ensemble(
+            ens, ens_path).get_smry(
+                time_index=sampling, column_keys=column_keys)
+        ens_smry_data['ENSEMBLE'] = ens
+        smry_data.append(ens_smry_data)
+    return pd.concat(smry_data)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
-    """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENS gets added for eacht ens-path
-    to seperate the ensambles.
-
-    Dash functions take positional args., so order matters. """
 
     df_ens_set = []
 
     for ensemble, path in ensemble_paths:
         stats = scratch_ensemble(ensemble, path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)
+            time_index=sampling, column_keys=column_keys)
         stats['ENSEMBLE'] = ensemble
         df_ens_set.append(stats)
 
@@ -163,11 +153,10 @@ def get_summary_stats(ensemble_paths, column_keys, sampling) -> pd.DataFrame:
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
-    """ returns a single dcc.Graph """
 
     summary_data = get_summary_data(ensemble_paths, column_keys, sampling
-                                     )[['REAL', 'DATE', 'ENSEMBLE', vector]]
-    
+                                    )[['REAL', 'DATE', 'ENSEMBLE', vector]]
+
     summary_data.dropna(subset=[vector])
 
     traces = [{
@@ -192,18 +181,14 @@ def render_realization_plot(ensemble_paths, sampling, column_keys, vector):
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-        })
+    })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(ensemble_paths, sampling, column_keys, vector):
-    """returns a list of html.Divs (required by dash). One div per ensemble.
-    Eachdiv includes a dcc.Graph(id, figure, config)."""
 
-    # get data
     data = get_summary_stats(ensemble_paths, sampling, column_keys)
 
-    # create a list of FanCharts to be plotted
     fan_chart_divs = []
     for ensemble in data.ENSEMBLE.unique():
         vector_stats = data[data['ENSEMBLE'] == ensemble][vector].unstack().transpose()
