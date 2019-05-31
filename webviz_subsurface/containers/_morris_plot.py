@@ -13,8 +13,9 @@ class MorrisPlot:
     '''### Morris
 
 This container renders a visualization of the Morris sampling method.
-The Morris method is a balance of local and global sensitivity analysis
-The Morris method reveals interaction effects and help to screen parameters
+The Morris method can be used to screen parameters for how they
+influence model response, both individually and through interaction
+effect with other parameters.
 
 * `csv_file`: Input data
 * `title`: Optional title for the container.
