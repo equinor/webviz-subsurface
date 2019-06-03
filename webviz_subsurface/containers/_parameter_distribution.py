@@ -331,6 +331,7 @@ def render_matrix(ensemble_path):
     }
 
     layout = {
+        'uirevision': 'keep_matrix',
         'title': 'Pairwise correlation matrix',
         'margin': {'t': 50, 'b': 50},
         'xaxis': {'ticks': '', 'showticklabels': False},
