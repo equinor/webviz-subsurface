@@ -209,44 +209,44 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
         'type': 'histogram',
         'yaxis': 'y2',
         'showlegend': False,
-        "marker": {"color": "rgb(31, 119, 180)"},
+        'marker': {'color': 'rgb(31, 119, 180)'},
     })
     data.append({
         'y': y,
         'type': 'histogram',
         'xaxis': 'x2',
         'showlegend': False,
-        "marker": {"color": "rgb(31, 119, 180)"}
+        'marker': {'color': 'rgb(31, 119, 180)'}
     })
     if density:
         data.append({
             'x': x,
             'y': y,
             'hoverinfo': 'none',
-            "autocolorscale": False,
+            'autocolorscale': False,
             'showlegend': False,
-            "colorscale": [
-                [0, "rgb(255,255,255)"],
-                [0.125, "rgb(37, 52, 148)"],
-                [0.25, "rgb(34, 94, 168)"],
-                [0.375, "rgb(29, 145, 192)"],
-                [0.5, "rgb(65, 182, 196)"],
-                [0.625, "rgb(127, 205, 187)"],
-                [0.75, "rgb(199, 233, 180)"],
-                [0.875, "rgb(237, 248, 217)"],
-                [1, "rgb(255, 255, 217)"]],
-            "contours": {
-                "coloring": "fill",
-                # "end": 80.05,
-                "showlines": True,
-                "size": 5,
-                "start": 5
+            'colorscale': [
+                [0, 'rgb(255,255,255)'],
+                [0.125, 'rgb(37, 52, 148)'],
+                [0.25, 'rgb(34, 94, 168)'],
+                [0.375, 'rgb(29, 145, 192)'],
+                [0.5, 'rgb(65, 182, 196)'],
+                [0.625, 'rgb(127, 205, 187)'],
+                [0.75, 'rgb(199, 233, 180)'],
+                [0.875, 'rgb(237, 248, 217)'],
+                [1, 'rgb(255, 255, 217)']],
+            'contours': {
+                'coloring': 'fill',
+                # 'end': 80.05,
+                'showlines': True,
+                'size': 5,
+                'start': 5
             },
-            "name": "density",
-            "ncontours": 20,
-            "reversescale": False,
-            "showscale": False,
-            "type": "histogram2dcontour",
+            'name': 'density',
+            'ncontours': 20,
+            'reversescale': False,
+            'showscale': False,
+            'type': 'histogram2dcontour',
         })
     layout = {
         'margin': {'t': 20, 'b': 50, 'l': 200, 'r': 200},
