@@ -297,8 +297,8 @@ def render_matrix(ensemble_path):
     layout = {
         'title': 'Pairwise correlation matrix',
         'margin': {'t': 50, 'b': 50},
-        'xaxis': {'showticklabels': False},
-        'yaxis': {'showticklabels': False},
+        'xaxis': {'ticks':'','showticklabels': False},
+        'yaxis': {'ticks':'','showticklabels': False},
     }
 
     return {'data': [data], 'layout': layout}
