@@ -248,7 +248,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
             "type": "histogram2dcontour",
         })
     layout = {
-        'margin': {'t': 20, 'b': 20, 'l': 200, 'r': 200},
+        'margin': {'t': 20, 'b': 50, 'l': 200, 'r': 200},
         'bargap': 0.05,
         'xaxis': {
             'title': x_col,
