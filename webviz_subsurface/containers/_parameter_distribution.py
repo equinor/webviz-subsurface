@@ -2,7 +2,7 @@ from uuid import uuid4
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_daq as daq
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
@@ -140,9 +140,37 @@ and correlation between the parameters as a correlation matrix.
 
     def set_callbacks(self, app):
         @app.callback(Output(self.matrix_id, 'figure'),
-                      [Input(self.ens_matrix_id, 'value')])
-        def update_matrix(ens):
-            return render_matrix(ens)
+                      [Input(self.ens_matrix_id, 'value'),
+                       Input(self.p1_drop_id, 'value'),
+                       Input(self.p2_drop_id, 'value')])
+        def update_matrix(ens, p1, p2):
+            '''Renders correlation matrix.
+            Currently also re-renders matrix to update currently
+            selected cell. This is not optimal, but hard to prevent
+            as an Output object only can have one callback attached,
+            and it is not possible to assign callbacks to individual
+            elements of a Plotly graph object
+            '''
+            fig = render_matrix(ens)
+            # Finds index of the currently selected cell
+            x_index = list(fig['data'][0]['x']).index(p1)
+            y_index = list(fig['data'][0]['y']).index(p2)
+            # Adds a shape to highlight the selected cell
+            shape = [
+                {
+                    'xref': 'x',
+                    'yref': 'y',
+                    'x0': x_index-0.5,
+                    'y0': y_index-0.5,
+                    'x1': x_index+0.5,
+                    'y1': y_index+0.5,
+                    'type': 'rect',
+                    'line': {
+                        'color': 'black',
+                    }
+                }]
+            fig['layout']['shapes'] = shape
+            return fig
 
         @app.callback(Output(self.scatter_id, 'figure'),
                       [Input(self.ens_p1_id, 'value'),
@@ -159,13 +187,15 @@ and correlation between the parameters as a correlation matrix.
                        Output(self.ens_p1_id, 'value'),
                        Output(self.ens_p2_id, 'value')],
                       [Input(self.matrix_id, 'clickData'),
-                       Input(self.ens_matrix_id, 'value')])
+                       Input(self.ens_matrix_id, 'value')]
+                      )
         def update_from_click(cd, ens):
             try:
                 points = cd['points'][0]
             # TypeError is returned if no cells are clicked
             except TypeError:
                 return [None for i in range(4)]
+
             return [points['x'], points['y'], ens, ens]
 
     def add_webvizstore(self):
