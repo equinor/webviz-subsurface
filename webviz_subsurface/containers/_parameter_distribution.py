@@ -25,14 +25,11 @@ class ParameterDistribution:
 This container shows parameter distribution as histogram,
 and correlation between the parameters as a correlation matrix.
 
-* `ensemble`: Which ensemble in `container_settings` to visualize.
-* `title`: Optional title for the container.
+* `ensembles`: Which ensembles in `container_settings` to visualize.
 '''
 
-    def __init__(self, app, container_settings, ensembles,
-                 title: str = 'Parameter Distribution'):
+    def __init__(self, app, container_settings, ensembles):
 
-        self.title = title
         self.ensembles = {ens: container_settings['scratch_ensembles'][ens]
                           for ens in ensembles}
         self.uid = f'{uuid4()}'
