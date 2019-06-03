@@ -55,13 +55,16 @@ class SummaryStats(WebvizContainer):
             ensembles,
             column_keys=None,
             sampling: str = 'monthly',
-            title: str = 'Simulation time series'):
+            title: str = 'Simulation time series',
+            history_uncertainty: bool=False):
+
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
+        self.show_history_uncertainty_id = 'show-history-uncertainty-{}'.format(uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
         self.ensemble_paths = tuple(
             (ensemble,
@@ -77,6 +80,11 @@ class SummaryStats(WebvizContainer):
                         'DATE',
                         'REAL',
                         'ENSEMBLE']) .columns))
+        self.smry_vector_columns = tuple([col for col in self.smry_columns
+                                          if not col.endswith('H')])
+        self.smry_history_columns = tuple([col for col in self.smry_columns
+                                           if col.endswith('H')])
+        self.history_uncertainty = history_uncertainty
         self.set_callbacks(app)
 
     @property
@@ -87,38 +95,50 @@ class SummaryStats(WebvizContainer):
             dcc.Dropdown(id=self.dropwdown_vector_id,
                          clearable=False,
                          options=[{'label': i, 'value': i}
-                                  for i in self.smry_columns],
-                         value=self.smry_columns[0]),
+                                  for i in self.smry_vector_columns],
+                         value=self.smry_vector_columns[0]),
             html.P('Plot type:', style={'font-weight': 'bold'}),
             dcc.RadioItems(id=self.radio_plot_type_id,
                            options=[{'label': i, 'value': i}
                                     for i in ['Realizations', 'Statistics']],
                            value='Realizations'),
+            dcc.Checklist(
+                id=self.show_history_uncertainty_id,
+                options=[{'label': 'Show history', 'value': 'SHOW_H'}],
+                values=[],
+            ),
             html.Div(id=self.chart_id)
         ])
 
     def set_callbacks(self, app):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
-                       Input(self.radio_plot_type_id, 'value')])
-        def update_plot(vector, summary_plot_type):
+                       Input(self.radio_plot_type_id, 'value'),
+                       Input(self.show_history_uncertainty_id, 'values')])
+        def update_plot(vector, summary_plot_type, show_history_uncertainty_id):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
                     ensemble_paths=self.ensemble_paths,
                     column_keys=self.column_keys,
                     sampling=self.sampling,
-                    vector=vector)
+                    smry_history_columns=self.smry_history_columns,
+                    history_uncertainty=self.history_uncertainty,
+                    vector=vector,
+                    show_history_uncertainty=show_history_uncertainty_id)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
                     column_keys=self.column_keys,
                     sampling=self.sampling,
-                    vector=vector)
+                    vector=vector,
+                    show_history_uncertainty=show_history_uncertainty_id)
 
     def add_webvizstore(self):
         return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
                                      'column_keys': self.column_keys,
-                                     'sampling': self.sampling}]),
+                                     'sampling': self.sampling,
+                                     'smry_history_columns': self.smry_history_columns,
+                                     'history_uncertainty': self.history_uncertainty}]),
                 (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
                                       'column_keys': self.column_keys,
                                       'sampling': self.sampling}])]
@@ -161,15 +181,26 @@ def get_summary_stats(ensemble_paths: tuple, sampling: str,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(ensemble_paths: tuple, sampling: str,
-                            column_keys: tuple, vector: str):
+                            column_keys: tuple, vector: str,
+                            smry_history_columns: tuple,
+                            history_uncertainty: bool,
+                            show_history_uncertainty: str):
 
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
+    history_vector = (vector + 'H')
 
-    smry_data = get_summary_data(
-        ensemble_paths=ensemble_paths,
-        column_keys=column_keys,
-        sampling=sampling)[
-            ['REAL', 'DATE', 'ENSEMBLE', vector]]
+    if history_vector in smry_history_columns:
+        smry_data = get_summary_data(
+            ensemble_paths=ensemble_paths,
+            column_keys=column_keys,
+            sampling=sampling)[
+                ['REAL', 'DATE', 'ENSEMBLE', vector, history_vector]]
+    else:
+        smry_data = get_summary_data(
+            ensemble_paths=ensemble_paths,
+            column_keys=column_keys,
+            sampling=sampling)[
+                ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     smry_data.dropna(subset=[vector])
 
@@ -191,7 +222,6 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
             'showlegend': True
         }
         traces.append(first_trace)
-
         for real in smry_data_i.REAL.unique()[1:]:
             trace = {
                 'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
@@ -205,6 +235,37 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
                 'showlegend': False
             }
             traces.append(trace)
+
+    if (history_vector in smry_history_columns
+            and 'SHOW_H' in show_history_uncertainty):
+        hist_trace = {
+            'x': smry_data_i[smry_data_i['REAL'] == smry_data_i.REAL.unique(
+            )[0]]['DATE'],
+            'y': smry_data_i[smry_data_i['REAL'] == smry_data_i.REAL.unique(
+            )[0]][history_vector],
+            'legendgroup': 'History',
+            'name': 'History',
+            'type': 'markers',
+            'marker': {
+                    'color': 'red'
+            },
+            'showlegend': True
+        }
+        traces.append(hist_trace)
+        if history_uncertainty:
+            for real in smry_data_i.REAL.unique()[1:]:
+                hist_trace = {
+                    'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
+                    'y': smry_data_i[smry_data_i['REAL'] == real][history_vector],
+                    'legendgroup': ens,
+                    'name': ens,
+                    'type': 'line',
+                    'marker': {
+                        'color': 'red'
+                    },
+                    'showlegend': False
+                }
+                traces.append(hist_trace)
 
     layout = {
         'hovermode': 'closest',
@@ -225,7 +286,7 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
-                     vector: str):
+                     vector: str, show_history_uncertainty: str):
 
     smry_stats = get_summary_stats(
         ensemble_paths=ensemble_paths,
