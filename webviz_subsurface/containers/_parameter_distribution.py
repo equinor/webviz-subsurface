@@ -3,6 +3,7 @@ import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
+import dash_daq as daq
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from ..datainput import scratch_ensemble
@@ -114,13 +115,12 @@ and correlation between the parameters as a correlation matrix.
                             id=self.scatter_color_id,
                             options=[{'label': p, 'value': p}
                                      for p in self.p_cols])]),
-                html.Label('Density Plot', style={
-                    'font-weight': 'bold'}),
-                dcc.Dropdown(
-                    id=self.density_id,
-                    options=[{'label': 'On', 'value': True},
-                             {'label': 'Off', 'value': False}],
-                    value=True)
+                html.Div(style={'padding-top': 20, 'display': 'grid',
+                                'grid-template-columns': '3fr 1fr 4fr'},
+                         children=[
+                    html.Label('Show density plot',
+                               style={'font-weight': 'bold'}),
+                    daq.ToggleSwitch(id=self.density_id, value=True)])
             ])
 
     @property
