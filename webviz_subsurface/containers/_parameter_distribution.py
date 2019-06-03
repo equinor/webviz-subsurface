@@ -163,7 +163,7 @@ and correlation between the parameters as a correlation matrix.
         def update_from_click(cd, ens):
             try:
                 points = cd['points'][0]
-            #TypeError is returned if no cells are clicked
+            # TypeError is returned if no cells are clicked
             except TypeError:
                 return [None for i in range(4)]
             return [points['x'], points['y'], ens, ens]
@@ -303,8 +303,8 @@ def render_matrix(ensemble_path):
     layout = {
         'title': 'Pairwise correlation matrix',
         'margin': {'t': 50, 'b': 50},
-        'xaxis': {'ticks':'','showticklabels': False},
-        'yaxis': {'ticks':'','showticklabels': False},
+        'xaxis': {'ticks': '', 'showticklabels': False},
+        'yaxis': {'ticks': '', 'showticklabels': False},
     }
 
     return {'data': [data], 'layout': layout}
