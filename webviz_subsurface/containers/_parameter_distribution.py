@@ -77,7 +77,7 @@ and correlation between the parameters as a correlation matrix.
                             Widgets.dropdown_from_dict(
                                 self.ens_matrix_id, self.ensembles)
                         ]),
-                        html.Label('Parameter x axis', style={
+                        html.Label('Parameter horisontal axis', style={
                             'font-weight': 'bold'}),
                         html.Div(
                             style={'padding-bottom': 20, 'display': 'grid',
@@ -91,7 +91,7 @@ and correlation between the parameters as a correlation matrix.
                                 Widgets.dropdown_from_dict(
                                     self.ens_p1_id, self.ensembles),
                             ]),
-                        html.Label('Parameter y axis', style={
+                        html.Label('Parameter vertical axis', style={
                             'font-weight': 'bold'}),
                         html.Div(style={
                             'padding-bottom': 20,
