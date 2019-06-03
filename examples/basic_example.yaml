@@ -25,13 +25,8 @@ pages:
    content: 
     - Some text...
     - container: ParameterDistribution
-      ensemble: iter-0
-    - ...some other text
- - title: Morris Plot
-   content: 
-    - Some text...
-    - container: MorrisPlot
-      csv_file: morris.csv
+      ensembles: 
+        - iter-0
     - ...some other text
  - title: Subsurface map
    content: 
