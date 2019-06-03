@@ -14,38 +14,23 @@ import itertools
 
 class SummaryStats(WebvizContainer):
 
-    """
-    Summary statistics
-    ==================
-
-    Provides:
-      1. Summary data plot (y: vector, x: timeseries, traces: realization-i)
-      2. Statistics plot (y: vector, x: timeseries, fanchart of ensemble-i
-                          min, max, mean, p10, p90)
+    """Summary statistics
 
     Args:
-    -----
-      * `ensemble`: Which ensembles in `container_settings` to visualize.
-        -> list of ensemble paths (can be only one)
-      * `column_keys`: list of pre defined vectors to visualize. Default is
-        `none`
-      * `sampling`: Optional. Either `monthly` or `yearly`. Default is
-        `monthly`.
-      * `title`: Optional title for the container.
-
-    Logic:
-    ------
-      Data:
-        Ensembles are stored as one big concated dataframe including a columns
-        "ENSEMBLE" to identify them.
-
-      Loading data:
-        get_summary_data or get_summary_stats load data from scratch. After the
-        functions got called the first time the result gets cached.
-
-      Accessing data:
-        Calling get_summary_data with the same input parameter will return the
-        memoized dataframe.
+        ensembles: list of ensemble paths. Length >= 1
+        column_keys: list of pre defined vectors to visualize. Default is none
+        sampling: Optional. Either 'monthly' or 'yearly'. Default is 'monthly'.
+        title: Optional title for the container.
+        history_uncertainty: boolean value if history vector is subjected to
+            uncertainty.
+    Return:
+        dcc.Graph() of either statistics plot or realization plot.
+    Annotations:
+        Function argument-litst are passed as tuple as they are hashed in
+        webviz-store --portable option (list-type is not hashable).
+        Pandas within fmu.ensemlbe expects list. Therefore argument-tuples are
+        converted back into lists within get_smry_data and get_smry_stats
+        functions.
     """
 
     def __init__(
@@ -56,7 +41,7 @@ class SummaryStats(WebvizContainer):
             column_keys=None,
             sampling: str = 'monthly',
             title: str = 'Simulation time series',
-            history_uncertainty: bool=False):
+            history_uncertainty: bool = False):
 
         self.title = title
         self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
@@ -64,7 +49,8 @@ class SummaryStats(WebvizContainer):
             column_keys, (list, tuple)) else None
         self.sampling = sampling
         self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
-        self.show_history_uncertainty_id = 'show-history-uncertainty-{}'.format(uuid4())
+        self.show_history_uncertainty_id = 'show-history-uncertainty-{}'.format(
+            uuid4())
         self.chart_id = 'chart-id-{}'.format(uuid4())
         self.ensemble_paths = tuple(
             (ensemble,
@@ -115,7 +101,10 @@ class SummaryStats(WebvizContainer):
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value'),
                        Input(self.show_history_uncertainty_id, 'values')])
-        def update_plot(vector, summary_plot_type, show_history_uncertainty_id):
+        def update_plot(
+                vector,
+                summary_plot_type,
+                show_history_uncertainty_id):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
                     ensemble_paths=self.ensemble_paths,
@@ -134,22 +123,30 @@ class SummaryStats(WebvizContainer):
                     show_history_uncertainty=show_history_uncertainty_id)
 
     def add_webvizstore(self):
-        return [(get_summary_data, [{'ensemble_paths': self.ensemble_paths,
-                                     'column_keys': self.column_keys,
-                                     'sampling': self.sampling,
-                                     'smry_history_columns': self.smry_history_columns,
-                                     'history_uncertainty': self.history_uncertainty}]),
-                (get_summary_stats, [{'ensemble_paths': self.ensemble_paths,
-                                      'column_keys': self.column_keys,
-                                      'sampling': self.sampling}])]
+        return [(get_summary_data,
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'column_keys': self.column_keys,
+                   'sampling': self.sampling,
+                   'smry_history_columns': self.smry_history_columns,
+                   'history_uncertainty': self.history_uncertainty}]),
+                (get_summary_stats,
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'column_keys': self.column_keys,
+                   'sampling': self.sampling}])]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def get_summary_data(ensemble_paths: tuple, sampling: str,
                      column_keys: tuple) -> pd.DataFrame:
+    """ Loops over given ensemble paths, extracts smry-data and concates them
+    into one big df. An additional column ENSEMBLE is added for each
+    ens-path to seperate the ensambles.
+    column_keys is converted to list as list-type is needed in
+    .get_smry_stats()"""
 
-    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
 
     smry_data = []
     for ens, ens_path in ensemble_paths:
@@ -165,8 +162,14 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
 @webvizstore
 def get_summary_stats(ensemble_paths: tuple, sampling: str,
                       column_keys: tuple) -> pd.DataFrame:
+    """ Loops over given ensemble paths, extracts smry-data and concates them
+    into one big df. An additional column ENSEMBLE is added for each
+    ens-path to seperate the ensambles.
+    column_keys is converted to list as list-type is needed in
+    .get_smry_stats()"""
 
-    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
 
     smry_stats = []
     for ens, ens_path in ensemble_paths:
@@ -185,6 +188,11 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
                             smry_history_columns: tuple,
                             history_uncertainty: bool,
                             show_history_uncertainty: str):
+    """ Creates scatter-plot-traces for choosen vector. One trace per
+    realization will be created. If history-data are not subjeted to
+    uncertainty only one traces per ensemble will be created for history_data.
+    If there is no history-vector in for the given vector, no trace will be
+    created. """
 
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
     history_vector = (vector + 'H')
@@ -287,6 +295,8 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
                      vector: str, show_history_uncertainty: str):
+    """Loops over ensemlbe_paths and creates one summary_statistics-plot per
+    ensemble."""
 
     smry_stats = get_summary_stats(
         ensemble_paths=ensemble_paths,
