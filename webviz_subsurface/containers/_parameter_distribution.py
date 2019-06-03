@@ -222,6 +222,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
         data.append({
             'x': x,
             'y': y,
+            'hoverinfo': 'none',
             "autocolorscale": False,
             'showlegend': False,
             "colorscale": [
