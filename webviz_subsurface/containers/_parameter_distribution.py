@@ -77,7 +77,7 @@ and correlation between the parameters as a correlation matrix.
                             Widgets.dropdown_from_dict(
                                 self.ens_matrix_id, self.ensembles)
                         ]),
-                        html.Label('Parameter 1', style={
+                        html.Label('Parameter x axis', style={
                             'font-weight': 'bold'}),
                         html.Div(
                             style={'padding-bottom': 20, 'display': 'grid',
@@ -91,7 +91,7 @@ and correlation between the parameters as a correlation matrix.
                                 Widgets.dropdown_from_dict(
                                     self.ens_p1_id, self.ensembles),
                             ]),
-                        html.Label('Parameter 2', style={
+                        html.Label('Parameter y axis', style={
                             'font-weight': 'bold'}),
                         html.Div(style={
                             'padding-bottom': 20,
@@ -163,8 +163,8 @@ and correlation between the parameters as a correlation matrix.
         def update_from_click(cd, ens):
             try:
                 points = cd['points'][0]
+            #TypeError is returned if no cells are clicked
             except TypeError:
-
                 return [None for i in range(4)]
             return [points['x'], points['y'], ens, ens]
 
