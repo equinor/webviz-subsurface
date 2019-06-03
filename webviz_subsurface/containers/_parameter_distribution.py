@@ -254,25 +254,31 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
         'xaxis': {
             'title': x_col,
             'domain': [0, 0.85],
-            'showgrid': 'false',
-            'zeroline': 'false',
+            'showgrid': False,
+            'showline': False,
+            'zeroline': False,
             'showlegend': False
         },
         'xaxis2': {
             'domain': [0.85, 1],
-            'showgrid': 'false',
-            'zeroline': 'false'
+            'showgrid': False,
+            'showline': False,
+            'zeroline': False,
+            'showticklabels': False
         },
         'yaxis': {
             'title': y_col,
             'domain': [0, 0.85],
-            'showgrid': 'false',
-            'zeroline': 'false'
+            'showgrid': False,
+            'zeroline': False,
+
         },
         'yaxis2': {
             'domain': [0.85, 1],
-            'showgrid': 'false',
-            'zeroline': 'false'
+            'showgrid': False,
+            'zeroline': False,
+            'showticklabels': False,
+            'showline': False
         }
     }
 
