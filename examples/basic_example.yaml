@@ -41,6 +41,12 @@ pages:
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
+ - title: Morris Plot
+   content: 
+    - Some text...
+    - container: MorrisPlot
+      csv_file: morris.csv
+    - ...some other text
  - title: Subsurface map
    content:
     - container: SubsurfaceMap
