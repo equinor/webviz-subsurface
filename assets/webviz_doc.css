@@ -1,0 +1,50 @@
+body {
+ background-image: linear-gradient(150deg, rgba(255,255,255), rgba(240,240,240));
+}
+
+pre {
+ border: 1px solid grey;
+}
+
+hr {
+ margin-top: 20px;
+ margin-bottom: 20px;
+ border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+div.container {
+ width: 80%;
+ margin: 0 auto;
+ padding: 15px;
+}
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1.5em;
+  color: #243746;
+  background: rgb(250, 250, 250);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: rgb(100, 100, 100);
+  font-style: italic;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable {
+  color: #007079;
+}
+
+.hljs-string {
+  color: #7d0023;
+}
+
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: #d5EAF4;
+  font-weight: normal;
+}

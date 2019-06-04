@@ -1,1 +1,355 @@
-This will be the documentation
+<html>
+<head>
+<meta charset="UTF-8"> 
+<link rel="stylesheet" href="./assets/webviz_doc.css">
+
+<!-- Also update package-lock.json with highlight.js version number: -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js" integrity="sha256-sNPiigbfSkqUzMc5rgrdztLnneCMAp6W9wetJUZu9Zw=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/languages/yaml.min.js" integrity="sha256-GuL67zsJWO0bMHHaASSslF37TSgnQF5fuL2n80/HpoU=" crossorigin="anonymous"></script>
+
+<script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+
+<body>
+
+<div class='container'>
+
+<h1>Webviz configuration guide</h1>
+
+<h2>Fundamental configuration</h2>
+
+A configuration consists of some mandatory properties (title, username,
+password) and one or more pages. Each page has a title, and potentially some
+content. The content can be one or more items.
+
+Containers represent predefined content, which takes one or more arguments.
+A list and description of all available different containers is listed below.
+
+Content which is not containers are interpreted as text paragraphs.
+
+A basic example configuration is shown below.
+
+<pre><code class='yaml'># This file demonstrates the most basic usage of webviz in a FMU setting
+# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+
+title: Reek Webviz Demonstration
+username: some_username
+password: some_password
+
+
+pages:
+
+ - title: Front page
+   content:
+    - container: BannerImage
+      image: ./example_banner.png
+      title: My banner image
+    - Webviz created from configuration file.
+    - Some other text, potentially with strange letters like &#197;re, Sm&#248;rbukk S&#248;r.
+
+ - title: Markdown example
+   content:
+    - container: Markdown
+      markdown_file: ./example-markdown.md
+
+ - title: Table example
+   content:
+    - container: DataTable
+      csv_file: ./example_data.csv
+      filtering: True
+
+ - title: PDF example
+   content:
+    - container: EmbedPdf
+      pdf_file: ./example.pdf
+
+ - title: Syntax highlighting example
+   content:
+    - container: SyntaxHighlighter
+      filename: ./basic_example.yaml
+
+ - title: Plot a table
+   content:
+    - container: TablePlotter
+      title: Plotter
+      csv_file: ./example_data.csv
+
+ - title: Plot a table (locked)
+   content:
+    - container: TablePlotter
+      title: Initial reservoir pressure
+      csv_file: ./example_data.csv
+      lock: true
+      plot_options:
+        x: Well
+        y: Initial reservoir pressure (bar)
+        size: Average permeability (D)
+        facet_col: Segment
+</code></pre>
+
+<h2>Container documentation</h2><h3><em>Basic containers</em></h3>
+<p>These are the basic Webviz configuration containers, distributed through
+the utility itself.</p><div style='margin-left: 40px;'>
+
+<h3>Banner image</h3>
+<p>This container adds a full width <em>banner image</em>, with an optional overlayed
+title. Useful on e.g. the front page for introducing a field or project.</p>
+<ul>
+<li><code>image</code>: Path to the picture you want to add. Either absolute path or
+  relative to the configuration file.</li>
+<li><code>title</code>: Title which will be overlayed over the banner image.</li>
+<li><code>color</code>: Color to be used for the font.</li>
+<li><code>shadow</code>: Set to <code>False</code> if you do not want text shadow for the title.</li>
+</ul>
+<pre><code class='yaml'>  - container: BannerImage
+    image: some value
+    title:   # Optional (default value shown here).
+    color: white  # Optional (default value shown here).
+    shadow: True  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Data table</h3>
+<p>This container adds a table to the webviz instance, using tabular data from
+a provided csv file. If feature is requested, the data could also come from
+a database.</p>
+<ul>
+<li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
+              path or relative to the configuration file.</li>
+<li><code>sorting</code>: If <code>True</code>, the table can be sorted interactively based
+             on data in the individual columns.</li>
+<li><code>filtering</code>: If <code>True</code>, the table can be filtered based on values in the
+               individual columns.</li>
+</ul>
+<pre><code class='yaml'>  - container: DataTable
+    csv_file: some value
+    sorting: True  # Optional (default value shown here).
+    filtering: False  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Embed PDF file</h3>
+<p>This container embeds a given PDF file into the page.</p>
+<ul>
+<li><code>pdf_file</code>: Path to the PDF file to include. Either absolute path or
+  relative to the configuration file.</li>
+<li><code>height</code>: Height of the PDF object (in percent of viewport height).</li>
+<li><code>width</code>: Width of the PDF object (in percent of available space).</li>
+</ul>
+<p><em>Note</em>: Webviz does not scan your PDF for malicious code.
+Make sure it comes from a trusted source.</p>
+<pre><code class='yaml'>  - container: EmbedPdf
+    pdf_file: some value
+    height: 80  # Optional (default value shown here).
+    width: 100  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Include Markdown</h3>
+<p>This container renders and includes the content from a Markdown file. Images
+are supported, and should in the markdown file be given as either relative
+paths to the markdown file itself, or absolute paths.</p>
+<ul>
+<li><code>markdown_file</code>: Path to the markdown file to render and include. Either
+  absolute path or relative to the configuration file.</li>
+</ul>
+<pre><code class='yaml'>  - container: Markdown
+    markdown_file: some value
+</code></pre>
+<hr>
+
+
+<h3>Syntax highlighter</h3>
+<p>This container adds support for syntax highlighting of code. Language is
+automatically detected.</p>
+<ul>
+<li><code>filename</code>: Path to a file containing the code to highlight.</li>
+<li><code>show_line_numbers</code>: If <code>True</code>, show line numbers. Default is <code>False</code>.</li>
+<li><code>start_number</code>: This only has effect if <code>show_line_numbers</code> is <code>True</code>. If
+                  given, line numbers will start at this value. Default is <code>1</code>.</li>
+<li><code>dark_theme</code>: If <code>True</code>, the code is shown with a dark theme. Default is
+                <code>False</code> giving a light theme.</li>
+</ul>
+<pre><code class='yaml'>  - container: SyntaxHighlighter
+    filename: some value
+    show_line_numbers: False  # Optional (default value shown here).
+    start_number: 1  # Optional (default value shown here).
+    dark_theme: False  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>TablePlotter</h3>
+<p>This container adds a plotter to the webviz instance, using tabular data from
+a provided csv file. If feature is requested, the data could also come from
+a database.</p>
+<ul>
+<li>title` : Title on page</li>
+<li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
+              path or relative to the configuration file.</li>
+<li><code>plot_options</code>: A dictionary of plot options to initialize the plot with</li>
+<li><code>lock</code>: If <code>True</code>, only the plot is shown, all dropdowns for changing
+          plot options are hidden.</li>
+</ul>
+<pre><code class='yaml'>  - container: TablePlotter
+    title: some value
+    csv_file: some value
+    plot_options: None  # Optional (default value shown here).
+    lock: False  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+</div><h3><em>Subsurface specific containers</em></h3>
+<p>These are containers relevant within subsurface workflows. Most of them
+rely on the setting <code>scratch_ensemble</code> configuration within the
+<code>container_settings</code>.
+I.e. you could have</p>
+<pre><code class="yaml">title: Reek Webviz Demonstration
+username: some_username
+password: some_password
+
+container_settings:
+  scratch_ensembles:
+    iter-0: /scratch/my_ensemble/realization-*/iter-0
+    iter-1: /scratch/my_ensemble/realization-*/iter-1
+
+pages:
+
+ - title: Front page
+   content:
+    - container: SummaryStats
+      ensemble: iter-0
+</code></pre><div style='margin-left: 40px;'>
+
+<h3>Disk usage</h3>
+<p>This container adds functionality for standard visualization of disk usage in
+FMU projects. It adds a dashboard element where the user can choose between
+showing disk usage, per user, either as a pie chart or as a bar chart.</p>
+<ul>
+<li><code>scratch_dir</code>: Path to the directory you want to show disk usage for, e.g.
+  <code>/scratch/fmu</code>.</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: DiskUsage
+    scratch_dir: some value
+    title: Disk usage  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>History match</h3>
+<p>This container visualizes the quality of the history match.</p>
+<ul>
+<li><code>ensembles</code>: List of the ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>observation_File</code>: Path to the observation <code>.yaml</code> file.</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: HistoryMatch
+    ensembles: some value
+    observation_file: some value
+    title: History Match  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Intersect</h3>
+<p>This container visualizes surfaces intersected along a well path.
+The input are surfaces from a FMU ensemble stored on standardized
+format with standardized naming (share/results/maps/name--category.gri)
+and a folder of well files stored in RMS well format.</p>
+<ul>
+<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
+<li><code>well_path</code>: File folder with wells in rmswell format</li>
+<li><code>surface_cat</code>: Surface category to look for in the file names</li>
+<li><code>surface_names</code>: List of surface names to look for in the file names</li>
+<li><code>well_suffix</code>:  Optional suffix for well files. Default is .rmswell</li>
+</ul>
+<pre><code class='yaml'>  - container: Intersect
+    ensemble: some value
+    well_path: some value
+    surface_cat: some value
+    surface_names: some value
+    well_suffix: .rmswell  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Morris</h3>
+<p>This container renders a visualization of the Morris sampling method.
+The Morris method can be used to screen parameters for how they
+influence model response, both individually and through interaction
+effect with other parameters.</p>
+<ul>
+<li><code>csv_file</code>: Input data</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: MorrisPlot
+    csv_file: some value
+    title: Morris plot  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Parameter distribution</h3>
+<p>This container shows parameter distribution as histogram,
+and correlation between the parameters as a correlation matrix.</p>
+<ul>
+<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: ParameterDistribution
+    ensemble: some value
+    title: Parameter Distribution  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Subsurface map</h3>
+<p>This container visualizes the subsurface. Currently only supporting reservoir
+model grid maps. In addition to show a map, it can visualize the flow pattern
+in the simulation output using streamlines.</p>
+<ul>
+<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
+<li><code>map_value</code>: Which property to show in the map (e.g. <code>PERMX</code>).</li>
+<li><code>flow_value</code>: Which property to use for the streamlines animation
+  (e.g. <code>FLOWAT</code>).</li>
+<li><code>time_step</code>: Which report or time step to use in the simulation output.</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: SubsurfaceMap
+    ensemble: some value
+    map_value: some value
+    flow_value: some value
+    time_step: some value
+    title: Subsurface map  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
+<h3>Summary statistics</h3>
+<p>This container visualizes simulation profiles, both per realization and
+statistical plots (min, max, mean, p10, p90).</p>
+<ul>
+<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
+<li><code>sampling</code>: Optional. Either <code>monthly</code> or <code>yearly</code>. Default is <code>monthly</code>.</li>
+<li><code>title</code>: Optional title for the container.</li>
+</ul>
+<pre><code class='yaml'>  - container: SummaryStats
+    ensemble: some value
+    sampling: monthly  # Optional (default value shown here).
+    title: Simulation time series  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+</div>
+
+</div>
+</div>
+
+</body>
+
+</html>
