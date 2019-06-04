@@ -6,6 +6,7 @@ from dash.dependencies import Input, Output, State
 import dash_daq as daq
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 from ..datainput import scratch_ensemble
 
 
@@ -19,7 +20,7 @@ class Widgets:
                             value=list(d.values())[0])
 
 
-class ParameterDistribution:
+class ParameterDistribution(WebvizContainer):
     '''### Parameter distribution
 
 This container shows parameter distribution as histogram,
