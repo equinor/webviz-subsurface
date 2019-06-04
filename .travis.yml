@@ -13,8 +13,8 @@ before_install:
   - sudo apt-get -qq update
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
-  - pip install --upgrade pip
-  - python -m venv env
+  - pip3 install --upgrade pip3
+  - python3 -m venv env
   - source ./env/bin/activate
 
 install:
