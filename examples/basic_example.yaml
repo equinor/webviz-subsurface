@@ -25,7 +25,9 @@ pages:
    content: 
     - Some text...
     - container: ParameterDistribution
-      ensemble: iter-0
+      ensembles:
+        - iter-0
+        - iter-1
     - ...some other text
  - title: Morris Plot
    content: 
