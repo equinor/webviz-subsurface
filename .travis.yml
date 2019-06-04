@@ -14,6 +14,9 @@ before_install:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
   - pip install --upgrade pip
+  - pip install venv
+  - python -m venv env
+  - source ./env/bin/activate
 
 install:
   - wget https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip
