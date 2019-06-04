@@ -4,11 +4,12 @@ from uuid import uuid4
 from pathlib import Path
 from scipy.stats import chi2
 import dash_html_components as html
+from webviz_config.containers import WebvizContainer
 import webviz_subsurface_components as wsc
 from ..datainput import extract_mismatch
 
 
-class HistoryMatch:
+class HistoryMatch(WebvizContainer):
     '''### History match
 
 This container visualizes the quality of the history match.

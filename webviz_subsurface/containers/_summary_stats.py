@@ -6,10 +6,11 @@ from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 from ..datainput import scratch_ensemble
 
 
-class SummaryStats:
+class SummaryStats(WebvizContainer):
     '''### Summary statistics
 
 This container visualizes simulation profiles, both per realization and

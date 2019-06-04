@@ -6,9 +6,10 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 
 
-class DiskUsage:
+class DiskUsage(WebvizContainer):
     '''### Disk usage
 
 This container adds functionality for standard visualization of disk usage in
