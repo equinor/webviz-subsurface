@@ -9,10 +9,11 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
 
 
-class Intersect():
+class Intersect(WebvizContainer):
     '''### Intersect
 
 This container visualizes surfaces intersected along a well path.

@@ -6,10 +6,11 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 from webviz_subsurface_components import Morris
 
 
-class MorrisPlot:
+class MorrisPlot(WebvizContainer):
     '''### Morris
 
 This container renders a visualization of the Morris sampling method.
