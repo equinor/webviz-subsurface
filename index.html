@@ -111,6 +111,23 @@ title. Useful on e.g. the front page for introducing a field or project.</p>
 <hr>
 
 
+<p>All webviz containers need to subclass this abstract base class,
+    e.g.</p>
+<pre><code>```python
+class MyContainer(WebvizContainer):
+
+    def __init__(self):
+        ...
+
+    def layout(self):
+        ...
+```
+</code></pre>
+<pre><code class='yaml'>  - container: WebvizContainer
+</code></pre>
+<hr>
+
+
 <h3>Data table</h3>
 <p>This container adds a table to the webviz instance, using tabular data from
 a provided csv file. If feature is requested, the data could also come from
