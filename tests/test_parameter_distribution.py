@@ -35,6 +35,6 @@ def test_parameter_dist(dash_threaded):
                            driver,
                            f'#{p.ens_matrix_id}'
                        )
-
+        print(my_component.text)
         if 'iter-0' != my_component.text:
             raise AssertionError()
