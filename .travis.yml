@@ -24,7 +24,7 @@ script:
   - pip install .
   - pip install .[tests]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
-  - pytest tests -s
+  - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
 
