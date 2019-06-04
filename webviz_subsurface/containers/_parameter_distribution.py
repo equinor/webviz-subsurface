@@ -21,7 +21,7 @@ class Widgets:
 
 
 class ParameterDistribution(WebvizContainer):
-
+    '''### Parameter distribution
 
 This container shows parameter distribution as histogram,
 and correlation between the parameters as a correlation matrix.
