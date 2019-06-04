@@ -21,7 +21,7 @@ class Widgets:
 
 
 class ParameterDistribution(WebvizContainer):
-    '''### Parameter distribution
+
 
 This container shows parameter distribution as histogram,
 and correlation between the parameters as a correlation matrix.
@@ -146,7 +146,7 @@ and correlation between the parameters as a correlation matrix.
                        Input(self.p2_drop_id, 'value')])
         def update_matrix(ens, p1, p2):
             '''Renders correlation matrix.
-            Currently also re-renders matrix to update currently
+            Currently also re - renders matrix to update currently
             selected cell. This is not optimal, but hard to prevent
             as an Output object only can have one callback attached,
             and it is not possible to assign callbacks to individual

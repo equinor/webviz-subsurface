@@ -16,13 +16,13 @@ pages:
    content:
     - Webviz created from configuration file
  - title: Summary vectors
-   content: 
+   content:
     - Some text...
     - container: SummaryStats
       ensemble: iter-0
     - ...some other text
  - title: Parameter distribution
-   content: 
+   content:
     - Some text...
     - container: ParameterDistribution
       ensembles:
@@ -30,28 +30,28 @@ pages:
         - iter-1
     - ...some other text
  - title: Morris Plot
-   content: 
+   content:
     - Some text...
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
  - title: Morris Plot
-   content: 
+   content:
     - Some text...
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
  - title: Subsurface map
-   content: 
+   content:
     - container: SubsurfaceMap
       ensemble: iter-0
       map_value: PERMX
       flow_value: FLOWAT
       time_step: 26
  - title: History match
-   content: 
+   content:
     - container: HistoryMatch
-      ensembles: 
+      ensembles:
        - iter-0
        - iter-1
       observation_file: some_observation_file.yaml
