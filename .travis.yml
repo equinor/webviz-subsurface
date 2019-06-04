@@ -13,9 +13,7 @@ before_install:
   - sudo apt-get -qq update
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
-  - pip3 install --upgrade pip
-  - python3 -m venv env
-  - source ./env/bin/activate
+  - pip install --upgrade pip
 
 install:
   - wget https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip
@@ -23,8 +21,8 @@ install:
   - export PATH=$PATH:$PWD
 
 script:
-  - pip install .
-  - pip install .[tests]
+  - pip install --upgrade --upgrade-strategy eager .
+  - pip install --upgrade --upgrade-strategy eager .[tests]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
