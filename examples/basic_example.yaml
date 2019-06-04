@@ -7,8 +7,8 @@ password: some_password
 
 container_settings:
   scratch_ensembles:
-    iter-0: /scratch/fmu/akia/volve/volve_example/realization-*/iter-0
-    iter-1: /scratch/fmu/akia/volve/volve_example/realization-*/iter-1
+    iter-0: /scratch/myfield/realization-*/iter-0
+    iter-1: /scratch/myfield/realization-*/iter-1
 
 pages:
 
