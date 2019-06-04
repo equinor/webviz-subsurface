@@ -13,7 +13,7 @@ before_install:
   - sudo apt-get -qq update
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
-  - pip install --upgrade pip
+  - pip install --upgrade pip numpy
 
 install:
   - wget https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip
@@ -21,8 +21,8 @@ install:
   - export PATH=$PATH:$PWD
 
 script:
-  - pip install --upgrade .
-  - pip install --upgrade .[tests]
+  - pip install .
+  - pip install .[tests]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
