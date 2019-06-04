@@ -21,8 +21,8 @@ install:
   - export PATH=$PATH:$PWD
 
 script:
-  - pip install --upgrade --upgrade-strategy eager .
-  - pip install --upgrade --upgrade-strategy eager .[tests]
+  - pip install --upgrade .
+  - pip install --upgrade .[tests]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
