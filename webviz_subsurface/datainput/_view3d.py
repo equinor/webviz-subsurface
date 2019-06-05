@@ -12,32 +12,36 @@ except ImportError:
 
 
 def xy_to_ij(s, xy):
-        """
-        xy : m xy coordinates (m, 2), x values in column 0 and y in 1
-        """
-        # subtract xyorigin
-        xy0 = xy - np.array([s.xori,s.yori])
+    """
+    xy : m xy coordinates (m, 2), x values in column 0 and y in 1
+    """
+    # subtract xyorigin
+    xy0 = xy - np.array([s.xori, s.yori])
 
-        theta = np.radians(s.rotation)
-        rmat = np.array([
-            [np.cos(theta), -np.sin(theta)],
-            [np.sin(theta), np.cos(theta)]])
-        # unrotated
-        xyr = np.dot(xy0, rmat)
-        # divide by increments to get ij
-        ij = xyr / np.array([s.xinc, s.yinc])
-        return ij
+    theta = np.radians(s.rotation)
+    rmat = np.array([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta), np.cos(theta)]])
+    # unrotated
+    xyr = np.dot(xy0, rmat)
+    # divide by increments to get ij
+    ij = xyr / np.array([s.xinc, s.yinc])
+    return ij
+
 
 def interp(s, ij):
     iv = np.arange(s.nx)
     jv = np.arange(s.ny)
     vals = np.reshape(s.npvalues1d, [s.nx, s.ny])
-    return RegularGridInterpolator(points = (iv, jv), values=vals,
-                                  bounds_error=False, fill_value= np.nan, method='linear')(ij)
+    return RegularGridInterpolator(points=(iv, jv), values=vals,
+                                   bounds_error=False,
+                                   fill_value=np.nan, method='linear')(ij)
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def load_cube(cube_path):
     return xtgeo.cube.Cube(cube_path)
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def slice_seismic(surface_path, cube_path):
@@ -68,12 +72,13 @@ def fill_nans(padata, pkind='nearest'):
     aindexes = np.arange(padata.shape[0])
     agood_indexes, = np.where(np.isfinite(padata))
     f = interp1d(
-                agood_indexes, padata[agood_indexes],
-                bounds_error=False,
-                copy=False,
-                fill_value="extrapolate",
-                kind=pkind)
+        agood_indexes, padata[agood_indexes],
+        bounds_error=False,
+        copy=False,
+        fill_value="extrapolate",
+        kind=pkind)
     return f(aindexes)
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def create_coords(center_x, center_y, extent=4000, inc=25):
@@ -85,6 +90,7 @@ def create_coords(center_x, center_y, extent=4000, inc=25):
             coords.append([xcc, ycc])
     return coords
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def generate_surface(path, x, y, extent, inc) -> pd.DataFrame:
@@ -95,6 +101,7 @@ def generate_surface(path, x, y, extent, inc) -> pd.DataFrame:
     values_filled = fill_nans(values)
     df = pd.DataFrame(values_filled, columns=['values'])
     return df
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore

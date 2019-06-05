@@ -18,6 +18,7 @@ This container adds a page with a 3D scene for rendering subsurface data.
 
 * `config`: Configuration file for the data.
 '''
+
     def __init__(self, app, config: pathlib.Path):
         self.vizvaz_id = f'vizvaz-{uuid4()}'
         self.selectors_id = f'selectors-{uuid4()}'
@@ -71,18 +72,19 @@ This container adds a page with a 3D scene for rendering subsurface data.
             'z-index': '1000',
             'width': '20%',
             'height': '20%',
-            }
+        }
 
     def selector(self, id, values, multi=False):
         return dcc.Dropdown(
             # inputStyle={'display':'table-'},
             id=id,
-            options=[{'label': s, 'value':s}
-                for s in values],
-                clearable=False,
-                value=values[0],
-                multi=multi
-                )
+            options=[{'label': s, 'value': s}
+                     for s in values],
+            clearable=False,
+            value=values[0],
+            multi=multi
+        )
+
     @property
     def selectors(self):
         layout = []
@@ -132,20 +134,22 @@ This container adds a page with a 3D scene for rendering subsurface data.
     def add_webvizstore(self):
         funcs = []
         funcs.append((get_path,
-            [{'config': self.config_path}]))
+                      [{'config': self.config_path}]))
         for surf_type, surfs in self.surfaces.items():
             for surf in surfs:
-                path = os.path.join(self.path, 'maps', surf+'--'+surf_type+'.gri')
+                path = os.path.join(self.path, 'maps',
+                                    surf+'--'+surf_type+'.gri')
                 funcs.append((generate_surface,
-                                [{
-                                'path': path,
-                                'x': self.center_x,
-                                'y': self.center_y,
-                                'extent': self.extent,
-                                'inc': self.inc}]))
+                              [{
+                                  'path': path,
+                                  'x': self.center_x,
+                                  'y': self.center_y,
+                                  'extent': self.extent,
+                                  'inc': self.inc}]))
         for well in self.wells:
             path = os.path.join(self.path, 'wells', str(well)+'.rmswell')
-            funcs.append((generate_well_path,[{'path': path, 'downsample':None}]))
+            funcs.append(
+                (generate_well_path, [{'path': path, 'downsample': None}]))
         return funcs
 
 
@@ -154,21 +158,24 @@ def get_surface_data(path, surf_names, cat, x, y, extent, inc):
     if not isinstance(surf_names, list):
         surf_names = [surf_names]
     surf_paths = [os.path.join(path, 'maps', name+'--'+cat+'.gri')
-                for name in surf_names]
+                  for name in surf_names]
     return [{
         'z': generate_surface(path, x, y, extent, inc).to_numpy().tolist(),
         'size': {'x': extent*2, 'y': extent*2},
-        'name' : name} for name, path in zip(surf_names, surf_paths)]
+        'name': name} for name, path in zip(surf_names, surf_paths)]
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_well_path_data(path, well_names):
     if not isinstance(well_names, list):
         well_names = [well_names]
     well_paths = [os.path.join(path, 'wells', str(well)+'.rmswell')
-                for well in well_names]
+                  for well in well_names]
     return [{
-        'positionLog':(generate_well_path(wpath, downsample=None)).to_numpy().tolist(),
-        'name' : name} for name, wpath in zip(well_names, well_paths)]
+        'positionLog': (generate_well_path(
+            wpath, downsample=None)).to_numpy().tolist(),
+        'name': name} for name, wpath in zip(well_names, well_paths)]
+
 
 @webvizstore
 def get_path(config) -> pathlib.Path:
