@@ -9,8 +9,10 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
 from webviz_config.containers import WebvizContainer
-from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
+from ..datainput import (scratch_ensemble, load_surface,
+                         get_wfence, get_hfence, well_to_df, surface_to_df)
 
 
 class Intersect(WebvizContainer):
@@ -57,7 +59,7 @@ and a folder of well files stored in RMS well format.
 
         self.well_path = well_path
         self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.ensemble = scratch_ensemble(ensemble, self.ensemble_path)
+        self.ensemble = ensemble
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat
         self.surface_names = surface_names
@@ -73,30 +75,18 @@ and a folder of well files stored in RMS well format.
 
     @property
     def realizations(self):
-        d = {self.ensemble._realizations[real]._origpath: real
-             for real in self.ensemble._realizations}
-        return OrderedDict(sorted(d.items()))
+        df = get_realizations(self.ensemble, self.ensemble_path)
+        return pd.Series(df['REAL'].values, index=df['PATH']).to_dict()
 
     @property
     def well_names(self):
-        well_folder = f'{self.well_path}/*{self.well_suffix}'
-        return sorted([well for well in glob(well_folder)])
+        df = get_file_paths(self.well_path, self.well_suffix)
+        return df['PATH'].tolist()
 
     @property
     def surface_colors(self):
         return {surf: Intersect.COLORS[i % len(Intersect.COLORS)]
                 for i, surf in enumerate(self.surface_names)}
-
-    # @cache.memoize(timeout=cache.TIMEOUT)
-    # def agg_surfaces(self, surf_names, calc='avg'):
-    #     agg = []
-    #     for s_name in surf_names:
-    #         s_arr = [self.load_surface_in_real(s_name, real).values
-    #                  for real in self.ensemble._realizations]
-    #         if calc=='avg':
-    #             s.values = np.average(np.array(s_arr), axis=0)
-    #             agg.append(s)
-    #     return agg
 
     @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
@@ -261,12 +251,32 @@ and a folder of well files stored in RMS well format.
                 'Name': name}
                 for name, val in names.items()]
 
+    def add_webvizstore(self):
+        funcs = []
+        funcs.append(
+            (get_realizations, [{'ens': self.ensemble,
+                                 'ens_path': self.ensemble_path}]))
+        funcs.append(
+            (get_file_paths, [{'folder': self.well_path,
+                               'suffix': self.well_suffix}]))
+        for well in self.well_names:
+            funcs.append((well_to_df, [{'well_name': well}]))
+        for surf in self.surface_names:
+            for path in self.realizations.keys():
+                funcs.append((surface_to_df, [
+                    {'s_name': surf,
+                             'real_path': path,
+                             'surface_cat': self.surface_cat}]))
+        return funcs
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def make_well_trace(well, tvdmin=0):
     '''Creates well trace for graph'''
-    x = [trace[3] for trace in get_wfence(well, extend=2).values]
-    y = [trace[2] for trace in get_wfence(well, extend=2).values]
+    x = [trace[3]
+         for trace in get_wfence(well, extend=2, tvdmin=tvdmin).values]
+    y = [trace[2]
+         for trace in get_wfence(well, extend=2, tvdmin=tvdmin).values]
     # Filter out elements less than tvdmin
     # https://stackoverflow.com/questions/17995302/filtering-two-lists-simultaneously
     try:
@@ -286,17 +296,14 @@ def make_well_trace(well, tvdmin=0):
 def make_surface_traces(well, reals, surf_name, cat, color):
     '''Creates surface traces for graph'''
     plot_data = []
-    x = [trace[3] for trace in get_wfence(well).values]
+    x = [trace[3] for trace in get_wfence(well, extend=200, tvdmin=0).values]
     for j, real in enumerate(reals):
-        try:
-            surf = load_surface(surf_name, real, cat)
-        except IOError:
-            continue
+        y = get_hfence(well, surf_name, real, cat)['fence']
         showlegend = True if j == 0 else False
         plot_data.append(
             {
                 'x': x,
-                'y': get_hfence(well, surf)[:, 2].copy().tolist(),
+                'y': y,
                 'name': surf_name,
                 'hoverinfo': 'none',
                 'legendgroup': surf_name,
@@ -305,3 +312,20 @@ def make_surface_traces(well, reals, surf_name, cat, color):
                 'marker': {'color': color}
             })
     return pd.DataFrame(plot_data)
+
+
+@webvizstore
+def get_realizations(ens, ens_path) -> pd.DataFrame:
+    ensemble = scratch_ensemble(ens, ens_path)
+    paths = [ensemble._realizations[real]._origpath
+             for real in ensemble._realizations]
+    reals = [real for real in ensemble._realizations]
+    return pd.DataFrame({'REAL': reals, 'PATH': paths})\
+        .sort_values(by=['REAL'])
+
+
+@webvizstore
+def get_file_paths(folder, suffix) -> pd.DataFrame:
+    glob_pattern = f'{folder}/*{suffix}'
+    files = sorted([f for f in glob(glob_pattern)])
+    return pd.DataFrame({'PATH': files})
