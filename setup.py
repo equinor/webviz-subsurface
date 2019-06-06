@@ -34,6 +34,7 @@ setup(
         ]
     },
     install_requires=[
+        'xtgeo==2.1.0a1',
         'scipy>=1.2.1',
         'dash-daq>=0.1.5',
         'webviz-config>=0.0.4',
