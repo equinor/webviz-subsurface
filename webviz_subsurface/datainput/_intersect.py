@@ -9,6 +9,10 @@ from webviz_config.webviz_store import webvizstore
 def load_well(well_name):
     return xtgeo.well.Well(well_name)
 
+@cache.memoize(timeout=cache.TIMEOUT)
+def load_cube(cube_name):
+    return xtgeo.cube.Cube(cube_name)
+
 
 def load_surface(s_name, real_path, surface_cat):
     path = os.path.join(real_path, 'share/results/maps',)
@@ -62,9 +66,15 @@ def get_wfence(well_name, extend=200, tvdmin=0) -> pd.DataFrame:
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
+def get_cfence(well, cube_name):
+    cube = load_cube(cube_name)
+    return cube.get_randomline(get_wfence(well).values.copy())
+
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
     df = surface_to_df(s_name, real_path, surface_cat)
     s = xtgeo.surface.RegularSurface(**df.to_dict('records')[0])
     fence = s.get_fence(get_wfence(well).values.copy())
     arr = fence[:, 2].copy().tolist()
+    # print(fence)
     return pd.DataFrame(arr, columns=['fence'])
