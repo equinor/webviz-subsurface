@@ -124,17 +124,19 @@ and a folder of well files stored in RMS well format.
         cube_trace = make_cube_trace(well, self.get_seis_path(cube)).to_dict('rows')
         cube_trace[0]['colorscale'] = color_scale
         cube_trace[0]['name'] = cube
+        cube_trace[0]['colorbar'] = {'x':1, 'showticklabels': False}
         layout['xaxis']['range'] = [cube_trace[0]['x0'], cube_trace[0]['xmax']]
         layout['xaxis']['autorange'] = False
         layout['yaxis']['range'] = [cube_trace[0]['ymax'], cube_trace[0]['y0']]
         layout['yaxis']['autorange'] = False
-        traces.extend(cube_trace)
+        
         for s_name in surf_names:
             traces.extend(
                 make_surface_traces(
                     well, reals, s_name, self.surface_cat,
                     self.surface_colors[s_name]).to_dict('rows'))
         traces.append(make_well_trace(well, tvdmin))
+        traces.extend(cube_trace)
         return {'data': traces, 'layout': layout}
 
     @property
@@ -333,15 +335,17 @@ and a folder of well files stored in RMS well format.
 def make_well_trace(well, tvdmin=0):
     '''Creates well trace for graph'''
     x = [trace[3]
-         for trace in get_wfence(well, extend=0, tvdmin=tvdmin).values]
+         for trace in get_wfence(well, extend=2, tvdmin=tvdmin).values]
     y = [trace[2]
-         for trace in get_wfence(well, extend=0, tvdmin=tvdmin).values]
+         for trace in get_wfence(well, extend=2, tvdmin=tvdmin).values]
     # Filter out elements less than tvdmin
     # https://stackoverflow.com/questions/17995302/filtering-two-lists-simultaneously
     try:
         y, x = zip(*((y_el, x) for y_el, x in zip(y, x) if y_el >= tvdmin))
     except ValueError:
         pass
+    x = x[1:-1]
+    y = y[1:-1]
     return {
         'x': x,
         'y': y,
