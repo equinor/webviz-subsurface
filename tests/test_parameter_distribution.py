@@ -3,8 +3,7 @@ import dash
 import pandas as pd
 from pytest_dash.wait_for import wait_for_element_by_css_selector
 from webviz_config.common_cache import cache
-from webviz_subsurface.containers import _parameter_distribution
-
+from webviz_config.containers import ParameterDistribution
 
 # mocked functions
 get_parameters = 'webviz_subsurface.containers'\
@@ -20,21 +19,19 @@ def test_parameter_dist(dash_threaded):
     cache.init_app(app.server)
     driver = dash_threaded.driver
     container_settings = {'scratch_ensembles': {'iter-0': ''}}
-    ensemble = 'iter-0'
+    ensembles = ['iter-0']
 
     with mock.patch(get_parameters) as mock_parameters:
         mock_parameters.return_value = pd.read_csv('tests/data/parameters.csv')
 
-        p = _parameter_distribution.\
-            ParameterDistribution(app, container_settings, ensemble)
+        p = ParameterDistribution(app, container_settings, ensembles)
 
         app.layout = p.layout
         dash_threaded(app)
 
         my_component = wait_for_element_by_css_selector(
                            driver,
-                           f'#{p.dropdown_vector_id}'
+                           f'#{p.ens_matrix_id}'
                        )
-
-        if 'REAL' != my_component.text:
+        if not my_component.text.startswith('iter-0'):
             raise AssertionError()
