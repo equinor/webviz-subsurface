@@ -1,5 +1,4 @@
 from uuid import uuid4
-import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
@@ -7,9 +6,9 @@ from webviz_plotly.graph_objs import FanChart
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
-from ..datainput import scratch_ensemble
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 import itertools
+from ..datainput import get_summary_data, get_summary_stats
 
 
 class SummaryStats(WebvizContainer):
@@ -44,32 +43,34 @@ class SummaryStats(WebvizContainer):
             history_uncertainty: bool = False):
 
         self.title = title
-        self.dropwdown_vector_id = 'dropdown-vector-{}'.format(uuid4())
+        self.uid = f'{uuid4()}'
+        self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
         self.sampling = sampling
-        self.radio_plot_type_id = 'radio-plot-type-{}'.format(uuid4())
-        self.show_history_uncertainty_id = 'show-history-uncertainty-{}'.format(
-            uuid4())
-        self.chart_id = 'chart-id-{}'.format(uuid4())
+        self.radio_plot_type_id = f'radio-plot-type-{self.uid}'
+        self.show_history_uncertainty_id = f'show-history-uncertainty-{self.uid}'
+        self.chart_id = f'chart-id-{self.uid}'
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
-        self.smry_columns = sorted(
+        self.vector_columns = sorted(
             list(
                 get_summary_data(
                     ensemble_paths=self.ensemble_paths,
                     sampling=self.sampling,
                     column_keys=self.column_keys) .drop(
-                    columns=[
-                        'DATE',
-                        'REAL',
-                        'ENSEMBLE']) .columns))
-        self.smry_vector_columns = tuple([col for col in self.smry_columns
-                                          if not col.endswith('H')])
-        self.smry_history_columns = tuple([col for col in self.smry_columns
-                                           if col.endswith('H')])
+                        columns=[
+                            'DATE',
+                            'REAL',
+                            'ENSEMBLE']).columns))
+        self.smry_history_columns = tuple(
+            [vctr + 'H' for vctr in self.vector_columns
+             if vctr + 'H' in self.vector_columns])
+        self.smry_vector_columns = tuple(
+            [vctr for vctr in self.vector_columns
+             if not vctr in self.smry_history_columns])
         self.history_uncertainty = history_uncertainty
         self.set_callbacks(app)
 
@@ -126,60 +127,64 @@ class SummaryStats(WebvizContainer):
         return [(get_summary_data,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
-                   'sampling': self.sampling,
-                   'smry_history_columns': self.smry_history_columns,
-                   'history_uncertainty': self.history_uncertainty}]),
+                   'sampling': self.sampling,}]),
                 (get_summary_stats,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
                    'sampling': self.sampling}])]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
-@webvizstore
-def get_summary_data(ensemble_paths: tuple, sampling: str,
-                     column_keys: tuple) -> pd.DataFrame:
-    """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENSEMBLE is added for each
-    ens-path to seperate the ensambles.
-    column_keys is converted to list as list-type is needed in
-    .get_smry_stats()"""
+def trace_group(ens_smry_data, ens, vector, color):
 
-    column_keys = list(column_keys) if isinstance(
-        column_keys, (list, tuple)) else None
+    ens_traces = []
 
-    smry_data = []
-    for ens, ens_path in ensemble_paths:
-        ens_smry_data = scratch_ensemble(
-            ens, ens_path).get_smry(
-                time_index=sampling, column_keys=column_keys)
-        ens_smry_data['ENSEMBLE'] = ens
-        smry_data.append(ens_smry_data)
-    return pd.concat(smry_data)
+    # 1st and only trace of the legendgroup to show up in legend
+    ens_traces.append({
+        'x': ens_smry_data[ens_smry_data['REAL']
+                           == ens_smry_data.REAL.unique()[0]]['DATE'],
+        'y': ens_smry_data[ens_smry_data['REAL']
+                           == ens_smry_data.REAL.unique()[0]][vector],
+        'legendgroup': ens,
+        'name': ens,
+        'type': 'markers',
+        'marker': {
+            'color': color
+        },
+        'showlegend': True
+    })
+
+    for real in ens_smry_data.REAL.unique()[1:]:
+
+        ens_traces.append({
+            'x': ens_smry_data[ens_smry_data['REAL'] == real]['DATE'],
+            'y': ens_smry_data[ens_smry_data['REAL'] == real][vector],
+            'legendgroup': ens,
+            'name': ens,
+            'type': 'line',
+            'marker': {
+                'color': color
+            },
+            'showlegend': False
+        })
+
+    return ens_traces
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
-@webvizstore
-def get_summary_stats(ensemble_paths: tuple, sampling: str,
-                      column_keys: tuple) -> pd.DataFrame:
-    """ Loops over given ensemble paths, extracts smry-data and concates them
-    into one big df. An additional column ENSEMBLE is added for each
-    ens-path to seperate the ensambles.
-    column_keys is converted to list as list-type is needed in
-    .get_smry_stats()"""
+def single_trace(ens_smry_data, ens, vector, color):
 
-    column_keys = list(column_keys) if isinstance(
-        column_keys, (list, tuple)) else None
-
-    smry_stats = []
-    for ens, ens_path in ensemble_paths:
-        ens_smry_stats = scratch_ensemble(
-            ens, ens_path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)
-        ens_smry_stats['ENSEMBLE'] = ens
-        smry_stats.append(ens_smry_stats)
-
-    return pd.concat(smry_stats)
+    return {
+        'x': ens_smry_data[ens_smry_data['REAL']
+                           == ens_smry_data.REAL.unique()[0]]['DATE'],
+        'y': ens_smry_data[ens_smry_data['REAL']
+                           == ens_smry_data.REAL.unique()[0]][vector],
+        'legendgroup': ens,
+        'name': ens,
+        'type': 'markers',
+        'marker': {
+            'color': color
+        },
+        'showlegend': True
+    }
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -212,68 +217,35 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 
     smry_data.dropna(subset=[vector])
 
-    traces = []
-    for ens in smry_data.ENSEMBLE.unique():
-        smry_data_i = smry_data[smry_data['ENSEMBLE'] == ens]
-        color = next(cycle_list)
-        first_trace = {
-            'x': smry_data_i[smry_data_i['REAL']
-                             == smry_data_i.REAL.unique()[0]]['DATE'],
-            'y': smry_data_i[smry_data_i['REAL']
-                             == smry_data_i.REAL.unique()[0]][vector],
-            'legendgroup': ens,
-            'name': ens,
-            'type': 'markers',
-            'marker': {
-                    'color': color
-            },
-            'showlegend': True
-        }
-        traces.append(first_trace)
-        for real in smry_data_i.REAL.unique()[1:]:
-            trace = {
-                'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
-                'y': smry_data_i[smry_data_i['REAL'] == real][vector],
-                'legendgroup': ens,
-                'name': ens,
-                'type': 'line',
-                'marker': {
-                    'color': color
-                },
-                'showlegend': False
-            }
-            traces.append(trace)
+    plot_traces = []
 
-    if (history_vector in smry_history_columns
-            and 'SHOW_H' in show_history_uncertainty):
-        hist_trace = {
-            'x': smry_data_i[smry_data_i['REAL'] == smry_data_i.REAL.unique(
-            )[0]]['DATE'],
-            'y': smry_data_i[smry_data_i['REAL'] == smry_data_i.REAL.unique(
-            )[0]][history_vector],
-            'legendgroup': 'History',
-            'name': 'History',
-            'type': 'markers',
-            'marker': {
-                    'color': 'red'
-            },
-            'showlegend': True
-        }
-        traces.append(hist_trace)
-        if history_uncertainty:
-            for real in smry_data_i.REAL.unique()[1:]:
-                hist_trace = {
-                    'x': smry_data_i[smry_data_i['REAL'] == real]['DATE'],
-                    'y': smry_data_i[smry_data_i['REAL'] == real][history_vector],
-                    'legendgroup': ens,
-                    'name': ens,
-                    'type': 'line',
-                    'marker': {
-                        'color': 'red'
-                    },
-                    'showlegend': False
-                }
-                traces.append(hist_trace)
+    for ens in smry_data.ENSEMBLE.unique():
+
+        plot_traces += trace_group(
+            ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
+            ens=ens,
+            vector=vector,
+            color=next(cycle_list))
+
+        if (history_vector in smry_history_columns
+                and 'SHOW_H' in show_history_uncertainty
+                and history_uncertainty):
+
+            plot_traces += trace_group(
+                ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
+                ens=ens,
+                vector=history_vector,
+                color='black')
+
+        if (history_vector in smry_history_columns
+                and 'SHOW_H' in show_history_uncertainty
+                and not history_uncertainty):
+
+            plot_traces += single_trace(
+                ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
+                ens=ens,
+                vector=history_vector,
+                color='black')
 
     layout = {
         'hovermode': 'closest',
@@ -285,11 +257,11 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
         'hoverlabel': {'font': {'family': 'Equinor'}},
     }
 
-    return dcc.Graph(figure={'data': traces, 'layout': layout},
+    return dcc.Graph(figure={'data': plot_traces, 'layout': layout},
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']
-    })
+                     })
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
