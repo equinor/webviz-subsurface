@@ -19,11 +19,9 @@ This container visualizes the quality of the history match.
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, container_settings, ensembles, observation_file: Path,
-                 title: str = 'History Match'):
+    def __init__(self, container_settings, ensembles, observation_file: Path):
 
         self.observation_file = observation_file
-        self.title = title
         self.ens_paths = tuple((ens,
                                 container_settings['scratch_ensembles'][ens])
                                for ens in ensembles)
@@ -99,7 +97,6 @@ This container visualizes the quality of the history match.
     @property
     def layout(self):
         return html.Div([
-                  html.H2(self.title),
                   wsc.HistoryMatch(id=self.hm_id, data=self.hm_data)
                ])
 
