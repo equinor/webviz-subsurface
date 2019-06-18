@@ -19,7 +19,9 @@ pages:
    content: 
     - Some text...
     - container: SummaryStats
-      ensemble: iter-0
+      ensembles:
+        - iter-0
+        - iter-1
     - ...some other text
  - title: Parameter distribution
    content: 

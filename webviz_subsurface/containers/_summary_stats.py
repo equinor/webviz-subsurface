@@ -4,7 +4,6 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
-from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from plotly.colors import DEFAULT_PLOTLY_COLORS
