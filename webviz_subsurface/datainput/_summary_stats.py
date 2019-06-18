@@ -1,7 +1,7 @@
 import pandas as pd
-from ..datainput import scratch_ensemble
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
+from ..datainput import scratch_ensemble
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
