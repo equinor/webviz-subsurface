@@ -4,11 +4,12 @@ import pandas as pd
 import dash_html_components as html
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 from webviz_subsurface_components import Map
 from ..datainput import scratch_ensemble
 
 
-class SubsurfaceMap:
+class SubsurfaceMap(WebvizContainer):
     '''### Subsurface map
 
 This container visualizes the subsurface. Currently only supporting reservoir
