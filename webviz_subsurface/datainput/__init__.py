@@ -13,4 +13,4 @@ __all__ = ['scratch_ensemble',
            'load_surface',
            'get_wfence',
            'get_hfence',
-           '_summary_stats',]
+           '_summary_stats']

@@ -72,7 +72,7 @@ class SummaryStats(WebvizContainer):
              if vctr + 'H' in self.vector_columns])
         self.smry_vector_columns = tuple(
             [vctr for vctr in self.vector_columns
-             if not vctr in self.smry_history_columns])
+             if vctr not in self.smry_history_columns])
         self.set_callbacks(app)
 
     @property
@@ -202,7 +202,6 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
     history_vector = (vector + 'H')
 
-
     if history_vector in smry_history_columns:
         smry_data = get_summary_data(
             ensemble_paths=ensemble_paths,
@@ -261,8 +260,7 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
     return dcc.Graph(figure={'data': plot_traces, 'layout': layout},
                      config={
                          'displaylogo': False,
-                         'modeBarButtonsToRemove': ['sendDataToCloud']}
-                    )
+                         'modeBarButtonsToRemove': ['sendDataToCloud']})
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
