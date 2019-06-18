@@ -167,6 +167,12 @@ Make sure it comes from a trusted source.</p>
 
 
 <h3>Include Markdown</h3>
+<p><em>Note:</em> The markdown syntax for images has been extended to support
+(optionally) providing width and/or height for individual images.
+To specify the dimensions write e.g.</p>
+<pre><code class="markdown">![width=40%,height=300px](./example_banner.png &quot;Some caption&quot;)
+</code></pre>
+
 <p>This container renders and includes the content from a Markdown file. Images
 are supported, and should in the markdown file be given as either relative
 paths to the markdown file itself, or absolute paths.</p>
@@ -345,18 +351,29 @@ in the simulation output using streamlines.</p>
 <hr>
 
 
-<h3>Summary statistics</h3>
-<p>This container visualizes simulation profiles, both per realization and
-statistical plots (min, max, mean, p10, p90).</p>
-<ul>
-<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
-<li><code>sampling</code>: Optional. Either <code>monthly</code> or <code>yearly</code>. Default is <code>monthly</code>.</li>
-<li><code>title</code>: Optional title for the container.</li>
-</ul>
+<p>Summary statistics</p>
+<pre><code>Args:
+    ensembles: list of ensemble paths. Length &gt;= 1
+    column_keys: list of pre defined vectors to visualize. Default is none
+    sampling: Optional. Either 'monthly' or 'yearly'. Default is 'monthly'.
+    title: Optional title for the container.
+    history_uncertainty: boolean value if history vector is subjected to
+        uncertainty.
+Return:
+    dcc.Graph() of either statistics plot or realization plot.
+Annotations:
+    Function argument-litst are passed as tuple as they are hashed in
+    webviz-store --portable option (list-type is not hashable).
+    Pandas within fmu.ensemlbe expects list. Therefore argument-tuples are
+    converted back into lists within get_smry_data and get_smry_stats
+    functions.
+</code></pre>
 <pre><code class='yaml'>  - container: SummaryStats
-    ensemble: some value
+    ensembles: some value
+    column_keys: None  # Optional (default value shown here).
     sampling: monthly  # Optional (default value shown here).
     title: Simulation time series  # Optional (default value shown here).
+    history_uncertainty: False  # Optional (default value shown here).
 </code></pre>
 <hr>
 
