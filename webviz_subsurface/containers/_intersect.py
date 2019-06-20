@@ -92,12 +92,9 @@ and a folder of well files stored in RMS well format.
         self.well_tvd_id = f'well-tvd-id-{self.unique_id}'
         self.zoom_state_id = f'ui-state-id-{self.unique_id}'
         self.intersection_id = f'intersection-id-{self.unique_id}'
-        # self.cube = load_cube(cube) if cube else None
         self.set_callbacks(app)
 
-    def slice_cube(self, well):
-        pass
-
+    
     @property
     def realizations(self):
         df = get_realizations(self.ensemble, self.ensemble_path)
@@ -258,57 +255,6 @@ and a folder of well files stored in RMS well format.
             # if _keep_zoom_state:
             xsect['layout']['uirevision'] = 'keep'
             return xsect
-
-        # @app.callback(Output(self.table_id, 'data'),
-        #               [Input(self.intersection_id, 'hoverData')],
-        #               [State(self.intersection_id, 'figure'),
-        #                State(self.surf_list_id, 'value')])
-        # def hover(_data, _fig, _surfaces):
-        #     '''Callback to update table on mouse over'''
-        #     try:
-        #         graph = _fig['data']
-        #     except TypeError:
-        #         return [{
-        #             'TVDmin': None,
-        #             'TVDmean': None,
-        #             'TVDmax': None,
-        #             'TVDstddev': None,
-        #             'Name': None
-        #         }]
-        #     if not isinstance(_surfaces, list):
-        #         _surfaces = [_surfaces]
-        #     if not _surfaces:
-        #         _surfaces = self.surface_names
-        #     names = {s: {'vals': [], 'min': None, 'max': None}
-        #              for s in _surfaces}
-
-        #     for i, p in enumerate(_data['points']):
-        #         try:
-        #             s_name = graph[i]['name']
-        #             real = self.realizations[graph[i]['real']]
-        #         except KeyError:
-        #             continue
-        #         names[s_name]['vals'].append(p['y'])
-        #         if not names[s_name]['min']:
-        #             names[s_name]['min'] = p['y']
-        #             names[s_name]['min_real'] = real
-        #             names[s_name]['max'] = p['y']
-        #             names[s_name]['max_real'] = real
-        #         else:
-        #             if names[s_name]['min'] > p['y']:
-        #                 names[s_name]['min'] = p['y']
-        #                 names[s_name]['min_real'] = real
-        #             if names[s_name]['max'] < p['y']:
-        #                 names[s_name]['max'] = p['y']
-        #                 names[s_name]['max_real'] = real
-
-        #     return [{
-        #         'TVDmin': f'{np.min(val["vals"]):.2f}({val["min_real"]})',
-        #         'TVDmean': f'{np.mean(val["vals"]):.2f}',
-        #         'TVDmax': f'{np.max(val["vals"]):.2f}({val["max_real"]})',
-        #         'TVDstddev': f'{np.std(val["vals"]):.2f}',
-        #         'Name': name}
-        #         for name, val in names.items()]
 
     def add_webvizstore(self):
         funcs = []
