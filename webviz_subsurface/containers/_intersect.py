@@ -94,7 +94,6 @@ and a folder of well files stored in RMS well format.
         self.intersection_id = f'intersection-id-{self.unique_id}'
         self.set_callbacks(app)
 
-    
     @property
     def realizations(self):
         df = get_realizations(self.ensemble, self.ensemble_path)
@@ -114,19 +113,21 @@ and a folder of well files stored in RMS well format.
         return os.path.join(self.cube_path, f'{cube}.segy')
 
     @cache.memoize(timeout=cache.TIMEOUT)
-    def plot_xsection(self, cube, well, reals, surf_names, color_scale, tvdmin=0):
+    def plot_xsection(self, cube, well, reals, surf_names,
+                      color_scale, tvdmin=0):
         '''Plots all lines in intersection'''
         traces = []
         layout = self.graph_layout
-        cube_trace = make_cube_trace(well, self.get_seis_path(cube)).to_dict('rows')
+        cube_trace = make_cube_trace(
+            well, self.get_seis_path(cube)).to_dict('rows')
         cube_trace[0]['colorscale'] = color_scale
         cube_trace[0]['name'] = cube
-        cube_trace[0]['colorbar'] = {'x':1, 'showticklabels': False}
+        cube_trace[0]['colorbar'] = {'x': 1, 'showticklabels': False}
         layout['xaxis']['range'] = [cube_trace[0]['x0'], cube_trace[0]['xmax']]
         layout['xaxis']['autorange'] = False
         layout['yaxis']['range'] = [cube_trace[0]['ymax'], cube_trace[0]['y0']]
         layout['yaxis']['autorange'] = False
-        
+
         for s_name in surf_names:
             traces.extend(
                 make_surface_traces(
@@ -140,7 +141,7 @@ and a folder of well files stored in RMS well format.
     def graph_layout(self):
         '''Styling the graph'''
         return {
-        'margin': {'t':0},
+            'margin': {'t': 0},
             'yaxis': {'autorange': 'reversed',
                       'zeroline': False, 'title': 'TVD'},
             'xaxis': {'zeroline': False,
@@ -155,7 +156,7 @@ and a folder of well files stored in RMS well format.
                 html.Div([
                     html.P('Seismic cube:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        style={'width':'100%'},
+                        style={'width': '100%'},
                         id=self.cube_list_id,
                         options=[{'label': c, 'value': c}
                                  for c in self.cubes],
@@ -164,7 +165,7 @@ and a folder of well files stored in RMS well format.
                     ),
                     html.P('Seismic color:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        style={'width':'50%'},
+                        style={'width': '50%'},
                         id=self.color_scale_id,
                         options=[{'label': c, 'value': c}
                                  for c in Intersect.COLOR_SCALES],
@@ -173,7 +174,7 @@ and a folder of well files stored in RMS well format.
                     ),
                     html.P('Well:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(
-                        style={'width':'50%'},
+                        style={'width': '50%'},
                         id=self.well_list_id,
                         options=[{'label': PurePath(well).stem, 'value': well}
                                  for well in self.well_names],
@@ -197,34 +198,10 @@ and a folder of well files stored in RMS well format.
                         value=list(self.realizations.keys())[0],
                         multi=True,
                         placeholder='All realizations'
-                    ),
-                    # html.Div(style=Intersect.TABLE_STYLE, children=[
-                    #     DataTable(
-                    #         id=self.table_id,
-                    #         columns=[{"name": i, "id": i}
-                    #                  for i in ['Name', 'TVDmin', 'TVDmean',
-                    #                            'TVDmax', 'TVDstddev']]
-                    #     )
-                    # ])
+                    )
                 ]),
-                html.Div( children=[
-                    dcc.Graph(id=self.intersection_id),
-                    # html.Div(style=Intersect.FENCE_OPTION_STYLE, children=[
-                    #     html.P('Start depth:', style={'font-weight': 'bold'}),
-                    #     html.P('Graph zoom level:', style={
-                    #            'font-weight': 'bold'}),
-                    #     dcc.Input(style={'overflow': 'auto'},
-                    #               id=self.well_tvd_id, type='number', value=0),
-                    #     dcc.RadioItems(
-                    #         id=self.zoom_state_id,
-                    #         options=[{'label': k, 'value': v}
-                    #                  for k, v in {
-                    #                  'Keep on new data': True,
-                    #                  'Reset on new data': False}.items()],
-                    #         value=True,
-                    #     ),
-                    # ])
-
+                html.Div(children=[
+                    dcc.Graph(id=self.intersection_id)
                 ])
             ])
         ])
@@ -236,8 +213,6 @@ and a folder of well files stored in RMS well format.
              Input(self.well_list_id, 'value'),
              Input(self.real_list_id, 'value'),
              Input(self.surf_list_id, 'value'),
-             # Input(self.well_tvd_id, 'value'),
-             # Input(self.zoom_state_id, 'value'),
              Input(self.color_scale_id, 'value')])
         def set_fence(_cube_path, _well_path, _reals, _surfs, color_scale):
             '''Callback to update intersection on data change'''
@@ -250,9 +225,8 @@ and a folder of well files stored in RMS well format.
             if not _surfs:
                 _surfs = self.surface_names
             s_names = [s for s in self.surface_names if s in _surfs]
-            xsect = self.plot_xsection(_cube_path, _well_path, _reals, s_names, color_scale)
-            
-            # if _keep_zoom_state:
+            xsect = self.plot_xsection(
+                _cube_path, _well_path, _reals, s_names, color_scale)
             xsect['layout']['uirevision'] = 'keep'
             return xsect
 
@@ -266,8 +240,9 @@ and a folder of well files stored in RMS well format.
                                'suffix': self.well_suffix}]))
         for well in self.well_names:
             funcs.append((well_to_df, [{'well_name': well}]))
-            funcs.append((make_cube_trace, [{'well': well, 'cube':self.get_seis_path(cube)} 
-                          for cube in self.cubes]))
+            funcs.append((make_cube_trace, [{'well': well,
+                                             'cube': self.get_seis_path(cube)}
+                                            for cube in self.cubes]))
         for surf in self.surface_names:
             for path in self.realizations.keys():
                 funcs.append((surface_to_df, [
@@ -323,14 +298,13 @@ def make_surface_traces(well, reals, surf_name, cat, color):
             })
     return pd.DataFrame(plot_data)
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def make_cube_trace(well, cube) -> pd.DataFrame:
-    hmin, hmax, vmin, vmax, values  = get_cfence(well, cube)
+    hmin, hmax, vmin, vmax, values = get_cfence(well, cube)
     x_inc = (hmax-hmin)/values.shape[1]
     y_inc = (vmax-vmin)/values.shape[0]
-    values[values > 1000] = np.nan #remove
- 
     return pd.DataFrame([{
         'type': 'heatmap',
         'z': values.tolist(),
@@ -342,6 +316,7 @@ def make_cube_trace(well, cube) -> pd.DataFrame:
         'dy': y_inc,
         'zsmooth': 'best'
     }])
+
 
 @webvizstore
 def get_realizations(ens, ens_path) -> pd.DataFrame:
