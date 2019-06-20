@@ -29,6 +29,8 @@ and a folder of well files stored in RMS well format.
 * `surface_cat`: Surface category to look for in the file names
 * `surface_names`: List of surface names to look for in the file names
 * `well_suffix`:  Optional suffix for well files. Default is .rmswell
+* `cube_path`: File folder containing seismic cubes
+* `cubes`: List of cube names
 '''
     COLORS = ['#543005', '#8c510a', '#bf812d', '#dfc27d',
               '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
