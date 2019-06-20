@@ -59,18 +59,7 @@ and a folder of well files stored in RMS well format.
         'grid-template-columns': '2fr 6fr',
     }
 
-    FENCE_OPTION_STYLE = {
-        'display': 'grid',
-        'align-content': 'space-around',
-        'justify-content': 'space-between',
-        'grid-template-columns': '1fr 1fr',
-        'max-width': '50%'
-    }
 
-    TABLE_STYLE = {
-        'maxHeight': '300',
-        'overflowY': 'auto'
-    }
 
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
