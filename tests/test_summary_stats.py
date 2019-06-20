@@ -1,45 +1,56 @@
 import pytest
 from mock import patch
-import flask_caching
+# pathing .cache.memoize with a pass through decorator function
+# lambda *x, **y: lambda f: f   # takes params
 patch('webviz_config.common_cache.cache.memoize',
-      new_callable=None).start()
+      lambda *x, **y: lambda f: f).start()
 import sys
 sys.path.append('../')
-from webviz_subsurface.datainput import get_summary_data
+import pandas as pd
+from webviz_subsurface.datainput import get_summary_data, get_summary_stats, \
+    get_fieldgain
 
 
 def test_summary_data():
 
     smry_data = get_summary_data(
         ensemble_paths=[
-            ('Volve--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
-            ('Volve--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
+            ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
+            ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ],
         time_index = 'yearly',
         column_keys = ['FOP*', 'FGP*'],
     )
+    assert smry_data.shape == (484, 7)
+    assert isinstance(smry_data, pd.DataFrame)
+    assert 'REAL' in smry_data.columns
+    assert 'ENSEMBLE' in smry_data.columns
 
-"""
-    Posssible solutions:
-        - test on undecorated function but use decorated in app
+    smry_stats = get_summary_stats(
+        ensemble_paths=[
+            ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
+            ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
+        ],
+        time_index = 'yearly',
+        column_keys = ['FOP*', 'FGP*'],
+    )
+    assert smry_stats.shape == (110, 5)
+    assert isinstance(smry_stats, pd.DataFrame)
+    assert 'REAL' not in smry_stats.columns
+    assert 'ENSEMBLE' in smry_stats.columns
 
-            @numba.jit
-            def f(a, b):
-              return f_undecorated(a, b)
-
-            def f_undecorated(a, b):
-              return a + b
-
-        - move caching into app itself
-
-        - monkey-patch a decorator:
-        https://stackoverflow.com/questions/7667567/ \
-        can-i-patch-a-python-decorator-before-it-wraps \
-        -a-function
-
-            Import the module that contains it
-            Define the mock decorator function
-            Set e.g. module.decorator = mymockdecorator
-            Import the module(s) that use the decorator, or use it in 
-            your own module.
-"""
+    fieldgain = get_fieldgain(
+        ensemble_paths=[
+            ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
+            ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
+        ],
+        time_index = 'yearly',
+        column_keys = ['FOP*', 'FGP*'],
+        iorens='iter--0',
+        refens='iter--1',
+        ensemble_set_name='Volve'
+    )
+    assert fieldgain.shape == (264, 6)
+    assert isinstance(fieldgain, pd.DataFrame)
+    assert 'REAL' in fieldgain.columns
+    assert 'ENSEMBLE' not in fieldgain.columns
