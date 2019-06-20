@@ -7,7 +7,7 @@ from webviz_plotly.graph_objs import FanChart
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from plotly.colors import DEFAULT_PLOTLY_COLORS
-from ..datainput import get_summary_data, get_summary_stats
+from ..datainput import get_summary_data, get_summary_stats, get_fieldgain
 
 
 class SummaryStats(WebvizContainer):
@@ -46,7 +46,7 @@ class SummaryStats(WebvizContainer):
         self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
-        self.sampling = sampling
+        self.time_index = sampling
         self.radio_plot_type_id = f'radio-plot-type-{self.uid}'
         self.show_history_uncertainty_id = \
             f'show-history-uncertainty-{self.uid}'
@@ -60,7 +60,7 @@ class SummaryStats(WebvizContainer):
             list(
                 get_summary_data(
                     ensemble_paths=self.ensemble_paths,
-                    sampling=self.sampling,
+                    time_index=self.time_index,
                     column_keys=self.column_keys) .drop(
                         columns=[
                             'DATE',
@@ -110,7 +110,7 @@ class SummaryStats(WebvizContainer):
                 return render_realization_plot(
                     ensemble_paths=self.ensemble_paths,
                     column_keys=self.column_keys,
-                    sampling=self.sampling,
+                    time_index=self.time_index,
                     smry_history_columns=self.smry_history_columns,
                     history_uncertainty=self.history_uncertainty,
                     vector=vector,
@@ -119,18 +119,18 @@ class SummaryStats(WebvizContainer):
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
                     column_keys=self.column_keys,
-                    sampling=self.sampling,
+                    time_index=self.time_index,
                     vector=vector)
 
     def add_webvizstore(self):
         return [(get_summary_data,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
-                   'sampling': self.sampling, }]),
+                   'time_index': self.time_index, }]),
                 (get_summary_stats,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
-                   'sampling': self.sampling}])]
+                   'time_index': self.time_index}])]
 
 
 def trace_group(ens_smry_data, ens, vector, color):
@@ -187,7 +187,7 @@ def single_trace(ens_smry_data, ens, vector, color):
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_paths: tuple, sampling: str,
+def render_realization_plot(ensemble_paths: tuple, time_index: str,
                             column_keys: tuple, vector: str,
                             smry_history_columns: tuple,
                             history_uncertainty: bool,
@@ -205,14 +205,24 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
         smry_data = get_summary_data(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
-            sampling=sampling)[
+            time_index=time_index)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector, history_vector]]
     else:
         smry_data = get_summary_data(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
-            sampling=sampling)[
+            time_index=time_index)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
+
+    print('fieldgian ========================================================')
+    fieldgain = get_fieldgain(
+        ensemble_paths=ensemble_paths,
+        column_keys=column_keys,
+        time_index=time_index,
+        ensemble_set_name='Volve',
+        iorens='iter-0',
+        refens='iter-1')[
+            ['REAL', 'DATE', vector]]
 
     smry_data.dropna(subset=[vector])
 
@@ -246,6 +256,12 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
                 vector=history_vector,
                 color='black')
 
+    plot_traces += trace_group(
+        ens_smry_data=fieldgain,
+        ens='fieldgain',
+        vector=vector,
+        color='red') 
+
     layout = {
         'hovermode': 'closest',
         'barmode': 'overlay',
@@ -263,7 +279,7 @@ def render_realization_plot(ensemble_paths: tuple, sampling: str,
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
+def render_stat_plot(ensemble_paths: tuple, time_index: str, column_keys: tuple,
                      vector: str):
     """Loops over ensemlbe_paths and creates one summary_statistics-plot per
     ensemble."""
@@ -271,7 +287,7 @@ def render_stat_plot(ensemble_paths: tuple, sampling: str, column_keys: tuple,
     smry_stats = get_summary_stats(
         ensemble_paths=ensemble_paths,
         column_keys=column_keys,
-        sampling=sampling)
+        time_index=time_index)
 
     fan_chart_divs = []
     for ens in smry_stats.ENSEMBLE.unique():

@@ -1,12 +1,15 @@
 import pandas as pd
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
+from fmu.ensemble import EnsembleSet 
 from ..datainput import scratch_ensemble
+
+
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_data(ensemble_paths: tuple, sampling: str,
+def get_summary_data(ensemble_paths: tuple, time_index: str,
                      column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE is added for each
@@ -21,7 +24,7 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
     for ens, ens_path in ensemble_paths:
         ens_smry_data = scratch_ensemble(
             ens, ens_path).get_smry(
-                time_index=sampling, column_keys=column_keys)
+                time_index=time_index, column_keys=column_keys)
         ens_smry_data['ENSEMBLE'] = ens
         smry_data.append(ens_smry_data)
     return pd.concat(smry_data)
@@ -29,7 +32,7 @@ def get_summary_data(ensemble_paths: tuple, sampling: str,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_stats(ensemble_paths: tuple, sampling: str,
+def get_summary_stats(ensemble_paths: tuple, time_index: str,
                       column_keys: tuple) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE is added for each
@@ -44,8 +47,29 @@ def get_summary_stats(ensemble_paths: tuple, sampling: str,
     for ens, ens_path in ensemble_paths:
         ens_smry_stats = scratch_ensemble(
             ens, ens_path).get_smry_stats(
-                time_index=sampling, column_keys=column_keys)
+                time_index=time_index, column_keys=column_keys)
         ens_smry_stats['ENSEMBLE'] = ens
         smry_stats.append(ens_smry_stats)
 
     return pd.concat(smry_stats)
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+@webvizstore
+def get_fieldgain(ensemble_paths: tuple, time_index: str, column_keys: tuple,
+                  iorens: str, refens: str, ensemble_set_name: str
+                 ) -> pd.DataFrame:
+
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
+
+    ensset = EnsembleSet(
+        ensemble_set_name,
+        [scratch_ensemble(ens_name, ens_path)
+         for ens_name, ens_path in ensemble_paths]
+    )
+
+    return (ensset[iorens] - ensset[refens]).get_smry(
+        column_keys=column_keys,
+        time_index=time_index,
+    )
