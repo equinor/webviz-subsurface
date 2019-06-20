@@ -34,12 +34,12 @@ setup(
         ]
     },
     install_requires=[
-        'xtgeo==2.1.0a2',
         'scipy>=1.2.1',
         'dash-daq>=0.1.5',
         'webviz-config>=0.0.4',
         'webviz-plotly>=0.0.1',
-        'webviz-subsurface-components>=0.0.3'
+        'webviz-subsurface-components>=0.0.3',
+        'xtgeo==2.1.0a2'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
