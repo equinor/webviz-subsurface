@@ -59,8 +59,6 @@ and a folder of well files stored in RMS well format.
         'grid-template-columns': '2fr 6fr',
     }
 
-
-
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
                  cube_path, cubes: list, well_suffix='.rmswell'):

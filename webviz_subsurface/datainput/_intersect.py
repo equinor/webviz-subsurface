@@ -9,6 +9,7 @@ from webviz_config.webviz_store import webvizstore
 def load_well(well_name):
     return xtgeo.well.Well(well_name)
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def load_cube(cube_name):
     return xtgeo.cube.Cube(cube_name)
@@ -26,6 +27,7 @@ def load_surface(s_name, real_path, surface_cat):
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def surface_to_df(s_name, real_path, surface_cat) -> pd.DataFrame:
+    '''Convert Irap Bin surface to Pandas dataframe'''
     s = load_surface(s_name, real_path, surface_cat)
     return pd.DataFrame.from_dict([{
         'ncol': s.ncol,
@@ -46,6 +48,7 @@ def well_to_df(well_name) -> pd.DataFrame:
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_wfence(well_name, extend=200, tvdmin=0) -> pd.DataFrame:
+    '''Generate 2D array along well path'''
     df = well_to_df(well_name)
     keep = ("X_UTME", "Y_UTMN", "Z_TVDSS")
     for col in df.columns:
@@ -67,11 +70,14 @@ def get_wfence(well_name, extend=200, tvdmin=0) -> pd.DataFrame:
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_cfence(well, cube_name):
+    '''Slice cube along well fence'''
     cube = load_cube(cube_name)
     return cube.get_randomline(get_wfence(well).values.copy())
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
+    '''Slice surface along well fence'''
     df = surface_to_df(s_name, real_path, surface_cat)
     s = xtgeo.surface.RegularSurface(**df.to_dict('records')[0])
     fence = s.get_fence(get_wfence(well).values.copy())
