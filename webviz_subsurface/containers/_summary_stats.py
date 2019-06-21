@@ -45,10 +45,8 @@ class SummaryStats(WebvizContainer):
             ensembles,
             column_keys=None,
             sampling: str = 'monthly',
-            title: str = 'Simulation time series',
             history_uncertainty: bool = False):
 
-        self.title = title
         self.uid = f'{uuid4()}'
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if isinstance(

@@ -22,10 +22,8 @@ effect with other parameters.
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, app, csv_file: Path,
-                 title: str = 'Morris plot'):
+    def __init__(self, app, csv_file: Path):
 
-        self.title = title
         self.graph_id = 'graph-{}'.format(uuid4())
         self.vector_id = 'vector-{}'.format(uuid4())
         self.csv_file = csv_file
@@ -36,7 +34,6 @@ effect with other parameters.
     @property
     def layout(self):
         return html.Div([
-            html.H2(self.title),
             html.Label('Vector', style={'font-size': '2rem'}),
             dcc.Dropdown(id=self.vector_id,
                          clearable=False,
