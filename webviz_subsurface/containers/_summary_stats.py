@@ -44,22 +44,66 @@ class SummaryStats(WebvizContainer):
 
         self.title = title
         self.uid = f'{uuid4()}'
-        self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
-        self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
-        self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
+        #self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
+        #self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
+        #self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
+        #self.show_history_uncertainty_id = \
+        #    f'show-history-uncertainty-{self.uid}'
+        #self.radio_plot_type_id = f'radio-plot-type-{self.uid}'
+        #self.chart_id = f'chart-id-{self.uid}'
+        self.time_index = sampling
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
-        self.time_index = sampling
-        self.radio_plot_type_id = f'radio-plot-type-{self.uid}'
-        self.show_history_uncertainty_id = \
-            f'show-history-uncertainty-{self.uid}'
-        self.chart_id = f'chart-id-{self.uid}'
+        self.history_uncertainty = history_uncertainty        
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
-        self.history_uncertainty = history_uncertainty
-        self.vector_columns = sorted(
+        self.set_callbacks(app)
+        #self.vector_columns = sorted(
+        #    list(
+        #        get_summary_data(
+        #            ensemble_paths=self.ensemble_paths,
+        #            time_index=self.time_index,
+        #            column_keys=self.column_keys) .drop(
+        #                columns=[
+        #                    'DATE',
+        #                    'REAL',
+        #                    'ENSEMBLE']).columns))
+        #self.smry_history_columns = tuple(
+        #    [vctr + 'H' for vctr in self.vector_columns
+        #     if vctr + 'H' in self.vector_columns])
+        #self.smry_vector_columns = tuple(
+        #    [vctr for vctr in self.vector_columns
+        #     if vctr not in self.smry_history_columns])
+
+    @property
+    def dropwdown_vector_id(self):
+        return f'dropdown-vector-{self.uid}'
+
+    @property
+    def dropdown_iorens_id(self):
+        return f'dropdown-iorens-{self.uid}'
+
+    @property
+    def dropdown_refens_id(self):
+        return f'dropdown-refens-{self.uid}'
+
+    @property
+    def show_history_uncertainty_id(self):
+        return f'show-history-uncertainty-{self.uid}'
+    
+    @property
+    def radio_plot_type_id(self):
+        return f'radio-plot-type-{self.uid}'
+
+    @property
+    def chart_id(self):
+        return f'chart-id-{self.uid}'        
+
+    @property
+    def vector_columns(self):
+        return sorted(
             list(
                 get_summary_data(
                     ensemble_paths=self.ensemble_paths,
@@ -69,13 +113,18 @@ class SummaryStats(WebvizContainer):
                             'DATE',
                             'REAL',
                             'ENSEMBLE']).columns))
-        self.smry_history_columns = tuple(
+
+    @property
+    def smry_history_columns(self):
+        return tuple(
             [vctr + 'H' for vctr in self.vector_columns
              if vctr + 'H' in self.vector_columns])
-        self.smry_vector_columns = tuple(
+
+    @property
+    def smry_vector_columns(self):
+        return tuple(
             [vctr for vctr in self.vector_columns
-             if vctr not in self.smry_history_columns])
-        self.set_callbacks(app)
+             if vctr not in self.smry_history_columns])        
 
     @property
     def layout(self):
