@@ -32,6 +32,12 @@ class SummaryStats(WebvizContainer):
         functions.
     """
 
+    # TODO:
+    #  - add fieldgain to webvizstore
+    #  - grid-layout
+    #  - selector-layout
+    #  - check data-flow -> unnecessary unhashed reloading of ensamble-data?
+
     def __init__(
             self,
             app,
@@ -44,38 +50,15 @@ class SummaryStats(WebvizContainer):
 
         self.title = title
         self.uid = f'{uuid4()}'
-        #self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
-        #self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
-        #self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
-        #self.show_history_uncertainty_id = \
-        #    f'show-history-uncertainty-{self.uid}'
-        #self.radio_plot_type_id = f'radio-plot-type-{self.uid}'
-        #self.chart_id = f'chart-id-{self.uid}'
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
-        self.history_uncertainty = history_uncertainty        
+        self.history_uncertainty = history_uncertainty
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
         self.set_callbacks(app)
-        #self.vector_columns = sorted(
-        #    list(
-        #        get_summary_data(
-        #            ensemble_paths=self.ensemble_paths,
-        #            time_index=self.time_index,
-        #            column_keys=self.column_keys) .drop(
-        #                columns=[
-        #                    'DATE',
-        #                    'REAL',
-        #                    'ENSEMBLE']).columns))
-        #self.smry_history_columns = tuple(
-        #    [vctr + 'H' for vctr in self.vector_columns
-        #     if vctr + 'H' in self.vector_columns])
-        #self.smry_vector_columns = tuple(
-        #    [vctr for vctr in self.vector_columns
-        #     if vctr not in self.smry_history_columns])
 
     @property
     def dropwdown_vector_id(self):
@@ -92,14 +75,14 @@ class SummaryStats(WebvizContainer):
     @property
     def show_history_uncertainty_id(self):
         return f'show-history-uncertainty-{self.uid}'
-    
+
     @property
     def radio_plot_type_id(self):
         return f'radio-plot-type-{self.uid}'
 
     @property
     def chart_id(self):
-        return f'chart-id-{self.uid}'        
+        return f'chart-id-{self.uid}'
 
     @property
     def vector_columns(self):
@@ -124,37 +107,45 @@ class SummaryStats(WebvizContainer):
     def smry_vector_columns(self):
         return tuple(
             [vctr for vctr in self.vector_columns
-             if vctr not in self.smry_history_columns])        
+             if vctr not in self.smry_history_columns])
 
     @property
     def layout(self):
         return html.Div([
             html.H2(self.title),
-            html.P('Summary Vector:', style={'font-weight': 'bold'}),
-            dcc.Dropdown(id=self.dropwdown_vector_id,
-                         clearable=False,
-                         options=[{'label': i, 'value': i}
-                                  for i in self.smry_vector_columns],
-                         value=self.smry_vector_columns[0]),
-            html.P('Plot type:', style={'font-weight': 'bold'}),
-            dcc.RadioItems(id=self.radio_plot_type_id,
-                           options=[{'label': i, 'value': i}
-                                    for i in ['Realizations', 'Statistics']],
-                           value='Realizations'),
-            dcc.Checklist(
-                id=self.show_history_uncertainty_id,
-                options=[{'label': 'Show history', 'value': 'SHOW_H'}],
-                values=[],
-            ),
-            dcc.Dropdown(id=self.dropdown_iorens_id,
-                options=[{'label': i[0], 'value': i[0]}
-                         for i in self.ensemble_paths],                
-            ),
-            dcc.Dropdown(id=self.dropdown_refens_id,
-                options=[{'label': i[0], 'value': i[0]}
-                         for i in self.ensemble_paths],                
-            ),
-            html.Div(id=self.chart_id)
+            html.Div([
+                html.Div([
+                    html.P('Summary Vector:', style={'font-weight': 'bold'}),
+                    dcc.Dropdown(id=self.dropwdown_vector_id,
+                                 clearable=False,
+                                 options=[{'label': i, 'value': i}
+                                          for i in self.smry_vector_columns],
+                                 value=self.smry_vector_columns[0]),
+                    html.P('Plot type:', style={'font-weight': 'bold'}),
+                    dcc.RadioItems(id=self.radio_plot_type_id,
+                                   options=[{'label': i, 'value': i}
+                                            for i in ['Realizations', 'Statistics']],
+                                   value='Realizations'),
+                    dcc.Checklist(
+                        id=self.show_history_uncertainty_id,
+                        options=[{'label': 'Show history', 'value': 'SHOW_H'}],
+                        values=[],
+                    ),
+                    dcc.Dropdown(
+                        id=self.dropdown_iorens_id,
+                        options=[{'label': i[0], 'value': i[0]}
+                                 for i in self.ensemble_paths],
+                    ),
+                    dcc.Dropdown(
+                        id=self.dropdown_refens_id,
+                        options=[{'label': i[0], 'value': i[0]}
+                                 for i in self.ensemble_paths],
+                    ),
+                ], style={"float":"left", 'display': 'inline-block'}),
+                html.Div([
+                    html.Div(id=self.chart_id)
+                ], style={'width': '80%', 'display': 'inline-block'}),
+            ]),
         ])
 
     def set_callbacks(self, app):
@@ -188,7 +179,6 @@ class SummaryStats(WebvizContainer):
                     time_index=self.time_index,
                     vector=vector)
 
-    # TODO: add fieldgain
     def add_webvizstore(self):
         return [(get_summary_data,
                  [{'ensemble_paths': self.ensemble_paths,
@@ -255,14 +245,14 @@ def single_trace(ens_smry_data, ens, vector, color):
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
-    ensemble_paths: tuple, 
-    time_index: str,
-    column_keys: tuple, vector: str,
-    smry_history_columns: tuple,
-    history_uncertainty: bool,
-    show_history_uncertainty: str,
-    iorens: str,
-    refens: str
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple, vector: str,
+        smry_history_columns: tuple,
+        history_uncertainty: bool,
+        show_history_uncertainty: str,
+        iorens: str,
+        refens: str
     ):
     """ Creates scatter-plot-traces for choosen vector. One trace per
     realization will be created. If history-data are not subjeted to

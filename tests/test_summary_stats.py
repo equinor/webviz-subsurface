@@ -1,12 +1,14 @@
-import pytest
-from mock import patch
-# pathing .cache.memoize with a pass through decorator function
-# lambda *x, **y: lambda f: f   # takes params
-patch('webviz_config.common_cache.cache.memoize',
-      lambda *x, **y: lambda f: f).start()
 import sys
 sys.path.append('../')
 import pandas as pd
+from mock import patch
+# pathing .cache.memoize with a pass through decorator function
+# lambda *x, **y: lambda f: f   # takes params
+# Important: decorators need to be patched before they are applied within
+# a module that uses them. # They get applied when the module is loaded.
+# http://alexmarandon.com/articles/python_mock_gotchas/
+patch('webviz_config.common_cache.cache.memoize',
+      lambda *x, **y: lambda f: f).start()
 from webviz_subsurface.datainput import get_summary_data, get_summary_stats, \
     get_fieldgain
 
@@ -19,8 +21,8 @@ def test_summary_data():
             ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ],
         ensemble_set_name='Volve',
-        time_index = 'yearly',
-        column_keys = ['FOP*', 'FGP*'],
+        time_index='yearly',
+        column_keys=['FOP*', 'FGP*'],
     )
     assert smry_data.shape == (484, 7)
     assert isinstance(smry_data, pd.DataFrame)
@@ -32,8 +34,8 @@ def test_summary_data():
             ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
             ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ],
-        time_index = 'yearly',
-        column_keys = ['FOP*', 'FGP*'],
+        time_index='yearly',
+        column_keys=['FOP*', 'FGP*'],
     )
     assert smry_stats.shape == (110, 5)
     assert isinstance(smry_stats, pd.DataFrame)
@@ -45,8 +47,8 @@ def test_summary_data():
             ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
             ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ],
-        time_index = 'yearly',
-        column_keys = ['FOP*', 'FGP*'],
+        time_index='yearly',
+        column_keys=['FOP*', 'FGP*'],
         iorens='iter--0',
         refens='iter--1',
         ensemble_set_name='Volve'

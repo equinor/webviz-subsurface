@@ -1,11 +1,13 @@
 import pandas as pd
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
-from fmu.ensemble import EnsembleSet 
+from fmu.ensemble import EnsembleSet
 from ..datainput import scratch_ensemble
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str=None):
+def load_ensemble_set(
+        ensemble_paths: tuple,
+        ensemble_set_name: str = 'EnsembleSet'):
     """Loops over given ensembles-path, loads them into memory and
     aggregates them into an EnsemlbeSet-obj. Main data on sumamry_stats
     container.
@@ -20,16 +22,16 @@ def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str=None):
         ensemble_set_name,
         [scratch_ensemble(ens_name, ens_path)
          for ens_name, ens_path in ensemble_paths]
-)
+    )
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def get_summary_data(
-    ensemble_paths: tuple,
-    time_index: str,
-    column_keys: tuple,
-    ensemble_set_name: str='EnsembleSet'
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        ensemble_set_name: str = 'EnsembleSet'
     ) -> pd.DataFrame:
     """Retruns summary data of ensembleset. Operates on EnsemlbeSet-obj that
     is returned by load_ensemble_set() and cached after first call.
@@ -46,7 +48,7 @@ def get_summary_data(
         column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, 
+        ensemble_paths=ensemble_paths,
         ensemble_set_name=ensemble_set_name
     )
 
@@ -58,8 +60,11 @@ def get_summary_data(
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_summary_stats(ensemble_paths: tuple, time_index: str,
-                      column_keys: tuple) -> pd.DataFrame:
+def get_summary_stats(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple
+    ) -> pd.DataFrame:
     """ Loops over given ensemble paths, extracts smry-data and concates them
     into one big df. An additional column ENSEMBLE is added for each
     ens-path to seperate the ensambles.
@@ -82,9 +87,14 @@ def get_summary_stats(ensemble_paths: tuple, time_index: str,
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_fieldgain(ensemble_paths: tuple, time_index: str, column_keys: tuple,
-                  iorens: str, refens: str, ensemble_set_name: str
-                 ) -> pd.DataFrame:
+def get_fieldgain(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        iorens: str,
+        refens: str,
+        ensemble_set_name: str = 'EnsembleSet'
+    ) -> pd.DataFrame:
     """Calulates differnces between two ensembles and retunrs a dataframe of
     delta-data. Operates on EnsemlbeSet-obj that is returned by
     load_ensemble_set() and cached after first call.
@@ -93,8 +103,8 @@ def get_fieldgain(ensemble_paths: tuple, time_index: str, column_keys: tuple,
         ensemle_set_name: str = name of enesemble-set
         time_index: str = timeseries steps
         column_keys: tuple = pre filtered vectors
-        iorens: str = 
-        refens: str = reference ensemble 
+        iorens: str =
+        refens: str = reference ensemble
     Retuns:
         delta-vals-dataframe
     """
@@ -103,7 +113,7 @@ def get_fieldgain(ensemble_paths: tuple, time_index: str, column_keys: tuple,
         column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, 
+        ensemble_paths=ensemble_paths,
         ensemble_set_name=ensemble_set_name
     )
 
