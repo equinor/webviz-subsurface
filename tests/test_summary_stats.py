@@ -18,6 +18,7 @@ def test_summary_data():
             ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
             ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ],
+        ensemble_set_name='Volve',
         time_index = 'yearly',
         column_keys = ['FOP*', 'FGP*'],
     )
