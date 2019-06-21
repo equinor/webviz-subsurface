@@ -1,5 +1,6 @@
 import itertools
 from uuid import uuid4
+import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
@@ -44,6 +45,8 @@ class SummaryStats(WebvizContainer):
         self.title = title
         self.uid = f'{uuid4()}'
         self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
+        self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
+        self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
         self.time_index = sampling
@@ -94,6 +97,14 @@ class SummaryStats(WebvizContainer):
                 options=[{'label': 'Show history', 'value': 'SHOW_H'}],
                 values=[],
             ),
+            dcc.Dropdown(id=self.dropdown_iorens_id,
+                options=[{'label': i[0], 'value': i[0]}
+                         for i in self.ensemble_paths],                
+            ),
+            dcc.Dropdown(id=self.dropdown_refens_id,
+                options=[{'label': i[0], 'value': i[0]}
+                         for i in self.ensemble_paths],                
+            ),
             html.Div(id=self.chart_id)
         ])
 
@@ -101,11 +112,15 @@ class SummaryStats(WebvizContainer):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value'),
-                       Input(self.show_history_uncertainty_id, 'values')])
+                       Input(self.show_history_uncertainty_id, 'values'),
+                       Input(self.dropdown_iorens_id, 'value'),
+                       Input(self.dropdown_refens_id, 'value')])
         def update_plot(
                 vector,
                 summary_plot_type,
-                show_history_uncertainty_id):
+                show_history_uncertainty_id,
+                iorens,
+                refens):
             if summary_plot_type == 'Realizations':
                 return render_realization_plot(
                     ensemble_paths=self.ensemble_paths,
@@ -114,7 +129,9 @@ class SummaryStats(WebvizContainer):
                     smry_history_columns=self.smry_history_columns,
                     history_uncertainty=self.history_uncertainty,
                     vector=vector,
-                    show_history_uncertainty=show_history_uncertainty_id)
+                    show_history_uncertainty=show_history_uncertainty_id,
+                    iorens=iorens,
+                    refens=refens)
             if summary_plot_type == 'Statistics':
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
@@ -122,6 +139,7 @@ class SummaryStats(WebvizContainer):
                     time_index=self.time_index,
                     vector=vector)
 
+    # TODO: add fieldgain
     def add_webvizstore(self):
         return [(get_summary_data,
                  [{'ensemble_paths': self.ensemble_paths,
@@ -187,11 +205,16 @@ def single_trace(ens_smry_data, ens, vector, color):
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_realization_plot(ensemble_paths: tuple, time_index: str,
-                            column_keys: tuple, vector: str,
-                            smry_history_columns: tuple,
-                            history_uncertainty: bool,
-                            show_history_uncertainty: str):
+def render_realization_plot(
+    ensemble_paths: tuple, 
+    time_index: str,
+    column_keys: tuple, vector: str,
+    smry_history_columns: tuple,
+    history_uncertainty: bool,
+    show_history_uncertainty: str,
+    iorens: str,
+    refens: str
+    ):
     """ Creates scatter-plot-traces for choosen vector. One trace per
     realization will be created. If history-data are not subjeted to
     uncertainty only one traces per ensemble will be created for history_data.
@@ -214,15 +237,15 @@ def render_realization_plot(ensemble_paths: tuple, time_index: str,
             time_index=time_index)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    print('fieldgian ========================================================')
-    fieldgain = get_fieldgain(
-        ensemble_paths=ensemble_paths,
-        column_keys=column_keys,
-        time_index=time_index,
-        ensemble_set_name='Volve',
-        iorens='iter-0',
-        refens='iter-1')[
-            ['REAL', 'DATE', vector]]
+    if (iorens and refens):
+        fieldgain = get_fieldgain(
+            ensemble_paths=ensemble_paths,
+            column_keys=column_keys,
+            time_index=time_index,
+            ensemble_set_name='Volve',
+            iorens=iorens,
+            refens=refens)[
+                ['REAL', 'DATE', vector]]
 
     smry_data.dropna(subset=[vector])
 
@@ -256,11 +279,15 @@ def render_realization_plot(ensemble_paths: tuple, time_index: str,
                 vector=history_vector,
                 color='black')
 
-    plot_traces += trace_group(
-        ens_smry_data=fieldgain,
-        ens='fieldgain',
-        vector=vector,
-        color='red') 
+    # to avoide referencing a fieldgains before it is assigned
+    # and adding traces plot_traces is assigned to avoide overwriting it
+    if (iorens and refens):
+        if isinstance(fieldgain, pd.DataFrame):
+            plot_traces += trace_group(
+                ens_smry_data=fieldgain,
+                ens='fieldgain',
+                vector=vector,
+                color='red')
 
     layout = {
         'hovermode': 'closest',
