@@ -29,6 +29,7 @@ from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
 from ._intersect import Intersect
+from ._intersect_grid import IntersectGrid
 from ._morris_plot import MorrisPlot
 
 
@@ -38,4 +39,5 @@ __all__ = ['SummaryStats',
            'SubsurfaceMap',
            'HistoryMatch',
            'Intersect',
-           'MorrisPlot']
+           'MorrisPlot',
+           'IntersectGrid']

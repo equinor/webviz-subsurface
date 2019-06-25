@@ -47,7 +47,7 @@ def well_to_df(well_name) -> pd.DataFrame:
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def get_wfence(well_name, extend=200, tvdmin=0) -> pd.DataFrame:
+def get_wfence(well_name, nextend=200, tvdmin=0) -> pd.DataFrame:
     '''Generate 2D array along well path'''
     df = well_to_df(well_name)
     keep = ("X_UTME", "Y_UTMN", "Z_TVDSS")
@@ -62,7 +62,7 @@ def get_wfence(well_name, extend=200, tvdmin=0) -> pd.DataFrame:
 
     if tvdmin is not None:
         poly.dataframe = poly.dataframe[poly.dataframe[poly.zname] >= tvdmin]
-    data = poly.get_fence(extend=extend, asnumpy=True)
+    data = poly.get_fence(nextend=nextend, asnumpy=True)
     df = pd.DataFrame(data)
     df.columns = df.columns.astype(str)
     return df
@@ -74,6 +74,24 @@ def get_cfence(well, cube_name):
     cube = load_cube(cube_name)
     return cube.get_randomline(get_wfence(well).values.copy())
 
+@cache.memoize(timeout=cache.TIMEOUT)
+def load_grid(g_name):
+    return xtgeo.grid3d.Grid(g_name)
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def load_parameter(p_name):
+    return xtgeo.grid3d.GridProperty().from_file(p_name, fformat="roff")
+@cache.memoize(timeout=cache.TIMEOUT)
+def get_gfence(well, g_name, p_name):
+    '''Slice cube along well fence'''
+    try:
+        grid = load_grid(g_name)
+        parameter = load_parameter(p_name)
+        
+    
+        return grid.get_randomline(get_wfence(well).values.copy(), parameter, zmin=1500, zmax=1900, zincrement=1.0)
+    except:
+        return 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
@@ -82,5 +100,4 @@ def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
     s = xtgeo.surface.RegularSurface(**df.to_dict('records')[0])
     fence = s.get_fence(get_wfence(well).values.copy())
     arr = fence[:, 2].copy().tolist()
-    # print(fence)
     return pd.DataFrame(arr, columns=['fence'])
