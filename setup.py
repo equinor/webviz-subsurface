@@ -30,6 +30,7 @@ setup(
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
+            'IntersectGrid = webviz_subsurface.containers:IntersectGrid',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot'
         ]
     },
@@ -39,7 +40,7 @@ setup(
         'webviz-config>=0.0.4',
         'webviz-plotly>=0.0.1',
         'webviz-subsurface-components>=0.0.3',
-        'xtgeo==2.1.0a2'
+        'xtgeo==2.1.0b2'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},

@@ -1,0 +1,35 @@
+# This file demonstrates usage of webviz in a FMU setting
+# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+
+title: Introducing Webviz
+username: some_username
+password: some_password
+
+# FMU ensembles are stored on disk at these paths
+container_settings:
+  scratch_ensembles:
+    reek: /scratch/fmu/hakal/7_r001_reek/realization-*/iter-0/
+
+
+#Webviz pages
+pages:
+ - title: Front
+   content:
+    - Testing xtgeo cross-sections
+ - title: cross-sections
+   content:
+    - container: IntersectGrid
+      ensemble: reek
+      well_path: /scratch/fmu/hakal/reek_wells
+      surface_cat: ds_extracted_horizons
+      grid_model: geogrid
+      parameters: 
+        - poro
+        - perm
+        - facies
+      surface_names:
+        - topupperreek
+        - topmidreek
+        - toplowerreek
+        - baselowerreek
+      views: 2
