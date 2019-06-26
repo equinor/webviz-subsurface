@@ -13,10 +13,39 @@ container_settings:
 
 #Webviz pages
 pages:
+
  - title: Front
    content:
     - Testing xtgeo cross-sections
+
  - title: cross-sections
+   content:
+    - container: Intersect
+      ensemble: reek
+      well_path: /scratch/fmu/hakal/reek_wells
+      surface_cat: ds_extracted_horizons
+      surface_names:
+        - topupperreek
+        - topmidreek
+        - toplowerreek
+        - baselowerreek
+ - title: seismic cross-sections
+   content:
+    - container: IntersectSeismic
+      ensemble: reek
+      well_path: /scratch/fmu/hakal/reek_wells
+      surface_cat: ds_extracted_horizons
+      cube_path: /scratch/fmu/hakal/reek_seismic
+      cubes: 
+        - depth_2000
+        - depth_2001
+        - depth_2003
+      surface_names:
+        - topupperreek
+        - topmidreek
+        - toplowerreek
+        - baselowerreek
+ - title: grid cross-section
    content:
     - container: IntersectGrid
       ensemble: reek
@@ -32,4 +61,4 @@ pages:
         - topmidreek
         - toplowerreek
         - baselowerreek
-      views: 2
+      
