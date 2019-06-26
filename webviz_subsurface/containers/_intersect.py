@@ -1,7 +1,6 @@
 from uuid import uuid4
 from glob import glob
 from pathlib import PurePath
-from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import dash_html_components as html
@@ -10,7 +9,8 @@ from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
-from ..datainput import scratch_ensemble, make_well_trace, make_surface_traces, get_file_paths, get_realizations
+from ..datainput import (make_well_trace, make_surface_traces,
+                         get_file_paths, get_realizations)
 
 
 class Intersect(WebvizContainer):
@@ -66,7 +66,7 @@ and a folder of well files stored in RMS well format.
 
         self.well_path = well_path
         self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.ensemble = scratch_ensemble(ensemble, self.ensemble_path)
+        self.ensemble = ensemble
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat
         self.surface_names = surface_names
@@ -98,7 +98,6 @@ and a folder of well files stored in RMS well format.
         return {surf: Intersect.COLORS[i % len(Intersect.COLORS)]
                 for i, surf in enumerate(self.surface_names)}
 
-
     @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
         '''Plots all lines in intersection'''
@@ -124,55 +123,58 @@ and a folder of well files stored in RMS well format.
 
     @property
     def view_layout(self):
-        return html.Div(style=Intersect.CONTROL_STYLE,
+        return html.Div(
+            style=Intersect.CONTROL_STYLE,
             children=[
-                    html.Div([
-                         html.P('Well:', style={'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                              # style={'width': '50%'},
-                              id=self.well_list_id,
-                              options=[{'label': PurePath(well).stem, 'value': well}
-                                       for well in self.well_names],
-                              value=self.well_names[0],
-                              clearable=False
-                              )]),
-                     html.Div([
-                         html.P('Surfaces:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.surf_list_id,
-                             options=[{'label': r, 'value': r}
-                                      for r in self.surface_names],
-                             value=self.surface_names[0],
-                             multi=True,
-                             placeholder='All surfaces'
-                         )]),
-                     html.Div([
-                         html.P('Realizations:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.real_list_id,
-                             options=[{'label': real, 'value': path}
-                                      for path, real in self.realizations.items()],
-                             value=list(self.realizations.keys())[0],
-                             multi=True,
-                             placeholder='All realizations'
-                         )])
-                ])
+                html.Div([
+                    html.P('Well:', style={'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '50%'},
+                        id=self.well_list_id,
+                        options=[{'label': PurePath(well).stem,
+                                  'value': well}
+                                 for well in self.well_names],
+                        value=self.well_names[0],
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Surfaces:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.surf_list_id,
+                        options=[{'label': r, 'value': r}
+                                 for r in self.surface_names],
+                        value=self.surface_names[0],
+                        multi=True,
+                        placeholder='All surfaces'
+                    )]),
+                html.Div([
+                    html.P('Realizations:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.real_list_id,
+                        options=[{'label': real, 'value': path}
+                                 for path, real in self.realizations.items()],
+                        value=list(self.realizations.keys())[0],
+                        multi=True,
+                        placeholder='All realizations'
+                    )])
+            ])
+
     @property
     def layout(self):
         return html.Div([
-             html.Div(children=[self.view_layout]),
+            html.Div(children=[self.view_layout]),
             html.Div(style=Intersect.LAYOUT_STYLE, children=[
-                    html.Div(style=Intersect.TABLE_STYLE, children=[
-                        DataTable(
-                            id=self.table_id,
-                            columns=[{"name": i, "id": i}
-                                     for i in ['Name', 'TVDmin', 'TVDmean',
-                                               'TVDmax', 'TVDstddev']]
-                        )
-                    ]),
-                
+                html.Div(style=Intersect.TABLE_STYLE, children=[
+                    DataTable(
+                        id=self.table_id,
+                        columns=[{"name": i, "id": i}
+                                 for i in ['Name', 'TVDmin', 'TVDmean',
+                                           'TVDmax', 'TVDstddev']]
+                    )
+                ]),
+
                 html.Div(style={'height': '80vh'}, children=[
                     dcc.Graph(style={'height': '80vh'},
                               id=self.intersection_id),
@@ -271,5 +273,3 @@ and a folder of well files stored in RMS well format.
                 'TVDstddev': f'{np.std(val["vals"]):.2f}',
                 'Name': name}
                 for name, val in names.items()]
-
-

@@ -109,10 +109,13 @@ and a folder of well files stored in RMS well format.
                 for i, surf in enumerate(self.surface_names)}
 
     def get_grid_path(self, real):
-        return os.path.join(real, 'share/results/grids', f'{self.grid_model}.roff')
+        return os.path.join(real,
+                            'share/results/grids', f'{self.grid_model}.roff')
 
     def get_param_path(self, real, parameter):
-        return os.path.join(real, 'share/results/grids', f'{self.grid_model}--{parameter}.roff')
+        return os.path.join(real,
+                            'share/results/grids',
+                            f'{self.grid_model}--{parameter}.roff')
 
     @cache.memoize(timeout=cache.TIMEOUT)
     def plot_xsection(self, parameter, well, real, surf_names,
@@ -157,63 +160,64 @@ and a folder of well files stored in RMS well format.
 
     @property
     def view_layout(self):
-        return html.Div(style=IntersectGrid.CONTROL_STYLE,
-                 children=[
-                     html.Div([
-                         html.P('Parameter:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             # style={'width': '100%'},
-                             id=self.parameters_id,
-                             options=[{'label': c, 'value': c}
-                                      for c in self.parameters],
-                             value=self.parameters[0],
-                             clearable=False
-                         )]),
-                     html.Div([
-                         html.P('Seismic color:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             # style={'width': '50%'},
-                             id=self.color_scale_id,
-                             options=[{'label': c, 'value': c}
-                                      for c in IntersectGrid.COLOR_SCALES],
-                             value='RdBu',
-                             clearable=False
-                         )]),
-                     html.Div([
-                         html.P('Well:', style={'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                              # style={'width': '50%'},
-                              id=self.well_list_id,
-                              options=[{'label': PurePath(well).stem, 'value': well}
-                                       for well in self.well_names],
-                              value=self.well_names[0],
-                              clearable=False
-                              )]),
-                     html.Div([
-                         html.P('Surfaces:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.surf_list_id,
-                                 options=[{'label': r, 'value': r}
-                                      for r in self.surface_names],
-                             value=self.surface_names[0],
-                             multi=True,
-                             placeholder='All surfaces'
-                         )]),
-                     html.Div([
-                         html.P('Realizations:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.real_list_id,
-                             options=[{'label': real, 'value': path}
-                                      for path, real in self.realizations.items()],
-                             value=list(self.realizations.keys())[0],
-                             multi=False,
-                             placeholder='All realizations'
-                         )])
-                 ])
+        return html.Div(
+            style=IntersectGrid.CONTROL_STYLE,
+            children=[
+                html.Div([
+                    html.P('Parameter:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '100%'},
+                        id=self.parameters_id,
+                        options=[{'label': c, 'value': c}
+                                 for c in self.parameters],
+                        value=self.parameters[0],
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Seismic color:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '50%'},
+                        id=self.color_scale_id,
+                        options=[{'label': c, 'value': c}
+                                 for c in IntersectGrid.COLOR_SCALES],
+                        value='RdBu',
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Well:', style={'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '50%'},
+                        id=self.well_list_id,
+                        options=[{'label': PurePath(well).stem, 'value': well}
+                                 for well in self.well_names],
+                        value=self.well_names[0],
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Surfaces:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.surf_list_id,
+                        options=[{'label': r, 'value': r}
+                                 for r in self.surface_names],
+                        value=self.surface_names[0],
+                        multi=True,
+                        placeholder='All surfaces'
+                    )]),
+                html.Div([
+                    html.P('Realizations:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.real_list_id,
+                        options=[{'label': real, 'value': path}
+                                 for path, real in self.realizations.items()],
+                        value=list(self.realizations.keys())[0],
+                        multi=False,
+                        placeholder='All realizations'
+                    )])
+            ])
 
     @property
     def layout(self):
@@ -249,18 +253,20 @@ and a folder of well files stored in RMS well format.
     def add_webvizstore(self):
         funcs = []
         funcs.append(
-            (get_realizations, [{'ens': self.ensemble,
-                                 'ens_path': self.ensemble_path}]))
+            (get_realizations,
+                [{'ens': self.ensemble,
+                  'ens_path': self.ensemble_path}]))
         funcs.append(
             (get_file_paths, [{'folder': self.well_path,
                                'suffix': self.well_suffix}]))
         for well in self.well_names:
             funcs.append((well_to_df, [{'well_name': well}]))
             for real in self.realizations.keys():
-                funcs.append((make_param_trace, [{'well': well,
-                                                  'grid': self.get_grid_path(real),
-                                                  'parameter': self.get_param_path(real, p)}
-                                                 for p in self.parameters]))
+                funcs.append((make_param_trace,
+                              [{'well': well,
+                                'grid': self.get_grid_path(real),
+                                'parameter': self.get_param_path(real, p)}
+                               for p in self.parameters]))
         for surf in self.surface_names:
             for path in self.realizations.keys():
                 funcs.append((surface_to_df, [

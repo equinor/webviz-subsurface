@@ -150,10 +150,12 @@ and a folder of well files stored in RMS well format.
 
     @property
     def view_layout(self):
-        return html.Div(style=IntersectSeismic.CONTROL_STYLE,
+        return html.Div(
+            style=IntersectSeismic.CONTROL_STYLE,
             children=[
-            html.Div([
-                    html.P('Seismic cube:', style={'font-weight': 'bold'}),
+                html.Div([
+                    html.P('Seismic cube:', style={
+                        'font-weight': 'bold'}),
                     dcc.Dropdown(
                         style={'width': '100%'},
                         id=self.cube_list_id,
@@ -162,50 +164,50 @@ and a folder of well files stored in RMS well format.
                         value=self.cubes[0],
                         clearable=False
                     )]),
-                  html.Div([
-                         html.P('Seismic color:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             # style={'width': '50%'},
-                             id=self.color_scale_id,
-                             options=[{'label': c, 'value': c}
-                                      for c in IntersectSeismic.COLOR_SCALES],
-                             value='RdBu',
-                             clearable=False
-                         )]),
-                     html.Div([
-                         html.P('Well:', style={'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                              # style={'width': '50%'},
-                              id=self.well_list_id,
-                              options=[{'label': PurePath(well).stem, 'value': well}
-                                       for well in self.well_names],
-                              value=self.well_names[0],
-                              clearable=False
-                              )]),
-                     html.Div([
-                         html.P('Surfaces:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.surf_list_id,
-                             options=[{'label': r, 'value': r}
-                                      for r in self.surface_names],
-                             value=self.surface_names[0],
-                             multi=True,
-                             placeholder='All surfaces'
-                         )]),
-                     html.Div([
-                         html.P('Realizations:', style={
-                              'font-weight': 'bold'}),
-                         dcc.Dropdown(
-                             id=self.real_list_id,
-                             options=[{'label': real, 'value': path}
-                                      for path, real in self.realizations.items()],
-                             value=list(self.realizations.keys())[0],
-                             multi=True,
-                             placeholder='All realizations'
-                         )])
-                ])
+                html.Div([
+                    html.P('Seismic color:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '50%'},
+                        id=self.color_scale_id,
+                        options=[{'label': c, 'value': c}
+                                 for c in IntersectSeismic.COLOR_SCALES],
+                        value='RdBu',
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Well:', style={'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        # style={'width': '50%'},
+                        id=self.well_list_id,
+                        options=[{'label': PurePath(well).stem, 'value': well}
+                                 for well in self.well_names],
+                        value=self.well_names[0],
+                        clearable=False
+                    )]),
+                html.Div([
+                    html.P('Surfaces:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.surf_list_id,
+                        options=[{'label': r, 'value': r}
+                                 for r in self.surface_names],
+                        value=self.surface_names[0],
+                        multi=True,
+                        placeholder='All surfaces'
+                    )]),
+                html.Div([
+                    html.P('Realizations:', style={
+                        'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        id=self.real_list_id,
+                        options=[{'label': real, 'value': path}
+                                 for path, real in self.realizations.items()],
+                        value=list(self.realizations.keys())[0],
+                        multi=True,
+                        placeholder='All realizations'
+                    )])
+            ])
 
     @property
     def layout(self):
@@ -216,7 +218,6 @@ and a folder of well files stored in RMS well format.
                                 dcc.Graph(id=self.intersection_id)
                             ])
                         ])
-        
 
     def set_callbacks(self, app):
         @app.callback(

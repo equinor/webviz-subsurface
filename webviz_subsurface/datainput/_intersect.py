@@ -7,6 +7,7 @@ from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
 from ._history_match import scratch_ensemble
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def load_well(well_name):
     return xtgeo.well.Well(well_name)
@@ -76,24 +77,30 @@ def get_cfence(well, cube_name):
     cube = load_cube(cube_name)
     return cube.get_randomline(get_wfence(well).values.copy())
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def load_grid(g_name):
     return xtgeo.grid3d.Grid(g_name)
 
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def load_parameter(p_name):
     return xtgeo.grid3d.GridProperty().from_file(p_name, fformat="roff")
+
+
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_gfence(well, g_name, p_name):
     '''Slice cube along well fence'''
     try:
         grid = load_grid(g_name)
         parameter = load_parameter(p_name)
-        
-    
-        return grid.get_randomline(get_wfence(well).values.copy(), parameter, zmin=1500, zmax=1900, zincrement=1.0)
+
+        return grid.get_randomline(
+            get_wfence(well).values.copy(), parameter,
+            zmin=1500, zmax=1900, zincrement=1.0)
     except:
-        return 
+        return
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
@@ -103,6 +110,7 @@ def get_hfence(well, s_name, real_path, surface_cat) -> pd.DataFrame:
     fence = s.get_fence(get_wfence(well).values.copy())
     arr = fence[:, 2].copy().tolist()
     return pd.DataFrame(arr, columns=['fence'])
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def make_well_trace(well, tvdmin=0):
@@ -127,6 +135,7 @@ def make_well_trace(well, tvdmin=0):
         'mode': 'lines',
         'marker': {'color': 'black'}
     }
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def make_surface_traces(well, reals, surf_name, cat, color):
@@ -158,14 +167,14 @@ def make_param_trace(well, grid, parameter) -> pd.DataFrame:
         hmin, hmax, vmin, vmax, values = get_gfence(well, grid, parameter)
     except TypeError:
         return pd.DataFrame([{
-        'x0' : 0,
-        'xmax' : 0,
-        'dx' : 0,
-        'y0' : 0,
-        'ymax' : 0,
-        'dy' : 0,
-        'type' : 'heatmap',
-        'z':  [[]]}])
+            'x0': 0,
+            'xmax': 0,
+            'dx': 0,
+            'y0': 0,
+            'ymax': 0,
+            'dy': 0,
+            'type': 'heatmap',
+            'z':  [[]]}])
     x_inc = (hmax-hmin)/values.shape[1]
     y_inc = (vmax-vmin)/values.shape[0]
     return pd.DataFrame([{
@@ -179,6 +188,7 @@ def make_param_trace(well, grid, parameter) -> pd.DataFrame:
         'dy': y_inc,
         'zsmooth': 'best'
     }])
+
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
@@ -197,6 +207,7 @@ def make_cube_trace(well, cube) -> pd.DataFrame:
         'dy': y_inc,
         'zsmooth': 'best'
     }])
+
 
 @webvizstore
 def get_realizations(ens, ens_path) -> pd.DataFrame:
