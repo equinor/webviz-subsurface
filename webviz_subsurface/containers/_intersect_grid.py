@@ -1,16 +1,11 @@
 import os
 from uuid import uuid4
-from glob import glob
 from pathlib import PurePath
-from collections import OrderedDict
-import numpy as np
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output, State
-from dash_table import DataTable
+from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
 from webviz_config.containers import WebvizContainer
 from ..datainput import (get_file_paths, get_realizations,
                          make_well_trace, make_param_trace,
