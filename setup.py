@@ -31,6 +31,7 @@ setup(
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
             'IntersectGrid = webviz_subsurface.containers:IntersectGrid',
+            'IntersectSeismic = webviz_subsurface.containers:IntersectSeismic',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot'
         ]
     },

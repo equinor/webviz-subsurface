@@ -30,6 +30,7 @@ from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._intersect_grid import IntersectGrid
+from ._intersect_seismic import IntersectSeismic
 from ._morris_plot import MorrisPlot
 
 
@@ -40,4 +41,5 @@ __all__ = ['SummaryStats',
            'HistoryMatch',
            'Intersect',
            'MorrisPlot',
-           'IntersectGrid']
+           'IntersectGrid',
+           'IntersectSeismic']

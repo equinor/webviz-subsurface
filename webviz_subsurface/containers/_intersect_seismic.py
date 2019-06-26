@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 from glob import glob
 from pathlib import PurePath
@@ -9,11 +10,14 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
 from webviz_config.containers import WebvizContainer
-from ..datainput import scratch_ensemble, make_well_trace, make_surface_traces, get_file_paths, get_realizations
+from ..datainput import (get_file_paths, get_realizations,
+                         make_well_trace, make_surface_traces,
+                         make_cube_trace, well_to_df, surface_to_df)
 
 
-class Intersect(WebvizContainer):
+class IntersectSeismic(WebvizContainer):
     '''### Intersect
 
 This container visualizes surfaces intersected along a well path.
@@ -26,47 +30,54 @@ and a folder of well files stored in RMS well format.
 * `surface_cat`: Surface category to look for in the file names
 * `surface_names`: List of surface names to look for in the file names
 * `well_suffix`:  Optional suffix for well files. Default is .rmswell
+* `cube_path`: File folder containing seismic cubes
+* `cubes`: List of cube names
 '''
     COLORS = ['#543005', '#8c510a', '#bf812d', '#dfc27d',
               '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1',
               '#35978f', '#01665e', '#003c30']
-
+    COLOR_SCALES = ['Blackbody',
+                    'Bluered',
+                    'Blues',
+                    'Earth',
+                    'Electric',
+                    'Greens',
+                    'Greys',
+                    'Hot',
+                    'Jet',
+                    'Picnic',
+                    'Portland',
+                    'Rainbow',
+                    'RdBu',
+                    'Reds',
+                    'Viridis',
+                    'YlGnBu',
+                    'YlOrRd']
     LAYOUT_STYLE = {
         'display': 'grid',
         'align-content': 'space-around',
         'justify-content': 'space-between',
-        'grid-template-columns': '1fr 3fr',
+        'grid-template-columns': '1fr',
     }
     CONTROL_STYLE = {
         'display': 'grid',
         'align-content': 'space-around',
         'justify-content': 'space-between',
         'grid-template-columns': '1fr 1fr 1fr 1fr 1fr',
-
-        'font-size': '10px'
-    }
-
-    FENCE_OPTION_STYLE = {
-        'display': 'grid',
-        'align-content': 'space-around',
-        'justify-content': 'space-between',
-        'grid-template-columns': '1fr 1fr',
-        'max-width': '50%'
-    }
-
-    TABLE_STYLE = {
-        'maxHeight': '300',
-        'overflowY': 'auto',
+        'padding-right': '20px',
+        'padding-left': '20px',
         'font-size': '10px'
     }
 
     def __init__(self, app, container_settings, ensemble,
                  well_path, surface_cat, surface_names,
-                 well_suffix='.rmswell'):
+                 cube_path, cubes: list, well_suffix='.rmswell'):
 
         self.well_path = well_path
+        self.cube_path = cube_path
+        self.cubes = cubes
         self.ensemble_path = container_settings['scratch_ensembles'][ensemble]
-        self.ensemble = scratch_ensemble(ensemble, self.ensemble_path)
+        self.ensemble = ensemble
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat
         self.surface_names = surface_names
@@ -76,11 +87,10 @@ and a folder of well files stored in RMS well format.
     def assign_ids(self):
         unique_id = f'{uuid4()}'
         self.well_list_id = f'well-list-id-{unique_id}'
+        self.cube_list_id = f'cube-list-id-{unique_id}'
         self.real_list_id = f'real-list-id-{unique_id}'
         self.surf_list_id = f'surf-list-id-{unique_id}'
-        self.table_id = f'table-id-{unique_id}'
-        self.well_tvd_id = f'well-tvd-id-{unique_id}'
-        self.zoom_state_id = f'ui-state-id-{unique_id}'
+        self.color_scale_id = f'color-scale-id-{unique_id}'
         self.intersection_id = f'intersection-id-{unique_id}'
 
     @property
@@ -95,26 +105,42 @@ and a folder of well files stored in RMS well format.
 
     @property
     def surface_colors(self):
-        return {surf: Intersect.COLORS[i % len(Intersect.COLORS)]
+        return {surf: IntersectSeismic.COLORS[i % len(IntersectSeismic.COLORS)]
                 for i, surf in enumerate(self.surface_names)}
 
+    def get_seis_path(self, cube):
+        return os.path.join(self.cube_path, f'{cube}.segy')
 
     @cache.memoize(timeout=cache.TIMEOUT)
-    def plot_xsection(self, well, reals, surf_names, tvdmin=0):
+    def plot_xsection(self, cube, well, reals, surf_names,
+                      color_scale, tvdmin=0):
         '''Plots all lines in intersection'''
         traces = []
+        layout = self.graph_layout
+        cube_trace = make_cube_trace(
+            well, self.get_seis_path(cube)).to_dict('rows')
+        cube_trace[0]['colorscale'] = color_scale
+        cube_trace[0]['name'] = cube
+        cube_trace[0]['colorbar'] = {'x': 1, 'showticklabels': False}
+        layout['xaxis']['range'] = [cube_trace[0]['x0'], cube_trace[0]['xmax']]
+        layout['xaxis']['autorange'] = False
+        layout['yaxis']['range'] = [cube_trace[0]['ymax'], cube_trace[0]['y0']]
+        layout['yaxis']['autorange'] = False
+
         for s_name in surf_names:
             traces.extend(
                 make_surface_traces(
                     well, reals, s_name, self.surface_cat,
                     self.surface_colors[s_name]).to_dict('rows'))
         traces.append(make_well_trace(well, tvdmin))
-        return traces
+        traces.extend(cube_trace)
+        return {'data': traces, 'layout': layout}
 
     @property
     def graph_layout(self):
         '''Styling the graph'''
         return {
+            'margin': {'t': 0},
             'yaxis': {'autorange': 'reversed',
                       'zeroline': False, 'title': 'TVD'},
             'xaxis': {'zeroline': False,
@@ -124,9 +150,30 @@ and a folder of well files stored in RMS well format.
 
     @property
     def view_layout(self):
-        return html.Div(style=Intersect.CONTROL_STYLE,
+        return html.Div(style=IntersectSeismic.CONTROL_STYLE,
             children=[
-                    html.Div([
+            html.Div([
+                    html.P('Seismic cube:', style={'font-weight': 'bold'}),
+                    dcc.Dropdown(
+                        style={'width': '100%'},
+                        id=self.cube_list_id,
+                        options=[{'label': c, 'value': c}
+                                 for c in self.cubes],
+                        value=self.cubes[0],
+                        clearable=False
+                    )]),
+                  html.Div([
+                         html.P('Seismic color:', style={
+                              'font-weight': 'bold'}),
+                         dcc.Dropdown(
+                             # style={'width': '50%'},
+                             id=self.color_scale_id,
+                             options=[{'label': c, 'value': c}
+                                      for c in IntersectSeismic.COLOR_SCALES],
+                             value='RdBu',
+                             clearable=False
+                         )]),
+                     html.Div([
                          html.P('Well:', style={'font-weight': 'bold'}),
                          dcc.Dropdown(
                               # style={'width': '50%'},
@@ -159,52 +206,27 @@ and a folder of well files stored in RMS well format.
                              placeholder='All realizations'
                          )])
                 ])
+
     @property
     def layout(self):
-        return html.Div([
-             html.Div(children=[self.view_layout]),
-            html.Div(style=Intersect.LAYOUT_STYLE, children=[
-                    html.Div(style=Intersect.TABLE_STYLE, children=[
-                        DataTable(
-                            id=self.table_id,
-                            columns=[{"name": i, "id": i}
-                                     for i in ['Name', 'TVDmin', 'TVDmean',
-                                               'TVDmax', 'TVDstddev']]
-                        )
-                    ]),
-                
-                html.Div(style={'height': '80vh'}, children=[
-                    dcc.Graph(style={'height': '80vh'},
-                              id=self.intersection_id),
-                    html.Div(style=Intersect.FENCE_OPTION_STYLE, children=[
-                        html.P('Start depth:', style={'font-weight': 'bold'}),
-                        html.P('Graph zoom level:', style={
-                               'font-weight': 'bold'}),
-                        dcc.Input(style={'overflow': 'auto'},
-                                  id=self.well_tvd_id, type='number', value=0),
-                        dcc.RadioItems(
-                            id=self.zoom_state_id,
-                            options=[{'label': k, 'value': v}
-                                     for k, v in {
-                                     'Keep on new data': True,
-                                     'Reset on new data': False}.items()],
-                            value=True,
-                        ),
-                    ])
-
-                ])
-            ])
-        ])
+        return html.Div(style=IntersectSeismic.LAYOUT_STYLE,
+                        children=[
+                            html.Div(children=[self.view_layout]),
+                            html.Div(children=[
+                                dcc.Graph(id=self.intersection_id)
+                            ])
+                        ])
+        
 
     def set_callbacks(self, app):
         @app.callback(
             Output(self.intersection_id, 'figure'),
-            [Input(self.well_list_id, 'value'),
+            [Input(self.cube_list_id, 'value'),
+             Input(self.well_list_id, 'value'),
              Input(self.real_list_id, 'value'),
              Input(self.surf_list_id, 'value'),
-             Input(self.well_tvd_id, 'value'),
-             Input(self.zoom_state_id, 'value')])
-        def set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
+             Input(self.color_scale_id, 'value')])
+        def set_fence(_cube_path, _well_path, _reals, _surfs, color_scale):
             '''Callback to update intersection on data change'''
             if not isinstance(_surfs, list):
                 _surfs = [_surfs]
@@ -215,61 +237,28 @@ and a folder of well files stored in RMS well format.
             if not _surfs:
                 _surfs = self.surface_names
             s_names = [s for s in self.surface_names if s in _surfs]
-            xsect = self.plot_xsection(_well_path, _reals, s_names, _tvdmin)
-            layout = self.graph_layout
-            if _keep_zoom_state:
-                layout['uirevision'] = 'keep'
-            return {'data': xsect, 'layout': layout}
+            xsect = self.plot_xsection(
+                _cube_path, _well_path, _reals, s_names, color_scale)
+            xsect['layout']['uirevision'] = 'keep'
+            return xsect
 
-        @app.callback(Output(self.table_id, 'data'),
-                      [Input(self.intersection_id, 'hoverData')],
-                      [State(self.intersection_id, 'figure'),
-                       State(self.surf_list_id, 'value')])
-        def hover(_data, _fig, _surfaces):
-            '''Callback to update table on mouse over'''
-            try:
-                graph = _fig['data']
-            except TypeError:
-                return [{
-                    'TVDmin': None,
-                    'TVDmean': None,
-                    'TVDmax': None,
-                    'TVDstddev': None,
-                    'Name': None
-                }]
-            if not isinstance(_surfaces, list):
-                _surfaces = [_surfaces]
-            if not _surfaces:
-                _surfaces = self.surface_names
-            names = {s: {'vals': [], 'min': None, 'max': None}
-                     for s in _surfaces}
-
-            for i, p in enumerate(_data['points']):
-                try:
-                    s_name = graph[i]['name']
-                    real = self.realizations[graph[i]['real']]
-                except KeyError:
-                    continue
-                names[s_name]['vals'].append(p['y'])
-                if not names[s_name]['min']:
-                    names[s_name]['min'] = p['y']
-                    names[s_name]['min_real'] = real
-                    names[s_name]['max'] = p['y']
-                    names[s_name]['max_real'] = real
-                else:
-                    if names[s_name]['min'] > p['y']:
-                        names[s_name]['min'] = p['y']
-                        names[s_name]['min_real'] = real
-                    if names[s_name]['max'] < p['y']:
-                        names[s_name]['max'] = p['y']
-                        names[s_name]['max_real'] = real
-
-            return [{
-                'TVDmin': f'{np.min(val["vals"]):.2f}({val["min_real"]})',
-                'TVDmean': f'{np.mean(val["vals"]):.2f}',
-                'TVDmax': f'{np.max(val["vals"]):.2f}({val["max_real"]})',
-                'TVDstddev': f'{np.std(val["vals"]):.2f}',
-                'Name': name}
-                for name, val in names.items()]
-
-
+    def add_webvizstore(self):
+        funcs = []
+        funcs.append(
+            (get_realizations, [{'ens': self.ensemble,
+                                 'ens_path': self.ensemble_path}]))
+        funcs.append(
+            (get_file_paths, [{'folder': self.well_path,
+                               'suffix': self.well_suffix}]))
+        for well in self.well_names:
+            funcs.append((well_to_df, [{'well_name': well}]))
+            funcs.append((make_cube_trace, [{'well': well,
+                                             'cube': self.get_seis_path(cube)}
+                                            for cube in self.cubes]))
+        for surf in self.surface_names:
+            for path in self.realizations.keys():
+                funcs.append((surface_to_df, [
+                    {'s_name': surf,
+                             'real_path': path,
+                             'surface_cat': self.surface_cat}]))
+        return funcs
