@@ -121,3 +121,32 @@ def get_fieldgain(
         column_keys=column_keys,
         time_index=time_index,
     )
+
+
+@webvizstore
+def gather_fieldgains_combinations(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        ensemble_set_name: str = 'EnsembleSet'
+    ) -> pd.DataFrame:
+    
+    ensset = load_ensemble_set(
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name
+    )
+
+    ens_name_list = [name for name, path in ensemble_paths]
+
+    fieldgians_dfs = []
+    for ens_i in ens_name_list:
+        for ens_ii in ens_name_list:
+            if ens_i != ens_ii:
+                fieldgain_df = (ensset[i] - ensset[ii]).get_smry(
+                    column_keys=column_keys,
+                    time_index=time_index,
+                )
+                fieldgain_df['IROENS - REFENS'] = f'{ens_i} - {ens_ii}'
+                fieldgians_dfs.append(fieldgain_df)
+
+    return pd.concat(fieldgians_dfs)

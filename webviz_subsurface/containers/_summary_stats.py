@@ -47,6 +47,7 @@ class SummaryStats(WebvizContainer):
             sampling: str = 'monthly',
             history_uncertainty: bool = False):
 
+        self.title = 'EnsembleSet'
         self.uid = f'{uuid4()}'
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if isinstance(
@@ -181,7 +182,8 @@ class SummaryStats(WebvizContainer):
         return [(get_summary_data,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
-                   'time_index': self.time_index, }]),
+                   'time_index': self.time_index,
+                   'ensemble_set_name': self.title}]),
                 (get_summary_stats,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,

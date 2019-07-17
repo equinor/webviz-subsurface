@@ -10,7 +10,7 @@ from mock import patch
 patch('webviz_config.common_cache.cache.memoize',
       lambda *x, **y: lambda f: f).start()
 from webviz_subsurface.datainput import get_summary_data, get_summary_stats, \
-    get_fieldgain
+    get_fieldgain, gather_fieldgains_combinations
 
 
 def test_summary_data():
@@ -57,3 +57,22 @@ def test_summary_data():
     assert isinstance(fieldgain, pd.DataFrame)
     assert 'REAL' in fieldgain.columns
     assert 'ENSEMBLE' not in fieldgain.columns
+
+
+def test_gather_fieldgains_combinations():
+
+    gathered_fieldgains = gather_fieldgains_combinations(
+        ensemble_paths=[
+            ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
+            ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
+            ('iter--2', '/scratch/fmu/stcr/volve/realization-*/iter-2'),
+        ],
+        ensemble_set_name='Volve',
+        time_index='yearly',
+        column_keys=['FOP*', 'FGP*'],
+    )
+
+    assert 'iter--0 - iter--1' in gathered_fieldgains.columns
+    assert 'iter--1 - iter--0' in gathered_fieldgains.columns
+    assert isinstance(gathered_fieldgains, pd.DataFrame)
+    assert 'REAL' in gathered_fieldgains.columns
