@@ -12,17 +12,83 @@ from fmu.ensemble import EnsembleSet
 from ..datainput import scratch_ensemble
 
 
-def load_ensemble_set():
-    pass
+def load_ensemble_set(
+        ensemble_paths: tuple,
+        ensemble_set_name: str = 'EnsembleSet'):
+
+    return EnsembleSet(
+        ensemble_set_name,
+        [scratch_ensemble(ens_name, ens_path)
+         for ens_name, ens_path in ensemble_paths]
+    )
 
 
-def get_time_series_data():
-    pass
+def get_time_series_statistics(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple
+    ) -> pd.DataFrame:
+
+    column_keys = list(column_keys) if isinstance(
+    column_keys, (list, tuple)) else None
+
+    smry_stats = []
+    for ens, ens_path in ensemble_paths:
+        ens_smry_stats = scratch_ensemble(
+            ens, ens_path).get_smry_stats(
+                time_index=time_index, column_keys=column_keys)
+        ens_smry_stats['ENSEMBLE'] = ens
+        smry_stats.append(ens_smry_stats)
+
+    return pd.concat(smry_stats)
 
 
-def get_time_series_statistics():
-    pass
+def get_time_series_data(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        ensemble_set_name: str = 'EnsembleSet'
+    ) -> pd.DataFrame:
+    
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
+
+    ensset = load_ensemble_set(
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name
+    )
+
+    return ensset.get_smry(
+        time_index=time_index,
+        column_keys=column_keys
+    )
 
 
-def get_time_series_fielgains():
-    pass
+def get_time_series_fielgains(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        ensemble_set_name: str = 'EnsembleSet'
+    ) -> pd.DataFrame:
+
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
+    
+    ensset = load_ensemble_set(
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name
+    )
+
+    ens_name_list = [name for name, path in ensemble_paths]
+
+    fieldgians_dfs = []
+    for ens_i in ens_name_list:
+        for ens_ii in ens_name_list:
+            fieldgain_df = (ensset[ens_i] - ensset[ens_ii]).get_smry(
+                column_keys=column_keys,
+                time_index=time_index,
+            )
+            fieldgain_df['IROENS - REFENS'] = f'{ens_i} - {ens_ii}'
+            fieldgians_dfs.append(fieldgain_df)
+
+    return pd.concat(fieldgians_dfs)
