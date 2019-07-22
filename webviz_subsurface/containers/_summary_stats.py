@@ -38,10 +38,8 @@ class SummaryStats(WebvizContainer):
             ensembles,
             column_keys=None,
             sampling: str = 'monthly',
-            title: str = 'Simulation time series',
             history_uncertainty: bool = False):
 
-        self.title = title
         self.uid = f'{uuid4()}'
         self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
         self.column_keys = tuple(column_keys) if isinstance(
@@ -77,7 +75,6 @@ class SummaryStats(WebvizContainer):
     @property
     def layout(self):
         return html.Div([
-            html.H2(self.title),
             html.P('Summary Vector:', style={'font-weight': 'bold'}),
             dcc.Dropdown(id=self.dropwdown_vector_id,
                          clearable=False,

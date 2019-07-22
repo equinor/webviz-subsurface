@@ -25,9 +25,8 @@ in the simulation output using streamlines.
 '''
 
     def __init__(self, container_settings, ensemble, map_value: str,
-                 flow_value: str, time_step, title: str = 'Subsurface map'):
+                 flow_value: str, time_step):
 
-        self.title = title
         self.map_id = 'map-{}'.format(uuid4())
         self.map_value = map_value
         self.flow_value = flow_value
@@ -40,7 +39,6 @@ in the simulation output using streamlines.
     @property
     def layout(self):
         return html.Div([
-                   html.H2(self.title),
                    Map(id=self.map_id, data=self.map_data)
                ])
 
