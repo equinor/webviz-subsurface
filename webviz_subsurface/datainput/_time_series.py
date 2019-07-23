@@ -7,11 +7,11 @@
 
 import pandas as pd
 from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
 from fmu.ensemble import EnsembleSet
 from ..datainput import scratch_ensemble
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def load_ensemble_set(
         ensemble_paths: tuple,
         ensemble_set_name: str = 'EnsembleSet'):
@@ -23,6 +23,7 @@ def load_ensemble_set(
     )
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_time_series_statistics(
         ensemble_paths: tuple,
         time_index: str,
@@ -32,6 +33,8 @@ def get_time_series_statistics(
     column_keys = list(column_keys) if isinstance(
     column_keys, (list, tuple)) else None
 
+    # Note: to be replaced by ensset.get_smry_stats()
+    # when function is available
     smry_stats = []
     for ens, ens_path in ensemble_paths:
         ens_smry_stats = scratch_ensemble(
@@ -43,6 +46,7 @@ def get_time_series_statistics(
     return pd.concat(smry_stats)
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_time_series_data(
         ensemble_paths: tuple,
         time_index: str,
@@ -64,12 +68,19 @@ def get_time_series_data(
     )
 
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def get_time_series_fielgains(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
         ensemble_set_name: str = 'EnsembleSet'
     ) -> pd.DataFrame:
+    """ Loads ensembleset (cached after first loaded), gets a list of
+    ensemblenames and loops over possible combinations to be compared
+    and gathers the resulting dataframes.
+    Fieldgains can then be extracted from the time_series_fieldgains
+    dataframe.
+    """
 
     column_keys = list(column_keys) if isinstance(
         column_keys, (list, tuple)) else None
