@@ -48,6 +48,10 @@ class TimeSeries(WebvizContainer):
         return f'chart-id-{self.uid}'
 
     @property
+    def tab_id(self):
+        return f'_tab_id-{self.uid}'    
+
+    @property
     def vector_columns(self):
         return sorted(
             list(
@@ -91,9 +95,16 @@ class TimeSeries(WebvizContainer):
                                  value=self.smry_vector_columns[0]),
                     html.P('Plot type:', style={'font-weight': 'bold'}),
                 ], style={"float":"left", 'display': 'inline-block'}),
+
                 html.Div([
+                    dcc.Tabs(id=self.tab_id, value='summary_data', children=[
+                        dcc.Tab(label='Summary Vector', value='summary_data'),
+                        dcc.Tab(label='Statistics', value='summary_stats'),
+                    ]),
+                    html.Div(id='tabs-content'),
                     html.Div(id=self.chart_id)
                 ], style={'width': '80%', 'display': 'inline-block'}),
+
             ]),
         ])
 
@@ -103,21 +114,49 @@ class TimeSeries(WebvizContainer):
 # =============================================================================
 
     def set_callbacks(self, app):
+
         @app.callback(Output(self.chart_id, 'children'),
-                      [Input(self.dropwdown_vector_id, 'value')])
-        def update_plot(vector):
-            return render_realization_plot(
-                ensemble_paths=self.ensemble_paths,
-                column_keys=self.column_keys,
-                time_index=self.time_index,
-                vector=vector
-            )
+                      [Input(self.dropwdown_vector_id, 'value'),
+                       Input(self.tab_id, 'value')])
+        def update_plot(vector, plot_type):
+
+            if plot_type == 'summary_data':
+
+                return render_realization_plot(
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                    vector=vector
+                )
+
+            if plot_type == 'summary_stats': 
+
+                return render_stat_plot(
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                    vector=vector
+                )
+
+
+        @app.callback(Output('tabs-content', 'children'),
+                      [Input('tabs', 'value')])
+        def render_content(tab):
+            if tab == 'tab-1':
+                return html.Div([
+                    html.H3('Tab content 1')
+                ])
+            elif tab == 'tab-2':
+                return html.Div([
+                    html.H3('Tab content 2')
+                ])
 
 
 # =============================================================================
 # Render functions
 # =============================================================================
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
         ensemble_paths: tuple,
         time_index: str,
@@ -159,6 +198,39 @@ def render_realization_plot(
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_stat_plot(ensemble_paths: tuple, time_index: str,
+                     column_keys: tuple, vector: str):
+
+    smry_stats = get_time_series_statistics(
+        ensemble_paths=ensemble_paths,
+        column_keys=column_keys,
+        time_index=time_index)
+
+    fan_chart_divs = []
+    for ens in smry_stats.ENSEMBLE.unique():
+        vector_stats = smry_stats[
+            smry_stats['ENSEMBLE'] == ens][
+                vector].unstack().transpose()
+        vector_stats['name'] = vector
+        vector_stats.rename(index=str, inplace=True,
+                            columns={"minimum": "min", "maximum": "max"})
+        fan_chart_divs.append(html.H5(ens))
+        fan_chart_divs.append(
+            html.Div(
+                dcc.Graph(
+                    id='graph-{}'.format(ens),
+                    figure=FanChart(vector_stats.iterrows()),
+                    config={
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['sendDataToCloud']
+                    }
+                )
+            )
+        )
+
+    return fan_chart_divs
 
 
 # =============================================================================
