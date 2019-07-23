@@ -126,7 +126,8 @@ class TimeSeries(WebvizContainer):
                     ensemble_paths=self.ensemble_paths,
                     column_keys=self.column_keys,
                     time_index=self.time_index,
-                    vector=vector
+                    vector=vector,
+                    ensemble_set_name=self.title,
                 )
 
             if plot_type == 'summary_stats': 
@@ -153,6 +154,25 @@ class TimeSeries(WebvizContainer):
 
 
 # =============================================================================
+# Webvizstore
+# =============================================================================
+
+    def add_webvizstore(self):
+        return [(get_time_series_data,
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'column_keys': self.column_keys,
+                   'time_index': self.time_index,
+                   'ensemble_set_name': self.title}]
+                ),
+                (get_time_series_statistics,
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'time_index': self.time_index,
+                   'column_keys': self.column_keys}]
+                ),
+    ]
+
+
+# =============================================================================
 # Render functions
 # =============================================================================
 
@@ -162,6 +182,7 @@ def render_realization_plot(
         time_index: str,
         column_keys: tuple,
         vector: str,
+        ensemble_set_name: str,
     ):
 
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
@@ -169,7 +190,8 @@ def render_realization_plot(
     smry_data = get_time_series_data(
         ensemble_paths=ensemble_paths,
         column_keys=column_keys,
-        time_index=time_index)[
+        time_index=time_index,
+        ensemble_set_name=ensemble_set_name)[
             ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     smry_data.dropna(subset=[vector])

@@ -7,6 +7,7 @@
 
 import pandas as pd
 from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
 from fmu.ensemble import EnsembleSet
 from ..datainput import scratch_ensemble
 
@@ -24,6 +25,7 @@ def load_ensemble_set(
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
+@webvizstore
 def get_time_series_statistics(
         ensemble_paths: tuple,
         time_index: str,
@@ -47,6 +49,7 @@ def get_time_series_statistics(
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
+@webvizstore
 def get_time_series_data(
         ensemble_paths: tuple,
         time_index: str,
@@ -69,6 +72,7 @@ def get_time_series_data(
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
+@webvizstore
 def get_time_series_fielgains(
         ensemble_paths: tuple,
         time_index: str,
