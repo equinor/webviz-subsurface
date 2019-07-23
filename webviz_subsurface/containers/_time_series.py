@@ -5,11 +5,17 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
-from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 from webviz_subsurface.datainput import load_ensemble_set, get_time_series_data, \
     get_time_series_statistics, get_time_series_fielgains
+
+
+# Todo:
+#   - caching
+#   - history
+#   - fieldgains
+#   - layout
 
 
 # =============================================================================
@@ -49,7 +55,11 @@ class TimeSeries(WebvizContainer):
 
     @property
     def tab_id(self):
-        return f'_tab_id-{self.uid}'    
+        return f'_tab_id-{self.uid}'
+
+    @property
+    def btn_show_uncertainty_id(self):
+        return f'show-history-uncertainty-{self.uid}'  
 
     @property
     def vector_columns(self):
@@ -93,7 +103,9 @@ class TimeSeries(WebvizContainer):
                                  options=[{'label': i, 'value': i}
                                           for i in self.smry_vector_columns],
                                  value=self.smry_vector_columns[0]),
-                    html.P('Plot type:', style={'font-weight': 'bold'}),
+                    html.Button('Show *H',
+                        id=self.btn_show_uncertainty_id,
+                    ),
                 ], style={"float":"left", 'display': 'inline-block'}),
 
                 html.Div([
@@ -117,8 +129,22 @@ class TimeSeries(WebvizContainer):
 
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
-                       Input(self.tab_id, 'value')])
-        def update_plot(vector, plot_type):
+                       Input(self.tab_id, 'value'),
+                       Input(self.btn_show_uncertainty_id, 'n_clicks')])
+        def update_plot(
+                vector: str, 
+                plot_type: str,
+                n_clicks: int = 0):
+
+            if n_clicks == None:
+                n_clicks = 0
+                show_history_vector = False
+
+            if (n_clicks % 2 == 0) or (n_clicks == None):
+                show_history_vector = False
+
+            if (n_clicks % 2 == 1):
+                show_history_vector = True
 
             if plot_type == 'summary_data':
 
@@ -128,6 +154,8 @@ class TimeSeries(WebvizContainer):
                     time_index=self.time_index,
                     vector=vector,
                     ensemble_set_name=self.title,
+                    smry_history_columns=self.smry_history_columns,
+                    show_history_vector=show_history_vector,
                 )
 
             if plot_type == 'summary_stats': 
@@ -169,35 +197,50 @@ class TimeSeries(WebvizContainer):
                    'time_index': self.time_index,
                    'column_keys': self.column_keys}]
                 ),
-    ]
+        ]
 
 
 # =============================================================================
 # Render functions
 # =============================================================================
 
-@cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
         vector: str,
         ensemble_set_name: str,
+        smry_history_columns: tuple,
+        show_history_vector: bool,
     ):
 
-    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
 
-    smry_data = get_time_series_data(
-        ensemble_paths=ensemble_paths,
-        column_keys=column_keys,
-        time_index=time_index,
-        ensemble_set_name=ensemble_set_name)[
-            ['REAL', 'DATE', 'ENSEMBLE', vector]]
+    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
+    history_vector = (vector + 'H')
+
+
+    if history_vector in smry_history_columns:
+
+        smry_data = get_time_series_data(
+            ensemble_paths=ensemble_paths,
+            column_keys=column_keys,
+            time_index=time_index,
+            ensemble_set_name=ensemble_set_name)[
+                ['REAL', 'DATE', 'ENSEMBLE', vector, history_vector]]
+
+    else:
+
+        smry_data = get_time_series_data(
+            ensemble_paths=ensemble_paths,
+            column_keys=column_keys,
+            time_index=time_index,
+            ensemble_set_name=ensemble_set_name)[
+                ['REAL', 'DATE', 'ENSEMBLE', vector]]
+
 
     smry_data.dropna(subset=[vector])
 
     plot_traces = []
-
     for ens in smry_data.ENSEMBLE.unique():
 
         plot_traces += trace_group(
@@ -205,6 +248,16 @@ def render_realization_plot(
             ens=ens,
             vector=vector,
             color=next(cycle_list))
+
+        if (history_vector in smry_history_columns
+            and show_history_vector):
+
+            plot_traces += trace_group(
+                ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
+                ens=ens,
+                vector=history_vector,
+                color='black')
+
 
     layout = {
         'hovermode': 'closest',
@@ -221,9 +274,12 @@ def render_realization_plot(
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
 
-@cache.memoize(timeout=cache.TIMEOUT)
-def render_stat_plot(ensemble_paths: tuple, time_index: str,
-                     column_keys: tuple, vector: str):
+# caching leads to an err. in FanChart()
+def render_stat_plot(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        vector: str):
 
     smry_stats = get_time_series_statistics(
         ensemble_paths=ensemble_paths,
