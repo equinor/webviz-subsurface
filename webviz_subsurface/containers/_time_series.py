@@ -64,7 +64,15 @@ class TimeSeries(WebvizContainer):
 
     @property
     def btn_show_fieldgains_id(self):
-        return f'show-fieldgains-{self.uid}'    
+        return f'show-fieldgains-{self.uid}'
+
+    @property
+    def dropdown_iorens_id(self):
+        return f'dropdown-iorens-{self.uid}'
+
+    @property
+    def dropdown_refens_id(self):
+        return f'dropdown-refens-{self.uid}'     
 
     @property
     def vector_columns(self):
@@ -115,6 +123,16 @@ class TimeSeries(WebvizContainer):
                         html.Button('Fieldgains',
                             id=self.btn_show_fieldgains_id,
                         ),
+                        dcc.Dropdown(
+                            id=self.dropdown_iorens_id,
+                            options=[{'label': i[0], 'value': i[0]}
+                                     for i in self.ensemble_paths],
+                        ),
+                        dcc.Dropdown(
+                            id=self.dropdown_refens_id,
+                            options=[{'label': i[0], 'value': i[0]}
+                                     for i in self.ensemble_paths],
+                        ),
                     ]),
                 ], style={"float":"left", 'display': 'inline-block'}),
 
@@ -141,12 +159,16 @@ class TimeSeries(WebvizContainer):
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.tab_id, 'value'),
                        Input(self.btn_show_uncertainty_id, 'n_clicks'),
-                       Input(self.btn_show_fieldgains_id, 'n_clicks')])
+                       Input(self.btn_show_fieldgains_id, 'n_clicks'),
+                       Input(self.dropdown_iorens_id, 'value'),
+                       Input(self.dropdown_refens_id, 'value')])
         def update_plot(
                 vector: str, 
                 plot_type: str,
-                n_clicks_history: int = 0,
-                n_clicks_fieldgians: int = 0,):
+                n_clicks_history: int,
+                n_clicks_fieldgians: int,
+                iorens: str,
+                refens: str):
 
             # to be replaced by boolen
             # show history uncertainty
@@ -179,6 +201,8 @@ class TimeSeries(WebvizContainer):
                     smry_history_columns=self.smry_history_columns,
                     show_history_vector=show_history_vector,
                     show_fieldgains=show_fieldgains,
+                    iorens=iorens,
+                    refens=refens,
                 )
 
             if plot_type == 'summary_stats': 
@@ -242,6 +266,8 @@ def render_realization_plot(
         smry_history_columns: tuple,
         show_history_vector: bool,
         show_fieldgains: bool,
+        iorens: str,
+        refens: str,
     ):
 
 
@@ -268,8 +294,10 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
+    #smry_data.dropna(subset=[vector])
 
-    # feildgain traces
+
+    # feildgain data
     if show_fieldgains:
         field_gains = get_time_series_fielgains(
             ensemble_paths=ensemble_paths,
@@ -277,10 +305,15 @@ def render_realization_plot(
             column_keys=column_keys,
             ensemble_set_name=ensemble_set_name
         )
-        print(field_gains.shape)
+        
+        if (iorens and refens):
+            compared_ensembles = f'{iorens} - {refens}'
+            field_gain = field_gains[
+                field_gains['IROENS - REFENS'] == compared_ensembles
+            ]
+            field_gain[['REAL', 'DATE', vector]]#.dropna(subset=[vector])
 
-    smry_data.dropna(subset=[vector])
-
+    
     plot_traces = []
     for ens in smry_data.ENSEMBLE.unique():
 
@@ -298,6 +331,13 @@ def render_realization_plot(
                 ens=ens,
                 vector=history_vector,
                 color='black')
+
+    if (show_fieldgains and iorens and refens):
+        plot_traces += trace_group(
+           ens_smry_data=field_gain,
+           ens=f'{iorens} - {refens}',
+           vector=vector,
+           color='red')
 
 
     layout = {
