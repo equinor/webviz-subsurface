@@ -15,7 +15,8 @@ from webviz_subsurface.datainput import load_ensemble_set, get_time_series_data,
 #   - caching
 #   - history
 #   - fieldgains
-#   - layout
+#   - layout => griding
+#   - button logic to boolean
 
 
 # =============================================================================
@@ -59,7 +60,11 @@ class TimeSeries(WebvizContainer):
 
     @property
     def btn_show_uncertainty_id(self):
-        return f'show-history-uncertainty-{self.uid}'  
+        return f'show-history-uncertainty-{self.uid}'
+
+    @property
+    def btn_show_fieldgains_id(self):
+        return f'show-fieldgains-{self.uid}'    
 
     @property
     def vector_columns(self):
@@ -103,9 +108,14 @@ class TimeSeries(WebvizContainer):
                                  options=[{'label': i, 'value': i}
                                           for i in self.smry_vector_columns],
                                  value=self.smry_vector_columns[0]),
-                    html.Button('Show *H',
-                        id=self.btn_show_uncertainty_id,
-                    ),
+                    html.Div([
+                        html.Button('Show *H',
+                            id=self.btn_show_uncertainty_id,
+                        ),
+                        html.Button('Fieldgains',
+                            id=self.btn_show_fieldgains_id,
+                        ),
+                    ]),
                 ], style={"float":"left", 'display': 'inline-block'}),
 
                 html.Div([
@@ -130,21 +140,33 @@ class TimeSeries(WebvizContainer):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.tab_id, 'value'),
-                       Input(self.btn_show_uncertainty_id, 'n_clicks')])
+                       Input(self.btn_show_uncertainty_id, 'n_clicks'),
+                       Input(self.btn_show_fieldgains_id, 'n_clicks')])
         def update_plot(
                 vector: str, 
                 plot_type: str,
-                n_clicks: int = 0):
+                n_clicks_history: int = 0,
+                n_clicks_fieldgians: int = 0,):
 
-            if n_clicks == None:
-                n_clicks = 0
+            # to be replaced by boolen
+            # show history uncertainty
+            if n_clicks_history == None:
+                n_clicks_history = 0
                 show_history_vector = False
-
-            if (n_clicks % 2 == 0) or (n_clicks == None):
+            if (n_clicks_history % 2 == 0):
                 show_history_vector = False
-
-            if (n_clicks % 2 == 1):
+            if (n_clicks_history % 2 == 1):
                 show_history_vector = True
+
+            # show fieldgains
+            if n_clicks_fieldgians == None:
+                n_clicks_fieldgians = 0
+                show_fieldgains = False
+            if (n_clicks_fieldgians % 2 == 0):
+                show_fieldgains = False
+            if (n_clicks_fieldgians % 2 == 1):
+                show_fieldgains = True
+
 
             if plot_type == 'summary_data':
 
@@ -156,6 +178,7 @@ class TimeSeries(WebvizContainer):
                     ensemble_set_name=self.title,
                     smry_history_columns=self.smry_history_columns,
                     show_history_vector=show_history_vector,
+                    show_fieldgains=show_fieldgains,
                 )
 
             if plot_type == 'summary_stats': 
@@ -187,15 +210,21 @@ class TimeSeries(WebvizContainer):
 
     def add_webvizstore(self):
         return [(get_time_series_data,
-                 [{'ensemble_paths': self.ensemble_paths,
-                   'column_keys': self.column_keys,
-                   'time_index': self.time_index,
-                   'ensemble_set_name': self.title}]
+                    [{'ensemble_paths': self.ensemble_paths,
+                      'column_keys': self.column_keys,
+                      'time_index': self.time_index,
+                      'ensemble_set_name': self.title}]
                 ),
                 (get_time_series_statistics,
-                 [{'ensemble_paths': self.ensemble_paths,
-                   'time_index': self.time_index,
-                   'column_keys': self.column_keys}]
+                    [{'ensemble_paths': self.ensemble_paths,
+                      'time_index': self.time_index,
+                      'column_keys': self.column_keys}]
+                ),
+                (get_time_series_fielgains,
+                    [{'ensemble_paths': self.ensemble_paths,
+                      'time_index': self.time_index,
+                      'column_keys': self.column_keys,
+                      'ensemble_set_name': self.title}]
                 ),
         ]
 
@@ -212,6 +241,7 @@ def render_realization_plot(
         ensemble_set_name: str,
         smry_history_columns: tuple,
         show_history_vector: bool,
+        show_fieldgains: bool,
     ):
 
 
@@ -219,6 +249,7 @@ def render_realization_plot(
     history_vector = (vector + 'H')
 
 
+    # summary- and history-vector-traces
     if history_vector in smry_history_columns:
 
         smry_data = get_time_series_data(
@@ -237,6 +268,16 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
+
+    # feildgain traces
+    if show_fieldgains:
+        field_gains = get_time_series_fielgains(
+            ensemble_paths=ensemble_paths,
+            time_index=time_index,
+            column_keys=column_keys,
+            ensemble_set_name=ensemble_set_name
+        )
+        print(field_gains.shape)
 
     smry_data.dropna(subset=[vector])
 

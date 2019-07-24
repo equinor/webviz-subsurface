@@ -67,6 +67,7 @@ def test_get_time_series_fielgains():
         ensemble_set_name='Volve'
     )
     assert isinstance(field_gains, pd.DataFrame)
+    assert field_gains.shape == (2156, 7)
     assert all([column in field_gains.columns
                 for column in ['IROENS - REFENS', 'REAL', 'DATE']])
 
