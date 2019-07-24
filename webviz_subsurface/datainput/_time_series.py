@@ -33,7 +33,7 @@ def get_time_series_statistics(
     ) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(
-    column_keys, (list, tuple)) else None
+        column_keys, (list, tuple)) else None
 
     # Note: to be replaced by ensset.get_smry_stats()
     # when function is available
@@ -56,7 +56,7 @@ def get_time_series_data(
         column_keys: tuple,
         ensemble_set_name: str = 'EnsembleSet'
     ) -> pd.DataFrame:
-    
+
     column_keys = list(column_keys) if isinstance(
         column_keys, (list, tuple)) else None
 
@@ -88,7 +88,7 @@ def get_time_series_fielgains(
 
     column_keys = list(column_keys) if isinstance(
         column_keys, (list, tuple)) else None
-    
+
     ensset = load_ensemble_set(
         ensemble_paths=ensemble_paths,
         ensemble_set_name=ensemble_set_name

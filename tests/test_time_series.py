@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 import sys
 sys.path.append('../')
 import pandas as pd
@@ -13,21 +11,21 @@ from webviz_subsurface.datainput import load_ensemble_set, get_time_series_data,
 
 
 # define recurring variables
-volve_ensemble_paths = [
+VOVLE_ENSEMBLE_PATHS = [
         ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
         ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
         ('iter--2', '/scratch/fmu/stcr/volve/realization-*/iter-2'),
 ]
-volve_ensemble_set_name='Volve'
-volve_time_index='yearly'
-volve_column_keys=['FOP*', 'FGP*']
+VOLVE_ENSEMBLESET_NAME = 'Volve'
+VOLVE_TIME_INDEX = 'yearly'
+VOLVE_COLUMN_KEYS = ['FOP*', 'FGP*']
 
 
 def test_load_ensemble_set():
 
     ensset = load_ensemble_set(
-        ensemble_paths=volve_ensemble_paths,
-        ensemble_set_name=volve_ensemble_set_name
+        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
+        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
     )
     assert len(ensset) == 3
     assert len(ensset["iter--0"].get_df("STATUS")) == 120
@@ -38,9 +36,9 @@ def test_load_ensemble_set():
 def test_time_series_statistics():
 
     summary_statistics = get_time_series_statistics(
-        ensemble_paths=volve_ensemble_paths,
-        time_index=volve_time_index,
-        column_keys=volve_column_keys
+        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
+        time_index=VOLVE_TIME_INDEX,
+        column_keys=VOLVE_COLUMN_KEYS
     )
     assert isinstance(summary_statistics, pd.DataFrame)
     assert summary_statistics.shape == (165, 5)
@@ -49,9 +47,9 @@ def test_time_series_statistics():
 def test_time_series_data():
 
     summary_data = get_time_series_data(
-        ensemble_paths=volve_ensemble_paths,
-        time_index=volve_time_index,
-        column_keys=volve_column_keys,
+        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
+        time_index=VOLVE_TIME_INDEX,
+        column_keys=VOLVE_COLUMN_KEYS,
         ensemble_set_name='Volve'
     )
     assert isinstance(summary_data, pd.DataFrame)
@@ -61,9 +59,9 @@ def test_time_series_data():
 def test_get_time_series_fielgains():
 
     field_gains = get_time_series_fielgains(
-        ensemble_paths=volve_ensemble_paths,
-        time_index=volve_time_index,
-        column_keys=volve_column_keys,
+        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
+        time_index=VOLVE_TIME_INDEX,
+        column_keys=VOLVE_COLUMN_KEYS,
         ensemble_set_name='Volve'
     )
     assert isinstance(field_gains, pd.DataFrame)

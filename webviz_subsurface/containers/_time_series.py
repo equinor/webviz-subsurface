@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
 from webviz_config.containers import WebvizContainer
 from plotly.colors import DEFAULT_PLOTLY_COLORS
-from webviz_subsurface.datainput import load_ensemble_set, get_time_series_data, \
+from webviz_subsurface.datainput import get_time_series_data, \
     get_time_series_statistics, get_time_series_fielgains
 
 
@@ -72,7 +72,7 @@ class TimeSeries(WebvizContainer):
 
     @property
     def dropdown_refens_id(self):
-        return f'dropdown-refens-{self.uid}'     
+        return f'dropdown-refens-{self.uid}'
 
     @property
     def vector_columns(self):
@@ -118,23 +118,19 @@ class TimeSeries(WebvizContainer):
                                  value=self.smry_vector_columns[0]),
                     html.Div([
                         html.Button('Show *H',
-                            id=self.btn_show_uncertainty_id,
-                        ),
+                                    id=self.btn_show_uncertainty_id),
                         html.Button('Fieldgains',
-                            id=self.btn_show_fieldgains_id,
-                        ),
+                                    id=self.btn_show_fieldgains_id),
                         dcc.Dropdown(
                             id=self.dropdown_iorens_id,
                             options=[{'label': i[0], 'value': i[0]}
-                                     for i in self.ensemble_paths],
-                        ),
+                                     for i in self.ensemble_paths]),
                         dcc.Dropdown(
                             id=self.dropdown_refens_id,
                             options=[{'label': i[0], 'value': i[0]}
-                                     for i in self.ensemble_paths],
-                        ),
+                                     for i in self.ensemble_paths]),
                     ]),
-                ], style={"float":"left", 'display': 'inline-block'}),
+                ], style={'width': '20%', "float": "left"}),
 
                 html.Div([
                     dcc.Tabs(id=self.tab_id, value='summary_data', children=[
@@ -143,7 +139,7 @@ class TimeSeries(WebvizContainer):
                     ]),
                     html.Div(id='tabs-content'),
                     html.Div(id=self.chart_id)
-                ], style={'width': '80%', 'display': 'inline-block'}),
+                ], style={'width': '80%', "float": "right"}),
 
             ]),
         ])
@@ -163,7 +159,7 @@ class TimeSeries(WebvizContainer):
                        Input(self.dropdown_iorens_id, 'value'),
                        Input(self.dropdown_refens_id, 'value')])
         def update_plot(
-                vector: str, 
+                vector: str,
                 plot_type: str,
                 n_clicks_history: int,
                 n_clicks_fieldgians: int,
@@ -172,23 +168,22 @@ class TimeSeries(WebvizContainer):
 
             # to be replaced by boolen
             # show history uncertainty
-            if n_clicks_history == None:
+            if n_clicks_history is None:
                 n_clicks_history = 0
                 show_history_vector = False
-            if (n_clicks_history % 2 == 0):
+            if n_clicks_history % 2 == 0:
                 show_history_vector = False
-            if (n_clicks_history % 2 == 1):
+            if n_clicks_history % 2 == 1:
                 show_history_vector = True
 
             # show fieldgains
-            if n_clicks_fieldgians == None:
+            if n_clicks_fieldgians is None:
                 n_clicks_fieldgians = 0
                 show_fieldgains = False
-            if (n_clicks_fieldgians % 2 == 0):
+            if n_clicks_fieldgians % 2 == 0:
                 show_fieldgains = False
-            if (n_clicks_fieldgians % 2 == 1):
+            if n_clicks_fieldgians % 2 == 1:
                 show_fieldgains = True
-
 
             if plot_type == 'summary_data':
 
@@ -205,7 +200,7 @@ class TimeSeries(WebvizContainer):
                     refens=refens,
                 )
 
-            if plot_type == 'summary_stats': 
+            if plot_type == 'summary_stats':
 
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
@@ -213,7 +208,6 @@ class TimeSeries(WebvizContainer):
                     time_index=self.time_index,
                     vector=vector
                 )
-
 
         @app.callback(Output('tabs-content', 'children'),
                       [Input('tabs', 'value')])
@@ -234,23 +228,23 @@ class TimeSeries(WebvizContainer):
 
     def add_webvizstore(self):
         return [(get_time_series_data,
-                    [{'ensemble_paths': self.ensemble_paths,
-                      'column_keys': self.column_keys,
-                      'time_index': self.time_index,
-                      'ensemble_set_name': self.title}]
-                ),
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'column_keys': self.column_keys,
+                   'time_index': self.time_index,
+                   'ensemble_set_name': self.title}]
+                 ),
                 (get_time_series_statistics,
-                    [{'ensemble_paths': self.ensemble_paths,
-                      'time_index': self.time_index,
-                      'column_keys': self.column_keys}]
-                ),
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'time_index': self.time_index,
+                   'column_keys': self.column_keys}]
+                 ),
                 (get_time_series_fielgains,
-                    [{'ensemble_paths': self.ensemble_paths,
-                      'time_index': self.time_index,
-                      'column_keys': self.column_keys,
-                      'ensemble_set_name': self.title}]
-                ),
-        ]
+                 [{'ensemble_paths': self.ensemble_paths,
+                   'time_index': self.time_index,
+                   'column_keys': self.column_keys,
+                   'ensemble_set_name': self.title}]
+                 ),
+                ]
 
 
 # =============================================================================
@@ -270,10 +264,8 @@ def render_realization_plot(
         refens: str,
     ):
 
-
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
     history_vector = (vector + 'H')
-
 
     # summary- and history-vector-traces
     if history_vector in smry_history_columns:
@@ -294,8 +286,7 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    #smry_data.dropna(subset=[vector])
-
+    # smry_data.dropna(subset=[vector])
 
     # feildgain data
     if show_fieldgains:
@@ -305,15 +296,14 @@ def render_realization_plot(
             column_keys=column_keys,
             ensemble_set_name=ensemble_set_name
         )
-        
+
         if (iorens and refens):
             compared_ensembles = f'{iorens} - {refens}'
             field_gain = field_gains[
                 field_gains['IROENS - REFENS'] == compared_ensembles
             ]
-            field_gain[['REAL', 'DATE', vector]]#.dropna(subset=[vector])
+            field_gain[['REAL', 'DATE', vector]]  # .dropna(subset=[vector])
 
-    
     plot_traces = []
     for ens in smry_data.ENSEMBLE.unique():
 
@@ -324,7 +314,7 @@ def render_realization_plot(
             color=next(cycle_list))
 
         if (history_vector in smry_history_columns
-            and show_history_vector):
+                and show_history_vector):
 
             plot_traces += trace_group(
                 ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
@@ -334,11 +324,10 @@ def render_realization_plot(
 
     if (show_fieldgains and iorens and refens):
         plot_traces += trace_group(
-           ens_smry_data=field_gain,
-           ens=f'{iorens} - {refens}',
-           vector=vector,
-           color='red')
-
+            ens_smry_data=field_gain,
+            ens=f'{iorens} - {refens}',
+            vector=vector,
+            color='red')
 
     layout = {
         'hovermode': 'closest',
@@ -356,6 +345,8 @@ def render_realization_plot(
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
 
 # caching leads to an err. in FanChart()
+
+
 def render_stat_plot(
         ensemble_paths: tuple,
         time_index: str,
@@ -447,4 +438,3 @@ def single_trace(ens_smry_data, ens, vector, color):
         },
         'showlegend': True
     }
-
