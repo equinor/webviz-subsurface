@@ -24,6 +24,15 @@ from webviz_subsurface.datainput import get_time_series_data, \
 # =============================================================================
 
 class TimeSeries(WebvizContainer):
+    """Plot of time series data based on fmu-ensemble summary data.
+    Data are loaded from scratch an process via fmu-ensemble utilities.
+
+    Args:
+        ensembles: key-value-pait = ensemble-name: ensemble-path
+        column_keys: list = list of preselected vectors to be selectable
+        sampling: str = time-index / time-steps of summary-data
+    """  
+
 
     def __init__(
             self,
@@ -31,15 +40,13 @@ class TimeSeries(WebvizContainer):
             container_settings,
             ensembles,
             column_keys=None,
-            sampling: str = 'monthly',
-            history_uncertainty: bool = False):
+            sampling: str = 'monthly'):
 
         self.title = 'EnsembleSet'
         self.uid = f'{uuid4()}'
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if isinstance(
             column_keys, (list, tuple)) else None
-        self.history_uncertainty = history_uncertainty
         self.ensemble_paths = tuple(
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
@@ -263,6 +270,23 @@ def render_realization_plot(
         iorens: str,
         refens: str,
     ):
+    """ Callback for a dcc.Graph-obj that shows traces (one per realization
+    and one color per tracegroup <=> ensemble) of a selected vector per
+    selected time-step.
+
+    Args:
+        ensemble_paths: tuple = list of ensemble-paths
+        time_index: str = time-index
+        column_keys: tuple = tuple of pre selected-vectors
+        vector: str = vector to be plotted
+        ensemble_set_name: str = name of enesmble-set
+        smry_history_columns: tuple = tuple of history-vectors
+        show_history_vector: bool = show history vector (if present)
+        show_fieldgains: bool = shwo fieldgains
+    Retuns:
+        dcc.Graph (scatter-plot) of summary-data aggregated over given
+        ensembles. x: time, y: vector-value
+    """
 
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
     history_vector = (vector + 'H')
@@ -352,6 +376,16 @@ def render_stat_plot(
         time_index: str,
         column_keys: tuple,
         vector: str):
+    """ Render statistics plot renders one fanchart-plot per given ensemble.
+
+    Args:
+        ens_smry_data: pd.DataFrame = Dataframe containing all ensmelbes.
+        time_index: str = time-index
+        column_keys: tuple = tuple of pre selected-vectors
+        vector: str = vector to be plotted
+    Returns:
+        dcc.Graph objects as fancharts of summary statistics.
+    """
 
     smry_stats = get_time_series_statistics(
         ensemble_paths=ensemble_paths,
@@ -388,6 +422,18 @@ def render_stat_plot(
 # =============================================================================
 
 def trace_group(ens_smry_data, ens, vector, color):
+    """ Returns a plotly-graph-trace-group with one color and one name.
+    The first trace gets plotted individually as is show up in the legend
+    to represent the trace group.
+
+    Args:
+        ens_smry_data: pd.DataFrame = Dataframe containing all ensmelbes.
+        ens: str = ensemble to be plotted
+        vecotr: str = vector to be plotted
+        color: str = trace color
+    Returns:
+        plotly-graph-obj-tracegroup
+    """
 
     ens_traces = []
 
