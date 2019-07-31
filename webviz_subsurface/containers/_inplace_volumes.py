@@ -15,19 +15,20 @@ from ..datainput import extract_volumes
 class InplaceVolumes(WebvizContainer):
     '''### Volumetrics
 
-This container visualizes inplace volumetrics results-
+This container visualizes inplace volumetrics results from 
+csv files stored on standard format.
 
-* `ensemble`: Which ensemble in `container_settings` to visualize.
-* `volfile`:  Local realization path to the RMS volumetrics file
-* `title`: Optional title for the container.
+* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `volfiles`:  Name of csv files. E.g. (geogrid--oil.csv)
+* `volfolder`: Optional local folder for csv files
+* `response`: Optional initial visualized volume response
+
 '''
 
     def __init__(self, app, container_settings, ensembles: list,
-                 volfiles: list, title: str = 'In-place volumes',
-                 volfolder: str = 'share/results/volumes',
+                 volfiles: list, volfolder: str = 'share/results/volumes',
                  response: str = 'STOIIP_OIL'):
 
-        self.title = title
         self.ens_paths = tuple((ens,
                                 container_settings['scratch_ensembles'][ens])
                                for ens in ensembles)
@@ -200,7 +201,6 @@ This container visualizes inplace volumetrics results-
     def layout(self):
         '''Main layout'''
         return html.Div([
-            html.H2(self.title),
             html.Div(style=self.style_layout, children=[
                 html.Div(children=[
                     self.plot_options_layout,
