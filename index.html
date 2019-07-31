@@ -57,7 +57,6 @@ pages:
    content:
     - container: DataTable
       csv_file: ./example_data.csv
-      filtering: True
 
  - title: PDF example
    content:
@@ -72,13 +71,11 @@ pages:
  - title: Plot a table
    content:
     - container: TablePlotter
-      title: Plotter
       csv_file: ./example_data.csv
 
  - title: Plot a table (locked)
    content:
     - container: TablePlotter
-      title: Initial reservoir pressure
       csv_file: ./example_data.csv
       lock: true
       plot_options:
@@ -139,11 +136,14 @@ a database.</p>
              on data in the individual columns.</li>
 <li><code>filtering</code>: If <code>True</code>, the table can be filtered based on values in the
                individual columns.</li>
+<li><code>pagination</code>: If <code>True</code>, only a subset of the table is displayed at once.
+                Different subsets can be viewed from 'previous/next' buttons</li>
 </ul>
 <pre><code class='yaml'>  - container: DataTable
     csv_file: some value
     sorting: True  # Optional (default value shown here).
-    filtering: False  # Optional (default value shown here).
+    filtering: True  # Optional (default value shown here).
+    pagination: True  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -191,16 +191,11 @@ paths to the markdown file itself, or absolute paths.</p>
 automatically detected.</p>
 <ul>
 <li><code>filename</code>: Path to a file containing the code to highlight.</li>
-<li><code>show_line_numbers</code>: If <code>True</code>, show line numbers. Default is <code>False</code>.</li>
-<li><code>start_number</code>: This only has effect if <code>show_line_numbers</code> is <code>True</code>. If
-                  given, line numbers will start at this value. Default is <code>1</code>.</li>
 <li><code>dark_theme</code>: If <code>True</code>, the code is shown with a dark theme. Default is
                 <code>False</code> giving a light theme.</li>
 </ul>
 <pre><code class='yaml'>  - container: SyntaxHighlighter
     filename: some value
-    show_line_numbers: False  # Optional (default value shown here).
-    start_number: 1  # Optional (default value shown here).
     dark_theme: False  # Optional (default value shown here).
 </code></pre>
 <hr>
@@ -211,7 +206,6 @@ automatically detected.</p>
 a provided csv file. If feature is requested, the data could also come from
 a database.</p>
 <ul>
-<li>title` : Title on page</li>
 <li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
               path or relative to the configuration file.</li>
 <li><code>plot_options</code>: A dictionary of plot options to initialize the plot with</li>
@@ -219,7 +213,6 @@ a database.</p>
           plot options are hidden.</li>
 </ul>
 <pre><code class='yaml'>  - container: TablePlotter
-    title: some value
     csv_file: some value
     plot_options: None  # Optional (default value shown here).
     lock: False  # Optional (default value shown here).
