@@ -1,7 +1,6 @@
 import mock
 import dash
 import pandas as pd
-from pytest_dash.wait_for import wait_for_element_by_css_selector
 from webviz_config.common_cache import cache
 from webviz_config.containers import ParameterDistribution
 
