@@ -8,10 +8,11 @@ import dash_table
 from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
+from webviz_config.containers import WebvizContainer
 from ..datainput import extract_volumes
 
 
-class InplaceVolumes:
+class InplaceVolumes(WebvizContainer):
     '''### Volumetrics
 
 This container visualizes inplace volumetrics results-
