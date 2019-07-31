@@ -16,13 +16,14 @@ before_install:
   - pip install --upgrade pip numpy
 
 install:
-  - wget https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip
+  - wget https://chromedriver.storage.googleapis.com/76.0.3809.12/chromedriver_linux64.zip
   - unzip chromedriver_linux64.zip
   - export PATH=$PATH:$PWD
 
 script:
   - pip install .
   - pip install .[tests]
+  - pip install dash[testing]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
   - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
