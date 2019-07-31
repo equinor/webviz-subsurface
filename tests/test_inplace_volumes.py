@@ -6,7 +6,7 @@ from webviz_config.containers import InplaceVolumes
 
 # mocked functions
 extract_volumes = 'webviz_subsurface.containers'\
-                '._inplace_volumes.extract_volumes'
+    '._inplace_volumes.extract_volumes'
 
 
 def test_inplace_volumes(dash_duo):
@@ -27,5 +27,6 @@ def test_inplace_volumes(dash_duo):
 
         app.layout = vol.layout
         dash_duo.start_server(app)
-        assert  "STOIIP_OIL" in dash_duo.wait_for_element(f'#{vol.response_id}').text
-        assert dash_duo.get_logs() == []                                               
+        assert "STOIIP_OIL" in dash_duo.wait_for_element(
+            f'#{vol.response_id}').text
+        assert dash_duo.get_logs() == []
