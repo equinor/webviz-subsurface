@@ -1,8 +1,11 @@
 language: python
-cache: pip
+dist: bionic
 
 addons:
-    chrome: stable
+  chrome: stable
+
+services:
+  - xvfb
 
 python:
   - "3.6"
@@ -13,7 +16,6 @@ matrix:
 before_install:
   - sudo apt-get -qq update
   - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
   - pip freeze | grep -vw "pip" | xargs pip uninstall -y
   - pip install --upgrade pip
 
