@@ -15,7 +15,7 @@ from ..datainput import extract_volumes
 class InplaceVolumes(WebvizContainer):
     '''### Volumetrics
 
-This container visualizes inplace volumetrics results from 
+This container visualizes inplace volumetrics results from
 csv files stored on standard format.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
