@@ -15,7 +15,6 @@ matrix:
 
 before_install:
   - sudo apt-get -qq update
-  - export DISPLAY=:99.0
   - pip freeze | grep -vw "pip" | xargs pip uninstall -y
   - pip install --upgrade pip
 
