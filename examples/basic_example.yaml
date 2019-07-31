@@ -31,6 +31,13 @@ pages:
         - iter-0
         - iter-1
     - ...some other text
+ - title: Inplace volumes
+   content: 
+    - container: InplaceVolumes
+      ensembles: [iter-0, iter-1]
+      volfiles: 
+        - geogrid--oil.csv
+        - simgrid--oil.csv
  - title: Morris Plot
    content: 
     - Some text...
