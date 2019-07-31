@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 import sys
 sys.path.append('../')
+sys.path.append('../webviz_subsurface/containers/')
 import pandas as pd
 from mock import patch
 # patch out flask.app instance related decorators
 patch('webviz_config.common_cache.cache.memoize',
       lambda *x, **y: lambda f: f).start()
-from webviz_subsurface.datainput import load_ensemble_set, get_time_series_data, \
-    get_time_series_statistics, get_time_series_fielgains
+from webviz_subsurface.datainput import load_ensemble_set, \
+    get_time_series_statistics, get_time_series_fielgains, get_time_series_data
+# to avoide "module webviz_subsurface.containers has no attribute 'DiskUsage"
+from _time_series import trace_group, single_trace
 
 
 # define recurring variables
@@ -75,3 +78,38 @@ def test_get_time_series_fielgains():
         field_gains['IROENS - REFENS'] == compared_ensembles]
     assert isinstance(field_gain, pd.DataFrame)
     assert field_gain.shape == (264, 7)
+
+
+def test_trace_group():
+
+    summary_data = pd.read_csv('./data/Iter0_FOPT.csv')
+    _trace_group = trace_group(
+        ens_smry_data=summary_data,
+        ens='Volve--0',
+        vector='FOPT',
+        color='red'
+    )
+    assert len(_trace_group) == 24
+    assert len(_trace_group[0]) == 7
+
+
+def test_single_trace():
+
+    summary_data = pd.read_csv('./data/Iter0_FOPT.csv')
+    _single_trace = single_trace(
+        ens_smry_data=summary_data,
+        ens='Volve--0',
+        vector='FOPT',
+        color='red'
+    )
+    assert len(_single_trace) == 7
+
+
+def test_render_realization_plot():
+
+    pass
+
+
+def test_render_stat_plot():
+
+    pass

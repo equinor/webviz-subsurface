@@ -1,11 +1,11 @@
 import itertools
 from uuid import uuid4
-import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_plotly.graph_objs import FanChart
 from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 from webviz_subsurface.datainput import get_time_series_data, \
     get_time_series_statistics, get_time_series_fielgains
@@ -13,7 +13,6 @@ from webviz_subsurface.datainput import get_time_series_data, \
 
 # Todo:
 #   - caching
-#   - history
 #   - fieldgains
 #   - layout => griding
 #   - button logic to boolean
@@ -31,8 +30,7 @@ class TimeSeries(WebvizContainer):
         ensembles: key-value-pait = ensemble-name: ensemble-path
         column_keys: list = list of preselected vectors to be selectable
         sampling: str = time-index / time-steps of summary-data
-    """  
-
+    """
 
     def __init__(
             self,
@@ -258,6 +256,7 @@ class TimeSeries(WebvizContainer):
 # Render functions
 # =============================================================================
 
+@cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
         ensemble_paths: tuple,
         time_index: str,
@@ -353,6 +352,7 @@ def render_realization_plot(
             vector=vector,
             color='red')
 
+
     layout = {
         'hovermode': 'closest',
         'barmode': 'overlay',
@@ -368,9 +368,9 @@ def render_realization_plot(
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
 
+
 # caching leads to an err. in FanChart()
-
-
+@cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(
         ensemble_paths: tuple,
         time_index: str,
@@ -405,7 +405,7 @@ def render_stat_plot(
             html.Div(
                 dcc.Graph(
                     id='graph-{}'.format(ens),
-                    figure=FanChart(vector_stats.iterrows()),
+                    figure=FanChart(data=vector_stats.iterrows()),
                     config={
                         'displaylogo': False,
                         'modeBarButtonsToRemove': ['sendDataToCloud']
