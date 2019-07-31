@@ -6,9 +6,10 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
+from webviz_config.containers import WebvizContainer
 
 
-class DiskUsage:
+class DiskUsage(WebvizContainer):
     '''### Disk usage
 
 This container adds functionality for standard visualization of disk usage in
@@ -20,10 +21,8 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
 * `title`: Optional title for the container.
 '''
 
-    def __init__(self, app, scratch_dir: str,
-                 title: str = 'Disk usage'):
+    def __init__(self, app, scratch_dir: str):
 
-        self.title = title
         self.scratch_dir = scratch_dir
         self.chart_id = 'chart-id-{}'.format(uuid4())
         self.plot_type_id = 'plot-type-id-{}'.format(uuid4())
@@ -36,7 +35,6 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
     @property
     def layout(self):
         return html.Div([
-                    html.H2(self.title),
                     html.P(
                         f'This is the disk usage on \
                         {self.scratch_dir} per user, \

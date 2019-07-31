@@ -29,14 +29,17 @@ setup(
             'DiskUsage = webviz_subsurface.containers:DiskUsage',
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
+            'Intersect = webviz_subsurface.containers:Intersect',
+            'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
             'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes'
         ]
     },
     install_requires=[
         'scipy>=1.2.1',
+        'dash-daq>=0.1.5',
         'webviz-config>=0.0.4',
         'webviz-plotly>=0.0.1',
-        'webviz-subsurface-components>=0.0.2'
+        'webviz-subsurface-components>=0.0.3'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
