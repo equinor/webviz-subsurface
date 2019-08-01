@@ -27,6 +27,10 @@ def test_inplace_volumes(dash_duo):
 
         app.layout = vol.layout
         dash_duo.start_server(app)
-        assert "STOIIP_OIL" in dash_duo.wait_for_element(
-            f'#{vol.response_id}').text
-        assert dash_duo.get_logs() == []
+        
+        if not "STOIIP_OIL" in dash_duo.wait_for_element(
+                f'#{vol.response_id}').text:
+            raise AssertionError()
+
+        if not dash_duo.get_logs() == []:
+            raise AssertionError()

@@ -18,7 +18,6 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 @webvizstore
 def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
     volfiles = list(volfiles)
-    volpaths = [os.path.join(volfolder, f) for f in volfiles]
     dfs = []
     for ens_name, ens_path in list(ensemble_paths):
         ens_dfs = []

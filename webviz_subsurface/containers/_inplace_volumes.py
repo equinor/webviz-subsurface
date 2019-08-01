@@ -1,13 +1,10 @@
 from uuid import uuid4
-import os
 import numpy as np
-import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_table
 from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
 from webviz_config.containers import WebvizContainer
 from ..datainput import extract_volumes
 
@@ -154,7 +151,8 @@ csv files stored on standard format.
             'grid-template-columns': '5fr 1fr'
         }
 
-    def group_radio_options(self, selectors):
+    @staticmethod
+    def group_radio_options(selectors):
         '''Returns options for a radio button used for grouping
         volume results on a dataframe column. There is one
         The option 'NONE' is added to allow no grouping
@@ -280,7 +278,7 @@ csv files stored on standard format.
             [Output(self.selectors_id['SOURCE'], 'multi'),
              Output(self.selectors_id['SOURCE'], 'value')],
             [Input(self.radio_selectors_id, 'value')])
-        def set_iteration_selector(group_by):
+        def set_source_selector(group_by):
             '''If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             '''

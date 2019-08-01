@@ -40,4 +40,4 @@ __all__ = ['SummaryStats',
            'HistoryMatch',
            'Intersect',
            'MorrisPlot',
-           'InPlaceVolumes']
+           'InplaceVolumes']
