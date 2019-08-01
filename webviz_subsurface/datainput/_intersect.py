@@ -98,7 +98,7 @@ def get_gfence(well, g_name, p_name):
         return grid.get_randomline(
             get_wfence(well).values.copy(), parameter,
             zmin=1500, zmax=1900, zincrement=1.0)
-    except:
+    except IOError:
         return
 
 
