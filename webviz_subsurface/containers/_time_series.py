@@ -133,7 +133,9 @@ class TimeSeries(WebvizContainer):
                         dcc.Dropdown(
                             id=self.dropdown_refens_id,
                             options=[{'label': i[0], 'value': i[0]}
-                                     for i in self.ensemble_paths]),
+                                     for i in self.ensemble_paths],
+                                     multi=True, 
+                                     ),
                     ]),
                 ], style={'width': '20%', "float": "left"}),
 
@@ -290,7 +292,7 @@ def render_realization_plot(
     cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
     history_vector = (vector + 'H')
 
-    # summary- and history-vector-traces
+    # process data ------------------------------------------------------------
     if history_vector in smry_history_columns:
 
         smry_data = get_time_series_data(
@@ -309,9 +311,6 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    # smry_data.dropna(subset=[vector])
-
-    # feildgain data
     if show_fieldgains:
         field_gains = get_time_series_fielgains(
             ensemble_paths=ensemble_paths,
@@ -320,37 +319,42 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name
         )
 
-        if (iorens and refens):
-            compared_ensembles = f'{iorens} - {refens}'
-            field_gain = field_gains[
-                field_gains['IROENS - REFENS'] == compared_ensembles
-            ]
-            field_gain[['REAL', 'DATE', vector]]  # .dropna(subset=[vector])
 
+    # plot traces -------------------------------------------------------------
     plot_traces = []
-    for ens in smry_data.ENSEMBLE.unique():
-
-        plot_traces += trace_group(
-            ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
-            ens=ens,
-            vector=vector,
-            color=next(cycle_list))
-
-        if (history_vector in smry_history_columns
-                and show_history_vector):
+    if not (show_fieldgains and iorens and refens):
+        for ens in smry_data.ENSEMBLE.unique():
 
             plot_traces += trace_group(
                 ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
                 ens=ens,
-                vector=history_vector,
-                color='black')
+                vector=vector,
+                color=next(cycle_list))
+
+            if (history_vector in smry_history_columns
+                    and show_history_vector):
+
+                plot_traces += trace_group(
+                    ens_smry_data=smry_data[smry_data['ENSEMBLE'] == ens],
+                    ens=ens,
+                    vector=history_vector,
+                    color='black')
+
 
     if (show_fieldgains and iorens and refens):
-        plot_traces += trace_group(
-            ens_smry_data=field_gain,
-            ens=f'{iorens} - {refens}',
-            vector=vector,
-            color='red')
+        for i in refens:
+
+            compared_ensembles = f'{iorens} - {i}'
+            field_gain = field_gains[
+                field_gains['IROENS - REFENS'] == compared_ensembles
+            ]
+            field_gain[['REAL', 'DATE', vector]]
+
+            plot_traces += trace_group(
+                ens_smry_data=field_gain,
+                ens=f'{iorens} - {i}',
+                vector=vector,
+                color=next(cycle_list))
 
 
     layout = {
@@ -370,7 +374,7 @@ def render_realization_plot(
 
 
 # caching leads to an err. in FanChart()
-@cache.memoize(timeout=cache.TIMEOUT)
+#@cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(
         ensemble_paths: tuple,
         time_index: str,
