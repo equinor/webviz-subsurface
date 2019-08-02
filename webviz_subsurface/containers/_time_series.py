@@ -38,7 +38,9 @@ class TimeSeries(WebvizContainer):
             container_settings,
             ensembles,
             column_keys=None,
-            sampling: str = 'monthly'):
+            sampling: str = 'monthly',
+            base_ensembles: list = None,
+            delta_ensembles: list = None):
 
         self.title = 'EnsembleSet'
         self.uid = f'{uuid4()}'
@@ -49,7 +51,20 @@ class TimeSeries(WebvizContainer):
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
+        #self.ensemble_combinations = ensemble_combinations if ensemble_combinations else [self.ensemble_paths, self.ensemble_paths]
+        self.base_ensembles = tuple(base_ensembles if base_ensembles else [
+                    i[0] for i in self.ensemble_paths])
+        self.delta_ensembles = tuple(delta_ensembles if delta_ensembles else [
+                    i[0] for i in self.ensemble_paths])
         self.set_callbacks(app)
+
+    @property
+    def base_ens(self):
+        return self.ensemble_combinations[0]
+
+    @property
+    def delta_ens(self):
+        return self.ensemble_combinations[1]
 
     @property
     def dropwdown_vector_id(self):
@@ -128,12 +143,12 @@ class TimeSeries(WebvizContainer):
                                     id=self.btn_show_fieldgains_id),
                         dcc.Dropdown(
                             id=self.dropdown_iorens_id,
-                            options=[{'label': i[0], 'value': i[0]}
-                                     for i in self.ensemble_paths]),
+                            options=[{'label': i, 'value': i}
+                                     for i in self.base_ensembles]),
                         dcc.Dropdown(
                             id=self.dropdown_refens_id,
-                            options=[{'label': i[0], 'value': i[0]}
-                                     for i in self.ensemble_paths],
+                            options=[{'label': i, 'value': i}
+                                     for i in self.delta_ensembles],
                                      multi=True, 
                                      ),
                     ]),
@@ -205,6 +220,8 @@ class TimeSeries(WebvizContainer):
                     show_fieldgains=show_fieldgains,
                     iorens=iorens,
                     refens=refens,
+                    base_ensembles=self.base_ensembles,
+                    delta_ensembles=self.delta_ensembles,
                 )
 
             if plot_type == 'summary_stats':
@@ -249,6 +266,8 @@ class TimeSeries(WebvizContainer):
                  [{'ensemble_paths': self.ensemble_paths,
                    'time_index': self.time_index,
                    'column_keys': self.column_keys,
+                   'base_ensembles': self.base_ensembles,
+                   'delta_ensembles': self.delta_ensembles,
                    'ensemble_set_name': self.title}]
                  ),
                 ]
@@ -270,6 +289,8 @@ def render_realization_plot(
         show_fieldgains: bool,
         iorens: str,
         refens: str,
+        base_ensembles: tuple,
+        delta_ensembles: tuple
     ):
     """ Callback for a dcc.Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
@@ -316,7 +337,9 @@ def render_realization_plot(
             ensemble_paths=ensemble_paths,
             time_index=time_index,
             column_keys=column_keys,
-            ensemble_set_name=ensemble_set_name
+            base_ensembles=base_ensembles,
+            delta_ensembles=delta_ensembles,
+            ensemble_set_name=ensemble_set_name,
         )
 
 
@@ -374,7 +397,6 @@ def render_realization_plot(
 
 
 # caching leads to an err. in FanChart()
-#@cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(
         ensemble_paths: tuple,
         time_index: str,

@@ -77,6 +77,8 @@ def get_time_series_fielgains(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
+        base_ensembles: tuple,
+        delta_ensembles: tuple,
         ensemble_set_name: str = 'EnsembleSet'
     ) -> pd.DataFrame:
     """ Loads ensembleset (cached after first loaded), gets a list of
@@ -94,11 +96,9 @@ def get_time_series_fielgains(
         ensemble_set_name=ensemble_set_name
     )
 
-    ens_name_list = [name for name, path in ensemble_paths]
-
     fieldgians_dfs = []
-    for ens_i in ens_name_list:
-        for ens_ii in ens_name_list:
+    for ens_i in base_ensembles:
+        for ens_ii in delta_ensembles:
             fieldgain_df = (ensset[ens_i] - ensset[ens_ii]).get_smry(
                 column_keys=column_keys,
                 time_index=time_index,

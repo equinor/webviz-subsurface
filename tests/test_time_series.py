@@ -22,6 +22,8 @@ VOVLE_ENSEMBLE_PATHS = [
 VOLVE_ENSEMBLESET_NAME = 'Volve'
 VOLVE_TIME_INDEX = 'yearly'
 VOLVE_COLUMN_KEYS = ['FOP*', 'FGP*']
+BASE_ENSEMBLES = ['iter--0']
+DELTA_ENSEMBLES =  ['iter--0', 'iter--1', 'iter--2']
 
 
 def test_load_ensemble_set():
@@ -65,10 +67,12 @@ def test_get_time_series_fielgains():
         ensemble_paths=VOVLE_ENSEMBLE_PATHS,
         time_index=VOLVE_TIME_INDEX,
         column_keys=VOLVE_COLUMN_KEYS,
+        base_ensembles=BASE_ENSEMBLES,
+        delta_ensembles=DELTA_ENSEMBLES,
         ensemble_set_name='Volve'
     )
     assert isinstance(field_gains, pd.DataFrame)
-    assert field_gains.shape == (2156, 7)
+    assert field_gains.shape == (792, 7)
     assert all([column in field_gains.columns
                 for column in ['IROENS - REFENS', 'REAL', 'DATE']])
 
@@ -103,13 +107,3 @@ def test_single_trace():
         color='red'
     )
     assert len(_single_trace) == 7
-
-
-def test_render_realization_plot():
-
-    pass
-
-
-def test_render_stat_plot():
-
-    pass
