@@ -28,7 +28,7 @@ def test_inplace_volumes(dash_duo):
         app.layout = vol.layout
         dash_duo.start_server(app)
 
-        if "STOIIP_OIL" not in dash_duo.wait_for_element(
+        if "Stock Tank Oil Initially Inplace" not in dash_duo.wait_for_element(
                 f'#{vol.response_id}').text:
             raise AssertionError()
 
