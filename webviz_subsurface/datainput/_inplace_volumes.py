@@ -17,15 +17,15 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
 def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
-    volfiles = list(volfiles)
     dfs = []
     for ens_name, ens_path in list(ensemble_paths):
         ens_dfs = []
         ens = scratch_ensemble(ens_name, ens_path)
-        for volfile in volfiles:
+        for volname, volfile in volfiles:
+            print(volname, volfile)
             path = os.path.join(volfolder, volfile)
             df = ens.load_csv(path)
-            df['SOURCE'] = volfile
+            df['SOURCE'] = volname
             df['ENSEMBLE'] = ens_name
             ens_dfs.append(df)
         dfs.append(pd.concat(ens_dfs))

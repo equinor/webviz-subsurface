@@ -18,7 +18,7 @@ def test_inplace_volumes(dash_duo):
     cache.init_app(app.server)
     container_settings = {'scratch_ensembles': {'iter-0': '', 'iter-1': ''}}
     ensembles = ['iter-0', 'iter-1']
-    volfiles = ['geogrid--oil.csv', 'simgrid--oil.csv']
+    volfiles = {'geogrid':'geogrid--oil.csv', 'simgrid':'simgrid--oil.csv'}
 
     with mock.patch(extract_volumes) as mock_volumes:
         mock_volumes.return_value = pd.read_csv('tests/data/volumes.csv')

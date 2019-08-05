@@ -37,13 +37,15 @@ csv files stored on standard format.
         'RECOVERABLE_GAS': 'Recoverable Volume (Gas)'
     }
     def __init__(self, app, container_settings, ensembles: list,
-                 volfiles: list, volfolder: str = 'share/results/volumes',
+                 volfiles: dict, volfolder: str = 'share/results/volumes',
                  response: str = 'STOIIP_OIL'):
 
         self.ens_paths = tuple((ens,
                                 container_settings['scratch_ensembles'][ens])
                                for ens in ensembles)
-        self.volfiles = tuple(volfiles)
+        self.volfiles = tuple(volfiles.items())
+        print(self.volfiles)
+        print(volfiles)
         self.volfolder = volfolder
         self.initial_response = response
         self.volumes = extract_volumes(self.ens_paths,
