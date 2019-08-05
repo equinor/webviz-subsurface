@@ -16,7 +16,7 @@ This container visualizes inplace volumetrics results from
 csv files stored on standard format.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
-* `volfiles`:  Name of csv files. E.g. (geogrid--oil.csv)
+* `volfiles`:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)
 * `volfolder`: Optional local folder for csv files
 * `response`: Optional initial visualized volume response
 
@@ -83,7 +83,7 @@ csv files stored on standard format.
     @property
     def plot_types(self):
         '''List of available plots'''
-        return ['Histogram', 'Per Realization', 'Box Plot', 'Table']
+        return ['Histogram', 'Per realization', 'Box Plot', 'Table']
 
     @property
     def selectors(self):
@@ -170,7 +170,7 @@ csv files stored on standard format.
     @staticmethod
     def group_radio_options(selectors):
         '''Returns options for a radio button used for grouping
-        volume results on a dataframe column. There is one
+        volume results on a dataframe column. 
         The option 'NONE' is added to allow no grouping
         '''
         options = ['NONE']
@@ -201,7 +201,7 @@ csv files stored on standard format.
                                 id=self.radio_plot_type_id,
                                 options=[{'label': i, 'value': i}
                                          for i in self.plot_types],
-                                value='Per Realization'),
+                                value='Per realization'),
                         ]),
                         html.Div(children=[
                             html.P('Group by:', style={
@@ -325,7 +325,7 @@ def plot_data(plot_type, dframe, response, name):
             'name': name,
             'type': 'box'
         }
-    if plot_type == 'Per Realization':
+    if plot_type == 'Per realization':
         return {
             'y': values,
             'x': dframe['REAL'],

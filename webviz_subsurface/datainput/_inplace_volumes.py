@@ -22,7 +22,6 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
         ens_dfs = []
         ens = scratch_ensemble(ens_name, ens_path)
         for volname, volfile in volfiles:
-            print(volname, volfile)
             path = os.path.join(volfolder, volfile)
             df = ens.load_csv(path)
             df['SOURCE'] = volname
