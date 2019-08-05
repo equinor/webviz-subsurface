@@ -270,6 +270,24 @@ showing disk usage, per user, either as a pie chart or as a bar chart.</p>
 <hr>
 
 
+<h3>Volumetrics</h3>
+<p>This container visualizes inplace volumetrics results from
+csv files stored on standard format.</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>volfiles</code>:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)</li>
+<li><code>volfolder</code>: Optional local folder for csv files</li>
+<li><code>response</code>: Optional initial visualized volume response</li>
+</ul>
+<pre><code class='yaml'>  - container: InplaceVolumes
+    ensembles: some value
+    volfiles: some value
+    volfolder: share/results/volumes  # Optional (default value shown here).
+    response: STOIIP_OIL  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Intersect</h3>
 <p>This container visualizes surfaces intersected along a well path.
 The input are surfaces from a FMU ensemble stored on standardized
