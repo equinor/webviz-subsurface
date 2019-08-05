@@ -366,7 +366,6 @@ def plot_layout(plot_type, response):
                 'r': 40,
                 'b': 30,
                 't': 10},
-            'barmode': 'stack',
             'yaxis': {'title': response},
             'xaxis': {'title': 'Realization'}}
 
