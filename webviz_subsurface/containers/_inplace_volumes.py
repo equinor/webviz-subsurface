@@ -170,7 +170,7 @@ csv files stored on standard format.
     @staticmethod
     def group_radio_options(selectors):
         '''Returns options for a radio button used for grouping
-        volume results on a dataframe column. 
+        volume results on a dataframe column.
         The option 'NONE' is added to allow no grouping
         '''
         options = ['NONE']
