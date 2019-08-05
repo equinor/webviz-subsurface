@@ -135,7 +135,7 @@ csv files stored on standard format.
             dropdowns.append(
                 html.Div(children=[
                     html.Details(open=True, children=[
-                        html.Summary(selector),
+                        html.Summary(selector.lower().capitalize()),
                         dcc.Dropdown(
                             id=self.selectors_id[selector],
                             options=[{'label': i, 'value': i}
@@ -175,7 +175,7 @@ csv files stored on standard format.
         '''
         options = ['NONE']
         options.extend(selectors)
-        return [{'label': i, 'value': i} for i in options]
+        return [{'label': i.lower().capitalize(), 'value': i} for i in options]
 
     @property
     def plot_options_layout(self):
@@ -352,7 +352,6 @@ def plot_layout(plot_type, response):
 
     if plot_type == 'Histogram':
         return {
-            'barmode': 'overlay',
             'bargap': 0.05,
             'xaxis': {'title': response},
             'yaxis': {'title': 'Count'}
