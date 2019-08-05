@@ -29,7 +29,8 @@ setup(
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
-            'MorrisPlot = webviz_subsurface.containers:MorrisPlot'
+            'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
+            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes'
         ]
     },
     install_requires=[
