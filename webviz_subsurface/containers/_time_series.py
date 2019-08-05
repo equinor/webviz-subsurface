@@ -3,10 +3,10 @@ from uuid import uuid4
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
-from webviz_plotly.graph_objs import FanChart
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
+import plotly.graph_objs as go
 from webviz_subsurface.datainput import get_time_series_data, \
     get_time_series_statistics, get_time_series_fielgains
 
@@ -396,7 +396,7 @@ def render_realization_plot(
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
 
 
-# caching leads to an err. in FanChart()
+@cache.memoize(timeout=cache.TIMEOUT)
 def render_stat_plot(
         ensemble_paths: tuple,
         time_index: str,
@@ -418,29 +418,37 @@ def render_stat_plot(
         column_keys=column_keys,
         time_index=time_index)
 
-    fan_chart_divs = []
+    plotly_colors_rgb = itertools.cycle([
+        (31, 119, 180),
+        (255, 127, 14),
+        (44, 160, 44),
+        (214, 39, 40),
+        (148, 103, 189),
+        (140, 86, 75),
+        (227, 119, 194),
+        (127, 127, 127),
+        (188, 189, 34),
+        (23, 190, 207)
+    ])
+
+    data = []
     for ens in smry_stats.ENSEMBLE.unique():
         vector_stats = smry_stats[
-            smry_stats['ENSEMBLE'] == ens][
-                vector].unstack().transpose()
-        vector_stats['name'] = vector
-        vector_stats.rename(index=str, inplace=True,
-                            columns={"minimum": "min", "maximum": "max"})
-        fan_chart_divs.append(html.H5(ens))
-        fan_chart_divs.append(
-            html.Div(
-                dcc.Graph(
-                    id='graph-{}'.format(ens),
-                    figure=FanChart(data=vector_stats.iterrows()),
-                    config={
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove': ['sendDataToCloud']
-                    }
-                )
-            )
+            smry_stats['ENSEMBLE'] == ens]
+        data += time_series_confidence_interval_traces(
+            vector_stats=vector_stats[vector],
+            color_rgb=next(plotly_colors_rgb),
+            legend_group=ens          
         )
 
-    return fan_chart_divs
+    layout = go.Layout(
+        yaxis=dict(title=vector),
+        title='Time series statistics')
+
+    return dcc.Graph(figure={'data': data, 'layout': layout},
+                     config={
+                         'displaylogo': False,
+                         'modeBarButtonsToRemove': ['sendDataToCloud']})
 
 
 # =============================================================================
@@ -510,3 +518,78 @@ def single_trace(ens_smry_data, ens, vector, color):
         },
         'showlegend': True
     }
+
+
+def time_series_confidence_interval_traces(
+        vector_stats,
+        color_rgb,
+        legend_group
+    ):
+
+    r, g, b = color_rgb
+
+    trace_maximum = go.Scatter(
+        name='maximum',
+        x=vector_stats['maximum'].index.tolist(),
+        y=vector_stats['maximum'].values,
+        mode='lines',
+        line=dict(width=0),
+        legendgroup=legend_group,
+        showlegend=False,
+    )    
+    
+    trace_p10 = go.Scatter(
+        name='p10',
+        x=vector_stats['p10'].index.tolist(),
+        y=vector_stats['p10'].values,
+        mode='lines',
+        fill='tonexty',
+        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
+        line=dict(width=0),
+        legendgroup=legend_group,
+        showlegend=False,
+    )
+    
+    trace_mean = go.Scatter(
+        name=legend_group,
+        x=vector_stats['mean'].index.tolist(),
+        y=vector_stats['mean'].values,
+        mode='lines',
+        fill='tonexty',
+        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
+        line=dict(color='rgba({},{},{},{})'.format(r, g, b, 1)),
+        legendgroup=legend_group,
+        showlegend=True,
+    )
+    
+    trace_p90 = go.Scatter(
+        name='p90',
+        x=vector_stats['p90'].index.tolist(),
+        y=vector_stats['p90'].values,
+        mode='lines',
+        fill='tonexty',
+        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
+        line=dict(width=0),
+        legendgroup=legend_group,
+        showlegend=False
+    )
+    
+    trace_minimum = go.Scatter(
+        name='minimum',
+        x=vector_stats['minimum'].index.tolist(),
+        y=vector_stats['minimum'].values,
+        mode='lines',
+        fill='tonexty',
+        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
+        line=dict(width=0),
+        legendgroup=legend_group,
+        showlegend=False,
+    )
+
+    return [
+        trace_maximum,
+        trace_p10,
+        trace_mean,
+        trace_p90,
+        trace_minimum
+    ]
