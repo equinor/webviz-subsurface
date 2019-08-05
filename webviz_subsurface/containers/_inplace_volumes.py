@@ -59,8 +59,8 @@ csv files stored on standard format.
         self.selectors_id = {
             x: str(uuid4())
             for x in self.selectors}
-        self.table_cols = ["response", "selector", "mean",
-                           "stddev", "minimum", "p90", "p10", "maximum"]
+        self.table_cols = ['response', 'selector', 'mean',
+                           'stddev', 'minimum', 'p90', 'p10', 'maximum']
 
         self.set_callbacks(app)
 
@@ -272,7 +272,7 @@ csv files stored on standard format.
             # Make a dash table if table is selected
             if plot_type == 'Table':
                 return dash_table.DataTable(
-                    columns=[{"name": i, "id": i} for i in self.table_cols],
+                    columns=[{'name': i, 'id': i} for i in self.table_cols],
                     data=traces)
             # Else make a graph object
             else:
