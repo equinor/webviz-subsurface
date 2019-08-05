@@ -22,6 +22,20 @@ csv files stored on standard format.
 
 '''
 
+    RESPONSES = {
+        'BULK_OIL': 'Bulk Volume (Oil)',
+        'NET_OIL': 'Net Volume (Oil)',
+        'PORE_OIL': 'Pore Volume (Oil)',
+        'HCPV_OIL': 'Hydro Carbon Pore Volume (Oil)',
+        'STOIIP_OIL': 'Stock Tank Oil Initially Inplace',
+        'BULK_GAS': 'Bulk Volume (Gas)',
+        'NET_GAS': 'Net Volume (Gas)',
+        'PORE_GAS': 'Pore Volume (Gas)',
+        'HCPV_GAS': 'Hydro Carbon Pore Volume (Gas)',
+        'GIIP_GAS': 'Gas Initially in-place',
+        'RECOVERABLE_OIL': 'Recoverable Volume (Oil)',
+        'RECOVERABLE_GAS': 'Recoverable Volume (Gas)'
+    }
     def __init__(self, app, container_settings, ensembles: list,
                  volfiles: list, volfolder: str = 'share/results/volumes',
                  response: str = 'STOIIP_OIL'):
@@ -83,6 +97,8 @@ csv files stored on standard format.
         return [x
                 for x in self.vol_columns
                 if x not in self.selectors and x != 'REAL']
+        # return [InplaceVolumes[x] for x in cols]
+
 
     @property
     def vol_callback_inputs(self):
@@ -138,7 +154,7 @@ csv files stored on standard format.
             'display': 'grid',
             'align-content': 'space-around',
             'justify-content': 'space-between',
-            'grid-template-columns': 'repeat(4, 1fr)'
+            'grid-template-columns': '2fr 1fr 1fr 1fr'
         }
 
     @property
@@ -170,7 +186,7 @@ csv files stored on standard format.
                                 'font-weight': 'bold'}),
                             dcc.Dropdown(
                                 id=self.response_id,
-                                options=[{'label': i, 'value': i}
+                                options=[{'label': InplaceVolumes.RESPONSES.get(i,i), 'value': i}
                                          for i in self.responses],
                                 value=self.initial_response
                                 if self.initial_response in self.responses
