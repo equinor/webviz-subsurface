@@ -36,6 +36,7 @@ csv files stored on standard format.
         'RECOVERABLE_OIL': 'Recoverable Volume (Oil)',
         'RECOVERABLE_GAS': 'Recoverable Volume (Gas)'
     }
+
     def __init__(self, app, container_settings, ensembles: list,
                  volfiles: dict, volfolder: str = 'share/results/volumes',
                  response: str = 'STOIIP_OIL'):
@@ -100,7 +101,6 @@ csv files stored on standard format.
                 for x in self.vol_columns
                 if x not in self.selectors and x != 'REAL']
         # return [InplaceVolumes[x] for x in cols]
-
 
     @property
     def vol_callback_inputs(self):
@@ -188,8 +188,10 @@ csv files stored on standard format.
                                 'font-weight': 'bold'}),
                             dcc.Dropdown(
                                 id=self.response_id,
-                                options=[{'label': InplaceVolumes.RESPONSES.get(i,i), 'value': i}
-                                         for i in self.responses],
+                                options=[
+                                    {'label': InplaceVolumes.RESPONSES.get(
+                                        i, i), 'value': i}
+                                    for i in self.responses],
                                 value=self.initial_response
                                 if self.initial_response in self.responses
                                 else self.responses[0])
