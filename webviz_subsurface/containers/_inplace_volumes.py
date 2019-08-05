@@ -98,7 +98,6 @@ csv files stored on standard format.
         return [x
                 for x in self.vol_columns
                 if x not in self.selectors and x != 'REAL']
-        # return [InplaceVolumes[x] for x in cols]
 
     @property
     def vol_callback_inputs(self):
@@ -318,7 +317,6 @@ def plot_data(plot_type, dframe, response, name):
             'type': 'histogram',
             'name': name
         }
-        # return {}
     if plot_type == 'Box Plot':
         return {
             'y': values,
