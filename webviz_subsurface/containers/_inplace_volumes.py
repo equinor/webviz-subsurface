@@ -45,8 +45,6 @@ csv files stored on standard format.
                                 container_settings['scratch_ensembles'][ens])
                                for ens in ensembles)
         self.volfiles = tuple(volfiles.items())
-        print(self.volfiles)
-        print(volfiles)
         self.volfolder = volfolder
         self.initial_response = response
         self.volumes = extract_volumes(self.ens_paths,
