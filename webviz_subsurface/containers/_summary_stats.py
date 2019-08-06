@@ -89,7 +89,7 @@ class SummaryStats(WebvizContainer):
             dcc.Checklist(
                 id=self.show_history_uncertainty_id,
                 options=[{'label': 'Show history', 'value': 'SHOW_H'}],
-                values=[],
+                value=[],
             ),
             html.Div(id=self.chart_id)
         ])
