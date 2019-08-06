@@ -98,7 +98,7 @@ class SummaryStats(WebvizContainer):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value'),
-                       Input(self.show_history_uncertainty_id, 'values')])
+                       Input(self.show_history_uncertainty_id, 'value')])
         def update_plot(
                 vector,
                 summary_plot_type,
