@@ -10,7 +10,6 @@ tests_require = [
     'selenium>=3.141.0',
     'flake8',
     'pylint',
-    'pytest-dash>=2.1.2',
     'mock'
 ]
 
@@ -30,7 +29,8 @@ setup(
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
-            'MorrisPlot = webviz_subsurface.containers:MorrisPlot'
+            'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
+            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes'
         ]
     },
     install_requires=[
