@@ -22,7 +22,7 @@ from webviz_subsurface.datainput import get_time_series_data, \
 # Container
 # =============================================================================
 
-class TimeSeries(WebvizContainer):
+class Summary(WebvizContainer):
     """Plot of time series data based on fmu-ensemble summary data.
     Data are loaded from scratch an process via fmu-ensemble utilities.
 

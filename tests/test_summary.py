@@ -10,7 +10,7 @@ patch('webviz_config.common_cache.cache.memoize',
 from webviz_subsurface.datainput import load_ensemble_set, \
     get_time_series_statistics, get_time_series_fielgains, get_time_series_data
 # to avoide "module webviz_subsurface.containers has no attribute 'DiskUsage"
-from _time_series import trace_group, single_trace
+from _summary import trace_group, single_trace
 
 
 # define recurring variables

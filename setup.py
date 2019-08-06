@@ -30,7 +30,8 @@ setup(
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
-            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes'
+            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes',
+            'Summary = webviz_subsurface.containers:Summary'
         ]
     },
     install_requires=[
