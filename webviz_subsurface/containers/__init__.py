@@ -31,6 +31,7 @@ from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
+from ._time_series import TimeSeries
 
 
 __all__ = ['SummaryStats',
@@ -40,4 +41,5 @@ __all__ = ['SummaryStats',
            'HistoryMatch',
            'Intersect',
            'MorrisPlot',
-           'InplaceVolumes']
+           'InplaceVolumes',
+           'TimeSeries']
