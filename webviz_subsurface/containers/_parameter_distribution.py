@@ -319,7 +319,8 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_matrix(ensemble_path):
 
-    data = get_parameters(ensemble_path)
+    data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
+                                        .dropna(how='all', axis='columns')
     values = list(data.corr().values)
 
     data = {

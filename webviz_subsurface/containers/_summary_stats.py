@@ -89,7 +89,7 @@ class SummaryStats(WebvizContainer):
             dcc.Checklist(
                 id=self.show_history_uncertainty_id,
                 options=[{'label': 'Show history', 'value': 'SHOW_H'}],
-                values=[],
+                value=[],
             ),
             html.Div(id=self.chart_id)
         ])
@@ -98,7 +98,7 @@ class SummaryStats(WebvizContainer):
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value'),
-                       Input(self.show_history_uncertainty_id, 'values')])
+                       Input(self.show_history_uncertainty_id, 'value')])
         def update_plot(
                 vector,
                 summary_plot_type,
