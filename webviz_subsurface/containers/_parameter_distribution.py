@@ -1,5 +1,4 @@
 from uuid import uuid4
-import numpy as np
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
@@ -320,7 +319,8 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_matrix(ensemble_path):
 
-    data = get_parameters(ensemble_path).select_dtypes([np.number])
+    data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
+                                        .dropna(how='all', axis='columns')
     values = list(data.corr().values)
 
     data = {
