@@ -53,7 +53,7 @@ def test_time_series_data():
         ensemble_paths=VOVLE_ENSEMBLE_PATHS,
         time_index=VOLVE_TIME_INDEX,
         column_keys=VOLVE_COLUMN_KEYS,
-        ensemble_set_name='Volve'
+        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
     )
     assert isinstance(summary_data, pd.DataFrame)
     assert summary_data.shape == (693, 7)
@@ -67,7 +67,7 @@ def test_get_time_series_fielgains():
         column_keys=VOLVE_COLUMN_KEYS,
         base_ensembles=BASE_ENSEMBLES,
         delta_ensembles=DELTA_ENSEMBLES,
-        ensemble_set_name='Volve'
+        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
     )
     assert isinstance(field_gains, pd.DataFrame)
     assert field_gains.shape == (825, 7)
