@@ -5,10 +5,15 @@
 """
 
 
+try:
+    from fmu.ensemble import EnsembleSet
+except ImportError:  # fmu.ensemble is an optional dependency, e.g.
+    pass # for a portable webviz instance, it is never used.
+
+
 import pandas as pd
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
-from fmu.ensemble import EnsembleSet
 from ..datainput import scratch_ensemble
 
 
