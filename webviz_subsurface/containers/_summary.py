@@ -22,7 +22,7 @@ from webviz_subsurface.datainput import get_time_series_data, \
 # Container
 # =============================================================================
 
-class TimeSeries(WebvizContainer):
+class Summary(WebvizContainer):
     """Plot of time series data based on fmu-ensemble summary data.
     Data are loaded from scratch an process via fmu-ensemble utilities.
 
@@ -51,11 +51,10 @@ class TimeSeries(WebvizContainer):
             (ensemble,
              container_settings['scratch_ensembles'][ensemble])
             for ensemble in ensembles)
-        #self.ensemble_combinations = ensemble_combinations if ensemble_combinations else [self.ensemble_paths, self.ensemble_paths]
         self.base_ensembles = tuple(base_ensembles if base_ensembles else [
-                    i[0] for i in self.ensemble_paths])
+            i[0] for i in self.ensemble_paths])
         self.delta_ensembles = tuple(delta_ensembles if delta_ensembles else [
-                    i[0] for i in self.ensemble_paths])
+            i[0] for i in self.ensemble_paths])
         self.set_callbacks(app)
 
     @property
@@ -137,20 +136,21 @@ class TimeSeries(WebvizContainer):
                                           for i in self.smry_vector_columns],
                                  value=self.smry_vector_columns[0]),
                     html.Div([
-                        html.Button('Show *H',
+                        html.Button(' Show *H  ',
                                     id=self.btn_show_uncertainty_id),
                         html.Button('Fieldgains',
                                     id=self.btn_show_fieldgains_id),
                         dcc.Dropdown(
                             id=self.dropdown_iorens_id,
                             options=[{'label': i, 'value': i}
-                                     for i in self.base_ensembles]),
+                                     for i in self.base_ensembles]
+                        ),
                         dcc.Dropdown(
                             id=self.dropdown_refens_id,
                             options=[{'label': i, 'value': i}
                                      for i in self.delta_ensembles],
-                                     multi=True, 
-                                     ),
+                            multi=True,
+                        ),
                     ]),
                 ], style={'width': '20%', "float": "left"}),
 
@@ -438,7 +438,7 @@ def render_stat_plot(
         data += time_series_confidence_interval_traces(
             vector_stats=vector_stats[vector],
             color_rgb=next(plotly_colors_rgb),
-            legend_group=ens          
+            legend_group=ens
         )
 
     layout = go.Layout(
@@ -536,8 +536,8 @@ def time_series_confidence_interval_traces(
         line=dict(width=0),
         legendgroup=legend_group,
         showlegend=False,
-    )    
-    
+    )
+
     trace_p10 = go.Scatter(
         name='p10',
         x=vector_stats['p10'].index.tolist(),
@@ -549,7 +549,7 @@ def time_series_confidence_interval_traces(
         legendgroup=legend_group,
         showlegend=False,
     )
-    
+
     trace_mean = go.Scatter(
         name=legend_group,
         x=vector_stats['mean'].index.tolist(),
@@ -561,7 +561,7 @@ def time_series_confidence_interval_traces(
         legendgroup=legend_group,
         showlegend=True,
     )
-    
+
     trace_p90 = go.Scatter(
         name='p90',
         x=vector_stats['p90'].index.tolist(),
@@ -573,7 +573,7 @@ def time_series_confidence_interval_traces(
         legendgroup=legend_group,
         showlegend=False
     )
-    
+
     trace_minimum = go.Scatter(
         name='minimum',
         x=vector_stats['minimum'].index.tolist(),

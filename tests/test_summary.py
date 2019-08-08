@@ -9,8 +9,6 @@ patch('webviz_config.common_cache.cache.memoize',
       lambda *x, **y: lambda f: f).start()
 from webviz_subsurface.datainput import load_ensemble_set, \
     get_time_series_statistics, get_time_series_fielgains, get_time_series_data
-# to avoide "module webviz_subsurface.containers has no attribute 'DiskUsage"
-from _time_series import trace_group, single_trace
 
 
 # define recurring variables
@@ -33,9 +31,9 @@ def test_load_ensemble_set():
         ensemble_set_name=VOLVE_ENSEMBLESET_NAME
     )
     assert len(ensset) == 3
-    assert len(ensset["iter--0"].get_df("STATUS")) == 120
-    assert len(ensset["iter--1"].get_df("STATUS")) == 100
-    assert len(ensset["iter--2"].get_df("STATUS")) == 80
+    assert len(ensset["iter--0"].get_df("STATUS")) == 125
+    assert len(ensset["iter--1"].get_df("STATUS")) == 105
+    assert len(ensset["iter--2"].get_df("STATUS")) == 85
 
 
 def test_time_series_statistics():
@@ -58,7 +56,7 @@ def test_time_series_data():
         ensemble_set_name='Volve'
     )
     assert isinstance(summary_data, pd.DataFrame)
-    assert summary_data.shape == (660, 7)
+    assert summary_data.shape == (693, 7)
 
 
 def test_get_time_series_fielgains():
@@ -72,7 +70,7 @@ def test_get_time_series_fielgains():
         ensemble_set_name='Volve'
     )
     assert isinstance(field_gains, pd.DataFrame)
-    assert field_gains.shape == (792, 7)
+    assert field_gains.shape == (825, 7)
     assert all([column in field_gains.columns
                 for column in ['IROENS - REFENS', 'REAL', 'DATE']])
 
@@ -81,29 +79,4 @@ def test_get_time_series_fielgains():
     field_gain = field_gains[
         field_gains['IROENS - REFENS'] == compared_ensembles]
     assert isinstance(field_gain, pd.DataFrame)
-    assert field_gain.shape == (264, 7)
-
-
-def test_trace_group():
-
-    summary_data = pd.read_csv('./data/Iter0_FOPT.csv')
-    _trace_group = trace_group(
-        ens_smry_data=summary_data,
-        ens='Volve--0',
-        vector='FOPT',
-        color='red'
-    )
-    assert len(_trace_group) == 24
-    assert len(_trace_group[0]) == 7
-
-
-def test_single_trace():
-
-    summary_data = pd.read_csv('./data/Iter0_FOPT.csv')
-    _single_trace = single_trace(
-        ens_smry_data=summary_data,
-        ens='Volve--0',
-        vector='FOPT',
-        color='red'
-    )
-    assert len(_single_trace) == 7
+    assert field_gain.shape == (275, 7)

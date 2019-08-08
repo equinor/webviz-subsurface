@@ -31,7 +31,7 @@ setup(
             'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
             'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes',
-            'TimeSeries = webviz_subsurface.containers:TimeSeries'
+            'Summary = webviz_subsurface.containers:Summary'
         ]
     },
     install_requires=[
