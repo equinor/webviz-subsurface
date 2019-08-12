@@ -118,6 +118,31 @@ class Summary(WebvizContainer):
             [vctr for vctr in self.vector_columns
              if vctr not in self.smry_history_columns])
 
+    @property
+    def realizations_plot_input(self):
+        inputs = []
+        inputs.append(Input(self.dropwdown_vector_id, 'value'))
+        inputs.append(Input(self.tab_id, 'value'))
+        if len(self.smry_history_columns) > 0:
+            inputs.append(Input(self.btn_show_uncertainty_id, 'n_clicks'))
+        else:
+            inputs.append(Input(self.dropwdown_vector_id, 'value'))
+        inputs.append(Input(self.btn_show_fieldgains_id, 'n_clicks'))
+        inputs.append(Input(self.dropdown_iorens_id, 'value'))
+        inputs.append(Input(self.dropdown_refens_id, 'value'))
+        return inputs
+
+    @property
+    def h_btn(self):
+        if len(self.smry_history_columns) > 0:
+            return html.Button(' Show *H  ',
+                               id=self.btn_show_uncertainty_id)
+        else:
+            return html.Button('No H-vctrs',
+                               id=self.btn_show_uncertainty_id,
+                               disabled=True)
+    
+
 
 # =============================================================================
 # Layout
@@ -135,24 +160,25 @@ class Summary(WebvizContainer):
                                  options=[{'label': i, 'value': i}
                                           for i in self.smry_vector_columns],
                                  value=self.smry_vector_columns[0]),
-                    html.Div([
-                        html.Button(' Show *H  ',
-                                    id=self.btn_show_uncertainty_id),
+                    html.Div(children=[
+                        self.h_btn,
                         html.Button('Fieldgains',
                                     id=self.btn_show_fieldgains_id),
-                        dcc.Dropdown(
-                            id=self.dropdown_iorens_id,
-                            placeholder="Base case",
-                            options=[{'label': i, 'value': i}
-                                     for i in self.base_ensembles]
-                        ),
-                        dcc.Dropdown(
-                            id=self.dropdown_refens_id,
-                            placeholder="Select ensembles",
-                            options=[{'label': i, 'value': i}
-                                     for i in self.delta_ensembles],
-                            multi=True,
-                        ),
+                        html.Div([
+                            dcc.Dropdown(
+                                id=self.dropdown_iorens_id,
+                                placeholder="Base case",
+                                options=[{'label': i, 'value': i}
+                                         for i in self.base_ensembles]
+                            ),
+                            dcc.Dropdown(
+                                id=self.dropdown_refens_id,
+                                placeholder="Select ensembles",
+                                options=[{'label': i, 'value': i}
+                                         for i in self.delta_ensembles],
+                                multi=True,
+                            ),
+                        ])
                     ]),
                 ], style={'width': '20%', "float": "left"}),
 
@@ -176,19 +202,15 @@ class Summary(WebvizContainer):
     def set_callbacks(self, app):
 
         @app.callback(Output(self.chart_id, 'children'),
-                      [Input(self.dropwdown_vector_id, 'value'),
-                       Input(self.tab_id, 'value'),
-                       Input(self.btn_show_uncertainty_id, 'n_clicks'),
-                       Input(self.btn_show_fieldgains_id, 'n_clicks'),
-                       Input(self.dropdown_iorens_id, 'value'),
-                       Input(self.dropdown_refens_id, 'value')])
-        def update_plot(
-                vector: str,
-                plot_type: str,
-                n_clicks_history: int,
-                n_clicks_fieldgians: int,
-                iorens: str,
-                refens: str):
+                      self.realizations_plot_input)
+        def update_plot(*args):
+
+            vector = args[0]
+            plot_type = args[1]
+            n_clicks_history = args[2] if args[2] != args[0] else None
+            n_clicks_fieldgians = args[3]
+            iorens = args[4]
+            refens = args[5] 
 
             # to be replaced by boolen
             # show history uncertainty
