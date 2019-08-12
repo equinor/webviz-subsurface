@@ -129,7 +129,7 @@ class Summary(WebvizContainer):
             html.H2(self.title),
             html.Div([
                 html.Div([
-                    html.P('Summary Vector:', style={'font-weight': 'bold'}),
+                    html.P('Time Series:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(id=self.dropwdown_vector_id,
                                  clearable=False,
                                  options=[{'label': i, 'value': i}
@@ -142,11 +142,13 @@ class Summary(WebvizContainer):
                                     id=self.btn_show_fieldgains_id),
                         dcc.Dropdown(
                             id=self.dropdown_iorens_id,
+                            placeholder="Base case",
                             options=[{'label': i, 'value': i}
                                      for i in self.base_ensembles]
                         ),
                         dcc.Dropdown(
                             id=self.dropdown_refens_id,
+                            placeholder="Select ensembles",
                             options=[{'label': i, 'value': i}
                                      for i in self.delta_ensembles],
                             multi=True,
@@ -156,7 +158,7 @@ class Summary(WebvizContainer):
 
                 html.Div([
                     dcc.Tabs(id=self.tab_id, value='summary_data', children=[
-                        dcc.Tab(label='Summary Vector', value='summary_data'),
+                        dcc.Tab(label='Realizations', value='summary_data'),
                         dcc.Tab(label='Statistics', value='summary_stats'),
                     ]),
                     html.Div(id='tabs-content'),
