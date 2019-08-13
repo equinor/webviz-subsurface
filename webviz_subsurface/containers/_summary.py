@@ -11,13 +11,6 @@ from webviz_subsurface.datainput import get_time_series_data, \
     get_time_series_statistics, get_time_series_fielgains
 
 
-# Todo:
-#   - caching
-#   - fieldgains
-#   - layout => griding
-#   - button logic to boolean
-
-
 # =============================================================================
 # Container
 # =============================================================================
@@ -59,42 +52,53 @@ class Summary(WebvizContainer):
 
     @property
     def base_ens(self):
+        """ extracts base-ensemble from passed ensemble-combinations list"""
         return self.ensemble_combinations[0]
+
 
     @property
     def delta_ens(self):
+        """ extracts delta-ensemble from passed ensemble-combinations list """
         return self.ensemble_combinations[1]
 
     @property
     def dropwdown_vector_id(self):
+        """ component-id for vecotr selector"""
         return f'dropdown-vector-{self.uid}'
 
     @property
     def chart_id(self):
+        """ component-id for chart => main plot"""
         return f'chart-id-{self.uid}'
 
     @property
     def tab_id(self):
+        """ component-id for tab-selector"""
         return f'_tab_id-{self.uid}'
 
     @property
     def chlst(self):
+        """ component-id for checklist """
         return f'chlst-{self.uid}'
 
     @property
     def dropdown_iorens_id(self):
+        """ component-id for base-enseble-selector (fieldgaisn) """
         return f'dropdown-iorens-{self.uid}'
 
     @property
     def dropdown_refens_id(self):
+        """ component-id for ensemble-selectors (fieldgains) """
         return f'dropdown-refens-{self.uid}'
 
     @property
     def show_ens_selectors(self):
-        return f'show-ens-selectors-{self.uid}'    
+        """ component-id for div including ensemble-selectors """
+        return f'show-ens-selectors-{self.uid}'
 
     @property
     def vector_columns(self):
+        """ list of available vector-columns """
         return sorted(
             list(
                 get_time_series_data(
@@ -108,12 +112,14 @@ class Summary(WebvizContainer):
 
     @property
     def smry_history_columns(self):
+        """ history-columns => can be empty """
         return tuple(
             [vctr + 'H' for vctr in self.vector_columns
              if vctr + 'H' in self.vector_columns])
 
     @property
     def smry_vector_columns(self):
+        """ smry-vector columsn without h-vectors """
         return tuple(
             [vctr for vctr in self.vector_columns
              if vctr not in self.smry_history_columns])
@@ -178,21 +184,40 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def set_callbacks(self, app):
+        """ define callbacks for SUmmary-container => dash functionality"""
+
 
         @app.callback(Output(self.show_ens_selectors, 'style'),
-                      [Input(self.chlst,'value')])
+                      [Input(self.chlst, 'value')])
         def func_show_ens_selectors(chlst: list):
+            """callback to update the styling of div that includes the ensemble
+            selectors. The styling switches to hiden when fieldgains is not
+            selected.
+
+            Input:
+                checklist values: list of strings = selected options
+            Output:
+                html.Div(...styling): dictionary describing styling
+            """
 
             if 'show_fieldgains' in chlst:
                 return {}
 
             else:
-                return {'display': 'none'} 
+                return {'display': 'none'}
 
 
         @app.callback(Output(self.chlst, 'options'),
                       [Input(self.dropwdown_vector_id, 'value')])
         def update_chlst(vctr: str):
+            """ callback to update checklist options to include available
+            plot options.
+
+            Input:
+                dropdown(vector selection): str = selected vector
+            Output:
+                checklist values: list of strings = selectable options
+            """
 
             options = []
             options.append(['Fieldgains', 'show_fieldgains'])
@@ -215,9 +240,23 @@ class Summary(WebvizContainer):
                 chlst: list,
                 iorens: str,
                 refens: str):
+            """ main plot
 
-            show_history_vector = True if 'show_h_vctr' in chlst else False
-            show_fieldgains = True if 'show_fieldgains' in chlst else False
+            Depending on selected tab a different type of plot gets rendered.
+            *vals get calcualted within render-func.
+
+            Input:
+                dropdown(vector selection): str = selected vector
+                tab: str = selected tab => for plot-type
+                checklist values: list of strings = selectable options
+                dropdown iorens: str = base-ensemlbe
+                dropdown refens: list(str) = selected ensembles
+            Output:
+                dcc.Graph
+            """
+
+            show_history_vector = 'show_h_vctr' in chlst
+            show_fieldgains = 'show_fieldgains' in chlst
 
             if plot_type == 'summary_data':
 
@@ -263,6 +302,10 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def add_webvizstore(self):
+        """ selections of functions to be added to webvizstore. They include
+        data to be laoded and values to be calculated for the plots.
+        """
+
         return [(get_time_series_data,
                  [{'ensemble_paths': self.ensemble_paths,
                    'column_keys': self.column_keys,
@@ -291,19 +334,19 @@ class Summary(WebvizContainer):
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
-    ensemble_paths: tuple,
-    time_index: str,
-    column_keys: tuple,
-    vector: str,
-    ensemble_set_name: str,
-    smry_history_columns: tuple,
-    show_history_vector: bool,
-    show_fieldgains: bool,
-    iorens: str,
-    refens: str,
-    base_ensembles: tuple,
-    delta_ensembles: tuple
-):
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        vector: str,
+        ensemble_set_name: str,
+        smry_history_columns: tuple,
+        show_history_vector: bool,
+        show_fieldgains: bool,
+        iorens: str,
+        refens: str,
+        base_ensembles: tuple,
+        delta_ensembles: tuple
+    ):
     """ Callback for a dcc.Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
     selected time-step.
@@ -381,10 +424,9 @@ def render_realization_plot(
             field_gain = field_gains[
                 field_gains['IROENS - REFENS'] == compared_ensembles
             ]
-            field_gain[['REAL', 'DATE', vector]]
 
             plot_traces += trace_group(
-                ens_smry_data=field_gain,
+                ens_smry_data=field_gain[['REAL', 'DATE', vector]],
                 ens=f'{iorens} - {i}',
                 vector=vector,
                 color=next(cycle_list))
@@ -512,7 +554,20 @@ def trace_group(ens_smry_data, ens, vector, color):
     return ens_traces
 
 
-def single_trace(ens_smry_data, ens, vector, color):
+def single_trace(
+        ens_smry_data,
+        ens: str,
+        vector: str,
+        color: str):
+    """ function to create a single trace that shows up in the legend.
+
+    Args:
+        smry_data: pd.df = calculated summary data (fmu-ensemble)
+        ens: str = selected ensemble
+        color str = color
+    Returns:
+        trace-obj to be plotted in a plotly.fig
+    """
 
     return {
         'x': ens_smry_data[ens_smry_data['REAL']
@@ -530,10 +585,19 @@ def single_trace(ens_smry_data, ens, vector, color):
 
 
 def time_series_confidence_interval_traces(
-    vector_stats,
-    color_rgb,
-    legend_group
-):
+        vector_stats,
+        color_rgb: list,
+        legend_group: str
+    ):
+    """ function to create a convidence interval set of a selected ensemble.
+
+    Args:
+        smry_data: pd.df = calculated summary data (fmu-ensemble)
+        color (r: int, g:int, b:int) = rgb of color to be ploted
+        legend_group: str = selected ensemble
+    Returns:
+        list if trace-obj representing min, max, p10, p90 and mean
+    """
 
     r, g, b = color_rgb
 
