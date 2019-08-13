@@ -78,12 +78,8 @@ class Summary(WebvizContainer):
         return f'_tab_id-{self.uid}'
 
     @property
-    def btn_show_uncertainty_id(self):
-        return f'show-history-uncertainty-{self.uid}'
-
-    @property
-    def btn_show_fieldgains_id(self):
-        return f'show-fieldgains-{self.uid}'
+    def chlst(self):
+        return f'chlst-{self.uid}'
 
     @property
     def dropdown_iorens_id(self):
@@ -119,29 +115,12 @@ class Summary(WebvizContainer):
              if vctr not in self.smry_history_columns])
 
     @property
-    def realizations_plot_input(self):
-        inputs = []
-        inputs.append(Input(self.dropwdown_vector_id, 'value'))
-        inputs.append(Input(self.tab_id, 'value'))
+    def chlst_options(self):
+        options = []
+        options.append(['Fieldgains', 'show_fieldgains'])
         if len(self.smry_history_columns) > 0:
-            inputs.append(Input(self.btn_show_uncertainty_id, 'n_clicks'))
-        else:
-            inputs.append(Input(self.dropwdown_vector_id, 'value'))
-        inputs.append(Input(self.btn_show_fieldgains_id, 'n_clicks'))
-        inputs.append(Input(self.dropdown_iorens_id, 'value'))
-        inputs.append(Input(self.dropdown_refens_id, 'value'))
-        return inputs
-
-    @property
-    def h_btn(self):
-        if len(self.smry_history_columns) > 0:
-            return html.Button(' Show *H  ',
-                               id=self.btn_show_uncertainty_id)
-        else:
-            return html.Button('No H-vctrs',
-                               id=self.btn_show_uncertainty_id,
-                               disabled=True)
-    
+            options.append(['Show H-Vctr', 'show_h_vctr'])
+        return options
 
 
 # =============================================================================
@@ -160,10 +139,14 @@ class Summary(WebvizContainer):
                                  options=[{'label': i, 'value': i}
                                           for i in self.smry_vector_columns],
                                  value=self.smry_vector_columns[0]),
-                    html.Div(children=[
-                        self.h_btn,
-                        html.Button('Fieldgains',
-                                    id=self.btn_show_fieldgains_id),
+                    html.Div([
+                        dcc.Checklist(
+                            id=self.chlst,
+                            options=[{'label': l, 'value': v}
+                                     for l, v in self.chlst_options],
+                            labelStyle={'display': 'inline-block'},
+                            value=[],
+                        ),
                         html.Div([
                             dcc.Dropdown(
                                 id=self.dropdown_iorens_id,
@@ -202,34 +185,20 @@ class Summary(WebvizContainer):
     def set_callbacks(self, app):
 
         @app.callback(Output(self.chart_id, 'children'),
-                      self.realizations_plot_input)
-        def update_plot(*args):
+                      [Input(self.dropwdown_vector_id, 'value'),
+                       Input(self.tab_id, 'value'),
+                       Input(self.chlst, 'value'),
+                       Input(self.dropdown_iorens_id, 'value'),
+                       Input(self.dropdown_refens_id, 'value')])
+        def update_plot(
+                vector: str,
+                plot_type: str,
+                chlst: list,
+                iorens: str,
+                refens: str):
 
-            vector = args[0]
-            plot_type = args[1]
-            n_clicks_history = args[2] if args[2] != args[0] else None
-            n_clicks_fieldgians = args[3]
-            iorens = args[4]
-            refens = args[5] 
-
-            # to be replaced by boolen
-            # show history uncertainty
-            if n_clicks_history is None:
-                n_clicks_history = 0
-                show_history_vector = False
-            if n_clicks_history % 2 == 0:
-                show_history_vector = False
-            if n_clicks_history % 2 == 1:
-                show_history_vector = True
-
-            # show fieldgains
-            if n_clicks_fieldgians is None:
-                n_clicks_fieldgians = 0
-                show_fieldgains = False
-            if n_clicks_fieldgians % 2 == 0:
-                show_fieldgains = False
-            if n_clicks_fieldgians % 2 == 1:
-                show_fieldgains = True
+            show_history_vector = True if 'show_h_vctr' in chlst else False
+            show_fieldgains = True if 'show_fieldgains' in chlst else False
 
             if plot_type == 'summary_data':
 
