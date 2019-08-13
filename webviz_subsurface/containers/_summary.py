@@ -114,14 +114,6 @@ class Summary(WebvizContainer):
             [vctr for vctr in self.vector_columns
              if vctr not in self.smry_history_columns])
 
-    @property
-    def chlst_options(self):
-        options = []
-        options.append(['Fieldgains', 'show_fieldgains'])
-        if len(self.smry_history_columns) > 0:
-            options.append(['Show H-Vctr', 'show_h_vctr'])
-        return options
-
 
 # =============================================================================
 # Layout
@@ -142,8 +134,7 @@ class Summary(WebvizContainer):
                     html.Div([
                         dcc.Checklist(
                             id=self.chlst,
-                            options=[{'label': l, 'value': v}
-                                     for l, v in self.chlst_options],
+                            options=[{'label': 'Fieldgains', 'value': 'show_fieldgains'}],
                             labelStyle={'display': 'inline-block'},
                             value=[],
                         ),
@@ -183,6 +174,18 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def set_callbacks(self, app):
+
+        @app.callback(Output(self.chlst, 'options'),
+                      [Input(self.dropwdown_vector_id, 'value')])
+        def update_chlst(vctr: str):
+
+            options = []
+            options.append(['Fieldgains', 'show_fieldgains'])
+            if vctr + 'H' in self.smry_history_columns:                
+                options.append(['Show H-Vctr', 'show_h_vctr'])
+
+            return [{'label': i, 'value': i} for i in self.options]  
+
 
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
