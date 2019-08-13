@@ -90,6 +90,10 @@ class Summary(WebvizContainer):
         return f'dropdown-refens-{self.uid}'
 
     @property
+    def show_ens_selectors(self):
+        return f'show-ens-selectors-{self.uid}'    
+
+    @property
     def vector_columns(self):
         return sorted(
             list(
@@ -138,7 +142,7 @@ class Summary(WebvizContainer):
                             labelStyle={'display': 'inline-block'},
                             value=[],
                         ),
-                        html.Div([
+                        html.Div(id=self.show_ens_selectors, children=[
                             dcc.Dropdown(
                                 id=self.dropdown_iorens_id,
                                 placeholder="Base case",
@@ -152,7 +156,7 @@ class Summary(WebvizContainer):
                                          for i in self.delta_ensembles],
                                 multi=True,
                             ),
-                        ])
+                        ], style={'display': 'none'}),
                     ]),
                 ], style={'width': '20%', "float": "left"}),
 
@@ -175,6 +179,17 @@ class Summary(WebvizContainer):
 
     def set_callbacks(self, app):
 
+        @app.callback(Output(self.show_ens_selectors, 'style'),
+                      [Input(self.chlst,'value')])
+        def func_show_ens_selectors(chlst: list):
+
+            if 'show_fieldgains' in chlst:
+                return {}
+
+            else:
+                return {'display': 'none'} 
+
+
         @app.callback(Output(self.chlst, 'options'),
                       [Input(self.dropwdown_vector_id, 'value')])
         def update_chlst(vctr: str):
@@ -186,6 +201,7 @@ class Summary(WebvizContainer):
 
             return [{'label': label, 'value': value}
                     for label, value in options]
+
 
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
