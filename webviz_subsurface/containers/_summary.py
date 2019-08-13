@@ -181,11 +181,11 @@ class Summary(WebvizContainer):
 
             options = []
             options.append(['Fieldgains', 'show_fieldgains'])
-            if vctr + 'H' in self.smry_history_columns:                
+            if vctr + 'H' in self.smry_history_columns:
                 options.append(['Show H-Vctr', 'show_h_vctr'])
 
-            return [{'label': i, 'value': i} for i in self.options]  
-
+            return [{'label': label, 'value': value}
+                    for label, value in options]
 
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
@@ -275,19 +275,19 @@ class Summary(WebvizContainer):
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_realization_plot(
-        ensemble_paths: tuple,
-        time_index: str,
-        column_keys: tuple,
-        vector: str,
-        ensemble_set_name: str,
-        smry_history_columns: tuple,
-        show_history_vector: bool,
-        show_fieldgains: bool,
-        iorens: str,
-        refens: str,
-        base_ensembles: tuple,
-        delta_ensembles: tuple
-    ):
+    ensemble_paths: tuple,
+    time_index: str,
+    column_keys: tuple,
+    vector: str,
+    ensemble_set_name: str,
+    smry_history_columns: tuple,
+    show_history_vector: bool,
+    show_fieldgains: bool,
+    iorens: str,
+    refens: str,
+    base_ensembles: tuple,
+    delta_ensembles: tuple
+):
     """ Callback for a dcc.Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
     selected time-step.
@@ -338,7 +338,6 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name,
         )
 
-
     # plot traces -------------------------------------------------------------
     plot_traces = []
     if not (show_fieldgains and iorens and refens):
@@ -359,7 +358,6 @@ def render_realization_plot(
                     vector=history_vector,
                     color='black')
 
-
     if (show_fieldgains and iorens and refens):
         for i in refens:
 
@@ -374,7 +372,6 @@ def render_realization_plot(
                 ens=f'{iorens} - {i}',
                 vector=vector,
                 color=next(cycle_list))
-
 
     layout = {
         'hovermode': 'closest',
@@ -517,10 +514,10 @@ def single_trace(ens_smry_data, ens, vector, color):
 
 
 def time_series_confidence_interval_traces(
-        vector_stats,
-        color_rgb,
-        legend_group
-    ):
+    vector_stats,
+    color_rgb,
+    legend_group
+):
 
     r, g, b = color_rgb
 
