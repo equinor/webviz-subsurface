@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
-sys.path.append('../')
-sys.path.append('../webviz_subsurface/containers/')
-
 import pytest
 import pandas as pd
-
 from mock import patch
+sys.path.append('../')
+sys.path.append('../webviz_subsurface/containers/')
 # patch out flask.app instance related decorators
 patch('webviz_config.common_cache.cache.memoize',
       lambda *x, **y: lambda f: f).start()
@@ -21,15 +19,15 @@ except ImportError:
 
 # define recurring variables
 VOVLE_ENSEMBLE_PATHS = [
-        ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
-        ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
-        ('iter--2', '/scratch/fmu/stcr/volve/realization-*/iter-2'),
+    ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
+    ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
+    ('iter--2', '/scratch/fmu/stcr/volve/realization-*/iter-2'),
 ]
 VOLVE_ENSEMBLESET_NAME = 'Volve'
 VOLVE_TIME_INDEX = 'yearly'
 VOLVE_COLUMN_KEYS = ['FOP*', 'FGP*']
 BASE_ENSEMBLES = ['iter--0']
-DELTA_ENSEMBLES =  ['iter--0', 'iter--1', 'iter--2']
+DELTA_ENSEMBLES = ['iter--0', 'iter--1', 'iter--2']
 
 
 @pytest.mark.skipif('fmu.ensemble' not in sys.modules,

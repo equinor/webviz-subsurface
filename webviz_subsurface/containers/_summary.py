@@ -55,7 +55,6 @@ class Summary(WebvizContainer):
         """ extracts base-ensemble from passed ensemble-combinations list"""
         return self.ensemble_combinations[0]
 
-
     @property
     def delta_ens(self):
         """ extracts delta-ensemble from passed ensemble-combinations list """
@@ -144,7 +143,10 @@ class Summary(WebvizContainer):
                     html.Div([
                         dcc.Checklist(
                             id=self.chlst,
-                            options=[{'label': 'Fieldgains', 'value': 'show_fieldgains'}],
+                            options=[{
+                                'label': 'Fieldgains',
+                                'value': 'show_fieldgains'
+                            }],
                             labelStyle={'display': 'inline-block'},
                             value=[],
                         ),
@@ -184,8 +186,8 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def set_callbacks(self, app):
-        """ define callbacks for SUmmary-container => dash functionality"""
 
+        """ define callbacks for SUmmary-container => dash functionality"""
 
         @app.callback(Output(self.show_ens_selectors, 'style'),
                       [Input(self.chlst, 'value')])
@@ -206,7 +208,6 @@ class Summary(WebvizContainer):
             else:
                 return {'display': 'none'}
 
-
         @app.callback(Output(self.chlst, 'options'),
                       [Input(self.dropwdown_vector_id, 'value')])
         def update_chlst(vctr: str):
@@ -226,7 +227,6 @@ class Summary(WebvizContainer):
 
             return [{'label': label, 'value': value}
                     for label, value in options]
-
 
         @app.callback(Output(self.chart_id, 'children'),
                       [Input(self.dropwdown_vector_id, 'value'),
@@ -302,30 +302,32 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def add_webvizstore(self):
+
         """ selections of functions to be added to webvizstore. They include
         data to be laoded and values to be calculated for the plots.
         """
 
-        return [(get_time_series_data,
-                 [{'ensemble_paths': self.ensemble_paths,
-                   'column_keys': self.column_keys,
-                   'time_index': self.time_index,
-                   'ensemble_set_name': self.title}]
-                 ),
-                (get_time_series_statistics,
-                 [{'ensemble_paths': self.ensemble_paths,
-                   'time_index': self.time_index,
-                   'column_keys': self.column_keys}]
-                 ),
-                (get_time_series_fielgains,
-                 [{'ensemble_paths': self.ensemble_paths,
-                   'time_index': self.time_index,
-                   'column_keys': self.column_keys,
-                   'base_ensembles': self.base_ensembles,
-                   'delta_ensembles': self.delta_ensembles,
-                   'ensemble_set_name': self.title}]
-                 ),
-                ]
+        return [
+            (get_time_series_data,
+             [{'ensemble_paths': self.ensemble_paths,
+               'column_keys': self.column_keys,
+               'time_index': self.time_index,
+               'ensemble_set_name': self.title}]
+             ),
+            (get_time_series_statistics,
+             [{'ensemble_paths': self.ensemble_paths,
+               'time_index': self.time_index,
+               'column_keys': self.column_keys}]
+             ),
+            (get_time_series_fielgains,
+             [{'ensemble_paths': self.ensemble_paths,
+               'time_index': self.time_index,
+               'column_keys': self.column_keys,
+               'base_ensembles': self.base_ensembles,
+               'delta_ensembles': self.delta_ensembles,
+               'ensemble_set_name': self.title}]
+             ),
+        ]
 
 
 # =============================================================================
@@ -346,7 +348,7 @@ def render_realization_plot(
         refens: str,
         base_ensembles: tuple,
         delta_ensembles: tuple
-    ):
+        ):
     """ Callback for a dcc.Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
     selected time-step.
@@ -588,7 +590,7 @@ def time_series_confidence_interval_traces(
         vector_stats,
         color_rgb: list,
         legend_group: str
-    ):
+        ):
     """ function to create a convidence interval set of a selected ensemble.
 
     Args:
