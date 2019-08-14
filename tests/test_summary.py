@@ -2,13 +2,21 @@
 import sys
 sys.path.append('../')
 sys.path.append('../webviz_subsurface/containers/')
+
+import pytest
 import pandas as pd
+
 from mock import patch
 # patch out flask.app instance related decorators
 patch('webviz_config.common_cache.cache.memoize',
       lambda *x, **y: lambda f: f).start()
 from webviz_subsurface.datainput import load_ensemble_set, \
     get_time_series_statistics, get_time_series_fielgains, get_time_series_data
+
+try:
+    import fmu.ensemble
+except ImportError:
+    pass
 
 
 # define recurring variables
@@ -24,6 +32,8 @@ BASE_ENSEMBLES = ['iter--0']
 DELTA_ENSEMBLES =  ['iter--0', 'iter--1', 'iter--2']
 
 
+@pytest.mark.skipif('fmu.ensemble' not in sys.modules,
+                    reason="Requires fmu.ensemble installed")
 def test_load_ensemble_set():
 
     ensset = load_ensemble_set(
@@ -36,6 +46,8 @@ def test_load_ensemble_set():
     assert len(ensset["iter--2"].get_df("STATUS")) == 85
 
 
+@pytest.mark.skipif('fmu.ensemble' not in sys.modules,
+                    reason="Requires fmu.ensemble installed")
 def test_time_series_statistics():
 
     summary_statistics = get_time_series_statistics(
@@ -47,6 +59,8 @@ def test_time_series_statistics():
     assert summary_statistics.shape == (165, 5)
 
 
+@pytest.mark.skipif('fmu.ensemble' not in sys.modules,
+                    reason="Requires fmu.ensemble installed")
 def test_time_series_data():
 
     summary_data = get_time_series_data(
@@ -59,6 +73,8 @@ def test_time_series_data():
     assert summary_data.shape == (693, 7)
 
 
+@pytest.mark.skipif('fmu.ensemble' not in sys.modules,
+                    reason="Requires fmu.ensemble installed")
 def test_get_time_series_fielgains():
 
     field_gains = get_time_series_fielgains(
