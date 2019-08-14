@@ -5,16 +5,13 @@ import pandas as pd
 from mock import patch
 sys.path.append('../')
 sys.path.append('../webviz_subsurface/containers/')
-# patch out flask.app instance related decorators
-patch('webviz_config.common_cache.cache.memoize',
-      lambda *x, **y: lambda f: f).start()
-from webviz_subsurface.datainput import load_ensemble_set, \
-    get_time_series_statistics, get_time_series_fielgains, get_time_series_data
-
-try:
-    import fmu.ensemble
-except ImportError:
-    pass
+with patch('webviz_config.common_cache.cache.memoize',
+           lambda *x, **y: lambda f: f):
+    from webviz_subsurface.datainput import \
+        load_ensemble_set, \
+        get_time_series_statistics, \
+        get_time_series_fielgains, \
+        get_time_series_data
 
 
 # define recurring variables
