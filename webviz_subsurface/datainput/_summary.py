@@ -8,7 +8,7 @@
 try:
     from fmu.ensemble import EnsembleSet
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
-    pass # for a portable webviz instance, it is never used.
+    pass  # for a portable webviz instance, it is never used.
 
 
 import pandas as pd
@@ -35,7 +35,7 @@ def get_time_series_statistics(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(
         column_keys, (list, tuple)) else None
@@ -60,7 +60,7 @@ def get_time_series_data(
         time_index: str,
         column_keys: tuple,
         ensemble_set_name: str = 'EnsembleSet'
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(
         column_keys, (list, tuple)) else None
@@ -85,7 +85,7 @@ def get_time_series_fielgains(
         base_ensembles: tuple,
         delta_ensembles: tuple,
         ensemble_set_name: str = 'EnsembleSet'
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """ Loads ensembleset (cached after first loaded), gets a list of
     ensemblenames and loops over possible combinations to be compared
     and gathers the resulting dataframes.

@@ -3,8 +3,6 @@ import sys
 import pytest
 import pandas as pd
 from mock import patch
-sys.path.append('../')
-sys.path.append('../webviz_subsurface/containers/')
 with patch('webviz_config.common_cache.cache.memoize',
            lambda *x, **y: lambda f: f):
     from webviz_subsurface.datainput import \
@@ -15,14 +13,14 @@ with patch('webviz_config.common_cache.cache.memoize',
 
 
 # define recurring variables
-VOVLE_ENSEMBLE_PATHS = [
-    ('iter--0', '/scratch/fmu/stcr/volve/realization-*/iter-0'),
-    ('iter--1', '/scratch/fmu/stcr/volve/realization-*/iter-1'),
-    ('iter--2', '/scratch/fmu/stcr/volve/realization-*/iter-2'),
+ENSEMBLE_PATHS = [
+    ('iter--0', '/path/to/ensemble/realization-*/iter-0'),
+    ('iter--1', '/path/to/ensemble/realization-*/iter-1'),
+    ('iter--2', '/path/to/ensemble/realization-*/iter-2'),
 ]
-VOLVE_ENSEMBLESET_NAME = 'Volve'
-VOLVE_TIME_INDEX = 'yearly'
-VOLVE_COLUMN_KEYS = ['FOP*', 'FGP*']
+ENSEMBLESET_NAME = 'Test Ensemble'
+TIME_INDEX = 'yearly'
+COLUMN_KEYS = ['FOP*', 'FGP*']
 BASE_ENSEMBLES = ['iter--0']
 DELTA_ENSEMBLES = ['iter--0', 'iter--1', 'iter--2']
 
@@ -32,8 +30,8 @@ DELTA_ENSEMBLES = ['iter--0', 'iter--1', 'iter--2']
 def test_load_ensemble_set():
 
     ensset = load_ensemble_set(
-        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
-        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
+        ensemble_paths=ENSEMBLE_PATHS,
+        ensemble_set_name=ENSEMBLESET_NAME
     )
     assert len(ensset) == 3
     assert len(ensset["iter--0"].get_df("STATUS")) == 125
@@ -46,9 +44,9 @@ def test_load_ensemble_set():
 def test_time_series_statistics():
 
     summary_statistics = get_time_series_statistics(
-        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
-        time_index=VOLVE_TIME_INDEX,
-        column_keys=VOLVE_COLUMN_KEYS
+        ensemble_paths=ENSEMBLE_PATHS,
+        time_index=TIME_INDEX,
+        column_keys=COLUMN_KEYS
     )
     assert isinstance(summary_statistics, pd.DataFrame)
     assert summary_statistics.shape == (165, 5)
@@ -59,10 +57,10 @@ def test_time_series_statistics():
 def test_time_series_data():
 
     summary_data = get_time_series_data(
-        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
-        time_index=VOLVE_TIME_INDEX,
-        column_keys=VOLVE_COLUMN_KEYS,
-        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
+        ensemble_paths=ENSEMBLE_PATHS,
+        time_index=TIME_INDEX,
+        column_keys=COLUMN_KEYS,
+        ensemble_set_name=ENSEMBLESET_NAME
     )
     assert isinstance(summary_data, pd.DataFrame)
     assert summary_data.shape == (693, 7)
@@ -73,12 +71,12 @@ def test_time_series_data():
 def test_get_time_series_fielgains():
 
     field_gains = get_time_series_fielgains(
-        ensemble_paths=VOVLE_ENSEMBLE_PATHS,
-        time_index=VOLVE_TIME_INDEX,
-        column_keys=VOLVE_COLUMN_KEYS,
+        ensemble_paths=ENSEMBLE_PATHS,
+        time_index=TIME_INDEX,
+        column_keys=COLUMN_KEYS,
         base_ensembles=BASE_ENSEMBLES,
         delta_ensembles=DELTA_ENSEMBLES,
-        ensemble_set_name=VOLVE_ENSEMBLESET_NAME
+        ensemble_set_name=ENSEMBLESET_NAME
     )
     assert isinstance(field_gains, pd.DataFrame)
     assert field_gains.shape == (825, 7)

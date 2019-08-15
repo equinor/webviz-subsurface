@@ -348,7 +348,7 @@ def render_realization_plot(
         refens: str,
         base_ensembles: tuple,
         delta_ensembles: tuple
-        ):
+):
     """ Callback for a dcc.Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
     selected time-step.
@@ -590,7 +590,7 @@ def time_series_confidence_interval_traces(
         vector_stats,
         color_rgb: list,
         legend_group: str
-        ):
+):
     """ function to create a convidence interval set of a selected ensemble.
 
     Args:
@@ -608,7 +608,7 @@ def time_series_confidence_interval_traces(
         x=vector_stats['maximum'].index.tolist(),
         y=vector_stats['maximum'].values,
         mode='lines',
-        line=dict(width=0),
+        line={'width': 0},
         legendgroup=legend_group,
         showlegend=False,
     )
@@ -619,8 +619,8 @@ def time_series_confidence_interval_traces(
         y=vector_stats['p10'].values,
         mode='lines',
         fill='tonexty',
-        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
-        line=dict(width=0),
+        fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
+        line={'width': 0},
         legendgroup=legend_group,
         showlegend=False,
     )
@@ -631,8 +631,8 @@ def time_series_confidence_interval_traces(
         y=vector_stats['mean'].values,
         mode='lines',
         fill='tonexty',
-        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
-        line=dict(color='rgba({},{},{},{})'.format(r, g, b, 1)),
+        fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
+        line={'color': f'rgba({r}, {g}, {b}, 1)'},
         legendgroup=legend_group,
         showlegend=True,
     )
@@ -643,8 +643,8 @@ def time_series_confidence_interval_traces(
         y=vector_stats['p90'].values,
         mode='lines',
         fill='tonexty',
-        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
-        line=dict(width=0),
+        fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
+        line={'width': 0},
         legendgroup=legend_group,
         showlegend=False
     )
@@ -655,8 +655,8 @@ def time_series_confidence_interval_traces(
         y=vector_stats['minimum'].values,
         mode='lines',
         fill='tonexty',
-        fillcolor='rgba({},{},{},{})'.format(r, g, b, 0.3),
-        line=dict(width=0),
+        fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
+        line={'width': 0},
         legendgroup=legend_group,
         showlegend=False,
     )
