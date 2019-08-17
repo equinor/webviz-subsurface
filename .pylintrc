@@ -1,0 +1,5 @@
+[VARIABLES]
+
+# List of strings which can identify a callback function by name. A callback
+# name must start or end with one of those strings.
+callbacks=cb_,_cb
