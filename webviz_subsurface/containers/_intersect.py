@@ -193,7 +193,7 @@ and a folder of well files stored in RMS well format.
              Input(self.surf_list_id, 'value'),
              Input(self.well_tvd_id, 'value'),
              Input(self.zoom_state_id, 'value')])
-        def set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
+        def cb_set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
             '''Callback to update intersection on data change'''
             if not isinstance(_surfs, list):
                 _surfs = [_surfs]
@@ -214,7 +214,7 @@ and a folder of well files stored in RMS well format.
                       [Input(self.intersection_id, 'hoverData')],
                       [State(self.intersection_id, 'figure'),
                        State(self.surf_list_id, 'value')])
-        def hover(_data, _fig, _surfaces):
+        def cb_hover(_data, _fig, _surfaces):
             '''Callback to update table on mouse over'''
             try:
                 graph = _fig['data']
