@@ -235,7 +235,7 @@ csv files stored on standard format.
         @app.callback(
             Output(self.chart_id, 'children'),
             self.vol_callback_inputs)
-        def cb_render_vol_chart(*args):
+        def _render_vol_chart(*args):
             '''Renders a volume visualization which could either by a dcc.Graph
             or a Dash table object.
             The arguments are given by the vol_callback_inputs property
@@ -282,7 +282,7 @@ csv files stored on standard format.
             [Output(self.selectors_id['ENSEMBLE'], 'multi'),
              Output(self.selectors_id['ENSEMBLE'], 'value')],
             [Input(self.radio_selectors_id, 'value')])
-        def cb_set_iteration_selector(group_by):
+        def _set_iteration_selector(group_by):
             '''If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             '''
@@ -295,7 +295,7 @@ csv files stored on standard format.
             [Output(self.selectors_id['SOURCE'], 'multi'),
              Output(self.selectors_id['SOURCE'], 'value')],
             [Input(self.radio_selectors_id, 'value')])
-        def cb_set_source_selector(group_by):
+        def _set_source_selector(group_by):
             '''If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             '''

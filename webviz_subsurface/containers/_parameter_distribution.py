@@ -144,7 +144,7 @@ and correlation between the parameters as a correlation matrix.
                       [Input(self.ens_matrix_id, 'value'),
                        Input(self.p1_drop_id, 'value'),
                        Input(self.p2_drop_id, 'value')])
-        def cb_update_matrix(ens, p1, p2):
+        def _update_matrix(ens, p1, p2):
             '''Renders correlation matrix.
             Currently also re-renders matrix to update currently
             selected cell. This is not optimal, but hard to prevent
@@ -180,7 +180,7 @@ and correlation between the parameters as a correlation matrix.
                        Input(self.p2_drop_id, 'value'),
                        Input(self.scatter_color_id, 'value'),
                        Input(self.density_id, 'value')])
-        def cb_update_scatter(ens1, p1, ens2, p2, color, density):
+        def _update_scatter(ens1, p1, ens2, p2, color, density):
             return render_scatter(ens1, p1, ens2, p2, color, density)
 
         @app.callback([Output(self.p1_drop_id, 'value'),
@@ -190,7 +190,7 @@ and correlation between the parameters as a correlation matrix.
                       [Input(self.matrix_id, 'clickData'),
                        Input(self.ens_matrix_id, 'value')]
                       )
-        def cb_update_from_click(cd, ens):
+        def _update_from_click(cd, ens):
             try:
                 points = cd['points'][0]
             # TypeError is returned if no cells are clicked
