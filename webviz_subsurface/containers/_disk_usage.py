@@ -57,7 +57,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
     def set_callbacks(self, app):
         @app.callback(Output(self.chart_id, 'figure'),
                       [Input(self.plot_type_id, 'value')])
-        def update_plot(plot_type):
+        def _update_plot(plot_type):
             if plot_type == 'Pie chart':
                 data = [{
                     'values': self.usage,

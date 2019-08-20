@@ -53,7 +53,7 @@ effect with other parameters.
             Output(self.graph_id, 'parameter'),
             Output(self.graph_id, 'parameters')],
             [Input(self.vector_id, 'value')])
-        def update_plot(vector):
+        def _update_plot(vector):
             df = self.data[self.data['name'] == vector]
             df = df.sort_values('time')
             output = df[['mean', 'max', 'min', 'time']]\

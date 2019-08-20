@@ -99,7 +99,7 @@ class SummaryStats(WebvizContainer):
                       [Input(self.dropwdown_vector_id, 'value'),
                        Input(self.radio_plot_type_id, 'value'),
                        Input(self.show_history_uncertainty_id, 'value')])
-        def update_plot(
+        def _update_plot(
                 vector,
                 summary_plot_type,
                 show_history_uncertainty_id):
