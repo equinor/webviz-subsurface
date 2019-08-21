@@ -41,7 +41,9 @@ def get_time_series_statistics(
         column_keys, (list, tuple)) else None
 
     # Note: to be replaced by ensset.get_smry_stats()
-    # when function is available
+    # when function is available.
+    # See:
+    # https://github.com/equinor/fmu-ensemble/pull/19
     smry_stats = []
     for ens, ens_path in ensemble_paths:
         ens_smry_stats = scratch_ensemble(

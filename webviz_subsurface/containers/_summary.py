@@ -2,7 +2,7 @@ import itertools
 from uuid import uuid4
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
@@ -48,6 +48,13 @@ class Summary(WebvizContainer):
             i[0] for i in self.ensemble_paths])
         self.delta_ensembles = tuple(delta_ensembles if delta_ensembles else [
             i[0] for i in self.ensemble_paths])
+        self.dropwdown_vector_id = f'dropdown-vector-{self.uid}'
+        self.chart_id = f'chart-id-{self.uid}'
+        self.tab_id = f'_tab_id-{self.uid}'
+        self.chlst = f'chlst-{self.uid}'
+        self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
+        self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
+        self.show_ens_selectors = f'show-ens-selectors-{self.uid}'
         self.set_callbacks(app)
 
     @property
@@ -59,41 +66,6 @@ class Summary(WebvizContainer):
     def delta_ens(self):
         """ extracts delta-ensemble from passed ensemble-combinations list """
         return self.ensemble_combinations[1]
-
-    @property
-    def dropwdown_vector_id(self):
-        """ component-id for vecotr selector"""
-        return f'dropdown-vector-{self.uid}'
-
-    @property
-    def chart_id(self):
-        """ component-id for chart => main plot"""
-        return f'chart-id-{self.uid}'
-
-    @property
-    def tab_id(self):
-        """ component-id for tab-selector"""
-        return f'_tab_id-{self.uid}'
-
-    @property
-    def chlst(self):
-        """ component-id for checklist """
-        return f'chlst-{self.uid}'
-
-    @property
-    def dropdown_iorens_id(self):
-        """ component-id for base-enseble-selector (fieldgaisn) """
-        return f'dropdown-iorens-{self.uid}'
-
-    @property
-    def dropdown_refens_id(self):
-        """ component-id for ensemble-selectors (fieldgains) """
-        return f'dropdown-refens-{self.uid}'
-
-    @property
-    def show_ens_selectors(self):
-        """ component-id for div including ensemble-selectors """
-        return f'show-ens-selectors-{self.uid}'
 
     @property
     def vector_columns(self):
@@ -153,20 +125,20 @@ class Summary(WebvizContainer):
                         html.Div(id=self.show_ens_selectors, children=[
                             dcc.Dropdown(
                                 id=self.dropdown_iorens_id,
-                                placeholder="Base case",
+                                placeholder='Base case',
                                 options=[{'label': i, 'value': i}
                                          for i in self.base_ensembles]
                             ),
                             dcc.Dropdown(
                                 id=self.dropdown_refens_id,
-                                placeholder="Select ensembles",
+                                placeholder='Select ensembles',
                                 options=[{'label': i, 'value': i}
                                          for i in self.delta_ensembles],
                                 multi=True,
                             ),
                         ], style={'display': 'none'}),
                     ]),
-                ], style={'width': '20%', "float": "left"}),
+                ], style={'width': '20%', 'float': 'left'}),
 
                 html.Div([
                     dcc.Tabs(id=self.tab_id, value='summary_data', children=[
@@ -175,7 +147,7 @@ class Summary(WebvizContainer):
                     ]),
                     html.Div(id='tabs-content'),
                     html.Div(id=self.chart_id)
-                ], style={'width': '80%', "float": "right"}),
+                ], style={'width': '80%', 'float': 'right'}),
 
             ]),
         ])
@@ -186,8 +158,6 @@ class Summary(WebvizContainer):
 # =============================================================================
 
     def set_callbacks(self, app):
-
-        """ define callbacks for SUmmary-container => dash functionality"""
 
         @app.callback(Output(self.show_ens_selectors, 'style'),
                       [Input(self.chlst, 'value')])
@@ -202,11 +172,7 @@ class Summary(WebvizContainer):
                 html.Div(...styling): dictionary describing styling
             """
 
-            if 'show_fieldgains' in chlst:
-                return {}
-
-            else:
-                return {'display': 'none'}
+            return {} if 'show_fieldgains' in chlst else {'display': 'none'}
 
         @app.callback(Output(self.chlst, 'options'),
                       [Input(self.dropwdown_vector_id, 'value')])
@@ -295,6 +261,68 @@ class Summary(WebvizContainer):
                 return html.Div([
                     html.H3('Tab content 2')
                 ])
+
+        @app.callback(self.container_data_output,
+                      [self.container_data_requested],
+                      [State(self.tab_id, 'value'),
+                       State(self.chlst, 'value')])
+        def _user_download_data(
+                data_requested,
+                plot_type: str,
+                chlst: list):
+            """ Callback to download data as .csv (Summary)
+
+                Reads summary data from scratch into memory as ps.DataFrame and
+                stores them to .cvs
+
+                Args:
+                    data_requesed: button-click to fire the download request
+                    tab: str = current selected tab
+                    chlst: list = list of selected plot options [
+                        fielgains, history_vctr]
+                Returns:
+                    summary.csv: .csv stored to ~/Downloads
+            """
+
+            show_fieldgains = 'show_fieldgains' in chlst
+
+            if plot_type == 'summary_data':
+
+                if show_fieldgains:
+
+                    file_name = 'field_gains'
+                    requested_data = get_time_series_fielgains(
+                        ensemble_paths=self.ensemble_paths,
+                        time_index=self.time_index,
+                        column_keys=self.column_keys,
+                        base_ensembles=self.base_ensembles,
+                        delta_ensembles=self.delta_ensembles,
+                        ensemble_set_name=self.title,
+                    )
+
+                else:
+
+                    file_name = 'summary_data'
+                    requested_data = get_time_series_data(
+                        ensemble_paths=self.ensemble_paths,
+                        column_keys=self.column_keys,
+                        time_index=self.time_index,
+                        ensemble_set_name=self.title
+                    )
+
+            if plot_type == 'summary_stats':
+
+                file_name = 'summary_statistics'
+                requested_data = get_time_series_statistics(
+                    ensemble_paths=self.ensemble_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                )
+
+            return WebvizContainer.container_data_compress(
+                [{'filename': f'{file_name}.csv',
+                  'content': requested_data.to_csv()}]
+            )
 
 
 # =============================================================================
