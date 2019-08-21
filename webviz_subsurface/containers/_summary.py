@@ -322,7 +322,7 @@ class Summary(WebvizContainer):
             return WebvizContainer.container_data_compress(
                 [{'filename': f'{file_name}.csv',
                   'content': requested_data.to_csv()}]
-            )
+            ) if data_requested else ''
 
 
 # =============================================================================
