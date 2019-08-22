@@ -6,10 +6,9 @@ that will be made open source in the near future.
 
 from ._history_match import extract_mismatch, scratch_ensemble
 from ._intersect import load_surface, get_wfence, get_hfence
-from ._summary_stats import get_summary_data, get_summary_stats
 from ._inplace_volumes import extract_volumes
-from ._summary import get_time_series_data, get_time_series_statistics, \
-    get_time_series_fielgains, load_ensemble_set
+from ._reservoirrimulationrimeseries import get_time_series_data, \
+  get_time_series_statistics, get_time_series_fielgains, load_ensemble_set
 
 
 __all__ = ['scratch_ensemble',

@@ -23,7 +23,6 @@ setup(
     packages=find_packages(exclude=['tests']),
     entry_points={
         'webviz_config_containers': [
-            'SummaryStats = webviz_subsurface.containers:SummaryStats',
             'ParameterDistribution = webviz_subsurface.containers:ParameterDistribution',
             'DiskUsage = webviz_subsurface.containers:DiskUsage',
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
@@ -31,7 +30,7 @@ setup(
             'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
             'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes',
-            'Summary = webviz_subsurface.containers:Summary'
+            'ReservoirSimulationTimeSeries = webviz_subsurface.containers:ReservoirSimulationTimeSeries'
         ]
     },
     install_requires=[
