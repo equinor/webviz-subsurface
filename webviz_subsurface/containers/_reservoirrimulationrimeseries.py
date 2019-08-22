@@ -55,6 +55,22 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         self.dropdown_iorens_id = f'dropdown-iorens-{self.uid}'
         self.dropdown_refens_id = f'dropdown-refens-{self.uid}'
         self.show_ens_selectors = f'show-ens-selectors-{self.uid}'
+        self.vector_columns = sorted(
+            list(
+                get_time_series_data(
+                    ensemble_paths=self.ensemble_paths,
+                    time_index=self.time_index,
+                    column_keys=self.column_keys).drop(
+                        columns=[
+                            'DATE',
+                            'REAL',
+                            'ENSEMBLE']).columns))
+        self.history_vctr_cols = tuple(
+            [vctr + 'H' for vctr in self.vector_columns
+             if vctr + 'H' in self.vector_columns])
+        self.vctr_cols_no_hist = tuple(
+            [vctr for vctr in self.vector_columns
+             if vctr not in self.history_vctr_cols])
         self.set_callbacks(app)
 
     @property
@@ -66,34 +82,6 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
     def delta_ens(self):
         """ extracts delta-ensemble from passed ensemble-combinations list """
         return self.ensemble_combinations[1]
-
-    @property
-    def vector_columns(self):
-        """ list of available vector-columns """
-        return sorted(
-            list(
-                get_time_series_data(
-                    ensemble_paths=self.ensemble_paths,
-                    time_index=self.time_index,
-                    column_keys=self.column_keys) .drop(
-                        columns=[
-                            'DATE',
-                            'REAL',
-                            'ENSEMBLE']).columns))
-
-    @property
-    def smry_history_columns(self):
-        """ history-columns => can be empty """
-        return tuple(
-            [vctr + 'H' for vctr in self.vector_columns
-             if vctr + 'H' in self.vector_columns])
-
-    @property
-    def smry_vector_columns(self):
-        """ smry-vector columsn without h-vectors """
-        return tuple(
-            [vctr for vctr in self.vector_columns
-             if vctr not in self.smry_history_columns])
 
 
 # =============================================================================
@@ -110,8 +98,8 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     dcc.Dropdown(id=self.dropwdown_vector_id,
                                  clearable=False,
                                  options=[{'label': i, 'value': i}
-                                          for i in self.smry_vector_columns],
-                                 value=self.smry_vector_columns[0]),
+                                          for i in self.vctr_cols_no_hist],
+                                 value=self.vctr_cols_no_hist[0]),
                     html.Div([
                         dcc.Checklist(
                             id=self.chlst,
@@ -191,7 +179,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 
             options = []
             options.append(['Delta time series', 'show_delta_time_series'])
-            if vctr + 'H' in self.smry_history_columns:
+            if vctr + 'H' in self.history_vctr_cols:
                 options.append(['Show H-Vctr', 'show_h_vctr'])
 
             return [{'label': label, 'value': value}
@@ -235,7 +223,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     time_index=self.time_index,
                     vector=vector,
                     ensemble_set_name=self.title,
-                    smry_history_columns=self.smry_history_columns,
+                    history_vctr_cols=self.history_vctr_cols,
                     show_history_vector=show_history_vector,
                     show_delta_time_series=show_delta_time_series,
                     iorens=iorens,
@@ -372,7 +360,7 @@ def render_realization_plot(
         column_keys: tuple,
         vector: str,
         ensemble_set_name: str,
-        smry_history_columns: tuple,
+        history_vctr_cols: tuple,
         show_history_vector: bool,
         show_delta_time_series: bool,
         iorens: str,
@@ -390,7 +378,7 @@ def render_realization_plot(
         column_keys: tuple = tuple of pre selected-vectors
         vector: str = vector to be plotted
         ensemble_set_name: str = name of enesmble-set
-        smry_history_columns: tuple = tuple of history-vectors
+        history_vctr_cols: tuple = tuple of history-vectors
         show_history_vector: bool = show history vector (if present)
         show_delta_time_series: bool = shwo Delta time series
     Retuns:
@@ -402,7 +390,7 @@ def render_realization_plot(
     history_vector = (vector + 'H')
 
     # process data ------------------------------------------------------------
-    if history_vector in smry_history_columns:
+    if history_vector in history_vctr_cols:
 
         smry_data = get_time_series_data(
             ensemble_paths=ensemble_paths,
@@ -441,7 +429,7 @@ def render_realization_plot(
                 vector=vector,
                 color=next(cycle_list))
 
-            if (history_vector in smry_history_columns
+            if (history_vector in history_vctr_cols
                     and show_history_vector):
 
                 plot_traces += trace_group(
