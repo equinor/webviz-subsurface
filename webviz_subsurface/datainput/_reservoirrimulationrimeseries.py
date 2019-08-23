@@ -114,3 +114,43 @@ def get_time_series_fielgains(
             fieldgians_dfs.append(fieldgain_df)
 
     return pd.concat(fieldgians_dfs)
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+@webvizstore
+def get_time_series_fielgains_stats(
+        ensemble_paths: tuple,
+        time_index: str,
+        column_keys: tuple,
+        base_ensembles: tuple,
+        delta_ensembles: tuple,
+        ensemble_set_name: str = 'EnsembleSet'
+) -> pd.DataFrame:
+    """ Loads ensembleset (cached after first loaded), gets a list of
+    ensemblenames and loops over possible combinations to be compared
+    and gathers the resulting dataframes.
+    Fieldgains can then be extracted from the time_series_fieldgains
+    dataframe.
+    """
+
+    column_keys = list(column_keys) if isinstance(
+        column_keys, (list, tuple)) else None
+
+    ensset = load_ensemble_set(
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name
+    )
+
+    fieldgians_stats_dfs = []
+    for ens_i in base_ensembles:
+        for ens_ii in delta_ensembles:
+            fieldgain_stats_df = (
+                ensset[ens_i] - ensset[ens_ii]
+            ).get_smry_stats(
+                column_keys=column_keys,
+                time_index=time_index,
+            )
+            fieldgain_stats_df['IROENS - REFENS'] = f'{ens_i} - {ens_ii}'
+            fieldgians_stats_dfs.append(fieldgain_stats_df)
+
+    return pd.concat(fieldgians_stats_dfs)
