@@ -30,7 +30,7 @@ from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
-from ._reservoirrimulationrimeseries import ReservoirSimulationTimeSeries
+from ._reservoirsimulationrimeseries import ReservoirSimulationTimeSeries
 
 
 __all__ = ['ParameterDistribution',

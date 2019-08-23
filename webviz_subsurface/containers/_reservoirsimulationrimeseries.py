@@ -8,8 +8,8 @@ from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 import plotly.graph_objs as go
 from webviz_subsurface.datainput import get_time_series_data, \
-    get_time_series_statistics, get_time_series_fielgains, \
-    get_time_series_fielgains_stats
+    get_time_series_statistics, get_time_series_delteans, \
+    get_time_series_delteans_stats
 
 
 # =============================================================================
@@ -275,7 +275,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     data_requesed: button-click to fire the download request
                     tab: str = current selected tab
                     chlst: list = list of selected plot options [
-                        fielgains, history_vctr]
+                        delteans, history_vctr]
                 Returns:
                     summary.csv: .csv stored to ~/Downloads
             """
@@ -287,7 +287,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                 if show_delta_time_series:
 
                     file_name = 'delta_time_series'
-                    requested_data = get_time_series_fielgains(
+                    requested_data = get_time_series_delteans(
                         ensemble_paths=self.ensemble_paths,
                         time_index=self.time_index,
                         column_keys=self.column_keys,
@@ -311,7 +311,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                 if show_delta_time_series:
 
                     file_name = 'delta_time_series_statistics'
-                    requested_data = get_time_series_fielgains_stats(
+                    requested_data = get_time_series_delteans_stats(
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
@@ -357,7 +357,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                'time_index': self.time_index,
                'column_keys': self.column_keys}]
              ),
-            (get_time_series_fielgains,
+            (get_time_series_delteans,
              [{'ensemble_paths': self.ensemble_paths,
                'time_index': self.time_index,
                'column_keys': self.column_keys,
@@ -365,7 +365,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                'delta_ensembles': self.delta_ensembles,
                'ensemble_set_name': self.title}]
              ),
-            (get_time_series_fielgains_stats,
+            (get_time_series_delteans_stats,
              [{'ensemble_paths': self.ensemble_paths,
                'time_index': self.time_index,
                'column_keys': self.column_keys,
@@ -436,7 +436,7 @@ def render_realization_plot(
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
     if show_delta_time_series:
-        field_gains = get_time_series_fielgains(
+        delta_vals = get_time_series_delteans(
             ensemble_paths=ensemble_paths,
             time_index=time_index,
             column_keys=column_keys,
@@ -469,12 +469,12 @@ def render_realization_plot(
         for i in refens:
 
             compared_ensembles = f'{iorens} - {i}'
-            field_gain = field_gains[
-                field_gains['IROENS - REFENS'] == compared_ensembles
+            delta_val = delta_vals[
+                delta_vals['IROENS - REFENS'] == compared_ensembles
             ]
 
             plot_traces += trace_group(
-                ens_smry_data=field_gain[['REAL', 'DATE', vector]],
+                ens_smry_data=delta_val[['REAL', 'DATE', vector]],
                 ens=f'{iorens} - {i}',
                 vector=vector,
                 color=next(cycle_list))
@@ -551,7 +551,7 @@ def render_stat_plot(
 
     if (show_delta_time_series and iorens and refens):
 
-        delta_time_series_stats = get_time_series_fielgains_stats(
+        delta_time_series_stats = get_time_series_delteans_stats(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
             time_index=time_index,
@@ -564,13 +564,13 @@ def render_stat_plot(
         for i in refens:
 
             compared_ensembles = f'{iorens} - {i}'
-            field_gain_stats = delta_time_series_stats[
+            delta_val_stats = delta_time_series_stats[
                 delta_time_series_stats['IROENS - REFENS']
                 == compared_ensembles
             ]
 
             data += time_series_confidence_interval_traces(
-                vector_stats=field_gain_stats[vector],
+                vector_stats=delta_val_stats[vector],
                 color_rgb=next(plotly_colors_rgb),
                 legend_group=compared_ensembles
             )
