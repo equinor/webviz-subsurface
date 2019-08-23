@@ -80,7 +80,7 @@ def get_time_series_data(
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_time_series_fielgains(
+def get_time_series_delteans(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
@@ -118,7 +118,7 @@ def get_time_series_fielgains(
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_time_series_fielgains_stats(
+def get_time_series_delteans_stats(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
