@@ -92,10 +92,8 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
     @property
     def layout(self):
         return html.Div([
-            html.H2(self.title),
             html.Div([
                 html.Div([
-                    html.P('Time Series:', style={'font-weight': 'bold'}),
                     dcc.Dropdown(id=self.dropwdown_vector_id,
                                  clearable=False,
                                  options=[{'label': i, 'value': i}
@@ -579,7 +577,7 @@ def render_stat_plot(
 
     layout = go.Layout(
         yaxis=dict(title=vector),
-        title='Time series statistics')
+    )
 
     return dcc.Graph(figure={'data': data, 'layout': layout},
                      config={
@@ -691,7 +689,10 @@ def time_series_confidence_interval_traces(
         x=vector_stats['maximum'].index.tolist(),
         y=vector_stats['maximum'].values,
         mode='lines',
-        line={'width': 0},
+        line={
+            'width': 0,
+            'color': f'rgba({r}, {g}, {b}, 1)'
+        },
         legendgroup=legend_group,
         showlegend=False,
     )
@@ -703,7 +704,10 @@ def time_series_confidence_interval_traces(
         mode='lines',
         fill='tonexty',
         fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
-        line={'width': 0},
+        line={
+            'width': 0,
+            'color': f'rgba({r}, {g}, {b}, 1)'
+        },
         legendgroup=legend_group,
         showlegend=False,
     )
@@ -727,9 +731,12 @@ def time_series_confidence_interval_traces(
         mode='lines',
         fill='tonexty',
         fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
-        line={'width': 0},
+        line={
+            'width': 0,
+            'color': f'rgba({r}, {g}, {b}, 1)'
+        },
         legendgroup=legend_group,
-        showlegend=False
+        showlegend=False,
     )
 
     trace_minimum = go.Scatter(
@@ -739,7 +746,10 @@ def time_series_confidence_interval_traces(
         mode='lines',
         fill='tonexty',
         fillcolor=f'rgba({r}, {g}, {b}, 0.3)',
-        line={'width': 0},
+        line={
+            'width': 0,
+            'color': f'rgba({r}, {g}, {b}, 1)'
+        },
         legendgroup=legend_group,
         showlegend=False,
     )
