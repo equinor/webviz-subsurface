@@ -336,16 +336,17 @@ def render_matrix(ensemble_path):
         layput: dict = plotly figure layout
     """
 
-    _data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
-                                        .dropna(how='all', axis='columns')
+    _data = get_parameters(ensemble_path)\
+        .apply(pd.to_numeric, errors='coerce')\
+        .dropna(how='all', axis='columns')
 
     corr_matrix = _data.corr().values
     all_nan_ax0 = ~np.isnan(corr_matrix).all(axis=0)
     all_nan_ax1 = ~np.isnan(corr_matrix).all(axis=1)
     _cols = _data.columns[all_nan_ax0]
 
-    _corr_matrix = corr_matrix[all_nan_ax0,:]
-    _corr_matrix_nonan = _corr_matrix[:,all_nan_ax1]
+    _corr_matrix = corr_matrix[all_nan_ax0, :]
+    _corr_matrix_nonan = _corr_matrix[:, all_nan_ax1]
 
     _values = list(_corr_matrix_nonan)
 
