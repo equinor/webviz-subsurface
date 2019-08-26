@@ -1,5 +1,6 @@
 from uuid import uuid4
 import pandas as pd
+import numpy as np
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
@@ -319,17 +320,43 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
 @cache.memoize(timeout=cache.TIMEOUT)
 def render_matrix(ensemble_path):
 
-    data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
+    """
+    Args:
+        ensemble_path: str = path to ensemble
+    Parameteres:
+            _data: pd.DataFrame = Numerical type data input
+            corr_matrix = correlation matrix vlaues (NumPy)
+            all_nan_ax0: ndarry = corr_matrix all nans along axis=0 removed
+            all_nan_ax1: ndarry = corr_matrix all nans along axis=0 removed
+            _cols: DataFrame columns that container data (all-nan axes removed)
+            _corr_matrix_nonan: ndarry = corr_matrix without all-nan axes
+            _values: ndarray = list of arrays containing values for rows.
+    Return:
+        data: dict = plotly heatmap
+        layput: dict = plotly figure layout
+    """
+
+    _data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
-    values = list(data.corr().values)
+
+    corr_matrix = _data.corr().values
+    all_nan_ax0 = ~np.isnan(corr_matrix).all(axis=0)
+    all_nan_ax1 = ~np.isnan(corr_matrix).all(axis=1)
+    _cols = _data.columns[all_nan_ax0]
+
+    _corr_matrix = corr_matrix[all_nan_ax0,:]
+    _corr_matrix_nonan = _corr_matrix[:,all_nan_ax1]
+
+    _values = list(_corr_matrix_nonan)
 
     data = {
         'type': 'heatmap',
-        'x': data.columns,
-        'y': data.columns,
-        'z': values,
+        'x': _cols,
+        'y': _cols,
+        'z': _values,
         'zmin': -1,
-        'zmax': 1
+        'zmax': 1,
+        'colorscale': 'Viridis'
     }
 
     layout = {
