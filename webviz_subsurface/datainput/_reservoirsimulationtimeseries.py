@@ -80,7 +80,7 @@ def get_time_series_data(
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_time_series_delteans(
+def get_time_series_delta_ens(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
@@ -91,7 +91,7 @@ def get_time_series_delteans(
     """ Loads ensembleset (cached after first loaded), gets a list of
     ensemblenames and loops over possible combinations to be compared
     and gathers the resulting dataframes.
-    Fieldgains can then be extracted from the time_series_fieldgains
+    Delta-Ens-Values can then be extracted from the get_time_series_delta_ens
     dataframe.
     """
 
@@ -103,7 +103,7 @@ def get_time_series_delteans(
         ensemble_set_name=ensemble_set_name
     )
 
-    fieldgians_dfs = []
+    delta_ens_dfs = []
     for ens_i in base_ensembles:
         for ens_ii in delta_ensembles:
             fieldgain_df = (ensset[ens_i] - ensset[ens_ii]).get_smry(
@@ -111,14 +111,14 @@ def get_time_series_delteans(
                 time_index=time_index,
             )
             fieldgain_df['IROENS - REFENS'] = f'{ens_i} - {ens_ii}'
-            fieldgians_dfs.append(fieldgain_df)
+            delta_ens_dfs.append(fieldgain_df)
 
-    return pd.concat(fieldgians_dfs)
+    return pd.concat(delta_ens_dfs)
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 @webvizstore
-def get_time_series_delteans_stats(
+def get_time_series_delta_ens_stats(
         ensemble_paths: tuple,
         time_index: str,
         column_keys: tuple,
@@ -129,8 +129,8 @@ def get_time_series_delteans_stats(
     """ Loads ensembleset (cached after first loaded), gets a list of
     ensemblenames and loops over possible combinations to be compared
     and gathers the resulting dataframes.
-    Fieldgains can then be extracted from the time_series_fieldgains
-    dataframe.
+    Delta-Ens-Statistics can then be extracted from the
+    get_time_series_delta_ens dataframe.
     """
 
     column_keys = list(column_keys) if isinstance(
@@ -141,7 +141,7 @@ def get_time_series_delteans_stats(
         ensemble_set_name=ensemble_set_name
     )
 
-    fieldgians_stats_dfs = []
+    delta_ens_stats_dfs = []
     for ens_i in base_ensembles:
         for ens_ii in delta_ensembles:
             fieldgain_stats_df = (
@@ -151,6 +151,6 @@ def get_time_series_delteans_stats(
                 time_index=time_index,
             )
             fieldgain_stats_df['IROENS - REFENS'] = f'{ens_i} - {ens_ii}'
-            fieldgians_stats_dfs.append(fieldgain_stats_df)
+            delta_ens_stats_dfs.append(fieldgain_stats_df)
 
-    return pd.concat(fieldgians_stats_dfs)
+    return pd.concat(delta_ens_stats_dfs)

@@ -7,9 +7,9 @@ that will be made open source in the near future.
 from ._history_match import extract_mismatch, scratch_ensemble
 from ._intersect import load_surface, get_wfence, get_hfence
 from ._inplace_volumes import extract_volumes
-from ._reservoirsimulationrimeseries import get_time_series_data, \
-  get_time_series_statistics, get_time_series_delteans, load_ensemble_set, \
-  get_time_series_delteans_stats
+from ._reservoirsimulationtimeseries import get_time_series_data, \
+  get_time_series_statistics, get_time_series_delta_ens, load_ensemble_set, \
+  get_time_series_delta_ens_stats
 
 
 __all__ = ['scratch_ensemble',
@@ -22,5 +22,5 @@ __all__ = ['scratch_ensemble',
            'load_ensemble_set',
            'get_time_series_data',
            'get_time_series_statistics',
-           'get_time_series_delteans',
-           'get_time_series_delteans_stats']
+           'get_time_series_delta_ens',
+           'get_time_series_delta_ens_stats']
