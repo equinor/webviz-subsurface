@@ -321,13 +321,17 @@ def render_matrix(ensemble_path):
 
     data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
-    values = list(data.corr().values)
+    # .dopna() required to remove undefined entries in correlation matrix.
+    # resulting from constants
+    # Drop the rows where all elements are missing
+    # Drop the columns where at least one element is
+    corr_data = data.corr().dropna(how='all').dropna(axis='columns')
 
     data = {
         'type': 'heatmap',
-        'x': data.columns,
-        'y': data.columns,
-        'z': values,
+        'x': corr_data.columns,
+        'y': corr_data.columns,
+        'z': list(corr_data.values),
         'zmin': -1,
         'zmax': 1
     }
