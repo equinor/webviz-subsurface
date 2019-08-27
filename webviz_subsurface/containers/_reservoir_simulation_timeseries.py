@@ -17,6 +17,7 @@ from webviz_subsurface.datainput import get_time_series_data, \
 # =============================================================================
 
 class ReservoirSimulationTimeSeries(WebvizContainer):
+
     """Plot of time series data based on fmu-ensemble summary data.
     Data are loaded from scratch an process via fmu-ensemble utilities.
 
@@ -24,6 +25,10 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         ensembles: key-value-pait = ensemble-name: ensemble-path
         column_keys: list = list of preselected vectors to be selectable
         sampling: str = time-index / time-steps of summary-data
+        base_ensembles: list = used to calculate delta-values relative to
+            this ensemble
+        delta_ensembles: list = Ensembles to be compared with a base-ensemlbe
+            to calculate delta values.
     """
 
     def __init__(
@@ -104,7 +109,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                             id=self.chlst,
                             options=[{
                                 'label': 'Delta time series',
-                                'value': 'show_delta_time_series'
+                                'value': 'show_delta_series'
                             }],
                             labelStyle={'display': 'inline-block'},
                             value=[],
@@ -149,20 +154,16 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         @app.callback(Output(self.show_ens_selectors, 'style'),
                       [Input(self.chlst, 'value')])
         def _func_show_ens_selectors(chlst: list):
-            """callback to update the styling of div that includes the ensemble
-            selectors. The styling switches to hiden when Delta time series is
-            not selected.
+            """ callback to update the styling of div that includes the
+            ensemble selectors. The styling switches to hiden when Delta
+            time series is not selected.
 
             Input:
                 checklist values: list of strings = selected options
             Output:
                 html.Div(...styling): dictionary describing styling
             """
-
-            if 'show_delta_time_series' in chlst:
-                return {}
-            else:
-                return {'display': 'none'}
+            return {} if 'show_delta_series' in chlst else {'display': 'none'}
 
         @app.callback(Output(self.chlst, 'options'),
                       [Input(self.dropwdown_vector_id, 'value')])
@@ -177,7 +178,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
             """
 
             options = []
-            options.append(['Delta time series', 'show_delta_time_series'])
+            options.append(['Delta time series', 'show_delta_series'])
             if vctr + 'H' in self.history_vctr_cols:
                 options.append(['Show H-Vctr', 'show_h_vctr'])
 
@@ -212,7 +213,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
             """
 
             show_history_vector = 'show_h_vctr' in chlst
-            show_delta_time_series = 'show_delta_time_series' in chlst
+            show_delta_series = 'show_delta_series' in chlst
 
             if plot_type == 'summary_data':
 
@@ -224,7 +225,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     ensemble_set_name=self.title,
                     history_vctr_cols=self.history_vctr_cols,
                     show_history_vector=show_history_vector,
-                    show_delta_time_series=show_delta_time_series,
+                    show_delta_series=show_delta_series,
                     iorens=iorens,
                     refens=refens,
                     base_ensembles=self.base_ensembles,
@@ -239,24 +240,12 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     time_index=self.time_index,
                     ensemble_set_name=self.title,
                     vector=vector,
-                    show_delta_time_series=show_delta_time_series,
+                    show_delta_series=show_delta_series,
                     iorens=iorens,
                     refens=refens,
                     base_ensembles=self.base_ensembles,
                     delta_ensembles=self.delta_ensembles,
                 )
-
-        @app.callback(Output('tabs-content', 'children'),
-                      [Input('tabs', 'value')])
-        def _render_content(tab):
-            if tab == 'tab-1':
-                return html.Div([
-                    html.H3('Tab content 1')
-                ])
-            elif tab == 'tab-2':
-                return html.Div([
-                    html.H3('Tab content 2')
-                ])
 
         @app.callback(self.container_data_output,
                       [self.container_data_requested],
@@ -280,11 +269,11 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     summary.csv: .csv stored to ~/Downloads
             """
 
-            show_delta_time_series = 'show_delta_time_series' in chlst
+            show_delta_series = 'show_delta_series' in chlst
 
             if plot_type == 'summary_data':
 
-                if show_delta_time_series:
+                if show_delta_series:
 
                     file_name = 'delta_time_series'
                     requested_data = get_time_series_delta_ens(
@@ -308,7 +297,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 
             if plot_type == 'summary_stats':
 
-                if show_delta_time_series:
+                if show_delta_series:
 
                     file_name = 'delta_time_series_statistics'
                     requested_data = get_time_series_delta_ens_stats(
@@ -389,7 +378,7 @@ def render_realization_plot(
         ensemble_set_name: str,
         history_vctr_cols: tuple,
         show_history_vector: bool,
-        show_delta_time_series: bool,
+        show_delta_series: bool,
         iorens: str,
         refens: str,
         base_ensembles: tuple,
@@ -407,7 +396,11 @@ def render_realization_plot(
         ensemble_set_name: str = name of enesmble-set
         history_vctr_cols: tuple = tuple of history-vectors
         show_history_vector: bool = show history vector (if present)
-        show_delta_time_series: bool = shwo Delta time series
+        show_delta_series: bool = shwo Delta time series
+        iorens: str = selcted divergent ensembles
+        refens: str = selected base or refernce ensemble
+        base_ensembles: tuple = tuple of available divergent ensembles
+        delta_ensembles: tuple = tuple of available base or refernce ensembles
     Retuns:
         dcc.Graph (scatter-plot) of summary-data aggregated over given
         ensembles. x: time, y: vector-value
@@ -435,7 +428,7 @@ def render_realization_plot(
             ensemble_set_name=ensemble_set_name)[
                 ['REAL', 'DATE', 'ENSEMBLE', vector]]
 
-    if show_delta_time_series:
+    if show_delta_series:
         delta_vals = get_time_series_delta_ens(
             ensemble_paths=ensemble_paths,
             time_index=time_index,
@@ -447,7 +440,7 @@ def render_realization_plot(
 
     # plot traces -------------------------------------------------------------
     plot_traces = []
-    if not (show_delta_time_series and iorens and refens):
+    if not (show_delta_series and iorens and refens):
         for ens in smry_data.ENSEMBLE.unique():
 
             plot_traces += trace_group(
@@ -465,7 +458,7 @@ def render_realization_plot(
                     vector=history_vector,
                     color='black')
 
-    if (show_delta_time_series and iorens and refens):
+    if (show_delta_series and iorens and refens):
         for i in refens:
 
             compared_ensembles = f'{iorens} - {i}'
@@ -502,7 +495,7 @@ def render_stat_plot(
         column_keys: tuple,
         vector: str,
         ensemble_set_name: str,
-        show_delta_time_series: bool,
+        show_delta_series: bool,
         iorens: str,
         refens: str,
         base_ensembles: tuple,
@@ -510,10 +503,16 @@ def render_stat_plot(
     """ Render statistics plot renders one fanchart-plot per given ensemble.
 
     Args:
-        ens_smry_data: pd.DataFrame = Dataframe containing all ensmelbes.
+        ensemble_paths: tuple = list of ensemble-paths
         time_index: str = time-index
         column_keys: tuple = tuple of pre selected-vectors
         vector: str = vector to be plotted
+        ensemble_set_name: str = name of enesmble-set
+        show_delta_series: bool = shwo Delta time series
+        iorens: str = selcted divergent ensembles
+        refens: str = selected base or refernce ensemble
+        base_ensembles: tuple = tuple of available divergent ensembles
+        delta_ensembles: tuple = tuple of available base or refernce ensembles
     Returns:
         dcc.Graph objects as fancharts of summary statistics.
     """
@@ -531,7 +530,7 @@ def render_stat_plot(
         (23, 190, 207)
     ])
 
-    if not (show_delta_time_series and iorens and refens):
+    if not (show_delta_series and iorens and refens):
 
         smry_stats = get_time_series_statistics(
             ensemble_paths=ensemble_paths,
@@ -549,7 +548,7 @@ def render_stat_plot(
                 legend_group=ens
             )
 
-    if (show_delta_time_series and iorens and refens):
+    if (show_delta_series and iorens and refens):
 
         delta_time_series_stats = get_time_series_delta_ens_stats(
             ensemble_paths=ensemble_paths,
@@ -647,6 +646,7 @@ def single_trace(
     Args:
         smry_data: pd.df = calculated summary data (fmu-ensemble)
         ens: str = selected ensemble
+        vector: str = selected vector to be plotted; passed as key
         color str = color
     Returns:
         trace-obj to be plotted in a plotly.fig
@@ -670,8 +670,7 @@ def single_trace(
 def time_series_confidence_interval_traces(
         vector_stats,
         color_rgb: list,
-        legend_group: str
-):
+        legend_group: str):
     """ function to create a convidence interval set of a selected ensemble.
 
     Args:
