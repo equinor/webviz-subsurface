@@ -193,20 +193,20 @@ and a folder of well files stored in RMS well format.
              Input(self.surf_list_id, 'value'),
              Input(self.well_tvd_id, 'value'),
              Input(self.zoom_state_id, 'value')])
-        def set_fence(_well_path, _reals, _surfs, _tvdmin, _keep_zoom_state):
+        def _set_fence(well_path, reals, surfs, tvdmin, keep_zoom_state):
             '''Callback to update intersection on data change'''
-            if not isinstance(_surfs, list):
-                _surfs = [_surfs]
-            if not isinstance(_reals, list):
-                _reals = [_reals]
-            if not _reals:
-                _reals = list(self.realizations.keys())
-            if not _surfs:
-                _surfs = self.surface_names
-            s_names = [s for s in self.surface_names if s in _surfs]
-            xsect = self.plot_xsection(_well_path, _reals, s_names, _tvdmin)
+            if not isinstance(surfs, list):
+                surfs = [surfs]
+            if not isinstance(reals, list):
+                reals = [reals]
+            if not reals:
+                reals = list(self.realizations.keys())
+            if not surfs:
+                surfs = self.surface_names
+            s_names = [s for s in self.surface_names if s in surfs]
+            xsect = self.plot_xsection(well_path, reals, s_names, tvdmin)
             layout = self.graph_layout
-            if _keep_zoom_state:
+            if keep_zoom_state:
                 layout['uirevision'] = 'keep'
             return {'data': xsect, 'layout': layout}
 
@@ -214,7 +214,7 @@ and a folder of well files stored in RMS well format.
                       [Input(self.intersection_id, 'hoverData')],
                       [State(self.intersection_id, 'figure'),
                        State(self.surf_list_id, 'value')])
-        def hover(_data, _fig, _surfaces):
+        def _hover(_data, _fig, _surfaces):
             '''Callback to update table on mouse over'''
             try:
                 graph = _fig['data']
