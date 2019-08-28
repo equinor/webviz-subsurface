@@ -325,7 +325,10 @@ def render_matrix(ensemble_path):
     # .dopna() required to remove undefined entries in correlation matrix after
     # it is calcualted. Correlations between constants yield nan values since
     # they are undefined.
-    corr_data = data.corr().dropna(axis=[0,1], how='all')
+    # Passing tuple or list to drop on multiple axes is deprecated since
+    # version 0.23.0. Therefor split in 2x .dropnan()
+    corr_data = data.corr().dropna(axis='index', how='all') \
+                           .dropna(axis='columns', how='all')
 
     data = {
         'type': 'heatmap',
