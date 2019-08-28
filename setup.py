@@ -7,7 +7,7 @@ tests_require = [
     'chromedriver-binary>=74.0.3729.6.0',
     'ipdb',
     'percy',
-    'selenium>=3.141.0',
+    'selenium~=3.141',
     'flake8',
     'pylint',
     'mock'
@@ -36,9 +36,9 @@ setup(
     install_requires=[
         'scipy~=1.2',
         'dash-daq~=0.1',
-        'webviz-config~=0.0.4',
-        'webviz-plotly~=0.0.1',
-        'webviz-subsurface-components~=0.0.3'
+        'webviz-config>=0.0.4',
+        'webviz-plotly>=0.0.1',
+        'webviz-subsurface-components>=0.0.3'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
