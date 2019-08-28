@@ -15,16 +15,15 @@ pages:
  - title: Front page
    content:
     - Webviz created from configuration file
- - title: Summary vectors
-   content: 
+ - title: Reservoir Simulation Time Series
+   content:
     - Some text...
-    - container: SummaryStats
-      ensembles:
-        - iter-0
-        - iter-1
-    - ...some other text
+    - container: ReservoirSimulationTimeSeries
+      ensembles: [iter-0, iter-1]
+      column_keys: ['FGP*']
+      base_ensembles: [iter-0]
  - title: Parameter distribution
-   content: 
+   content:
     - Some text...
     - container: ParameterDistribution
       ensembles:
@@ -32,29 +31,29 @@ pages:
         - iter-1
     - ...some other text
  - title: Inplace volumes
-   content: 
+   content:
     - container: InplaceVolumes
       ensembles: [iter-0, iter-1]
-      volfiles: 
+      volfiles:
         geogrid: geogrid--oil.csv
         simgrid: simgrid--oil.csv
  - title: Morris Plot
-   content: 
+   content:
     - Some text...
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
  - title: Subsurface map
-   content: 
+   content:
     - container: SubsurfaceMap
       ensemble: iter-0
       map_value: PERMX
       flow_value: FLOWAT
       time_step: 26
  - title: History match
-   content: 
+   content:
     - container: HistoryMatch
-      ensembles: 
+      ensembles:
        - iter-0
        - iter-1
       observation_file: some_observation_file.yaml
