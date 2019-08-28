@@ -322,11 +322,10 @@ def render_matrix(ensemble_path):
     data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
 
-    # .dopna() required to remove undefined entries in correlation matrix.
-    # resulting from constants
-    # Drop the rows where all elements are missing
-    # Drop the columns where at least one element is
-    corr_data = data.corr().dropna(how='all').dropna(axis='columns')
+    # .dopna() required to remove undefined entries in correlation matrix after
+    # it is calcualted. Correlations between constants yield nan values since
+    # they are undefined.
+    corr_data = data.corr().dropna(axis=[0,1], how='all')
 
     data = {
         'type': 'heatmap',
