@@ -23,7 +23,6 @@ pages:
 ```
 '''
 
-from ._summary_stats import SummaryStats
 from ._parameter_distribution import ParameterDistribution
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
@@ -31,13 +30,14 @@ from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
+from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 
 
-__all__ = ['SummaryStats',
-           'ParameterDistribution',
+__all__ = ['ParameterDistribution',
            'DiskUsage',
            'SubsurfaceMap',
            'HistoryMatch',
            'Intersect',
            'MorrisPlot',
-           'InplaceVolumes']
+           'InplaceVolumes',
+           'ReservoirSimulationTimeSeries']
