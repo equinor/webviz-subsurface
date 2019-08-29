@@ -15,14 +15,13 @@ pages:
  - title: Front page
    content:
     - Webviz created from configuration file
- - title: Summary vectors
-   content: 
+ - title: Reservoir Simulation Time Series
+   content:
     - Some text...
-    - container: SummaryStats
-      ensembles:
-        - iter-0
-        - iter-1
-    - ...some other text
+    - container: ReservoirSimulationTimeSeries
+      ensembles: [iter-0, iter-1]
+      column_keys: ['FGP*']
+      base_ensembles: [iter-0]
  - title: Parameter distribution
    content: 
     - Some text...
@@ -44,20 +43,3 @@ pages:
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
- - title: Subsurface map
-   content: 
-    - container: SubsurfaceMap
-      ensemble: iter-0
-      map_value: PERMX
-      flow_value: FLOWAT
-      time_step: 26
- - title: History match
-   content: 
-    - container: HistoryMatch
-      ensembles: 
-       - iter-0
-       - iter-1
-      observation_file: some_observation_file.yaml
- - title: Another page
-   content:
-    - Some basic text with special characters... Åre, Smørbukk Sør.

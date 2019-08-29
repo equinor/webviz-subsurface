@@ -7,7 +7,7 @@ tests_require = [
     'chromedriver-binary>=74.0.3729.6.0',
     'ipdb',
     'percy',
-    'selenium>=3.141.0',
+    'selenium~=3.141',
     'flake8',
     'pylint',
     'mock'
@@ -23,26 +23,25 @@ setup(
     packages=find_packages(exclude=['tests']),
     entry_points={
         'webviz_config_containers': [
-            'SummaryStats = webviz_subsurface.containers:SummaryStats',
             'ParameterDistribution = webviz_subsurface.containers:ParameterDistribution',
             'DiskUsage = webviz_subsurface.containers:DiskUsage',
             'SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap',
             'HistoryMatch = webviz_subsurface.containers:HistoryMatch',
             'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
-            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes'
+            'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes',
+            'ReservoirSimulationTimeSeries = webviz_subsurface.containers:ReservoirSimulationTimeSeries'
         ]
     },
     install_requires=[
-        'scipy>=1.2.1',
-        'dash-daq>=0.1.5',
+        'scipy~=1.2',
+        'dash-daq~=0.1',
         'webviz-config>=0.0.4',
-        'webviz-plotly>=0.0.1',
         'webviz-subsurface-components>=0.0.3'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
-    setup_requires=['setuptools_scm>=3.2.0'],
+    setup_requires=['setuptools_scm~=3.2'],
     use_scm_version=True,
     zip_safe=False
 )
