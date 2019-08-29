@@ -321,13 +321,20 @@ def render_matrix(ensemble_path):
 
     data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
-    values = list(data.corr().values)
+
+    # .dopna() required to remove undefined entries in correlation matrix after
+    # it is calcualted. Correlations between constants yield nan values since
+    # they are undefined.
+    # Passing tuple or list to drop on multiple axes is deprecated since
+    # version 0.23.0. Therefor split in 2x .dropnan()
+    corr_data = data.corr().dropna(axis='index', how='all') \
+                           .dropna(axis='columns', how='all')
 
     data = {
         'type': 'heatmap',
-        'x': data.columns,
-        'y': data.columns,
-        'z': values,
+        'x': corr_data.columns,
+        'y': corr_data.columns,
+        'z': list(corr_data.values),
         'zmin': -1,
         'zmax': 1
     }
