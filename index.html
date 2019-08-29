@@ -341,6 +341,27 @@ and correlation between the parameters as a correlation matrix.</p>
 <hr>
 
 
+<p>Plot of time series data based on fmu-ensemble summary data.
+    Data are loaded from scratch an process via fmu-ensemble utilities.</p>
+<pre><code>Args:
+    ensembles: key-value-pait = ensemble-name: ensemble-path
+    column_keys: list = list of preselected vectors to be selectable
+    sampling: str = time-index / time-steps of summary-data
+    base_ensembles: list = used to calculate delta-values relative to
+        this ensemble
+    delta_ensembles: list = Ensembles to be compared with a base-ensemlbe
+        to calculate delta values.
+</code></pre>
+<pre><code class='yaml'>  - container: ReservoirSimulationTimeSeries
+    ensembles: some value
+    column_keys: None  # Optional (default value shown here).
+    sampling: monthly  # Optional (default value shown here).
+    base_ensembles: None  # Optional (default value shown here).
+    delta_ensembles: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Subsurface map</h3>
 <p>This container visualizes the subsurface. Currently only supporting reservoir
 model grid maps. In addition to show a map, it can visualize the flow pattern
@@ -358,32 +379,6 @@ in the simulation output using streamlines.</p>
     map_value: some value
     flow_value: some value
     time_step: some value
-</code></pre>
-<hr>
-
-
-<p>Summary statistics</p>
-<pre><code>Args:
-    ensembles: list of ensemble paths. Length &gt;= 1
-    column_keys: list of pre defined vectors to visualize. Default is none
-    sampling: Optional. Either 'monthly' or 'yearly'. Default is 'monthly'.
-    title: Optional title for the container.
-    history_uncertainty: boolean value if history vector is subjected to
-        uncertainty.
-Return:
-    dcc.Graph() of either statistics plot or realization plot.
-Annotations:
-    Function argument-litst are passed as tuple as they are hashed in
-    webviz-store --portable option (list-type is not hashable).
-    Pandas within fmu.ensemlbe expects list. Therefore argument-tuples are
-    converted back into lists within get_smry_data and get_smry_stats
-    functions.
-</code></pre>
-<pre><code class='yaml'>  - container: SummaryStats
-    ensembles: some value
-    column_keys: None  # Optional (default value shown here).
-    sampling: monthly  # Optional (default value shown here).
-    history_uncertainty: False  # Optional (default value shown here).
 </code></pre>
 <hr>
 
