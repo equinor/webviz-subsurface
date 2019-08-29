@@ -2,6 +2,7 @@ import itertools
 from uuid import uuid4
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
@@ -482,7 +483,7 @@ def render_realization_plot(
         'hoverlabel': {'font': {'family': 'Equinor'}},
     }
 
-    return dcc.Graph(figure={'data': plot_traces, 'layout': layout},
+    return wcc.Graph(figure={'data': plot_traces, 'layout': layout},
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']})
@@ -578,7 +579,7 @@ def render_stat_plot(
         yaxis=dict(title=vector),
     )
 
-    return dcc.Graph(figure={'data': data, 'layout': layout},
+    return wcc.Graph(figure={'data': data, 'layout': layout},
                      config={
                          'displaylogo': False,
                          'modeBarButtonsToRemove': ['sendDataToCloud']})

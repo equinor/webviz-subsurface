@@ -2,6 +2,7 @@ from uuid import uuid4
 import numpy as np
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 import dash_table
 from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
@@ -273,7 +274,7 @@ csv files stored on standard format.
                     data=traces)
             # Else make a graph object
             else:
-                return dcc.Graph(figure={
+                return wcc.Graph(figure={
                     'data': traces,
                     'layout': plot_layout(plot_type, response)}
                 )
