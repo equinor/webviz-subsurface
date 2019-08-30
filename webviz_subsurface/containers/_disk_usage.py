@@ -3,6 +3,7 @@ from uuid import uuid4
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
@@ -45,13 +46,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                             {'label': i, 'value': i}
                             for i in ['Pie chart', 'Bar chart']],
                         value='Pie chart'),
-                    dcc.Graph(
-                        id=self.chart_id,
-                        config={
-                                'displaylogo': False,
-                                'modeBarButtonsToRemove': ['sendDataToCloud']
-                               }
-                             )
+                    wcc.Graph(id=self.chart_id)
                ])
 
     def set_callbacks(self, app):

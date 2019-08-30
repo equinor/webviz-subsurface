@@ -2,6 +2,7 @@ from uuid import uuid4
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 import dash_daq as daq
 from webviz_config.webviz_store import webvizstore
@@ -54,15 +55,11 @@ and correlation between the parameters as a correlation matrix.
 
     @property
     def matrix_plot(self):
-        return dcc.Graph(
+        return wcc.Graph(
             id=self.matrix_id,
             clickData={'points': [
                 {'x': self.p_cols[0],
-                 'y': self.p_cols[0]}]},
-            config={
-                'displaylogo': False,
-                'modeBarButtonsToRemove': ['sendDataToCloud']
-            })
+                 'y': self.p_cols[0]}]})
 
     @property
     def control_div(self):
@@ -131,12 +128,7 @@ and correlation between the parameters as a correlation matrix.
                     children=[
                         html.Div(
                             children=[self.matrix_plot]), self.control_div]),
-                dcc.Graph(
-                    id=self.scatter_id,
-                    config={
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove': ['sendDataToCloud']
-                    }),
+                wcc.Graph(id=self.scatter_id)
             ])
 
     def set_callbacks(self, app):

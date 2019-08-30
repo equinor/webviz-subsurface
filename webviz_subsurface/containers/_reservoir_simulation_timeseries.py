@@ -2,6 +2,7 @@ import itertools
 from uuid import uuid4
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
@@ -209,7 +210,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                 dropdown iorens: str = base-ensemlbe
                 dropdown refens: list(str) = selected ensembles
             Output:
-                dcc.Graph
+                wcc.Graph
             """
 
             show_history_vector = 'show_h_vctr' in chlst
@@ -384,7 +385,7 @@ def render_realization_plot(
         base_ensembles: tuple,
         delta_ensembles: tuple
 ):
-    """ Callback for a dcc.Graph-obj that shows traces (one per realization
+    """ Callback for a Plotly Graph-obj that shows traces (one per realization
     and one color per tracegroup <=> ensemble) of a selected vector per
     selected time-step.
 
@@ -402,7 +403,7 @@ def render_realization_plot(
         base_ensembles: tuple = tuple of available divergent ensembles
         delta_ensembles: tuple = tuple of available base or refernce ensembles
     Retuns:
-        dcc.Graph (scatter-plot) of summary-data aggregated over given
+        wcc.Graph (scatter-plot) of summary-data aggregated over given
         ensembles. x: time, y: vector-value
     """
 
@@ -482,10 +483,7 @@ def render_realization_plot(
         'hoverlabel': {'font': {'family': 'Equinor'}},
     }
 
-    return dcc.Graph(figure={'data': plot_traces, 'layout': layout},
-                     config={
-                         'displaylogo': False,
-                         'modeBarButtonsToRemove': ['sendDataToCloud']})
+    return wcc.Graph(figure={'data': plot_traces, 'layout': layout})
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -514,7 +512,7 @@ def render_stat_plot(
         base_ensembles: tuple = tuple of available divergent ensembles
         delta_ensembles: tuple = tuple of available base or refernce ensembles
     Returns:
-        dcc.Graph objects as fancharts of summary statistics.
+        wcc.Graph objects as fancharts of summary statistics.
     """
 
     plotly_colors_rgb = itertools.cycle([
@@ -578,10 +576,7 @@ def render_stat_plot(
         yaxis=dict(title=vector),
     )
 
-    return dcc.Graph(figure={'data': data, 'layout': layout},
-                     config={
-                         'displaylogo': False,
-                         'modeBarButtonsToRemove': ['sendDataToCloud']})
+    return wcc.Graph(figure={'data': data, 'layout': layout})
 
 
 # =============================================================================

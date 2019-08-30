@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
@@ -163,7 +164,7 @@ and a folder of well files stored in RMS well format.
                     ])
                 ]),
                 html.Div(style={'height': '80vh'}, children=[
-                    dcc.Graph(style={'height': '80vh'},
+                    wcc.Graph(style={'height': '80vh'},
                               id=self.intersection_id),
                     html.Div(style=Intersect.FENCE_OPTION_STYLE, children=[
                         html.P('Start depth:', style={'font-weight': 'bold'}),

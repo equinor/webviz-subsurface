@@ -2,6 +2,7 @@ from uuid import uuid4
 import numpy as np
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 import dash_table
 from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
@@ -236,8 +237,8 @@ csv files stored on standard format.
             Output(self.chart_id, 'children'),
             self.vol_callback_inputs)
         def _render_vol_chart(*args):
-            '''Renders a volume visualization which could either by a dcc.Graph
-            or a Dash table object.
+            '''Renders a volume visualization either as a Plotly Graph or
+            as a Dash table object.
             The arguments are given by the vol_callback_inputs property
             Args:
                 response: The volumetrics response to plot
@@ -245,7 +246,7 @@ csv files stored on standard format.
                 group: The selector to group the data by
                 selections: Active values from the selector columns
             Return:
-                dcc.Graph/dash_table.DataTable
+                Plotly Graph/dash_table.DataTable
             '''
             response = args[0]
             plot_type = args[1]
@@ -273,7 +274,7 @@ csv files stored on standard format.
                     data=traces)
             # Else make a graph object
             else:
-                return dcc.Graph(figure={
+                return wcc.Graph(figure={
                     'data': traces,
                     'layout': plot_layout(plot_type, response)}
                 )
