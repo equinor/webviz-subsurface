@@ -237,8 +237,8 @@ csv files stored on standard format.
             Output(self.chart_id, 'children'),
             self.vol_callback_inputs)
         def _render_vol_chart(*args):
-            '''Renders a volume visualization which could either by a Plotly Graph
-            or a Dash table object.
+            '''Renders a volume visualization either as a Plotly Graph or
+            as a Dash table object.
             The arguments are given by the vol_callback_inputs property
             Args:
                 response: The volumetrics response to plot
