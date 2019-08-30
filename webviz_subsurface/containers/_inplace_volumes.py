@@ -237,7 +237,7 @@ csv files stored on standard format.
             Output(self.chart_id, 'children'),
             self.vol_callback_inputs)
         def _render_vol_chart(*args):
-            '''Renders a volume visualization which could either by a dcc.Graph
+            '''Renders a volume visualization which could either by a Plotly Graph
             or a Dash table object.
             The arguments are given by the vol_callback_inputs property
             Args:
@@ -246,7 +246,7 @@ csv files stored on standard format.
                 group: The selector to group the data by
                 selections: Active values from the selector columns
             Return:
-                dcc.Graph/dash_table.DataTable
+                Plotly Graph/dash_table.DataTable
             '''
             response = args[0]
             plot_type = args[1]

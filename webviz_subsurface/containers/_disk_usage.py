@@ -46,13 +46,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                             {'label': i, 'value': i}
                             for i in ['Pie chart', 'Bar chart']],
                         value='Pie chart'),
-                    wcc.Graph(
-                        id=self.chart_id,
-                        config={
-                                'displaylogo': False,
-                                'modeBarButtonsToRemove': ['sendDataToCloud']
-                               }
-                             )
+                    wcc.Graph(id=self.chart_id)
                ])
 
     def set_callbacks(self, app):

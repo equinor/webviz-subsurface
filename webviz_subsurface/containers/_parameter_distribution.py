@@ -59,11 +59,7 @@ and correlation between the parameters as a correlation matrix.
             id=self.matrix_id,
             clickData={'points': [
                 {'x': self.p_cols[0],
-                 'y': self.p_cols[0]}]},
-            config={
-                'displaylogo': False,
-                'modeBarButtonsToRemove': ['sendDataToCloud']
-            })
+                 'y': self.p_cols[0]}]})
 
     @property
     def control_div(self):
@@ -132,12 +128,7 @@ and correlation between the parameters as a correlation matrix.
                     children=[
                         html.Div(
                             children=[self.matrix_plot]), self.control_div]),
-                wcc.Graph(
-                    id=self.scatter_id,
-                    config={
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove': ['sendDataToCloud']
-                    }),
+                wcc.Graph(id=self.scatter_id)
             ])
 
     def set_callbacks(self, app):
