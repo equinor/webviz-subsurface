@@ -4,6 +4,10 @@ dist: bionic
 addons:
   chrome: stable
 
+  apt:
+    packages:
+      - swig
+
 services:
   - xvfb
 
