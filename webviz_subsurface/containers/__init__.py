@@ -31,6 +31,7 @@ from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
+from ._structural_uncertainty import StructuralUncertainty
 
 
 __all__ = ['ParameterDistribution',
@@ -40,4 +41,5 @@ __all__ = ['ParameterDistribution',
            'Intersect',
            'MorrisPlot',
            'InplaceVolumes',
-           'ReservoirSimulationTimeSeries']
+           'ReservoirSimulationTimeSeries',
+           'StructuralUncertainty']

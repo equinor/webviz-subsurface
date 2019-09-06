@@ -30,14 +30,17 @@ setup(
             'Intersect = webviz_subsurface.containers:Intersect',
             'MorrisPlot = webviz_subsurface.containers:MorrisPlot',
             'InplaceVolumes = webviz_subsurface.containers:InplaceVolumes',
-            'ReservoirSimulationTimeSeries = webviz_subsurface.containers:ReservoirSimulationTimeSeries'
+            'ReservoirSimulationTimeSeries = webviz_subsurface.containers:ReservoirSimulationTimeSeries',
+            'StructuralUncertainty = webviz_subsurface.containers:StructuralUncertainty'
         ]
     },
     install_requires=[
         'scipy~=1.2',
         'dash-daq~=0.1',
         'webviz-config>=0.0.4',
-        'webviz-subsurface-components>=0.0.3'
+        'webviz-subsurface-components',
+        'pillow',
+        'xtgeo @ git+https://github.com/equinor/xtgeo.git@293c06a58e9653b6cf40ad597380d6745845cfae'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},

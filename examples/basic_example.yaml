@@ -7,39 +7,51 @@ password: some_password
 
 container_settings:
   scratch_ensembles:
-    iter-0: /scratch/myfield/realization-*/iter-0
-    iter-1: /scratch/myfield/realization-*/iter-1
+    # iter-0: /scratch/myfield/realization-*/iter-0
+    # iter-1: /scratch/myfield/realization-*/iter-1
+    iter-0: /mnt/raid/scratch/3_r001_reek/realization-*/iter-0
 
 pages:
 
- - title: Front page
+ # - title: Front page
+ #   content:
+ #    - Webviz created from configuration file
+ # - title: Reservoir Simulation Time Series
+ #   content:
+ #    - Some text...
+ #    - container: ReservoirSimulationTimeSeries
+ #      ensembles: [iter-0]
+ #      column_keys: ['FGP*']
+ #      base_ensembles: [iter-0]
+ # - title: Parameter distribution
+ #   content: 
+ #    - Some text...
+ #    - container: ParameterDistribution
+ #      ensembles:
+ #        - iter-0
+ #        # - iter-1
+ #    - ...some other text
+ # - title: Inplace volumes
+ #   content: 
+ #    - container: InplaceVolumes
+ #      ensembles: [iter-0]
+ #      volfiles: 
+ #        geogrid: geogrid--oil.csv
+ #        simgrid: simgrid--oil.csv
+ - title: StructuralUncertainty
    content:
-    - Webviz created from configuration file
- - title: Reservoir Simulation Time Series
-   content:
-    - Some text...
-    - container: ReservoirSimulationTimeSeries
-      ensembles: [iter-0, iter-1]
-      column_keys: ['FGP*']
-      base_ensembles: [iter-0]
- - title: Parameter distribution
-   content: 
-    - Some text...
-    - container: ParameterDistribution
-      ensembles:
-        - iter-0
-        - iter-1
-    - ...some other text
- - title: Inplace volumes
-   content: 
-    - container: InplaceVolumes
-      ensembles: [iter-0, iter-1]
-      volfiles: 
-        geogrid: geogrid--oil.csv
-        simgrid: simgrid--oil.csv
- - title: Morris Plot
-   content: 
-    - Some text...
-    - container: MorrisPlot
-      csv_file: morris.csv
-    - ...some other text
+    - container: StructuralUncertainty
+      ensemble: iter-0
+      surface_cat : ds_extracted_horizons
+      surface_names :
+        - topupperreek
+        - topmiddlereek
+        - toplowerreek
+        - baselowerreek
+ # - title: Morris Plot
+   # content: 
+    # - Some text...
+    # - container: MorrisPlot
+      # csv_file: morris.csv
+    # - ...some other text
+# 
