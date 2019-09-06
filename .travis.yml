@@ -25,6 +25,7 @@ install:
 
 script:
   - pip install .
+  - pip install git+https://github.com/equinor/xtgeo.git
   - pip install .[tests]
   - pip install dash[testing]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests

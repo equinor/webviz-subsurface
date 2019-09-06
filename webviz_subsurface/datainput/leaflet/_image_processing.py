@@ -38,19 +38,22 @@ def array_to_png(Z, shift=True, colormap=False):
 
     if colormap:
         if Z.shape[0] != 1:
-            raise ValueError("The first dimension of a " "colormap array should be 1")
+            raise ValueError(
+                "The first dimension of a " "colormap array should be 1")
         if Z.shape[1] != 256:
             raise ValueError(
                 "The second dimension of a " "colormap array should be 256"
             )
         if Z.shape[2] not in [3, 4]:
             raise ValueError(
-                "The third dimension of a colormap " "array should be either 3 or 4"
+                "The third dimension of a colormap "
+                "array should be either 3 or 4"
             )
         if shift:
             if Z.shape[2] != 4:
                 raise ValueError(
-                    "Can not shift a colormap which " "is not utilizing alpha channel"
+                    "Can not shift a colormap which "
+                    "is not utilizing alpha channel"
                 )
             else:
                 Z[0][0][3] = 0.0  # Make first color channel transparent
@@ -64,7 +67,8 @@ def array_to_png(Z, shift=True, colormap=False):
             image = Image.fromarray(np.uint8(Z), "RGBA")
         else:
             raise ValueError(
-                "Third dimension of array must " "have length 3 (RGB) or 4 (RGBA)"
+                "Third dimension of array must "
+                "have length 3 (RGB) or 4 (RGBA)"
             )
     else:
         raise ValueError("Incorrect number of dimensions in array")

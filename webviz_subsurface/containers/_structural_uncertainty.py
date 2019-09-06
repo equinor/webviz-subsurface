@@ -20,9 +20,11 @@ from webviz_subsurface.datainput.leaflet import (
 )
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-from fmu.ensemble import ScratchEnsemble
+try:
+    from fmu.ensemble import ScratchEnsemble
+except ImportError:
+    pass
 import xtgeo
-import plotly.express as px
 
 
 class StructuralUncertainty(WebvizContainer):
@@ -45,8 +47,8 @@ and a folder of well files stored in RMS well format.
         app,
         container_settings,
         ensemble,
-        surface_names : list,
-        surface_categories : list,
+        surface_names: list,
+        surface_categories: list,
     ):
 
         self.ens = ScratchEnsemble(
@@ -56,7 +58,8 @@ and a folder of well files stored in RMS well format.
             os.path.join(obj._origpath, "share", "results", "maps")
             for real, obj in self.ens._realizations.items()
         ]
-        self.reals = [str(real) for real, obj in self.ens._realizations.items()]
+        self.reals = [str(real)
+                      for real, obj in self.ens._realizations.items()]
         self.cat = surface_categories
         self.calculations = ["Mean", "StdDev", "Min", "Max"]
         self.strat = surface_names
@@ -102,13 +105,15 @@ and a folder of well files stored in RMS well format.
                     children=[
                         dcc.Dropdown(
                             id=self.s_cat_id,
-                            options=[{"value": cat, "label": cat} for cat in self.cat],
+                            options=[{"value": cat, "label": cat}
+                                     for cat in self.cat],
                             value=self.cat[0],
                         ),
                         dcc.Dropdown(
                             id=self.s_name_id,
                             options=[
-                                {"value": cat, "label": cat} for cat in self.strat
+                                {"value": cat, "label": cat}
+                                for cat in self.strat
                             ],
                             value=self.strat[0],
                         ),
@@ -122,13 +127,15 @@ and a folder of well files stored in RMS well format.
                         ),
                         dcc.Dropdown(
                             id=self.s_cat_id2,
-                            options=[{"value": cat, "label": cat} for cat in self.cat],
+                            options=[{"value": cat, "label": cat}
+                                     for cat in self.cat],
                             value=self.cat[0],
                         ),
                         dcc.Dropdown(
                             id=self.s_name_id2,
                             options=[
-                                {"value": cat, "label": cat} for cat in self.strat
+                                {"value": cat, "label": cat}
+                                for cat in self.strat
                             ],
                             value=self.strat[0],
                             multi=True,
@@ -161,14 +168,16 @@ and a folder of well files stored in RMS well format.
         def change_map(calc_type, s_name, s_cat):
             stratsurfs = {}
             stratsurfs[f"{s_name}"] = [
-                str(os.path.join(r, f"{s_name}--{s_cat}.gri")) for r in self.real_paths
+                str(os.path.join(r, f"{s_name}--{s_cat}.gri"))
+                for r in self.real_paths
             ]
             collection = SurfaceCollection(stratsurfs)
             stat_surfs = {}
             stat_surfs["Mean"] = collection.apply(s_name, np.nanmean, axis=0)
             stat_surfs["Min"] = collection.apply(s_name, np.nanmin, axis=0)
             stat_surfs["Max"] = collection.apply(s_name, np.nanmax, axis=0)
-            stat_surfs["StdDev"] = collection.apply(s_name, np.nanstd, axis=0, ddof=1)
+            stat_surfs["StdDev"] = collection.apply(
+                s_name, np.nanstd, axis=0, ddof=1)
 
             sleaf = LeafletSurface(s_name, stat_surfs[calc_type])
             return [sleaf.leaflet_layer], sleaf.bounds, sleaf.center
@@ -195,7 +204,8 @@ and a folder of well files stored in RMS well format.
             stratsurfs = {}
             for s_name in s_names:
                 stratsurfs[s_name] = [
-                    os.path.join(r, f"{s_name}--{s_cat}.gri") for r in self.real_paths
+                    os.path.join(r, f"{s_name}--{s_cat}.gri")
+                    for r in self.real_paths
                 ]
 
             collection = SurfaceCollection(stratsurfs)
@@ -211,9 +221,11 @@ and a folder of well files stored in RMS well format.
                     surface=s, name=f"{s_name}(Mean)", color="black"
                 )
                 s = collection.apply(s_name, np.nanmin, axis=0)
-                sleaf.add_surface_layer(surface=s, name=f"{s_name}(Min)", color="red")
+                sleaf.add_surface_layer(surface=s, name=f"{s_name}(Min)",
+                                        color="red")
                 s = collection.apply(s_name, np.nanmax, axis=0)
-                sleaf.add_surface_layer(surface=s, name=f"{s_name}(Max)", color="blue")
+                sleaf.add_surface_layer(surface=s, name=f"{s_name}(Max)",
+                                        color="blue")
 
             return sleaf.get_layers(), sleaf.bounds, sleaf.center
 
@@ -233,7 +245,8 @@ and a folder of well files stored in RMS well format.
             s_name = s_names[0]
             stratsurfs = {}
             stratsurfs[f"{s_name}"] = [
-                str(os.path.join(r, f"{s_name}--{s_cat}.gri")) for r in self.real_paths
+                str(os.path.join(r, f"{s_name}--{s_cat}.gri"))
+                for r in self.real_paths
             ]
             collection = SurfaceCollection(stratsurfs)
             xy = (coords[1], coords[0])
@@ -247,7 +260,8 @@ and a folder of well files stored in RMS well format.
 
 
 def get_fencespec(coords):
-    coords_dict = [{"X_UTME": c[1], "Y_UTMN": c[0], "Z_TVDSS": 0} for c in coords]
+    coords_dict = [{"X_UTME": c[1], "Y_UTMN": c[0], "Z_TVDSS": 0}
+                   for c in coords]
     df = pd.DataFrame().from_dict(coords_dict)
     df["POLY_ID"] = 1
     df["NAME"] = "test"

@@ -18,7 +18,7 @@ class LeafletCrossSection:
     @property
     def center(self):
         return self._center
-    
+
     def set_bounds_and_center(self, data):
         if isinstance(data, RegularSurface):
             x, y = self.slice_surface(data.copy())

@@ -39,8 +39,7 @@ setup(
         'dash-daq~=0.1',
         'webviz-config>=0.0.4',
         'webviz-subsurface-components',
-        'pillow',
-        'xtgeo @ git+https://github.com/equinor/xtgeo.git@293c06a58e9653b6cf40ad597380d6745845cfae'
+        'pillow'
     ],
     tests_require=tests_require,
     extras_require={'tests': tests_require},
