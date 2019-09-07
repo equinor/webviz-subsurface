@@ -5,13 +5,13 @@ from webviz_subsurface.datainput.leaflet._leaflet_cross_section import (
 )
 
 s = RegularSurface("tests/data/surface.gri")
-polyline = np.loadtxt("tests/data/polyline.np.gz")
+fencespec = np.loadtxt("tests/data/polyline.np.gz")
 s_slice = np.loadtxt("tests/data/surface_slice.np.gz")
 
 
 def test_leafletcross_section_init():
-    leaf = LeafletCrossSection(polyline)
-    assert np.array_equal(leaf.polyline, polyline)
+    leaf = LeafletCrossSection(fencespec)
+    assert np.array_equal(leaf.fencespec, fencespec)
     assert leaf._surface_layers == []
     assert leaf._base_layer == None
     assert leaf.bounds == [[0, 0], [0, 0]]
@@ -19,12 +19,12 @@ def test_leafletcross_section_init():
 
 
 def test_slice_surface():
-    leaf = LeafletCrossSection(polyline)
+    leaf = LeafletCrossSection(fencespec)
     assert np.array_equal(leaf.slice_surface(s.copy()), s_slice)
 
 
 def test_set_bounds_and_center():
-    leaf = LeafletCrossSection(polyline)
+    leaf = LeafletCrossSection(fencespec)
     leaf.set_bounds_and_center(s)
     assert leaf.bounds == [
         [-40.260988980909914, -1653.468683917269],
@@ -34,7 +34,7 @@ def test_set_bounds_and_center():
 
 
 def test_add_surface_layer():
-    leaf = LeafletCrossSection(polyline)
+    leaf = LeafletCrossSection(fencespec)
     leaf.add_surface_layer(s, "test", "tada", "red", False)
 
     assert len(leaf._surface_layers) == 1
