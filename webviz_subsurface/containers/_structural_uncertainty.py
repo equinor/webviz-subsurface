@@ -1,6 +1,5 @@
 import os
 from uuid import uuid4
-from glob import glob
 import numpy as np
 import pandas as pd
 from dash.dependencies import Input, Output
