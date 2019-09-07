@@ -1,17 +1,27 @@
 import numpy as np
 from ._image_processing import get_colormap, array_to_png
+from xtgeo.surface import RegularSurface
 
 
 class LeafletSurface():
+    '''### LeafletSurface
 
-    def __init__(self, name, surface):
+    Class to generate input for a Leaflet background layer
+    to visualize subsurface data in a map view
+
+
+    * `name: Name of the layer
+    * `surface: XTGeo surface
+    * `colormap: Matplotlib colormap to use
+    '''
+
+    def __init__(self, name, surface: RegularSurface, colormap='viridis'):
         self.name = name
-        self.surface = surface
-        self.get_surface_array()
-        self.colormap = self.set_colormap('viridis')
+        self.get_surface_array(surface)
+        self.colormap = self.set_colormap(colormap)
 
-    def get_surface_array(self):
-        s = self.surface.copy()
+    def get_surface_array(self, surface):
+        s = surface.copy()
         s.unrotate()
         xi, yi, zi = s.get_xyz_values()
         xi = np.flip(xi.transpose(), axis=0)
@@ -35,7 +45,6 @@ class LeafletSurface():
 
     @property
     def z_arr(self):
-        # np.savetxt('test.txt', self.arr[2].filled(np.nan))
         return self.arr[2].filled(np.nan)
 
     @property

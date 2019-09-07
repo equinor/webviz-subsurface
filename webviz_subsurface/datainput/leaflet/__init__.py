@@ -6,8 +6,6 @@ that will be made open source in the near future.
 
 from ._leaflet_surface import LeafletSurface
 from ._leaflet_cross_section import LeafletCrossSection
-from ._surface_collection import SurfaceCollection
 
 __all__ = ['LeafletSurface',
-           'SurfaceCollection',
            'LeafletCrossSection']
