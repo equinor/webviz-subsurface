@@ -1,23 +1,16 @@
 import os
-import glob
 from uuid import uuid4
 from glob import glob
-from pathlib import PurePath
-from collections import OrderedDict
 import numpy as np
 import pandas as pd
+from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from dash.dependencies import Input, Output, State
-from dash_table import DataTable
-from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from webviz_subsurface.datainput.leaflet import (
     LeafletSurface, LeafletCrossSection)
-import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-
 try:
     from fmu.ensemble import ScratchEnsemble
 except ImportError:
@@ -162,7 +155,7 @@ class StructuralUncertainty(WebvizContainer):
                 Input(self.s_cat_id, "value"),
             ],
         )
-        def change_map(calc_type, s_name, s_cat):
+        def _change_map(calc_type, s_name, s_cat):
             """Callback to update the visualized map
 
             Input:
@@ -197,7 +190,7 @@ class StructuralUncertainty(WebvizContainer):
                 Input(self.s_cat_id2, "value"),
             ],
         )
-        def change_fence(coords, s_names, s_cat):
+        def _change_fence(coords, s_names, s_cat):
             """Callback to update the visualized cross-section
 
             Input:
@@ -251,7 +244,7 @@ class StructuralUncertainty(WebvizContainer):
                 Input(self.s_cat_id, "value"),
             ],
         )
-        def change_chart(coords, s_name, s_cat):
+        def _change_chart(coords, s_name, s_cat):
             """Callback to update the statistical histogram
 
             Input:

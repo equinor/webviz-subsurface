@@ -3,7 +3,6 @@ import base64
 import numpy as np
 from matplotlib import cm
 from PIL import Image
-from PIL import ImageFilter
 
 
 def array_to_png(Z, shift=True, colormap=False):
@@ -72,7 +71,6 @@ def array_to_png(Z, shift=True, colormap=False):
             )
     else:
         raise ValueError("Incorrect number of dimensions in array")
-    # image = image.filter(ImageFilter.SMOOTH)
     byte_io = io.BytesIO()
     image.save(byte_io, format="png")
 

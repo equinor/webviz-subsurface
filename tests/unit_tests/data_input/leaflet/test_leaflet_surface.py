@@ -21,8 +21,8 @@ def test_leafletsurface_init():
     assert np.array_equal(leaf.arr, [xi, yi, zi])
 
 
-def test_leaflet_zarr():
-    leaf = LeafletSurface("test", SURFACE)
+# def test_leaflet_zarr():
+    # leaf = LeafletSurface("test", SURFACE)
     # assert(np.array_equal(leaf.z_arr, Z_ARR))
 
 

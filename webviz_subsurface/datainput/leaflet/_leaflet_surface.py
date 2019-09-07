@@ -18,7 +18,7 @@ class LeafletSurface():
     def __init__(self, name, surface: RegularSurface, colormap='viridis'):
         self.name = name
         self.get_surface_array(surface)
-        self.colormap = self.set_colormap(colormap)
+        self.colormap = get_colormap(colormap)
 
     def get_surface_array(self, surface):
         s = surface.copy()
@@ -30,9 +30,6 @@ class LeafletSurface():
         self.arr = [xi, yi, zi]
         self.min = s.values.min()
         self.max = s.values.max()
-
-    def set_colormap(self, colormap):
-        return get_colormap(colormap)
 
     @property
     def bounds(self):
