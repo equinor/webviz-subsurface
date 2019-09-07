@@ -14,7 +14,7 @@ from dash_table import DataTable
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from webviz_subsurface.datainput.leaflet import (
-    LeafletSurface,LeafletCrossSection)
+    LeafletSurface, LeafletCrossSection)
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 
@@ -305,7 +305,7 @@ def get_reals(ens_name, ens_path):
 def get_surfaces_from_scratch(
     real_folders: list, surface_folder, s_name, s_cat=None, s_suffix=".gri"
 ):
-    '''Retrieve an XTGeo surfaces instance for an ensemble of surfaces 
+    '''Retrieve an XTGeo surfaces instance for an ensemble of surfaces
     on scratch'''
 
     base_name = f"{s_name}--{s_cat}{s_suffix}"

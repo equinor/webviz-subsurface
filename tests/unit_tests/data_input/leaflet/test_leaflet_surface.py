@@ -43,8 +43,8 @@ def test_leaflet_layer():
     leaf = LeafletSurface("test", SURFACE)
     layer = leaf.leaflet_layer
     assert layer["name"] == "test"
-    assert layer["checked"] == True
-    assert layer["base_layer"] == True
+    assert layer["checked"] is True
+    assert layer["base_layer"] is True
     assert isinstance(layer["data"], list)
     assert len(layer["data"]) == 1
     assert layer["data"][0]["type"] == "image"

@@ -60,7 +60,7 @@ class LeafletCrossSection:
         color: str = "blue",
         checked: bool = True,
     ):
-        '''Adds a Leaflet polyline overlay layer 
+        '''Adds a Leaflet polyline overlay layer
         for a given XTGeo surface'''
         x, y = self.slice_surface(surface.copy())
         positions = [[a, b] for a, b in zip(x, y)]

@@ -16,5 +16,4 @@ def test_array_to_png():
 
 
 def test_colormap():
-    assert get_colormap("viridis")== BASE64_COLORMAP
-    
+    assert get_colormap("viridis") == BASE64_COLORMAP
