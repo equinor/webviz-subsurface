@@ -13,7 +13,6 @@ def test_leafletcross_section_init():
     leaf = LeafletCrossSection(fencespec)
     assert np.array_equal(leaf.fencespec, fencespec)
     assert leaf._surface_layers == []
-    assert leaf._base_layer is None
     assert leaf.bounds == [[0, 0], [0, 0]]
     assert leaf.center == [0, 0]
 
