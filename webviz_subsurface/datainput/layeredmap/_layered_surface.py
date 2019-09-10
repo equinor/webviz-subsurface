@@ -3,15 +3,17 @@ from ._image_processing import get_colormap, array_to_png
 from xtgeo.surface import RegularSurface
 
 
-class LeafletSurface():
-    '''### LeafletSurface
+class LayeredSurface():
+    '''### LayeredSurface
 
-    Class to generate a Leaflet layer from a XTgeo
-    regular surface.
+    Class to generate input for a LayeredMap component
+    to visualize regular surfaces in a top-down perspective.
+    An XTgeo regular surface is used as input and converted
+    to a bitmap image with a provided color mapping.
 
 
     * `name: Name of the layer
-    * `surface: XTGeo surface
+    * `surface: XTGeo RegularSurface
     * `colormap: Matplotlib colormap to use
     '''
 
@@ -49,7 +51,7 @@ class LeafletSurface():
         return array_to_png(self.z_arr)
 
     @property
-    def leaflet_layer(self):
+    def layer(self):
         return {'name': self.name,
                 'checked': True,
                 'base_layer': True,

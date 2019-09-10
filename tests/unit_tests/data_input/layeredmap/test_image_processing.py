@@ -1,5 +1,5 @@
 import numpy as np
-from webviz_subsurface.datainput.leaflet._image_processing import (
+from webviz_subsurface.datainput.layeredmap._image_processing import (
     array_to_png,
     get_colormap,
 )

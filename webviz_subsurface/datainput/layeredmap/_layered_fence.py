@@ -2,12 +2,12 @@ import numpy as np
 from xtgeo.surface import RegularSurface
 
 
-class LeafletCrossSection:
-    '''### LeafletCrossSection
+class LayeredFence:
+    '''### LayeredFence
 
-    Class to generate input for a Leaflet component
-    to visualize subsurface data in a cross-section.
-    Xtgeo is used to slice regular grids along a given
+    Class to generate input for a LayeredMap component
+    to visualize subsurface data in a fence/cross-section perspective.
+    Xtgeo is used to slice regular surface grids along a given
     polyline.
 
 
@@ -24,12 +24,12 @@ class LeafletCrossSection:
 
     @property
     def bounds(self):
-        '''Bounds of the leaflet component'''
+        '''Bounds of the component'''
         return self._bounds
 
     @property
     def center(self):
-        '''Center of the leaflet component'''
+        '''Center of the component'''
         return self._center
 
     def set_bounds_and_center(self, data):
@@ -61,7 +61,7 @@ class LeafletCrossSection:
         color: str = "blue",
         checked: bool = True,
     ):
-        '''Adds a Leaflet polyline overlay layer
+        '''Adds a polyline overlay layer
         for a given XTGeo surface'''
         x, y = self.slice_surface(surface.copy())
         positions = [[a, b] for a, b in zip(x, y)]
@@ -83,6 +83,6 @@ class LeafletCrossSection:
         )
 
     def get_layers(self):
-        '''Returns all Leaflet layers'''
+        '''Returns all layers'''
         layers = self._surface_layers
         return layers
