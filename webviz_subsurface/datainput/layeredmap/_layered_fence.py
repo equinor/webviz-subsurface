@@ -1,5 +1,6 @@
 import numpy as np
-from xtgeo.surface import RegularSurface
+from ._image_processing import get_colormap, array_to_png
+from xtgeo import RegularSurface, Cube
 
 
 class LayeredFence:
@@ -15,10 +16,12 @@ class LayeredFence:
 
     '''
 
-    def __init__(self, fencespec):
+    def __init__(self, fencespec, hinc: int = 5):
 
         self.fencespec = fencespec
+        self.hinc = hinc
         self._surface_layers = []
+        self._base_layer = None
         self._bounds = [[0, 0], [0, 0]]
         self._center = [0, 0]
 
@@ -36,17 +39,25 @@ class LayeredFence:
         '''Set bounds and center from data'''
         if isinstance(data, RegularSurface):
             x, y = self.slice_surface(data.copy())
-        else:
-            raise TypeError('Input must be a surface')
+            self._bounds = [
+                [np.nanmin(x), np.nanmin(y)],
+                [np.nanmax(x), np.nanmax(y)]
+            ]
+            self._center = [np.mean(x), np.mean(y)]
 
-        self._bounds = [[np.nanmin(x), np.nanmin(y)], [
-            np.nanmax(x), np.nanmax(y)]]
-        self._center = [np.mean(x), np.mean(y)]
+        elif isinstance(data, Cube):
+            hmin, hmax, vmin, vmax, values = data.get_randomline(
+                self.fencespec, hincrement=self.hinc
+            )
+            self._bounds = [[hmin, -vmax], [hmax, -vmin]]
+            self._center = [(hmin+hmax)/2, (-vmax-vmin)/2]
+        else:
+            raise TypeError('Input must be a surface or a cube')
 
     def slice_surface(self, surface, invert_y=True):
         '''Extract line along the fencespec for the surface'''
         s = surface.copy()
-        values = s.get_randomline(self.fencespec)
+        values = s.get_randomline(self.fencespec, hincrement=self.hinc)
         x = values[:, 0]
         y = values[:, 1]
         if invert_y:
@@ -82,7 +93,38 @@ class LayeredFence:
             }
         )
 
-    def get_layers(self):
+    def set_cube_base_layer(self, cube: Cube, name: str,
+                            colormap: str = 'RdBu'):
+        '''Slices a Xtgeo seismic cube along the fencespec
+        and visualizes as a bitmap image with the given colormap.
+
+        * `name: Name of the layer
+        * `cube: XTGeo Cube
+        * `colormap: Matplotlib colormap to use
+        '''
+        hmin, hmax, vmin, vmax, values = cube.get_randomline(
+            self.fencespec, hincrement=self.hinc
+        )
+        bounds = [[hmin, -vmax], [hmax, -vmin]]
+        url = array_to_png(values)
+        colormap = get_colormap(colormap)
+        self._base_layer = {'name': name,
+                            'checked': True,
+                            'base_layer': True,
+                            'hill_shading': False,
+                            'data': [{'type': 'image',
+                                      'url': url,
+                                      'colormap': colormap,
+                                      'bounds': bounds,
+                                      }]
+                            }
+
+    @property
+    def layers(self):
         '''Returns all layers'''
-        layers = self._surface_layers
+        layers = []
+        if self._surface_layers:
+            layers.extend(self._surface_layers)
+        if self._base_layer:
+            layers.append(self._base_layer)
         return layers
