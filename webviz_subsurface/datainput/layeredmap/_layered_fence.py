@@ -46,36 +46,64 @@ class LayeredFence:
             self._center = [np.mean(x), np.mean(y)]
 
         elif isinstance(data, Cube):
-            # pylint: disable=unused-argument
-            hmin, hmax, vmin, vmax, values = data.get_randomline(
-                self.fencespec, hincrement=self.hinc
-            )
-            self._bounds = [[hmin, -vmax], [hmax, -vmin]]
-            self._center = [(hmin+hmax)/2, (-vmax-vmin)/2]
+
+            cubefence = self.slice_cube(data)
+            self._bounds = cubefence['bounds']
+            self._center = cubefence['center']
 
         elif (isinstance(data[0], Grid) and
               isinstance(data[1], GridProperty)):
             grid = data[0]
             prop = data[1]
-            zmin, zmax = self.get_grid_min_max(grid)
-
-            # pylint: disable=unused-argument
-            hmin, hmax, vmin, vmax, values = grid.get_randomline(
-                self.fencespec, prop, zmin=zmin, zmax=zmax,
-                hincrement=self.hinc
-            )
-            self._bounds = [[hmin, -vmax], [hmax, -vmin]]
-            self._center = [(hmin+hmax)/2, (-vmax-vmin)/2]
+            gridfence = self.slice_grid(grid, prop)
+            self._bounds = gridfence['bounds']
+            self._center = gridfence['center']
 
         else:
             raise TypeError(
                 'Input must be a Xtgeo surface, cube or grid/grid property')
 
-    def get_grid_min_max(self, grid):
+    def slice_grid(self, grid, prop, invert_y=True):
+        '''Extract line along the fencespec for the grid property'''
+        zmin, zmax = self.get_grid_min_max(grid)
+        hmin, hmax, vmin, vmax, values = grid.get_randomline(
+            self.fencespec, prop, zmin=zmin, zmax=zmax,
+            hincrement=self.hinc
+        )
+        if invert_y:
+            ymin = -vmax
+            ymax = -vmin
+        else:
+            ymin = vmin
+            ymax = vmax
+        bounds = [[hmin, ymin], [hmax, ymax]]
+        center = [(hmin+hmax)/2, (ymax+ymin)/2]
+
+        return {'values': values, 'bounds': bounds, 'center': center}
+
+    def slice_cube(self, cube, invert_y=True):
+        '''Extract line along the fencespec for the cube'''
+        hmin, hmax, vmin, vmax, values = cube.get_randomline(
+            self.fencespec, hincrement=self.hinc
+        )
+        if invert_y:
+            ymin = -vmax
+            ymax = -vmin
+        else:
+            ymin = vmin
+            ymax = vmax
+        bounds = [[hmin, ymin], [hmax, ymax]]
+        center = [(hmin+hmax)/2, (ymax+ymin)/2]
+
+        return {'values': values, 'bounds': bounds, 'center': center}
+
+    @staticmethod
+    def get_grid_min_max(grid):
         '''Function to caclulate zmin, zmax from a Xtgeo grid
         Needed due to https://github.com/equinor/xtgeo/issues/175
         '''
         geom = grid.get_geometrics(return_dict=True)
+        print(geom['zmin'], geom['zmax'])
         return geom['zmin'], geom['zmax']
 
     def slice_surface(self, surface, invert_y=True):
@@ -126,10 +154,9 @@ class LayeredFence:
         * `cube: XTGeo Cube
         * `colormap: Matplotlib colormap to use
         '''
-        hmin, hmax, vmin, vmax, values = cube.get_randomline(
-            self.fencespec, hincrement=self.hinc
-        )
-        bounds = [[hmin, -vmax], [hmax, -vmin]]
+        cubefence = self.slice_cube(cube)
+        bounds = cubefence['bounds']
+        values = cubefence['values']
         url = array_to_png(values)
         colormap = get_colormap(colormap)
         self._base_layer = {'name': name,
@@ -153,12 +180,9 @@ class LayeredFence:
         * `prop: XTGeo Grid Property
         * `colormap: Matplotlib colormap to use
         '''
-        zmin, zmax = self.get_grid_min_max(grid)
-        hmin, hmax, vmin, vmax, values = grid.get_randomline(
-            self.fencespec, prop, zmin=zmin, zmax=zmax,
-            hincrement=self.hinc
-        )
-        bounds = [[hmin, -vmax], [hmax, -vmin]]
+        gridfence = self.slice_grid(grid, prop)
+        bounds = gridfence['bounds']
+        values = gridfence['values']
         url = array_to_png(values)
         colormap = get_colormap(colormap)
         self._base_layer = {'name': name,
