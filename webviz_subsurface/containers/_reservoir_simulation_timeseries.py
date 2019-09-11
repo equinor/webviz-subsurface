@@ -606,8 +606,8 @@ def trace_group(ens_smry_data, ens, vector, color):
         'y': ens_smry_data[ens_smry_data['REAL']
                            == ens_smry_data.REAL.unique()[0]][vector],
         'legendgroup': ens,
-        'hovertext':f'Realization: {ens_smry_data.REAL.unique()[0]}',
-        'hoverinfo':"y+x+text",
+        'hovertext': f'Realization: {ens_smry_data.REAL.unique()[0]}',
+        'hoverinfo': "y+x+text",
         'name': ens,
         'type': 'markers',
         'marker': {
@@ -622,8 +622,8 @@ def trace_group(ens_smry_data, ens, vector, color):
             'x': ens_smry_data[ens_smry_data['REAL'] == real]['DATE'],
             'y': ens_smry_data[ens_smry_data['REAL'] == real][vector],
             'legendgroup': ens,
-            'hovertext':f'Realization: {real}',
-            'hoverinfo':"y+x+text",
+            'hovertext': f'Realization: {real}',
+            'hoverinfo': "y+x+text",
             'name': ens,
             'type': 'line',
             'marker': {
