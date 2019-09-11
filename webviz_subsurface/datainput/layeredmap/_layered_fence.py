@@ -1,6 +1,6 @@
 import numpy as np
 from ._image_processing import get_colormap, array_to_png
-from xtgeo import RegularSurface, Cube
+from xtgeo import RegularSurface, Cube, Grid, GridProperty
 
 
 class LayeredFence:
@@ -35,7 +35,7 @@ class LayeredFence:
         '''Center of the component'''
         return self._center
 
-    def set_bounds_and_center(self, data):
+    def set_bounds_and_center(self, data: [RegularSurface, Cube, tuple]):
         '''Set bounds and center from data'''
         if isinstance(data, RegularSurface):
             x, y = self.slice_surface(data.copy())
@@ -46,13 +46,37 @@ class LayeredFence:
             self._center = [np.mean(x), np.mean(y)]
 
         elif isinstance(data, Cube):
+            # pylint: disable=unused-argument
             hmin, hmax, vmin, vmax, values = data.get_randomline(
                 self.fencespec, hincrement=self.hinc
             )
             self._bounds = [[hmin, -vmax], [hmax, -vmin]]
             self._center = [(hmin+hmax)/2, (-vmax-vmin)/2]
+
+        elif (isinstance(data[0], Grid) and
+              isinstance(data[1], GridProperty)):
+            grid = data[0]
+            prop = data[1]
+            zmin, zmax = self.get_grid_min_max(grid)
+
+            # pylint: disable=unused-argument
+            hmin, hmax, vmin, vmax, values = grid.get_randomline(
+                self.fencespec, prop, zmin=zmin, zmax=zmax,
+                hincrement=self.hinc
+            )
+            self._bounds = [[hmin, -vmax], [hmax, -vmin]]
+            self._center = [(hmin+hmax)/2, (-vmax-vmin)/2]
+
         else:
-            raise TypeError('Input must be a surface or a cube')
+            raise TypeError(
+                'Input must be a Xtgeo surface, cube or grid/grid property')
+
+    def get_grid_min_max(self, grid):
+        '''Function to caclulate zmin, zmax from a Xtgeo grid
+        Needed due to https://github.com/equinor/xtgeo/issues/175
+        '''
+        geom = grid.get_geometrics(return_dict=True)
+        return geom['zmin'], geom['zmax']
 
     def slice_surface(self, surface, invert_y=True):
         '''Extract line along the fencespec for the surface'''
@@ -104,6 +128,35 @@ class LayeredFence:
         '''
         hmin, hmax, vmin, vmax, values = cube.get_randomline(
             self.fencespec, hincrement=self.hinc
+        )
+        bounds = [[hmin, -vmax], [hmax, -vmin]]
+        url = array_to_png(values)
+        colormap = get_colormap(colormap)
+        self._base_layer = {'name': name,
+                            'checked': True,
+                            'base_layer': True,
+                            'hill_shading': False,
+                            'data': [{'type': 'image',
+                                      'url': url,
+                                      'colormap': colormap,
+                                      'bounds': bounds,
+                                      }]
+                            }
+
+    def set_grid_prop_base_layer(self, grid: Grid, prop: GridProperty,
+                                 name: str, colormap: str = 'RdBu'):
+        '''Slices a Xtgeo grid property along the fencespec
+        and visualizes as a bitmap image with the given colormap.
+
+        * `name: Name of the layer
+        * `grid: XTGeo Grid
+        * `prop: XTGeo Grid Property
+        * `colormap: Matplotlib colormap to use
+        '''
+        zmin, zmax = self.get_grid_min_max(grid)
+        hmin, hmax, vmin, vmax, values = grid.get_randomline(
+            self.fencespec, prop, zmin=zmin, zmax=zmax,
+            hincrement=self.hinc
         )
         bounds = [[hmin, -vmax], [hmax, -vmin]]
         url = array_to_png(values)

@@ -1,5 +1,5 @@
 import numpy as np
-from xtgeo import RegularSurface, Cube
+from xtgeo import RegularSurface, Cube, Grid, GridProperty
 from webviz_subsurface.datainput.layeredmap._layered_fence import (
     LayeredFence,
 )
@@ -10,6 +10,10 @@ FENCESPEC = np.loadtxt("tests/data/polyline.np.gz")
 S_SLICE = np.loadtxt("tests/data/surface_slice.np.gz")
 with open("tests/data/seismic_png.txt", "r") as f:
     SEISMIC_IMG = f.read()
+GRID = Grid('tests/data/grid.roff')
+GRIDPROP = GridProperty('tests/data/prop.roff')
+with open("tests/data/gridprop_png.txt", "r") as f:
+    GRIDPROP_IMG = f.read()
 
 
 def test_layered_fence_init():
@@ -45,6 +49,16 @@ def test_set_seismic_bounds_and_center():
     assert fence.center == [2224.7557856789767, -1697.5]
 
 
+def test_set_grid_prop_bounds_and_center():
+    fence = LayeredFence(FENCESPEC)
+    fence.set_bounds_and_center((GRID, GRIDPROP))
+    assert fence.bounds == [
+        [-40.260988980909914, -3450.0],
+        [4489.7725603388635, -1550.0]
+    ]
+    assert fence.center == [2224.7557856789767, -2500.0]
+
+
 def test_add_surface_layer():
     fence = LayeredFence(FENCESPEC)
     fence.add_surface_layer(SURFACE, "test", "tada", "red", False)
@@ -68,7 +82,7 @@ def test_set_cube_base_layer():
     fence = LayeredFence(FENCESPEC)
     assert fence._base_layer is None
     c = CUBE.copy()
-    fence.set_cube_base_layer(CUBE, 'test')
+    fence.set_cube_base_layer(c, 'test')
     assert (fence._base_layer)
     layer = fence._base_layer
     assert isinstance(layer, dict)
@@ -78,6 +92,20 @@ def test_set_cube_base_layer():
     data = layer['data'][0]
     assert data['type'] == 'image'
     assert data['url'] == SEISMIC_IMG
+
+
+def test_set_grid_prop_base_layer():
+    fence = LayeredFence(FENCESPEC)
+    fence.set_grid_prop_base_layer(GRID, GRIDPROP, 'test')
+    assert (fence._base_layer)
+    layer = fence._base_layer
+    assert isinstance(layer, dict)
+    assert layer['name'] == 'test'
+    assert layer['checked'] is True
+    assert layer['base_layer'] is True
+    data = layer['data'][0]
+    assert data['type'] == 'image'
+    assert data['url'] == GRIDPROP_IMG
 
 
 def test_layers():
