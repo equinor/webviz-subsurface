@@ -18,7 +18,8 @@ class Widgets:
         return dcc.Dropdown(id=dom_id,
                             options=[{'label': k, 'value': v}
                                      for k, v in d.items()],
-                            value=list(d.values())[0])
+                            value=list(d.values())[0],
+                            clearable=False)
 
 
 class ParameterDistribution(WebvizContainer):
@@ -68,13 +69,15 @@ and correlation between the parameters as a correlation matrix.
     @property
     def control_div(self):
         return html.Div(
-            style={'padding-top': 10, 'padding-left': 100},
+            style={'padding-top': 10},
             children=[
                 html.Div(
                     children=[
                         html.Label('Set ensemble in all plots:',
                                    style={'font-weight': 'bold'}),
-                        html.Div(style={'padding-bottom': 20},
+                        html.Div(style={'padding-bottom': 20,
+                                        'display': 'grid',
+                                        'grid-template-columns': '1fr 4fr'},
                                  children=[
                             Widgets.dropdown_from_dict(
                                 self.ens_matrix_id, self.ensembles)
@@ -83,13 +86,14 @@ and correlation between the parameters as a correlation matrix.
                             'font-weight': 'bold'}),
                         html.Div(
                             style={'padding-bottom': 20, 'display': 'grid',
-                                   'grid-template-columns': '3fr 2fr'},
+                                   'grid-template-columns': '4fr 1fr'},
                             children=[
                                 dcc.Dropdown(
                                     id=self.p1_drop_id,
                                     options=[{'label': p, 'value': p}
                                              for p in self.p_cols],
-                                    value=self.p_cols[0]),
+                                    value=self.p_cols[0],
+                                    clearable=False),
                                 Widgets.dropdown_from_dict(
                                     self.ens_p1_id, self.ensembles),
                             ]),
@@ -98,13 +102,14 @@ and correlation between the parameters as a correlation matrix.
                         html.Div(style={
                             'padding-bottom': 20,
                             'display': 'grid',
-                            'grid-template-columns': '3fr 2fr'},
+                            'grid-template-columns': '4fr 1fr'},
                             children=[
                             dcc.Dropdown(
                                 id=self.p2_drop_id,
                                 options=[{'label': p, 'value': p}
                                          for p in self.p_cols],
-                                value=self.p_cols[0]),
+                                value=self.p_cols[0],
+                                clearable=False),
                             Widgets.dropdown_from_dict(
                                 self.ens_p2_id, self.ensembles)
                         ]),
@@ -132,7 +137,11 @@ and correlation between the parameters as a correlation matrix.
                     children=[
                         html.Div(
                             children=[self.matrix_plot]), self.control_div]),
-                wcc.Graph(id=self.scatter_id)
+                html.Div(
+                    style={'display': 'grid',
+                           'grid-template-columns': '3fr 2fr'},
+                    children=wcc.Graph(id=self.scatter_id)
+                )
             ])
 
     def set_callbacks(self, app):
