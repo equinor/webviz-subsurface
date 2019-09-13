@@ -22,7 +22,8 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
-                 from the simulations will be extracted.
+                 from the simulations will be extracted. Wild card asterisk *
+                 can be used.
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
 * `base_ensembles`: List of ensembles to use as base ensemble in delta
