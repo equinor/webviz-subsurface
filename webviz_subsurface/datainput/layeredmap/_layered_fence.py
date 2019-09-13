@@ -12,7 +12,7 @@ class LayeredFence:
     polyline.
 
 
-    * `polyspec: 2D Numpy array with fence specification
+    * `polyspec: 2D Numpy array for fence specification.
 
     '''
 
@@ -24,6 +24,7 @@ class LayeredFence:
         self._base_layer = None
         self._bounds = [[0, 0], [0, 0]]
         self._center = [0, 0]
+        self._well_layer = None
 
     @property
     def bounds(self):
@@ -65,10 +66,9 @@ class LayeredFence:
 
     def slice_grid(self, grid, prop, invert_y=True):
         '''Extract line along the fencespec for the grid property'''
-        zmin, zmax = self.get_grid_min_max(grid)
+        
         hmin, hmax, vmin, vmax, values = grid.get_randomline(
-            self.fencespec, prop, zmin=zmin, zmax=zmax,
-            hincrement=self.hinc
+            self.fencespec, prop, hincrement=self.hinc
         )
         if invert_y:
             ymin = -vmax
@@ -96,15 +96,6 @@ class LayeredFence:
         center = [(hmin+hmax)/2, (ymax+ymin)/2]
 
         return {'values': values, 'bounds': bounds, 'center': center}
-
-    @staticmethod
-    def get_grid_min_max(grid):
-        '''Function to caclulate zmin, zmax from a Xtgeo grid
-        Needed due to https://github.com/equinor/xtgeo/issues/175
-        '''
-        geom = grid.get_geometrics(return_dict=True)
-        print(geom['zmin'], geom['zmax'])
-        return geom['zmin'], geom['zmax']
 
     def slice_surface(self, surface, invert_y=True):
         '''Extract line along the fencespec for the surface'''
@@ -196,6 +187,23 @@ class LayeredFence:
                                       }]
                             }
 
+    def set_well_layer(self, name):
+        '''Adds a polyline for the well'''
+        values = self.fencespec
+        x = values[:, 3]
+        y = values[:, 2]
+        y *= -1
+        positions = [[a, b] for a, b in zip(x, y)]
+        data = [{'type': 'polyline',
+                 'color': 'black',
+                 'tooltip': name,
+                 'metadata': {'type': 'well', 'name': name},
+                 'positions': positions}]
+        self._well_layer = {'name': name,
+                            'checked': True,
+                            'base_layer': False,
+                            'data': data}
+
     @property
     def layers(self):
         '''Returns all layers'''
@@ -204,4 +212,6 @@ class LayeredFence:
             layers.extend(self._surface_layers)
         if self._base_layer:
             layers.append(self._base_layer)
+        if self._well_layer:
+            layers.append(self._well_layer)
         return layers

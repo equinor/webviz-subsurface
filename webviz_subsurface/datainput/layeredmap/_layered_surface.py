@@ -21,6 +21,7 @@ class LayeredSurface():
         self.name = name
         self.get_surface_array(surface)
         self.colormap = get_colormap(colormap)
+        self.well_layer = None
 
     def get_surface_array(self, surface):
         s = surface.copy()
@@ -32,6 +33,23 @@ class LayeredSurface():
         self.arr = [xi, yi, zi]
         self.min = s.values.min()
         self.max = s.values.max()
+
+    def add_well(self, name, well):
+        df = well.get_polygons().get_xyz_dataframe()[['X_UTME', 'Y_UTMN']]
+
+        values = df.to_numpy().tolist()
+        values = values[:-1]
+        data = {'type': 'polyline',
+                'color': 'black',
+                'tooltip': name,
+                'metadata': {'type': 'well', 'name': name},
+                'positions': values}
+        if not self.well_layer:
+            self.well_layer = {'name': 'Wells',
+                               'checked': True,
+                               'base_layer': False,
+                               'data': []}
+        self.well_layer['data'].append(data)
 
     @property
     def bounds(self):
@@ -51,16 +69,20 @@ class LayeredSurface():
         return array_to_png(self.z_arr)
 
     @property
-    def layer(self):
-        return {'name': self.name,
-                'checked': True,
-                'base_layer': True,
-                'data': [{'type': 'image',
-                          'url': self.as_png,
-                          'colormap': self.colormap,
-                          'bounds': self.bounds,
-                          'minvalue': f'{self.min:.2f}',
-                          'maxvalue': f'{self.max:.2f}',
-                          'unit': 'm'
-                          }]
-                }
+    def layers(self):
+        all_layers = [{'name': self.name,
+                       'checked': True,
+                       'base_layer': True,
+                       'data': [{'type': 'image',
+                                 'url': self.as_png,
+                                 'colormap': self.colormap,
+                                 'bounds': self.bounds,
+                                 'minvalue': f'{self.min:.2f}',
+                                 'maxvalue': f'{self.max:.2f}',
+                                 'unit': 'm'
+                                 }]
+                       }]
+        if self.well_layer:
+
+            all_layers.append(self.well_layer)
+        return all_layers

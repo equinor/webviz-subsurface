@@ -43,7 +43,9 @@ def test_center():
 
 def test_layered_surfacelet_layer():
     layered_surface = LayeredSurface("test", SURFACE)
-    layer = layered_surface.layer
+    layers = layered_surface.layers
+    assert len(layers) == 1
+    layer = layers[0]
     assert layer["name"] == "test"
     assert layer["checked"] is True
     assert layer["base_layer"] is True
