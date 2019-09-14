@@ -350,17 +350,18 @@ and correlation between the parameters as a correlation matrix.</p>
 <hr>
 
 
-<p>Plot of time series data based on fmu-ensemble summary data.
-    Data are loaded from scratch an process via fmu-ensemble utilities.</p>
-<pre><code>Args:
-    ensembles: key-value-pait = ensemble-name: ensemble-path
-    column_keys: list = list of preselected vectors to be selectable
-    sampling: str = time-index / time-steps of summary-data
-    base_ensembles: list = used to calculate delta-values relative to
-        this ensemble
-    delta_ensembles: list = Ensembles to be compared with a base-ensemlbe
-        to calculate delta values.
-</code></pre>
+<h3>Time series from reservoir simulations</h3>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
+                 from the simulations will be extracted. Wild card asterisk *
+                 can be used.</li>
+<li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
+              or <code>yearly</code>.</li>
+<li><code>base_ensembles</code>: List of ensembles to use as base ensemble in delta
+                    calculations.</li>
+<li><code>delta_ensembles</code>: List of ensembles to be compared with base ensemble.</li>
+</ul>
 <pre><code class='yaml'>  - container: ReservoirSimulationTimeSeries
     ensembles: some value
     column_keys: None  # Optional (default value shown here).
