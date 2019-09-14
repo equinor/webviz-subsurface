@@ -18,19 +18,18 @@ from webviz_subsurface.datainput import get_time_series_data, \
 # =============================================================================
 
 class ReservoirSimulationTimeSeries(WebvizContainer):
+    '''### Time series from reservoir simulations
 
-    """Plot of time series data based on fmu-ensemble summary data.
-    Data are loaded from scratch an process via fmu-ensemble utilities.
-
-    Args:
-        ensembles: key-value-pait = ensemble-name: ensemble-path
-        column_keys: list = list of preselected vectors to be selectable
-        sampling: str = time-index / time-steps of summary-data
-        base_ensembles: list = used to calculate delta-values relative to
-            this ensemble
-        delta_ensembles: list = Ensembles to be compared with a base-ensemlbe
-            to calculate delta values.
-    """
+* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `column_keys`: List of vectors to extract. If not given, all vectors
+                 from the simulations will be extracted. Wild card asterisk *
+                 can be used.
+* `sampling`: Time separation between extracted values. Can be e.g. `monthly`
+              or `yearly`.
+* `base_ensembles`: List of ensembles to use as base ensemble in delta
+                    calculations.
+* `delta_ensembles`: List of ensembles to be compared with base ensemble.
+'''
 
     def __init__(
             self,
