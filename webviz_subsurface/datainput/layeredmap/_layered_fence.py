@@ -66,7 +66,7 @@ class LayeredFence:
 
     def slice_grid(self, grid, prop, invert_y=True):
         '''Extract line along the fencespec for the grid property'''
-        
+
         hmin, hmax, vmin, vmax, values = grid.get_randomline(
             self.fencespec, prop, hincrement=self.hinc
         )

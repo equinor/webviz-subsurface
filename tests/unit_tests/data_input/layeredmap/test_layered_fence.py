@@ -53,10 +53,11 @@ def test_set_grid_prop_bounds_and_center():
     fence = LayeredFence(FENCESPEC)
     fence.set_bounds_and_center((GRID, GRIDPROP))
     assert fence.bounds == [
-        [-40.260988980909914, -3450.0],
-        [4489.7725603388635, -1550.0]
+        [-40.260988980909914, -3500.000000000071],
+        [4489.7725603388635, -1499.9999999999648]
     ]
-    assert fence.center == [2224.7557856789767, -2500.0]
+
+    assert fence.center == [2224.7557856789767, -2500.0000000000177]
 
 
 def test_add_surface_layer():
