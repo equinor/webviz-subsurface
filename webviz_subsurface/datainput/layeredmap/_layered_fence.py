@@ -12,11 +12,12 @@ class LayeredFence:
     polyline.
 
 
-    * `polyspec: 2D Numpy array for fence specification.
+    * `polyspec`: 2D numpy with X, Y, Z, horizontal length as rows
+    * `hincrement`: Increment to sample the fence  horizontally
 
     '''
 
-    def __init__(self, fencespec, hinc: int = 5):
+    def __init__(self, fencespec, hincrement: int = 5):
 
         self.fencespec = fencespec
         self.hinc = hinc
