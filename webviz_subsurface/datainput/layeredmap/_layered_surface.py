@@ -13,8 +13,8 @@ class LayeredSurface():
 
 
     * `name: Name of the layer
-    * `surface: XTGeo RegularSurface
-    * `colormap: Matplotlib colormap to use
+    * `surface`: XTGeo RegularSurface
+    * `colormap`: Matplotlib colormap to use
     '''
 
     def __init__(self, name, surface: RegularSurface, colormap='viridis'):
@@ -83,6 +83,6 @@ class LayeredSurface():
                                  }]
                        }]
         if self.well_layer:
-
             all_layers.append(self.well_layer)
+
         return all_layers

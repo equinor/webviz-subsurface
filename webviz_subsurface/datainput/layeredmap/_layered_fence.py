@@ -20,7 +20,7 @@ class LayeredFence:
     def __init__(self, fencespec, hincrement: int = 5):
 
         self.fencespec = fencespec
-        self.hinc = hinc
+        self.hinc = hincrement
         self._surface_layers = []
         self._base_layer = None
         self._bounds = [[0, 0], [0, 0]]
@@ -113,25 +113,26 @@ class LayeredFence:
         surface: RegularSurface,
         name: str,
         tooltip: str = None,
-        color: str = "blue",
+        color: str = 'blue',
         checked: bool = True,
     ):
         '''Adds a polyline overlay layer
         for a given XTGeo surface'''
-        x, y = self.slice_surface(surface.copy())
-        positions = [[a, b] for a, b in zip(x, y)]
+
+        x_arr, y_arr = self.slice_surface(surface.copy())
+        positions = [[x, y] for x, y in zip(x_arr, y_arr)]
 
         self._surface_layers.append(
             {
-                "name": name,
-                "checked": checked,
-                "base_layer": False,
-                "data": [
+                'name': name,
+                'checked': checked,
+                'base_layer': False,
+                'data': [
                     {
-                        "type": "polyline",
-                        "positions": positions,
-                        "color": color,
-                        "tooltip": tooltip if tooltip else name,
+                        'type': 'polyline',
+                        'positions': positions,
+                        'color': color,
+                        'tooltip': tooltip if tooltip else name,
                     }
                 ],
             }
@@ -142,9 +143,9 @@ class LayeredFence:
         '''Slices a Xtgeo seismic cube along the fencespec
         and visualizes as a bitmap image with the given colormap.
 
-        * `name: Name of the layer
-        * `cube: XTGeo Cube
-        * `colormap: Matplotlib colormap to use
+        * `name`: Name of the layer
+        * `cube`: XTGeo Cube
+        * `colormap`: Matplotlib colormap to use
         '''
         cubefence = self.slice_cube(cube)
         bounds = cubefence['bounds']
@@ -167,10 +168,10 @@ class LayeredFence:
         '''Slices a Xtgeo grid property along the fencespec
         and visualizes as a bitmap image with the given colormap.
 
-        * `name: Name of the layer
-        * `grid: XTGeo Grid
-        * `prop: XTGeo Grid Property
-        * `colormap: Matplotlib colormap to use
+        * `name`: Name of the layer
+        * `grid`: XTGeo Grid
+        * `prop`: XTGeo Grid Property
+        * `colormap`: Matplotlib colormap to use
         '''
         gridfence = self.slice_grid(grid, prop)
         bounds = gridfence['bounds']
@@ -188,13 +189,14 @@ class LayeredFence:
                                       }]
                             }
 
-    def set_well_layer(self, name):
+    def set_well_layer(self, name, invert_y=True):
         '''Adds a polyline for the well'''
         values = self.fencespec
-        x = values[:, 3]
-        y = values[:, 2]
-        y *= -1
-        positions = [[a, b] for a, b in zip(x, y)]
+        x_arr = values[:, 3]
+        y_arr = values[:, 2]
+        if invert_y:
+            y_arr *= -1
+        positions = [[x, y] for x, y in zip(x_arr, y_arr)]
         data = [{'type': 'polyline',
                  'color': 'black',
                  'tooltip': name,
