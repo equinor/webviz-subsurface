@@ -20,8 +20,8 @@ def test_layered_fence_init():
     fence = LayeredFence(FENCESPEC)
     assert np.array_equal(fence.fencespec, FENCESPEC)
     assert fence._surface_layers == []
-    assert fence.bounds == [[0, 0], [0, 0]]
-    assert fence.center == [0, 0]
+    assert np.allclose(fence.center, [[0, 0], [0, 0]])
+    assert np.allclose(fence.center, [0, 0])
 
 
 def test_slice_surface():
@@ -32,32 +32,32 @@ def test_slice_surface():
 def test_set_surface_bounds_and_center():
     fence = LayeredFence(FENCESPEC)
     fence.set_bounds_and_center(SURFACE)
-    assert fence.bounds == [
+    assert np.allclose(fence.bounds, [
         [-40.260988980909914, -1653.468683917269],
         [4489.7725603388635, -1586.0012876253734],
-    ]
-    assert fence.center == [2225.2178792970494, -1618.0241894694848]
+    ])
+    assert np.allclose(fence.center, [2225.2178792970494, -1618.0241894694848])
 
 
 def test_set_seismic_bounds_and_center():
     fence = LayeredFence(FENCESPEC)
     fence.set_bounds_and_center(CUBE)
-    assert fence.bounds == [
+    assert np.allclose(fence.bounds, [
         [-40.260988980909914, -1845.0],
         [4489.7725603388635, -1550]
-    ]
-    assert fence.center == [2224.7557856789767, -1697.5]
+    ])
+    assert np.allclose(fence.center, [2224.7557856789767, -1697.5])
 
 
 def test_set_grid_prop_bounds_and_center():
     fence = LayeredFence(FENCESPEC)
     fence.set_bounds_and_center((GRID, GRIDPROP))
-    assert fence.bounds == [
+    assert np.allclose(fence.bounds, [
         [-40.260988980909914, -3500.000000000071],
         [4489.7725603388635, -1499.9999999999648]
-    ]
+    ])
 
-    assert fence.center == [2224.7557856789767, -2500.0000000000177]
+    assert np.allclose(fence.center, [2224.7557856789767, -2500.0000000000177])
 
 
 def test_add_surface_layer():

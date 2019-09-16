@@ -30,15 +30,16 @@ def test_layered_surface_zarr():
 
 def test_bounds():
     layered_surface = LayeredSurface("test", SURFACE)
-    assert layered_surface.bounds == [
+    assert np.allclose(layered_surface.bounds, [
         [456950.7443767242, 5927337.164084819],
         [466655.3381886231, 5938639.3915624125],
-    ]
+    ])
 
 
 def test_center():
     layered_surface = LayeredSurface("test", SURFACE)
-    assert layered_surface.center == [461803.04128267366, 5932988.277823616]
+    assert np.allclose(layered_surface.center, [
+                       461803.04128267366, 5932988.277823616])
 
 
 def test_layered_surfacelet_layer():
