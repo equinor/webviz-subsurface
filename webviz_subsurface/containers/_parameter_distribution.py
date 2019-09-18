@@ -29,7 +29,7 @@ This container shows parameter distribution as histogram,
 and correlation between the parameters as a correlation matrix.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
-* `drop_constants`: Drop constant parameters (Default: true)
+* `drop_constants`: Drop constant parameters
 '''
 
     def __init__(self, app, container_settings,
@@ -333,10 +333,10 @@ def get_corr_data(ensemble_path, drop_constants=True):
     '''
     data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
-    if drop_constants:
-        return data.corr().dropna(axis='index', how='all') \
-                               .dropna(axis='columns', how='all')
-    return data.corr()
+
+    return data.corr() if not drop_constants \
+        else data.corr().dropna(axis='index', how='all') \
+        .dropna(axis='columns', how='all')
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
