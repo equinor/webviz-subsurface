@@ -18,7 +18,8 @@ class Widgets:
         return dcc.Dropdown(id=dom_id,
                             options=[{'label': k, 'value': v}
                                      for k, v in d.items()],
-                            value=list(d.values())[0])
+                            value=list(d.values())[0],
+                            clearable=False)
 
 
 class ParameterDistribution(WebvizContainer):
@@ -28,12 +29,15 @@ This container shows parameter distribution as histogram,
 and correlation between the parameters as a correlation matrix.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
+* `drop_constants`: Drop constant parameters
 '''
 
-    def __init__(self, app, container_settings, ensembles):
+    def __init__(self, app, container_settings,
+                 ensembles, drop_constants: bool = True):
 
         self.ensembles = {ens: container_settings['scratch_ensembles'][ens]
                           for ens in ensembles}
+        self.drop_constants = drop_constants
         self.uid = f'{uuid4()}'
         self.p1_drop_id = f'p1-dropd-{self.uid}'
         self.p2_drop_id = f'p2-dropd-{self.uid}'
@@ -50,7 +54,8 @@ and correlation between the parameters as a correlation matrix.
 
     @property
     def p_cols(self):
-        dfs = [get_parameters(ens) for ens in self.ensembles.values()]
+        dfs = [get_corr_data(ens, self.drop_constants)
+               for ens in self.ensembles.values()]
         return sorted(list(pd.concat(dfs).columns))
 
     @property
@@ -64,13 +69,15 @@ and correlation between the parameters as a correlation matrix.
     @property
     def control_div(self):
         return html.Div(
-            style={'padding-top': 10, 'padding-left': 100},
+            style={'padding-top': 10},
             children=[
                 html.Div(
                     children=[
                         html.Label('Set ensemble in all plots:',
                                    style={'font-weight': 'bold'}),
-                        html.Div(style={'padding-bottom': 20},
+                        html.Div(style={'padding-bottom': 20,
+                                        'display': 'grid',
+                                        'grid-template-columns': '1fr 4fr'},
                                  children=[
                             Widgets.dropdown_from_dict(
                                 self.ens_matrix_id, self.ensembles)
@@ -79,13 +86,14 @@ and correlation between the parameters as a correlation matrix.
                             'font-weight': 'bold'}),
                         html.Div(
                             style={'padding-bottom': 20, 'display': 'grid',
-                                   'grid-template-columns': '3fr 2fr'},
+                                   'grid-template-columns': '4fr 1fr'},
                             children=[
                                 dcc.Dropdown(
                                     id=self.p1_drop_id,
                                     options=[{'label': p, 'value': p}
                                              for p in self.p_cols],
-                                    value=self.p_cols[0]),
+                                    value=self.p_cols[0],
+                                    clearable=False),
                                 Widgets.dropdown_from_dict(
                                     self.ens_p1_id, self.ensembles),
                             ]),
@@ -94,13 +102,14 @@ and correlation between the parameters as a correlation matrix.
                         html.Div(style={
                             'padding-bottom': 20,
                             'display': 'grid',
-                            'grid-template-columns': '3fr 2fr'},
+                            'grid-template-columns': '4fr 1fr'},
                             children=[
                             dcc.Dropdown(
                                 id=self.p2_drop_id,
                                 options=[{'label': p, 'value': p}
                                          for p in self.p_cols],
-                                value=self.p_cols[0]),
+                                value=self.p_cols[0],
+                                clearable=False),
                             Widgets.dropdown_from_dict(
                                 self.ens_p2_id, self.ensembles)
                         ]),
@@ -128,7 +137,11 @@ and correlation between the parameters as a correlation matrix.
                     children=[
                         html.Div(
                             children=[self.matrix_plot]), self.control_div]),
-                wcc.Graph(id=self.scatter_id)
+                html.Div(
+                    style={'display': 'grid',
+                           'grid-template-columns': '3fr 2fr'},
+                    children=wcc.Graph(id=self.scatter_id)
+                )
             ])
 
     def set_callbacks(self, app):
@@ -144,7 +157,7 @@ and correlation between the parameters as a correlation matrix.
             and it is not possible to assign callbacks to individual
             elements of a Plotly graph object
             '''
-            fig = render_matrix(ens)
+            fig = render_matrix(ens, self.drop_constants)
             # Finds index of the currently selected cell
             x_index = list(fig['data'][0]['x']).index(p1)
             y_index = list(fig['data'][0]['y']).index(p2)
@@ -309,18 +322,26 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def render_matrix(ensemble_path):
-
+def get_corr_data(ensemble_path, drop_constants=True):
+    '''
+    if drop_constants:
+    .dropna() removes undefined entries in correlation matrix after
+    it is calculated. Correlations between constants yield nan values since
+    they are undefined.
+    Passing tuple or list to drop on multiple axes is deprecated since
+    version 0.23.0. Therefor split in 2x .dropnan()
+    '''
     data = get_parameters(ensemble_path).apply(pd.to_numeric, errors='coerce')\
                                         .dropna(how='all', axis='columns')
 
-    # .dopna() required to remove undefined entries in correlation matrix after
-    # it is calcualted. Correlations between constants yield nan values since
-    # they are undefined.
-    # Passing tuple or list to drop on multiple axes is deprecated since
-    # version 0.23.0. Therefor split in 2x .dropnan()
-    corr_data = data.corr().dropna(axis='index', how='all') \
-                           .dropna(axis='columns', how='all')
+    return data.corr() if not drop_constants \
+        else data.corr().dropna(axis='index', how='all') \
+        .dropna(axis='columns', how='all')
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def render_matrix(ensemble_path, drop_constants=True):
+    corr_data = get_corr_data(ensemble_path, drop_constants)
 
     data = {
         'type': 'heatmap',
