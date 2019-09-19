@@ -1,13 +1,8 @@
 from uuid import uuid4
-import numpy as np
-import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
-import dash_table
-from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from webviz_subsurface.datainput import load_parameters
 import plotly.express as px
