@@ -2,14 +2,14 @@ import mock
 import dash
 import pandas as pd
 from webviz_config.common_cache import cache
-from webviz_config.containers import ParameterDistribution
+from webviz_config.containers import ParameterCorrelation
 
 # mocked functions
 get_parameters = 'webviz_subsurface.containers'\
-                '._parameter_distribution.get_parameters'
+                '._parameter_correlation.get_parameters'
 
 
-def test_parameter_dist(dash_duo):
+def test_parameter_corr(dash_duo):
 
     app = dash.Dash(__name__)
     app.css.config.serve_locally = True
@@ -22,7 +22,7 @@ def test_parameter_dist(dash_duo):
     with mock.patch(get_parameters) as mock_parameters:
         mock_parameters.return_value = pd.read_csv('tests/data/parameters.csv')
 
-        p = ParameterDistribution(app, container_settings, ensembles)
+        p = ParameterCorrelation(app, container_settings, ensembles)
 
         app.layout = p.layout
         dash_duo.start_server(app)

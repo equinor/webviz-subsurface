@@ -22,11 +22,11 @@ class Widgets:
                             clearable=False)
 
 
-class ParameterDistribution(WebvizContainer):
-    '''### Parameter distribution
+class ParameterCorrelation(WebvizContainer):
+    '''### ParameterCorrelation
 
-This container shows parameter distribution as histogram,
-and correlation between the parameters as a correlation matrix.
+This container shows pairwise correlation between model parameters as a
+heatmap. Selected pairs are cross-plotted in a scatterplot.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `drop_constants`: Drop constant parameters

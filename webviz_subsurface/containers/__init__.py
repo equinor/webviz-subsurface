@@ -23,7 +23,7 @@ pages:
 ```
 '''
 
-from ._parameter_distribution import ParameterDistribution
+from ._parameter_correlation import ParameterCorrelation
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
@@ -33,7 +33,7 @@ from ._inplace_volumes import InplaceVolumes
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 
 
-__all__ = ['ParameterDistribution',
+__all__ = ['ParameterCorrelation',
            'DiskUsage',
            'SubsurfaceMap',
            'HistoryMatch',
