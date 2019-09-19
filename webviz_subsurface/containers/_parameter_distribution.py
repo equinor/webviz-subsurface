@@ -36,7 +36,8 @@ with a marginal boxplot on top.
         self.pcol_id = f"pcol-id-{self.uid}"
         self.set_callbacks(app)
 
-    def set_grid_layout(self, columns):
+    @staticmethod
+    def set_grid_layout(columns):
         return {
             "display": "grid",
             "alignContent": "space-around",
