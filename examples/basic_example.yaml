@@ -30,6 +30,12 @@ pages:
         - iter-0
         - iter-1
     - ...some other text
+ - title: Parameter correlations
+   content: 
+    - container: ParameterCorrelation
+      ensembles:
+        - iter-0
+        - iter-1
  - title: Inplace volumes
    content: 
     - container: InplaceVolumes

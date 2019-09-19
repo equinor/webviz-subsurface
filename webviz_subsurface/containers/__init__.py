@@ -24,6 +24,7 @@ pages:
 '''
 
 from ._parameter_distribution import ParameterDistribution
+from ._parameter_correlation import ParameterCorrelation
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
@@ -40,4 +41,5 @@ __all__ = ['ParameterDistribution',
            'Intersect',
            'MorrisPlot',
            'InplaceVolumes',
-           'ReservoirSimulationTimeSeries']
+           'ReservoirSimulationTimeSeries',
+           'ParameterCorrelation']
