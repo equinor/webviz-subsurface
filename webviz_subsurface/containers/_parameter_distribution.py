@@ -91,7 +91,8 @@ with a marginal boxplot on top.
                 barmode="overlay",
                 nbins=10,
                 marginal="box",
-            )
+
+            ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=","")))
 
             return plot
 
