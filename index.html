@@ -338,14 +338,14 @@ effect with other parameters.</p>
 <hr>
 
 
-<h3>Parameter distribution</h3>
-<p>This container shows parameter distribution as histogram,
-and correlation between the parameters as a correlation matrix.</p>
+<h3>Parameter correlation</h3>
+<p>This container shows parameter correlation using a correlation matrix,
+and scatter plot for any given pair of parameters.</p>
 <ul>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>drop_constants</code>: Drop constant parameters</li>
 </ul>
-<pre><code class='yaml'>  - container: ParameterDistribution
+<pre><code class='yaml'>  - container: ParameterCorrelation
     ensembles: some value
     drop_constants: True  # Optional (default value shown here).
 </code></pre>
