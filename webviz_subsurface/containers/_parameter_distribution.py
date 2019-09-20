@@ -92,7 +92,8 @@ with a marginal boxplot on top.
                 nbins=10,
                 marginal="box",
 
-            ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=","")))
+            ).for_each_trace(lambda t: t.update(
+                name=t.name.replace("ENSEMBLE=", "")))
 
             return plot
 
