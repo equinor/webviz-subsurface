@@ -90,6 +90,7 @@ with a marginal boxplot on top.
                 hover_data=["REAL"],
                 barmode="overlay",
                 nbins=10,
+                range_x=[param[column].min(),  param[column].max()],
                 marginal="box",
 
             ).for_each_trace(lambda t: t.update(
