@@ -35,11 +35,11 @@ from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 
 
 __all__ = ['ParameterDistribution',
+           'ParameterCorrelation',
            'DiskUsage',
            'SubsurfaceMap',
            'HistoryMatch',
            'Intersect',
            'MorrisPlot',
            'InplaceVolumes',
-           'ReservoirSimulationTimeSeries',
-           'ParameterCorrelation']
+           'ReservoirSimulationTimeSeries']
