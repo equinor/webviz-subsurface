@@ -25,7 +25,7 @@ pages:
  - title: Parameter distribution
    content: 
     - Some text...
-    - container: ParameterDistribution
+    - container: ParameterCorrelation
       ensembles:
         - iter-0
         - iter-1

@@ -22,11 +22,11 @@ class Widgets:
                             clearable=False)
 
 
-class ParameterDistribution(WebvizContainer):
-    '''### Parameter distribution
+class ParameterCorrelation(WebvizContainer):
+    '''### Parameter correlation
 
-This container shows parameter distribution as histogram,
-and correlation between the parameters as a correlation matrix.
+This container shows parameter correlation using a correlation matrix,
+and scatter plot for any given pair of parameters.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `drop_constants`: Drop constant parameters
