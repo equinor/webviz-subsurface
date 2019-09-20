@@ -1,8 +1,10 @@
 from uuid import uuid4
+import dash
+from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from webviz_config.containers import WebvizContainer
 from webviz_subsurface.datainput import load_parameters
 import plotly.express as px
@@ -33,6 +35,8 @@ with a marginal boxplot on top.
         ]
         self.uid = f"{uuid4()}"
         self.histogram_id = f"histogram-id-{self.uid}"
+        self.prev_btn_id = f"prev-btn-id-{self.uid}"
+        self.next_btn_id = f"next-btn-id-{self.uid}"
         self.pcol_id = f"pcol-id-{self.uid}"
         self.set_callbacks(app)
 
@@ -45,43 +49,62 @@ with a marginal boxplot on top.
             "gridTemplateColumns": f"{columns}",
         }
 
-    @property
-    def layout(self):
+    def make_buttons(self, prev_id, next_id):
         return html.Div(
-            style=self.set_grid_layout("1fr 4fr"),
+            style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Div(
-                    [
-                        html.H5("Select parameter"),
-                        dcc.Dropdown(
-                            id=self.pcol_id,
-                            options=[
-                                {"value": col, "label": col}
-                                for col in self.parameter_columns
-                            ],
-                            value=self.parameter_columns[0],
-                            clearable=False,
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        html.H5(
-                            style={"textAlign": "center"},
-                            children="Parameter distribution",
-                        ),
-                        wcc.Graph(id=self.histogram_id),
-                    ]
-                ),
+                html.Button(id=prev_id, children="<="),
+                html.Button(id=next_id, children="=>"),
             ],
         )
 
+    @property
+    def layout(self):
+        return html.Div([
+            html.H5("Select parameter distribution"),
+            html.Div(
+                style=self.set_grid_layout('8fr 1fr 2fr'),
+                children=[
+                    dcc.Dropdown(
+                        id=self.pcol_id,
+                        options=[
+                            {"value": col, "label": col}
+                            for col in self.parameter_columns
+                        ],
+                        value=self.parameter_columns[0],
+                        clearable=False,
+                    ),
+                    self.make_buttons(self.prev_btn_id, self.next_btn_id),
+                ]),
+            wcc.Graph(id=self.histogram_id),
+        ])
+
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.histogram_id, "figure"), [Input(self.pcol_id, "value")]
-        )
+            Output(self.pcol_id, 'value'),
+            [
+                Input(self.prev_btn_id, "n_clicks"),
+                Input(self.next_btn_id, "n_clicks")
+            ],
+            [State(self.pcol_id, 'value')])
+        def _set_parameter_from_btn(prev_click, next_click, column):
+
+            ctx = dash.callback_context.triggered
+            if not ctx:
+                raise PreventUpdate
+            cb = ctx[0]["prop_id"]
+            if cb == f"{self.prev_btn_id}.n_clicks":
+                column = prev_value(column, self.parameter_columns)
+            elif cb == f"{self.next_btn_id}.n_clicks":
+                column = next_value(column, self.parameter_columns)
+            return column
+
+        @app.callback(
+            Output(self.histogram_id, "figure"),
+            [Input(self.pcol_id, "value")])
         def _set_parameter(column):
             param = self.parameters[[column, "REAL", "ENSEMBLE"]]
+
             plot = px.histogram(
                 param,
                 x=column,
@@ -110,3 +133,25 @@ with a marginal boxplot on top.
                 ],
             )
         ]
+
+
+def prev_value(current_value, options):
+    try:
+        index = options.index(current_value)
+    except ValueError:
+        index = None
+    if index > 0:
+        return options[index - 1]
+    else:
+        return current_value
+
+
+def next_value(current_value, options):
+    try:
+        index = options.index(current_value)
+    except ValueError:
+        index = None
+    if index < len(options) - 1:
+        return options[index + 1]
+    else:
+        return current_value
