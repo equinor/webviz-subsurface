@@ -250,11 +250,13 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         @app.callback(self.container_data_output,
                       [self.container_data_requested],
                       [State(self.tab_id, 'value'),
-                       State(self.chlst, 'value')])
+                       State(self.chlst, 'value'),
+                       State(self.dropwdown_vector_id, 'value')])
         def _user_download_data(
                 data_requested,
                 plot_type: str,
-                chlst: list):
+                chlst: list,
+                vector: str):
             """ Callback to download data as .csv (Summary)
 
                 Reads summary data from scratch into memory as ps.DataFrame and
@@ -279,7 +281,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     requested_data = get_time_series_delta_ens(
                         ensemble_paths=self.ensemble_paths,
                         time_index=self.time_index,
-                        column_keys=self.column_keys,
+                        column_keys=[vector],
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
@@ -290,7 +292,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     file_name = 'time_series'
                     requested_data = get_time_series_data(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
+                        column_keys=[vector],
                         time_index=self.time_index,
                         ensemble_set_name=self.title
                     )
@@ -302,7 +304,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     file_name = 'delta_time_series_statistics'
                     requested_data = get_time_series_delta_ens_stats(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
+                        column_keys=[vector],
                         time_index=self.time_index,
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
@@ -314,7 +316,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     file_name = 'delta_time_series_statistics'
                     requested_data = get_time_series_statistics(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
+                        column_keys=[vector],
                         time_index=self.time_index,
                     )
 
