@@ -1,8 +1,9 @@
 import os
+
 try:
     import fmu.ensemble
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
-    pass             # for a portable webviz instance, it is never used.
+    pass  # for a portable webviz instance, it is never used.
 
 import pandas as pd
 from webviz_config.common_cache import cache
@@ -24,8 +25,8 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
         for volname, volfile in volfiles:
             path = os.path.join(volfolder, volfile)
             df = ens.load_csv(path)
-            df['SOURCE'] = volname
-            df['ENSEMBLE'] = ens_name
+            df["SOURCE"] = volname
+            df["ENSEMBLE"] = ens_name
             ens_dfs.append(df)
         dfs.append(pd.concat(ens_dfs))
     return pd.concat(dfs)

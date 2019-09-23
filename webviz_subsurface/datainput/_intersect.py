@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+
 try:
     import xtgeo
 except ImportError:
@@ -13,8 +14,8 @@ def load_well(well_name):
 
 
 def load_surface(s_name, real_path, surface_cat):
-    path = os.path.join(real_path, 'share/results/maps',)
-    s_path = os.path.join(path, f'{s_name}--{surface_cat}.gri')
+    path = os.path.join(real_path, "share/results/maps")
+    s_path = os.path.join(path, f"{s_name}--{surface_cat}.gri")
     try:
         return xtgeo.surface.RegularSurface(s_path)
     except IOError:

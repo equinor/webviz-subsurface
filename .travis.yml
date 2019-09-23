@@ -28,6 +28,7 @@ script:
   - pip install .[tests]
   - pip install dash[testing]
   - pycodestyle webviz_subsurface/containers webviz_subsurface/datainput tests
+  - black --check webviz_subsurface tests -l 79
   - pytest tests
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
