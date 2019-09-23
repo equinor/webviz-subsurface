@@ -281,21 +281,21 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     requested_data = get_time_series_delta_ens(
                         ensemble_paths=self.ensemble_paths,
                         time_index=self.time_index,
-                        column_keys=[vector],
+                        column_keys=self.column_keys,
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )
+                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
 
                 else:
 
                     file_name = 'time_series'
                     requested_data = get_time_series_data(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=[vector],
+                        column_keys=self.column_keys,
                         time_index=self.time_index,
                         ensemble_set_name=self.title
-                    )
+                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
 
             if plot_type == 'summary_stats':
 
@@ -304,21 +304,21 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     file_name = 'delta_time_series_statistics'
                     requested_data = get_time_series_delta_ens_stats(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=[vector],
+                        column_keys=self.column_keys,
                         time_index=self.time_index,
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )
+                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
 
                 else:
 
                     file_name = 'delta_time_series_statistics'
                     requested_data = get_time_series_statistics(
                         ensemble_paths=self.ensemble_paths,
-                        column_keys=[vector],
+                        column_keys=self.column_keys,
                         time_index=self.time_index,
-                    )
+                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
 
             return WebvizContainer.container_data_compress(
                 [{'filename': f'{file_name}.csv',
