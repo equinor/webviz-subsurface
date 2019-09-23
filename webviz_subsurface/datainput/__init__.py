@@ -10,6 +10,7 @@ from ._inplace_volumes import extract_volumes
 from ._reservoir_simulation_timeseries import get_time_series_data, \
   get_time_series_statistics, get_time_series_delta_ens, load_ensemble_set, \
   get_time_series_delta_ens_stats
+from ._fmu_input import load_parameters
 
 
 __all__ = ['scratch_ensemble',
@@ -22,4 +23,5 @@ __all__ = ['scratch_ensemble',
            'get_time_series_data',
            'get_time_series_statistics',
            'get_time_series_delta_ens',
-           'get_time_series_delta_ens_stats']
+           'get_time_series_delta_ens_stats',
+           'load_parameters']

@@ -250,11 +250,13 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         @app.callback(self.container_data_output,
                       [self.container_data_requested],
                       [State(self.tab_id, 'value'),
-                       State(self.chlst, 'value')])
+                       State(self.chlst, 'value'),
+                       State(self.dropwdown_vector_id, 'value')])
         def _user_download_data(
                 data_requested,
                 plot_type: str,
-                chlst: list):
+                chlst: list,
+                vector: str):
             """ Callback to download data as .csv (Summary)
 
                 Reads summary data from scratch into memory as ps.DataFrame and
@@ -283,7 +285,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )
+                    ).filter(items=[vector, 'DATE', 'IROENS - REFENS', 'REAL'])
 
                 else:
 
@@ -293,7 +295,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         column_keys=self.column_keys,
                         time_index=self.time_index,
                         ensemble_set_name=self.title
-                    )
+                    ).filter(items=[vector, 'DATE', 'ENSEMBLE', 'REAL'])
 
             if plot_type == 'summary_stats':
 
@@ -307,29 +309,24 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )
+                    ).filter(items=['STATISTIC', vector,
+                                    'DATE', 'IROENS - REFENS'])
 
                 else:
 
-                    file_name = 'delta_time_series_statistics'
+                    file_name = 'time_series_statistics'
                     requested_data = get_time_series_statistics(
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
-                    )
+                    ).filter(items=['STATISTIC', vector, 'DATE', 'ENSEMBLE'])
 
             return WebvizContainer.container_data_compress(
                 [{'filename': f'{file_name}.csv',
                   'content': requested_data.to_csv()}]
             ) if data_requested else ''
 
-
-# =============================================================================
-# Webvizstore
-# =============================================================================
-
     def add_webvizstore(self):
-
         """ selections of functions to be added to webvizstore. They include
         data to be laoded and values to be calculated for the plots.
         """
