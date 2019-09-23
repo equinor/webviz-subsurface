@@ -326,11 +326,6 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                   'content': requested_data.to_csv()}]
             ) if data_requested else ''
 
-
-# =============================================================================
-# Webvizstore
-# =============================================================================
-
     def add_webvizstore(self):
         """ selections of functions to be added to webvizstore. They include
         data to be laoded and values to be calculated for the plots.
