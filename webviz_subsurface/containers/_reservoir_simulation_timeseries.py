@@ -331,7 +331,6 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 # Webvizstore
 # =============================================================================
 
-
     def add_webvizstore(self):
         """ selections of functions to be added to webvizstore. They include
         data to be laoded and values to be calculated for the plots.
