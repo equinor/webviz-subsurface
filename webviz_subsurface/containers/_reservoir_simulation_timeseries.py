@@ -285,7 +285,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )[[vector, 'DATE', 'IROENS - REFENS', 'REAL']]
+                    ).filter(items=[vector, 'DATE', 'IROENS - REFENS', 'REAL'])
 
                 else:
 
@@ -295,7 +295,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         column_keys=self.column_keys,
                         time_index=self.time_index,
                         ensemble_set_name=self.title
-                    )[[vector, 'DATE', 'ENSEMBLE', 'REAL']]
+                    ).filter(items=[vector, 'DATE', 'ENSEMBLE', 'REAL'])
 
             if plot_type == 'summary_stats':
 
@@ -309,7 +309,8 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )
+                    ).filter(items=['STATISTIC', vector,
+                                    'DATE', 'IROENS - REFENS'])
 
                 else:
 
@@ -318,7 +319,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
-                    )
+                    ).filter(items=['STATISTIC', vector, 'DATE', 'ENSEMBLE'])
 
             return WebvizContainer.container_data_compress(
                 [{'filename': f'{file_name}.csv',
@@ -331,7 +332,6 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 # =============================================================================
 
     def add_webvizstore(self):
-
         """ selections of functions to be added to webvizstore. They include
         data to be laoded and values to be calculated for the plots.
         """
