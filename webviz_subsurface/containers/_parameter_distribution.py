@@ -22,8 +22,7 @@ with a marginal boxplot on top.
     def __init__(self, app, container_settings, ensembles):
 
         self.ensembles = tuple(
-            (ens, container_settings["scratch_ensembles"][ens])
-            for ens in ensembles
+            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
         )
         self.parameters = load_parameters(
             ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
@@ -60,33 +59,34 @@ with a marginal boxplot on top.
 
     @property
     def layout(self):
-        return html.Div([
-            html.H5("Select parameter distribution"),
-            html.Div(
-                style=self.set_grid_layout('8fr 1fr 2fr'),
-                children=[
-                    dcc.Dropdown(
-                        id=self.pcol_id,
-                        options=[
-                            {"value": col, "label": col}
-                            for col in self.parameter_columns
-                        ],
-                        value=self.parameter_columns[0],
-                        clearable=False,
-                    ),
-                    self.make_buttons(self.prev_btn_id, self.next_btn_id),
-                ]),
-            wcc.Graph(id=self.histogram_id),
-        ])
+        return html.Div(
+            [
+                html.H5("Select parameter distribution"),
+                html.Div(
+                    style=self.set_grid_layout("8fr 1fr 2fr"),
+                    children=[
+                        dcc.Dropdown(
+                            id=self.pcol_id,
+                            options=[
+                                {"value": col, "label": col}
+                                for col in self.parameter_columns
+                            ],
+                            value=self.parameter_columns[0],
+                            clearable=False,
+                        ),
+                        self.make_buttons(self.prev_btn_id, self.next_btn_id),
+                    ],
+                ),
+                wcc.Graph(id=self.histogram_id),
+            ]
+        )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.pcol_id, 'value'),
-            [
-                Input(self.prev_btn_id, "n_clicks"),
-                Input(self.next_btn_id, "n_clicks")
-            ],
-            [State(self.pcol_id, 'value')])
+            Output(self.pcol_id, "value"),
+            [Input(self.prev_btn_id, "n_clicks"), Input(self.next_btn_id, "n_clicks")],
+            [State(self.pcol_id, "value")],
+        )
         def _set_parameter_from_btn(prev_click, next_click, column):
 
             ctx = dash.callback_context.triggered
@@ -100,8 +100,8 @@ with a marginal boxplot on top.
             return column
 
         @app.callback(
-            Output(self.histogram_id, "figure"),
-            [Input(self.pcol_id, "value")])
+            Output(self.histogram_id, "figure"), [Input(self.pcol_id, "value")]
+        )
         def _set_parameter(column):
             param = self.parameters[[column, "REAL", "ENSEMBLE"]]
 
@@ -113,11 +113,9 @@ with a marginal boxplot on top.
                 hover_data=["REAL"],
                 barmode="overlay",
                 nbins=10,
-                range_x=[param[column].min(),  param[column].max()],
+                range_x=[param[column].min(), param[column].max()],
                 marginal="box",
-
-            ).for_each_trace(lambda t: t.update(
-                name=t.name.replace("ENSEMBLE=", "")))
+            ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=", "")))
 
             return plot
 
