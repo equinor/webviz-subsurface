@@ -5,9 +5,7 @@ from webviz_config.common_cache import cache
 from webviz_config.containers import ParameterCorrelation
 
 # mocked functions
-get_parameters = (
-    "webviz_subsurface.containers" "._parameter_correlation.get_parameters"
-)
+get_parameters = "webviz_subsurface.containers" "._parameter_correlation.get_parameters"
 
 
 def test_parameter_corr(dash_duo):

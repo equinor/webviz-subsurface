@@ -45,8 +45,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                 dcc.RadioItems(
                     id=self.plot_type_id,
                     options=[
-                        {"label": i, "value": i}
-                        for i in ["Pie chart", "Bar chart"]
+                        {"label": i, "value": i} for i in ["Pie chart", "Bar chart"]
                     ],
                     value="Pie chart",
                 ),
@@ -56,8 +55,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.chart_id, "figure"),
-            [Input(self.plot_type_id, "value")],
+            Output(self.chart_id, "figure"), [Input(self.plot_type_id, "value")]
         )
         def _update_plot(plot_type):
             if plot_type == "Pie chart":
@@ -85,10 +83,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                     }
                 ]
                 layout = {
-                    "yaxis": {
-                        "title": "Usage in Gigabytes",
-                        "family": "Equinor",
-                    },
+                    "yaxis": {"title": "Usage in Gigabytes", "family": "Equinor"},
                     "xaxis": {"title": "User name", "family": "Equinor"},
                 }
 

@@ -18,16 +18,11 @@ from ..datainput import scratch_ensemble
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
-def load_ensemble_set(
-    ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
-):
+def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
 
     return EnsembleSet(
         ensemble_set_name,
-        [
-            scratch_ensemble(ens_name, ens_path)
-            for ens_name, ens_path in ensemble_paths
-        ],
+        [scratch_ensemble(ens_name, ens_path) for ens_name, ens_path in ensemble_paths],
     )
 
 
@@ -37,9 +32,7 @@ def get_time_series_statistics(
     ensemble_paths: tuple, time_index: str, column_keys: tuple
 ) -> pd.DataFrame:
 
-    column_keys = (
-        list(column_keys) if isinstance(column_keys, (list, tuple)) else None
-    )
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     # Note: to be replaced by ensset.get_smry_stats()
     # when function is available.
@@ -65,9 +58,7 @@ def get_time_series_data(
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
 
-    column_keys = (
-        list(column_keys) if isinstance(column_keys, (list, tuple)) else None
-    )
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
         ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
@@ -93,9 +84,7 @@ def get_time_series_delta_ens(
     dataframe.
     """
 
-    column_keys = (
-        list(column_keys) if isinstance(column_keys, (list, tuple)) else None
-    )
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
         ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
@@ -130,9 +119,7 @@ def get_time_series_delta_ens_stats(
     get_time_series_delta_ens dataframe.
     """
 
-    column_keys = (
-        list(column_keys) if isinstance(column_keys, (list, tuple)) else None
-    )
+    column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
         ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
@@ -141,9 +128,9 @@ def get_time_series_delta_ens_stats(
     delta_ens_stats_dfs = []
     for ens_i in base_ensembles:
         for ens_ii in delta_ensembles:
-            fieldgain_stats_df = (
-                ensset[ens_i] - ensset[ens_ii]
-            ).get_smry_stats(column_keys=column_keys, time_index=time_index)
+            fieldgain_stats_df = (ensset[ens_i] - ensset[ens_ii]).get_smry_stats(
+                column_keys=column_keys, time_index=time_index
+            )
             fieldgain_stats_df["IROENS - REFENS"] = f"{ens_i} - {ens_ii}"
             delta_ens_stats_dfs.append(fieldgain_stats_df)
 

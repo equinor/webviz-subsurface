@@ -39,10 +39,7 @@ effect with other parameters.
                 dcc.Dropdown(
                     id=self.vector_id,
                     clearable=False,
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.vector_names)
-                    ],
+                    options=[{"label": i, "value": i} for i in list(self.vector_names)],
                     value=self.vector_names[0],
                 ),
                 Morris(id=self.graph_id),
@@ -78,9 +75,7 @@ effect with other parameters.
                         {
                             "main": list(name_df["morris_main"]),
                             "name": str(name),
-                            "interactions": list(
-                                name_df["morris_interaction"]
-                            ),
+                            "interactions": list(name_df["morris_interaction"]),
                         }
                     )
             return output, vector, parameters

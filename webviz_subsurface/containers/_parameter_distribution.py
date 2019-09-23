@@ -22,8 +22,7 @@ with a marginal boxplot on top.
     def __init__(self, app, container_settings, ensembles):
 
         self.ensembles = tuple(
-            (ens, container_settings["scratch_ensembles"][ens])
-            for ens in ensembles
+            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
         )
         self.parameters = load_parameters(
             ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
@@ -85,10 +84,7 @@ with a marginal boxplot on top.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.pcol_id, "value"),
-            [
-                Input(self.prev_btn_id, "n_clicks"),
-                Input(self.next_btn_id, "n_clicks"),
-            ],
+            [Input(self.prev_btn_id, "n_clicks"), Input(self.next_btn_id, "n_clicks")],
             [State(self.pcol_id, "value")],
         )
         def _set_parameter_from_btn(prev_click, next_click, column):
@@ -119,9 +115,7 @@ with a marginal boxplot on top.
                 nbins=10,
                 range_x=[param[column].min(), param[column].max()],
                 marginal="box",
-            ).for_each_trace(
-                lambda t: t.update(name=t.name.replace("ENSEMBLE=", ""))
-            )
+            ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=", "")))
 
             return plot
 

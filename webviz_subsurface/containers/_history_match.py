@@ -23,8 +23,7 @@ This container visualizes the quality of the history match.
 
         self.observation_file = observation_file
         self.ens_paths = tuple(
-            (ens, container_settings["scratch_ensembles"][ens])
-            for ens in ensembles
+            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
         )
 
         data = extract_mismatch(self.ens_paths, self.observation_file)
@@ -124,9 +123,7 @@ def _get_sorted_edges(number_observation_groups):
 
     monte_carlo_iterations = 100000
 
-    sorted_values = np.empty(
-        (number_observation_groups, monte_carlo_iterations)
-    )
+    sorted_values = np.empty((number_observation_groups, monte_carlo_iterations))
 
     for i in range(monte_carlo_iterations):
         sorted_values[:, i] = np.sort(

@@ -32,13 +32,10 @@ and scatter plot for any given pair of parameters.
 * `drop_constants`: Drop constant parameters
 """
 
-    def __init__(
-        self, app, container_settings, ensembles, drop_constants: bool = True
-    ):
+    def __init__(self, app, container_settings, ensembles, drop_constants: bool = True):
 
         self.ensembles = {
-            ens: container_settings["scratch_ensembles"][ens]
-            for ens in ensembles
+            ens: container_settings["scratch_ensembles"][ens] for ens in ensembles
         }
         self.drop_constants = drop_constants
         self.uid = f"{uuid4()}"
@@ -58,8 +55,7 @@ and scatter plot for any given pair of parameters.
     @property
     def p_cols(self):
         dfs = [
-            get_corr_data(ens, self.drop_constants)
-            for ens in self.ensembles.values()
+            get_corr_data(ens, self.drop_constants) for ens in self.ensembles.values()
         ]
         return sorted(list(pd.concat(dfs).columns))
 
@@ -78,8 +74,7 @@ and scatter plot for any given pair of parameters.
                 html.Div(
                     children=[
                         html.Label(
-                            "Set ensemble in all plots:",
-                            style={"font-weight": "bold"},
+                            "Set ensemble in all plots:", style={"font-weight": "bold"}
                         ),
                         html.Div(
                             style={
@@ -94,8 +89,7 @@ and scatter plot for any given pair of parameters.
                             ],
                         ),
                         html.Label(
-                            "Parameter horisontal axis",
-                            style={"font-weight": "bold"},
+                            "Parameter horisontal axis", style={"font-weight": "bold"}
                         ),
                         html.Div(
                             style={
@@ -107,8 +101,7 @@ and scatter plot for any given pair of parameters.
                                 dcc.Dropdown(
                                     id=self.p1_drop_id,
                                     options=[
-                                        {"label": p, "value": p}
-                                        for p in self.p_cols
+                                        {"label": p, "value": p} for p in self.p_cols
                                     ],
                                     value=self.p_cols[0],
                                     clearable=False,
@@ -119,8 +112,7 @@ and scatter plot for any given pair of parameters.
                             ],
                         ),
                         html.Label(
-                            "Parameter vertical axis",
-                            style={"font-weight": "bold"},
+                            "Parameter vertical axis", style={"font-weight": "bold"}
                         ),
                         html.Div(
                             style={
@@ -132,8 +124,7 @@ and scatter plot for any given pair of parameters.
                                 dcc.Dropdown(
                                     id=self.p2_drop_id,
                                     options=[
-                                        {"label": p, "value": p}
-                                        for p in self.p_cols
+                                        {"label": p, "value": p} for p in self.p_cols
                                     ],
                                     value=self.p_cols[0],
                                     clearable=False,
@@ -143,14 +134,10 @@ and scatter plot for any given pair of parameters.
                                 ),
                             ],
                         ),
-                        html.Label(
-                            "Color scatter by", style={"font-weight": "bold"}
-                        ),
+                        html.Label("Color scatter by", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.scatter_color_id,
-                            options=[
-                                {"label": p, "value": p} for p in self.p_cols
-                            ],
+                            options=[{"label": p, "value": p} for p in self.p_cols],
                         ),
                     ]
                 ),
@@ -161,9 +148,7 @@ and scatter plot for any given pair of parameters.
                         "grid-template-columns": "3fr 1fr 4fr",
                     },
                     children=[
-                        html.Label(
-                            "Show density plot", style={"font-weight": "bold"}
-                        ),
+                        html.Label("Show density plot", style={"font-weight": "bold"}),
                         daq.ToggleSwitch(id=self.density_id, value=True),
                     ],
                 ),
@@ -175,20 +160,11 @@ and scatter plot for any given pair of parameters.
         return html.Div(
             children=[
                 html.Div(
-                    style={
-                        "display": "grid",
-                        "grid-template-columns": "3fr 2fr",
-                    },
-                    children=[
-                        html.Div(children=[self.matrix_plot]),
-                        self.control_div,
-                    ],
+                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
+                    children=[html.Div(children=[self.matrix_plot]), self.control_div],
                 ),
                 html.Div(
-                    style={
-                        "display": "grid",
-                        "grid-template-columns": "3fr 2fr",
-                    },
+                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
                     children=wcc.Graph(id=self.scatter_id),
                 ),
             ]
@@ -252,10 +228,7 @@ and scatter plot for any given pair of parameters.
                 Output(self.ens_p1_id, "value"),
                 Output(self.ens_p2_id, "value"),
             ],
-            [
-                Input(self.matrix_id, "clickData"),
-                Input(self.ens_matrix_id, "value"),
-            ],
+            [Input(self.matrix_id, "clickData"), Input(self.ens_matrix_id, "value")],
         )
         def _update_from_click(cd, ens):
             try:
@@ -268,12 +241,7 @@ and scatter plot for any given pair of parameters.
 
     def add_webvizstore(self):
         return [
-            (
-                [
-                    get_parameters,
-                    [{"ensemble_path": v} for v in self.ensembles.values()],
-                ]
-            )
+            ([get_parameters, [{"ensemble_path": v} for v in self.ensembles.values()]])
         ]
 
 
@@ -289,9 +257,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
     if ens1 == ens2:
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
     else:
-        real_text = [
-            f"Realization:{r}(x)" for r in get_parameters(ens2)["REAL"]
-        ]
+        real_text = [f"Realization:{r}(x)" for r in get_parameters(ens2)["REAL"]]
 
     x = get_parameters(ens1)[x_col]
     y = get_parameters(ens2)[y_col]

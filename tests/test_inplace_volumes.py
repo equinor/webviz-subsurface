@@ -5,9 +5,7 @@ from webviz_config.common_cache import cache
 from webviz_config.containers import InplaceVolumes
 
 # mocked functions
-extract_volumes = (
-    "webviz_subsurface.containers" "._inplace_volumes.extract_volumes"
-)
+extract_volumes = "webviz_subsurface.containers" "._inplace_volumes.extract_volumes"
 
 
 def test_inplace_volumes(dash_duo):

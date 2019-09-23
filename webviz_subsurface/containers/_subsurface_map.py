@@ -25,12 +25,7 @@ in the simulation output using streamlines.
 """
 
     def __init__(
-        self,
-        container_settings,
-        ensemble,
-        map_value: str,
-        flow_value: str,
-        time_step,
+        self, container_settings, ensemble, map_value: str, flow_value: str, time_step
     ):
 
         self.map_id = "map-{}".format(uuid4())
@@ -70,9 +65,7 @@ def get_map_data(ensemble_path, map_value, flow_value, time_step):
     https://github.com/equinor/webviz-subsurface-components
     """
 
-    grid = get_uncompressed_data(
-        ensemble_path, map_value, flow_value, time_step
-    )
+    grid = get_uncompressed_data(ensemble_path, map_value, flow_value, time_step)
 
     INDICES_COL = ["i", "j", "k"]
     X_COL = ["x0", "x1", "x2", "x3"]

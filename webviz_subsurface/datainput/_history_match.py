@@ -22,15 +22,12 @@ def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
     """
 
     list_ens = [
-        scratch_ensemble(ensemble_name, path)
-        for (ensemble_name, path) in ens_paths
+        scratch_ensemble(ensemble_name, path) for (ensemble_name, path) in ens_paths
     ]
 
     ens_data = fmu.ensemble.EnsembleSet("HistoryMatch", list_ens)
 
-    df_mismatch = fmu.ensemble.Observations(str(observation_file)).mismatch(
-        ens_data
-    )
+    df_mismatch = fmu.ensemble.Observations(str(observation_file)).mismatch(ens_data)
 
     df_mismatch["NORMALISED_MISMATCH"] = df_mismatch["L2"] / (
         df_mismatch["MEASERROR"] ** 2

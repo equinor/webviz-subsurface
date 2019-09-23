@@ -49,15 +49,12 @@ csv files stored on standard format.
     ):
 
         self.ens_paths = tuple(
-            (ens, container_settings["scratch_ensembles"][ens])
-            for ens in ensembles
+            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
         )
         self.volfiles = tuple(volfiles.items())
         self.volfolder = volfolder
         self.initial_response = response
-        self.volumes = extract_volumes(
-            self.ens_paths, self.volfolder, self.volfiles
-        )
+        self.volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
         self.radio_plot_type_id = "radio-plot-type-{}".format(uuid4())
         self.response_id = "response-{}".format(uuid4())
         self.chart_id = "chart-{}".format(uuid4())
@@ -113,11 +110,7 @@ csv files stored on standard format.
     @property
     def responses(self):
         """List of available volume responses in dframe"""
-        return [
-            x
-            for x in self.vol_columns
-            if x not in self.selectors and x != "REAL"
-        ]
+        return [x for x in self.vol_columns if x not in self.selectors and x != "REAL"]
 
     @property
     def vol_callback_inputs(self):
@@ -160,8 +153,7 @@ csv files stored on standard format.
                                 dcc.Dropdown(
                                     id=self.selectors_id[selector],
                                     options=[
-                                        {"label": i, "value": i}
-                                        for i in elements
+                                        {"label": i, "value": i} for i in elements
                                     ],
                                     value=value,
                                     multi=multi,
@@ -216,9 +208,7 @@ csv files stored on standard format.
                             id=self.response_id,
                             options=[
                                 {
-                                    "label": InplaceVolumes.RESPONSES.get(
-                                        i, i
-                                    ),
+                                    "label": InplaceVolumes.RESPONSES.get(i, i),
                                     "value": i,
                                 }
                                 for i in self.responses
@@ -234,10 +224,7 @@ csv files stored on standard format.
                         html.P("Plot type:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.radio_plot_type_id,
-                            options=[
-                                {"label": i, "value": i}
-                                for i in self.plot_types
-                            ],
+                            options=[{"label": i, "value": i} for i in self.plot_types],
                             value="Per realization",
                         ),
                     ]
@@ -271,9 +258,7 @@ csv files stored on standard format.
                         ),
                         html.Div(
                             children=[
-                                html.P(
-                                    "Filters:", style={"font-weight": "bold"}
-                                ),
+                                html.P("Filters:", style={"font-weight": "bold"}),
                                 html.Div(children=self.selector_dropdowns),
                             ]
                         ),
@@ -283,9 +268,7 @@ csv files stored on standard format.
         )
 
     def set_callbacks(self, app):
-        @app.callback(
-            Output(self.chart_id, "children"), self.vol_callback_inputs
-        )
+        @app.callback(Output(self.chart_id, "children"), self.vol_callback_inputs)
         def _render_vol_chart(*args):
             """Renders a volume visualization either as a Plotly Graph or
             as a Dash table object.
@@ -320,16 +303,12 @@ csv files stored on standard format.
             # Make a dash table if table is selected
             if plot_type == "Table":
                 return dash_table.DataTable(
-                    columns=[{"name": i, "id": i} for i in self.table_cols],
-                    data=traces,
+                    columns=[{"name": i, "id": i} for i in self.table_cols], data=traces
                 )
             # Else make a graph object
             else:
                 return wcc.Graph(
-                    figure={
-                        "data": traces,
-                        "layout": plot_layout(plot_type, response),
-                    }
+                    figure={"data": traces, "layout": plot_layout(plot_type, response)}
                 )
 
         @app.callback(

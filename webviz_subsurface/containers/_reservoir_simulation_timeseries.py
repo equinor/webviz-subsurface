@@ -50,23 +50,17 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
         self.uid = f"{uuid4()}"
         self.time_index = sampling
         self.column_keys = (
-            tuple(column_keys)
-            if isinstance(column_keys, (list, tuple))
-            else None
+            tuple(column_keys) if isinstance(column_keys, (list, tuple)) else None
         )
         self.ensemble_paths = tuple(
             (ensemble, container_settings["scratch_ensembles"][ensemble])
             for ensemble in ensembles
         )
         self.base_ensembles = tuple(
-            base_ensembles
-            if base_ensembles
-            else [i[0] for i in self.ensemble_paths]
+            base_ensembles if base_ensembles else [i[0] for i in self.ensemble_paths]
         )
         self.delta_ensembles = tuple(
-            delta_ensembles
-            if delta_ensembles
-            else [i[0] for i in self.ensemble_paths]
+            delta_ensembles if delta_ensembles else [i[0] for i in self.ensemble_paths]
         )
         self.dropwdown_vector_id = f"dropdown-vector-{self.uid}"
         self.chart_id = f"chart-id-{self.uid}"
@@ -94,11 +88,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
             ]
         )
         self.vctr_cols_no_hist = tuple(
-            [
-                vctr
-                for vctr in self.vector_columns
-                if vctr not in self.history_vctr_cols
-            ]
+            [vctr for vctr in self.vector_columns if vctr not in self.history_vctr_cols]
         )
         self.set_callbacks(app)
 
@@ -126,8 +116,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                             id=self.dropwdown_vector_id,
                             clearable=False,
                             options=[
-                                {"label": i, "value": i}
-                                for i in self.vctr_cols_no_hist
+                                {"label": i, "value": i} for i in self.vctr_cols_no_hist
                             ],
                             value=self.vctr_cols_no_hist[0],
                         ),
@@ -178,12 +167,8 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                             id=self.tab_id,
                             value="summary_data",
                             children=[
-                                dcc.Tab(
-                                    label="Realizations", value="summary_data"
-                                ),
-                                dcc.Tab(
-                                    label="Statistics", value="summary_stats"
-                                ),
+                                dcc.Tab(label="Realizations", value="summary_data"),
+                                dcc.Tab(label="Statistics", value="summary_stats"),
                             ],
                         ),
                         html.Div(id="tabs-content"),
@@ -200,8 +185,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.show_ens_selectors, "style"),
-            [Input(self.chlst, "value")],
+            Output(self.show_ens_selectors, "style"), [Input(self.chlst, "value")]
         )
         def _func_show_ens_selectors(chlst: list):
             """ callback to update the styling of div that includes the
@@ -216,8 +200,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
             return {} if "show_delta_series" in chlst else {"display": "none"}
 
         @app.callback(
-            Output(self.chlst, "options"),
-            [Input(self.dropwdown_vector_id, "value")],
+            Output(self.chlst, "options"), [Input(self.dropwdown_vector_id, "value")]
         )
         def _update_chlst(vctr: str):
             """ callback to update checklist options to include available
@@ -234,9 +217,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
             if vctr + "H" in self.history_vctr_cols:
                 options.append(["Show H-Vctr", "show_h_vctr"])
 
-            return [
-                {"label": label, "value": value} for label, value in options
-            ]
+            return [{"label": label, "value": value} for label, value in options]
 
         @app.callback(
             Output(self.chart_id, "children"),
@@ -365,9 +346,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    ).filter(
-                        items=["STATISTIC", vector, "DATE", "IROENS - REFENS"]
-                    )
+                    ).filter(items=["STATISTIC", vector, "DATE", "IROENS - REFENS"])
 
                 else:
 
@@ -546,9 +525,7 @@ def render_realization_plot(
         for i in refens:
 
             compared_ensembles = f"{iorens} - {i}"
-            delta_val = delta_vals[
-                delta_vals["IROENS - REFENS"] == compared_ensembles
-            ]
+            delta_val = delta_vals[delta_vals["IROENS - REFENS"] == compared_ensembles]
 
             plot_traces += trace_group(
                 ens_smry_data=delta_val[["REAL", "DATE", vector]],
@@ -648,8 +625,7 @@ def render_stat_plot(
 
             compared_ensembles = f"{iorens} - {i}"
             delta_val_stats = delta_time_series_stats[
-                delta_time_series_stats["IROENS - REFENS"]
-                == compared_ensembles
+                delta_time_series_stats["IROENS - REFENS"] == compared_ensembles
             ]
 
             data += time_series_confidence_interval_traces(
@@ -687,12 +663,12 @@ def trace_group(ens_smry_data, ens, vector, color):
     # 1st and only trace of the legendgroup to show up in legend
     ens_traces.append(
         {
-            "x": ens_smry_data[
-                ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]
-            ]["DATE"],
-            "y": ens_smry_data[
-                ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]
-            ][vector],
+            "x": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
+                "DATE"
+            ],
+            "y": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
+                vector
+            ],
             "legendgroup": ens,
             "hovertext": f"Realization: {ens_smry_data.REAL.unique()[0]}",
             "hoverinfo": "y+x+text",
@@ -735,12 +711,12 @@ def single_trace(ens_smry_data, ens: str, vector: str, color: str):
     """
 
     return {
-        "x": ens_smry_data[
-            ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]
-        ]["DATE"],
-        "y": ens_smry_data[
-            ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]
-        ][vector],
+        "x": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
+            "DATE"
+        ],
+        "y": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
+            vector
+        ],
         "legendgroup": ens,
         "name": ens,
         "type": "markers",

@@ -125,11 +125,7 @@ and a folder of well files stored in RMS well format.
         for s_name in surf_names:
             traces.extend(
                 make_surface_traces(
-                    well,
-                    reals,
-                    s_name,
-                    self.surface_cat,
-                    self.surface_colors[s_name],
+                    well, reals, s_name, self.surface_cat, self.surface_colors[s_name]
                 ).to_dict("rows")
             )
         traces.append(make_well_trace(well, tvdmin))
@@ -139,11 +135,7 @@ and a folder of well files stored in RMS well format.
     def graph_layout(self):
         """Styling the graph"""
         return {
-            "yaxis": {
-                "autorange": "reversed",
-                "zeroline": False,
-                "title": "TVD",
-            },
+            "yaxis": {"autorange": "reversed", "zeroline": False, "title": "TVD"},
             "xaxis": {"zeroline": False, "title": "Well horizontal distance"},
         }
 
@@ -160,19 +152,13 @@ and a folder of well files stored in RMS well format.
                                 dcc.Dropdown(
                                     id=self.well_list_id,
                                     options=[
-                                        {
-                                            "label": PurePath(well).stem,
-                                            "value": well,
-                                        }
+                                        {"label": PurePath(well).stem, "value": well}
                                         for well in self.well_names
                                     ],
                                     value=self.well_names[0],
                                     clearable=False,
                                 ),
-                                html.P(
-                                    "Realization:",
-                                    style={"font-weight": "bold"},
-                                ),
+                                html.P("Realization:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.real_list_id,
                                     options=[
@@ -183,9 +169,7 @@ and a folder of well files stored in RMS well format.
                                     multi=True,
                                     placeholder="All realizations",
                                 ),
-                                html.P(
-                                    "Surfaces:", style={"font-weight": "bold"}
-                                ),
+                                html.P("Surfaces:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.surf_list_id,
                                     options=[
@@ -220,8 +204,7 @@ and a folder of well files stored in RMS well format.
                             style={"height": "80vh"},
                             children=[
                                 wcc.Graph(
-                                    style={"height": "80vh"},
-                                    id=self.intersection_id,
+                                    style={"height": "80vh"}, id=self.intersection_id
                                 ),
                                 html.Div(
                                     style=Intersect.FENCE_OPTION_STYLE,
@@ -291,10 +274,7 @@ and a folder of well files stored in RMS well format.
         @app.callback(
             Output(self.table_id, "data"),
             [Input(self.intersection_id, "hoverData")],
-            [
-                State(self.intersection_id, "figure"),
-                State(self.surf_list_id, "value"),
-            ],
+            [State(self.intersection_id, "figure"), State(self.surf_list_id, "value")],
         )
         def _hover(_data, _fig, _surfaces):
             """Callback to update table on mouse over"""
@@ -314,9 +294,7 @@ and a folder of well files stored in RMS well format.
                 _surfaces = [_surfaces]
             if not _surfaces:
                 _surfaces = self.surface_names
-            names = {
-                s: {"vals": [], "min": None, "max": None} for s in _surfaces
-            }
+            names = {s: {"vals": [], "min": None, "max": None} for s in _surfaces}
 
             for i, p in enumerate(_data["points"]):
                 try:
