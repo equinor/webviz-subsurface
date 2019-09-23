@@ -10,7 +10,7 @@ import dash_core_components as dcc
 
 
 class SurfaceSelector:
-    '''### Surface Selector
+    """### Surface Selector
 
 Creates a widget to select surfaces from a configuration file.
 The current selection are stored in a dcc.Store object that can
@@ -34,7 +34,8 @@ another_property:
     dates:
         - somedate
         - somedata
-'''
+"""
+
     def __init__(self, app, yaml_file, ensembles):
         self._configuration = yaml.safe_load(open(yaml_file, "r"))
         self._ensembles = ensembles
@@ -44,7 +45,7 @@ another_property:
 
     @property
     def storage_id(self):
-        '''The id of the dcc.Store component that holds the selection'''
+        """The id of the dcc.Store component that holds the selection"""
         return self._storage_id
 
     def set_ids(self):
@@ -113,15 +114,12 @@ another_property:
                         dcc.Dropdown(
                             id=self.attr_id,
                             options=[
-                                {"label": attr, "value": attr}
-                                for attr in self.attrs
+                                {"label": attr, "value": attr} for attr in self.attrs
                             ],
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(
-                            self.attr_id_btn_prev, self.attr_id_btn_next
-                        ),
+                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
                     ],
                 ),
             ],
@@ -147,9 +145,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(
-                            self.name_id_btn_prev, self.name_id_btn_next
-                        ),
+                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
                     ],
                 ),
             ],
@@ -166,9 +162,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(
-                            self.date_id_btn_prev, self.date_id_btn_next
-                        ),
+                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
                     ],
                 ),
             ],
@@ -187,15 +181,13 @@ another_property:
                         dcc.Dropdown(
                             id=self.ensemble_id,
                             options=[
-                                {"label": ens, "value": ens}
-                                for ens in self.ensembles
+                                {"label": ens, "value": ens} for ens in self.ensembles
                             ],
                             value=self.ensembles[0],
                             clearable=False,
                         ),
                         self.make_buttons(
-                            self.ensemble_id_btn_prev,
-                            self.ensemble_id_btn_next,
+                            self.ensemble_id_btn_prev, self.ensemble_id_btn_next
                         ),
                     ],
                 ),
@@ -214,21 +206,14 @@ another_property:
                         dcc.Dropdown(
                             id=self.aggreal_id,
                             options=[
-                                {
-                                    "label": "Aggregation",
-                                    "value": "Aggregation",
-                                },
-                                {
-                                    "label": "Realization",
-                                    "value": "Realization",
-                                },
+                                {"label": "Aggregation", "value": "Aggregation"},
+                                {"label": "Realization", "value": "Realization"},
                             ],
                             value="Aggregation",
                         ),
                         dcc.Dropdown(id=self.realization_id, clearable=False),
                         self.make_buttons(
-                            self.realization_id_btn_prev,
-                            self.realization_id_btn_next,
+                            self.realization_id_btn_prev, self.realization_id_btn_next
                         ),
                     ],
                 ),
