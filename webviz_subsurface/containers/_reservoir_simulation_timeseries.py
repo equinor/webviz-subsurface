@@ -285,7 +285,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
+                    )[[vector, 'DATE', 'IROENS - REFENS', 'REAL']]
 
                 else:
 
@@ -295,7 +295,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         column_keys=self.column_keys,
                         time_index=self.time_index,
                         ensemble_set_name=self.title
-                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
+                    )[[vector, 'DATE', 'ENSEMBLE', 'REAL']]
 
             if plot_type == 'summary_stats':
 
@@ -309,16 +309,16 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
                         ensemble_set_name=self.title,
-                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
+                    )
 
                 else:
 
-                    file_name = 'delta_time_series_statistics'
+                    file_name = 'time_series_statistics'
                     requested_data = get_time_series_statistics(
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
-                    )[[vector, "DATE", "ENSEMBLE", "REAL"]]
+                    )
 
             return WebvizContainer.container_data_compress(
                 [{'filename': f'{file_name}.csv',
