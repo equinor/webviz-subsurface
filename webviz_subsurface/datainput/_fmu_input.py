@@ -1,11 +1,10 @@
 import pandas as pd
-
+from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
 try:
     from fmu.ensemble import ScratchEnsemble, EnsembleSet
 except ImportError:
     pass
-from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
 
 
 @cache.memoize(timeout=cache.TIMEOUT)

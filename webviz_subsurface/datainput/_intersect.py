@@ -1,11 +1,11 @@
 import os
-import pandas as pd
 
+import pandas as pd
+from webviz_config.common_cache import cache
 try:
     import xtgeo
 except ImportError:
     pass
-from webviz_config.common_cache import cache
 
 
 @cache.memoize(timeout=cache.TIMEOUT)

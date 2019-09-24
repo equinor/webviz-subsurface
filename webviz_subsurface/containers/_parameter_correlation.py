@@ -1,13 +1,15 @@
 from uuid import uuid4
+
 import pandas as pd
+import dash_daq as daq
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
-import dash_daq as daq
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
+
 from ..datainput import scratch_ensemble
 
 
