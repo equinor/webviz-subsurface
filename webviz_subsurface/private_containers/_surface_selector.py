@@ -1,4 +1,3 @@
-import os
 from uuid import uuid4
 import json
 import yaml
@@ -114,12 +113,15 @@ another_property:
                         dcc.Dropdown(
                             id=self.attr_id,
                             options=[
-                                {"label": attr, "value": attr} for attr in self.attrs
+                                {"label": attr, "value": attr}
+                                for attr in self.attrs
                             ],
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
+                        self.make_buttons(
+                            self.attr_id_btn_prev, self.attr_id_btn_next
+                        ),
                     ],
                 ),
             ],
@@ -145,7 +147,9 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
+                        self.make_buttons(
+                            self.name_id_btn_prev, self.name_id_btn_next
+                        ),
                     ],
                 ),
             ],
@@ -162,7 +166,9 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
+                        self.make_buttons(
+                            self.date_id_btn_prev, self.date_id_btn_next
+                        ),
                     ],
                 ),
             ],
@@ -181,13 +187,15 @@ another_property:
                         dcc.Dropdown(
                             id=self.ensemble_id,
                             options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
+                                {"label": ens, "value": ens}
+                                for ens in self.ensembles
                             ],
                             value=self.ensembles[0],
                             clearable=False,
                         ),
                         self.make_buttons(
-                            self.ensemble_id_btn_prev, self.ensemble_id_btn_next
+                            self.ensemble_id_btn_prev,
+                            self.ensemble_id_btn_next,
                         ),
                     ],
                 ),
@@ -206,21 +214,29 @@ another_property:
                         dcc.Dropdown(
                             id=self.aggreal_id,
                             options=[
-                                {"label": "Aggregation", "value": "Aggregation"},
-                                {"label": "Realization", "value": "Realization"},
+                                {
+                                    "label": "Aggregation",
+                                    "value": "Aggregation",
+                                },
+                                {
+                                    "label": "Realization",
+                                    "value": "Realization",
+                                },
                             ],
                             value="Aggregation",
                         ),
                         dcc.Dropdown(id=self.realization_id, clearable=False),
                         self.make_buttons(
-                            self.realization_id_btn_prev, self.realization_id_btn_next
+                            self.realization_id_btn_prev,
+                            self.realization_id_btn_next,
                         ),
                     ],
                 ),
             ],
         )
 
-    def set_grid_layout(self, columns):
+    @staticmethod
+    def set_grid_layout(columns):
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -255,7 +271,7 @@ another_property:
             ],
             [State(self.attr_id, "value")],
         )
-        def update_attr(n_prev, n_next, current_value):
+        def _update_attr(n_prev, n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx or not current_value:
                 raise PreventUpdate
@@ -275,7 +291,7 @@ another_property:
             ],
             [State(self.ensemble_id, "value")],
         )
-        def update_ensemble(n_prev, n_next, current_value):
+        def _update_ensemble(n_prev, n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx or not current_value:
                 raise PreventUpdate
@@ -301,7 +317,7 @@ another_property:
             ],
             [State(self.name_id, "value")],
         )
-        def update_name(attr, n_prev, n_next, current_value):
+        def _update_name(attr, n_prev, n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
@@ -332,7 +348,7 @@ another_property:
             ],
             [State(self.date_id, "value")],
         )
-        def update_date(attr, n_prev, n_next, current_value):
+        def _update_date(attr, n_prev, n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
@@ -364,7 +380,7 @@ another_property:
             ],
             [State(self.realization_id, "value")],
         )
-        def update_real(ensemble, aggreal, n_prev, n_next, current_value):
+        def _update_real(ensemble, aggreal, n_prev, n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
@@ -395,7 +411,7 @@ another_property:
                 Input(self.realization_id, "value"),
             ],
         )
-        def set_data(attr, name, date, ensemble, aggreal, realization):
+        def _set_data(attr, name, date, ensemble, aggreal, realization):
             return json.dumps(
                 {
                     "attribute": attr,
