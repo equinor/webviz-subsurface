@@ -3,8 +3,8 @@ from ._image_processing import get_colormap, array_to_png
 from xtgeo.surface import RegularSurface
 
 
-class LayeredSurface():
-    '''### LayeredSurface
+class LayeredSurface:
+    """### LayeredSurface
 
     Class to generate input for a LayeredMap component
     to visualize regular surfaces in a top-down perspective.
@@ -15,9 +15,9 @@ class LayeredSurface():
     * `name: Name of the layer
     * `surface`: XTGeo RegularSurface
     * `colormap`: Matplotlib colormap to use
-    '''
+    """
 
-    def __init__(self, name, surface: RegularSurface, colormap='viridis'):
+    def __init__(self, name, surface: RegularSurface, colormap="viridis"):
         self.name = name
         self.get_surface_array(surface)
         self.colormap = get_colormap(colormap)
@@ -35,26 +35,32 @@ class LayeredSurface():
         self.max = s.values.max()
 
     def add_well(self, name, well):
-        df = well.get_polygons().get_xyz_dataframe()[['X_UTME', 'Y_UTMN']]
+        df = well.get_polygons().get_xyz_dataframe()[["X_UTME", "Y_UTMN"]]
 
         values = df.to_numpy().tolist()
         values = values[:-1]
-        data = {'type': 'polyline',
-                'color': 'black',
-                'tooltip': name,
-                'metadata': {'type': 'well', 'name': name},
-                'positions': values}
+        data = {
+            "type": "polyline",
+            "color": "black",
+            "tooltip": name,
+            "metadata": {"type": "well", "name": name},
+            "positions": values,
+        }
         if not self.well_layer:
-            self.well_layer = {'name': 'Wells',
-                               'checked': True,
-                               'base_layer': False,
-                               'data': []}
-        self.well_layer['data'].append(data)
+            self.well_layer = {
+                "name": "Wells",
+                "checked": True,
+                "base_layer": False,
+                "data": [],
+            }
+        self.well_layer["data"].append(data)
 
     @property
     def bounds(self):
-        return [[np.min(self.arr[0]), np.min(self.arr[1])],
-                [np.max(self.arr[0]), np.max(self.arr[1])]]
+        return [
+            [np.min(self.arr[0]), np.min(self.arr[1])],
+            [np.max(self.arr[0]), np.max(self.arr[1])],
+        ]
 
     @property
     def center(self):
@@ -70,18 +76,24 @@ class LayeredSurface():
 
     @property
     def layers(self):
-        all_layers = [{'name': self.name,
-                       'checked': True,
-                       'base_layer': True,
-                       'data': [{'type': 'image',
-                                 'url': self.as_png,
-                                 'colormap': self.colormap,
-                                 'bounds': self.bounds,
-                                 'minvalue': f'{self.min:.2f}',
-                                 'maxvalue': f'{self.max:.2f}',
-                                 'unit': 'm'
-                                 }]
-                       }]
+        all_layers = [
+            {
+                "name": self.name,
+                "checked": True,
+                "base_layer": True,
+                "data": [
+                    {
+                        "type": "image",
+                        "url": self.as_png,
+                        "colormap": self.colormap,
+                        "bounds": self.bounds,
+                        "minvalue": f"{self.min:.2f}",
+                        "maxvalue": f"{self.max:.2f}",
+                        "unit": "m",
+                    }
+                ],
+            }
+        ]
         if self.well_layer:
             all_layers.append(self.well_layer)
 

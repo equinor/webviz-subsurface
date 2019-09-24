@@ -4,7 +4,7 @@ from xtgeo import RegularSurface, Cube, Grid, GridProperty
 
 
 class LayeredFence:
-    '''### LayeredFence
+    """### LayeredFence
 
     Class to generate input for a LayeredMap component
     to visualize subsurface data in a fence/cross-section perspective.
@@ -15,7 +15,7 @@ class LayeredFence:
     * `polyspec`: 2D numpy with X, Y, Z, horizontal length as rows
     * `hincrement`: Increment to sample the fence  horizontally
 
-    '''
+    """
 
     def __init__(self, fencespec, hincrement: int = 5):
 
@@ -29,44 +29,39 @@ class LayeredFence:
 
     @property
     def bounds(self):
-        '''Bounds of the component'''
+        """Bounds of the component"""
         return self._bounds
 
     @property
     def center(self):
-        '''Center of the component'''
+        """Center of the component"""
         return self._center
 
     def set_bounds_and_center(self, data: [RegularSurface, Cube, tuple]):
-        '''Set bounds and center from data'''
+        """Set bounds and center from data"""
         if isinstance(data, RegularSurface):
             x, y = self.slice_surface(data.copy())
-            self._bounds = [
-                [np.nanmin(x), np.nanmin(y)],
-                [np.nanmax(x), np.nanmax(y)]
-            ]
+            self._bounds = [[np.nanmin(x), np.nanmin(y)], [np.nanmax(x), np.nanmax(y)]]
             self._center = [np.mean(x), np.mean(y)]
 
         elif isinstance(data, Cube):
 
             cubefence = self.slice_cube(data)
-            self._bounds = cubefence['bounds']
-            self._center = cubefence['center']
+            self._bounds = cubefence["bounds"]
+            self._center = cubefence["center"]
 
-        elif (isinstance(data[0], Grid) and
-              isinstance(data[1], GridProperty)):
+        elif isinstance(data[0], Grid) and isinstance(data[1], GridProperty):
             grid = data[0]
             prop = data[1]
             gridfence = self.slice_grid(grid, prop)
-            self._bounds = gridfence['bounds']
-            self._center = gridfence['center']
+            self._bounds = gridfence["bounds"]
+            self._center = gridfence["center"]
 
         else:
-            raise TypeError(
-                'Input must be a Xtgeo surface, cube or grid/grid property')
+            raise TypeError("Input must be a Xtgeo surface, cube or grid/grid property")
 
     def slice_grid(self, grid, prop, invert_y=True):
-        '''Extract line along the fencespec for the grid property'''
+        """Extract line along the fencespec for the grid property"""
 
         hmin, hmax, vmin, vmax, values = grid.get_randomline(
             self.fencespec, prop, hincrement=self.hinc
@@ -78,12 +73,12 @@ class LayeredFence:
             ymin = vmin
             ymax = vmax
         bounds = [[hmin, ymin], [hmax, ymax]]
-        center = [(hmin+hmax)/2, (ymax+ymin)/2]
+        center = [(hmin + hmax) / 2, (ymax + ymin) / 2]
 
-        return {'values': values, 'bounds': bounds, 'center': center}
+        return {"values": values, "bounds": bounds, "center": center}
 
     def slice_cube(self, cube, invert_y=True):
-        '''Extract line along the fencespec for the cube'''
+        """Extract line along the fencespec for the cube"""
         hmin, hmax, vmin, vmax, values = cube.get_randomline(
             self.fencespec, hincrement=self.hinc
         )
@@ -94,12 +89,12 @@ class LayeredFence:
             ymin = vmin
             ymax = vmax
         bounds = [[hmin, ymin], [hmax, ymax]]
-        center = [(hmin+hmax)/2, (ymax+ymin)/2]
+        center = [(hmin + hmax) / 2, (ymax + ymin) / 2]
 
-        return {'values': values, 'bounds': bounds, 'center': center}
+        return {"values": values, "bounds": bounds, "center": center}
 
     def slice_surface(self, surface, invert_y=True):
-        '''Extract line along the fencespec for the surface'''
+        """Extract line along the fencespec for the surface"""
         s = surface.copy()
         values = s.get_randomline(self.fencespec, hincrement=self.hinc)
         x = values[:, 0]
@@ -113,103 +108,107 @@ class LayeredFence:
         surface: RegularSurface,
         name: str,
         tooltip: str = None,
-        color: str = 'blue',
+        color: str = "blue",
         checked: bool = True,
     ):
-        '''Adds a polyline overlay layer
-        for a given XTGeo surface'''
+        """Adds a polyline overlay layer
+        for a given XTGeo surface"""
 
         x_arr, y_arr = self.slice_surface(surface.copy())
         positions = [[x, y] for x, y in zip(x_arr, y_arr)]
 
         self._surface_layers.append(
             {
-                'name': name,
-                'checked': checked,
-                'base_layer': False,
-                'data': [
+                "name": name,
+                "checked": checked,
+                "base_layer": False,
+                "data": [
                     {
-                        'type': 'polyline',
-                        'positions': positions,
-                        'color': color,
-                        'tooltip': tooltip if tooltip else name,
+                        "type": "polyline",
+                        "positions": positions,
+                        "color": color,
+                        "tooltip": tooltip if tooltip else name,
                     }
                 ],
             }
         )
 
-    def set_cube_base_layer(self, cube: Cube, name: str,
-                            colormap: str = 'RdBu'):
-        '''Slices a Xtgeo seismic cube along the fencespec
+    def set_cube_base_layer(self, cube: Cube, name: str, colormap: str = "RdBu"):
+        """Slices a Xtgeo seismic cube along the fencespec
         and visualizes as a bitmap image with the given colormap.
 
         * `name`: Name of the layer
         * `cube`: XTGeo Cube
         * `colormap`: Matplotlib colormap to use
-        '''
+        """
         cubefence = self.slice_cube(cube)
-        bounds = cubefence['bounds']
-        values = cubefence['values']
+        bounds = cubefence["bounds"]
+        values = cubefence["values"]
         url = array_to_png(values)
         colormap = get_colormap(colormap)
-        self._base_layer = {'name': name,
-                            'checked': True,
-                            'base_layer': True,
-                            'hill_shading': False,
-                            'data': [{'type': 'image',
-                                      'url': url,
-                                      'colormap': colormap,
-                                      'bounds': bounds,
-                                      }]
-                            }
+        self._base_layer = {
+            "name": name,
+            "checked": True,
+            "base_layer": True,
+            "hill_shading": False,
+            "data": [
+                {"type": "image", "url": url, "colormap": colormap, "bounds": bounds}
+            ],
+        }
 
-    def set_grid_prop_base_layer(self, grid: Grid, prop: GridProperty,
-                                 name: str, colormap: str = 'RdBu'):
-        '''Slices a Xtgeo grid property along the fencespec
+    def set_grid_prop_base_layer(
+        self, grid: Grid, prop: GridProperty, name: str, colormap: str = "RdBu"
+    ):
+        """Slices a Xtgeo grid property along the fencespec
         and visualizes as a bitmap image with the given colormap.
 
         * `name`: Name of the layer
         * `grid`: XTGeo Grid
         * `prop`: XTGeo Grid Property
         * `colormap`: Matplotlib colormap to use
-        '''
+        """
         gridfence = self.slice_grid(grid, prop)
-        bounds = gridfence['bounds']
-        values = gridfence['values']
+        bounds = gridfence["bounds"]
+        values = gridfence["values"]
         url = array_to_png(values)
         colormap = get_colormap(colormap)
-        self._base_layer = {'name': name,
-                            'checked': True,
-                            'base_layer': True,
-                            'hill_shading': False,
-                            'data': [{'type': 'image',
-                                      'url': url,
-                                      'colormap': colormap,
-                                      'bounds': bounds,
-                                      }]
-                            }
+        self._base_layer = {
+            "name": name,
+            "checked": True,
+            "base_layer": True,
+            "hill_shading": False,
+            "data": [
+                {"type": "image", "url": url, "colormap": colormap, "bounds": bounds}
+            ],
+        }
 
     def set_well_layer(self, name, invert_y=True):
-        '''Adds a polyline for the well'''
+        """Adds a polyline for the well"""
         values = self.fencespec
         x_arr = values[:, 3]
         y_arr = values[:, 2]
         if invert_y:
             y_arr *= -1
         positions = [[x, y] for x, y in zip(x_arr, y_arr)]
-        data = [{'type': 'polyline',
-                 'color': 'black',
-                 'tooltip': name,
-                 'metadata': {'type': 'well', 'name': name},
-                 'positions': positions}]
-        self._well_layer = {'name': name,
-                            'checked': True,
-                            'base_layer': False,
-                            'data': data}
+        data = [
+            {
+                "type": "polyline",
+                "color": "black",
+                "tooltip": name,
+                "metadata": {"type": "well", "name": name},
+                "positions": positions,
+            }
+        ]
+        self._well_layer = {
+            "name": name,
+            "checked": True,
+            "base_layer": False,
+            "data": data,
+        }
 
     @property
     def layers(self):
-        '''Returns all layers'''
+        """Returns all layers"""
         layers = []
         if self._surface_layers:
             layers.extend(self._surface_layers)

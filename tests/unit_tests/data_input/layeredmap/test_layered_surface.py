@@ -1,8 +1,6 @@
 import numpy as np
 from xtgeo import RegularSurface
-from webviz_subsurface.datainput.layeredmap._layered_surface import (
-    LayeredSurface
-)
+from webviz_subsurface.datainput.layeredmap._layered_surface import LayeredSurface
 
 SURFACE = RegularSurface("tests/data/surface.gri")
 Z_ARR = np.loadtxt("tests/data/surface_zarr.np.gz")
@@ -25,21 +23,23 @@ def test_layered_surface_init():
 
 def test_layered_surface_zarr():
     layered_surface = LayeredSurface("test", SURFACE)
-    assert(np.allclose(layered_surface.z_arr, Z_ARR, equal_nan=True))
+    assert np.allclose(layered_surface.z_arr, Z_ARR, equal_nan=True)
 
 
 def test_bounds():
     layered_surface = LayeredSurface("test", SURFACE)
-    assert np.allclose(layered_surface.bounds, [
-        [456950.7443767242, 5927337.164084819],
-        [466655.3381886231, 5938639.3915624125],
-    ])
+    assert np.allclose(
+        layered_surface.bounds,
+        [
+            [456950.7443767242, 5927337.164084819],
+            [466655.3381886231, 5938639.3915624125],
+        ],
+    )
 
 
 def test_center():
     layered_surface = LayeredSurface("test", SURFACE)
-    assert np.allclose(layered_surface.center, [
-                       461803.04128267366, 5932988.277823616])
+    assert np.allclose(layered_surface.center, [461803.04128267366, 5932988.277823616])
 
 
 def test_layered_surfacelet_layer():
@@ -56,7 +56,4 @@ def test_layered_surfacelet_layer():
     assert layer["data"][0]["minvalue"] == f"{1576.45:.2f}"
     assert layer["data"][0]["maxvalue"] == f"{1933.12:.2f}"
     assert layer["data"][0]["unit"] == "m"
-    assert (
-        layer["data"][0]["url"]
-        == BASE64_IMG
-    )
+    assert layer["data"][0]["url"] == BASE64_IMG
