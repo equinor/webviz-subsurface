@@ -1,6 +1,7 @@
 import pandas as pd
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
+
 try:
     from fmu.ensemble import EnsembleSet
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.

@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 from webviz_config.common_cache import cache
 from webviz_config.webviz_store import webvizstore
+
 try:
     import fmu.ensemble
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
