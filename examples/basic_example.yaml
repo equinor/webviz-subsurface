@@ -24,8 +24,14 @@ pages:
       base_ensembles: [iter-0]
  - title: Parameter distribution
    content: 
-    - Some text...
     - container: ParameterDistribution
+      ensembles:
+        - iter-0
+        - iter-1
+ - title: Parameter correlations
+   content: 
+    - Some text...
+    - container: ParameterCorrelation
       ensembles:
         - iter-0
         - iter-1
