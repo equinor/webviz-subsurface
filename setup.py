@@ -40,6 +40,8 @@ setup(
         "dash-daq~=0.1",
         "webviz-config>=0.0.4",
         "webviz-subsurface-components>=0.0.3",
+        "pillow~=6.1",
+        "xtgeo~=2.1.0",
     ],
     tests_require=tests_require,
     extras_require={"tests": tests_require},

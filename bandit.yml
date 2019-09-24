@@ -1,0 +1,2 @@
+#Allow use of assert for tests
+skips: ['B101']
