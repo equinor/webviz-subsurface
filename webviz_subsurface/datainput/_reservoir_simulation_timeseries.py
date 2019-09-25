@@ -1,19 +1,12 @@
-# -*- coding: utf-8 -*-
-""" time-series data-input functions
-    - Process ensemble-data (read, filter, compare)
-    - Treated as ensembleset-object (independent of n-ensembles)
-"""
-
+import pandas as pd
+from webviz_config.common_cache import cache
+from webviz_config.webviz_store import webvizstore
 
 try:
     from fmu.ensemble import EnsembleSet
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
     pass  # for a portable webviz instance, it is never used.
 
-
-import pandas as pd
-from webviz_config.common_cache import cache
-from webviz_config.webviz_store import webvizstore
 from ..datainput import scratch_ensemble
 
 
