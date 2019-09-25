@@ -44,9 +44,9 @@ another_property:
         self.set_ids()
         self.set_callbacks(app)
 
+    @staticmethod
     def read_config(self, config):
         if isinstance(config, str):
-            path = Path(config)
             return yaml.safe_load(open(config, "r"))
         elif isinstance(config, dict):
             return config

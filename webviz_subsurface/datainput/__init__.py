@@ -30,5 +30,5 @@ __all__ = [
     "get_time_series_delta_ens",
     "get_time_series_delta_ens_stats",
     "load_parameters",
-    "get_realizations"
+    "get_realizations",
 ]
