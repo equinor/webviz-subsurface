@@ -1,3 +1,5 @@
+from datetime import datetime
+from pathlib import Path
 from uuid import uuid4
 import json
 import yaml
@@ -35,12 +37,21 @@ another_property:
         - somedata
 """
 
-    def __init__(self, app, yaml_file, ensembles):
-        self._configuration = yaml.safe_load(open(yaml_file, "r"))
+    def __init__(self, app, config, ensembles):
+        self._configuration = self.read_config(config)
         self._ensembles = ensembles
         self._storage_id = f"{str(uuid4())}-surface-selector"
         self.set_ids()
         self.set_callbacks(app)
+
+    def read_config(self, config):
+        if isinstance(config, str):
+            path = Path(config)
+            return yaml.safe_load(open(config, "r"))
+        elif isinstance(config, dict):
+            return config
+        else:
+            raise IOError("Config must be a dictionary of a yaml file")
 
     @property
     def storage_id(self):
@@ -70,6 +81,9 @@ another_property:
         self.ens_wrapper_id = f"{uuid}-ens-wrapper"
         self.real_wrapper_id = f"{uuid}-real-wrapper"
         self.aggreal_id = f"{uuid}-aggreal"
+        self.sens_name_id = f"{uuid}-sens-name-id"
+        self.sens_case_id = f"{uuid}-sens-case-id"
+        self.sens_label_id = f"{uuid}-sens-label-id"
 
     @property
     def attrs(self):
@@ -79,14 +93,42 @@ another_property:
         return self._configuration[attr].get("names", None)
 
     def dates_in_attr(self, attr):
-        return self._configuration[attr].get("dates", None)
+        dates = self._configuration[attr].get("dates", None)
+        if dates:
+            return [str(d) for d in dates]
+        else:
+            return None
 
     @property
     def ensembles(self):
-        return list(self._ensembles.keys())
+        return list(self._ensembles["ENSEMBLE"].unique())
 
-    def realizations(self, ensemble):
-        return self._ensembles[ensemble]
+    def sens_names(self, ensemble):
+        sensnames = list(
+            self._ensembles.loc[self._ensembles["ENSEMBLE"] == ensemble][
+                "SENSNAME"
+            ].unique()
+        )
+        if sensnames[0] == None:
+            return None
+        return sensnames
+
+    def sens_cases(self, ensemble, sensname):
+        senscases = list(
+            self._ensembles.loc[
+                (self._ensembles["ENSEMBLE"] == ensemble)
+                & (self._ensembles["SENSNAME"] == sensname)
+            ]["SENSCASE"].unique()
+        )
+        if senscases and senscases[0] == None:
+            return None
+        return senscases
+
+    def realizations(self, ensemble, sensname=None, senstype=None):
+        df = self._ensembles.loc[self._ensembles["ENSEMBLE"] == ensemble].copy()
+        if sensname and senstype:
+            df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
+        return list(df["REAL"])
 
     @property
     def aggregations(self):
@@ -113,15 +155,12 @@ another_property:
                         dcc.Dropdown(
                             id=self.attr_id,
                             options=[
-                                {"label": attr, "value": attr}
-                                for attr in self.attrs
+                                {"label": attr, "value": attr} for attr in self.attrs
                             ],
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(
-                            self.attr_id_btn_prev, self.attr_id_btn_next
-                        ),
+                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
                     ],
                 ),
             ],
@@ -147,9 +186,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(
-                            self.name_id_btn_prev, self.name_id_btn_next
-                        ),
+                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
                     ],
                 ),
             ],
@@ -166,9 +203,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(
-                            self.date_id_btn_prev, self.date_id_btn_next
-                        ),
+                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
                     ],
                 ),
             ],
@@ -187,15 +222,13 @@ another_property:
                         dcc.Dropdown(
                             id=self.ensemble_id,
                             options=[
-                                {"label": ens, "value": ens}
-                                for ens in self.ensembles
+                                {"label": ens, "value": ens} for ens in self.ensembles
                             ],
                             value=self.ensembles[0],
                             clearable=False,
                         ),
                         self.make_buttons(
-                            self.ensemble_id_btn_prev,
-                            self.ensemble_id_btn_next,
+                            self.ensemble_id_btn_prev, self.ensemble_id_btn_next
                         ),
                     ],
                 ),
@@ -207,31 +240,58 @@ another_property:
         return html.Div(
             id=self.real_wrapper_id,
             children=[
-                html.H6("Aggregation / Realization"),
                 html.Div(
-                    style=self.set_grid_layout("3fr 3fr 1fr"),
+                    style=self.set_grid_layout("3fr 3fr 1fr 3fr 3fr"),
                     children=[
-                        dcc.Dropdown(
-                            id=self.aggreal_id,
-                            options=[
-                                {
-                                    "label": "Aggregation",
-                                    "value": "Aggregation",
-                                },
-                                {
-                                    "label": "Realization",
-                                    "value": "Realization",
-                                },
-                            ],
-                            value="Aggregation",
+                        html.Div(
+                            children=[
+                                html.Label("Mode"),
+                                dcc.Dropdown(
+                                    id=self.aggreal_id,
+                                    options=[
+                                        {
+                                            "label": "Aggregation",
+                                            "value": "Aggregation",
+                                        },
+                                        {
+                                            "label": "Realization",
+                                            "value": "Realization",
+                                        },
+                                    ],
+                                    value="Aggregation",
+                                    clearable=False,
+                                ),
+                            ]
                         ),
-                        dcc.Dropdown(id=self.realization_id, clearable=False),
-                        self.make_buttons(
-                            self.realization_id_btn_prev,
-                            self.realization_id_btn_next,
+                        html.Div(
+                            children=[
+                                html.Label("Realization"),
+                                dcc.Dropdown(id=self.realization_id, clearable=False),
+                            ]
+                        ),
+                        html.Div(
+                            children=[
+                                html.Label("Prev/Next"),
+                                self.make_buttons(
+                                    self.realization_id_btn_prev,
+                                    self.realization_id_btn_next,
+                                ),
+                            ]
+                        ),
+                        html.Div(
+                            children=[
+                                html.Label("Sensitivity name"),
+                                dcc.Dropdown(id=self.sens_name_id, clearable=False),
+                            ]
+                        ),
+                        html.Div(
+                            children=[
+                                html.Label("Sensitivity case"),
+                                dcc.Dropdown(id=self.sens_case_id, clearable=False),
+                            ]
                         ),
                     ],
-                ),
+                )
             ],
         )
 
@@ -363,7 +423,7 @@ another_property:
                 value = next_value(current_value, dates)
             else:
                 value = current_value if current_value in dates else dates[0]
-            options = [{"label": date, "value": date} for date in dates]
+            options = [{"label": format_date(date), "value": date} for date in dates]
             return options, value, self.show_dropdown_style
 
         @app.callback(
@@ -377,17 +437,21 @@ another_property:
                 Input(self.aggreal_id, "value"),
                 Input(self.realization_id_btn_prev, "n_clicks"),
                 Input(self.realization_id_btn_next, "n_clicks"),
+                Input(self.sens_name_id, "value"),
+                Input(self.sens_case_id, "value"),
             ],
             [State(self.realization_id, "value")],
         )
-        def _update_real(ensemble, aggreal, n_prev, n_next, current_value):
+        def _update_real(
+            ensemble, aggreal, n_prev, n_next, sens_name, sens_case, current_value
+        ):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
             if aggreal == "Aggregation":
                 reals = self.aggregations
             else:
-                reals = self.realizations(ensemble)
+                reals = self.realizations(ensemble, sens_name, sens_case)
             if not reals:
                 return [], None, self.hide_dropdown_style
             cb = ctx[0]["prop_id"]
@@ -401,6 +465,40 @@ another_property:
             return options, value, self.show_dropdown_style
 
         @app.callback(
+            [
+                Output(self.sens_name_id, "options"),
+                Output(self.sens_name_id, "value"),
+                Output(self.sens_name_id, "style"),
+            ],
+            [Input(self.ensemble_id, "value")],
+            [State(self.sens_name_id, "value")],
+        )
+        def _update_sens_name(ensemble, current_value):
+            sens_names = self.sens_names(ensemble)
+            if not sens_names:
+                return [], None, self.hide_dropdown_style
+            value = current_value if current_value in sens_names else sens_names[0]
+            options = [{"value": sens, "label": sens} for sens in sens_names]
+            return options, value, self.show_dropdown_style
+
+        @app.callback(
+            [
+                Output(self.sens_case_id, "options"),
+                Output(self.sens_case_id, "value"),
+                Output(self.sens_case_id, "style"),
+            ],
+            [Input(self.sens_name_id, "value")],
+            [State(self.ensemble_id, "value"), State(self.sens_case_id, "value")],
+        )
+        def _update_sens_case(sensname, ensemble, current_value):
+            sens_cases = self.sens_cases(ensemble, sensname)
+            if not sens_cases:
+                return [], None, self.hide_dropdown_style
+            value = current_value if current_value in sens_cases else sens_cases[0]
+            options = [{"value": sens, "label": sens} for sens in sens_cases]
+            return options, value, self.show_dropdown_style
+
+        @app.callback(
             Output(self.storage_id, "children"),
             [
                 Input(self.attr_id, "value"),
@@ -409,17 +507,22 @@ another_property:
                 Input(self.ensemble_id, "value"),
                 Input(self.aggreal_id, "value"),
                 Input(self.realization_id, "value"),
+                Input(self.sens_name_id, "value"),
+                Input(self.sens_case_id, "value"),
             ],
         )
-        def _set_data(attr, name, date, ensemble, aggreal, realization):
+        def _set_data(
+            attr, name, date, ensemble, aggreal, calculation, sens_name, sens_case
+        ):
+            reals = self.realizations(ensemble, sens_name, sens_case)
             return json.dumps(
                 {
                     "attribute": attr,
                     "name": name,
                     "date": date,
                     "ensemble": ensemble,
-                    "aggregation": True if aggreal == "Aggregation" else False,
-                    "realization": realization,
+                    "aggregation": calculation if aggreal == "Aggregation" else None,
+                    "realization": reals if aggreal == "Aggregation" else calculation,
                 }
             )
 
@@ -444,3 +547,15 @@ def next_value(current_value, options):
         return options[index + 1]
     else:
         return current_value
+
+
+def format_date(date_string):
+    d = str(date_string)
+    if len(d) == 8:
+        d = datetime.strptime(d, "%Y%m%d").strftime("%m/%d/%Y")
+    if len(d) == 17:
+        begin = d[0:8]
+        end = d[9:17]
+        d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%m/%d/%Y')})-\
+              ({datetime.strptime(end, '%Y%m%d').strftime('%m/%d/%Y')})"
+    return d
