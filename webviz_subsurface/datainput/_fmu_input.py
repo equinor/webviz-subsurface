@@ -56,7 +56,7 @@ def find_surfaces(ensemble_paths: tuple, suffix="*.gri"):
     """
 
     files = []
-    for name, path in ensemble_paths:
+    for _, path in ensemble_paths:
         files.extend(glob.glob(os.path.join(path, "share", "results", "maps", suffix)))
 
     files = [os.path.basename(f.split(".gri")[0]) for f in files]
