@@ -16,7 +16,7 @@ Creates a widget to select surfaces from a configuration file.
 The current selection are stored in a dcc.Store object that can
 be accessed by the storage_id property
 
-* `yaml_file`: A configuration file of surfaces
+* `config`: A configuration file of surfaces
 * `ensembles`: A dictionary of ensemble names and lists of realizations.
 
 Format of configuration file:
@@ -26,14 +26,14 @@ some_property:
         - surfacename
     dates:
         - somedate
-        - somedata
+        - somedate
 another_property:
     names:
         - surfacename
         - surfacename
     dates:
         - somedate
-        - somedata
+        - somedate
 """
 
     def __init__(self, app, config, ensembles):
@@ -45,6 +45,7 @@ another_property:
 
     @staticmethod
     def read_config(config):
+        """Reads config file either from a yaml provided file or from a dict"""
         if isinstance(config, str):
             return yaml.safe_load(open(config, "r"))
         elif isinstance(config, dict):
@@ -82,7 +83,8 @@ another_property:
         self.aggreal_id = f"{uuid}-aggreal"
         self.sens_name_id = f"{uuid}-sens-name-id"
         self.sens_case_id = f"{uuid}-sens-case-id"
-        self.sens_label_id = f"{uuid}-sens-label-id"
+        self.sens_name_wrapper_id = f"{uuid}-sens-name-wrapper-id"
+        self.sens_case_wrapper_id = f"{uuid}-sens-case-wrapper-id"
 
     @property
     def attrs(self):
@@ -94,7 +96,7 @@ another_property:
     def dates_in_attr(self, attr):
         dates = self._configuration[attr].get("dates", None)
         if dates:
-            return [str(d) for d in dates]
+            return [d for d in dates]
         else:
             return None
 
@@ -278,12 +280,14 @@ another_property:
                             ]
                         ),
                         html.Div(
+                            id=self.sens_name_wrapper_id,
                             children=[
                                 html.Label("Sensitivity name"),
                                 dcc.Dropdown(id=self.sens_name_id, clearable=False),
                             ]
                         ),
                         html.Div(
+                            id=self.sens_case_wrapper_id,
                             children=[
                                 html.Label("Sensitivity case"),
                                 dcc.Dropdown(id=self.sens_case_id, clearable=False),
@@ -467,7 +471,7 @@ another_property:
             [
                 Output(self.sens_name_id, "options"),
                 Output(self.sens_name_id, "value"),
-                Output(self.sens_name_id, "style"),
+                Output(self.sens_name_wrapper_id, "style"),
             ],
             [Input(self.ensemble_id, "value")],
             [State(self.sens_name_id, "value")],
@@ -484,7 +488,7 @@ another_property:
             [
                 Output(self.sens_case_id, "options"),
                 Output(self.sens_case_id, "value"),
-                Output(self.sens_case_id, "style"),
+                Output(self.sens_case_wrapper_id, "style"),
             ],
             [Input(self.sens_name_id, "value")],
             [State(self.ensemble_id, "value"), State(self.sens_case_id, "value")],
