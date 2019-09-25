@@ -1,5 +1,4 @@
 from datetime import datetime
-from pathlib import Path
 from uuid import uuid4
 import json
 import yaml
@@ -45,7 +44,7 @@ another_property:
         self.set_callbacks(app)
 
     @staticmethod
-    def read_config(self, config):
+    def read_config(config):
         if isinstance(config, str):
             return yaml.safe_load(open(config, "r"))
         elif isinstance(config, dict):
