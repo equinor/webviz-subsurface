@@ -14,7 +14,7 @@ from ._reservoir_simulation_timeseries import (
     load_ensemble_set,
     get_time_series_delta_ens_stats,
 )
-from ._fmu_input import load_parameters, get_realizations
+from ._fmu_input import load_parameters, get_realizations, find_surfaces
 
 
 __all__ = [
@@ -31,4 +31,5 @@ __all__ = [
     "get_time_series_delta_ens_stats",
     "load_parameters",
     "get_realizations",
+    "find_surfaces",
 ]
