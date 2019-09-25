@@ -284,14 +284,14 @@ another_property:
                             children=[
                                 html.Label("Sensitivity name"),
                                 dcc.Dropdown(id=self.sens_name_id, clearable=False),
-                            ]
+                            ],
                         ),
                         html.Div(
                             id=self.sens_case_wrapper_id,
                             children=[
                                 html.Label("Sensitivity case"),
                                 dcc.Dropdown(id=self.sens_case_id, clearable=False),
-                            ]
+                            ],
                         ),
                     ],
                 )
