@@ -33,7 +33,7 @@ def load_parameters(
 def get_realizations(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
-    """Extracts realization info from parameters.txt.
+    """Extracts realization info from a fmu.ensemble.EnsembleSet
     The information extracted is the ensemble name, realization number,
     realization local runpath, sensitivity name and sensitivity case.
     The sensitivty name and case is only relevant if a design matrix is used. If the ensemble
