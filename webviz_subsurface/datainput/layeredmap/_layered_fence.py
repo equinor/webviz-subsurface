@@ -1,6 +1,7 @@
 import numpy as np
-from ._image_processing import get_colormap, array_to_png
 from xtgeo import RegularSurface, Cube, Grid, GridProperty
+
+from ._image_processing import get_colormap, array_to_png
 
 
 class LayeredFence:

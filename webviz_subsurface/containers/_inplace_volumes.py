@@ -1,12 +1,14 @@
 from uuid import uuid4
+
 import numpy as np
+import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-import dash_table
 from dash.dependencies import Input, Output
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
+
 from ..datainput import extract_volumes
 
 

@@ -1,5 +1,6 @@
 import io
 import base64
+
 import numpy as np
 from matplotlib import cm
 from PIL import Image
