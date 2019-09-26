@@ -12,14 +12,15 @@ import dash_core_components as dcc
 class SurfaceSelector:
     """### Surface Selector
 
-Creates a widget to select surfaces from a configuration file.
-The current selection are stored in a dcc.Store object that can
-be accessed by the storage_id property
+Creates a widget to select surfaces from a yaml configuration file or dictionary, and 
+a dataframe of ensemble/realizations, optionally with sensitivity cases.
+The current selections are stored in a dcc.Store object that can
+be accessed by the storage_id property of the class instance.
 
-* `config`: A configuration file of surfaces
-* `ensembles`: A dictionary of ensemble names and lists of realizations.
+* `config`: A dictionary / yaml configuration file of surfaces on the format below
+* `ensembles`: A pandas dataframe with ensemble, real(index), runpath, sensname and senscase
 
-Format of configuration file:
+Format of configuration:
 some_property:
     names:
         - surfacename
@@ -51,7 +52,7 @@ another_property:
         elif isinstance(config, dict):
             return config
         else:
-            raise IOError("Config must be a dictionary of a yaml file")
+            raise TypeError("Config must be a dictionary of a yaml file")
 
     @property
     def storage_id(self):
@@ -615,12 +616,21 @@ def next_value(current_value, options):
 
 
 def format_date(date_string):
+    """Reformat date string for presentation
+    20010101 => Jan 2001
+    20010101_20010601 => (Jan 2001) - (June 2001)
+    20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
     d = str(date_string)
     if len(d) == 8:
-        d = datetime.strptime(d, "%Y%m%d").strftime("%m/%d/%Y")
+        d = datetime.strptime(d, "%Y%m%d").strftime("%b %Y")
     if len(d) == 17:
         begin = d[0:8]
         end = d[9:17]
-        d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%m/%d/%Y')})-\
-              ({datetime.strptime(end, '%Y%m%d').strftime('%m/%d/%Y')})"
+        if begin[0:4] == end[0:4] and begin[4:6] == end[4:6]:
+            d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%d %b %Y')})-\
+              ({datetime.strptime(end, '%Y%m%d').strftime('%d %b %Y')})"
+        else:
+            d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%b %Y')})-\
+              ({datetime.strptime(end, '%Y%m%d').strftime('%b %Y')})"
+
     return d
