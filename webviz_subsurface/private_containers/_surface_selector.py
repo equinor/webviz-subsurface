@@ -573,17 +573,18 @@ def format_date(date_string):
     20010101 => Jan 2001
     20010101_20010601 => (Jan 2001) - (June 2001)
     20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
-    d = str(date_string)
-    if len(d) == 8:
-        d = datetime.strptime(d, "%Y%m%d").strftime("%b %Y")
-    if len(d) == 17:
-        begin = d[0:8]
-        end = d[9:17]
-        if begin[0:4] == end[0:4] and begin[4:6] == end[4:6]:
-            d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%d %b %Y')})-\
-              ({datetime.strptime(end, '%Y%m%d').strftime('%d %b %Y')})"
+    date_string = str(date_string)
+    if len(date_string) == 8:
+        return datetime.strptime(date_string, "%Y%m%d").strftime("%b %Y")
+    elif len(date_string) == 17:
+        [begin, end] = [
+            datetime.strptime(date, "%Y%m%d") for date in date_string.split("_")
+        ]
+        if begin.year == end.year and begin.month == end.month:
+            return f"({begin.strftime('%d %b %Y')})-\
+              ({end.strftime('%d %b %Y')})"
         else:
-            d = f"({datetime.strptime(begin, '%Y%m%d').strftime('%b %Y')})-\
-              ({datetime.strptime(end, '%Y%m%d').strftime('%b %Y')})"
-
-    return d
+            return f"({begin.strftime('%b %Y')})-\
+              ({end.strftime('%b %Y')})"
+    else:
+        return date_string
