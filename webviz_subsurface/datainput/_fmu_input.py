@@ -34,8 +34,8 @@ def get_realizations(
 ) -> pd.DataFrame:
     """Extracts realization info from parameters.txt.
     The information extracted is the ensemble name, realization number,
-    realization local runpath, sensitivity name and sensitivity type.
-    The sensitivty name and type is only relevant if a design matrix is used. If the ensemble
+    realization local runpath, sensitivity name and sensitivity case.
+    The sensitivty name and case is only relevant if a design matrix is used. If the ensemble
     is a monte carlo / history matching run this information will be undefined.
     
     Returns a pandas dataframe with columns: ENSEMBLE, REAL, RUNPATH, SENSNAME, SENSCASE
