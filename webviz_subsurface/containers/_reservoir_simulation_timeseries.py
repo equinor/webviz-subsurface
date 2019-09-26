@@ -1,5 +1,6 @@
 import itertools
 from uuid import uuid4
+
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -8,7 +9,8 @@ from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 import plotly.graph_objs as go
-from webviz_subsurface.datainput import (
+
+from ..datainput import (
     get_time_series_data,
     get_time_series_statistics,
     get_time_series_delta_ens,

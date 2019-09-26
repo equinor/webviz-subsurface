@@ -2,6 +2,7 @@ from uuid import uuid4
 from glob import glob
 from pathlib import PurePath
 from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
 import dash_html_components as html
@@ -11,6 +12,7 @@ from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
+
 from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
 
 

@@ -1,13 +1,15 @@
 from uuid import uuid4
+
 import dash
-from dash.exceptions import PreventUpdate
+import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 from webviz_config.containers import WebvizContainer
-from webviz_subsurface.datainput import load_parameters
-import plotly.express as px
+
+from ..datainput import load_parameters
 
 
 class ParameterDistribution(WebvizContainer):
