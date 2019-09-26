@@ -12,7 +12,7 @@ import dash_core_components as dcc
 class SurfaceSelector:
     """### Surface Selector
 
-Creates a widget to select surfaces from a yaml configuration file or dictionary, and 
+Creates a widget to select surfaces from a yaml configuration file or dictionary, and
 a dataframe of ensemble/realizations, optionally with sensitivity cases.
 The current selections are stored in a dcc.Store object that can
 be accessed by the storage_id property of the class instance.
