@@ -127,13 +127,9 @@ another_property:
         return senscases
 
     def realizations(self, ensemble, sensname=None, senstype=None):
-        df = self._ensembles.loc[
-            self._ensembles["ENSEMBLE"] == ensemble
-        ].copy()
+        df = self._ensembles.loc[self._ensembles["ENSEMBLE"] == ensemble].copy()
         if sensname and senstype:
-            df = df.loc[
-                (df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)
-            ]
+            df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
         return list(df["REAL"])
 
     @property
@@ -161,15 +157,12 @@ another_property:
                         dcc.Dropdown(
                             id=self.attr_id,
                             options=[
-                                {"label": attr, "value": attr}
-                                for attr in self.attrs
+                                {"label": attr, "value": attr} for attr in self.attrs
                             ],
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(
-                            self.attr_id_btn_prev, self.attr_id_btn_next
-                        ),
+                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
                     ],
                 ),
             ],
@@ -195,9 +188,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(
-                            self.name_id_btn_prev, self.name_id_btn_next
-                        ),
+                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
                     ],
                 ),
             ],
@@ -214,9 +205,7 @@ another_property:
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(
-                            self.date_id_btn_prev, self.date_id_btn_next
-                        ),
+                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
                     ],
                 ),
             ],
@@ -235,15 +224,13 @@ another_property:
                         dcc.Dropdown(
                             id=self.ensemble_id,
                             options=[
-                                {"label": ens, "value": ens}
-                                for ens in self.ensembles
+                                {"label": ens, "value": ens} for ens in self.ensembles
                             ],
                             value=self.ensembles[0],
                             clearable=False,
                         ),
                         self.make_buttons(
-                            self.ensemble_id_btn_prev,
-                            self.ensemble_id_btn_next,
+                            self.ensemble_id_btn_prev, self.ensemble_id_btn_next
                         ),
                     ],
                 ),
@@ -281,9 +268,7 @@ another_property:
                         html.Div(
                             children=[
                                 html.Label("Realization"),
-                                dcc.Dropdown(
-                                    id=self.realization_id, clearable=False
-                                ),
+                                dcc.Dropdown(id=self.realization_id, clearable=False),
                             ]
                         ),
                         html.Div(
@@ -299,18 +284,14 @@ another_property:
                             id=self.sens_name_wrapper_id,
                             children=[
                                 html.Label("Sensitivity name"),
-                                dcc.Dropdown(
-                                    id=self.sens_name_id, clearable=False
-                                ),
+                                dcc.Dropdown(id=self.sens_name_id, clearable=False),
                             ],
                         ),
                         html.Div(
                             id=self.sens_case_wrapper_id,
                             children=[
                                 html.Label("Sensitivity case"),
-                                dcc.Dropdown(
-                                    id=self.sens_case_id, clearable=False
-                                ),
+                                dcc.Dropdown(id=self.sens_case_id, clearable=False),
                             ],
                         ),
                     ],
@@ -446,9 +427,7 @@ another_property:
                 value = next_value(current_value, dates)
             else:
                 value = current_value if current_value in dates else dates[0]
-            options = [
-                {"label": format_date(date), "value": date} for date in dates
-            ]
+            options = [{"label": format_date(date), "value": date} for date in dates]
             return options, value, self.show_dropdown_style
 
         @app.callback(
@@ -468,13 +447,7 @@ another_property:
             [State(self.realization_id, "value")],
         )
         def _update_real(
-            ensemble,
-            aggreal,
-            n_prev,
-            n_next,
-            sens_name,
-            sens_case,
-            current_value,
+            ensemble, aggreal, n_prev, n_next, sens_name, sens_case, current_value
         ):
             ctx = dash.callback_context.triggered
             if not ctx:
@@ -508,9 +481,7 @@ another_property:
             sens_names = self.sens_names(ensemble)
             if not sens_names:
                 return [], None, self.hide_dropdown_style
-            value = (
-                current_value if current_value in sens_names else sens_names[0]
-            )
+            value = current_value if current_value in sens_names else sens_names[0]
             options = [{"value": sens, "label": sens} for sens in sens_names]
             return options, value, self.show_dropdown_style
 
@@ -521,18 +492,13 @@ another_property:
                 Output(self.sens_case_wrapper_id, "style"),
             ],
             [Input(self.sens_name_id, "value")],
-            [
-                State(self.ensemble_id, "value"),
-                State(self.sens_case_id, "value"),
-            ],
+            [State(self.ensemble_id, "value"), State(self.sens_case_id, "value")],
         )
         def _update_sens_case(sensname, ensemble, current_value):
             sens_cases = self.sens_cases(ensemble, sensname)
             if not sens_cases:
                 return [], None, self.hide_dropdown_style
-            value = (
-                current_value if current_value in sens_cases else sens_cases[0]
-            )
+            value = current_value if current_value in sens_cases else sens_cases[0]
             options = [{"value": sens, "label": sens} for sens in sens_cases]
             return options, value, self.show_dropdown_style
 
@@ -550,14 +516,7 @@ another_property:
             ],
         )
         def _set_data(
-            attr,
-            name,
-            date,
-            ensemble,
-            aggreal,
-            calculation,
-            sens_name,
-            sens_case,
+            attr, name, date, ensemble, aggreal, calculation, sens_name, sens_case
         ):
 
             """
@@ -568,9 +527,7 @@ another_property:
             all_senscases = [
                 {
                     "case": senscase,
-                    "realizations": self.realizations(
-                        ensemble, sens_name, senscase
-                    ),
+                    "realizations": self.realizations(ensemble, sens_name, senscase),
                 }
                 for senscase in self.sens_cases(ensemble, sens_name)
             ]
@@ -580,12 +537,8 @@ another_property:
                     "name": name,
                     "date": date,
                     "ensemble": ensemble,
-                    "aggregation": calculation
-                    if aggreal == "Aggregation"
-                    else None,
-                    "realization": reals
-                    if aggreal == "Aggregation"
-                    else calculation,
+                    "aggregation": calculation if aggreal == "Aggregation" else None,
+                    "realization": reals if aggreal == "Aggregation" else calculation,
                     "sensname": sens_name,
                     "senscase": sens_case,
                     "all_senscases": all_senscases,
