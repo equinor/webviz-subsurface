@@ -32,11 +32,20 @@ def load_parameters(
 def get_realizations(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
+    """Extracts realization info from parameters.txt.
+    The information extracted is the ensemble name, realization number,
+    realization local runpath, sensitivity name and sensitivity type.
+    The sensitivty name and type is only relevant if a design matrix is used. If the ensemble
+    is a monte carlo / history matching run this information will be undefined.
+    
+    Returns a pandas dataframe with columns: ENSEMBLE, REAL, RUNPATH, SENSNAME, SENSCASE
+    """
     ens_set = load_ensemble_set(ensemble_paths, ensemble_set_name)
     df = ens_set.parameters.get(["ENSEMBLE", "REAL"])
     df["SENSCASE"] = ens_set.parameters.get("SENSCASE")
     df["SENSNAME"] = ens_set.parameters.get("SENSNAME")
     df["RUNPATH"] = df.apply(
+        #Extracts realization runpath from the EnsembleSet.ScratchEnsemble.Realization object
         lambda x: ens_set[x["ENSEMBLE"]][x["REAL"]].runpath(), axis=1
     )
     return df.sort_values(by=["ENSEMBLE", "REAL"])
