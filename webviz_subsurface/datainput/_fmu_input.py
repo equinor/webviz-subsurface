@@ -83,13 +83,6 @@ def find_surfaces(ensemble_paths: tuple, suffix="*.gri", delimiter="--"):
     )
 
     # Group dataframe by surface attribute and return unique names and dates
-    context = {}
-    for attr, dframe in df.groupby("attribute"):
-        context[attr] = {
-            "names": list(dframe["name"].unique()),
-            "dates": list(dframe["date"].unique()),
-        }
-
     return {
         attr: {
             "names": list(dframe["name"].unique()),
