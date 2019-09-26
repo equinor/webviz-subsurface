@@ -95,11 +95,7 @@ another_property:
         return self._configuration[attr].get("names", None)
 
     def dates_in_attr(self, attr):
-        dates = self._configuration[attr].get("dates", None)
-        if dates:
-            return [d for d in dates]
-        else:
-            return None
+        return self._configuration[attr].get("dates", None)
 
     @property
     def ensembles(self):
@@ -142,7 +138,7 @@ another_property:
 
     @property
     def hide_dropdown_style(self):
-        return {"display": "none"}
+        return {"visibility": "hidden"}
 
     @property
     def attribute_selector(self):
@@ -417,7 +413,7 @@ another_property:
             if not ctx:
                 raise PreventUpdate
             dates = self.dates_in_attr(attr)
-            if not dates:
+            if not dates or not dates[0]:
                 return [], None, self.hide_dropdown_style
 
             cb = ctx[0]["prop_id"]
