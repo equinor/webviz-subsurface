@@ -132,14 +132,6 @@ another_property:
         return ["mean", "stddev", "min", "max", "p10", "p90"]
 
     @property
-    def show_dropdown_style(self):
-        return {"display": "grid"}
-
-    @property
-    def hide_dropdown_style(self):
-        return {"visibility": "hidden"}
-
-    @property
     def attribute_selector(self):
         return html.Div(
             style={"display": "grid"},
@@ -381,7 +373,7 @@ another_property:
                 raise PreventUpdate
             names = self.names_in_attr(attr)
             if not names:
-                return None, None, self.hide_dropdown_style
+                return None, None, {"visibility": "hidden"}
 
             cb = ctx[0]["prop_id"]
             if cb == f"{self.name_id_btn_prev}.n_clicks":
@@ -391,7 +383,7 @@ another_property:
             else:
                 value = current_value if current_value in names else names[0]
             options = [{"label": name, "value": name} for name in names]
-            return options, value, self.show_dropdown_style
+            return options, value, {}
 
         @app.callback(
             [
@@ -412,7 +404,7 @@ another_property:
                 raise PreventUpdate
             dates = self.dates_in_attr(attr)
             if not dates or not dates[0]:
-                return [], None, self.hide_dropdown_style
+                return [], None, {"visibility": "hidden"}
 
             cb = ctx[0]["prop_id"]
             if cb == f"{self.date_id_btn_prev}.n_clicks":
@@ -422,7 +414,7 @@ another_property:
             else:
                 value = current_value if current_value in dates else dates[0]
             options = [{"label": format_date(date), "value": date} for date in dates]
-            return options, value, self.show_dropdown_style
+            return options, value, {}
 
         @app.callback(
             [
@@ -451,7 +443,7 @@ another_property:
             else:
                 reals = self.realizations(ensemble, sens_name, sens_case)
             if not reals:
-                return [], None, self.hide_dropdown_style
+                return [], None, {"visibility": "hidden"}
             cb = ctx[0]["prop_id"]
             if cb == f"{self.realization_id_btn_prev}.n_clicks":
                 value = prev_value(current_value, reals)
@@ -460,7 +452,7 @@ another_property:
             else:
                 value = current_value if current_value in reals else reals[0]
             options = [{"value": real, "label": real} for real in reals]
-            return options, value, self.show_dropdown_style
+            return options, value, {}
 
         @app.callback(
             [
@@ -474,10 +466,10 @@ another_property:
         def _update_sens_name(ensemble, current_value):
             sens_names = self.sens_names(ensemble)
             if not sens_names:
-                return [], None, self.hide_dropdown_style
+                return [], None, {"visibility": "hidden"}
             value = current_value if current_value in sens_names else sens_names[0]
             options = [{"value": sens, "label": sens} for sens in sens_names]
-            return options, value, self.show_dropdown_style
+            return options, value, {}
 
         @app.callback(
             [
@@ -491,10 +483,10 @@ another_property:
         def _update_sens_case(sensname, ensemble, current_value):
             sens_cases = self.sens_cases(ensemble, sensname)
             if not sens_cases:
-                return [], None, self.hide_dropdown_style
+                return [], None, {"visibility": "hidden"}
             value = current_value if current_value in sens_cases else sens_cases[0]
             options = [{"value": sens, "label": sens} for sens in sens_cases]
-            return options, value, self.show_dropdown_style
+            return options, value, {}
 
         @app.callback(
             Output(self.storage_id, "children"),
