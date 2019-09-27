@@ -76,7 +76,6 @@ another_property:
         self.realization_id = f"{uuid}-real"
         self.realization_id_btn_prev = f"{uuid}-realization-btn-prev"
         self.realization_id_btn_next = f"{uuid}-realization-btn-next"
-        self.attr_wrapper_id = f"{uuid}-attr-wrapper"
         self.name_wrapper_id = f"{uuid}-name-wrapper"
         self.date_wrapper_id = f"{uuid}-date-wrapper"
         self.ens_wrapper_id = f"{uuid}-ens-wrapper"
@@ -143,7 +142,6 @@ another_property:
     @property
     def attribute_selector(self):
         return html.Div(
-            id=self.attr_wrapper_id,
             style={"display": "grid"},
             children=[
                 html.H6("Surface property"),
