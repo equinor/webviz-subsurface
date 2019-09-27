@@ -543,22 +543,16 @@ another_property:
 def prev_value(current_value, options):
     try:
         index = options.index(current_value)
+        return options[max(0, index - 1)]
     except ValueError:
-        index = None
-    if index > 0:
-        return options[index - 1]
-    else:
         return current_value
 
 
 def next_value(current_value, options):
     try:
         index = options.index(current_value)
+        return options[min(len(options) - 1, index + 1)]
     except ValueError:
-        index = None
-    if index < len(options) - 1:
-        return options[index + 1]
-    else:
         return current_value
 
 
@@ -567,7 +561,6 @@ def format_date(date_string):
     20010101 => Jan 2001
     20010101_20010601 => (Jan 2001) - (June 2001)
     20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
-    date_string = str(date_string)
     if len(date_string) == 8:
         return datetime.strptime(date_string, "%Y%m%d").strftime("%b %Y")
     elif len(date_string) == 17:
@@ -575,8 +568,8 @@ def format_date(date_string):
             datetime.strptime(date, "%Y%m%d") for date in date_string.split("_")
         ]
         if begin.year == end.year and begin.month == end.month:
-            return f"({begin.strftime('%d %b %Y')})-\
-              ({end.strftime('%d %b %Y')})"
+            return f"({begin.strftime('%-d %b %Y')})-\
+              ({end.strftime('%-d %b %Y')})"
         else:
             return f"({begin.strftime('%b %Y')})-\
               ({end.strftime('%b %Y')})"
