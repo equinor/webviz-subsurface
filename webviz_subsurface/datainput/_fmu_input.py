@@ -34,22 +34,36 @@ def get_realizations(
 ) -> pd.DataFrame:
     """Extracts realization info from a fmu.ensemble.EnsembleSet
     The information extracted is the ensemble name, realization number,
-    realization local runpath, sensitivity name and sensitivity case.
-    The sensitivty name and case is only relevant if a design matrix is used. If the ensemble
-    is a monte carlo / history matching run this information will be undefined.
+    realization local runpath, sensitivity name, sensitivity case and sensitivity type.
+    The sensitivtiy information is only relevant if a design matrix is used. If the ensemble
+    is a full monte carlo / history matching run this information will be undefined.
 
-    Returns a pandas dataframe with columns: ENSEMBLE, REAL, RUNPATH, SENSNAME, SENSCASE
+    Returns a pandas dataframe with columns: ENSEMBLE, REAL, RUNPATH, SENSNAME, SENSCASE, SENSTYPE
     """
     ens_set = load_ensemble_set(ensemble_paths, ensemble_set_name)
     df = ens_set.parameters.get(["ENSEMBLE", "REAL"])
     df["SENSCASE"] = ens_set.parameters.get("SENSCASE")
     df["SENSNAME"] = ens_set.parameters.get("SENSNAME")
+    df["SENSTYPE"] = df.apply(lambda row: find_sens_type(row.SENSCASE), axis=1)
     df["RUNPATH"] = df.apply(
         # Extracts realization runpath from the EnsembleSet.ScratchEnsemble.Realization object
         lambda x: ens_set[x["ENSEMBLE"]][x["REAL"]].runpath(),
         axis=1,
     )
     return df.sort_values(by=["ENSEMBLE", "REAL"])
+
+
+def find_sens_type(senscase):
+    """Finds sensitivity type from sensitivty case. 
+    If sensitivity case is 'p10_p90', sensitivity type is montecarlo,
+    else sensitivity type is set to 'scalar'. 
+    """
+    if not senscase:
+        return None
+    elif senscase == "p10_p90":
+        return "mc"
+    else:
+        return "scalar"
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -71,16 +85,17 @@ def find_surfaces(ensemble_paths: tuple, suffix="*.gri", delimiter="--"):
         files += glob.glob(str(path / "share" / "results" / "maps" / suffix))
 
     # Store surface name, attribute and date as Pandas dataframe
-    df = pd.DataFrame(
-        [Path(f).stem.split(delimiter) for f in files],
-        columns=["name", "attribute", "date"],
+    df = pd.DataFrame([Path(f).stem.split(delimiter) for f in files]).rename(
+        columns={0: "name", 1: "attribute", 2: "date"}
     )
 
     # Group dataframe by surface attribute and return unique names and dates
     return {
         attr: {
             "names": list(dframe["name"].unique()),
-            "dates": list(dframe["date"].unique()),
+            "dates": list(dframe["date"].unique())
+            if "date" in dframe.columns
+            else [None],
         }
         for attr, dframe in df.groupby("attribute")
     }
