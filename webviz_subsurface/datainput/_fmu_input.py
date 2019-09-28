@@ -54,9 +54,9 @@ def get_realizations(
 
 
 def find_sens_type(senscase):
-    """Finds sensitivity type from sensitivty case. 
+    """Finds sensitivity type from sensitivty case.
     If sensitivity case is 'p10_p90', sensitivity type is montecarlo,
-    else sensitivity type is set to 'scalar'. 
+    else sensitivity type is set to 'scalar'.
     """
     if not senscase:
         return None
