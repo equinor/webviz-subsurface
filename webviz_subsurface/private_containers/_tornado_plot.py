@@ -1,24 +1,32 @@
 from uuid import uuid4
 import json
-import numpy as np
 import pandas as pd
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
-from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
 
 
-class TornadoPlot(WebvizContainer):
+class TornadoPlot:
     """### TornadoPlot
 
-This container visualizes a Tornado plot.
+This private container visualizes a Tornado plot. 
+It is meant to be used as a component in other containers.
+The container is initialized with a dataframe of realizations with corresponding sensitivities,
+but without the response values that are to be plotted.
+Instead the container registers a dcc.Store which will contain the response values.
 
-* `ensemble_paths`: Ensemble paths
-* `ensemble_set_name`:  Name of ensemble set
+To use:
+1. Initialize an instance of this class in a container
+2. Add tornadoplot.layout to the container layout
+2. Register a callback that writes a json dump to tornadoplot.storage_id
+The format of the json dump must be:
+{'ENSEMBLE': name of ensemble,
+ 'data': 2d array of realizations / response values}
+
+
+* `realizations`: Dataframe of realizations with corresponding sensitivity cases
 * `reference`: Which sensitivity to use as reference.
 
 """
@@ -56,7 +64,8 @@ This container visualizes a Tornado plot.
                 dcc.Dropdown(
                     id=self._scale_id,
                     options=[
-                        {"label": r, "value": r} for r in ["Percentage", "Absolute"]
+                        {"label": r, "value": r}
+                        for r in ["Percentage", "Absolute"]
                     ],
                     value="Percentage",
                 ),
