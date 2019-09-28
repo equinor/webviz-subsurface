@@ -64,8 +64,7 @@ The format of the json dump must be:
                 dcc.Dropdown(
                     id=self._scale_id,
                     options=[
-                        {"label": r, "value": r}
-                        for r in ["Percentage", "Absolute"]
+                        {"label": r, "value": r} for r in ["Percentage", "Absolute"]
                     ],
                     value="Percentage",
                 ),
