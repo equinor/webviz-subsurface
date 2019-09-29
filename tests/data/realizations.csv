@@ -1,0 +1,12 @@
+ENSEMBLE,REAL,SENSCASE,SENSNAME,RUNPATH
+iter-0,0,,,/scratch/3_r001_reek/realization-0/iter-0
+iter-0,1,,,/scratch/3_r001_reek/realization-1/iter-0
+iter-0,2,,,/scratch/3_r001_reek/realization-2/iter-0
+iterdm,0,p10_p90,rms_seed,/mnt/media/scratch/2_r001_reek_fullmatrix/realization-0/iter-0
+iterdm,1,p10_p90,rms_seed,/mnt/media/scratch/2_r001_reek_fullmatrix/realization-1/iter-0
+iterdm,10,deep,fwl,/scratch/2_r001_reek_fullmatrix/realization-10/iter-0
+iterdm,11,deep,fwl,/scratch/2_r001_reek_fullmatrix/realization-11/iter-0
+iterdm,12,deep,fwl,/scratch/2_r001_reek_fullmatrix/realization-12/iter-0
+iterdm,20,shallow,fwl,/scratch/2_r001_reek_fullmatrix/realization-20/iter-0
+iterdm,21,shallow,fwl,/scratch/2_r001_reek_fullmatrix/realization-21/iter-0
+iterdm,22,shallow,fwl,/scratch/2_r001_reek_fullmatrix/realization-22/iter-0
