@@ -20,14 +20,21 @@ Instead the container registers a dcc.Store which will contain the response valu
 To use:
 1. Initialize an instance of this class in a container
 2. Add tornadoplot.layout to the container layout
-2. Register a callback that writes a json dump to tornadoplot.storage_id
+3. Register a callback that writes a json dump to tornadoplot.storage_id
 The format of the json dump must be:
 {'ENSEMBLE': name of ensemble,
  'data': 2d array of realizations / response values}
 
+Mouse events:
+The current case at mouse cursor can be retrieved by registering a callback
+that reads from `tornadoplot.hover_id` or `tornadoplot.click_id` if `allow_hover`
+or `allow_click` has been specified at initialization.
+
 
 * `realizations`: Dataframe of realizations with corresponding sensitivity cases
 * `reference`: Which sensitivity to use as reference.
+* `allow_hover`: Registers a callback to store current data on mouse hover
+* `allow_click`: Registers a callback to store current data on mouse click
 
 """
 
@@ -132,7 +139,7 @@ The format of the json dump must be:
                 except TypeError:
                     raise PreventUpdate
 
-        if self.allow_hover:
+        if self.allow_click:
 
             @app.callback(
                 Output(self.click_id, "children"), [Input(self._graph_id, "clickData")]
