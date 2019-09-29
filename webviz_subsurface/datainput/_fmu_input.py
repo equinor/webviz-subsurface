@@ -60,10 +60,11 @@ def find_sens_type(senscase):
     """
     if not senscase:
         return None
-    elif senscase == "p10_p90":
+
+    if senscase == "p10_p90":
         return "mc"
-    else:
-        return "scalar"
+
+    return "scalar"
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
