@@ -12,11 +12,11 @@ min-public-methods = 1
 [BASIC]
 
 # Variable names which should always be accepted
-good-names= i,
-            j,
-            k,
-            x,
-            y,
-            z,
-            df,
-            _
+good-names = i,
+             j,
+             k,
+             x,
+             y,
+             z,
+             df,
+             _

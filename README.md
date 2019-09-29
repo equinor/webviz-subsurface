@@ -54,7 +54,7 @@ You can do automatic linting of your code changes by running
 ```bash
 black --check webviz_subsurface tests # Check code style
 pylint webviz_subsurface tests # Check code quality
-bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best-practice
+bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best practice
 ```
 
 ### Disclaimer
