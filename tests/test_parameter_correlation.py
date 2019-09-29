@@ -2,9 +2,9 @@ import mock
 import dash
 import pandas as pd
 from webviz_config.common_cache import cache
-from webviz_config.containers import (
+from webviz_config.containers import (  # pylint: disable=no-name-in-module
     ParameterCorrelation,
-)  # pylint: disable=no-name-in-module
+)
 
 
 def test_parameter_corr(dash_duo):
