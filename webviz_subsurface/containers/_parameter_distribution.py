@@ -89,15 +89,15 @@ with a marginal boxplot on top.
             [Input(self.prev_btn_id, "n_clicks"), Input(self.next_btn_id, "n_clicks")],
             [State(self.pcol_id, "value")],
         )
-        def _set_parameter_from_btn(prev_click, next_click, column):
+        def _set_parameter_from_btn(_prev_click, _next_click, column):
 
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.prev_btn_id}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.prev_btn_id}.n_clicks":
                 column = prev_value(column, self.parameter_columns)
-            elif cb == f"{self.next_btn_id}.n_clicks":
+            elif callback == f"{self.next_btn_id}.n_clicks":
                 column = next_value(column, self.parameter_columns)
             return column
 
@@ -142,8 +142,7 @@ def prev_value(current_value, options):
         index = None
     if index > 0:
         return options[index - 1]
-    else:
-        return current_value
+    return current_value
 
 
 def next_value(current_value, options):
@@ -153,5 +152,4 @@ def next_value(current_value, options):
         index = None
     if index < len(options) - 1:
         return options[index + 1]
-    else:
-        return current_value
+    return current_value

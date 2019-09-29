@@ -3,10 +3,10 @@ from uuid import uuid4
 
 import pandas as pd
 import dash_html_components as html
+from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
-from webviz_subsurface_components import Map
 
 from ..datainput import scratch_ensemble
 
@@ -66,44 +66,45 @@ def get_map_data(ensemble_path, map_value, flow_value, time_step):
     corresponding subsurface map component in
     https://github.com/equinor/webviz-subsurface-components
     """
+    # pylint: disable=too-many-locals
 
     grid = get_uncompressed_data(ensemble_path, map_value, flow_value, time_step)
 
-    INDICES_COL = ["i", "j", "k"]
-    X_COL = ["x0", "x1", "x2", "x3"]
-    Y_COL = ["y0", "y1", "y2", "y3"]
-    FLOW_COL = ["FLOWI+", "FLOWJ+"]
+    indices_col = ["i", "j", "k"]
+    x_col = ["x0", "x1", "x2", "x3"]
+    y_col = ["y0", "y1", "y2", "y3"]
+    flow_col = ["FLOWI+", "FLOWJ+"]
 
-    RESOLUTION = 1000
+    resolution = 1000
 
-    grid = grid[INDICES_COL + X_COL + Y_COL + ["value"] + FLOW_COL]
+    grid = grid[indices_col + x_col + y_col + ["value"] + flow_col]
     grid = grid[grid["value"] > 0]
 
-    xmin, xmax = grid[X_COL].values.min(), grid[X_COL].values.max()
-    ymin, ymax = grid[Y_COL].values.min(), grid[Y_COL].values.max()
+    xmin, xmax = grid[x_col].values.min(), grid[x_col].values.max()
+    ymin, ymax = grid[y_col].values.min(), grid[y_col].values.max()
 
-    flowmin, flowmax = grid[FLOW_COL].values.min(), grid[FLOW_COL].values.max()
+    flowmin, flowmax = grid[flow_col].values.min(), grid[flow_col].values.max()
 
     valmin, valmax = grid["value"].min(), grid["value"].max()
 
     if (xmax - xmin) > (ymax - ymin):
-        coord_scale = RESOLUTION / (xmax - xmin)
+        coord_scale = resolution / (xmax - xmin)
     else:
-        coord_scale = RESOLUTION / (ymax - ymin)
+        coord_scale = resolution / (ymax - ymin)
 
-    grid[X_COL] = (grid[X_COL] - xmin) * coord_scale
-    grid[Y_COL] = (grid[Y_COL] - ymin) * coord_scale
-    grid[X_COL + Y_COL] = grid[X_COL + Y_COL].astype(int)
+    grid[x_col] = (grid[x_col] - xmin) * coord_scale
+    grid[y_col] = (grid[y_col] - ymin) * coord_scale
+    grid[x_col + y_col] = grid[x_col + y_col].astype(int)
 
-    flow_scale = RESOLUTION / (flowmax - flowmin)
-    grid[FLOW_COL] = (grid[FLOW_COL] - flowmin) * flow_scale
-    grid[FLOW_COL] = grid[FLOW_COL].astype(int)
+    flow_scale = resolution / (flowmax - flowmin)
+    grid[flow_col] = (grid[flow_col] - flowmin) * flow_scale
+    grid[flow_col] = grid[flow_col].astype(int)
 
-    val_scale = RESOLUTION / (valmax - valmin)
+    val_scale = resolution / (valmax - valmin)
     grid["value"] = (grid["value"] - valmin) * val_scale
     grid["value"] = grid["value"].astype(int)
 
-    grid[INDICES_COL] = grid[INDICES_COL].astype(int)
+    grid[indices_col] = grid[indices_col].astype(int)
 
     data = {
         "values": grid.values.tolist(),

@@ -5,10 +5,10 @@ import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
+from webviz_subsurface_components import Morris
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
-from webviz_subsurface_components import Morris
 
 
 class MorrisPlot(WebvizContainer):

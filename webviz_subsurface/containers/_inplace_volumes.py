@@ -142,9 +142,11 @@ csv files stored on standard format.
             elements = list(self.volumes[selector].unique())
             multi = True
 
-            value = elements
-            if selector == "ENSEMBLE" or selector == "SOURCE":
+            if selector in ["ENSEMBLE", "SOURCE"]:
                 value = elements[0]
+            else:
+                value = elements
+
             dropdowns.append(
                 html.Div(
                     children=[
@@ -289,11 +291,11 @@ csv files stored on standard format.
             selections = args[3:]
             data = self.volumes
             data = filter_dataframe(data, self.selectors, selections)
+
             # If not grouped make one trace
             if group == "NONE":
                 dframe = data.groupby("REAL").sum().reset_index()
                 traces = [plot_data(plot_type, dframe, response, "Total")]
-
             # Else make one trace for each group member
             else:
                 traces = []
@@ -302,16 +304,17 @@ csv files stored on standard format.
                     trace = plot_data(plot_type, dframe, response, name)
                     if trace is not None:
                         traces.append(trace)
+
             # Make a dash table if table is selected
             if plot_type == "Table":
                 return dash_table.DataTable(
                     columns=[{"name": i, "id": i} for i in self.table_cols], data=traces
                 )
+
             # Else make a graph object
-            else:
-                return wcc.Graph(
-                    figure={"data": traces, "layout": plot_layout(plot_type, response)}
-                )
+            return wcc.Graph(
+                figure={"data": traces, "layout": plot_layout(plot_type, response)}
+            )
 
         @app.callback(
             [
@@ -326,8 +329,8 @@ csv files stored on standard format.
             """
             if group_by == "ENSEMBLE":
                 return True, list(self.volumes["ENSEMBLE"].unique())
-            else:
-                return False, list(self.volumes["ENSEMBLE"].unique())[0]
+
+            return False, list(self.volumes["ENSEMBLE"].unique())[0]
 
         @app.callback(
             [
@@ -340,10 +343,11 @@ csv files stored on standard format.
             """If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             """
+
             if group_by == "SOURCE":
                 return True, list(self.volumes["SOURCE"].unique())
-            else:
-                return False, list(self.volumes["SOURCE"].unique())[0]
+
+            return False, list(self.volumes["SOURCE"].unique())[0]
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
@@ -353,15 +357,15 @@ def plot_data(plot_type, dframe, response, name):
     if plot_type == "Histogram":
         if values.nunique() == 1:
             values = values[0]
-        return {"x": values, "type": "histogram", "name": name}
-    if plot_type == "Box Plot":
-        return {"y": values, "name": name, "type": "box"}
-    if plot_type == "Per realization":
-        return {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
-    values.replace(0, np.nan, inplace=True)
-    if plot_type == "Table":
+        output = {"x": values, "type": "histogram", "name": name}
+    elif plot_type == "Box Plot":
+        output = {"y": values, "name": name, "type": "box"}
+    elif plot_type == "Per realization":
+        output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
+    elif plot_type == "Table":
+        values.replace(0, np.nan, inplace=True)
         try:
-            return {
+            output = {
                 "response": response,
                 "selector": str(name),
                 "minimum": f"{values.min():.2e}",
@@ -372,27 +376,30 @@ def plot_data(plot_type, dframe, response, name):
                 "p90": f"{np.percentile(values, 10):.2e}",
             }
         except KeyError:
-            return None
+            output = None
+
+    return output
 
 
 @cache.memoize(timeout=cache.TIMEOUT)
 def plot_layout(plot_type, response):
 
     if plot_type == "Histogram":
-        return {
+        output = {
             "bargap": 0.05,
             "xaxis": {"title": response},
             "yaxis": {"title": "Count"},
         }
-    if plot_type == "Box Plot":
-        return {"yaxis": {"title": response}}
-
-    if plot_type == "Per Realization":
-        return {
+    elif plot_type == "Box Plot":
+        output = {"yaxis": {"title": response}}
+    elif plot_type == "Per Realization":
+        output = {
             "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
             "yaxis": {"title": response},
             "xaxis": {"title": "Realization"},
         }
+
+    return output
 
 
 @cache.memoize(timeout=cache.TIMEOUT)

@@ -96,8 +96,8 @@ class LayeredFence:
 
     def slice_surface(self, surface, invert_y=True):
         """Extract line along the fencespec for the surface"""
-        s = surface.copy()
-        values = s.get_randomline(self.fencespec, hincrement=self.hinc)
+        surface = surface.copy()
+        values = surface.get_randomline(self.fencespec, hincrement=self.hinc)
         x = values[:, 0]
         y = values[:, 1]
         if invert_y:

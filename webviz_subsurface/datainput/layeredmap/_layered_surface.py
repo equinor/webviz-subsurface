@@ -25,15 +25,15 @@ class LayeredSurface:
         self.well_layer = None
 
     def get_surface_array(self, surface):
-        s = surface.copy()
-        s.unrotate()
-        xi, yi, zi = s.get_xyz_values()
-        xi = np.flip(xi.transpose(), axis=0)
-        yi = np.flip(yi.transpose(), axis=0)
-        zi = np.flip(zi.transpose(), axis=0)
-        self.arr = [xi, yi, zi]
-        self.min = s.values.min()
-        self.max = s.values.max()
+        surface = surface.copy()
+        surface.unrotate()
+        x, y, z = surface.get_xyz_values()
+        x = np.flip(x.transpose(), axis=0)
+        y = np.flip(y.transpose(), axis=0)
+        z = np.flip(z.transpose(), axis=0)
+        self.arr = [x, y, z]
+        self.min = surface.values.min()
+        self.max = surface.values.max()
 
     def add_well(self, name, well):
         df = well.get_polygons().get_xyz_dataframe()[["X_UTME", "Y_UTMN"]]
