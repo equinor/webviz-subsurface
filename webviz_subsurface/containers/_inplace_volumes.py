@@ -398,6 +398,8 @@ def plot_layout(plot_type, response):
             "yaxis": {"title": response},
             "xaxis": {"title": "Realization"},
         }
+    else:
+        output = None
 
     return output
 
