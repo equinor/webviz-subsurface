@@ -259,10 +259,11 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
             "barmode": "relative",
             "margin": {"l": 50, "r": 50, "b": 20, "t": 50},
             "xaxis": {
+                "title": scale,
                 "autorange": True,
                 "showgrid": False,
                 "zeroline": False,
-                "showline": False,
+                "showline": True,
                 "automargin": True,
             },
             "yaxis": {
