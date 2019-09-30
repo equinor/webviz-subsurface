@@ -32,6 +32,7 @@ setup(
             "Intersect = webviz_subsurface.containers:Intersect",
             "MorrisPlot = webviz_subsurface.containers:MorrisPlot",
             "InplaceVolumes = webviz_subsurface.containers:InplaceVolumes",
+            "InplaceVolumesOneByOne = webviz_subsurface.containers:InplaceVolumesOneByOne",
             "ReservoirSimulationTimeSeries = webviz_subsurface.containers:ReservoirSimulationTimeSeries",
         ]
     },
