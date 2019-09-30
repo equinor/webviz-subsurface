@@ -90,17 +90,17 @@ or `allow_click` has been specified at initialization.
                     style={"display": "grid", "gridTemplateColumns": "1fr 1fr"},
                     children=[
                         dcc.Dropdown(
+                            id=self._reference_id,
+                            options=[{"label": r, "value": r} for r in self.senscases],
+                            value=self.initial_reference,
+                        ),
+                        dcc.Dropdown(
                             id=self._scale_id,
                             options=[
                                 {"label": r, "value": r}
                                 for r in ["Percentage", "Absolute"]
                             ],
                             value="Percentage",
-                        ),
-                        dcc.Dropdown(
-                            id=self._reference_id,
-                            options=[{"label": r, "value": r} for r in self.senscases],
-                            value=self.initial_reference,
                         ),
                     ],
                 ),
@@ -274,6 +274,5 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
                 "automargin": True,
             },
             "showlegend": False,
-             
         },
     }
