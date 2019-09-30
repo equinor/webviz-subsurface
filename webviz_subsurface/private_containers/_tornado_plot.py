@@ -82,19 +82,27 @@ or `allow_click` has been specified at initialization.
         return html.Div(
             [
                 dcc.Store(id=self.storage_id),
-                html.Label("Reference"),
-                dcc.Dropdown(
-                    id=self._reference_id,
-                    options=[{"label": r, "value": r} for r in self.senscases],
-                    value=self.initial_reference,
+                html.Div(
+                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr"},
+                    children=[html.Label("Reference"), html.Label("Scale")],
                 ),
-                html.Label("Scale"),
-                dcc.Dropdown(
-                    id=self._scale_id,
-                    options=[
-                        {"label": r, "value": r} for r in ["Percentage", "Absolute"]
+                html.Div(
+                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr"},
+                    children=[
+                        dcc.Dropdown(
+                            id=self._scale_id,
+                            options=[
+                                {"label": r, "value": r}
+                                for r in ["Percentage", "Absolute"]
+                            ],
+                            value="Percentage",
+                        ),
+                        dcc.Dropdown(
+                            id=self._reference_id,
+                            options=[{"label": r, "value": r} for r in self.senscases],
+                            value=self.initial_reference,
+                        ),
                     ],
-                    value="Percentage",
                 ),
                 wcc.Graph(id=self._graph_id, config={"displayModeBar": False}),
                 dcc.Store(id=self.hover_id),
