@@ -1,7 +1,6 @@
 from uuid import uuid4
 from glob import glob
 from pathlib import PurePath
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -91,16 +90,15 @@ and a folder of well files stored in RMS well format.
 
     @property
     def realizations(self):
-        d = {
+        # pylint: disable=protected-access
+        return {
             self.ensemble._realizations[real]._origpath: real
-            for real in self.ensemble._realizations
+            for real in sorted(self.ensemble._realizations)
         }
-        return OrderedDict(sorted(d.items()))
 
     @property
     def well_names(self):
-        well_folder = f"{self.well_path}/*{self.well_suffix}"
-        return sorted([well for well in glob(well_folder)])
+        return sorted(glob(f"{self.well_path}/*{self.well_suffix}"))
 
     @property
     def surface_colors(self):
@@ -298,24 +296,24 @@ and a folder of well files stored in RMS well format.
                 _surfaces = self.surface_names
             names = {s: {"vals": [], "min": None, "max": None} for s in _surfaces}
 
-            for i, p in enumerate(_data["points"]):
+            for i, point in enumerate(_data["points"]):
                 try:
                     s_name = graph[i]["name"]
                     real = self.realizations[graph[i]["real"]]
                 except KeyError:
                     continue
-                names[s_name]["vals"].append(p["y"])
+                names[s_name]["vals"].append(point["y"])
                 if not names[s_name]["min"]:
-                    names[s_name]["min"] = p["y"]
+                    names[s_name]["min"] = point["y"]
                     names[s_name]["min_real"] = real
-                    names[s_name]["max"] = p["y"]
+                    names[s_name]["max"] = point["y"]
                     names[s_name]["max_real"] = real
                 else:
-                    if names[s_name]["min"] > p["y"]:
-                        names[s_name]["min"] = p["y"]
+                    if names[s_name]["min"] > point["y"]:
+                        names[s_name]["min"] = point["y"]
                         names[s_name]["min_real"] = real
-                    if names[s_name]["max"] < p["y"]:
-                        names[s_name]["max"] = p["y"]
+                    if names[s_name]["max"] < point["y"]:
+                        names[s_name]["max"] = point["y"]
                         names[s_name]["max_real"] = real
 
             return [
@@ -360,7 +358,7 @@ def make_surface_traces(well, reals, surf_name, cat, color):
             surf = load_surface(surf_name, real, cat)
         except IOError:
             continue
-        showlegend = True if j == 0 else False
+        showlegend = j == 0
         plot_data.append(
             {
                 "x": x,

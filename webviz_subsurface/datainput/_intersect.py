@@ -26,7 +26,7 @@ def load_surface(s_name, real_path, surface_cat):
 @cache.memoize(timeout=cache.TIMEOUT)
 def get_wfence(well_name, extend=200, tvdmin=0):
     well = load_well(well_name)
-    data = well.get_fence_polyline(sampling=20, extend=extend, tvdmin=tvdmin)
+    data = well.get_fence_polyline(sampling=20, nextend=extend, tvdmin=tvdmin)
     df = pd.DataFrame(data)
     df.columns = df.columns.astype(str)
     return df

@@ -1,3 +1,7 @@
+# pylint: disable-all
+# This file will be restructured.
+# See https://github.com/equinor/webviz-subsurface/issues/84
+
 import itertools
 from uuid import uuid4
 
@@ -5,18 +9,10 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
-from webviz_config.containers import WebvizContainer
-from webviz_config.common_cache import cache
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 import plotly.graph_objs as go
-
-from ..datainput import (
-    get_time_series_data,
-    get_time_series_statistics,
-    get_time_series_delta_ens,
-    get_time_series_delta_ens_stats,
-)
-
+from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import cache
 
 # =============================================================================
 # Container

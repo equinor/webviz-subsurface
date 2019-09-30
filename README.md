@@ -50,6 +50,13 @@ If you are interested in creating new elements which can be configured through
 the configuration file, take a look at the
 [webviz-config contribution guide](https://github.com/equinor/webviz-config/blob/master/CONTRIBUTING.md).
 
+You can do automatic linting of your code changes by running
+```bash
+black --check webviz_subsurface tests # Check code style
+pylint webviz_subsurface tests # Check code quality
+bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best practice
+```
+
 ### Disclaimer
 
 This is a tool under heavy development. The current configuration file layout,

@@ -29,7 +29,7 @@ This container visualizes the quality of the history match.
         )
 
         data = extract_mismatch(self.ens_paths, self.observation_file)
-        self.hm_data = json.dumps(self._prepareData(data))
+        self.hm_data = json.dumps(HistoryMatch._prepare_data(data))
 
         self.hm_id = "hm-id-{}".format(uuid4())
 
@@ -46,7 +46,8 @@ This container visualizes the quality of the history match.
             )
         ]
 
-    def _prepareData(self, data):
+    @staticmethod
+    def _prepare_data(data):
         data = data.copy().reset_index()
 
         ensemble_labels = data.ensemble_name.unique().tolist()
@@ -60,7 +61,7 @@ This container visualizes the quality of the history match.
             df = data[data.ensemble_name == ensemble]
             iterations.append(df.groupby("obs_group_name").mean())
 
-        sorted_iterations = HistoryMatch._sortIterations(iterations)
+        sorted_iterations = HistoryMatch._sort_iterations(iterations)
 
         iterations_dict = HistoryMatch._iterations_to_dict(
             sorted_iterations, ensemble_labels
@@ -77,7 +78,7 @@ This container visualizes the quality of the history match.
         return data
 
     @staticmethod
-    def _sortIterations(iterations):
+    def _sort_iterations(iterations):
         sorted_data = []
 
         for df in iterations:
@@ -134,14 +135,14 @@ def _get_sorted_edges(number_observation_groups):
 
     sorted_values = np.flip(sorted_values, 0)
 
-    P10 = np.percentile(sorted_values, 90, axis=1)
-    P90 = np.percentile(sorted_values, 10, axis=1)
+    p10 = np.percentile(sorted_values, 90, axis=1)
+    p90 = np.percentile(sorted_values, 10, axis=1)
 
     # Dictionary with two arrays (P10, P90). Each array of length equal
     # to number of observation groups i.e. number of items along y axis.
     # These values are to be used for drawing the stair stepped
     # sorted P10-P90 area:
 
-    coordinates = {"low": list(P10), "high": list(P90)}
+    coordinates = {"low": list(p10), "high": list(p90)}
 
     return coordinates
