@@ -377,6 +377,8 @@ def plot_data(plot_type, dframe, response, name):
             }
         except KeyError:
             output = None
+    else:
+        output = None
 
     return output
 
