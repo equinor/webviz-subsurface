@@ -14,6 +14,7 @@ from ..datainput import extract_volumes, get_realizations
 
 
 class InplaceVolumesOneByOne(WebvizContainer):
+    # pylint: disable=too-many-instance-attributes
     """### InplaceVolumesOneByOne
 
 Visualizes inplace volumetrics related to a sensitivity run.
@@ -369,8 +370,8 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
                     figure={
                         "data": [
                             {
-                                "y": data[response],
-                                "x": data["REAL"],
+                                "y": plot_data[response],
+                                "x": plot_data["REAL"],
                                 "marker": {"color": "grey"},
                                 "type": "bar",
                             }

@@ -1,13 +1,14 @@
 from uuid import uuid4
 import json
 import pandas as pd
+
+from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
-import dash_daq as daq
+
 from webviz_config.common_cache import cache
 import webviz_core_components as wcc
-from dash.dependencies import Input, Output
 
 
 class TornadoPlot:
@@ -218,7 +219,7 @@ def cut_by_ref(tornadotable, refname):
 @cache.memoize(timeout=cache.TIMEOUT)
 def tornado_plot(
     realizations, data, reference="rms_seed", scale="Percentage", cutbyref=True
-):
+):  # pylint: disable=too-many-locals
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
     if list(realizations["SENSCASE"].unique()) == [None]:
@@ -241,7 +242,7 @@ def tornado_plot(
             continue
 
         # If `SENSTYPE` is scalar grab the mean for each `SENSCASE`
-        elif dframe["SENSTYPE"].all() == "scalar":
+        if dframe["SENSTYPE"].all() == "scalar":
             for sens_case, dframe2 in dframe.groupby(["SENSCASE"]):
                 values = data.loc[data["REAL"].isin(dframe2["REAL"])]["VALUE"].mean()
 
@@ -278,7 +279,8 @@ def tornado_plot(
             )
         else:
             raise ValueError(
-                f"Sensitivities should be either 'scalar'or 'mc'. Sensitivity: '{sens_name}' is neither."
+                f"Sensitivities should be either 'scalar'or 'mc'. \
+                Sensitivity: '{sens_name}' is neither."
             )
 
     # Group by sensitivity name and calculate low / high values
