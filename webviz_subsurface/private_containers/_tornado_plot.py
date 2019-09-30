@@ -4,6 +4,8 @@ import pandas as pd
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_daq as daq
+from webviz_config.common_cache import cache
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 
@@ -60,6 +62,7 @@ or `allow_click` has been specified at initialization.
         self._hover_id = f"{str(uuid4())}-hover"
         self._click_id = f"{str(uuid4())}-click"
         self._scale_id = f"{str(uuid4())}-scale"
+        self._cut_by_ref_id = f"{str(uuid4())}-cutref"
         self.set_callbacks(app)
 
     @property
@@ -83,16 +86,21 @@ or `allow_click` has been specified at initialization.
             [
                 dcc.Store(id=self.storage_id),
                 html.Div(
-                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr"},
-                    children=[html.Label("Reference"), html.Label("Scale")],
+                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr"},
+                    children=[
+                        html.Label("Reference"),
+                        html.Label("Scale"),
+                        html.Label("Cut by reference"),
+                    ],
                 ),
                 html.Div(
-                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr"},
+                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr"},
                     children=[
                         dcc.Dropdown(
                             id=self._reference_id,
                             options=[{"label": r, "value": r} for r in self.senscases],
                             value=self.initial_reference,
+                            clearable=False,
                         ),
                         dcc.Dropdown(
                             id=self._scale_id,
@@ -101,6 +109,16 @@ or `allow_click` has been specified at initialization.
                                 for r in ["Percentage", "Absolute"]
                             ],
                             value="Percentage",
+                            clearable=False,
+                        ),
+                        dcc.RadioItems(
+                            labelStyle={"display": "inline-block"},
+                            id=self._cut_by_ref_id,
+                            options=[
+                                {"label": "Off", "value": False},
+                                {"label": "On", "value": True},
+                            ],
+                            value=False,
                         ),
                     ],
                 ),
@@ -116,10 +134,11 @@ or `allow_click` has been specified at initialization.
             [
                 Input(self._reference_id, "value"),
                 Input(self._scale_id, "value"),
+                Input(self._cut_by_ref_id, "value"),
                 Input(self.storage_id, "children"),
             ],
         )
-        def _calc_tornado(reference, scale, data):
+        def _calc_tornado(reference, scale, cutbyref, data):
             if not data:
                 raise PreventUpdate
             data = json.loads(data)
@@ -130,7 +149,7 @@ or `allow_click` has been specified at initialization.
                 self.realizations["ENSEMBLE"] == data["ENSEMBLE"]
             ]
             try:
-                return tornado_plot(realizations, values, reference, scale)
+                return tornado_plot(realizations, values, reference, scale, cutbyref)
             except KeyError:
                 return {}
 
@@ -161,7 +180,45 @@ or `allow_click` has been specified at initialization.
                     raise PreventUpdate
 
 
-def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
+def scale_to_ref(value, ref, scale):
+    value_ref = value - ref
+    if scale == "Percentage":
+        value_ref = (100 * (value_ref / ref)) if ref != 0 else 0
+    return value_ref
+
+
+def sort_by_max(tornadotable):
+    """ Sorts table based on max(abs('low', 'high')) """
+    tornadotable["max"] = (
+        tornadotable[["low", "high"]]
+        .apply(lambda x: max(x.min(), x.max(), key=abs), axis=1)
+        .abs()
+    )
+    df_sorted = tornadotable.sort_values("max", ascending=True)
+    df_sorted.drop(["max"], axis=1, inplace=True)
+    return df_sorted
+
+
+def cut_by_ref(tornadotable, refname):
+    """ Removes sensitivities smaller than reference sensitivity from table """
+    maskref = tornadotable.sensname == refname
+    reflow = tornadotable[maskref].low.abs()
+    refhigh = tornadotable[maskref].high.abs()
+    refmax = max(float(reflow), float(refhigh))
+    dfr_filtered = tornadotable.loc[
+        (tornadotable["sensname"] == refname)
+        | (
+            (tornadotable["low"].abs() >= refmax)
+            | (tornadotable["high"].abs() >= refmax)
+        )
+    ]
+    return dfr_filtered
+
+
+@cache.memoize(timeout=cache.TIMEOUT)
+def tornado_plot(
+    realizations, data, reference="rms_seed", scale="Percentage", cutbyref=True
+):
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
     if list(realizations["SENSCASE"].unique()) == [None]:
@@ -176,25 +233,53 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
 
     # Group by sensitivity name/case and calculate average values for each case
     arr = []
-    for (sens_name, sens_case), dframe in realizations.groupby(
-        ["SENSNAME", "SENSCASE"]
-    ):
-        if sens_name == reference:
+    for sens_name, dframe in realizations.groupby(["SENSNAME"]):
+        # Excluding the reference case as well as any cases named `ref`
+        # `ref` is used as `SENSNAME`, typically for a single realization only,
+        # when no seed uncertainty is used
+        if sens_name == "ref":
             continue
-        values = data.loc[data["REAL"].isin(dframe["REAL"])]["VALUE"].mean()
 
-        values_ref = values - ref_avg
-        if scale == "Percentage":
-            values_ref = (100 * (values_ref / ref_avg)) if ref_avg != 0 else 0
-        arr.append(
-            {
-                "sensname": sens_name,
-                "senscase": sens_case,
-                "values": values,
-                "values_ref": values_ref,
-                "reals": list(dframe["REAL"]),
-            }
-        )
+        # If `SENSTYPE` is scalar grab the mean for each `SENSCASE`
+        elif dframe["SENSTYPE"].all() == "scalar":
+            for sens_case, dframe2 in dframe.groupby(["SENSCASE"]):
+                values = data.loc[data["REAL"].isin(dframe2["REAL"])]["VALUE"].mean()
+
+                arr.append(
+                    {
+                        "sensname": sens_name,
+                        "senscase": sens_case,
+                        "values": values,
+                        "values_ref": scale_to_ref(values, ref_avg, scale),
+                        "reals": list(dframe["REAL"]),
+                    }
+                )
+        # If `SENSTYPE` is monte carlo get p10, p90
+        elif dframe["SENSTYPE"].all() == "mc":
+            p90 = data.loc[data["REAL"].isin(dframe["REAL"])]["VALUE"].quantile(0.10)
+            p10 = data.loc[data["REAL"].isin(dframe["REAL"])]["VALUE"].quantile(0.90)
+            arr.append(
+                {
+                    "sensname": sens_name,
+                    "senscase": "p90",
+                    "values": p90,
+                    "values_ref": scale_to_ref(p90, ref_avg, scale),
+                    "reals": list(dframe["REAL"]),
+                }
+            )
+            arr.append(
+                {
+                    "sensname": sens_name,
+                    "senscase": "p10",
+                    "values": p10,
+                    "values_ref": scale_to_ref(p10, ref_avg, scale),
+                    "reals": list(dframe["REAL"]),
+                }
+            )
+        else:
+            raise ValueError(
+                f"Sensitivities should be either 'scalar'or 'mc'. Sensitivity: '{sens_name}' is neither."
+            )
 
     # Group by sensitivity name and calculate low / high values
     arr2 = []
@@ -208,21 +293,28 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
                 "low_label": low["senscase"],
                 "true_low": low["values"],
                 "low_reals": low["reals"],
-                "name": sensname,
+                "sensname": sensname,
                 "high": high["values_ref"] if high["values_ref"] > 0 else 0,
                 "high_label": high["senscase"],
                 "true_high": high["values"],
                 "high_reals": high["reals"],
             }
         )
-    df = pd.DataFrame(arr2).sort_values(by=["high"])
 
+    df = pd.DataFrame(arr2)
+
+    # Drops sensitivities smaller than reference if specified
+    if cutbyref and df["sensname"].str.contains(reference).any():
+        df = cut_by_ref(df, reference)
+
+    df = sort_by_max(df)
     # Return tornado data as Plotly figure
+
     return {
         "data": [
             dict(
                 type="bar",
-                y=df["name"],
+                y=df["sensname"],
                 x=df["low"],
                 name="low",
                 customdata=df["low_reals"],
@@ -239,7 +331,7 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
             ),
             dict(
                 type="bar",
-                y=df["name"],
+                y=df["sensname"],
                 x=df["high"],
                 name="high",
                 customdata=df["high_reals"],
@@ -274,5 +366,22 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
                 "automargin": True,
             },
             "showlegend": False,
+            "annotations": [
+                {
+                    "x": 0,
+                    "y": len(list(df["low"])),
+                    "xref": "x",
+                    "yref": "y",
+                    "text": f"Reference avg: {ref_avg:.2f}",
+                    "showarrow": True,
+                    "align": "center",
+                    "arrowhead": 2,
+                    "arrowsize": 1,
+                    "arrowwidth": 1,
+                    "arrowcolor": "#636363",
+                    "ax": 20,
+                    "ay": -25,
+                }
+            ],
         },
     }

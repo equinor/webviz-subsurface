@@ -362,7 +362,7 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
             # Make Plotly figure
             if plot_type == "Per Realization":
                 # One bar per realization
-                data = data.groupby("REAL").sum().reset_index()
+                plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.graph_id,
@@ -401,7 +401,13 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
                     },
                 )
             tornado = json.dumps(
-                {"ENSEMBLE": ensemble, "data": data[["REAL", response]].values.tolist()}
+                {
+                    "ENSEMBLE": ensemble,
+                    "data": data.groupby("REAL")
+                    .sum()
+                    .reset_index()[["REAL", response]]
+                    .values.tolist(),
+                }
             )
 
             return figure, tornado, table
