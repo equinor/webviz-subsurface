@@ -31,6 +31,7 @@ from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
+from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 
 
@@ -43,5 +44,6 @@ __all__ = [
     "Intersect",
     "MorrisPlot",
     "InplaceVolumes",
+    "InplaceVolumesOneByOne",
     "ReservoirSimulationTimeSeries",
 ]
