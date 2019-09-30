@@ -11,7 +11,7 @@ from dash.dependencies import Input, Output
 class TornadoPlot:
     """### TornadoPlot
 
-This private container visualizes a Tornado plot. 
+This private container visualizes a Tornado plot.
 It is meant to be used as a component in other containers.
 The container is initialized with a dataframe of realizations with corresponding sensitivities,
 but without the response values that are to be plotted.

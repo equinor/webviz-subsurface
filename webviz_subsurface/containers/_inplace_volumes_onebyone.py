@@ -3,8 +3,6 @@ import json
 import numpy as np
 import pandas as pd
 from dash_table import DataTable
-import plotly.express as px
-from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -263,7 +261,6 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
             )
             for selector in self.selectors
         ]
-        return dropdowns
 
     @staticmethod
     def set_grid_layout(columns):
@@ -412,7 +409,7 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
             [Input(self.tornadoplot.click_id, "children")],
             [State(self.plot_type_id, "value"), State(self.graph_id, "figure")],
         )
-        def color_chart(hoverdata, plot_type, figure):
+        def _color_chart(hoverdata, plot_type, figure):
             """Callback to update barchart color on tornado plot click"""
             if not hoverdata or plot_type != "Per Realization":
                 return figure
