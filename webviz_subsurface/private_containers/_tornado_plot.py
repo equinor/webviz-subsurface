@@ -263,13 +263,16 @@ def tornado_plot(realizations, data, reference="rms_seed", scale="Percentage"):
                 "showgrid": False,
                 "zeroline": False,
                 "showline": False,
+                "automargin": True,
             },
             "yaxis": {
                 "autorange": True,
                 "showgrid": False,
                 "zeroline": False,
                 "showline": False,
+                "automargin": True,
             },
             "showlegend": False,
+             
         },
     }
