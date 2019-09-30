@@ -364,6 +364,7 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
                 # One bar per realization
                 data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
+                    config={"displayModeBar": False},
                     id=self.graph_id,
                     figure={
                         "data": [
@@ -383,6 +384,7 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
             elif plot_type == "Box Plot":
                 # One box per sensitivity name
                 figure = wcc.Graph(
+                    config={"displayModeBar": False},
                     id=self.graph_id,
                     figure={
                         "data": [
