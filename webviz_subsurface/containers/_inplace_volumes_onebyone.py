@@ -1,15 +1,19 @@
 from uuid import uuid4
 import json
+
 import numpy as np
 import pandas as pd
+
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
+
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from webviz_config.common_cache import cache
 from webviz_config.containers import WebvizContainer
 from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
+
 from ..datainput import extract_volumes, get_realizations
 
 
@@ -21,7 +25,7 @@ Visualizes inplace volumetrics related to a sensitivity run.
 Requires ensembles with `SENSNAME`and `SENSCASE` information.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
-* `volfiles`:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)
+* `volfiles`:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}
 * `volfolder`: Optional local folder for csv files
 * `response`: Optional initial visualized volume response
 
