@@ -23,10 +23,16 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
         ens_dfs = []
         ens = scratch_ensemble(ens_name, ens_path)
         for volname, volfile in volfiles:
-            path = os.path.join(volfolder, volfile)
-            df = ens.load_csv(path)
-            df["SOURCE"] = volname
-            df["ENSEMBLE"] = ens_name
-            ens_dfs.append(df)
-        dfs.append(pd.concat(ens_dfs))
+            try:
+                path = os.path.join(volfolder, volfile)
+                df = ens.load_csv(path)
+                df["SOURCE"] = volname
+                df["ENSEMBLE"] = ens_name
+                ens_dfs.append(df)
+            except ValueError:
+                pass
+        try:
+            dfs.append(pd.concat(ens_dfs))
+        except ValueError:
+            pass
     return pd.concat(dfs)

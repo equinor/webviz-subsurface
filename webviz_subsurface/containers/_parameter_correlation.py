@@ -15,11 +15,11 @@ from ..datainput import scratch_ensemble
 
 class Widgets:
     @staticmethod
-    def dropdown_from_dict(dom_id, d):
+    def dropdown_from_dict(dom_id, dictionary):
         return dcc.Dropdown(
             id=dom_id,
-            options=[{"label": k, "value": v} for k, v in d.items()],
-            value=list(d.values())[0],
+            options=[{"label": k, "value": v} for k, v in dictionary.items()],
+            value=list(dictionary.values())[0],
             clearable=False,
         )
 
@@ -150,6 +150,8 @@ and scatter plot for any given pair of parameters.
                         "grid-template-columns": "3fr 1fr 4fr",
                     },
                     children=[
+                        # pylint: disable=no-member
+                        # ToggleSwitch module attribute in dash-daq is set at runtime
                         html.Label("Show density plot", style={"font-weight": "bold"}),
                         daq.ToggleSwitch(id=self.density_id, value=True),
                     ],
@@ -181,7 +183,7 @@ and scatter plot for any given pair of parameters.
                 Input(self.p2_drop_id, "value"),
             ],
         )
-        def _update_matrix(ens, p1, p2):
+        def _update_matrix(ens, param1, param2):
             """Renders correlation matrix.
             Currently also re-renders matrix to update currently
             selected cell. This is not optimal, but hard to prevent
@@ -191,8 +193,8 @@ and scatter plot for any given pair of parameters.
             """
             fig = render_matrix(ens, self.drop_constants)
             # Finds index of the currently selected cell
-            x_index = list(fig["data"][0]["x"]).index(p1)
-            y_index = list(fig["data"][0]["y"]).index(p2)
+            x_index = list(fig["data"][0]["x"]).index(param1)
+            y_index = list(fig["data"][0]["y"]).index(param2)
             # Adds a shape to highlight the selected cell
             shape = [
                 {
@@ -220,8 +222,8 @@ and scatter plot for any given pair of parameters.
                 Input(self.density_id, "value"),
             ],
         )
-        def _update_scatter(ens1, p1, ens2, p2, color, density):
-            return render_scatter(ens1, p1, ens2, p2, color, density)
+        def _update_scatter(ens1, param1, ens2, param2, color, density):
+            return render_scatter(ens1, param1, ens2, param2, color, density)
 
         @app.callback(
             [
@@ -232,9 +234,9 @@ and scatter plot for any given pair of parameters.
             ],
             [Input(self.matrix_id, "clickData"), Input(self.ens_matrix_id, "value")],
         )
-        def _update_from_click(cd, ens):
+        def _update_from_click(cell_data, ens):
             try:
-                points = cd["points"][0]
+                points = cell_data["points"][0]
             # TypeError is returned if no cells are clicked
             except TypeError:
                 return [None for i in range(4)]

@@ -10,6 +10,7 @@ import dash_core_components as dcc
 
 
 class SurfaceSelector:
+    # pylint: disable=too-many-instance-attributes,too-many-statements
     """### Surface Selector
 
 Creates a widget to select surfaces from a yaml configuration file or dictionary, and
@@ -49,10 +50,11 @@ another_property:
         """Reads config file either from a yaml provided file or from a dict"""
         if isinstance(config, str):
             return yaml.safe_load(open(config, "r"))
-        elif isinstance(config, dict):
+
+        if isinstance(config, dict):
             return config
-        else:
-            raise TypeError("Config must be a dictionary of a yaml file")
+
+        raise TypeError("Config must be a dictionary of a yaml file")
 
     @property
     def storage_id(self):
@@ -106,7 +108,7 @@ another_property:
                 "SENSNAME"
             ].unique()
         )
-        if sensnames[0] == None:
+        if sensnames[0] is None:
             return None
         return sensnames
 
@@ -117,7 +119,7 @@ another_property:
                 & (self._ensembles["SENSNAME"] == sensname)
             ]["SENSCASE"].unique()
         )
-        if senscases and senscases[0] == None:
+        if senscases and senscases[0] is None:
             return None
         return senscases
 
@@ -313,6 +315,7 @@ another_property:
         )
 
     def set_callbacks(self, app):
+        # pylint: disable=inconsistent-return-statements
         @app.callback(
             Output(self.attr_id, "value"),
             [
@@ -321,16 +324,16 @@ another_property:
             ],
             [State(self.attr_id, "value")],
         )
-        def _update_attr(n_prev, n_next, current_value):
+        def _update_attr(_n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx or not current_value:
                 raise PreventUpdate
             if not ctx[0]["value"]:
                 return current_value
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.attr_id_btn_prev}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.attr_id_btn_prev}.n_clicks":
                 return prev_value(current_value, self.attrs)
-            if cb == f"{self.attr_id_btn_next}.n_clicks":
+            if callback == f"{self.attr_id_btn_next}.n_clicks":
                 return next_value(current_value, self.attrs)
 
         @app.callback(
@@ -341,16 +344,16 @@ another_property:
             ],
             [State(self.ensemble_id, "value")],
         )
-        def _update_ensemble(n_prev, n_next, current_value):
+        def _update_ensemble(_n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx or not current_value:
                 raise PreventUpdate
             if not ctx[0]["value"]:
                 return current_value
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.ensemble_id_btn_prev}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.ensemble_id_btn_prev}.n_clicks":
                 return prev_value(current_value, self.ensembles)
-            if cb == f"{self.ensemble_id_btn_next}.n_clicks":
+            if callback == f"{self.ensemble_id_btn_next}.n_clicks":
                 return next_value(current_value, self.ensembles)
             return current_value
 
@@ -367,7 +370,7 @@ another_property:
             ],
             [State(self.name_id, "value")],
         )
-        def _update_name(attr, n_prev, n_next, current_value):
+        def _update_name(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
@@ -375,10 +378,10 @@ another_property:
             if not names:
                 return None, None, {"visibility": "hidden"}
 
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.name_id_btn_prev}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.name_id_btn_prev}.n_clicks":
                 value = prev_value(current_value, names)
-            elif cb == f"{self.name_id_btn_next}.n_clicks":
+            elif callback == f"{self.name_id_btn_next}.n_clicks":
                 value = next_value(current_value, names)
             else:
                 value = current_value if current_value in names else names[0]
@@ -398,7 +401,7 @@ another_property:
             ],
             [State(self.date_id, "value")],
         )
-        def _update_date(attr, n_prev, n_next, current_value):
+        def _update_date(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
@@ -406,10 +409,10 @@ another_property:
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.date_id_btn_prev}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.date_id_btn_prev}.n_clicks":
                 value = prev_value(current_value, dates)
-            elif cb == f"{self.date_id_btn_next}.n_clicks":
+            elif callback == f"{self.date_id_btn_next}.n_clicks":
                 value = next_value(current_value, dates)
             else:
                 value = current_value if current_value in dates else dates[0]
@@ -433,7 +436,7 @@ another_property:
             [State(self.realization_id, "value")],
         )
         def _update_real(
-            ensemble, aggreal, n_prev, n_next, sens_name, sens_case, current_value
+            ensemble, aggreal, _n_prev, _n_next, sens_name, sens_case, current_value
         ):
             ctx = dash.callback_context.triggered
             if not ctx:
@@ -444,10 +447,10 @@ another_property:
                 reals = self.realizations(ensemble, sens_name, sens_case)
             if not reals:
                 return [], None, {"visibility": "hidden"}
-            cb = ctx[0]["prop_id"]
-            if cb == f"{self.realization_id_btn_prev}.n_clicks":
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.realization_id_btn_prev}.n_clicks":
                 value = prev_value(current_value, reals)
-            elif cb == f"{self.realization_id_btn_next}.n_clicks":
+            elif callback == f"{self.realization_id_btn_next}.n_clicks":
                 value = next_value(current_value, reals)
             else:
                 value = current_value if current_value in reals else reals[0]
@@ -506,8 +509,9 @@ another_property:
         ):
 
             """
-            Stores current selections to dcc.Store. The information can be retrieved as a json string
-            from a dash callback Input. E.g. [Input(surfselector.storage_id, 'children')]
+            Stores current selections to dcc.Store. The information can
+            be retrieved as a json string from a dash callback Input.
+            E.g. [Input(surfselector.storage_id, 'children')]
             """
             reals = self.realizations(ensemble, sens_name, sens_case)
             all_senscases = [
@@ -555,15 +559,15 @@ def format_date(date_string):
     20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
     if len(date_string) == 8:
         return datetime.strptime(date_string, "%Y%m%d").strftime("%b %Y")
-    elif len(date_string) == 17:
+
+    if len(date_string) == 17:
         [begin, end] = [
             datetime.strptime(date, "%Y%m%d") for date in date_string.split("_")
         ]
         if begin.year == end.year and begin.month == end.month:
             return f"({begin.strftime('%-d %b %Y')})-\
               ({end.strftime('%-d %b %Y')})"
-        else:
-            return f"({begin.strftime('%b %Y')})-\
-              ({end.strftime('%b %Y')})"
-    else:
-        return date_string
+
+        return f"({begin.strftime('%b %Y')})-({end.strftime('%b %Y')})"
+
+    return date_string

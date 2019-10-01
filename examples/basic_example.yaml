@@ -43,6 +43,13 @@ pages:
       volfiles: 
         geogrid: geogrid--oil.csv
         simgrid: simgrid--oil.csv
+- title: Inplace volume sensitivities
+   content: 
+    - container: InplaceVolumesOneByOne
+      ensembles: [iter-0, iter-1]
+      volfiles: 
+        geogrid: geogrid--oil.csv
+        simgrid: simgrid--oil.csv
  - title: Morris Plot
    content: 
     - Some text...
