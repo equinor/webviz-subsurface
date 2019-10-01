@@ -244,7 +244,9 @@ def tornado_plot(
         # If `SENSTYPE` is scalar grab the mean for each `SENSCASE`
         if sens_name_df["SENSTYPE"].all() == "scalar":
             for sens_case, sens_case_df in sens_name_df.groupby(["SENSCASE"]):
-                values = data.loc[data["REAL"].isin(sens_case_df["REAL"])]["VALUE"].mean()
+                values = data.loc[data["REAL"].isin(sens_case_df["REAL"])][
+                    "VALUE"
+                ].mean()
 
                 arr.append(
                     {
@@ -257,15 +259,26 @@ def tornado_plot(
                 )
         # If `SENSTYPE` is monte carlo get p10, p90
         elif sens_name_df["SENSTYPE"].all() == "mc":
-            p90 = data.loc[data["REAL"].isin(sens_name_df["REAL"])]["VALUE"].quantile(0.10)
-            p10 = data.loc[data["REAL"].isin(sens_name_df["REAL"])]["VALUE"].quantile(0.90)
+            # Get data for relevant realizations
+            case_df = data.loc[data["REAL"].isin(sens_name_df["REAL"])]
+
+            # Calculate p90(low) and p10(high)
+            p90 = case_df["VALUE"].quantile(0.10)
+            p10 = case_df["VALUE"].quantile(0.90)
+
+            # Extract list of realizations with values less then reference avg (low)
+            low_reals = list(case_df.loc[case_df["VALUE"] <= ref_avg]["REAL"])
+
+            # Extract list of realizations with values higher then reference avg (high)
+            high_reals = list(case_df.loc[case_df["VALUE"] > ref_avg]["REAL"])
+
             arr.append(
                 {
                     "sensname": sens_name,
                     "senscase": "p90",
                     "values": p90,
                     "values_ref": scale_to_ref(p90, ref_avg, scale),
-                    "reals": list(sens_name_df["REAL"]),
+                    "reals": low_reals,
                 }
             )
             arr.append(
@@ -274,7 +287,7 @@ def tornado_plot(
                     "senscase": "p10",
                     "values": p10,
                     "values_ref": scale_to_ref(p10, ref_avg, scale),
-                    "reals": list(sens_name_df["REAL"]),
+                    "reals": high_reals,
                 }
             )
         else:
