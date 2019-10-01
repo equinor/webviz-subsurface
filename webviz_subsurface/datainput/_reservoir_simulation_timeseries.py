@@ -7,7 +7,7 @@ try:
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
     pass  # for a portable webviz instance, it is never used.
 
-from ..datainput import scratch_ensemble
+from ._history_match import scratch_ensemble
 
 
 @cache.memoize(timeout=cache.TIMEOUT)

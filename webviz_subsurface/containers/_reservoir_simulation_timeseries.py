@@ -14,6 +14,13 @@ import plotly.graph_objs as go
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
 
+from ..datainput import (
+    get_time_series_data,
+    get_time_series_statistics,
+    get_time_series_delta_ens,
+    get_time_series_delta_ens_stats,
+)
+
 # =============================================================================
 # Container
 # =============================================================================
