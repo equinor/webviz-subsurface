@@ -288,8 +288,6 @@ def tornado_plot(
     for sensname, dframe in pd.DataFrame(arr).groupby(["sensname"]):
         low = dframe.loc[dframe["values_ref"].idxmin()]
         high = dframe.loc[dframe["values_ref"].idxmax()]
-        print(low["reals"])
-        print(high["reals"])
         arr2.append(
             {
                 "low": low["values_ref"] if low["values_ref"] < 0 else 0,
