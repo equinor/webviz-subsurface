@@ -19,7 +19,7 @@ from ..datainput import load_smry, get_realizations
 
 
 class ReservoirSimulationSensitivity(WebvizContainer):
-    """### Visualizes reservoir simulation time series  related to a sensitivity run
+    """### Visualizes reservoir simulation time series related to a sensitivity run
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
