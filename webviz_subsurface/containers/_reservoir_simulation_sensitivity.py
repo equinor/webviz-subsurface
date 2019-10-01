@@ -25,9 +25,9 @@ class ReservoirSimulationSensitivity(WebvizContainer):
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
+* `column_keys`: Initial vector to display
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
-
 """
 
     ENSEMBLE_COLUMNS = [
@@ -57,6 +57,7 @@ class ReservoirSimulationSensitivity(WebvizContainer):
         container_settings,
         ensembles,
         column_keys=None,
+        initial_vector=None,
         sampling: str = "monthly",
     ):
 
@@ -83,7 +84,11 @@ class ReservoirSimulationSensitivity(WebvizContainer):
             for c in self.data.columns
             if c not in ReservoirSimulationSensitivity.ENSEMBLE_COLUMNS
         ]
-
+        self.initial_vector = (
+            initial_vector
+            if initial_vector and initial_vector in self.smry_cols
+            else self.smry_cols[0]
+        )
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
 
         self.make_uuids()
@@ -130,7 +135,7 @@ class ReservoirSimulationSensitivity(WebvizContainer):
                     id=self.smry_col_id,
                     options=[{"label": i, "value": i} for i in self.smry_cols],
                     clearable=False,
-                    value=self.smry_cols[0],
+                    value=self.initial_vector,
                 ),
             ],
         )
