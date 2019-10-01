@@ -10,7 +10,6 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash_table import DataTable
 
-
 import webviz_core_components as wcc
 from webviz_config.containers import WebvizContainer
 from webviz_config.common_cache import cache
