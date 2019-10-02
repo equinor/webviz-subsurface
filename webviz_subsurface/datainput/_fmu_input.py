@@ -29,6 +29,20 @@ def load_parameters(
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
+def load_smry(
+    ensemble_paths: tuple,
+    ensemble_set_name: str = "EnsembleSet",
+    time_index=str,
+    column_keys=tuple,
+) -> pd.DataFrame:
+
+    return load_ensemble_set(ensemble_paths, ensemble_set_name).get_smry(
+        time_index=time_index, column_keys=list(column_keys) if column_keys else None
+    )
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
 def get_realizations(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:

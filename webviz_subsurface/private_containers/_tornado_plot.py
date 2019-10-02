@@ -234,7 +234,7 @@ def tornado_plot(
 
     # Group by sensitivity name/case and calculate average values for each case
     arr = []
-    for sens_name, dframe in realizations.groupby(["SENSNAME"]):
+    for sens_name, sens_name_df in realizations.groupby(["SENSNAME"]):
         # Excluding the reference case as well as any cases named `ref`
         # `ref` is used as `SENSNAME`, typically for a single realization only,
         # when no seed uncertainty is used
@@ -242,9 +242,11 @@ def tornado_plot(
             continue
 
         # If `SENSTYPE` is scalar grab the mean for each `SENSCASE`
-        if dframe["SENSTYPE"].all() == "scalar":
-            for sens_case, dframe2 in dframe.groupby(["SENSCASE"]):
-                values = data.loc[data["REAL"].isin(dframe2["REAL"])]["VALUE"].mean()
+        if sens_name_df["SENSTYPE"].all() == "scalar":
+            for sens_case, sens_case_df in sens_name_df.groupby(["SENSCASE"]):
+                values = data.loc[data["REAL"].isin(sens_case_df["REAL"])][
+                    "VALUE"
+                ].mean()
 
                 arr.append(
                     {
@@ -252,20 +254,31 @@ def tornado_plot(
                         "senscase": sens_case,
                         "values": values,
                         "values_ref": scale_to_ref(values, ref_avg, scale),
-                        "reals": list(dframe["REAL"]),
+                        "reals": list(sens_case_df["REAL"]),
                     }
                 )
         # If `SENSTYPE` is monte carlo get p10, p90
-        elif dframe["SENSTYPE"].all() == "mc":
-            p90 = data.loc[data["REAL"].isin(dframe["REAL"])]["VALUE"].quantile(0.10)
-            p10 = data.loc[data["REAL"].isin(dframe["REAL"])]["VALUE"].quantile(0.90)
+        elif sens_name_df["SENSTYPE"].all() == "mc":
+            # Get data for relevant realizations
+            case_df = data.loc[data["REAL"].isin(sens_name_df["REAL"])]
+
+            # Calculate p90(low) and p10(high)
+            p90 = case_df["VALUE"].quantile(0.10)
+            p10 = case_df["VALUE"].quantile(0.90)
+
+            # Extract list of realizations with values less then reference avg (low)
+            low_reals = list(case_df.loc[case_df["VALUE"] <= ref_avg]["REAL"])
+
+            # Extract list of realizations with values higher then reference avg (high)
+            high_reals = list(case_df.loc[case_df["VALUE"] > ref_avg]["REAL"])
+
             arr.append(
                 {
                     "sensname": sens_name,
                     "senscase": "p90",
                     "values": p90,
                     "values_ref": scale_to_ref(p90, ref_avg, scale),
-                    "reals": list(dframe["REAL"]),
+                    "reals": low_reals,
                 }
             )
             arr.append(
@@ -274,7 +287,7 @@ def tornado_plot(
                     "senscase": "p10",
                     "values": p10,
                     "values_ref": scale_to_ref(p10, ref_avg, scale),
-                    "reals": list(dframe["REAL"]),
+                    "reals": high_reals,
                 }
             )
         else:
@@ -285,10 +298,9 @@ def tornado_plot(
 
     # Group by sensitivity name and calculate low / high values
     arr2 = []
-    for sensname, dframe in pd.DataFrame(arr).groupby(["sensname"]):
-        low = dframe.loc[dframe["values_ref"].idxmin()]
-        high = dframe.loc[dframe["values_ref"].idxmax()]
-
+    for sensname, sens_name_df in pd.DataFrame(arr).groupby(["sensname"]):
+        low = sens_name_df.loc[sens_name_df["values_ref"].idxmin()]
+        high = sens_name_df.loc[sens_name_df["values_ref"].idxmax()]
         arr2.append(
             {
                 "low": low["values_ref"] if low["values_ref"] < 0 else 0,
