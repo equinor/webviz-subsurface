@@ -19,13 +19,15 @@ from ..datainput import load_smry, get_realizations
 
 
 class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
-    """### Visualizes reservoir simulation time series related to a sensitivity run
+    """### ReservoirSimulationTimeSeriesOneByOne
+
+Visualizes reservoir simulation time series related to a sensitivity run
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
-* `column_keys`: Initial vector to display
+* `initial_vector`: Initial vector to display
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
 """
