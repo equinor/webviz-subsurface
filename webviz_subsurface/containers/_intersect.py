@@ -9,13 +9,13 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
 
 
-class Intersect(WebvizContainer):
+class Intersect(WebvizContainerABC):
     """### Intersect
 
 This container visualizes surfaces intersected along a well path.
@@ -107,7 +107,7 @@ and a folder of well files stored in RMS well format.
             for i, surf in enumerate(self.surface_names)
         }
 
-    # @cache.memoize(timeout=cache.TIMEOUT)
+    # @CACHE.memoize(timeout=CACHE.TIMEOUT)
     # def agg_surfaces(self, surf_names, calc='avg'):
     #     agg = []
     #     for s_name in surf_names:
@@ -118,7 +118,7 @@ and a folder of well files stored in RMS well format.
     #             agg.append(s)
     #     return agg
 
-    @cache.memoize(timeout=cache.TIMEOUT)
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def plot_xsection(self, well, reals, surf_names, tvdmin=0):
         """Plots all lines in intersection"""
         traces = []
@@ -328,7 +328,7 @@ and a folder of well files stored in RMS well format.
             ]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def make_well_trace(well, tvdmin=0):
     """Creates well trace for graph"""
     x = [trace[3] for trace in get_wfence(well, extend=2).values]
@@ -348,7 +348,7 @@ def make_well_trace(well, tvdmin=0):
     }
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def make_surface_traces(well, reals, surf_name, cat, color):
     """Creates surface traces for graph"""
     plot_data = []

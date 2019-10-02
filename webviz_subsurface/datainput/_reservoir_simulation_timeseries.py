@@ -1,5 +1,5 @@
 import pandas as pd
-from webviz_config.common_cache import cache
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 try:
@@ -10,7 +10,7 @@ except ImportError:  # fmu.ensemble is an optional dependency, e.g.
 from ._history_match import scratch_ensemble
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
 
     return EnsembleSet(
@@ -19,7 +19,7 @@ def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleS
     )
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_statistics(
     ensemble_paths: tuple, time_index: str, column_keys: tuple
@@ -42,7 +42,7 @@ def get_time_series_statistics(
     return pd.concat(smry_stats)
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_data(
     ensemble_paths: tuple,
@@ -60,7 +60,7 @@ def get_time_series_data(
     return ensset.get_smry(time_index=time_index, column_keys=column_keys)
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_delta_ens(
     ensemble_paths: tuple,
@@ -95,7 +95,7 @@ def get_time_series_delta_ens(
     return pd.concat(delta_ens_dfs)
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_delta_ens_stats(
     ensemble_paths: tuple,

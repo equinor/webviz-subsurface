@@ -5,13 +5,13 @@ import pandas as pd
 import dash_html_components as html
 from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 from ..datainput import scratch_ensemble
 
 
-class SubsurfaceMap(WebvizContainer):
+class SubsurfaceMap(WebvizContainerABC):
     """### Subsurface map
 
 This container visualizes the subsurface. Currently only supporting reservoir
@@ -60,7 +60,7 @@ in the simulation output using streamlines.
         ]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_map_data(ensemble_path, map_value, flow_value, time_step):
     """Returns map data in the format of a JSON string, suitable for the
     corresponding subsurface map component in

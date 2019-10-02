@@ -10,14 +10,14 @@ import dash_core_components as dcc
 
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
 from ..datainput import extract_volumes, get_realizations
 
 
-class InplaceVolumesOneByOne(WebvizContainer):
+class InplaceVolumesOneByOne(WebvizContainerABC):
     # pylint: disable=too-many-instance-attributes
     """### InplaceVolumesOneByOne
 
@@ -462,7 +462,7 @@ def calculate_table_rows(df, response):
     return table
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_dataframe(dframe, columns, column_values):
     df = dframe.copy()
     if not isinstance(columns, list):

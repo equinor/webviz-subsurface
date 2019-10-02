@@ -11,8 +11,8 @@ import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 import plotly.graph_objs as go
-from webviz_config.containers import WebvizContainer
-from webviz_config.common_cache import cache
+from webviz_config import WebvizContainerABC
+from webviz_config.common_cache import CACHE
 
 from ..datainput import (
     get_time_series_data,
@@ -26,7 +26,7 @@ from ..datainput import (
 # =============================================================================
 
 
-class ReservoirSimulationTimeSeries(WebvizContainer):
+class ReservoirSimulationTimeSeries(WebvizContainerABC):
     """### Time series from reservoir simulations
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
@@ -363,7 +363,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
                     ).filter(items=["STATISTIC", vector, "DATE", "ENSEMBLE"])
 
             return (
-                WebvizContainer.container_data_compress(
+                WebvizContainerABC.container_data_compress(
                     [
                         {
                             "filename": f"{file_name}.csv",
@@ -436,7 +436,7 @@ class ReservoirSimulationTimeSeries(WebvizContainer):
 # =============================================================================
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_realization_plot(
     ensemble_paths: tuple,
     time_index: str,
@@ -552,7 +552,7 @@ def render_realization_plot(
     return wcc.Graph(figure={"data": plot_traces, "layout": layout})
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_stat_plot(
     ensemble_paths: tuple,
     time_index: str,

@@ -7,12 +7,12 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
-from webviz_config.containers import WebvizContainer
+from webviz_config import WebvizContainerABC
 
 from ..datainput import load_parameters
 
 
-class ParameterDistribution(WebvizContainer):
+class ParameterDistribution(WebvizContainerABC):
     """### ParameterDistribution
 
 This container shows parameter distribution per ensemble as a histogram
