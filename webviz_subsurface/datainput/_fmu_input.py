@@ -41,7 +41,7 @@ def load_smry(
     )
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_realizations(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
