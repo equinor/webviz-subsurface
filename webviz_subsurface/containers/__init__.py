@@ -33,7 +33,9 @@ from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
 from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
-from ._reservoir_simulation_sensitivity import ReservoirSimulationSensitivity
+from ._reservoir_simulation_timeseries_onebyone import (
+    ReservoirSimulationTimeSeriesOneByOne,
+)
 
 
 __all__ = [
@@ -47,5 +49,5 @@ __all__ = [
     "InplaceVolumes",
     "InplaceVolumesOneByOne",
     "ReservoirSimulationTimeSeries",
-    "ReservoirSimulationSensitivity",
+    "ReservoirSimulationTimeSeriesOneByOne",
 ]

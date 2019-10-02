@@ -18,7 +18,7 @@ from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 from ..datainput import load_smry, get_realizations
 
 
-class ReservoirSimulationSensitivity(WebvizContainerABC):
+class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
     """### Visualizes reservoir simulation time series related to a sensitivity run
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
@@ -40,7 +40,7 @@ class ReservoirSimulationSensitivity(WebvizContainerABC):
         "RUNPATH",
     ]
 
-    TABLE_STATISTICS = [
+    TABLE_STAT = [
         "Sens Name",
         "Sens Case",
         "Mean",
@@ -82,7 +82,7 @@ class ReservoirSimulationSensitivity(WebvizContainerABC):
         self.smry_cols = [
             c
             for c in self.data.columns
-            if c not in ReservoirSimulationSensitivity.ENSEMBLE_COLUMNS
+            if c not in ReservoirSimulationTimeSeriesOneByOne.ENSEMBLE_COLUMNS
         ]
         self.initial_vector = (
             initial_vector
@@ -203,7 +203,7 @@ class ReservoirSimulationSensitivity(WebvizContainerABC):
                                     page_size=10,
                                     columns=[
                                         {"name": i, "id": i}
-                                        for i in ReservoirSimulationSensitivity.TABLE_STATISTICS
+                                        for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
                                     ],
                                 ),
                             ]
@@ -239,7 +239,14 @@ class ReservoirSimulationSensitivity(WebvizContainerABC):
             return [
                 wcc.Graph(
                     id=self.graph_id,
-                    figure={"data": traces, "layout": {"showlegend": False}},
+                    figure={
+                        "data": traces,
+                        "layout": {
+                            "title": "Click on a date to calculate tornado plot. "
+                            + "Click on a bar in tornadoplot to highlight relevant realizations",
+                            "showlegend": False,
+                        },
+                    },
                 )
             ]
 
@@ -293,6 +300,7 @@ class ReservoirSimulationSensitivity(WebvizContainerABC):
                 else:
                     trace["marker"] = {"color": "grey"}
                     trace["opacity"] = 0.02
+            figure["layout"]["title"] = ""
             return figure
 
 
