@@ -42,7 +42,7 @@ setup(
         "scipy~=1.2",
         "dash-daq~=0.1",
         "matplotlib~=3.0",
-        "webviz-config>=0.0.4",
+        "webviz-config>=0.0.23",
         "webviz-subsurface-components>=0.0.3",
         "pillow~=6.1",
         "xtgeo~=2.1",

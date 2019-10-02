@@ -1,7 +1,7 @@
 import mock
 import dash
 import pandas as pd
-from webviz_config.common_cache import cache
+from webviz_config.common_cache import CACHE
 from webviz_config.containers import ParameterCorrelation
 
 # mocked functions
@@ -14,7 +14,7 @@ def test_parameter_corr(dash_duo):
     app.css.config.serve_locally = True
     app.scripts.config.serve_locally = True
     app.config.suppress_callback_exceptions = True
-    cache.init_app(app.server)
+    CACHE.init_app(app.server)
     container_settings = {"scratch_ensembles": {"iter-0": ""}}
     ensembles = ["iter-0"]
 

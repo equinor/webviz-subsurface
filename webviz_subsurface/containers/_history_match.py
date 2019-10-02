@@ -6,12 +6,12 @@ import numpy as np
 from scipy.stats import chi2
 import dash_html_components as html
 import webviz_subsurface_components as wsc
-from webviz_config.containers import WebvizContainer
+from webviz_config import WebvizContainerABC
 
 from ..datainput import extract_mismatch
 
 
-class HistoryMatch(WebvizContainer):
+class HistoryMatch(WebvizContainerABC):
     """### History match
 
 This container visualizes the quality of the history match.

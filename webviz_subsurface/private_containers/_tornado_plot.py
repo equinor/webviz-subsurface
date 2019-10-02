@@ -7,7 +7,7 @@ from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 
-from webviz_config.common_cache import cache
+from webviz_config.common_cache import CACHE
 import webviz_core_components as wcc
 
 
@@ -216,7 +216,7 @@ def cut_by_ref(tornadotable, refname):
     return dfr_filtered
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def tornado_plot(
     realizations, data, reference="rms_seed", scale="Percentage", cutbyref=True
 ):  # pylint: disable=too-many-locals

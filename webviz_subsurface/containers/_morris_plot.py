@@ -7,11 +7,11 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from webviz_subsurface_components import Morris
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 
-class MorrisPlot(WebvizContainer):
+class MorrisPlot(WebvizContainerABC):
     """### Morris
 
 This container renders a visualization of the Morris sampling method.
@@ -82,7 +82,7 @@ effect with other parameters.
             return output, vector, parameters
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file)

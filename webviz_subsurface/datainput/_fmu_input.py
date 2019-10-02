@@ -1,7 +1,7 @@
 from pathlib import Path
 import glob
 import pandas as pd
-from webviz_config.common_cache import cache
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 try:
@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
     return EnsembleSet(
         ensemble_set_name,
@@ -18,7 +18,7 @@ def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleS
     )
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_parameters(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
@@ -27,7 +27,7 @@ def load_parameters(
     return load_ensemble_set(ensemble_paths, ensemble_set_name).parameters
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_realizations(
     ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
@@ -67,7 +67,7 @@ def find_sens_type(senscase):
     return "scalar"
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def find_surfaces(ensemble_paths: tuple, suffix="*.gri", delimiter="--"):
     """Reads surface file names stored in standard FMU format, and returns a dictionary
     on the following format:
