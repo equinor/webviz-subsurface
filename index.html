@@ -384,6 +384,28 @@ with a marginal boxplot on top.</p>
 <hr>
 
 
+<h3>ReservoirSimulationTimeSeriesOneByOne</h3>
+<p>Visualizes reservoir simulation time series for ensembles using design matrix.
+A tornadoplot can be calculated interactively for each date/vector.
+The realizations for each sensitivity can be highlighted.</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
+                 from the simulations will be extracted. Wild card asterisk *
+                 can be used.</li>
+<li><code>initial_vector</code>: Initial vector to display</li>
+<li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
+              or <code>yearly</code>.</li>
+</ul>
+<pre><code class='yaml'>  - container: ReservoirSimulationTimeSeriesOneByOne
+    ensembles: some value
+    column_keys: None  # Optional (default value shown here).
+    initial_vector: None  # Optional (default value shown here).
+    sampling: monthly  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Subsurface map</h3>
 <p>This container visualizes the subsurface. Currently only supporting reservoir
 model grid maps. In addition to show a map, it can visualize the flow pattern
