@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from webviz_config.common_cache import cache
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 try:
@@ -10,12 +10,12 @@ except ImportError:  # fmu.ensemble is an optional dependency, e.g.
     pass  # for a portable webviz instance, it is never used.
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def scratch_ensemble(ensemble_name, ensemble_path):
     return fmu.ensemble.ScratchEnsemble(ensemble_name, ensemble_path)
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
     """Convert the fmu-ensemble mismatch dataframe into the the format

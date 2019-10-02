@@ -6,13 +6,13 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 from ..datainput import extract_volumes
 
 
-class InplaceVolumes(WebvizContainer):
+class InplaceVolumes(WebvizContainerABC):
     """### Volumetrics
 
 This container visualizes inplace volumetrics results from
@@ -350,7 +350,7 @@ csv files stored on standard format.
             return False, list(self.volumes["SOURCE"].unique())[0]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_data(plot_type, dframe, response, name):
     values = dframe[response]
 
@@ -383,7 +383,7 @@ def plot_data(plot_type, dframe, response, name):
     return output
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(plot_type, response):
 
     if plot_type == "Histogram":
@@ -406,7 +406,7 @@ def plot_layout(plot_type, response):
     return output
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_dataframe(dframe, columns, column_values):
     df = dframe.copy()
     if not isinstance(columns, list):
