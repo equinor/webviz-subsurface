@@ -11,14 +11,14 @@ import dash_core_components as dcc
 from dash_table import DataTable
 
 import webviz_core_components as wcc
-from webviz_config.containers import WebvizContainer
-from webviz_config.common_cache import cache
+from webviz_config import WebvizContainerABC
+from webviz_config.common_cache import CACHE
 from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
 from ..datainput import load_smry, get_realizations
 
 
-class ReservoirSimulationSensitivity(WebvizContainer):
+class ReservoirSimulationSensitivity(WebvizContainerABC):
     """### Visualizes reservoir simulation time series related to a sensitivity run
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
@@ -318,7 +318,7 @@ def calculate_table_rows(df, vector):
     return table
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_ensemble(data, ensemble, vector):
     return data.loc[data["ENSEMBLE"] == ensemble][
         ["DATE", "REAL", vector, "SENSCASE", "SENSNAME"]
