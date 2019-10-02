@@ -7,8 +7,8 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 from ..datainput import scratch_ensemble
 
@@ -24,7 +24,7 @@ class Widgets:
         )
 
 
-class ParameterCorrelation(WebvizContainer):
+class ParameterCorrelation(WebvizContainerABC):
     """### Parameter correlation
 
 This container shows parameter correlation using a correlation matrix,
@@ -249,14 +249,14 @@ and scatter plot for any given pair of parameters.
         ]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_parameters(ensemble_path) -> pd.DataFrame:
 
     return scratch_ensemble("", ensemble_path).parameters
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_scatter(ens1, x_col, ens2, y_col, color, density):
     if ens1 == ens2:
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
@@ -365,7 +365,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
     return {"data": data, "layout": layout}
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_corr_data(ensemble_path, drop_constants=True):
     """
     if drop_constants:
@@ -390,7 +390,7 @@ def get_corr_data(ensemble_path, drop_constants=True):
     )
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(ensemble_path, drop_constants=True):
     corr_data = get_corr_data(ensemble_path, drop_constants)
 

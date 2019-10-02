@@ -7,11 +7,11 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import cache
-from webviz_config.containers import WebvizContainer
+from webviz_config.common_cache import CACHE
+from webviz_config import WebvizContainerABC
 
 
-class DiskUsage(WebvizContainer):
+class DiskUsage(WebvizContainerABC):
     """### Disk usage
 
 This container adds functionality for standard visualization of disk usage in
@@ -99,7 +99,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
         return [(get_disk_usage, [{"scratch_dir": self.scratch_dir}])]
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_disk_usage(scratch_dir) -> pd.DataFrame:
     try:
