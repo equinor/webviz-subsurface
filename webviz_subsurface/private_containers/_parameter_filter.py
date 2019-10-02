@@ -1,20 +1,22 @@
 from uuid import uuid4
 import json
+
 import numpy as np
+
 from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
 
 
 class ParameterFilter:
     """### ParameterFilter
 
-This private container displays a filter widget for ensemble parameters. 
+This private container displays a filter widget for ensemble parameters.
 It is meant to be used as a component in other containers.
 The container is initialized with a dataframe of parameter values from an ensemble set.
 Each parameter is then visualized as a rangeslider.
-When manipulating the rangesliders, the parameter dataframe is filtered, and the 
+When manipulating the rangesliders, the parameter dataframe is filtered, and the
 remaining realizations are stored as a list to a dcc.Store. The dcc Store object
 can be retrieved with a callback (parameterfilter.storage_id).
 
@@ -41,6 +43,8 @@ Currently only scalar parameters are used. Should be expanded to handle categori
         )
         self.uuid = f"{str(uuid4())}"
         self._storage_id = f"{str(uuid4())}-real-data"
+        self._reset_id = f"{str(uuid4())}-reset"
+        self._ensemble_id = f"{str(uuid4())}-ensemble"
         self.parameter_sliders = []
         self.parameter_ids = []
         self.parameter_wrapper_ids = []
@@ -70,7 +74,6 @@ Currently only scalar parameters are used. Should be expanded to handle categori
                         value=[parameter.min(), parameter.max()],
                         marks={
                             str(parameter.min()): {"label": f"{parameter.min():.2f}"},
-                            str(parameter.mean()): {"label": f"{parameter.mean():.2f}"},
                             str(parameter.max()): {"label": f"{parameter.max():.2f}"},
                         },
                     ),
@@ -81,7 +84,6 @@ Currently only scalar parameters are used. Should be expanded to handle categori
         self.parameter_wrapper_ids.append(f"{parameter_name}-wrapper-{self.uuid}")
 
     def find_parameters(self):
-        dom_elements = []
         for parameter in self.parameters.columns:
             if parameter == "ENSEMBLE":
                 print(self.parameters[parameter])
@@ -91,6 +93,15 @@ Currently only scalar parameters are used. Should be expanded to handle categori
                 self.make_parameter_slider_and_id(parameter, self.parameters[parameter])
             else:
                 pass
+
+    @staticmethod
+    def set_grid_layout(columns):
+        return {
+            "display": "grid",
+            "alignContent": "space-around",
+            "justifyContent": "space-between",
+            "gridTemplateColumns": f"{columns}",
+        }
 
     @property
     def layout(self):
@@ -103,27 +114,53 @@ Currently only scalar parameters are used. Should be expanded to handle categori
             },
             children=[
                 dcc.Store(id=self.storage_id),
-                html.Label(style={"fontSize": "10px"}, children="Ensemble"),
-                dcc.Dropdown(
-                    id="ensemble",
-                    options=[
-                        {"label": e, "value": e}
-                        for e in list(self.parameters["ENSEMBLE"].unique())
+                html.Div(
+                    style=self.set_grid_layout("1fr 1fr"),
+                    children=[
+                        html.Label(style={"fontSize": "10px"}, children="Ensemble")
                     ],
-                    value=list(self.parameters["ENSEMBLE"].unique())[0],
+                ),
+                html.Div(
+                    style=self.set_grid_layout("1fr 1fr"),
+                    children=[
+                        dcc.Dropdown(
+                            id=self._ensemble_id,
+                            options=[
+                                {"label": e, "value": e}
+                                for e in list(self.parameters["ENSEMBLE"].unique())
+                            ],
+                            value=list(self.parameters["ENSEMBLE"].unique())[0],
+                        ),
+                        html.Button(
+                            id=self._reset_id,
+                            style={"color": "red"},
+                            children="Reset Filter",
+                        ),
+                    ],
                 ),
                 html.Div(children=self.parameter_sliders),
             ],
         )
 
+    @property
+    def parameter_input_callback(self):
+        return [Input(item, "value") for item in self.parameter_ids]
+
+    @property
+    def parameter_output_callback(self):
+        return [Output(item, "value") for item in self.parameter_ids]
+
+    @property
+    def parameter_marks_output_callback(self):
+        return [Output(item, "marks") for item in self.parameter_ids]
+
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.storage_id, "children"),
             [
-                Input(item, "value")
-                for sublist in [["ensemble"], self.parameter_ids]
-                for item in sublist
+                Output(self.storage_id, "children"),
+                *self.parameter_marks_output_callback,
             ],
+            [Input(self._ensemble_id, "value"), *self.parameter_input_callback],
         )
         def _get_parameters(ensemble, *parameters):
             """Filters dataframe and dumps list of realizations to store"""
@@ -134,4 +171,29 @@ Currently only scalar parameters are used. Should be expanded to handle categori
                 df[self.numerical_parameters].columns, parameters
             ):
                 df = df.loc[df[pcol].between(parameter[0], parameter[1])]
-            return json.dumps(df["REAL"].tolist())
+            return (
+                json.dumps(df["REAL"].tolist()),
+                *[
+                    {
+                        str(df[pcol].min()): {"label": f"{df[pcol].min():.2f}"},
+                        str(df[pcol].max()): {"label": f"{df[pcol].max():.2f}"},
+                    }
+                    for pcol in df[self.numerical_parameters].columns
+                ],
+            )
+
+        @app.callback(
+            [*self.parameter_output_callback],
+            [Input(self._reset_id, "n_clicks")],
+            [State(self._ensemble_id, "value")],
+        )
+        def _get_parameters(clicks, ensemble):
+
+            print(clicks)
+
+            df = self.parameters.loc[self.parameters["ENSEMBLE"] == ensemble]
+            values = [
+                [df[pcol].min(), df[pcol].max()]
+                for pcol in df[self.numerical_parameters].columns
+            ]
+            return values

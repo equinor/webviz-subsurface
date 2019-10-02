@@ -36,6 +36,8 @@ setup(
             "InplaceVolumesOneByOne = webviz_subsurface.containers:InplaceVolumesOneByOne",
             "ReservoirSimulationTimeSeries = "
             "webviz_subsurface.containers:ReservoirSimulationTimeSeries",
+            "ReservoirSimulationParameterFilter = "
+            "webviz_subsurface.containers:ReservoirSimulationParameterFilter",
         ]
     },
     install_requires=[
