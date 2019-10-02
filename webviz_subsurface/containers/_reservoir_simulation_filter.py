@@ -11,14 +11,14 @@ import dash_core_components as dcc
 from dash_table import DataTable
 
 import webviz_core_components as wcc
-from webviz_config.containers import WebvizContainer
-from webviz_config.common_cache import cache
+from webviz_config import WebvizContainerABC
+from webviz_config.common_cache import CACHE
 from webviz_subsurface.private_containers._parameter_filter import ParameterFilter
 
 from ..datainput import load_parameters, load_smry
 
 
-class ReservoirSimulationParameterFilter(WebvizContainer):
+class ReservoirSimulationParameterFilter(WebvizContainerABC):
     """### Visualizes reservoir simulation time series with a an option to filter
     input parameters
 
@@ -266,6 +266,6 @@ def calculate_table_rows(df, vector):
     return table
 
 
-@cache.memoize(timeout=cache.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_ensemble(data, ensemble, vector):
     return data.loc[data["ENSEMBLE"] == ensemble][["DATE", "REAL", vector]]
