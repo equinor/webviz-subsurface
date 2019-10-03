@@ -301,7 +301,7 @@ another_property:
     @property
     def sensitivity_selector(self):
         return html.Div(
-            style=self.set_grid_layout("3fr 3fr 1fr 3fr 3fr"),
+            style=self.set_grid_layout("3fr 3fr"),
             children=[
                 html.Div(
                     id=self.sens_name_wrapper_id,
