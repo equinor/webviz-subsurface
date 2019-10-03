@@ -549,6 +549,15 @@ another_property:
             E.g. [Input(surfselector.storage_id, 'children')]
             """
             reals = self.realizations(ensemble, sens_name, sens_case)
+
+            # Preventing update if selections are not valid (waiting for the other callbacks)
+            if not name in self._names_in_attr(attr):
+                raise PreventUpdate
+            if not date in self._dates_in_attr(attr):
+                raise PreventUpdate
+            if sens_case and not sens_case in self.sens_cases(ensemble, sens_name):
+                raise PreventUpdate
+
             all_senscases = [
                 {
                     "case": senscase,
