@@ -92,10 +92,10 @@ another_property:
     def attrs(self):
         return list(self._configuration.keys())
 
-    def names_in_attr(self, attr):
+    def _names_in_attr(self, attr):
         return self._configuration[attr].get("names", None)
 
-    def dates_in_attr(self, attr):
+    def _dates_in_attr(self, attr):
         return self._configuration[attr].get("dates", None)
 
     @property
@@ -138,7 +138,7 @@ another_property:
         return html.Div(
             style={"display": "grid"},
             children=[
-                html.H6("Surface property"),
+                html.P("Surface property"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -150,18 +150,42 @@ another_property:
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
+                        self._make_buttons(
+                            self.attr_id_btn_prev, self.attr_id_btn_next
+                        ),
                     ],
                 ),
             ],
         )
 
-    def make_buttons(self, prev_id, next_id):
+    @property
+    def style_left_btn(self):
+        return {
+            "border": "solid black",
+            "border-width": "0 3px 3px 0",
+            "display": "inline-block",
+            "padding": "3px",
+            "transform": "rotate(135deg)",
+            "-webkit-transform": "rotate(135deg)",
+        }
+
+    @property
+    def style_right_btn(self):
+        return {
+            "border": "solid black",
+            "border-width": "0 3px 3px 0",
+            "display": "inline-block",
+            "padding": "3px",
+            "transform": "rotate(-45deg)",
+            "-webkit-transform": "rotate(-45deg)",
+        }
+
+    def _make_buttons(self, prev_id, next_id):
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Button(id=prev_id, children="<="),
-                html.Button(id=next_id, children="=>"),
+                html.I(id=prev_id, children="<"),
+                html.I(id=next_id, children=">"),
             ],
         )
 
@@ -171,12 +195,14 @@ another_property:
             id=self.name_wrapper_id,
             style={"display": "none"},
             children=[
-                html.H6("Surface name"),
+                html.P("Surface name"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
+                        self._make_buttons(
+                            self.name_id_btn_prev, self.name_id_btn_next
+                        ),
                     ],
                 ),
             ],
@@ -188,12 +214,14 @@ another_property:
             id=self.date_wrapper_id,
             style={"display": "none"},
             children=[
-                html.H6("Date"),
+                html.P("Date"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
+                        self._make_buttons(
+                            self.date_id_btn_prev, self.date_id_btn_next
+                        ),
                     ],
                 ),
             ],
@@ -205,7 +233,7 @@ another_property:
             id=self.ens_wrapper_id,
             style={"display": "grid"},
             children=[
-                html.H6("Ensemble"),
+                html.P("Ensemble"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -217,7 +245,7 @@ another_property:
                             value=self.ensembles[0],
                             clearable=False,
                         ),
-                        self.make_buttons(
+                        self._make_buttons(
                             self.ensemble_id_btn_prev, self.ensemble_id_btn_next
                         ),
                     ],
@@ -228,15 +256,15 @@ another_property:
     @property
     def realization_selector(self):
         return html.Div(
+            style={"marginTop": "10px"},
             id=self.real_wrapper_id,
             children=[
                 html.Div(
-                    style=self.set_grid_layout("3fr 3fr 1fr 3fr 3fr"),
+                    style=self.set_grid_layout("12fr 10fr 4fr"),
                     children=[
                         html.Div(
                             children=[
-                                html.Label("Mode"),
-                                dcc.Dropdown(
+                                dcc.RadioItems(
                                     id=self.aggreal_id,
                                     options=[
                                         {
@@ -248,42 +276,47 @@ another_property:
                                             "value": "Realization",
                                         },
                                     ],
-                                    value="Aggregation",
-                                    clearable=False,
-                                ),
+                                    value="Realization",
+                                )
                             ]
                         ),
                         html.Div(
                             children=[
-                                html.Label("Realization"),
-                                dcc.Dropdown(id=self.realization_id, clearable=False),
+                                dcc.Dropdown(id=self.realization_id, clearable=False)
                             ]
                         ),
                         html.Div(
                             children=[
-                                html.Label("Prev/Next"),
-                                self.make_buttons(
+                                self._make_buttons(
                                     self.realization_id_btn_prev,
                                     self.realization_id_btn_next,
-                                ),
+                                )
                             ]
-                        ),
-                        html.Div(
-                            id=self.sens_name_wrapper_id,
-                            children=[
-                                html.Label("Sensitivity name"),
-                                dcc.Dropdown(id=self.sens_name_id, clearable=False),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.sens_case_wrapper_id,
-                            children=[
-                                html.Label("Sensitivity case"),
-                                dcc.Dropdown(id=self.sens_case_id, clearable=False),
-                            ],
                         ),
                     ],
                 )
+            ],
+        )
+
+    @property
+    def sensitivity_selector(self):
+        return html.Div(
+            style=self.set_grid_layout("3fr 3fr 1fr 3fr 3fr"),
+            children=[
+                html.Div(
+                    id=self.sens_name_wrapper_id,
+                    children=[
+                        html.Label("Sensitivity name"),
+                        dcc.Dropdown(id=self.sens_name_id, clearable=False),
+                    ],
+                ),
+                html.Div(
+                    id=self.sens_case_wrapper_id,
+                    children=[
+                        html.Label("Sensitivity case"),
+                        dcc.Dropdown(id=self.sens_case_id, clearable=False),
+                    ],
+                ),
             ],
         )
 
@@ -299,6 +332,7 @@ another_property:
     @property
     def layout(self):
         return html.Div(
+            style={"fontSize": "12px", "marginLeft": "25px"},
             children=[
                 html.Div(
                     style=self.set_grid_layout("1fr"),
@@ -310,8 +344,9 @@ another_property:
                 ),
                 self.ensemble_selector,
                 self.realization_selector,
+                self.sensitivity_selector,
                 dcc.Store(id=self.storage_id),
-            ]
+            ],
         )
 
     def set_callbacks(self, app):
@@ -374,7 +409,7 @@ another_property:
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
-            names = self.names_in_attr(attr)
+            names = self._names_in_attr(attr)
             if not names:
                 return None, None, {"visibility": "hidden"}
 
@@ -405,7 +440,7 @@ another_property:
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
-            dates = self.dates_in_attr(attr)
+            dates = self._dates_in_attr(attr)
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
@@ -528,7 +563,7 @@ another_property:
                     "date": date,
                     "ensemble": ensemble,
                     "aggregation": calculation if aggreal == "Aggregation" else None,
-                    "realization": reals if aggreal == "Aggregation" else calculation,
+                    "realization": reals if aggreal == "Aggregation" else [calculation],
                     "sensname": sens_name,
                     "senscase": sens_case,
                     "all_senscases": all_senscases,
