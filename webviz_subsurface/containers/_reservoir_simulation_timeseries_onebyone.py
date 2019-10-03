@@ -102,12 +102,33 @@ The realizations for each sensitivity can be highlighted.
     def make_uuids(self):
         uuid = f"{uuid4()}"
         self.smry_col_id = f"smry-col-{uuid}"
-        self.date_id = f"date-{uuid}"
         self.date_label = f"date-label{uuid}"
         self.ensemble_id = f"ensemble-{uuid}"
         self.table_id = f"table-{uuid}"
         self.graph_id = f"graph-{uuid}"
         self.graph_wrapper_id = f"graph-wrapper-{uuid}"
+        self.tornadowrapper_id = f"tornadowrapper-{uuid}"
+
+    @property
+    def tour_steps(self):
+        return [
+            {"id": self.smry_col_id, "content": "Displayed summary vector"},
+            {"id": self.ensemble_id, "content": "Displayed ensemble"},
+            {
+                "id": self.graph_id,
+                "content": "Summary vector per realization, with timesteps \
+                            along the horizontal axis. Click in the plot to \
+                            calculate tornadoplot for the corresponding date ",
+            },
+            {
+                "id": self.tornadowrapper_id,
+                "content": "Tornado plot for the currently displayed data. \
+                            Differences references can be set and sensitivities \
+                            smaller than the reference can be filtered out. \
+                            Click on the bar of a sensitivity to highlight the \
+                            relevant realizations in the main chart.",
+            },
+        ]
 
     @property
     def ensemble_selector(self):
@@ -214,7 +235,7 @@ The realizations for each sensitivity can be highlighted.
                         ),
                     ]
                 ),
-                self.tornadoplot.layout,
+                html.Div(id=self.tornadowrapper_id, children=self.tornadoplot.layout),
             ],
         )
 
