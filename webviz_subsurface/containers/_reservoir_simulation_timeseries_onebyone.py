@@ -112,21 +112,25 @@ The realizations for each sensitivity can be highlighted.
     @property
     def tour_steps(self):
         return [
-            {"id": self.smry_col_id, "content": "Displayed summary vector"},
-            {"id": self.ensemble_id, "content": "Displayed ensemble"},
+            {"id": self.smry_col_id, "content": "Select time series"},
+            {"id": self.ensemble_id, "content": "Select ensemble"},
             {
                 "id": self.graph_id,
-                "content": "Summary vector per realization, with timesteps \
-                            along the horizontal axis. Click in the plot to \
-                            calculate tornadoplot for the corresponding date ",
+                "content": (
+                    "Selected time series displayed per realization. "
+                    "Click in the plot to calculate tornadoplot for the "
+                    "corresponding date"
+                ),
             },
             {
                 "id": self.tornadowrapper_id,
-                "content": "Tornado plot for the currently displayed data. \
-                            Differences references can be set and sensitivities \
-                            smaller than the reference can be filtered out. \
-                            Click on the bar of a sensitivity to highlight the \
-                            relevant realizations in the main chart.",
+                "content": (
+                    "Tornado plot for the currently displayed data. "
+                    "Differences references can be set and sensitivities "
+                    "smaller than the reference can be filtered out. "
+                    "Click on the bar of a sensitivity to highlight the "
+                    "relevant realizations in the main chart."
+                ),
             },
         ]
 
