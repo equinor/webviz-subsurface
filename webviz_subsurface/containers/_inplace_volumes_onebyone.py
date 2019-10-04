@@ -114,6 +114,7 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
         self.tornadowrapper_id = f"tornadowrapper-{uuid}"
         self.source_id = f"source-{uuid}"
         self.ensemble_id = f"ensemble-{uuid}"
+        self.filter_selectors_id = f"filter-selectors-{uuid}"
         self.selectors_id = {x: f"{x}{uuid}" for x in self.selectors}
 
     def add_webvizstore(self):
@@ -137,6 +138,67 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
                     }
                 ],
             ),
+        ]
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.graph_id,
+                "content": "The chart shows inplace volumetrics results.",
+            },
+            {
+                "id": self.table_id,
+                "content": (
+                    "The table shows statistics per sensitivity parameter. "
+                    "Rows can be filtered by searching, and sorted by "
+                    "clicking on a column header."
+                ),
+            },
+            {
+                "id": self.response_id,
+                "content": "Select the volumetric calculation to display.",
+            },
+            {
+                "id": self.plot_type_id,
+                "content": (
+                    "Controls the type of the visualized chart. "
+                    "Per realization shows bars per realization, "
+                    "while the boxplot shows the range per sensitivity."
+                ),
+            },
+            {
+                "id": self.tornadowrapper_id,
+                "content": (
+                    "Displays tornado plot for the currently selected data. "
+                    "Differences references can be set and sensitivities "
+                    "smaller than the reference can be filtered out. "
+                    "Click on the bar of a sensitivity to highlight the "
+                    "relevant realizations in the main chart."
+                ),
+            },
+            {
+                "id": self.ensemble_id,
+                "content": (
+                    "If several ensembles are available, the active ensemble "
+                    "can be selected here."
+                ),
+            },
+            {
+                "id": self.source_id,
+                "content": (
+                    "If volumes have been calculated for different grids. "
+                    "E.g. geogrid and eclipsegrid, the active grid can be selected here."
+                ),
+            },
+            {
+                "id": self.filter_selectors_id,
+                "content": (
+                    "Filter on different combinations of e.g. zones, facies and regions "
+                    "(The options will vary dependent on what was included "
+                    "in the calculation.)"
+                ),
+            },
         ]
 
     @property
@@ -289,7 +351,10 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
                                 self.ensemble_selector,
                                 self.source_selector,
                                 html.Label("Filters"),
-                                html.Div(self.filter_selectors),
+                                html.Div(
+                                    id=self.filter_selectors_id,
+                                    children=self.filter_selectors,
+                                ),
                             ]
                         ),
                         html.Div(
