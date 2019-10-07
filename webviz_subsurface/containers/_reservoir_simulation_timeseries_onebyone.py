@@ -102,7 +102,7 @@ The realizations for each sensitivity can be highlighted.
     def make_uuids(self):
         uuid = f"{uuid4()}"
         self.smry_col_id = f"smry-col-{uuid}"
-        self.date_label = f"date-label{uuid}"
+        self.store_date_id = f"date-store{uuid}"
         self.ensemble_id = f"ensemble-{uuid}"
         self.table_id = f"table-{uuid}"
         self.graph_id = f"graph-{uuid}"
@@ -214,7 +214,7 @@ The realizations for each sensitivity can be highlighted.
                             children=[
                                 self.ensemble_selector,
                                 self.smry_selector,
-                                html.Label(id=self.date_label),
+                                dcc.Store(id=self.store_date_id),
                             ],
                         ),
                         html.Div(
@@ -247,9 +247,14 @@ The realizations for each sensitivity can be highlighted.
         @app.callback(
             Output(self.graph_wrapper_id, "children"),
             [Input(self.ensemble_id, "value"), Input(self.smry_col_id, "value")],
+            [State(self.graph_id, "figure"), State(self.store_date_id, "children")],
         )
-        def _render_lines(ensemble, vector):
-            """Callback to update graph, and tornado"""
+        def _render_lines(ensemble, vector, figure, date):
+            """Callback to update graph, and tornado
+            Since it is not possible to use the same Output object in two different
+            callbacks, a parent div is used to re-render the graph when changing
+            vector or ensemble
+            """
 
             # Filter dataframe based on dropdown choices
             data = filter_ensemble(self.data, ensemble, vector)
@@ -265,23 +270,32 @@ The realizations for each sensitivity can be highlighted.
                 for r, df in data.groupby(["REAL"])
             ]
             traces[0]["hoverinfo"] = "x"
+
+            # Check if a data has been clicked previously
+            # If so, add the vertical line to the figure
+            if date:
+                ymin = min([min(trace["y"]) for trace in figure["data"]])
+                ymax = max([max(trace["y"]) for trace in figure["data"]])
+                date = json.loads(date)
+                layout = {
+                    "shapes": [
+                        {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+                    ],
+                    "showlegend": False,
+                }
+            else:
+                layout = {
+                    "title": "Click on a date to calculate tornado plot. "
+                    + "Click on a bar in tornadoplot to highlight relevant realizations",
+                    "showlegend": False,
+                }
             return [
-                wcc.Graph(
-                    id=self.graph_id,
-                    figure={
-                        "data": traces,
-                        "layout": {
-                            "title": "Click on a date to calculate tornado plot. "
-                            + "Click on a bar in tornadoplot to highlight relevant realizations",
-                            "showlegend": False,
-                        },
-                    },
-                )
+                wcc.Graph(id=self.graph_id, figure={"data": traces, "layout": layout})
             ]
 
         @app.callback(
             [
-                Output(self.date_label, "children"),
+                Output(self.store_date_id, "children"),
                 Output(self.table_id, "data"),
                 Output(self.tornadoplot.storage_id, "children"),
             ],
@@ -290,17 +304,21 @@ The realizations for each sensitivity can be highlighted.
                 Input(self.graph_id, "clickData"),
                 Input(self.smry_col_id, "value"),
             ],
+            [State(self.graph_id, "clickData")],
         )
-        def _render_tornado(ensemble, clickdata, vector):
+        def _render_date(ensemble, clickdata, vector, line_click):
+            """Store selected date and tornado input. Write statistics
+            to table"""
             try:
                 date = clickdata["points"][0]["x"]
             except TypeError:
                 raise PreventUpdate
+
             data = filter_ensemble(self.data, ensemble, vector)
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows = calculate_table_rows(data, vector)
             return (
-                f"Selected data {date}",
+                json.dumps(f"{date}"),
                 table_rows,
                 json.dumps(
                     {
@@ -312,12 +330,17 @@ The realizations for each sensitivity can be highlighted.
 
         @app.callback(
             Output(self.graph_id, "figure"),
-            [Input(self.tornadoplot.click_id, "children")],
+            [
+                Input(self.tornadoplot.click_id, "children"),
+                Input(self.store_date_id, "children"),
+            ],
             [State(self.graph_id, "figure")],
         )
-        def _render_tornado(clickdata, figure):
+        def _render_tornado(clickdata, date, figure):
+            """Update graph with line coloring, vertical line and title"""
             if not clickdata:
                 return figure
+
             clickdata = json.loads(clickdata)
             for trace in figure["data"]:
                 if trace["customdata"] in clickdata["real_low"]:
@@ -329,10 +352,21 @@ The realizations for each sensitivity can be highlighted.
                 else:
                     trace["marker"] = {"color": "grey"}
                     trace["opacity"] = 0.02
-            figure["layout"]["title"] = ""
+            if date:
+                ymin = min([min(trace["y"]) for trace in figure["data"]])
+                ymax = max([max(trace["y"]) for trace in figure["data"]])
+                date = json.loads(date)
+                figure["layout"]["shapes"] = [
+                    {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+                ]
+                figure["layout"][
+                    "title"
+                ] = f"Date: {date}, sensitivity: {clickdata['sens_name']}"
+
             return figure
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_table_rows(df, vector):
     table = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
