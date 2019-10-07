@@ -163,7 +163,14 @@ or `allow_click` has been specified at initialization.
                 try:
                     real_low = data["points"][0]["customdata"]
                     real_high = data["points"][1]["customdata"]
-                    return json.dumps({"real_low": real_low, "real_high": real_high})
+                    sens_name = data["points"][0]["y"]
+                    return json.dumps(
+                        {
+                            "real_low": real_low,
+                            "real_high": real_high,
+                            "sens_name": sens_name,
+                        }
+                    )
                 except TypeError:
                     raise PreventUpdate
 
@@ -176,7 +183,14 @@ or `allow_click` has been specified at initialization.
                 try:
                     real_low = data["points"][0]["customdata"]
                     real_high = data["points"][1]["customdata"]
-                    return json.dumps({"real_low": real_low, "real_high": real_high})
+                    sens_name = data["points"][0]["y"]
+                    return json.dumps(
+                        {
+                            "real_low": real_low,
+                            "real_high": real_high,
+                            "sens_name": sens_name,
+                        }
+                    )
                 except TypeError:
                     raise PreventUpdate
 
