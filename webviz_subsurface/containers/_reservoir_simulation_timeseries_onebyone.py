@@ -290,7 +290,7 @@ The realizations for each sensitivity can be highlighted.
                     "showlegend": False,
                 }
             else:
-                layout = { "showlegend": False}
+                layout = {"showlegend": False}
             return [
                 wcc.Graph(id=self.graph_id, figure={"data": traces, "layout": layout})
             ]
