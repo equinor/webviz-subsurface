@@ -304,9 +304,8 @@ The realizations for each sensitivity can be highlighted.
                 Input(self.graph_id, "clickData"),
                 Input(self.smry_col_id, "value"),
             ],
-            [State(self.graph_id, "clickData")],
         )
-        def _render_date(ensemble, clickdata, vector, line_click):
+        def _render_date(ensemble, clickdata, vector):
             """Store selected date and tornado input. Write statistics
             to table"""
             try:
