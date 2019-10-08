@@ -45,10 +45,10 @@ The realizations for each sensitivity can be highlighted.
     ]
 
     TABLE_STAT = [
-        "Sens Name",
-        "Sens Case",
+        "Sensitivity",
+        "Case",
         "Mean",
-        "Stddev",
+        "Standard Deviation",
         "Minimum",
         "P90",
         "P10",
@@ -112,10 +112,8 @@ The realizations for each sensitivity can be highlighted.
     @property
     def tour_steps(self):
         return [
-            {"id": self.smry_col_id, "content": "Select time series"},
-            {"id": self.ensemble_id, "content": "Select ensemble"},
             {
-                "id": self.graph_id,
+                "id": self.graph_wrapper_id,
                 "content": (
                     "Selected time series displayed per realization. "
                     "Click in the plot to calculate tornadoplot for the "
@@ -132,6 +130,8 @@ The realizations for each sensitivity can be highlighted.
                     "relevant realizations in the main chart."
                 ),
             },
+            {"id": self.smry_col_id, "content": "Select time series"},
+            {"id": self.ensemble_id, "content": "Select ensemble"},
         ]
 
     @property
@@ -159,7 +159,7 @@ The realizations for each sensitivity can be highlighted.
         return html.Div(
             style={"paddingBottom": "30px"},
             children=[
-                html.Label("Vector"),
+                html.Label("Time Series"),
                 dcc.Dropdown(
                     id=self.smry_col_id,
                     options=[{"label": i, "value": i} for i in self.smry_cols],
@@ -234,6 +234,12 @@ The realizations for each sensitivity can be highlighted.
                                         {"name": i, "id": i}
                                         for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
                                     ],
+                                    style_cell_conditional=[
+                                        {
+                                            "if": {"column_id": "Standard Deviation"},
+                                            "width": "5%",
+                                        }
+                                    ],
                                 ),
                             ]
                         ),
@@ -284,11 +290,7 @@ The realizations for each sensitivity can be highlighted.
                     "showlegend": False,
                 }
             else:
-                layout = {
-                    "title": "Click on a date to calculate tornado plot. "
-                    + "Click on a bar in tornadoplot to highlight relevant realizations",
-                    "showlegend": False,
-                }
+                layout = {"title": "", "showlegend": False}
             return [
                 wcc.Graph(id=self.graph_id, figure={"data": traces, "layout": layout})
             ]
@@ -373,12 +375,12 @@ def calculate_table_rows(df, vector):
         try:
             table.append(
                 {
-                    "Sens Name": str(sensname),
-                    "Sens Case": str(senscase),
+                    "Sensitivity": str(sensname),
+                    "Case": str(senscase),
                     "Minimum": f"{values.min():.2e}",
                     "Maximum": f"{values.max():.2e}",
                     "Mean": f"{values.mean():.2e}",
-                    "Stddev": f"{values.std():.2e}",
+                    "Standard Deviation": f"{values.std():.2e}",
                     "P10": f"{np.percentile(values, 90):.2e}",
                     "P90": f"{np.percentile(values, 10):.2e}",
                 }

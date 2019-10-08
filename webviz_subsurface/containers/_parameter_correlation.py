@@ -152,8 +152,7 @@ and scatter plot for any given pair of parameters.
                     children=[
                         html.Label("Show density plot", style={"font-weight": "bold"}),
                         # ToggleSwitch module attribute in dash-daq is set at runtime
-                        # pylint: disable=no-member
-                        # pylint: disable=not-callable
+                        # pylint: disable=no-member, not-callable
                         daq.ToggleSwitch(id=self.density_id, value=True),
                     ],
                 ),
