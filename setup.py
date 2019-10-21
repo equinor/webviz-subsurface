@@ -3,17 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
-TESTS_REQUIRE = [
-    "chromedriver-binary>=74.0.3729.6.0",
-    "ipdb",
-    "percy",
-    "selenium~=3.141",
-    "flake8",
-    "pylint",
-    "mock",
-    "black",
-    "bandit",
-]
+TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit"]
 
 setup(
     name="webviz-subsurface",
@@ -44,10 +34,10 @@ setup(
         "scipy~=1.2",
         "dash-daq~=0.1",
         "matplotlib~=3.0",
-        "webviz-config>=0.0.24",
-        "webviz-subsurface-components>=0.0.3",
         "pillow~=6.1",
         "xtgeo~=2.1",
+        "webviz-config>=0.0.24",
+        "webviz-subsurface-components>=0.0.3",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
