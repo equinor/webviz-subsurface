@@ -3,13 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
-TESTS_REQUIRE = [
-    "selenium~=3.141",
-    "pylint",
-    "mock",
-    "black",
-    "bandit",
-]
+TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit"]
 
 setup(
     name="webviz-subsurface",
