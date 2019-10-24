@@ -51,9 +51,16 @@ or `allow_click` has been specified at initialization.
     ):
 
         self.realizations = realizations
-        self.senscases = list(self.realizations["SENSNAME"].unique())
+        self.sensnames = list(self.realizations["SENSNAME"].unique())
+        if self.sensnames == [None]:
+            raise KeyError(
+                "No sensitivity information found in ensemble. "
+                "Containers utilizing tornadoplot can only be used for ensembles with "
+                "One by one design matrix setup. "
+                "(SENSNAME and SENSCASE must be present)"
+            )
         self.initial_reference = (
-            reference if reference in self.senscases else self.senscases[0]
+            reference if reference in self.sensnames else self.sensnames[0]
         )
         self.allow_hover = allow_hover
         self.allow_click = allow_click
@@ -99,7 +106,7 @@ or `allow_click` has been specified at initialization.
                     children=[
                         dcc.Dropdown(
                             id=self._reference_id,
-                            options=[{"label": r, "value": r} for r in self.senscases],
+                            options=[{"label": r, "value": r} for r in self.sensnames],
                             value=self.initial_reference,
                             clearable=False,
                         ),
