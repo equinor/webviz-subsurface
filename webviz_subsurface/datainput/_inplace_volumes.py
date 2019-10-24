@@ -35,4 +35,12 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
             dfs.append(pd.concat(ens_dfs))
         except ValueError:
             pass
-    return pd.concat(dfs)
+    try:
+        return pd.concat(dfs)
+    except ValueError:
+        raise ValueError(
+            f"""
+            Error when aggregating inplace volumetric files: {list(volfiles)}.
+            Ensure that the files are present in relative folder {volfolder}
+            """
+        )
