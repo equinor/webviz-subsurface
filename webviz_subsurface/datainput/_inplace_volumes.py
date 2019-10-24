@@ -39,8 +39,6 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
         return pd.concat(dfs)
     except ValueError:
         raise ValueError(
-            f"""
-            Error when aggregating inplace volumetric files: {list(volfiles)}.
-            Ensure that the files are present in relative folder {volfolder}
-            """
+            f"Error when aggregating inplace volumetric files: {list(volfiles)}. "
+            f"Ensure that the files are present in relative folder {volfolder}"
         )
