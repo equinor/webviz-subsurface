@@ -56,8 +56,8 @@ or `allow_click` has been specified at initialization.
             raise KeyError(
                 "No sensitivity information found in ensemble. "
                 "Containers utilizing tornadoplot can only be used for ensembles with "
-                "One by one design matrix setup. "
-                "(SENSNAME and SENSCASE must be present)"
+                "one by one design matrix setup "
+                "(SENSNAME and SENSCASE must be present in parameter file)."
             )
         self.initial_reference = (
             reference if reference in self.sensnames else self.sensnames[0]

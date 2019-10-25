@@ -18,6 +18,9 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
+    """Aggregates volumetric files from an FMU ensemble.
+    Files must be stored on standardized csv format. 
+    """
     dfs = []
     for ens_name, ens_path in list(ensemble_paths):
         ens_dfs = []
@@ -35,9 +38,9 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
             dfs.append(pd.concat(ens_dfs))
         except ValueError:
             pass
-    try:
+    if dfs:
         return pd.concat(dfs)
-    except ValueError:
+    else:
         raise ValueError(
             f"Error when aggregating inplace volumetric files: {list(volfiles)}. "
             f"Ensure that the files are present in relative folder {volfolder}"
