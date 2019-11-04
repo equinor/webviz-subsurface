@@ -44,4 +44,16 @@ setup(
     setup_requires=["setuptools_scm~=3.2"],
     use_scm_version=True,
     zip_safe=False,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+        "Natural Language :: English",
+        "Environment :: Web Environment",
+        "Framework :: Dash",
+        "Framework :: Flask",
+        "Topic :: Multimedia :: Graphics",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Visualization",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    ],
 )
