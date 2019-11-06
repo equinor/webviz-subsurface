@@ -11,8 +11,10 @@ except ImportError:  # fmu.ensemble is an optional dependency, e.g.
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def scratch_ensemble(ensemble_name, ensemble_path,autodiscovery=True):
-    return fmu.ensemble.ScratchEnsemble(ensemble_name, ensemble_path,autodiscovery=autodiscovery)
+def scratch_ensemble(ensemble_name, ensemble_path, autodiscovery=True):
+    return fmu.ensemble.ScratchEnsemble(
+        ensemble_name, ensemble_path, autodiscovery=autodiscovery
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

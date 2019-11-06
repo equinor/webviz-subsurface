@@ -11,7 +11,11 @@ from ._history_match import scratch_ensemble
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet", unsmry_files: tuple = None):
+def load_ensemble_set(
+    ensemble_paths: tuple,
+    ensemble_set_name: str = "EnsembleSet",
+    unsmry_files: tuple = None,
+):
 
     ensembles = []
     if unsmry_files is not None:
@@ -19,15 +23,13 @@ def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleS
 
     for ens_name, ens_path in ensemble_paths:
         if unsmry_files is not None and ens_name in unsmry_files:
-            scratch_ens = scratch_ensemble(ens_name, ens_path,autodiscovery=False)
+            scratch_ens = scratch_ensemble(ens_name, ens_path, autodiscovery=False)
             scratch_ens.find_files(unsmry_files[ens_name])
             ensembles.append(scratch_ens)
-        else: 
+        else:
             ensembles.append(scratch_ensemble(ens_name, ens_path))
-    
-    ensset = EnsembleSet(
-        ensemble_set_name,
-        ensembles)
+
+    ensset = EnsembleSet(ensemble_set_name, ensembles)
 
     return ensset
 
@@ -35,11 +37,13 @@ def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleS
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_statistics(
-    ensemble_paths: tuple, time_index: str, column_keys: tuple, unsmry_files: tuple = None
+    ensemble_paths: tuple,
+    time_index: str,
+    column_keys: tuple,
+    unsmry_files: tuple = None,
 ) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
-
 
     # Note: to be replaced by ensset.get_smry_stats()
     # when function is available.
@@ -51,9 +55,9 @@ def get_time_series_statistics(
 
     for ens_name, ens_path in ensemble_paths:
         if unsmry_files is not None and ens_name in unsmry_files:
-           ens = scratch_ensemble(ens_name, ens_path,autodiscovery=False)
-           ens.find_files(unsmry_files[ens_name])
-           ens_smry_stats = ens.get_smry_stats(
+            ens = scratch_ensemble(ens_name, ens_path, autodiscovery=False)
+            ens.find_files(unsmry_files[ens_name])
+            ens_smry_stats = ens.get_smry_stats(
                 time_index=time_index, column_keys=column_keys
             )
         else:
@@ -79,7 +83,9 @@ def get_time_series_data(
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name,
+        unsmry_files=unsmry_files,
     )
 
     return ensset.get_smry(time_index=time_index, column_keys=column_keys)
@@ -106,7 +112,9 @@ def get_time_series_delta_ens(
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name,
+        unsmry_files=unsmry_files,
     )
 
     delta_ens_dfs = []
@@ -142,7 +150,9 @@ def get_time_series_delta_ens_stats(
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
+        ensemble_paths=ensemble_paths,
+        ensemble_set_name=ensemble_set_name,
+        unsmry_files=unsmry_files,
     )
 
     delta_ens_stats_dfs = []

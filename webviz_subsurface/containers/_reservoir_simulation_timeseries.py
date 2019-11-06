@@ -63,7 +63,8 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
         )
         self.unsmry_files = tuple(
             (ensemble, container_settings["unsmry_files"][ensemble])
-            for ensemble in ensembles if "unsmry_files" in container_settings
+            for ensemble in ensembles
+            if "unsmry_files" in container_settings
         )
         self.base_ensembles = tuple(
             base_ensembles if base_ensembles else [i[0] for i in self.ensemble_paths]
@@ -84,7 +85,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                     ensemble_paths=self.ensemble_paths,
                     time_index=self.time_index,
                     column_keys=self.column_keys,
-                    unsmry_files=self.unsmry_files
+                    unsmry_files=self.unsmry_files,
                 )
                 .drop(columns=["DATE", "REAL", "ENSEMBLE"])
                 .columns
