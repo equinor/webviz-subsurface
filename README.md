@@ -1,7 +1,8 @@
 [![PyPI version](https://badge.fury.io/py/webviz-subsurface.svg)](https://badge.fury.io/py/webviz-subsurface)
 [![Build Status](https://travis-ci.org/equinor/webviz-subsurface.svg?branch=master)](https://travis-ci.org/equinor/webviz-subsurface)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fd7a8b451754841a1eb6600c08be967)](https://www.codacy.com/app/anders-kiaer/webviz-subsurface?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=equinor/webviz-subsurface&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fd7a8b451754841a1eb6600c08be967)](https://www.codacy.com/manual/webviz/webviz-subsurface?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=equinor/webviz-subsurface&amp;utm_campaign=Badge_Grade)
 [![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/)
+![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
 ## Webviz subsurface configuration 
 
@@ -48,6 +49,13 @@ for this repository.
 If you are interested in creating new elements which can be configured through
 the configuration file, take a look at the
 [webviz-config contribution guide](https://github.com/equinor/webviz-config/blob/master/CONTRIBUTING.md).
+
+You can do automatic linting of your code changes by running
+```bash
+black --check webviz_subsurface tests # Check code style
+pylint webviz_subsurface tests # Check code quality
+bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best practice
+```
 
 ### Disclaimer
 

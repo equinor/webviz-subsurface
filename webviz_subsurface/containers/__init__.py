@@ -1,4 +1,4 @@
-'''### _Subsurface specific containers_
+"""### _Subsurface specific containers_
 
 These are containers relevant within subsurface workflows. Most of them
 rely on the setting `scratch_ensemble` configuration within the
@@ -21,25 +21,36 @@ pages:
     - container: SummaryStats
       ensemble: iter-0
 ```
-'''
+"""
 
 from ._parameter_distribution import ParameterDistribution
+from ._parameter_correlation import ParameterCorrelation
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
 from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
+from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._structural_uncertainty import StructuralUncertainty
+from ._reservoir_simulation_timeseries_onebyone import (
+    ReservoirSimulationTimeSeriesOneByOne,
+)
 
 
-__all__ = ['ParameterDistribution',
-           'DiskUsage',
-           'SubsurfaceMap',
-           'HistoryMatch',
-           'Intersect',
-           'MorrisPlot',
-           'InplaceVolumes',
-           'ReservoirSimulationTimeSeries',
-           'StructuralUncertainty']
+__all__ = [
+    "ParameterDistribution",
+    "ParameterCorrelation",
+    "DiskUsage",
+    "SubsurfaceMap",
+    "HistoryMatch",
+    "Intersect",
+    "MorrisPlot",
+    "InplaceVolumes",
+    "InplaceVolumesOneByOne",
+    "ReservoirSimulationTimeSeries",
+    "ReservoirSimulationTimeSeriesOneByOne",
+    'StructuralUncertainty',
+]
+

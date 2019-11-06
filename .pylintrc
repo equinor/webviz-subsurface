@@ -1,0 +1,22 @@
+[MESSAGES CONTROL]
+
+disable = bad-continuation, missing-docstring, duplicate-code
+
+[DESIGN]
+
+max-args = 8
+max-branches = 14
+max-attributes = 14
+min-public-methods = 1
+
+[BASIC]
+
+# Variable names which should always be accepted
+good-names = i,
+             j,
+             k,
+             x,
+             y,
+             z,
+             df,
+             _
