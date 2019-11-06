@@ -11,32 +11,56 @@ from ._history_match import scratch_ensemble
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
+def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet", unsmry_files: tuple = None):
 
-    return EnsembleSet(
+    ensembles = []
+    if unsmry_files is not None:
+        unsmry_files = dict(unsmry_files)
+
+    for ens_name, ens_path in ensemble_paths:
+        if unsmry_files is not None and ens_name in unsmry_files:
+            scratch_ens = scratch_ensemble(ens_name, ens_path,autodiscovery=False)
+            scratch_ens.find_files(unsmry_files[ens_name])
+            ensembles.append(scratch_ens)
+        else: 
+            ensembles.append(scratch_ensemble(ens_name, ens_path))
+    
+    ensset = EnsembleSet(
         ensemble_set_name,
-        [scratch_ensemble(ens_name, ens_path) for ens_name, ens_path in ensemble_paths],
-    )
+        ensembles)
+
+    return ensset
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_time_series_statistics(
-    ensemble_paths: tuple, time_index: str, column_keys: tuple
+    ensemble_paths: tuple, time_index: str, column_keys: tuple, unsmry_files: tuple = None
 ) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
+
 
     # Note: to be replaced by ensset.get_smry_stats()
     # when function is available.
     # See:
     # https://github.com/equinor/fmu-ensemble/pull/19
     smry_stats = []
-    for ens, ens_path in ensemble_paths:
-        ens_smry_stats = scratch_ensemble(ens, ens_path).get_smry_stats(
-            time_index=time_index, column_keys=column_keys
-        )
-        ens_smry_stats["ENSEMBLE"] = ens
+    if unsmry_files is not None:
+        unsmry_files = dict(unsmry_files)
+
+    for ens_name, ens_path in ensemble_paths:
+        if unsmry_files is not None and ens_name in unsmry_files:
+           ens = scratch_ensemble(ens_name, ens_path,autodiscovery=False)
+           ens.find_files(unsmry_files[ens_name])
+           ens_smry_stats = ens.get_smry_stats(
+                time_index=time_index, column_keys=column_keys
+            )
+        else:
+            ens_smry_stats = scratch_ensemble(ens_name, ens_path).get_smry_stats(
+                time_index=time_index, column_keys=column_keys
+            )
+        ens_smry_stats["ENSEMBLE"] = ens_name
         smry_stats.append(ens_smry_stats)
 
     return pd.concat(smry_stats)
@@ -48,13 +72,14 @@ def get_time_series_data(
     ensemble_paths: tuple,
     time_index: str,
     column_keys: tuple,
+    unsmry_files: tuple = None,
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
 
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
+        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
     )
 
     return ensset.get_smry(time_index=time_index, column_keys=column_keys)
@@ -68,6 +93,7 @@ def get_time_series_delta_ens(
     column_keys: tuple,
     base_ensembles: tuple,
     delta_ensembles: tuple,
+    unsmry_files: tuple = None,
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
     """ Loads ensembleset (cached after first loaded), gets a list of
@@ -80,7 +106,7 @@ def get_time_series_delta_ens(
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
+        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
     )
 
     delta_ens_dfs = []
@@ -103,6 +129,7 @@ def get_time_series_delta_ens_stats(
     column_keys: tuple,
     base_ensembles: tuple,
     delta_ensembles: tuple,
+    unsmry_files: tuple = None,
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
     """ Loads ensembleset (cached after first loaded), gets a list of
@@ -115,7 +142,7 @@ def get_time_series_delta_ens_stats(
     column_keys = list(column_keys) if isinstance(column_keys, (list, tuple)) else None
 
     ensset = load_ensemble_set(
-        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name
+        ensemble_paths=ensemble_paths, ensemble_set_name=ensemble_set_name, unsmry_files=unsmry_files
     )
 
     delta_ens_stats_dfs = []

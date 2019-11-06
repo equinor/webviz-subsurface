@@ -61,6 +61,10 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
             (ensemble, container_settings["scratch_ensembles"][ensemble])
             for ensemble in ensembles
         )
+        self.unsmry_files = tuple(
+            (ensemble, container_settings["unsmry_files"][ensemble])
+            for ensemble in ensembles if "unsmry_files" in container_settings
+        )
         self.base_ensembles = tuple(
             base_ensembles if base_ensembles else [i[0] for i in self.ensemble_paths]
         )
@@ -80,6 +84,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                     ensemble_paths=self.ensemble_paths,
                     time_index=self.time_index,
                     column_keys=self.column_keys,
+                    unsmry_files=self.unsmry_files
                 )
                 .drop(columns=["DATE", "REAL", "ENSEMBLE"])
                 .columns
@@ -259,6 +264,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
 
                 return render_realization_plot(
                     ensemble_paths=self.ensemble_paths,
+                    unsmry_files=self.unsmry_files,
                     column_keys=self.column_keys,
                     time_index=self.time_index,
                     vector=vector,
@@ -276,6 +282,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
 
                 return render_stat_plot(
                     ensemble_paths=self.ensemble_paths,
+                    unsmry_files=self.unsmry_files,
                     column_keys=self.column_keys,
                     time_index=self.time_index,
                     ensemble_set_name=self.title,
@@ -326,6 +333,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         column_keys=self.column_keys,
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
+                        unsmry_files=self.unsmry_files,
                         ensemble_set_name=self.title,
                     ).filter(items=[vector, "DATE", "IROENS - REFENS", "REAL"])
 
@@ -336,6 +344,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
+                        unsmry_files=self.unsmry_files,
                         ensemble_set_name=self.title,
                     ).filter(items=[vector, "DATE", "ENSEMBLE", "REAL"])
 
@@ -350,6 +359,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         time_index=self.time_index,
                         base_ensembles=self.base_ensembles,
                         delta_ensembles=self.delta_ensembles,
+                        unsmry_files=self.unsmry_files,
                         ensemble_set_name=self.title,
                     ).filter(items=["STATISTIC", vector, "DATE", "IROENS - REFENS"])
 
@@ -360,6 +370,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         ensemble_paths=self.ensemble_paths,
                         column_keys=self.column_keys,
                         time_index=self.time_index,
+                        unsmry_files=self.unsmry_files,
                     ).filter(items=["STATISTIC", vector, "DATE", "ENSEMBLE"])
 
             return (
@@ -388,6 +399,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         "ensemble_paths": self.ensemble_paths,
                         "column_keys": self.column_keys,
                         "time_index": self.time_index,
+                        "unsmry_files": self.unsmry_files,
                         "ensemble_set_name": self.title,
                     }
                 ],
@@ -399,6 +411,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         "ensemble_paths": self.ensemble_paths,
                         "time_index": self.time_index,
                         "column_keys": self.column_keys,
+                        "unsmry_files": self.unsmry_files,
                     }
                 ],
             ),
@@ -411,6 +424,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         "column_keys": self.column_keys,
                         "base_ensembles": self.base_ensembles,
                         "delta_ensembles": self.delta_ensembles,
+                        "unsmry_files": self.unsmry_files,
                         "ensemble_set_name": self.title,
                     }
                 ],
@@ -424,6 +438,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
                         "column_keys": self.column_keys,
                         "base_ensembles": self.base_ensembles,
                         "delta_ensembles": self.delta_ensembles,
+                        "unsmry_files": self.unsmry_files,
                         "ensemble_set_name": self.title,
                     }
                 ],
@@ -439,6 +454,7 @@ class ReservoirSimulationTimeSeries(WebvizContainerABC):
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_realization_plot(
     ensemble_paths: tuple,
+    unsmry_files: tuple,
     time_index: str,
     column_keys: tuple,
     vector: str,
@@ -483,6 +499,7 @@ def render_realization_plot(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
             time_index=time_index,
+            unsmry_files=unsmry_files,
             ensemble_set_name=ensemble_set_name,
         )[["REAL", "DATE", "ENSEMBLE", vector, history_vector]]
 
@@ -492,6 +509,7 @@ def render_realization_plot(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
             time_index=time_index,
+            unsmry_files=unsmry_files,
             ensemble_set_name=ensemble_set_name,
         )[["REAL", "DATE", "ENSEMBLE", vector]]
 
@@ -502,6 +520,7 @@ def render_realization_plot(
             column_keys=column_keys,
             base_ensembles=base_ensembles,
             delta_ensembles=delta_ensembles,
+            unsmry_files=unsmry_files,
             ensemble_set_name=ensemble_set_name,
         )
 
@@ -555,6 +574,7 @@ def render_realization_plot(
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_stat_plot(
     ensemble_paths: tuple,
+    unsmry_files: tuple,
     time_index: str,
     column_keys: tuple,
     vector: str,
@@ -603,6 +623,7 @@ def render_stat_plot(
             ensemble_paths=ensemble_paths,
             column_keys=column_keys,
             time_index=time_index,
+            unsmry_files=unsmry_files,
         )
 
         data = []
@@ -622,6 +643,7 @@ def render_stat_plot(
             time_index=time_index,
             base_ensembles=base_ensembles,
             delta_ensembles=delta_ensembles,
+            unsmry_files=unsmry_files,
             ensemble_set_name=ensemble_set_name,
         )
 
