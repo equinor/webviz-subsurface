@@ -7,8 +7,8 @@ password: some_password
 
 container_settings:
   scratch_ensembles:
-    iter-0: /scratch/myfield/realization-*/iter-0
-    iter-1: /scratch/myfield/realization-*/iter-1
+    iter-0: /scratch/fmu/eza/5_r001_reek/realization-*/iter-0
+    # iter-1: /scratch/myfield/realization-*/iter-1
     
 pages:
 
@@ -17,51 +17,10 @@ pages:
    content:
     - container: StructuralUncertainty
       ensemble: iter-0
-      surface_cat : ds_extracted_horizons
+      surface_categories : [ds_extracted_horizons]
       surface_names :
         - topupperreek
         - topmiddlereek
         - toplowerreek
         - baselowerreek
- - title: Time Series
-   content: 
-    - Some text...
-    - container: ReservoirSimulationTimeSeries
-      ensembles: [iter-0, iter-1]
-      column_keys: ['FGP*']
-      base_ensembles: [iter-0]
- - title: Parameter distribution
-   content: 
-    - container: ParameterDistribution
-      ensembles:
-        - iter-0
-        - iter-1
- - title: Parameter correlations
-   content: 
-    - Some text...
-    - container: ParameterCorrelation
-      ensembles:
-        - iter-0
-        - iter-1
-    - ...some other text
- - title: Inplace volumes
-   content: 
-    - container: InplaceVolumes
-      ensembles: [iter-0, iter-1]
-      volfiles: 
-        geogrid: geogrid--oil.csv
-        simgrid: simgrid--oil.csv
-- title: Inplace volume sensitivities
-   content: 
-    - container: InplaceVolumesOneByOne
-      ensembles: [iter-0, iter-1]
-      volfiles: 
-        geogrid: geogrid--oil.csv
-        simgrid: simgrid--oil.csv
- - title: Morris Plot
-   content: 
-    - Some text...
-    - container: MorrisPlot
-      csv_file: morris.csv
-    - ...some other text
 

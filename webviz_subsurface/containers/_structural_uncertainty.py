@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config.containers import WebvizContainer
+from webviz_config  import WebvizContainerABC
 from webviz_subsurface.datainput.leaflet import (
     LeafletSurface, LeafletCrossSection)
 import webviz_subsurface_components as wsc
@@ -17,7 +17,7 @@ except ImportError:
 from xtgeo import Surfaces, Polygons
 
 
-class StructuralUncertainty(WebvizContainer):
+class StructuralUncertainty(WebvizContainerABC):
     '''### StructuralUncertainty
 
     This container visualizes statistical surfaces from an ensemble.
@@ -80,9 +80,9 @@ class StructuralUncertainty(WebvizContainer):
                     children=[
                         wsc.LayeredMap(
                             id=self.map_id,
-                            map_bounds=[[0, 0], [0, 0]],
-                            center=[0, 0],
                             layers=[],
+                            draw_toolbar_polyline=True,
+                            draw_toolbar_marker=True
                         )
                     ]
                 ),
@@ -134,8 +134,7 @@ class StructuralUncertainty(WebvizContainer):
                 ),
                 wsc.LayeredMap(
                     id=self.fence_id,
-                    map_bounds=[[0, 0], [0, 0]],
-                    center=[0, 0],
+                    showScaleY=True,
                     layers=[],
                 ),
             ],
@@ -143,11 +142,11 @@ class StructuralUncertainty(WebvizContainer):
 
     def set_callbacks(self, app):
         @app.callback(
-            [
+
                 Output(self.map_id, "layers"),
-                Output(self.map_id, "map_bounds"),
-                Output(self.map_id, "center"),
-            ],
+                
+                # Output(self.map_id, "center"),
+            
             [
                 Input(self.calc_id, "value"),
                 Input(self.s_name_id, "value"),
@@ -174,17 +173,18 @@ class StructuralUncertainty(WebvizContainer):
             stat_surface = get_statistical_surface(surfaces, calc_type)
 
             leaf = LeafletSurface(s_name, stat_surface)
-
-            return [leaf.leaflet_layer], leaf.bounds, leaf.center
+            
+            return  [leaf.leaflet_layer]
 
         @app.callback(
-            [
+            
+                
                 Output(self.fence_id, "layers"),
-                Output(self.fence_id, "map_bounds"),
-                Output(self.fence_id, "center"),
-            ],
+                
+                
+            
             [
-                Input(self.map_id, "line_points"),
+                Input(self.map_id, "polyline_points"),
                 Input(self.s_name_id2, "value"),
                 Input(self.s_cat_id2, "value"),
             ],
@@ -204,7 +204,7 @@ class StructuralUncertainty(WebvizContainer):
 
             # If no polyline is digitized, return empty view
             if not coords:
-                return [], [[0, 0], [0, 0]], [0, 0]
+                return 'update', []
 
             if not isinstance(s_names, list):
                 s_names = [s_names]
@@ -233,7 +233,8 @@ class StructuralUncertainty(WebvizContainer):
                         name=f"{s_name}({calc_type})",
                         color="black",
                     )
-            return sleaf.get_layers(), sleaf.bounds, sleaf.center
+            return sleaf.get_layers()
+
 
         @app.callback(
             Output(self.chart_id, "figure"),
