@@ -6,10 +6,10 @@ from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config  import WebvizContainerABC
-from webviz_subsurface.datainput.leaflet import (
-    LeafletSurface, LeafletCrossSection)
+from webviz_config import WebvizContainerABC
+from webviz_subsurface.datainput.leaflet import LeafletSurface, LeafletCrossSection
 import webviz_subsurface_components as wsc
+
 try:
     from fmu.ensemble import ScratchEnsemble
 except ImportError:
@@ -18,7 +18,7 @@ from xtgeo import Surfaces, Polygons
 
 
 class StructuralUncertainty(WebvizContainerABC):
-    '''### StructuralUncertainty
+    """### StructuralUncertainty
 
     This container visualizes statistical surfaces from an ensemble.
 
@@ -27,7 +27,7 @@ class StructuralUncertainty(WebvizContainerABC):
     * `surface_categories`: A list of surface categories
     * `surface_names`: A list of surface names
 
-    '''
+    """
 
     def __init__(
         self,
@@ -82,7 +82,7 @@ class StructuralUncertainty(WebvizContainerABC):
                             id=self.map_id,
                             layers=[],
                             draw_toolbar_polyline=True,
-                            draw_toolbar_marker=True
+                            draw_toolbar_marker=True,
                         )
                     ]
                 ),
@@ -91,16 +91,14 @@ class StructuralUncertainty(WebvizContainerABC):
                         dcc.Dropdown(
                             id=self.s_cat_id,
                             options=[
-                                {"value": cat, "label": cat}
-                                for cat in self.s_cats
+                                {"value": cat, "label": cat} for cat in self.s_cats
                             ],
                             value=self.s_cats[0],
                         ),
                         dcc.Dropdown(
                             id=self.s_name_id,
                             options=[
-                                {"value": cat, "label": cat}
-                                for cat in self.s_names
+                                {"value": cat, "label": cat} for cat in self.s_names
                             ],
                             value=self.s_names[0],
                         ),
@@ -115,16 +113,14 @@ class StructuralUncertainty(WebvizContainerABC):
                         dcc.Dropdown(
                             id=self.s_cat_id2,
                             options=[
-                                {"value": cat, "label": cat}
-                                for cat in self.s_cats
+                                {"value": cat, "label": cat} for cat in self.s_cats
                             ],
                             value=self.s_cats[0],
                         ),
                         dcc.Dropdown(
                             id=self.s_name_id2,
                             options=[
-                                {"value": cat, "label": cat}
-                                for cat in self.s_names
+                                {"value": cat, "label": cat} for cat in self.s_names
                             ],
                             value=self.s_names[0],
                             multi=True,
@@ -133,20 +129,15 @@ class StructuralUncertainty(WebvizContainerABC):
                     ]
                 ),
                 wsc.LayeredMap(
-                    id=self.fence_id,
-                    showScaleY=True,
-                    layers=[],
+                    id=self.fence_id, showScaleY=True, layers=[], hillShading=False
                 ),
             ],
         )
 
     def set_callbacks(self, app):
         @app.callback(
-
-                Output(self.map_id, "layers"),
-                
-                # Output(self.map_id, "center"),
-            
+            Output(self.map_id, "layers"),
+            # Output(self.map_id, "center"),
             [
                 Input(self.calc_id, "value"),
                 Input(self.s_name_id, "value"),
@@ -173,16 +164,11 @@ class StructuralUncertainty(WebvizContainerABC):
             stat_surface = get_statistical_surface(surfaces, calc_type)
 
             leaf = LeafletSurface(s_name, stat_surface)
-            
-            return  [leaf.leaflet_layer]
+
+            return [leaf.leaflet_layer]
 
         @app.callback(
-            
-                
-                Output(self.fence_id, "layers"),
-                
-                
-            
+            Output(self.fence_id, "layers"),
             [
                 Input(self.map_id, "polyline_points"),
                 Input(self.s_name_id2, "value"),
@@ -204,7 +190,7 @@ class StructuralUncertainty(WebvizContainerABC):
 
             # If no polyline is digitized, return empty view
             if not coords:
-                return 'update', []
+                return []
 
             if not isinstance(s_names, list):
                 s_names = [s_names]
@@ -234,7 +220,6 @@ class StructuralUncertainty(WebvizContainerABC):
                         color="black",
                     )
             return sleaf.get_layers()
-
 
         @app.callback(
             Output(self.chart_id, "figure"),
@@ -273,9 +258,8 @@ class StructuralUncertainty(WebvizContainerABC):
 
 
 def get_fencespec(coords):
-    '''Create a XTGeo fence spec from polyline coordinates'''
-    coords_dict = [{"X_UTME": c[1], "Y_UTMN": c[0], "Z_TVDSS": 0}
-                   for c in coords]
+    """Create a XTGeo fence spec from polyline coordinates"""
+    coords_dict = [{"X_UTME": c[1], "Y_UTMN": c[0], "Z_TVDSS": 0} for c in coords]
     df = pd.DataFrame().from_dict(coords_dict)
     df["POLY_ID"] = 1
     df["NAME"] = "test"
@@ -285,7 +269,7 @@ def get_fencespec(coords):
 
 
 def get_reals(ens_name, ens_path):
-    '''Retrieve valid realization and paths from ens instance'''
+    """Retrieve valid realization and paths from ens instance"""
     ens = ScratchEnsemble(ens_name, ens_path)
     real_folders = []
     reals = []
@@ -298,13 +282,12 @@ def get_reals(ens_name, ens_path):
 def get_surfaces_from_scratch(
     real_folders: list, surface_folder, s_name, s_cat=None, s_suffix=".gri"
 ):
-    '''Retrieve an XTGeo surfaces instance for an ensemble of surfaces
-    on scratch'''
+    """Retrieve an XTGeo surfaces instance for an ensemble of surfaces
+    on scratch"""
 
     base_name = f"{s_name}--{s_cat}{s_suffix}"
     surf_paths = [
-        os.path.join(r_folder, surface_folder, base_name)
-        for r_folder in real_folders
+        os.path.join(r_folder, surface_folder, base_name) for r_folder in real_folders
     ]
     return Surfaces(surf_paths)
 

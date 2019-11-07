@@ -3,8 +3,8 @@ from ._image_processing import get_colormap, array_to_png
 from xtgeo.surface import RegularSurface
 
 
-class LeafletSurface():
-    '''### LeafletSurface
+class LeafletSurface:
+    """### LeafletSurface
 
     Class to generate input for a Leaflet background layer
     to visualize subsurface data in a map view
@@ -13,9 +13,9 @@ class LeafletSurface():
     * `name: Name of the layer
     * `surface: XTGeo surface
     * `colormap: Matplotlib colormap to use
-    '''
+    """
 
-    def __init__(self, name, surface: RegularSurface, colormap='viridis'):
+    def __init__(self, name, surface: RegularSurface, colormap="viridis"):
         self.name = name
         self.get_surface_array(surface)
         self.colormap = get_colormap(colormap)
@@ -33,8 +33,10 @@ class LeafletSurface():
 
     @property
     def bounds(self):
-        return [[np.min(self.arr[0]), np.min(self.arr[1])],
-                [np.max(self.arr[0]), np.max(self.arr[1])]]
+        return [
+            [np.min(self.arr[0]), np.min(self.arr[1])],
+            [np.max(self.arr[0]), np.max(self.arr[1])],
+        ]
 
     @property
     def center(self):
@@ -50,15 +52,19 @@ class LeafletSurface():
 
     @property
     def leaflet_layer(self):
-        return {'name': self.name,
-                'checked': True,
-                'base_layer': True,
-                'data': [{'type': 'image',
-                          'url': self.as_png,
-                          'colormap': self.colormap,
-                          'bounds': self.bounds,
-                          'minvalue': f'{self.min:.2f}',
-                          'maxvalue': f'{self.max:.2f}',
-                          'unit': 'm'
-                          }]
+        return {
+            "name": self.name,
+            "checked": True,
+            "base_layer": True,
+            "data": [
+                {
+                    "type": "image",
+                    "url": self.as_png,
+                    "colormap": self.colormap,
+                    "bounds": self.bounds,
+                    "minvalue": f"{self.min:.2f}",
+                    "maxvalue": f"{self.max:.2f}",
+                    "unit": "m",
                 }
+            ],
+        }

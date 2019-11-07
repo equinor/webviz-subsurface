@@ -51,6 +51,5 @@ __all__ = [
     "InplaceVolumesOneByOne",
     "ReservoirSimulationTimeSeries",
     "ReservoirSimulationTimeSeriesOneByOne",
-    'StructuralUncertainty',
+    "StructuralUncertainty",
 ]
-
