@@ -27,11 +27,7 @@ SegyViewer
 * `segyfle`: Input data
 """
 
-    def __init__(
-        self,
-        app,
-        segyfile: Path,
-    ):
+    def __init__(self, app, segyfile: Path):
 
         self.iline_map_id = "iline-map-id-{}".format(uuid4())
         self.xline_map_id = "xline-map-id-{}".format(uuid4())
@@ -42,105 +38,108 @@ SegyViewer
         self.iline_label_id = "iline-label-id-{}".format(uuid4())
         self.xline_label_id = "xline-label-id-{}".format(uuid4())
         self.depth_label_id = "depth-label-id-{}".format(uuid4())
-        self.source = segyio.open(segyfile, "r")
+        # self.source = segyio.open(segyfile, "r")
         self.xtgeo_source = xtgeo.Cube(segyfile)
-        self.iline_count = len(self.source.ilines)
-        self.xline_count = len(self.source.xlines)
-        
-        self.sample_count = len(self.source.samples)
+        self.iline_count = len(self.xtgeo_source.ilines)
+        self.xline_count = len(self.xtgeo_source.xlines)
+
+        self.sample_count = len(self.xtgeo_source.zslices)
         self.set_callbacks(app)
+
+    @property
+    def slice_layout(self):
+        return html.Div(
+            style={"margin": "10px"},
+            children=[
+                html.Label(
+                    id=self.depth_label_id,
+                    children=f"Depth {self.xtgeo_source.zslices[0]}",
+                ),
+                html.Div(
+                    style={"margin-bottom": "30px"},
+                    children=[
+                        dcc.Slider(
+                            id=self.depth_slider_id,
+                            min=self.xtgeo_source.zslices[0],
+                            max=self.xtgeo_source.zslices[-1],
+                            value=self.xtgeo_source.zslices[0],
+                            updatemode='drag',
+                            step = self.xtgeo_source.zinc,
+                            marks={
+                                str(i): str(i)
+                                for i in self.xtgeo_source.zslices
+                                if i % 50 == 0
+                            },
+                        )
+                    ],
+                ),
+                LayeredMap(id=self.depth_map_id, layers=[], height=876),
+            ],
+        )
+
+    @property
+    def iline_layout(self):
+        return html.Div(
+            style={"margin": "10px"},
+            children=[
+                html.Label(
+                    id=self.iline_label_id,
+                    children=f"Inline {self.xtgeo_source.ilines[0]}",
+                ),
+                html.Div(
+                    style={"margin-bottom": "30px"},
+                    children=[
+                        dcc.Slider(
+                            id=self.iline_slider_id,
+                            min=self.xtgeo_source.ilines[0],
+                            max=self.iline_count - 1,
+                            value=self.xtgeo_source.ilines[0],
+                            updatemode='drag',
+                            marks={
+                                i: i for i in range(self.iline_count) if i % 50 == 0
+                            },
+                        )
+                    ],
+                ),
+                LayeredMap(id=self.iline_map_id, layers=[], height=400),
+            ],
+        )
+
+    @property
+    def xline_layout(self):
+        return html.Div(
+            style={"margin": "10px"},
+            children=[
+                html.Label(
+                    id=self.xline_label_id,
+                    children=f"Crossline {self.xtgeo_source.xlines[0]}",
+                ),
+                html.Div(
+                    style={"margin-bottom": "30px"},
+                    children=[
+                        dcc.Slider(
+                            id=self.xline_slider_id,
+                            min=self.xtgeo_source.xlines[0],
+                            max=self.xtgeo_source.xlines[-1],
+                            value=self.xtgeo_source.xlines[0],
+                            updatemode='drag',
+                            marks={
+                                i: i for i in range(self.xline_count) if i % 50 == 0
+                            },
+                        )
+                    ],
+                ),
+                LayeredMap(id=self.xline_map_id, layers=[], height=400),
+            ],
+        )
 
     @property
     def layout(self):
         return html.Div(
             style=self.set_grid_layout("1fr 3fr"),
             children=[
-                html.Div(
-                    style={"margin": "10px"},
-                    children=[
-                        html.Label(
-                            id=self.depth_label_id,
-                            children=f"Depth {self.source.samples[0]}",
-                        ),
-                        html.Div(
-                            style={"margin-bottom": "30px"},
-                            children=[
-                                dcc.Slider(
-                                    id=self.depth_slider_id,
-                                    min=1,
-                                    max=len(self.source.samples),
-                                    value=1,
-                                    marks={
-                                        i: f"{self.source.samples[i]}"
-                                        for i in range(len(self.source.samples))
-                                        if i % 50 == 0
-                                    },
-                                )
-                            ],
-                        ),
-                        LayeredMap(id=self.depth_map_id, layers=[], height=876),
-                    ]
-                ),
-                html.Div(
-                    children=[
-                        html.Div(
-                            style={"margin": "10px"},
-                            children=[
-                                html.Label(
-                                    id=self.iline_label_id,
-                                    children=f"Inline {self.source.ilines[0]}",
-                                ),
-                                html.Div(
-                                    style={"margin-bottom": "30px"},
-                                    children=[
-                                        dcc.Slider(
-                                            id=self.iline_slider_id,
-                                            min=self.source.ilines[0],
-                                            max=self.iline_count,
-                                            value=self.source.ilines[0],
-                                            marks={
-                                                i: i
-                                                for i in range(self.iline_count)
-                                                if i % 50 == 0
-                                            },
-                                        )
-                                    ],
-                                ),
-                                LayeredMap(
-                                    id=self.iline_map_id, layers=[], height=400,
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            style={"margin": "10px"},
-                            children=[
-                                html.Label(
-                                    id=self.xline_label_id,
-                                    children=f"Crossline {self.source.xlines[0]}",
-                                ),
-                                html.Div(
-                                    style={"margin-bottom": "30px"},
-                                    children=[
-                                        dcc.Slider(
-                                            id=self.xline_slider_id,
-                                            min=self.source.xlines[0],
-                                            max=self.xline_count,
-                                            value=self.source.xlines[0],
-                                            marks={
-                                                i: i
-                                                for i in range(self.xline_count)
-                                                if i % 50 == 0
-                                            },
-                                        )
-                                    ],
-                                ),
-                                LayeredMap(
-                                    id=self.xline_map_id, layers=[], height=400,
-                                ),
-                            ],
-                        ),
-                    ]
-                ),
+                self.slice_layout,
+                html.Div(children=[self.iline_layout, self.xline_layout]),
             ],
         )
 
@@ -157,12 +156,20 @@ SegyViewer
             if not depth:
                 raise PreventUpdate
 
-            idx = depth
-            print('depth index', idx)
-            depth_arr = self.source.depth_slice[idx].T.copy()
-            bounds = [[0, 0], [self.iline_count, self.xline_count]]
+            # idx = depth
+            # print("depth index", idx)
+            # depth_arr = self.source.depth_slice[0].T.copy()
+            # print('segyio', depth_arr)
+            # print(depth_arr, 'segyio')
+            idx = np.where(self.xtgeo_source.zslices == depth)
+            depth_arr = self.xtgeo_source.values[:, :, idx]
+            # print(idx)
+            # print(depth_arr)
+            depth_arr = depth_arr[:,:,0,0].T
+            print('xtgeo', depth_arr)
+            bounds = [[0, 0], [self.xline_count - 1, self.iline_count - 1]]
             layer = generate_layer("Depth", depth_arr, bounds=bounds, colormap="RdBu")
-            return (f"Depth {self.source.samples[idx]}", [layer])
+            return (f"Depth {depth}", [layer])
 
         @app.callback(
             [
@@ -172,23 +179,13 @@ SegyViewer
             [Input(self.iline_slider_id, "value")],
         )
         def set_iline(iline):
-            print(iline)
             if not iline:
                 raise PreventUpdate
-            iline_arr = self.source.iline[iline].T.copy()
-            print(iline, self.xtgeo_source.ilines[iline])
-            print('segyio', self.source.iline[iline])
-            # print('xtgeo ilines', self.xtgeo_source.ilines)
             idx = np.where(self.xtgeo_source.ilines == iline)
-            print('xtgeo', self.xtgeo_source.values[idx,:,:][:,0,:])
-            # print(self.xtgeo_source.describe())
-            # print(self.xtgeo_source.values[np.where(self.xtgeo_source.ilines[iline]),:,:])
-
-
-            # print('xtgeo',x)
-            bounds = [[0, 0], [self.iline_count-1, self.sample_count-1]]
+            iline_arr = self.xtgeo_source.values[idx, :, :][0, 0, :].T
+            bounds = [[0, 0], [self.iline_count - 1, self.sample_count - 1]]
             layer = generate_layer("inline", iline_arr, bounds=bounds, colormap="RdBu")
-            return (f"Inline {self.source.ilines[iline]}", [layer])
+            return (f"Inline {iline}", [layer])
 
         @app.callback(
             [
@@ -197,14 +194,14 @@ SegyViewer
             ],
             [Input(self.xline_slider_id, "value")],
         )
-        def set_iline(xline):
-            print(xline)
+        def set_xline(xline):
             if not xline:
                 raise PreventUpdate
-            xline_arr = self.source.xline[xline].T.copy()
-            bounds = [[0, 0], [self.xline_count-1, self.sample_count-1]]
+            idx = np.where(self.xtgeo_source.xlines == xline)
+            xline_arr = self.xtgeo_source.values[:,idx, :][:, 0, 0].T
+            bounds = [[0, 0], [self.xline_count - 1, self.sample_count - 1]]
             layer = generate_layer("inline", xline_arr, bounds=bounds, colormap="RdBu")
-            return f"Crossline {self.source.xlines[xline]}", [layer]
+            return f"Crossline {xline}", [layer]
 
     @staticmethod
     def set_grid_layout(columns):
