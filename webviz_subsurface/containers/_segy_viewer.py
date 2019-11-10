@@ -39,13 +39,9 @@ SegyViewer
         self.iline_label_id = "iline-label-id-{}".format(uuid4())
         self.xline_label_id = "xline-label-id-{}".format(uuid4())
         self.depth_label_id = "depth-label-id-{}".format(uuid4())
-        # self.source = segyio.open(segyfile, "r")
         self.xtgeo_source = xtgeo.Cube(segyfile)
-        print(self.xtgeo_source.describe())
         self.iline_count = len(self.xtgeo_source.ilines)
         self.xline_count = len(self.xtgeo_source.xlines)
-
-        self.sample_count = len(self.xtgeo_source.zslices)
         self.set_callbacks(app)
 
     @property
@@ -67,11 +63,6 @@ SegyViewer
                             value=self.xtgeo_source.zslices[0],
                             updatemode="drag",
                             step=self.xtgeo_source.zinc,
-                            marks={
-                                str(i): str(i)
-                                for i in self.xtgeo_source.zslices
-                                if i % 50 == 0
-                            },
                         )
                     ],
                 ),
@@ -96,12 +87,9 @@ SegyViewer
                         dcc.Slider(
                             id=self.iline_slider_id,
                             min=self.xtgeo_source.ilines[0],
-                            max=self.iline_count - 1,
+                            max=self.xtgeo_source.ilines[-1],
                             value=self.xtgeo_source.ilines[0],
                             updatemode="drag",
-                            marks={
-                                i: i for i in range(self.iline_count) if i % 50 == 0
-                            },
                         )
                     ],
                 ),
@@ -129,9 +117,6 @@ SegyViewer
                             max=self.xtgeo_source.xlines[-1],
                             value=self.xtgeo_source.xlines[0],
                             updatemode="drag",
-                            marks={
-                                i: i for i in range(self.xline_count) if i % 50 == 0
-                            },
                         )
                     ],
                 ),
@@ -164,19 +149,10 @@ SegyViewer
             if not depth:
                 raise PreventUpdate
 
-            # idx = depth
-            # print("depth index", idx)
-            # depth_arr = self.source.depth_slice[0].T.copy()
-            # print('segyio', depth_arr)
-            # print(depth_arr, 'segyio')
             idx = np.where(self.xtgeo_source.zslices == depth)
             depth_arr = self.xtgeo_source.values[:, :, idx]
-            # print(idx)
-            # print(depth_arr)
             depth_arr = depth_arr[:, :, 0, 0].T
             print("xtgeo", depth_arr)
-            bounds = [[0, 0], [self.xline_count - 1, self.iline_count - 1]]
-            layer = generate_layer("Depth", depth_arr, bounds=bounds, colormap="RdBu")
             return (f"Depth {depth}", make_heatmap(depth_arr))
 
         @app.callback(
@@ -191,8 +167,6 @@ SegyViewer
                 raise PreventUpdate
             idx = np.where(self.xtgeo_source.ilines == iline)
             iline_arr = self.xtgeo_source.values[idx, :, :][0, 0, :].T
-            bounds = [[0, 0], [self.iline_count - 1, self.sample_count - 1]]
-            layer = generate_layer("inline", iline_arr, bounds=bounds, colormap="RdBu")
             return (f"Inline {iline}", make_heatmap(iline_arr))
 
         @app.callback(
@@ -207,8 +181,6 @@ SegyViewer
                 raise PreventUpdate
             idx = np.where(self.xtgeo_source.xlines == xline)
             xline_arr = self.xtgeo_source.values[:, idx, :][:, 0, 0].T
-            bounds = [[0, 0], [self.xline_count - 1, self.sample_count - 1]]
-            layer = generate_layer("inline", xline_arr, bounds=bounds, colormap="RdBu")
             return f"Crossline {xline}", make_heatmap(xline_arr)
 
     @staticmethod
@@ -224,22 +196,6 @@ SegyViewer
         return [(read_csv, [{"csv_file": self.csv_file}])]
 
 
-def generate_layer(name, arr, bounds, colormap="RdBu"):
-    img = array_to_png(arr)
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": True,
-        "hill_shading": False,
-        "data": [
-            {
-                "type": "image",
-                "url": img,
-                "colormap": get_colormap(colormap),
-                "bounds": bounds,
-            }
-        ],
-    }
 
 
 def make_heatmap(arr, reverse_y=True):
