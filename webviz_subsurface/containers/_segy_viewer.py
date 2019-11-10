@@ -10,6 +10,7 @@ import xtgeo
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_subsurface_components import LayeredMap
 from webviz_config.webviz_store import webvizstore
@@ -40,6 +41,7 @@ SegyViewer
         self.depth_label_id = "depth-label-id-{}".format(uuid4())
         # self.source = segyio.open(segyfile, "r")
         self.xtgeo_source = xtgeo.Cube(segyfile)
+        print(self.xtgeo_source.describe())
         self.iline_count = len(self.xtgeo_source.ilines)
         self.xline_count = len(self.xtgeo_source.xlines)
 
@@ -63,8 +65,8 @@ SegyViewer
                             min=self.xtgeo_source.zslices[0],
                             max=self.xtgeo_source.zslices[-1],
                             value=self.xtgeo_source.zslices[0],
-                            updatemode='drag',
-                            step = self.xtgeo_source.zinc,
+                            updatemode="drag",
+                            step=self.xtgeo_source.zinc,
                             marks={
                                 str(i): str(i)
                                 for i in self.xtgeo_source.zslices
@@ -73,7 +75,9 @@ SegyViewer
                         )
                     ],
                 ),
-                LayeredMap(id=self.depth_map_id, layers=[], height=876),
+                html.Div(
+                    style={"height": "876px"}, children=wcc.Graph(id=self.depth_map_id)
+                ),
             ],
         )
 
@@ -94,14 +98,16 @@ SegyViewer
                             min=self.xtgeo_source.ilines[0],
                             max=self.iline_count - 1,
                             value=self.xtgeo_source.ilines[0],
-                            updatemode='drag',
+                            updatemode="drag",
                             marks={
                                 i: i for i in range(self.iline_count) if i % 50 == 0
                             },
                         )
                     ],
                 ),
-                LayeredMap(id=self.iline_map_id, layers=[], height=400),
+                html.Div(
+                    style={"height": "400px"}, children=wcc.Graph(id=self.iline_map_id)
+                ),
             ],
         )
 
@@ -122,21 +128,23 @@ SegyViewer
                             min=self.xtgeo_source.xlines[0],
                             max=self.xtgeo_source.xlines[-1],
                             value=self.xtgeo_source.xlines[0],
-                            updatemode='drag',
+                            updatemode="drag",
                             marks={
                                 i: i for i in range(self.xline_count) if i % 50 == 0
                             },
                         )
                     ],
                 ),
-                LayeredMap(id=self.xline_map_id, layers=[], height=400),
+                html.Div(
+                    style={"height": "400px"}, children=wcc.Graph(id=self.xline_map_id)
+                ),
             ],
         )
 
     @property
     def layout(self):
         return html.Div(
-            style=self.set_grid_layout("1fr 3fr"),
+            style=self.set_grid_layout("1fr 2fr"),
             children=[
                 self.slice_layout,
                 html.Div(children=[self.iline_layout, self.xline_layout]),
@@ -147,7 +155,7 @@ SegyViewer
         @app.callback(
             [
                 Output(self.depth_label_id, "children"),
-                Output(self.depth_map_id, "layers"),
+                Output(self.depth_map_id, "figure"),
             ],
             [Input(self.depth_slider_id, "value")],
         )
@@ -165,16 +173,16 @@ SegyViewer
             depth_arr = self.xtgeo_source.values[:, :, idx]
             # print(idx)
             # print(depth_arr)
-            depth_arr = depth_arr[:,:,0,0].T
-            print('xtgeo', depth_arr)
+            depth_arr = depth_arr[:, :, 0, 0].T
+            print("xtgeo", depth_arr)
             bounds = [[0, 0], [self.xline_count - 1, self.iline_count - 1]]
             layer = generate_layer("Depth", depth_arr, bounds=bounds, colormap="RdBu")
-            return (f"Depth {depth}", [layer])
+            return (f"Depth {depth}", make_heatmap(depth_arr))
 
         @app.callback(
             [
                 Output(self.iline_label_id, "children"),
-                Output(self.iline_map_id, "layers"),
+                Output(self.iline_map_id, "figure"),
             ],
             [Input(self.iline_slider_id, "value")],
         )
@@ -185,12 +193,12 @@ SegyViewer
             iline_arr = self.xtgeo_source.values[idx, :, :][0, 0, :].T
             bounds = [[0, 0], [self.iline_count - 1, self.sample_count - 1]]
             layer = generate_layer("inline", iline_arr, bounds=bounds, colormap="RdBu")
-            return (f"Inline {iline}", [layer])
+            return (f"Inline {iline}", make_heatmap(iline_arr))
 
         @app.callback(
             [
                 Output(self.xline_label_id, "children"),
-                Output(self.xline_map_id, "layers"),
+                Output(self.xline_map_id, "figure"),
             ],
             [Input(self.xline_slider_id, "value")],
         )
@@ -198,10 +206,10 @@ SegyViewer
             if not xline:
                 raise PreventUpdate
             idx = np.where(self.xtgeo_source.xlines == xline)
-            xline_arr = self.xtgeo_source.values[:,idx, :][:, 0, 0].T
+            xline_arr = self.xtgeo_source.values[:, idx, :][:, 0, 0].T
             bounds = [[0, 0], [self.xline_count - 1, self.sample_count - 1]]
             layer = generate_layer("inline", xline_arr, bounds=bounds, colormap="RdBu")
-            return f"Crossline {xline}", [layer]
+            return f"Crossline {xline}", make_heatmap(xline_arr)
 
     @staticmethod
     def set_grid_layout(columns):
@@ -231,4 +239,26 @@ def generate_layer(name, arr, bounds, colormap="RdBu"):
                 "bounds": bounds,
             }
         ],
+    }
+
+
+def make_heatmap(arr, reverse_y=True):
+    return {
+        "data": [
+            {
+                "type": "heatmap",
+                "z": arr.tolist(),
+                # "x0": hmin,
+                # "xmax": hmax,
+                # "dx": x_inc,
+                # "y0": vmin,
+                # "ymax": vmax,
+                # "dy": y_inc,
+                "zsmooth": "best",
+            }
+        ],
+        "layout": {
+            "margin": {"t": 0},
+            "yaxis": {"autorange": "reversed" if reverse_y else None},
+        },
     }

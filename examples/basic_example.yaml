@@ -15,4 +15,4 @@ pages:
  - title: Front page
    content:
     - container: SegyViewer
-      segyfile: /mnt/media/scratch/3_r001_reek/realization-0/iter-0/share/results/seismic/seismic--3d_depth--20000101.segy
+      segyfile: /mnt/media/scratch/webviz/segyviewer/big.segy
