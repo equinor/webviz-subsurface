@@ -2,8 +2,6 @@
 # The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
 
 title: Reek Webviz Demonstration
-username: some_username
-password: some_password
 
 container_settings:
   scratch_ensembles:
@@ -56,3 +54,9 @@ pages:
     - container: MorrisPlot
       csv_file: morris.csv
     - ...some other text
+ - title: SegyViewer
+   content:
+    - container: SegyViewer
+      segyfiles: 
+        - ./some_segy_file
+

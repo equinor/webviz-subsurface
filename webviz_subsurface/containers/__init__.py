@@ -36,6 +36,7 @@ from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
 )
+from ._segy_viewer import SegyViewer
 
 
 __all__ = [
@@ -50,4 +51,5 @@ __all__ = [
     "InplaceVolumesOneByOne",
     "ReservoirSimulationTimeSeries",
     "ReservoirSimulationTimeSeriesOneByOne",
+    "SegyViewer",
 ]

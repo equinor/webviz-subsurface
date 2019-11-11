@@ -28,11 +28,13 @@ setup(
             + "webviz_subsurface.containers:ReservoirSimulationTimeSeries",
             "ReservoirSimulationTimeSeriesOneByOne = "
             + "webviz_subsurface.containers:ReservoirSimulationTimeSeriesOneByOne",
+            "SegyViewer = webviz_subsurface.containers:SegyViewer",
         ]
     },
     install_requires=[
         "scipy~=1.2",
         "dash-daq~=0.1",
+        "dash-colorscales~=0.0.4",
         "matplotlib~=3.0",
         "pillow~=6.1",
         "xtgeo~=2.1",
