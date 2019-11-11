@@ -31,19 +31,8 @@ The plots are linked and updates are done by clicking in the plots.
 """
 
     def __init__(self, app, segyfiles: list, zunit="depth (m)", colors: list = None):
-
-        self.cube_id = "cube-id-{}".format(uuid4())
-        self.iline_map_id = "iline-map-id-{}".format(uuid4())
-        self.xline_map_id = "xline-map-id-{}".format(uuid4())
-        self.zline_map_id = "zline-map-id-{}".format(uuid4())
-        self.color_values_id = "color_values-id-{}".format(uuid4())
-        self.color_scale_id = f"{str(uuid4())}-color-scale-id"
-        self.color_range_btn = f"{str(uuid4())}-color-range-id"
-        self.zoom_btn = f"{str(uuid4())}-zoom-id"
-        self.state_store = "state-store-id-{}".format(uuid4())
         self.zunit = zunit
         self.segyfiles = segyfiles
-
         self.initial_colors = (
             colors
             if colors
@@ -65,8 +54,20 @@ The plots are linked and updates are done by clicking in the plots.
         self.init_state = self.update_state(segyfiles[0])
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
-
+        self.make_uuids()
         self.set_callbacks(app)
+
+    def make_uuids(self):
+        uuid = f"{uuid4()}"
+        self.cube_id = f"cube_id-{uuid}"
+        self.iline_map_id = f"iline_map_id-{uuid}"
+        self.xline_map_id = f"xline_map_id-{uuid}"
+        self.zline_map_id = f"zline_map_id-{uuid}"
+        self.color_values_id = f"color_values_id-{uuid}"
+        self.color_scale_id = f"color_scale_id-{uuid}"
+        self.color_range_btn = f"color_range_btn-{uuid}"
+        self.zoom_btn = f"zoom_btn-{uuid}"
+        self.state_store = f"state_store-{uuid}"
 
     def update_state(self, cubepath, **kwargs):
         cube = load_cube_data(get_path(Path(cubepath)))
