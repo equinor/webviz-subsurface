@@ -14,7 +14,6 @@ from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import CACHE
 
 from ..datainput._seismic import load_cube_data, get_iline, get_xline, get_zslice
 
