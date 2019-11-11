@@ -10,7 +10,6 @@ import dash_core_components as dcc
 
 # pylint: disable=no-name-in-module
 from dash_colorscales import DashColorscales
-
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
@@ -21,8 +20,8 @@ from ..datainput._seismic import load_cube_data, get_iline, get_xline, get_zslic
 class SegyViewer(WebvizContainerABC):
     """### SegyViewer
 
-Inspired by SegyViewer (https://github.com/equinor/segyviewer) this container
-visualizes seismic 3D cubes with 3 plots (inline, xline and zslice).
+Inspired by [SegyViewer for Python](https://github.com/equinor/segyviewer) this container
+visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
 The plots are linked and updates are done by clicking in the plots.
 
 * `segyfiles`: List of file paths to segyfiles
