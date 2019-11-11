@@ -39,7 +39,7 @@ setup(
         "pillow~=6.1",
         "xtgeo~=2.1",
         "webviz-config>=0.0.24",
-        "webviz-subsurface-components",
+        "webviz-subsurface-components>=0.0.3",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},

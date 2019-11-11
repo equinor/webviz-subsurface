@@ -2,26 +2,24 @@ from uuid import uuid4
 from pathlib import Path
 import json
 
-import numpy as np
-import pandas as pd
-
-import segyio
 import xtgeo
+
 
 import dash
 from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-import webviz_core_components as wcc
-from dash.dependencies import Input, Output, State
-import dash_colorscales
 
-from webviz_subsurface_components import LayeredMap
+# pylint: disable=no-name-in-module
+from dash_colorscales import DashColorscales
+
+import webviz_core_components as wcc
+from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
 
-from ..datainput.layeredmap._image_processing import array_to_png, get_colormap
+from ..datainput._seismic import get_iline, get_xline, get_zslice
 
 
 class SegyViewer(WebvizContainerABC):
@@ -33,7 +31,7 @@ class SegyViewer(WebvizContainerABC):
 * `colors`: List of colors to use
 """
 
-    def __init__(self, app, segyfiles: list, zunit="depth", colors: list = None):
+    def __init__(self, app, segyfiles: list, zunit="depth (m)", colors: list = None):
 
         self.cube_id = "cube-id-{}".format(uuid4())
         self.iline_map_id = "iline-map-id-{}".format(uuid4())
@@ -87,8 +85,8 @@ class SegyViewer(WebvizContainerABC):
             "colorscale": self.initial_colors,
         }
         if kwargs:
-            for key, value in kwargs:
-                state[key] = valu
+            for key, value in kwargs.items():
+                state[key] = value
         return state
 
     @property
@@ -120,7 +118,7 @@ class SegyViewer(WebvizContainerABC):
                         html.Label(
                             style={"textAlign": "center"}, children="Set colorscale"
                         ),
-                        dash_colorscales.DashColorscales(
+                        DashColorscales(
                             id=self.color_scale_id,
                             colorscale=self.initial_colors,
                             nSwatches=12,
@@ -191,6 +189,7 @@ class SegyViewer(WebvizContainerABC):
     def layout(self):
         return html.Div(children=[self.settings_layout, self.plot_layout])
 
+    # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
             Output(self.state_store, "data"),
@@ -206,7 +205,8 @@ class SegyViewer(WebvizContainerABC):
             ],
             [State(self.zline_map_id, "figure"), State(self.state_store, "data")],
         )
-        def update_state(
+        # pylint: disable=unused-argument,too-many-arguments
+        def _update_state(
             cubepath,
             icd,
             xcd,
@@ -257,7 +257,7 @@ class SegyViewer(WebvizContainerABC):
         @app.callback(
             Output(self.zline_map_id, "figure"), [Input(self.state_store, "data")]
         )
-        def set_zslice(state):
+        def _set_zslice(state):
             """Updates z-slice heatmap"""
             if not state:
                 raise PreventUpdate
@@ -282,9 +282,8 @@ class SegyViewer(WebvizContainerABC):
                 },
             ]
 
-            idx = np.where(cube.zslices == state["zslice"])
-            zslice_arr = cube.values[:, :, idx]
-            zslice_arr = zslice_arr[:, :, 0, 0].T
+            zslice_arr = get_zslice(cube, state["zslice"])
+
             fig = make_heatmap(
                 zslice_arr,
                 height=800,
@@ -305,7 +304,7 @@ class SegyViewer(WebvizContainerABC):
         @app.callback(
             Output(self.iline_map_id, "figure"), [Input(self.state_store, "data")]
         )
-        def set_iline(state):
+        def _set_iline(state):
             """Updates inline heatmap"""
             if not state:
                 raise PreventUpdate
@@ -329,9 +328,7 @@ class SegyViewer(WebvizContainerABC):
                     "line": {"width": 1, "dash": "dot"},
                 },
             ]
-
-            idx = np.where(cube.ilines == state["iline"])
-            iline_arr = cube.values[idx, :, :][0, 0, :].T
+            iline_arr = get_iline(cube, state["iline"])
 
             fig = make_heatmap(
                 iline_arr,
@@ -351,7 +348,7 @@ class SegyViewer(WebvizContainerABC):
         @app.callback(
             Output(self.xline_map_id, "figure"), [Input(self.state_store, "data")]
         )
-        def set_xline(state):
+        def _set_xline(state):
             """Update xline heatmap"""
             if not state:
                 raise PreventUpdate
@@ -375,9 +372,7 @@ class SegyViewer(WebvizContainerABC):
                     "line": {"width": 1, "dash": "dot"},
                 },
             ]
-
-            idx = np.where(cube.xlines == state["xline"])
-            xline_arr = cube.values[:, idx, :][:, 0, 0].T
+            xline_arr = get_xline(cube, state["xline"])
             fig = make_heatmap(
                 xline_arr,
                 xaxis=cube.ilines,
@@ -403,7 +398,8 @@ class SegyViewer(WebvizContainerABC):
             [Input(self.color_range_btn, "n_clicks")],
             [State(self.state_store, "data")],
         )
-        def update_state(btn_clicked, state):
+        # pylint: disable=unused-argument
+        def _reset_color_range(btn_clicked, state):
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
@@ -426,12 +422,13 @@ class SegyViewer(WebvizContainerABC):
         return [(get_path, [{"path": Path(fn)}]) for fn in self.segyfiles]
 
 
+# pylint: disable=too-many-arguments
 def make_heatmap(
     arr,
     height=400,
     zmin=None,
     zmax=None,
-    colorscale=[],
+    colorscale=None,
     uirevision=None,
     showscale=False,
     reverse_y=True,
