@@ -2,9 +2,6 @@ from uuid import uuid4
 from pathlib import Path
 import json
 
-import xtgeo
-
-
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
