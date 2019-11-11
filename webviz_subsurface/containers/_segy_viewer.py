@@ -146,13 +146,7 @@ SegyViewer
                                 - self.init_state["min_value"]
                             )
                             / 100,
-                        ),
-                        # html.Div(
-                        #     style={"height": "50"},
-                        wcc.Graph(
-                            id=self.value_distr_id, config={"displayModeBar": False}
-                        ),
-                        # ),
+                        )
                     ],
                 ),
                 html.Button(id=self.color_range_btn, children="Reset Range"),
@@ -336,6 +330,7 @@ SegyViewer
 
             idx = np.where(cube.ilines == state["iline"])
             iline_arr = cube.values[idx, :, :][0, 0, :].T
+            
             fig = make_heatmap(
                 iline_arr,
                 xaxis=cube.xlines,
@@ -415,35 +410,6 @@ SegyViewer
             value = [minv, maxv]
             step = (maxv - minv) / 100
             return minv, maxv, value, step
-
-        @app.callback(
-            Output(self.value_distr_id, "figure"), [Input(self.cube_id, "value")]
-        )
-        def update_value_distr(cubepath):
-            values = load_cube_data(get_path(Path(cubepath))).values
-            return {
-                "data": [{"x": values.ravel(), "type": "histogram"}],
-                "layout": {
-                    "hovermode": False,
-                    "autosize": True,
-                    "height": 40,
-                    "margin": {"t": 0, "b": 20, "l": 0, "r": 0},
-                    "xaxis": {
-                        "showgrid": False,
-                        "showticklabels": False,
-                        "showline": False,
-                        "zeroline": False,
-                        "fixedrange": True,
-                    },
-                    "yaxis": {
-                        "showgrid": False,
-                        "showticklabels": False,
-                        "showline": False,
-                        "zeroline": False,
-                        "fixedrange": True,
-                    },
-                },
-            }
 
     @staticmethod
     def set_grid_layout(columns):

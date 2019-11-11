@@ -2,13 +2,6 @@
 # The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
 
 title: Reek Webviz Demonstration
-username: some_username
-password: some_password
-
-container_settings:
-  scratch_ensembles:
-    iter-0: /scratch/myfield/realization-*/iter-0
-    iter-1: /scratch/myfield/realization-*/iter-1
 
 pages:
 
@@ -16,7 +9,5 @@ pages:
    content:
     - container: SegyViewer
       segyfiles: 
-        - /mnt/media/scratch/3_r001_reek/realization-0/iter-0/share/results/seismic/seismic--3d_depth--20000101.segy
-        - /mnt/media/scratch/3_r001_reek/realization-0/iter-0/share/results/seismic/seismic--4d_depth--20010601_20000101.segy
-        - /mnt/media/scratch/3_r001_reek/realization-0/iter-0/share/results/seismic/seismic--4d_depth--20030101_20010601.segy
-        - /mnt/media/scratch/3_r001_reek/realization-0/iter-0/share/results/seismic/seismic--4d_depth--20030101_20000101.segy
+        - /scratch/fmu/hakal/9_r001_reek/realization-0/iter-0/share/results/seismic/seismic--3d_depth--20000101.segy
+ 
