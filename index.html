@@ -412,6 +412,23 @@ The realizations for each sensitivity can be highlighted.</p>
 <hr>
 
 
+<h3>SegyViewer</h3>
+<p>Inspired by <a href="https://github.com/equinor/segyviewer">SegyViewer for Python</a> this container
+visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
+The plots are linked and updates are done by clicking in the plots.</p>
+<ul>
+<li><code>segyfiles</code>: List of file paths to segyfiles</li>
+<li><code>zunit</code>: z-unit for display</li>
+<li><code>colors</code>: List of colors to use</li>
+</ul>
+<pre><code class='yaml'>  - container: SegyViewer
+    segyfiles: some value
+    zunit: depth (m)  # Optional (default value shown here).
+    colors: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Subsurface map</h3>
 <p>This container visualizes the subsurface. Currently only supporting reservoir
 model grid maps. In addition to show a map, it can visualize the flow pattern
