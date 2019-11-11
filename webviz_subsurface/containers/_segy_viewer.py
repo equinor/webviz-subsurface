@@ -27,9 +27,10 @@ from ..datainput.layeredmap._image_processing import array_to_png, get_colormap
 class SegyViewer(WebvizContainerABC):
     """### SegyViewer
 
-SegyViewer
 
-* `segyfle`: Input data
+* `segyfiles`: List of file paths to segyfiles
+* `zunit`: z-unit for display
+* `colors`: List of colors to use
 """
 
     def __init__(self, app, segyfiles: list, zunit="depth", colors: list = None):
@@ -146,7 +147,7 @@ SegyViewer
                                 - self.init_state["min_value"]
                             )
                             / 100,
-                        )
+                        ),
                     ],
                 ),
                 html.Button(id=self.color_range_btn, children="Reset Range"),
@@ -298,6 +299,7 @@ SegyViewer
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
+
             return fig
 
         @app.callback(
@@ -330,7 +332,7 @@ SegyViewer
 
             idx = np.where(cube.ilines == state["iline"])
             iline_arr = cube.values[idx, :, :][0, 0, :].T
-            
+
             fig = make_heatmap(
                 iline_arr,
                 xaxis=cube.xlines,
@@ -421,7 +423,7 @@ SegyViewer
         }
 
     def add_webvizstore(self):
-        return [(get_path, [{"path": fn}]) for fn in self.segyfiles]
+        return [(get_path, [{"path": Path(fn)}]) for fn in self.segyfiles]
 
 
 def make_heatmap(
