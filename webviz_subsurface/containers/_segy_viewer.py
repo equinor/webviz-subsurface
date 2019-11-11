@@ -37,7 +37,6 @@ class SegyViewer(WebvizContainerABC):
         self.iline_map_id = "iline-map-id-{}".format(uuid4())
         self.xline_map_id = "xline-map-id-{}".format(uuid4())
         self.zline_map_id = "zline-map-id-{}".format(uuid4())
-        self.value_distr_id = "value-distr-id-{}".format(uuid4())
         self.color_values_id = "color_values-id-{}".format(uuid4())
         self.color_scale_id = f"{str(uuid4())}-color-scale-id"
         self.color_range_btn = f"{str(uuid4())}-color-range-id"
@@ -88,6 +87,47 @@ class SegyViewer(WebvizContainerABC):
             for key, value in kwargs.items():
                 state[key] = value
         return state
+
+    @property
+    def tour_steps(self):
+        return [
+            {"id": self.cube_id, "content": ("The currently visualized seismic cube.")},
+            {
+                "id": self.iline_map_id,
+                "content": (
+                    "Selected inline for the seismic cube. "
+                    "Adjacent views are updated by clicking MB1 "
+                    "in the plot. To zoom, hold MB1 and draw a vertical/horizontal "
+                    "line or a rectangle."
+                ),
+            },
+            {
+                "id": self.xline_map_id,
+                "content": ("Selected crossline for the seismic cube "),
+            },
+            {
+                "id": self.zline_map_id,
+                "content": ("Selected zslice for the seismic cube "),
+            },
+            {
+                "id": self.color_scale_id,
+                "content": ("Click this button to change colorscale"),
+            },
+            {
+                "id": self.color_values_id,
+                "content": ("Drag either node of slider to truncate color ranges"),
+            },
+            {
+                "id": self.color_range_btn,
+                "content": (
+                    "Click this button to update color slider min/max and reset ranges."
+                ),
+            },
+            {
+                "id": self.zoom_btn,
+                "content": ("Click this button to reset zoom/pan state in the plot"),
+            },
+        ]
 
     @property
     def settings_layout(self):
