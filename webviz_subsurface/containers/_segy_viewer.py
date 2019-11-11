@@ -19,12 +19,15 @@ from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
-from ..datainput._seismic import get_iline, get_xline, get_zslice
+from ..datainput._seismic import load_cube_data, get_iline, get_xline, get_zslice
 
 
 class SegyViewer(WebvizContainerABC):
     """### SegyViewer
 
+Inspired by SegyViewer (https://github.com/equinor/segyviewer) this container
+visualizes seismic 3D cubes with 3 plots (inline, xline and zslice).
+The plots are linked and updates are done by clicking in the plots.
 
 * `segyfiles`: List of file paths to segyfiles
 * `zunit`: z-unit for display
@@ -517,8 +520,3 @@ def make_heatmap(
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_cube_data(cube_path):
-    return xtgeo.Cube(cube_path)
