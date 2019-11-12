@@ -47,7 +47,8 @@ class SeismicFence(WebvizContainerABC):
         self.zunit = zunit
         self.segyfiles = segyfiles
         self.surfacefiles = surfacefiles
-        self.wellfiles = wellfiles
+        self.wellfiles = [get_path(Path(fn)) for fn in wellfiles] if wellfiles else None
+        print('asdasdasdasd',self.wellfiles)
         self.welllayers = make_well_layers(self.wellfiles)
         self.initial_colors = (
             colors
@@ -522,4 +523,6 @@ def make_well_layer(fn, zmin=0):
 
 
 def make_well_layers(wellpaths):
-    return [make_well_layer(get_path(Path(fn))) for fn in wellpaths]
+    
+    
+    return [make_well_layer(fn) for fn in wellpaths]
