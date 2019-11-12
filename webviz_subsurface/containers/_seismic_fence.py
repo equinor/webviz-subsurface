@@ -47,6 +47,7 @@ class SeismicFence(WebvizContainerABC):
         self.zunit = zunit
         self.segyfiles = segyfiles
         self.surfacefiles = surfacefiles
+        self.wells = wellfiles
         self.wellfiles = [get_path(Path(fn)) for fn in wellfiles] if wellfiles else None
         print('asdasdasdasd',self.wellfiles)
         self.welllayers = make_well_layers(self.wellfiles)
@@ -367,7 +368,7 @@ class SeismicFence(WebvizContainerABC):
         return [
             *[(get_path, [{"path": Path(fn)}]) for fn in self.segyfiles],
             *[(get_path, [{"path": Path(fn)}]) for fn in self.surfacefiles],
-            *[(get_path, [{"path": Path(fn)}]) for fn in self.wellfiles],
+            *[(get_path, [{"path": Path(fn)}]) for fn in self.wells],
         ]
 
 
