@@ -29,6 +29,7 @@ setup(
             "ReservoirSimulationTimeSeriesOneByOne = "
             + "webviz_subsurface.containers:ReservoirSimulationTimeSeriesOneByOne",
             "SegyViewer = webviz_subsurface.containers:SegyViewer",
+            "SeismicFence = webviz_subsurface.containers:SeismicFence",
         ]
     },
     install_requires=[
