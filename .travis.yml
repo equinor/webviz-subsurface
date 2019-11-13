@@ -32,7 +32,7 @@ script:
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
   - webviz certificate
   - git clone https://github.com/equinor/webviz-subsurface-testdata.git
-  - sed -i "s&./webviz-subsurface-testdata&$PWD/webviz-subsurface-testdata&g" examples/reek_example.yaml
+  - sed -i "s&./webviz-subsurface-testdata& $PWD/webviz-subsurface-testdata&g" examples/reek_example.yaml
   - pytest tests --forked
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
