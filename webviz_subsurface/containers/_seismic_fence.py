@@ -47,9 +47,8 @@ class SeismicFence(WebvizContainerABC):
         self.zunit = zunit
         self.segyfiles = segyfiles
         self.surfacefiles = surfacefiles
-        self.wells = wellfiles
-        self.wellfiles = [get_path(Path(fn)) for fn in wellfiles] if wellfiles else None
-        print('asdasdasdasd',self.wellfiles)
+        self.wellfiles = wellfiles if wellfiles else []
+        print("asdasdasdasd", self.wellfiles)
         self.welllayers = make_well_layers(self.wellfiles)
         self.initial_colors = (
             colors
@@ -285,7 +284,7 @@ class SeismicFence(WebvizContainerABC):
         def render_surface(
             surfacepath, surface_type, cubepath, color_values, colorscale
         ):
-            surface = xtgeo.RegularSurface(str(get_path(Path(surfacepath))), cubepath)
+            surface = xtgeo.RegularSurface(str(get_path(surfacepath)), cubepath)
             hillshading = True
             min_val = None
             max_val = None
@@ -296,7 +295,7 @@ class SeismicFence(WebvizContainerABC):
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
                 color = ListedColormap(colorscale) if colorscale else "viridis"
-                cube = load_cube_data(get_path(Path(cubepath)))
+                cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
 
             arr = get_surface_arr(surface)
@@ -325,10 +324,10 @@ class SeismicFence(WebvizContainerABC):
         def render_fence(coords, cubepath, surfacepath, color_values, colorscale):
             if not coords:
                 raise PreventUpdate
-            cube = load_cube_data(get_path(Path(cubepath)))
+            cube = load_cube_data(get_path(cubepath))
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
-            surface = xtgeo.RegularSurface(str(get_path(Path(surfacepath))), cubepath)
+            surface = xtgeo.RegularSurface(str(get_path(surfacepath)), cubepath)
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,
@@ -356,7 +355,7 @@ class SeismicFence(WebvizContainerABC):
             [State(self.cube_id, "value")],
         )
         def update_color_slider(clicks, cubepath):
-            cube = load_cube_data(get_path(Path(cubepath)))
+            cube = load_cube_data(get_path(cubepath))
 
             minv = float(f"{round(cube.values.min(), 2):2f}")
             maxv = float(f"{round(cube.values.max(), 2):2f}")
@@ -366,9 +365,9 @@ class SeismicFence(WebvizContainerABC):
 
     def add_webvizstore(self):
         return [
-            *[(get_path, [{"path": Path(fn)}]) for fn in self.segyfiles],
-            *[(get_path, [{"path": Path(fn)}]) for fn in self.surfacefiles],
-            *[(get_path, [{"path": Path(fn)}]) for fn in self.wells],
+            *[(get_path, [{"path": fn}]) for fn in self.segyfiles],
+            *[(get_path, [{"path": fn}]) for fn in self.surfacefiles],
+            *[(get_path, [{"path": fn}]) for fn in self.wellfiles],
         ]
 
 
@@ -494,7 +493,9 @@ def get_fencespec(coords):
 def make_well_layer(fn, zmin=0):
 
     # reduce the well data by Pandas operations
-    wo = xtgeo.Well(fn)
+    print(get_path(fn))
+    # return
+    wo = xtgeo.Well(str(get_path(fn)))
     wo.dataframe = wo.dataframe[wo.dataframe["Z_TVDSS"] > zmin]
     positions = wo.dataframe[["X_UTME", "Y_UTMN"]].values
     return {
@@ -524,6 +525,5 @@ def make_well_layer(fn, zmin=0):
 
 
 def make_well_layers(wellpaths):
-    
-    
+
     return [make_well_layer(fn) for fn in wellpaths]
