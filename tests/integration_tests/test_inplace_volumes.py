@@ -22,7 +22,9 @@ def test_inplace_volumes(dash_duo):
     with mock.patch(extract_volumes) as mock_volumes:
         mock_volumes.return_value = pd.read_csv("tests/data/volumes.csv")
 
-        vol = InplaceVolumes(app, container_settings, ensembles, volfiles)
+        vol = InplaceVolumes(
+            app, container_settings, ensembles=ensembles, volfiles=volfiles
+        )
 
         app.layout = vol.layout
         dash_duo.start_server(app)
