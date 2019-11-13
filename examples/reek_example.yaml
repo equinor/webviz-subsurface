@@ -1,0 +1,29 @@
+# This file demonstrates the most basic usage of webviz in a FMU setting
+# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+
+title: Reek Webviz Demonstration
+
+container_settings:
+  scratch_ensembles:
+    iter-0: /webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
+
+pages:
+
+ - title: Front page
+   content:
+    - Webviz created from configuration file
+
+ - title: Inplace volume sensitivities
+   content: 
+    - container: InplaceVolumesOneByOne
+      ensembles: 
+        - iter-0
+      volfiles: 
+        geogrid: geogrid--oil.csv
+        simgrid: simgrid--oil.csv
+
+ - title: Time series sensitivities
+   content: 
+    - container: ReservoirSimulationTimeSeriesOneByOne
+      ensembles: 
+        - iter-0
