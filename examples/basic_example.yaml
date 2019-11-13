@@ -1,62 +1,43 @@
-# This file demonstrates the most basic usage of webviz in a FMU setting
+# This file demonstrates the usage of webviz-subsurface using aggregated files
 # The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
 
 title: Reek Webviz Demonstration
-
-container_settings:
-  scratch_ensembles:
-    iter-0: /scratch/myfield/realization-*/iter-0
-    iter-1: /scratch/myfield/realization-*/iter-1
 
 pages:
 
  - title: Front page
    content:
     - Webviz created from configuration file
- - title: Reservoir Simulation Time Series
-   content:
-    - Some text...
-    - container: ReservoirSimulationTimeSeries
-      ensembles: [iter-0, iter-1]
-      column_keys: ['FGP*']
-      base_ensembles: [iter-0]
- - title: Parameter distribution
-   content: 
-    - container: ParameterDistribution
-      ensembles:
-        - iter-0
-        - iter-1
- - title: Parameter correlations
-   content: 
-    - Some text...
-    - container: ParameterCorrelation
-      ensembles:
-        - iter-0
-        - iter-1
-    - ...some other text
- - title: Inplace volumes
-   content: 
-    - container: InplaceVolumes
-      ensembles: [iter-0, iter-1]
-      volfiles: 
-        geogrid: geogrid--oil.csv
-        simgrid: simgrid--oil.csv
- - title: Inplace volume sensitivities
+
+ - title: InplaceVolumesOneByOne
    content: 
     - container: InplaceVolumesOneByOne
-      ensembles: [iter-0, iter-1]
-      volfiles: 
-        geogrid: geogrid--oil.csv
-        simgrid: simgrid--oil.csv
+      csvfile_vol: data/volumes.csv
+      csvfile_reals: data/realdata.csv
+
+ - title: ReservoirSimulationTimeSeriesOneByOne
+   content: 
+    - container: ReservoirSimulationTimeSeriesOneByOne
+      csvfile_smry: data/smry.csv
+      csvfile_reals: data/realdata.csv
+      initial_vector: FOPT
+      
+ - title: InplaceVolumes
+   content:
+    - container: InplaceVolumes
+      csvfile: data/volumes.csv
+
+ - title: ParameterDistribution
+   content:
+    - container: ParameterDistribution
+      csvfile: data/parameters.csv
+
  - title: Morris Plot
    content: 
-    - Some text...
     - container: MorrisPlot
-      csv_file: morris.csv
-    - ...some other text
- - title: SegyViewer
-   content:
-    - container: SegyViewer
-      segyfiles: 
-        - ./some_segy_file
+      csv_file: data/morris.csv
 
+ - title: Grid Viewer
+   content:
+    - container: SubsurfaceMap
+      jsonfile: data/subsurface-map.json

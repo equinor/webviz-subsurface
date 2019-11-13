@@ -1,5 +1,6 @@
 from uuid import uuid4
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -13,18 +14,29 @@ from dash_table import DataTable
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
 from ..datainput import load_smry, get_realizations
 
-
+# pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
     """### ReservoirSimulationTimeSeriesOneByOne
 
-Visualizes reservoir simulation time series for ensembles using design matrix.
+Visualizes reservoir simulation time series related to a FMU ensemble with design matrix.
+Input can be given either as aggregated csv files for smry and sensitivity information,
+or as an ensemble name defined in 'container_settings'.
+
 A tornadoplot can be calculated interactively for each date/vector.
 The realizations for each sensitivity can be highlighted.
 
+The sensitivity information is extracted automatically if an ensemble is given as input,
+as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
+If aggregated csv files are given as input a csv file with the following columns are
+required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
+
+* `csvfile_smry`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
+* `csvfile_reals`: Aggregated csvfile for sensitivity information
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
@@ -54,12 +66,14 @@ The realizations for each sensitivity can be highlighted.
         "P10",
         "Maximum",
     ]
-
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,
         container_settings,
-        ensembles,
+        csvfile_smry: Path = None,
+        csvfile_reals: Path = None,
+        ensembles: list = None,
         column_keys=None,
         initial_vector=None,
         sampling: str = "monthly",
@@ -67,20 +81,33 @@ The realizations for each sensitivity can be highlighted.
 
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if column_keys else None
-        self.ens_paths = tuple(
-            (ensemble, container_settings["scratch_ensembles"][ensemble])
-            for ensemble in ensembles
-        )
-        # Extract realizations and sensitivity information
-        realizations = get_realizations(
-            ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-        )
-        smry = load_smry(
-            ensemble_paths=self.ens_paths,
-            ensemble_set_name="EnsembleSet",
-            time_index=self.time_index,
-            column_keys=self.column_keys,
-        )
+
+        self.csvfile_smry = csvfile_smry if csvfile_smry else None
+        self.csvfile_reals = csvfile_reals if csvfile_reals else None
+        if csvfile_smry and csvfile_reals:
+            smry = read_csv(csvfile_smry)
+            realizations = read_csv(csvfile_reals)
+
+        elif ensembles:
+            self.ens_paths = tuple(
+                (ensemble, container_settings["scratch_ensembles"][ensemble])
+                for ensemble in ensembles
+            )
+            # Extract realizations and sensitivity information
+            realizations = get_realizations(
+                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            )
+            smry = load_smry(
+                ensemble_paths=self.ens_paths,
+                ensemble_set_name="EnsembleSet",
+                time_index=self.time_index,
+                column_keys=self.column_keys,
+            )
+        else:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_reals" or '
+                '"ensembles"'
+            )
 
         self.data = pd.merge(smry, realizations, on=["ENSEMBLE", "REAL"])
         self.smry_cols = [
@@ -170,28 +197,37 @@ The realizations for each sensitivity can be highlighted.
         )
 
     def add_webvizstore(self):
-        return [
-            (
-                load_smry,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                        "time_index": self.time_index,
-                        "column_keys": self.column_keys,
-                    }
-                ],
-            ),
-            (
-                get_realizations,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            ),
-        ]
+        return (
+            [
+                (
+                    read_csv,
+                    [{"csv_file": self.csvfile_smry}, {"csv_file": self.csvfile_reals}],
+                )
+            ]
+            if self.csvfile_smry and self.csvfile_reals
+            else [
+                (
+                    load_smry,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                            "time_index": self.time_index,
+                            "column_keys": self.column_keys,
+                        }
+                    ],
+                ),
+                (
+                    get_realizations,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                ),
+            ]
+        )
 
     @staticmethod
     def set_grid_layout(columns):
@@ -395,3 +431,9 @@ def filter_ensemble(data, ensemble, vector):
     return data.loc[data["ENSEMBLE"] == ensemble][
         ["DATE", "REAL", vector, "SENSCASE", "SENSNAME"]
     ]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_csv(csv_file) -> pd.DataFrame:
+    return pd.read_csv(csv_file, index_col=None)

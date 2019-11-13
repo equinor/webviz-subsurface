@@ -1,13 +1,19 @@
 from uuid import uuid4
+from pathlib import Path
 
-import dash
+import pandas as pd
+
 import plotly.express as px
-import dash_html_components as html
-import dash_core_components as dcc
-import webviz_core_components as wcc
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+import dash_html_components as html
+import dash_core_components as dcc
+
+import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
+from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 
 from ..datainput import load_parameters
 
@@ -15,20 +21,35 @@ from ..datainput import load_parameters
 class ParameterDistribution(WebvizContainerABC):
     """### ParameterDistribution
 
-This container shows parameter distribution per ensemble as a histogram
-with a marginal boxplot on top.
+This container shows parameter distributions for FMU ensembles.
+Parameters are visualized per ensemble as a histogram, and as a boxplot showing
+the parameter ranges for each ensemble.
+Input can be given either as an aggregated csv files with parameter information
+or as an ensemble name defined in 'container_settings'.
 
+* `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 """
 
-    def __init__(self, app, container_settings, ensembles):
+    def __init__(
+        self, app, container_settings, csvfile: Path = None, ensembles: list = None
+    ):
 
-        self.ensembles = tuple(
-            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
-        )
-        self.parameters = load_parameters(
-            ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
-        )
+        self.csvfile = csvfile if csvfile else None
+        if csvfile:
+            self.parameters = read_csv(csvfile)
+        elif ensembles:
+            self.ensembles = tuple(
+                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+            )
+            self.parameters = load_parameters(
+                ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
+            )
+        else:
+            raise ValueError(
+                'Incorrect arguments. Either provide a "csvfile" or "ensembles".'
+            )
+
         self.parameter_columns = [
             col
             for col in list(self.parameters.columns)
@@ -123,7 +144,9 @@ with a marginal boxplot on top.
 
     def add_webvizstore(self):
         return [
-            (
+            (read_csv, [{"csv_file": self.csvfile,}],)
+            if self.csvfile
+            else (
                 load_parameters,
                 [
                     {
@@ -153,3 +176,9 @@ def next_value(current_value, options):
     if index < len(options) - 1:
         return options[index + 1]
     return current_value
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_csv(csv_file) -> pd.DataFrame:
+    return pd.read_csv(csv_file, index_col=None)
