@@ -7,13 +7,13 @@ container_settings:
   scratch_ensembles:
     iter-0: /webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
 
-pages:
 
+pages:
  - title: Front page
    content:
     - Webviz created from configuration file
 
- - title: Inplace volume sensitivities
+ - title: InplaceVolumesOneByOne
    content: 
     - container: InplaceVolumesOneByOne
       ensembles: 
@@ -22,8 +22,35 @@ pages:
         geogrid: geogrid--oil.csv
         simgrid: simgrid--oil.csv
 
- - title: Time series sensitivities
+ - title: ReservoirSimulationTimeSeriesOneByOne
    content: 
     - container: ReservoirSimulationTimeSeriesOneByOne
       ensembles: 
+        - iter-0
+
+ - title: InplaceVolumes
+   content:
+    - container: InplaceVolumes
+      ensembles: 
+        - iter-0
+      volfiles:
+        geogrid: geogrid--oil.csv
+        simgrid: simgrid--oil.csv
+
+ - title: ParameterDistribution
+   content:
+    - container: ParameterDistribution
+      ensembles:
+        - iter-0
+
+ - title: ParameterCorrelation
+   content:
+    - container: ParameterCorrelation
+      ensembles:
+        - iter-0
+
+ - title: ReservoirSimulationTimeSeries
+   content:
+    - container: ReservoirSimulationTimeSeries
+      ensembles:
         - iter-0

@@ -22,6 +22,13 @@ def test_portable(dash_duo, tmp_path):
 
     # Start and test app
     dash_duo.start_server(app)
-    for page in ["inplace_volume_sensitivities", "last_page"]:
+    for page in [
+        "inplacevolumesonebyone",
+        "reservoirsimulationtimeseriesonebyone",
+        "inplacevolumes",
+        "parameterdistribution",
+        "parametercorrelation",
+        "last_page",
+    ]:
         dash_duo.wait_for_element(f"#{page}").click()
     assert dash_duo.get_logs() == [], "browser console should contain no error"
