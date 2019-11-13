@@ -25,6 +25,7 @@ install:
 
 script:
   - pip install .
+  - pip list
   - pip install .[tests]
   - pip install dash[testing]
   - black --check webviz_subsurface tests setup.py
