@@ -1,11 +1,11 @@
 import sys
-import subprocess
+import subprocess  # nosec
 
 
 def test_portable(dash_duo, tmp_path):
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
-    subprocess.call(
+    subprocess.call(  # nosec
         ["webviz", "build", "reek_example.yaml", "--portable", appdir], cwd="examples"
     )
     # Remove Talisman
