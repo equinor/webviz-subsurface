@@ -320,10 +320,11 @@ in container settings.
             ],
         )
 
+    # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
             Output(self.graph_id, "figure"),
-            [  # pylint: disable=too-many-statements
+            [
                 Input(self.vector_id, "value"),
                 Input(self.vector2_id, "value"),
                 Input(self.vector3_id, "value"),
@@ -444,20 +445,18 @@ in container settings.
         )
         def _update_mode(mode):
             """Switch displayed ensemble selector for delta/no-delta"""
-            return (
-                {"display": "block"},
-                {"display": "none"} if mode == "ensembles" else {"display": "none"},
-                {"display": "block"},
-            )
+            if mode == "ensembles":
+                style = {"display": "block"}, {"display": "none"}
+            else:
+                style = {"display": "none"}, {"display": "block"}
+            return style
 
         @app.callback(
             Output(self.date_id, "data"), [Input(self.graph_id, "clickData")],
         )
         def _update_date(clickdata):
             """Store clicked date for use in other callback"""
-            if not clickdata:
-                raise PreventUpdate
-            return json.dumps(clickdata["points"][0]["x"])
+            return json.dumps(clickdata["points"][0]["x"]) if clickdata else None
 
     def add_webvizstore(self):
         return (
