@@ -41,17 +41,6 @@ in container settings.
         "DATE",
     ]
 
-    TABLE_STAT = [
-        "Sensitivity",
-        "Case",
-        "Mean",
-        "Standard Deviation",
-        "Minimum",
-        "P90",
-        "P10",
-        "Maximum",
-    ]
-
     def __init__(
         self,
         app,
@@ -78,6 +67,11 @@ in container settings.
                 time_index=self.time_index,
                 column_keys=self.column_keys,
             )
+        else:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
+            )
+
         self.smry_cols = [
             c
             for c in [*self.smry.columns]
