@@ -56,6 +56,6 @@ setup(
         "Topic :: Multimedia :: Graphics",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Visualization",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
 )
