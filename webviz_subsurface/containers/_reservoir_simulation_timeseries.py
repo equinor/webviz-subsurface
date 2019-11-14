@@ -2,31 +2,30 @@ from uuid import uuid4
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 import plotly.tools as tools
 from dash.exceptions import PreventUpdate
-from dash import callback_context
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
-from dash_table import DataTable
 
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
 from ..datainput import load_smry
 
-
+# pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
     """### ReservoirSimulationTimeSeriesO
 
 Visualizes reservoir simulation time series for FMU ensembles.
+Input can be given either as aggregated csv file or an ensemble defined
+in container settings.
 
+* `csvfile`: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
@@ -87,16 +86,36 @@ Visualizes reservoir simulation time series for FMU ensembles.
         ]
         self.initial_vector = initial_vector if initial_vector else self.smry_cols[0]
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        # self.plotly_layout = app.webviz_settings["plotly_layout"]
-        colors = ["#243746", "#eb0036", "#919ba2", "#7d0023"]
-        self.ens_colors = {
-            # ens: self.plotly_layout["colors"][self.ensembles.index(ens)]
-            ens: colors[self.ensembles.index(ens)]
-            for ens in self.ensembles
-        }
-        # self.smry.to_csv("/tmp/smry.csv", index=None)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
 
-        self.allow_delta = True if len(self.ensembles) > 1 else False
+        colors = self.plotly_layout.get(
+            "colors",
+            [
+                "#243746",
+                "#eb0036",
+                "#919ba2",
+                "#7d0023",
+                "#66737d",
+                "#4c9ba1",
+                "#a44c65",
+                "#80b7bc",
+                "#ff1243",
+                "#919ba2",
+                "#be8091",
+                "#b2d4d7",
+                "#ff597b",
+                "#bdc3c7",
+                "#d8b2bd",
+                "#ffe7d6",
+                "#d5eaf4",
+                "#ff88a1",
+            ],
+        )
+        self.ens_colors = {
+            ens: colors[self.ensembles.index(ens)] for ens in self.ensembles
+        }
+
+        self.allow_delta = len(self.ensembles) > 1
         self.make_uuids()
         self.set_callbacks(app)
 
@@ -275,7 +294,8 @@ Visualizes reservoir simulation time series for FMU ensembles.
                                             "value": "statistics",
                                         },
                                         {
-                                            "label": "Time series fanchart and histogram for a selected date",
+                                            "label": "Time series fanchart and histogram "
+                                            "for a selected date",
                                             "value": "statistics_hist",
                                         },
                                     ],
@@ -303,7 +323,7 @@ Visualizes reservoir simulation time series for FMU ensembles.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.graph_id, "figure"),
-            [
+            [  # pylint: disable=too-many-statements
                 Input(self.vector_id, "value"),
                 Input(self.vector2_id, "value"),
                 Input(self.vector3_id, "value"),
@@ -315,21 +335,22 @@ Visualizes reservoir simulation time series for FMU ensembles.
                 Input(self.date_id, "data"),
             ],
         )
-        def update_graph(
-            vector,
+        # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
+        def _update_graph(
+            vector1,
             vector2,
             vector3,
             ensembles,
             calc_mode,
             base_ens,
             delta_ens,
-            stat_mode,
+            visualization,
             stored_date,
         ):
             """Callback to update all graphs based on selections"""
 
             # Combine selected vectors
-            vectors = [vector]
+            vectors = [vector1]
             if vector2:
                 vectors.append(vector2)
             if vector3:
@@ -337,15 +358,17 @@ Visualizes reservoir simulation time series for FMU ensembles.
 
             # Retrieve previous/current selected date
             date = json.loads(stored_date) if stored_date else None
-            # Create a plotly subplot
+
+            # Titles for subplots
             titles = []
-            for v in vectors:
-                titles.append(v)
-                if stat_mode == "statistics_hist":
+            for vect in vectors:
+                titles.append(vect)
+                if visualization == "statistics_hist":
                     titles.append(date)
+
             fig = tools.make_subplots(
                 rows=len(vectors),
-                cols=2 if stat_mode == "statistics_hist" else 1,
+                cols=2 if visualization == "statistics_hist" else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
                 subplot_titles=titles,
@@ -361,14 +384,15 @@ Visualizes reservoir simulation time series for FMU ensembles.
                     data = filter_df(self.smry, ensembles, vector)
                 elif calc_mode == "delta_ensembles":
                     data = filter_df(self.smry, [base_ens, delta_ens], vector)
-                    data = delta_vector(data, base_ens, delta_ens, vector)
+                    data = delta_vector(data, base_ens, delta_ens)
                 else:
                     raise PreventUpdate
-                if stat_mode == "statistics":
+
+                if visualization == "statistics":
                     traces = render_statistics(data, vector, colors=self.ens_colors)
-                elif stat_mode == "realizations":
+                elif visualization == "realizations":
                     traces = render_realizations(data, vector, colors=self.ens_colors)
-                elif stat_mode == "statistics_hist":
+                elif visualization == "statistics_hist":
                     traces = render_statistics(data, vector, colors=self.ens_colors)
                     histdata = render_histogram(
                         data, vector, date=date, colors=self.ens_colors
@@ -378,7 +402,8 @@ Visualizes reservoir simulation time series for FMU ensembles.
                         fig.append_trace(trace, i + 1, 2)
                 else:
                     raise PreventUpdate
-                # Reming unwanted legends(only one for each ensemble)
+
+                # Renaming unwanted legends(only keep one for each ensemble)
                 for trace in traces:
                     if trace.get("showlegend"):
                         if trace.get("legendgroup") in legends:
@@ -390,12 +415,8 @@ Visualizes reservoir simulation time series for FMU ensembles.
             # Add additional styling to layout
             fig["layout"].update(
                 height=800,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                # font=self.plotly_layout.get("font"),
-                # hoverlabel=self.plotly_layout.get("hoverlabel"),
-                font= {"family": "Equinor"},
-                hoverlabel = {"font": {"family": "Equinor"}},
+                font=self.plotly_layout.get("font"),
+                hoverlabel=self.plotly_layout.get("hoverlabel"),
                 margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
@@ -421,22 +442,22 @@ Visualizes reservoir simulation time series for FMU ensembles.
             ],
             [Input(self.mode_id, "value")],
         )
-        def set_mode(mode):
+        def _update_mode(mode):
             """Switch displayed ensemble selector for delta/no-delta"""
-            if mode == "ensembles":
-                return {"display": "block"}, {"display": "none"}
-            else:
-                return {"display": "none"}, {"display": "block"}
+            return (
+                {"display": "block"},
+                {"display": "none"} if mode == "ensembles" else {"display": "none"},
+                {"display": "block"},
+            )
 
         @app.callback(
             Output(self.date_id, "data"), [Input(self.graph_id, "clickData")],
         )
-        def update_date(clickdata):
+        def _update_date(clickdata):
             """Store clicked date for use in other callback"""
-            if clickdata:
-                return json.dumps(clickdata["points"][0]["x"])
-            else:
-                PreventUpdate
+            if not clickdata:
+                raise PreventUpdate
+            return json.dumps(clickdata["points"][0]["x"])
 
     def add_webvizstore(self):
         return (
@@ -460,7 +481,7 @@ Visualizes reservoir simulation time series for FMU ensembles.
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_df(df, ensembles, vector):
-    """Filter dataframe for current vector. Include history 
+    """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", vector, "DATE"]
     if f"{vector}H" in df.columns:
@@ -469,8 +490,8 @@ def filter_df(df, ensembles, vector):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def delta_vector(df, base_ens, delta_ens, vector):
-    """Calculate delta vector between two ensembles"""
+def delta_vector(df, base_ens, delta_ens):
+    """Calculate delta between two ensembles"""
     base_df = (
         df.loc[df["ENSEMBLE"] == base_ens]
         .set_index(["DATE", "REAL"])
@@ -503,7 +524,7 @@ def render_histogram(dframe, vector, date, colors):
             },
             "showlegend": False,
         }
-        for ens_no, (ensemble, ens_df) in enumerate(data.groupby("ENSEMBLE"))
+        for ensemble, ens_df in data.groupby("ENSEMBLE")
     ]
 
     return test
@@ -514,15 +535,14 @@ def render_realizations(dframe, vector, colors):
     """Renders line trace for each realization, includes history line if present"""
     traces = [
         {
+            # "type": "linegl",
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector]),
-            # "legendgroup": ens,
             "hovertext": f"Realization: {real_no}, Ensemble: {ensemble}",
-            "hoverinfo": "y+x+text",
             "name": ensemble,
             "legendgroup": ensemble,
             "marker": {"color": colors.get(ensemble, colors[list(colors.keys())[0]])},
-            "showlegend": True if real_no == 0 else False,
+            "showlegend": real_no == 0,
         }
         for ens_no, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE"))
         for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
@@ -555,7 +575,7 @@ def render_statistics(df, vector, colors):
     quantiles = [10, 90]
     traces = []
 
-    for ens_no, (ensemble, ens_df) in enumerate(df.groupby("ENSEMBLE")):
+    for ensemble, ens_df in df.groupby("ENSEMBLE"):
         dframe = ens_df.drop(columns=["ENSEMBLE", "REAL"]).groupby("DATE")
 
         # Build a dictionary of dataframes to be concatenated
@@ -614,7 +634,6 @@ def render_statistic_trace(vector_stats, color, legend_group: str):
             "line": {"color": line_color},
             "legendgroup": legend_group,
             "showlegend": True,
-            "name": legend_group,
         },
         {
             "name": "p90",
@@ -641,11 +660,11 @@ def render_statistic_trace(vector_stats, color, legend_group: str):
     ]
 
 
-def hex_to_rgb(hex, opacity=1):
+def hex_to_rgb(hex_string, opacity=1):
     """Converts a hex color to rgb"""
-    hex = hex.lstrip("#")
-    hlen = len(hex)
-    rgb = [int(hex[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
+    hex_string = hex_string.lstrip("#")
+    hlen = len(hex_string)
+    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
     rgb.append(opacity)
     return f"rgba{tuple(rgb)}"
 

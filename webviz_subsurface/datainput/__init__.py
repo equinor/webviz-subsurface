@@ -10,7 +10,6 @@ from ._inplace_volumes import extract_volumes
 from ._fmu_input import load_parameters, get_realizations, find_surfaces, load_smry
 
 
-
 __all__ = [
     "scratch_ensemble",
     "extract_mismatch",
