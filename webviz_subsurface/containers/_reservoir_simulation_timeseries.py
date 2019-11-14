@@ -1,806 +1,656 @@
-# pylint: disable-all
-# This file will be restructured.
-# See https://github.com/equinor/webviz-subsurface/issues/84
-
-import itertools
 from uuid import uuid4
+import json
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
+import plotly.tools as tools
+from dash.exceptions import PreventUpdate
+from dash import callback_context
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+from dash_table import DataTable
+
 import webviz_core_components as wcc
-from dash.dependencies import Input, Output, State
-from plotly.colors import DEFAULT_PLOTLY_COLORS
-import plotly.graph_objs as go
 from webviz_config import WebvizContainerABC
+from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
-from ..datainput import (
-    get_time_series_data,
-    get_time_series_statistics,
-    get_time_series_delta_ens,
-    get_time_series_delta_ens_stats,
-)
-
-# =============================================================================
-# Container
-# =============================================================================
+from ..datainput import load_smry
 
 
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
-    """### Time series from reservoir simulations
+    """### ReservoirSimulationTimeSeriesO
+
+Visualizes reservoir simulation time series for FMU ensembles.
 
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
+* `initial_vector`: Initial vector to display
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
-* `base_ensembles`: List of ensembles to use as base ensemble in delta
-                    calculations.
-* `delta_ensembles`: List of ensembles to be compared with base ensemble.
 """
+
+    ENSEMBLE_COLUMNS = [
+        "REAL",
+        "ENSEMBLE",
+        "DATE",
+    ]
+
+    TABLE_STAT = [
+        "Sensitivity",
+        "Case",
+        "Mean",
+        "Standard Deviation",
+        "Minimum",
+        "P90",
+        "P10",
+        "Maximum",
+    ]
 
     def __init__(
         self,
         app,
         container_settings,
-        ensembles,
+        csvfile: Path = None,
+        ensembles: list = None,
         column_keys=None,
+        initial_vector=None,
         sampling: str = "monthly",
-        base_ensembles: list = None,
-        delta_ensembles: list = None,
     ):
-
-        self.title = "EnsembleSet"
-        self.uid = f"{uuid4()}"
+        self.csvfile = csvfile if csvfile else None
         self.time_index = sampling
-        self.column_keys = (
-            tuple(column_keys) if isinstance(column_keys, (list, tuple)) else None
-        )
-        self.ensemble_paths = tuple(
-            (ensemble, container_settings["scratch_ensembles"][ensemble])
-            for ensemble in ensembles
-        )
-        self.base_ensembles = tuple(
-            base_ensembles if base_ensembles else [i[0] for i in self.ensemble_paths]
-        )
-        self.delta_ensembles = tuple(
-            delta_ensembles if delta_ensembles else [i[0] for i in self.ensemble_paths]
-        )
-        self.dropwdown_vector_id = f"dropdown-vector-{self.uid}"
-        self.chart_id = f"chart-id-{self.uid}"
-        self.tab_id = f"_tab_id-{self.uid}"
-        self.chlst = f"chlst-{self.uid}"
-        self.dropdown_iorens_id = f"dropdown-iorens-{self.uid}"
-        self.dropdown_refens_id = f"dropdown-refens-{self.uid}"
-        self.show_ens_selectors = f"show-ens-selectors-{self.uid}"
-        self.vector_columns = sorted(
-            list(
-                get_time_series_data(
-                    ensemble_paths=self.ensemble_paths,
-                    time_index=self.time_index,
-                    column_keys=self.column_keys,
-                )
-                .drop(columns=["DATE", "REAL", "ENSEMBLE"])
-                .columns
+        self.column_keys = tuple(column_keys) if column_keys else None
+        if csvfile:
+            self.smry = read_csv(csvfile)
+        elif ensembles:
+            self.ens_paths = tuple(
+                (ensemble, container_settings["scratch_ensembles"][ensemble])
+                for ensemble in ensembles
             )
-        )
-        self.history_vctr_cols = tuple(
-            [
-                vctr + "H"
-                for vctr in self.vector_columns
-                if vctr + "H" in self.vector_columns
-            ]
-        )
-        self.vctr_cols_no_hist = tuple(
-            [vctr for vctr in self.vector_columns if vctr not in self.history_vctr_cols]
-        )
+            self.smry = load_smry(
+                ensemble_paths=self.ens_paths,
+                ensemble_set_name="EnsembleSet",
+                time_index=self.time_index,
+                column_keys=self.column_keys,
+            )
+        self.smry_cols = [
+            c
+            for c in [*self.smry.columns]
+            if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
+            if not c.endswith("H")
+        ]
+        self.initial_vector = initial_vector if initial_vector else self.smry_cols[0]
+        self.ensembles = list(self.smry["ENSEMBLE"].unique())
+        # self.plotly_layout = app.webviz_settings["plotly_layout"]
+        colors = ["#243746", "#eb0036", "#919ba2", "#7d0023"]
+        self.ens_colors = {
+            # ens: self.plotly_layout["colors"][self.ensembles.index(ens)]
+            ens: colors[self.ensembles.index(ens)]
+            for ens in self.ensembles
+        }
+        # self.smry.to_csv("/tmp/smry.csv", index=None)
+
+        self.allow_delta = True if len(self.ensembles) > 1 else False
+        self.make_uuids()
         self.set_callbacks(app)
 
-    @property
-    def base_ens(self):
-        """ extracts base-ensemble from passed ensemble-combinations list"""
-        return self.ensemble_combinations[0]
+    def make_uuids(self):
+        uid = f"{uuid4()}"
+        self.graph_id = f"graph_id-{uid}"
+        self.graph2_id = f"graph2_id-{uid}"
+        self.graph3_id = f"graph3_id-{uid}"
+        self.graph_wrapper_id = f"graph_wrapper_id-{uid}"
+        self.graph2_wrapper_id = f"graph2_wrapper_id-{uid}"
+        self.graph3_wrapper_id = f"graph3_wrapper_id-{uid}"
+        self.vector_id = f"vector_id{uid}"
+        self.vector2_id = f"vector2_id{uid}"
+        self.vector3_id = f"vector3_id{uid}"
+        self.ensemble_id = f"ensemble_id{uid}"
+        self.base_ens_id = f"base_ens_id{uid}"
+        self.delta_ens_id = f"delta_ens_id{uid}"
+        self.mode_id = f"mode_id{uid}"
+        self.calc_delta_id = f"calc_delta_id{uid}"
+        self.show_ensembles_id = f"show_ensembles_id{uid}"
+        self.statistics_id = f"statistics_id{uid}"
+        self.date_id = f"date:id{uid}"
+
+    @staticmethod
+    def set_grid_layout(columns):
+        return {
+            "display": "grid",
+            "alignContent": "space-around",
+            "justifyContent": "space-between",
+            "gridTemplateColumns": f"{columns}",
+        }
 
     @property
-    def delta_ens(self):
-        """ extracts delta-ensemble from passed ensemble-combinations list """
-        return self.ensemble_combinations[1]
-
-    # =============================================================================
-    # Layout
-    # =============================================================================
+    def delta_layout(self):
+        show_delta = "block" if self.allow_delta else "none"
+        return html.Div(
+            children=[
+                html.Div(
+                    style={"display": show_delta},
+                    children=[
+                        html.Label("Mode"),
+                        dcc.RadioItems(
+                            id=self.mode_id,
+                            style={"marginBottom": "25px"},
+                            options=[
+                                {"label": "Show ensembles", "value": "ensembles"},
+                                {
+                                    "label": "Calculate ensemble deltas",
+                                    "value": "delta_ensembles",
+                                },
+                            ],
+                            value="ensembles",
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id=self.show_ensembles_id,
+                    children=[
+                        html.Label("Ensembles"),
+                        dcc.Dropdown(
+                            id=self.ensemble_id,
+                            clearable=False,
+                            multi=True,
+                            options=[{"label": i, "value": i} for i in self.ensembles],
+                            value=self.ensembles,
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id=self.calc_delta_id,
+                    style={"display": "none"},
+                    children=[
+                        html.Label("Ensembles"),
+                        html.Div(
+                            style=self.set_grid_layout("1fr 1fr"),
+                            children=[
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            style={"fontSize": "12px"}, children="Base"
+                                        ),
+                                        dcc.Dropdown(
+                                            id=self.base_ens_id,
+                                            clearable=False,
+                                            options=[
+                                                {"label": i, "value": i}
+                                                for i in self.ensembles
+                                            ],
+                                            value=self.ensembles[0],
+                                        ),
+                                    ]
+                                ),
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            style={"fontSize": "12px"}, children="Delta"
+                                        ),
+                                        dcc.Dropdown(
+                                            id=self.delta_ens_id,
+                                            clearable=False,
+                                            options=[
+                                                {"label": i, "value": i}
+                                                for i in self.ensembles
+                                            ],
+                                            value=self.ensembles[-1],
+                                        ),
+                                    ]
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        )
 
     @property
     def layout(self):
         return html.Div(
-            [
+            style=self.set_grid_layout("1fr 4fr"),
+            children=[
                 html.Div(
-                    [
-                        dcc.Dropdown(
-                            id=self.dropwdown_vector_id,
-                            clearable=False,
-                            options=[
-                                {"label": i, "value": i} for i in self.vctr_cols_no_hist
+                    children=[
+                        html.Div(
+                            style={"padding": "10px"},
+                            children=[
+                                html.Div(children=[self.delta_layout],),
+                                html.Label(
+                                    style={"marginTop": "25px"}, children="Time Series"
+                                ),
+                                dcc.Dropdown(
+                                    style={"marginTop": "5px", "marginBottom": "5px"},
+                                    id=self.vector_id,
+                                    clearable=False,
+                                    multi=False,
+                                    options=[
+                                        {"label": i, "value": i} for i in self.smry_cols
+                                    ],
+                                    value=self.initial_vector,
+                                ),
+                                dcc.Dropdown(
+                                    style={"marginBottom": "5px"},
+                                    id=self.vector2_id,
+                                    clearable=True,
+                                    multi=False,
+                                    placeholder="Add additional series",
+                                    options=[
+                                        {"label": i, "value": i} for i in self.smry_cols
+                                    ],
+                                    value=None,
+                                ),
+                                dcc.Dropdown(
+                                    id=self.vector3_id,
+                                    clearable=True,
+                                    multi=False,
+                                    placeholder="Add additional series",
+                                    options=[
+                                        {"label": i, "value": i} for i in self.smry_cols
+                                    ],
+                                    value=None,
+                                ),
                             ],
-                            value=self.vctr_cols_no_hist[0],
                         ),
                         html.Div(
-                            [
-                                dcc.Checklist(
-                                    id=self.chlst,
+                            style={"padding": "10px"},
+                            children=[
+                                html.Div("Visualization"),
+                                dcc.RadioItems(
+                                    id=self.statistics_id,
                                     options=[
                                         {
-                                            "label": "Delta time series",
-                                            "value": "show_delta_series",
-                                        }
+                                            "label": "Time series realization plot",
+                                            "value": "realizations",
+                                        },
+                                        {
+                                            "label": "Time series fanchart",
+                                            "value": "statistics",
+                                        },
+                                        {
+                                            "label": "Time series fanchart and histogram for a selected date",
+                                            "value": "statistics_hist",
+                                        },
                                     ],
-                                    labelStyle={"display": "inline-block"},
-                                    value=[],
+                                    value="realizations",
                                 ),
-                                html.Div(
-                                    id=self.show_ens_selectors,
-                                    children=[
-                                        dcc.Dropdown(
-                                            id=self.dropdown_iorens_id,
-                                            placeholder="Base case",
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.base_ensembles
-                                            ],
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.dropdown_refens_id,
-                                            placeholder="Select ensembles",
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.delta_ensembles
-                                            ],
-                                            multi=True,
-                                        ),
-                                    ],
-                                    style={"display": "none"},
-                                ),
-                            ]
+                            ],
                         ),
-                    ],
-                    style={"width": "20%", "float": "left"},
+                    ]
                 ),
                 html.Div(
                     [
-                        dcc.Tabs(
-                            id=self.tab_id,
-                            value="summary_data",
-                            children=[
-                                dcc.Tab(label="Realizations", value="summary_data"),
-                                dcc.Tab(label="Statistics", value="summary_stats"),
-                            ],
+                        html.Div(
+                            id=self.graph_wrapper_id,
+                            children=wcc.Graph(id=self.graph_id),
                         ),
-                        html.Div(id="tabs-content"),
-                        html.Div(id=self.chart_id),
-                    ],
-                    style={"width": "80%", "float": "right"},
+                        dcc.Store(
+                            id=self.date_id,
+                            data=json.dumps(str(list(self.smry["DATE"].unique())[0])),
+                        ),
+                    ]
                 ),
-            ]
+            ],
         )
-
-    # =============================================================================
-    # Callbacks
-    # =============================================================================
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.show_ens_selectors, "style"), [Input(self.chlst, "value")]
-        )
-        def _func_show_ens_selectors(chlst: list):
-            """ callback to update the styling of div that includes the
-            ensemble selectors. The styling switches to hiden when Delta
-            time series is not selected.
-
-            Input:
-                checklist values: list of strings = selected options
-            Output:
-                html.Div(...styling): dictionary describing styling
-            """
-            return {} if "show_delta_series" in chlst else {"display": "none"}
-
-        @app.callback(
-            Output(self.chlst, "options"), [Input(self.dropwdown_vector_id, "value")]
-        )
-        def _update_chlst(vctr: str):
-            """ callback to update checklist options to include available
-            plot options.
-
-            Input:
-                dropdown(vector selection): str = selected vector
-            Output:
-                checklist values: list of strings = selectable options
-            """
-
-            options = []
-            options.append(["Delta time series", "show_delta_series"])
-            if vctr + "H" in self.history_vctr_cols:
-                options.append(["Show H-Vctr", "show_h_vctr"])
-
-            return [{"label": label, "value": value} for label, value in options]
-
-        @app.callback(
-            Output(self.chart_id, "children"),
+            Output(self.graph_id, "figure"),
             [
-                Input(self.dropwdown_vector_id, "value"),
-                Input(self.tab_id, "value"),
-                Input(self.chlst, "value"),
-                Input(self.dropdown_iorens_id, "value"),
-                Input(self.dropdown_refens_id, "value"),
+                Input(self.vector_id, "value"),
+                Input(self.vector2_id, "value"),
+                Input(self.vector3_id, "value"),
+                Input(self.ensemble_id, "value"),
+                Input(self.mode_id, "value"),
+                Input(self.base_ens_id, "value"),
+                Input(self.delta_ens_id, "value"),
+                Input(self.statistics_id, "value"),
+                Input(self.date_id, "data"),
             ],
         )
-        def _update_plot(
-            vector: str, plot_type: str, chlst: list, iorens: str, refens: str
+        def update_graph(
+            vector,
+            vector2,
+            vector3,
+            ensembles,
+            calc_mode,
+            base_ens,
+            delta_ens,
+            stat_mode,
+            stored_date,
         ):
-            """ main plot
+            """Callback to update all graphs based on selections"""
 
-            Depending on selected tab a different type of plot gets rendered.
-            *vals get calcualted within render-func.
+            # Combine selected vectors
+            vectors = [vector]
+            if vector2:
+                vectors.append(vector2)
+            if vector3:
+                vectors.append(vector3)
 
-            Input:
-                dropdown(vector selection): str = selected vector
-                tab: str = selected tab => for plot-type
-                checklist values: list of strings = selectable options
-                dropdown iorens: str = base-ensemlbe
-                dropdown refens: list(str) = selected ensembles
-            Output:
-                wcc.Graph
-            """
-
-            show_history_vector = "show_h_vctr" in chlst
-            show_delta_series = "show_delta_series" in chlst
-
-            if plot_type == "summary_data":
-
-                return render_realization_plot(
-                    ensemble_paths=self.ensemble_paths,
-                    column_keys=self.column_keys,
-                    time_index=self.time_index,
-                    vector=vector,
-                    ensemble_set_name=self.title,
-                    history_vctr_cols=self.history_vctr_cols,
-                    show_history_vector=show_history_vector,
-                    show_delta_series=show_delta_series,
-                    iorens=iorens,
-                    refens=refens,
-                    base_ensembles=self.base_ensembles,
-                    delta_ensembles=self.delta_ensembles,
-                )
-
-            if plot_type == "summary_stats":
-
-                return render_stat_plot(
-                    ensemble_paths=self.ensemble_paths,
-                    column_keys=self.column_keys,
-                    time_index=self.time_index,
-                    ensemble_set_name=self.title,
-                    vector=vector,
-                    show_delta_series=show_delta_series,
-                    iorens=iorens,
-                    refens=refens,
-                    base_ensembles=self.base_ensembles,
-                    delta_ensembles=self.delta_ensembles,
-                )
-
-        @app.callback(
-            self.container_data_output,
-            [self.container_data_requested],
-            [
-                State(self.tab_id, "value"),
-                State(self.chlst, "value"),
-                State(self.dropwdown_vector_id, "value"),
-            ],
-        )
-        def _user_download_data(
-            data_requested, plot_type: str, chlst: list, vector: str
-        ):
-            """ Callback to download data as .csv (Summary)
-
-                Reads summary data from scratch into memory as ps.DataFrame and
-                stores them to .cvs
-
-                Args:
-                    data_requesed: button-click to fire the download request
-                    tab: str = current selected tab
-                    chlst: list = list of selected plot options [
-                        delta_ens, history_vctr]
-                Returns:
-                    summary.csv: .csv stored to ~/Downloads
-            """
-
-            show_delta_series = "show_delta_series" in chlst
-
-            if plot_type == "summary_data":
-
-                if show_delta_series:
-
-                    file_name = "delta_time_series"
-                    requested_data = get_time_series_delta_ens(
-                        ensemble_paths=self.ensemble_paths,
-                        time_index=self.time_index,
-                        column_keys=self.column_keys,
-                        base_ensembles=self.base_ensembles,
-                        delta_ensembles=self.delta_ensembles,
-                        ensemble_set_name=self.title,
-                    ).filter(items=[vector, "DATE", "IROENS - REFENS", "REAL"])
-
-                else:
-
-                    file_name = "time_series"
-                    requested_data = get_time_series_data(
-                        ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
-                        ensemble_set_name=self.title,
-                    ).filter(items=[vector, "DATE", "ENSEMBLE", "REAL"])
-
-            if plot_type == "summary_stats":
-
-                if show_delta_series:
-
-                    file_name = "delta_time_series_statistics"
-                    requested_data = get_time_series_delta_ens_stats(
-                        ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
-                        base_ensembles=self.base_ensembles,
-                        delta_ensembles=self.delta_ensembles,
-                        ensemble_set_name=self.title,
-                    ).filter(items=["STATISTIC", vector, "DATE", "IROENS - REFENS"])
-
-                else:
-
-                    file_name = "time_series_statistics"
-                    requested_data = get_time_series_statistics(
-                        ensemble_paths=self.ensemble_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
-                    ).filter(items=["STATISTIC", vector, "DATE", "ENSEMBLE"])
-
-            return (
-                WebvizContainerABC.container_data_compress(
-                    [
-                        {
-                            "filename": f"{file_name}.csv",
-                            "content": requested_data.to_csv(),
-                        }
-                    ]
-                )
-                if data_requested
-                else ""
+            # Retrieve previous/current selected date
+            date = json.loads(stored_date) if stored_date else None
+            # Create a plotly subplot
+            titles = []
+            for v in vectors:
+                titles.append(v)
+                if stat_mode == "statistics_hist":
+                    titles.append(date)
+            fig = tools.make_subplots(
+                rows=len(vectors),
+                cols=2 if stat_mode == "statistics_hist" else 1,
+                shared_xaxes=True,
+                vertical_spacing=0.05,
+                subplot_titles=titles,
             )
+
+            # Loop through each vector and calculate relevant plot
+            legends = []
+            for i, vector in enumerate(vectors):
+                if calc_mode == "ensembles":
+                    ensembles = (
+                        ensembles if isinstance(ensembles, list) else [ensembles]
+                    )
+                    data = filter_df(self.smry, ensembles, vector)
+                elif calc_mode == "delta_ensembles":
+                    data = filter_df(self.smry, [base_ens, delta_ens], vector)
+                    data = delta_vector(data, base_ens, delta_ens, vector)
+                else:
+                    raise PreventUpdate
+                if stat_mode == "statistics":
+                    traces = render_statistics(data, vector, colors=self.ens_colors)
+                elif stat_mode == "realizations":
+                    traces = render_realizations(data, vector, colors=self.ens_colors)
+                elif stat_mode == "statistics_hist":
+                    traces = render_statistics(data, vector, colors=self.ens_colors)
+                    histdata = render_histogram(
+                        data, vector, date=date, colors=self.ens_colors
+                    )
+
+                    for trace in histdata:
+                        fig.append_trace(trace, i + 1, 2)
+                else:
+                    raise PreventUpdate
+                # Reming unwanted legends(only one for each ensemble)
+                for trace in traces:
+                    if trace.get("showlegend"):
+                        if trace.get("legendgroup") in legends:
+                            trace["showlegend"] = False
+                        else:
+                            legends.append(trace.get("legendgroup"))
+                    fig.append_trace(trace, i + 1, 1)
+
+            # Add additional styling to layout
+            fig["layout"].update(
+                height=800,
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                # font=self.plotly_layout.get("font"),
+                # hoverlabel=self.plotly_layout.get("hoverlabel"),
+                font= {"family": "Equinor"},
+                hoverlabel = {"font": {"family": "Equinor"}},
+                margin={"t": 20, "b": 0},
+                barmode="overlay",
+                bargap=0.01,
+                bargroupgap=0.2,
+            )
+
+            # Remove linked x-axis for histograms
+            if "xaxis2" in fig["layout"]:
+                fig["layout"]["xaxis2"]["matches"] = None
+                fig["layout"]["xaxis2"]["showticklabels"] = True
+            if "xaxis4" in fig["layout"]:
+                fig["layout"]["xaxis4"]["matches"] = None
+                fig["layout"]["xaxis4"]["showticklabels"] = True
+            if "xaxis6" in fig["layout"]:
+                fig["layout"]["xaxis6"]["matches"] = None
+                fig["layout"]["xaxis6"]["showticklabels"] = True
+            return fig
+
+        @app.callback(
+            [
+                Output(self.show_ensembles_id, "style"),
+                Output(self.calc_delta_id, "style"),
+            ],
+            [Input(self.mode_id, "value")],
+        )
+        def set_mode(mode):
+            """Switch displayed ensemble selector for delta/no-delta"""
+            if mode == "ensembles":
+                return {"display": "block"}, {"display": "none"}
+            else:
+                return {"display": "none"}, {"display": "block"}
+
+        @app.callback(
+            Output(self.date_id, "data"), [Input(self.graph_id, "clickData")],
+        )
+        def update_date(clickdata):
+            """Store clicked date for use in other callback"""
+            if clickdata:
+                return json.dumps(clickdata["points"][0]["x"])
+            else:
+                PreventUpdate
 
     def add_webvizstore(self):
-        """ selections of functions to be added to webvizstore. They include
-        data to be laoded and values to be calculated for the plots.
-        """
-
-        return [
-            (
-                get_time_series_data,
-                [
-                    {
-                        "ensemble_paths": self.ensemble_paths,
-                        "column_keys": self.column_keys,
-                        "time_index": self.time_index,
-                        "ensemble_set_name": self.title,
-                    }
-                ],
-            ),
-            (
-                get_time_series_statistics,
-                [
-                    {
-                        "ensemble_paths": self.ensemble_paths,
-                        "time_index": self.time_index,
-                        "column_keys": self.column_keys,
-                    }
-                ],
-            ),
-            (
-                get_time_series_delta_ens,
-                [
-                    {
-                        "ensemble_paths": self.ensemble_paths,
-                        "time_index": self.time_index,
-                        "column_keys": self.column_keys,
-                        "base_ensembles": self.base_ensembles,
-                        "delta_ensembles": self.delta_ensembles,
-                        "ensemble_set_name": self.title,
-                    }
-                ],
-            ),
-            (
-                get_time_series_delta_ens_stats,
-                [
-                    {
-                        "ensemble_paths": self.ensemble_paths,
-                        "time_index": self.time_index,
-                        "column_keys": self.column_keys,
-                        "base_ensembles": self.base_ensembles,
-                        "delta_ensembles": self.delta_ensembles,
-                        "ensemble_set_name": self.title,
-                    }
-                ],
-            ),
-        ]
-
-
-# =============================================================================
-# Render functions
-# =============================================================================
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_realization_plot(
-    ensemble_paths: tuple,
-    time_index: str,
-    column_keys: tuple,
-    vector: str,
-    ensemble_set_name: str,
-    history_vctr_cols: tuple,
-    show_history_vector: bool,
-    show_delta_series: bool,
-    iorens: str,
-    refens: str,
-    base_ensembles: tuple,
-    delta_ensembles: tuple,
-):
-    """ Callback for a Plotly Graph-obj that shows traces (one per realization
-    and one color per tracegroup <=> ensemble) of a selected vector per
-    selected time-step.
-
-    Args:
-        ensemble_paths: tuple = list of ensemble-paths
-        time_index: str = time-index
-        column_keys: tuple = tuple of pre selected-vectors
-        vector: str = vector to be plotted
-        ensemble_set_name: str = name of enesmble-set
-        history_vctr_cols: tuple = tuple of history-vectors
-        show_history_vector: bool = show history vector (if present)
-        show_delta_series: bool = shwo Delta time series
-        iorens: str = selcted divergent ensembles
-        refens: str = selected base or refernce ensemble
-        base_ensembles: tuple = tuple of available divergent ensembles
-        delta_ensembles: tuple = tuple of available base or refernce ensembles
-    Retuns:
-        wcc.Graph (scatter-plot) of summary-data aggregated over given
-        ensembles. x: time, y: vector-value
-    """
-
-    cycle_list = itertools.cycle(DEFAULT_PLOTLY_COLORS)
-    history_vector = vector + "H"
-
-    # process data ------------------------------------------------------------
-    if history_vector in history_vctr_cols:
-
-        smry_data = get_time_series_data(
-            ensemble_paths=ensemble_paths,
-            column_keys=column_keys,
-            time_index=time_index,
-            ensemble_set_name=ensemble_set_name,
-        )[["REAL", "DATE", "ENSEMBLE", vector, history_vector]]
-
-    else:
-
-        smry_data = get_time_series_data(
-            ensemble_paths=ensemble_paths,
-            column_keys=column_keys,
-            time_index=time_index,
-            ensemble_set_name=ensemble_set_name,
-        )[["REAL", "DATE", "ENSEMBLE", vector]]
-
-    if show_delta_series:
-        delta_vals = get_time_series_delta_ens(
-            ensemble_paths=ensemble_paths,
-            time_index=time_index,
-            column_keys=column_keys,
-            base_ensembles=base_ensembles,
-            delta_ensembles=delta_ensembles,
-            ensemble_set_name=ensemble_set_name,
-        )
-
-    # plot traces -------------------------------------------------------------
-    plot_traces = []
-    if not (show_delta_series and iorens and refens):
-        for ens in smry_data.ENSEMBLE.unique():
-
-            plot_traces += trace_group(
-                ens_smry_data=smry_data[smry_data["ENSEMBLE"] == ens],
-                ens=ens,
-                vector=vector,
-                color=next(cycle_list),
-            )
-
-            if history_vector in history_vctr_cols and show_history_vector:
-
-                plot_traces += trace_group(
-                    ens_smry_data=smry_data[smry_data["ENSEMBLE"] == ens],
-                    ens=ens,
-                    vector=history_vector,
-                    color="black",
+        return (
+            [(read_csv, [{"csv_file": self.csvfile}],)]
+            if self.csvfile
+            else [
+                (
+                    load_smry,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                            "time_index": self.time_index,
+                            "column_keys": self.column_keys,
+                        }
+                    ],
                 )
-
-    if show_delta_series and iorens and refens:
-        for i in refens:
-
-            compared_ensembles = f"{iorens} - {i}"
-            delta_val = delta_vals[delta_vals["IROENS - REFENS"] == compared_ensembles]
-
-            plot_traces += trace_group(
-                ens_smry_data=delta_val[["REAL", "DATE", vector]],
-                ens=f"{iorens} - {i}",
-                vector=vector,
-                color=next(cycle_list),
-            )
-
-    layout = {
-        "hovermode": "closest",
-        "barmode": "overlay",
-        "bargap": 0.05,
-        "xaxis": {"title": "Date", "family": "Equinor"},
-        "yaxis": {"title": vector, "family": "Equinor"},
-        "font": {"family": "Equinor"},
-        "hoverlabel": {"font": {"family": "Equinor"}},
-    }
-
-    return wcc.Graph(figure={"data": plot_traces, "layout": layout})
+            ]
+        )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_stat_plot(
-    ensemble_paths: tuple,
-    time_index: str,
-    column_keys: tuple,
-    vector: str,
-    ensemble_set_name: str,
-    show_delta_series: bool,
-    iorens: str,
-    refens: str,
-    base_ensembles: tuple,
-    delta_ensembles: tuple,
-):
-    """ Render statistics plot renders one fanchart-plot per given ensemble.
+def filter_df(df, ensembles, vector):
+    """Filter dataframe for current vector. Include history 
+    vector if present"""
+    columns = ["REAL", "ENSEMBLE", vector, "DATE"]
+    if f"{vector}H" in df.columns:
+        columns.append(f"{vector}H")
+    return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
-    Args:
-        ensemble_paths: tuple = list of ensemble-paths
-        time_index: str = time-index
-        column_keys: tuple = tuple of pre selected-vectors
-        vector: str = vector to be plotted
-        ensemble_set_name: str = name of enesmble-set
-        show_delta_series: bool = shwo Delta time series
-        iorens: str = selcted divergent ensembles
-        refens: str = selected base or refernce ensemble
-        base_ensembles: tuple = tuple of available divergent ensembles
-        delta_ensembles: tuple = tuple of available base or refernce ensembles
-    Returns:
-        wcc.Graph objects as fancharts of summary statistics.
-    """
 
-    plotly_colors_rgb = itertools.cycle(
-        [
-            (31, 119, 180),
-            (255, 127, 14),
-            (44, 160, 44),
-            (214, 39, 40),
-            (148, 103, 189),
-            (140, 86, 75),
-            (227, 119, 194),
-            (127, 127, 127),
-            (188, 189, 34),
-            (23, 190, 207),
-        ]
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def delta_vector(df, base_ens, delta_ens, vector):
+    """Calculate delta vector between two ensembles"""
+    base_df = (
+        df.loc[df["ENSEMBLE"] == base_ens]
+        .set_index(["DATE", "REAL"])
+        .drop("ENSEMBLE", axis=1)
     )
-
-    if not (show_delta_series and iorens and refens):
-
-        smry_stats = get_time_series_statistics(
-            ensemble_paths=ensemble_paths,
-            column_keys=column_keys,
-            time_index=time_index,
-        )
-
-        data = []
-        for ens in smry_stats.ENSEMBLE.unique():
-            vector_stats = smry_stats[smry_stats["ENSEMBLE"] == ens]
-            data += time_series_confidence_interval_traces(
-                vector_stats=vector_stats[vector],
-                color_rgb=next(plotly_colors_rgb),
-                legend_group=ens,
-            )
-
-    if show_delta_series and iorens and refens:
-
-        delta_time_series_stats = get_time_series_delta_ens_stats(
-            ensemble_paths=ensemble_paths,
-            column_keys=column_keys,
-            time_index=time_index,
-            base_ensembles=base_ensembles,
-            delta_ensembles=delta_ensembles,
-            ensemble_set_name=ensemble_set_name,
-        )
-
-        data = []
-        for i in refens:
-
-            compared_ensembles = f"{iorens} - {i}"
-            delta_val_stats = delta_time_series_stats[
-                delta_time_series_stats["IROENS - REFENS"] == compared_ensembles
-            ]
-
-            data += time_series_confidence_interval_traces(
-                vector_stats=delta_val_stats[vector],
-                color_rgb=next(plotly_colors_rgb),
-                legend_group=compared_ensembles,
-            )
-
-    layout = go.Layout(yaxis=dict(title=vector))
-
-    return wcc.Graph(figure={"data": data, "layout": layout})
+    delta_df = (
+        df.loc[df["ENSEMBLE"] == delta_ens]
+        .set_index(["DATE", "REAL"])
+        .drop("ENSEMBLE", axis=1)
+    )
+    dframe = base_df.sub(delta_df).reset_index()
+    dframe["ENSEMBLE"] = f"{base_ens}-{delta_ens}"
+    return dframe.fillna(0)
 
 
-# =============================================================================
-# Auxiliary functions
-# =============================================================================
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def render_histogram(dframe, vector, date, colors):
+    """Renders a histogram trace per ensemble for a given date"""
+    dframe["DATE"] = dframe["DATE"].astype(str)
+    data = dframe.loc[dframe["DATE"] == date]
 
-
-def trace_group(ens_smry_data, ens, vector, color):
-    """ Returns a plotly-graph-trace-group with one color and one name.
-    The first trace gets plotted individually as is show up in the legend
-    to represent the trace group.
-
-    Args:
-        ens_smry_data: pd.DataFrame = Dataframe containing all ensmelbes.
-        ens: str = ensemble to be plotted
-        vecotr: str = vector to be plotted
-        color: str = trace color
-    Returns:
-        plotly-graph-obj-tracegroup
-    """
-
-    ens_traces = []
-
-    # 1st and only trace of the legendgroup to show up in legend
-    ens_traces.append(
+    test = [
         {
-            "x": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
-                "DATE"
-            ],
-            "y": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
-                vector
-            ],
-            "legendgroup": ens,
-            "hovertext": f"Realization: {ens_smry_data.REAL.unique()[0]}",
-            "hoverinfo": "y+x+text",
-            "name": ens,
-            "type": "markers",
-            "marker": {"color": color},
-            "showlegend": True,
+            "type": "histogram",
+            "x": list(ens_df[vector]),
+            "name": ensemble,
+            "marker": {
+                "color": colors.get(ensemble, colors[list(colors.keys())[0]]),
+                "line": {"color": "black", "width": 1},
+            },
+            "showlegend": False,
         }
-    )
+        for ens_no, (ensemble, ens_df) in enumerate(data.groupby("ENSEMBLE"))
+    ]
 
-    for real in ens_smry_data.REAL.unique()[1:]:
-
-        ens_traces.append(
-            {
-                "x": ens_smry_data[ens_smry_data["REAL"] == real]["DATE"],
-                "y": ens_smry_data[ens_smry_data["REAL"] == real][vector],
-                "legendgroup": ens,
-                "hovertext": f"Realization: {real}",
-                "hoverinfo": "y+x+text",
-                "name": ens,
-                "type": "line",
-                "marker": {"color": color},
-                "showlegend": False,
-            }
-        )
-
-    return ens_traces
+    return test
 
 
-def single_trace(ens_smry_data, ens: str, vector: str, color: str):
-    """ function to create a single trace that shows up in the legend.
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def render_realizations(dframe, vector, colors):
+    """Renders line trace for each realization, includes history line if present"""
+    traces = [
+        {
+            "x": list(real_df["DATE"]),
+            "y": list(real_df[vector]),
+            # "legendgroup": ens,
+            "hovertext": f"Realization: {real_no}, Ensemble: {ensemble}",
+            "hoverinfo": "y+x+text",
+            "name": ensemble,
+            "legendgroup": ensemble,
+            "marker": {"color": colors.get(ensemble, colors[list(colors.keys())[0]])},
+            "showlegend": True if real_no == 0 else False,
+        }
+        for ens_no, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE"))
+        for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
+    ]
 
-    Args:
-        smry_data: pd.df = calculated summary data (fmu-ensemble)
-        ens: str = selected ensemble
-        vector: str = selected vector to be plotted; passed as key
-        color str = color
-    Returns:
-        trace-obj to be plotted in a plotly.fig
-    """
+    if f"{vector}H" in dframe.columns:
+        traces.append(render_history_trace(dframe, f"{vector}H"))
+    return traces
 
+
+def render_history_trace(dframe, vector):
+    """Renders the history line"""
+    df = dframe.loc[
+        (dframe["REAL"] == dframe["REAL"].unique()[0])
+        & (dframe["ENSEMBLE"] == dframe["ENSEMBLE"].unique()[0])
+    ]
     return {
-        "x": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
-            "DATE"
-        ],
-        "y": ens_smry_data[ens_smry_data["REAL"] == ens_smry_data.REAL.unique()[0]][
-            vector
-        ],
-        "legendgroup": ens,
-        "name": ens,
-        "type": "markers",
-        "marker": {"color": color},
+        "x": df["DATE"],
+        "y": df[vector],
+        "hovertext": "History",
+        "hoverinfo": "y+x+text",
+        "name": "History",
+        "marker": {"color": "black"},
         "showlegend": True,
     }
 
 
-def time_series_confidence_interval_traces(
-    vector_stats, color_rgb: list, legend_group: str
-):
-    """ function to create a convidence interval set of a selected ensemble.
+def render_statistics(df, vector, colors):
+    """Calculate statistics for a given vector for relevant ensembles"""
+    quantiles = [10, 90]
+    traces = []
 
-    Args:
-        smry_data: pd.df = calculated summary data (fmu-ensemble)
-        color (r: int, g:int, b:int) = rgb of color to be ploted
-        legend_group: str = selected ensemble
-    Returns:
-        list if trace-obj representing min, max, p10, p90 and mean
-    """
+    for ens_no, (ensemble, ens_df) in enumerate(df.groupby("ENSEMBLE")):
+        dframe = ens_df.drop(columns=["ENSEMBLE", "REAL"]).groupby("DATE")
 
-    r, g, b = color_rgb
+        # Build a dictionary of dataframes to be concatenated
+        dframes = {}
+        dframes["mean"] = dframe.mean()
+        for quantile in quantiles:
+            quantile_str = "p" + str(quantile)
+            dframes[quantile_str] = dframe.quantile(q=quantile / 100.0)
+        dframes["maximum"] = dframe.max()
+        dframes["minimum"] = dframe.min()
+        traces.extend(
+            render_statistic_trace(
+                pd.concat(dframes, names=["STATISTIC"], sort=False)[vector],
+                colors.get(ensemble, colors[list(colors.keys())[0]]),
+                ensemble,
+            )
+        )
+    if f"{vector}H" in df.columns:
+        traces.append(render_history_trace(df, f"{vector}H"))
+    return traces
 
-    trace_maximum = go.Scatter(
-        name="maximum",
-        x=vector_stats["maximum"].index.tolist(),
-        y=vector_stats["maximum"].values,
-        mode="lines",
-        line={"width": 0, "color": f"rgba({r}, {g}, {b}, 1)"},
-        legendgroup=legend_group,
-        showlegend=False,
-    )
 
-    trace_p10 = go.Scatter(
-        name="p10",
-        x=vector_stats["p10"].index.tolist(),
-        y=vector_stats["p10"].values,
-        mode="lines",
-        fill="tonexty",
-        fillcolor=f"rgba({r}, {g}, {b}, 0.3)",
-        line={"width": 0, "color": f"rgba({r}, {g}, {b}, 1)"},
-        legendgroup=legend_group,
-        showlegend=False,
-    )
+def render_statistic_trace(vector_stats, color, legend_group: str):
+    """Renders a fanchart for an ensemble vector"""
 
-    trace_mean = go.Scatter(
-        name=legend_group,
-        x=vector_stats["mean"].index.tolist(),
-        y=vector_stats["mean"].values,
-        mode="lines",
-        fill="tonexty",
-        fillcolor=f"rgba({r}, {g}, {b}, 0.3)",
-        line={"color": f"rgba({r}, {g}, {b}, 1)"},
-        legendgroup=legend_group,
-        showlegend=True,
-    )
+    fill_color = hex_to_rgb(color, 0.3)
+    line_color = hex_to_rgb(color, 1)
+    return [
+        {
+            "name": "maximum",
+            "x": vector_stats["maximum"].index.tolist(),
+            "y": vector_stats["maximum"].values,
+            "mode": "lines",
+            "line": {"width": 0, "color": line_color},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            "name": "p10",
+            "x": vector_stats["p10"].index.tolist(),
+            "y": vector_stats["p10"].values,
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            "name": legend_group,
+            "x": vector_stats["mean"].index.tolist(),
+            "y": vector_stats["mean"].values,
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"color": line_color},
+            "legendgroup": legend_group,
+            "showlegend": True,
+            "name": legend_group,
+        },
+        {
+            "name": "p90",
+            "x": vector_stats["p90"].index.tolist(),
+            "y": vector_stats["p90"].values,
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            "name": "minimum",
+            "x": vector_stats["minimum"].index.tolist(),
+            "y": vector_stats["minimum"].values,
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+    ]
 
-    trace_p90 = go.Scatter(
-        name="p90",
-        x=vector_stats["p90"].index.tolist(),
-        y=vector_stats["p90"].values,
-        mode="lines",
-        fill="tonexty",
-        fillcolor=f"rgba({r}, {g}, {b}, 0.3)",
-        line={"width": 0, "color": f"rgba({r}, {g}, {b}, 1)"},
-        legendgroup=legend_group,
-        showlegend=False,
-    )
 
-    trace_minimum = go.Scatter(
-        name="minimum",
-        x=vector_stats["minimum"].index.tolist(),
-        y=vector_stats["minimum"].values,
-        mode="lines",
-        fill="tonexty",
-        fillcolor=f"rgba({r}, {g}, {b}, 0.3)",
-        line={"width": 0, "color": f"rgba({r}, {g}, {b}, 1)"},
-        legendgroup=legend_group,
-        showlegend=False,
-    )
+def hex_to_rgb(hex, opacity=1):
+    """Converts a hex color to rgb"""
+    hex = hex.lstrip("#")
+    hlen = len(hex)
+    rgb = [int(hex[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
+    rgb.append(opacity)
+    return f"rgba{tuple(rgb)}"
 
-    return [trace_maximum, trace_p10, trace_mean, trace_p90, trace_minimum]
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_csv(csv_file) -> pd.DataFrame:
+    return pd.read_csv(csv_file, index_col=False)
