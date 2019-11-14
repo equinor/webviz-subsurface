@@ -414,6 +414,8 @@ Plot options:
                 height=800,
                 font=self.plotly_layout.get("font"),
                 hoverlabel=self.plotly_layout.get("hoverlabel"),
+                paper_bgcolor=self.plotly_layout.get("paper_bgcolor", "rgba(0,0,0,0)"),
+                plot_bgcolor=self.plotly_layout.get("plot_bgcolor", "rgba(0,0,0,0)"),
                 margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
