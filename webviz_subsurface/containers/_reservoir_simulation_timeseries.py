@@ -6,7 +6,7 @@ import pandas as pd
 
 import plotly.tools as tools
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 
@@ -30,9 +30,16 @@ in container settings.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
-* `initial_vector`: Initial vector to display
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
+* `options`: Options to initialize plots with. See below
+
+Plot options:
+    * 'vector1' : First vector to display
+    * 'vector2' : Second vector to display
+    * 'vector3' : Third vector to display
+    * 'visualization' : 'realizations', 'statistics' or 'statistics_hist',
+    * 'date' : Date to show in histograms
 """
 
     ENSEMBLE_COLUMNS = [
@@ -48,8 +55,8 @@ in container settings.
         csvfile: Path = None,
         ensembles: list = None,
         column_keys=None,
-        initial_vector=None,
         sampling: str = "monthly",
+        options: dict = None,
     ):
         self.csvfile = csvfile if csvfile else None
         self.time_index = sampling
@@ -78,10 +85,9 @@ in container settings.
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
             if not c.endswith("H")
         ]
-        self.initial_vector = initial_vector if initial_vector else self.smry_cols[0]
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.plotly_layout = app.webviz_settings["plotly_layout"]
-
+        self.plot_options = options if options else {}
         colors = self.plotly_layout.get(
             "colors",
             [
@@ -116,11 +122,6 @@ in container settings.
     def make_uuids(self):
         uid = f"{uuid4()}"
         self.graph_id = f"graph_id-{uid}"
-        self.graph2_id = f"graph2_id-{uid}"
-        self.graph3_id = f"graph3_id-{uid}"
-        self.graph_wrapper_id = f"graph_wrapper_id-{uid}"
-        self.graph2_wrapper_id = f"graph2_wrapper_id-{uid}"
-        self.graph3_wrapper_id = f"graph3_wrapper_id-{uid}"
         self.vector_id = f"vector_id{uid}"
         self.vector2_id = f"vector2_id{uid}"
         self.vector3_id = f"vector3_id{uid}"
@@ -174,7 +175,7 @@ in container settings.
                             clearable=False,
                             multi=True,
                             options=[{"label": i, "value": i} for i in self.ensembles],
-                            value=self.ensembles,
+                            value=self.ensembles[0],
                         ),
                     ],
                 ),
@@ -247,7 +248,9 @@ in container settings.
                                     options=[
                                         {"label": i, "value": i} for i in self.smry_cols
                                     ],
-                                    value=self.initial_vector,
+                                    value=self.plot_options.get(
+                                        "vector1", self.smry_cols[0]
+                                    ),
                                 ),
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px"},
@@ -258,7 +261,7 @@ in container settings.
                                     options=[
                                         {"label": i, "value": i} for i in self.smry_cols
                                     ],
-                                    value=None,
+                                    value=self.plot_options.get("vector2", None),
                                 ),
                                 dcc.Dropdown(
                                     id=self.vector3_id,
@@ -268,7 +271,7 @@ in container settings.
                                     options=[
                                         {"label": i, "value": i} for i in self.smry_cols
                                     ],
-                                    value=None,
+                                    value=self.plot_options.get("vector3", None),
                                 ),
                             ],
                         ),
@@ -293,7 +296,9 @@ in container settings.
                                             "value": "statistics_hist",
                                         },
                                     ],
-                                    value="realizations",
+                                    value=self.plot_options.get(
+                                        "visualization", "statistics"
+                                    ),
                                 ),
                             ],
                         ),
@@ -301,13 +306,10 @@ in container settings.
                 ),
                 html.Div(
                     [
-                        html.Div(
-                            id=self.graph_wrapper_id,
-                            children=wcc.Graph(id=self.graph_id),
-                        ),
+                        wcc.Graph(id=self.graph_id),
                         dcc.Store(
                             id=self.date_id,
-                            data=json.dumps(str(list(self.smry["DATE"].unique())[0])),
+                            data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ]
                 ),
@@ -446,11 +448,14 @@ in container settings.
             return style
 
         @app.callback(
-            Output(self.date_id, "data"), [Input(self.graph_id, "clickData")],
+            Output(self.date_id, "data"),
+            [Input(self.graph_id, "clickData")],
+            [State(self.date_id, "data")],
         )
-        def _update_date(clickdata):
+        def _update_date(clickdata, date):
             """Store clicked date for use in other callback"""
-            return json.dumps(clickdata["points"][0]["x"]) if clickdata else None
+            date = clickdata["points"][0]["x"] if clickdata else json.loads(date)
+            return json.dumps(date)
 
     def add_webvizstore(self):
         return (
@@ -506,7 +511,7 @@ def render_histogram(dframe, vector, date, colors):
     dframe["DATE"] = dframe["DATE"].astype(str)
     data = dframe.loc[dframe["DATE"] == date]
 
-    test = [
+    return [
         {
             "type": "histogram",
             "x": list(ens_df[vector]),
@@ -519,8 +524,6 @@ def render_histogram(dframe, vector, date, colors):
         }
         for ensemble, ens_df in data.groupby("ENSEMBLE")
     ]
-
-    return test
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
