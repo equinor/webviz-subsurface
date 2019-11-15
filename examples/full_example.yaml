@@ -1,5 +1,7 @@
-# This file demonstrates the most basic usage of webviz in a FMU setting
-# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+# This file demonstrates the usage of webviz-subsurface with fmu results.
+# Additional data is needed to run this example, which can be found here:
+# https://github.com/equinor/webviz-subsurface-testdata
+# Modify the path below to the full path of a downloaded copy of the above data.
 
 title: Reek Webviz Demonstration
 
@@ -7,8 +9,8 @@ container_settings:
   scratch_ensembles:
     iter-0: ./webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
 
-
 pages:
+
  - title: Front page
    content:
     - Webviz created from configuration file
