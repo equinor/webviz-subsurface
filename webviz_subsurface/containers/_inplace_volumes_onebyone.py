@@ -1,14 +1,12 @@
-from uuid import uuid4
 import json
+from uuid import uuid4
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
-
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from webviz_config import WebvizContainerABC
@@ -115,6 +113,12 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
 
         self.csvfile_vol = csvfile_vol if csvfile_vol else None
         self.csvfile_reals = csvfile_reals if csvfile_reals else None
+
+        if csvfile_vol and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_reals" or '
+                '"ensembles" and "volfiles"'
+            )
         if csvfile_vol and csvfile_reals:
             volumes = read_csv(csvfile_vol)
             realizations = read_csv(csvfile_reals)

@@ -2,14 +2,12 @@ from uuid import uuid4
 from pathlib import Path
 
 import pandas as pd
-
 import plotly.express as px
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
@@ -25,7 +23,7 @@ This container shows parameter distributions for FMU ensembles.
 Parameters are visualized per ensemble as a histogram, and as a boxplot showing
 the parameter ranges for each ensemble.
 Input can be given either as an aggregated csv files with parameter information
-or as an ensemble name defined in 'container_settings'.
+or as an ensemble name defined in `container_settings`.
 
 * `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns
 * `ensembles`: Which ensembles in `container_settings` to visualize.
@@ -36,6 +34,11 @@ or as an ensemble name defined in 'container_settings'.
     ):
 
         self.csvfile = csvfile if csvfile else None
+
+        if csvfile and ensembles:
+            raise ValueError(
+                'Incorrect arguments. Either provide a "csvfile" or "ensembles".'
+            )
         if csvfile:
             self.parameters = read_csv(csvfile)
         elif ensembles:

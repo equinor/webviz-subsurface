@@ -75,6 +75,10 @@ but the following responses are given more descriptive names automatically:
         response: str = "STOIIP_OIL",
     ):
         self.csvfile = csvfile if csvfile else None
+        if csvfile and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
+            )
         if csvfile:
             self.volumes = read_csv(csvfile)
 

@@ -40,6 +40,12 @@ a FMU ensemble.
     ):
 
         self.jsonfile = jsonfile if jsonfile else None
+
+        if jsonfile and ensemble:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "jsonfile" or "ensemble", "map_value" '
+                '"flow_value" and "time_step"'
+            )
         if jsonfile:
             with open(get_path(jsonfile), "r") as filehandle:
                 self.map_data = json.dumps(json.load(filehandle))

@@ -1,16 +1,14 @@
+from pathlib import Path
 from uuid import uuid4
 import json
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_table import DataTable
-
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
@@ -84,6 +82,12 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
 
         self.csvfile_smry = csvfile_smry if csvfile_smry else None
         self.csvfile_reals = csvfile_reals if csvfile_reals else None
+
+        if csvfile_smry and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_reals" or '
+                '"ensembles"'
+            )
         if csvfile_smry and csvfile_reals:
             smry = read_csv(csvfile_smry)
             realizations = read_csv(csvfile_reals)
