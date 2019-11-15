@@ -17,9 +17,9 @@ from webviz_config.common_cache import CACHE
 
 from ..datainput import load_smry
 
-# pylint: disable=too-many-instance-attributes
+
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
-    """### ReservoirSimulationTimeSeriesO
+    """### ReservoirSimulationTimeSeries
 
 Visualizes reservoir simulation time series for FMU ensembles.
 Input can be given either as aggregated csv file or an ensemble defined
@@ -116,23 +116,12 @@ Plot options:
         }
 
         self.allow_delta = len(self.ensembles) > 1
-        self.make_uuids()
+        self.uid = uuid4()
         self.set_callbacks(app)
 
-    def make_uuids(self):
-        uid = f"{uuid4()}"
-        self.graph_id = f"graph_id-{uid}"
-        self.vector_id = f"vector_id{uid}"
-        self.vector2_id = f"vector2_id{uid}"
-        self.vector3_id = f"vector3_id{uid}"
-        self.ensemble_id = f"ensemble_id{uid}"
-        self.base_ens_id = f"base_ens_id{uid}"
-        self.delta_ens_id = f"delta_ens_id{uid}"
-        self.mode_id = f"mode_id{uid}"
-        self.calc_delta_id = f"calc_delta_id{uid}"
-        self.show_ensembles_id = f"show_ensembles_id{uid}"
-        self.statistics_id = f"statistics_id{uid}"
-        self.date_id = f"date:id{uid}"
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     @staticmethod
     def set_grid_layout(columns):
@@ -153,7 +142,7 @@ Plot options:
                     children=[
                         html.Label("Mode"),
                         dcc.RadioItems(
-                            id=self.mode_id,
+                            id=self.ids("mode"),
                             style={"marginBottom": "25px"},
                             options=[
                                 {"label": "Show ensembles", "value": "ensembles"},
@@ -167,11 +156,11 @@ Plot options:
                     ],
                 ),
                 html.Div(
-                    id=self.show_ensembles_id,
+                    id=self.ids("show_ensembles"),
                     children=[
                         html.Label("Ensembles"),
                         dcc.Dropdown(
-                            id=self.ensemble_id,
+                            id=self.ids("ensemble"),
                             clearable=False,
                             multi=True,
                             options=[{"label": i, "value": i} for i in self.ensembles],
@@ -180,7 +169,7 @@ Plot options:
                     ],
                 ),
                 html.Div(
-                    id=self.calc_delta_id,
+                    id=self.ids("calc_delta"),
                     style={"display": "none"},
                     children=[
                         html.Label("Ensembles"),
@@ -193,7 +182,7 @@ Plot options:
                                             style={"fontSize": "12px"}, children="Base"
                                         ),
                                         dcc.Dropdown(
-                                            id=self.base_ens_id,
+                                            id=self.ids("base_ens"),
                                             clearable=False,
                                             options=[
                                                 {"label": i, "value": i}
@@ -209,7 +198,7 @@ Plot options:
                                             style={"fontSize": "12px"}, children="Delta"
                                         ),
                                         dcc.Dropdown(
-                                            id=self.delta_ens_id,
+                                            id=self.ids("delta_ens"),
                                             clearable=False,
                                             options=[
                                                 {"label": i, "value": i}
@@ -242,7 +231,7 @@ Plot options:
                                 ),
                                 dcc.Dropdown(
                                     style={"marginTop": "5px", "marginBottom": "5px"},
-                                    id=self.vector_id,
+                                    id=self.ids("vector1"),
                                     clearable=False,
                                     multi=False,
                                     options=[
@@ -254,7 +243,7 @@ Plot options:
                                 ),
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px"},
-                                    id=self.vector2_id,
+                                    id=self.ids("vector2"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
@@ -264,7 +253,7 @@ Plot options:
                                     value=self.plot_options.get("vector2", None),
                                 ),
                                 dcc.Dropdown(
-                                    id=self.vector3_id,
+                                    id=self.ids("vector3"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
@@ -280,7 +269,7 @@ Plot options:
                             children=[
                                 html.Div("Visualization"),
                                 dcc.RadioItems(
-                                    id=self.statistics_id,
+                                    id=self.ids("statistics"),
                                     options=[
                                         {
                                             "label": "Time series realization plot",
@@ -306,9 +295,9 @@ Plot options:
                 ),
                 html.Div(
                     [
-                        wcc.Graph(id=self.graph_id),
+                        wcc.Graph(id=self.ids("graph")),
                         dcc.Store(
-                            id=self.date_id,
+                            id=self.ids("date"),
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ]
@@ -319,17 +308,17 @@ Plot options:
     # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.graph_id, "figure"),
+            Output(self.ids("graph"), "figure"),
             [
-                Input(self.vector_id, "value"),
-                Input(self.vector2_id, "value"),
-                Input(self.vector3_id, "value"),
-                Input(self.ensemble_id, "value"),
-                Input(self.mode_id, "value"),
-                Input(self.base_ens_id, "value"),
-                Input(self.delta_ens_id, "value"),
-                Input(self.statistics_id, "value"),
-                Input(self.date_id, "data"),
+                Input(self.ids("vector1"), "value"),
+                Input(self.ids("vector2"), "value"),
+                Input(self.ids("vector3"), "value"),
+                Input(self.ids("ensemble"), "value"),
+                Input(self.ids("mode"), "value"),
+                Input(self.ids("base_ens"), "value"),
+                Input(self.ids("delta_ens"), "value"),
+                Input(self.ids("statistics"), "value"),
+                Input(self.ids("date"), "data"),
             ],
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
@@ -436,10 +425,10 @@ Plot options:
 
         @app.callback(
             [
-                Output(self.show_ensembles_id, "style"),
-                Output(self.calc_delta_id, "style"),
+                Output(self.ids("show_ensembles"), "style"),
+                Output(self.ids("calc_delta"), "style"),
             ],
-            [Input(self.mode_id, "value")],
+            [Input(self.ids("mode"), "value")],
         )
         def _update_mode(mode):
             """Switch displayed ensemble selector for delta/no-delta"""
@@ -450,9 +439,9 @@ Plot options:
             return style
 
         @app.callback(
-            Output(self.date_id, "data"),
-            [Input(self.graph_id, "clickData")],
-            [State(self.date_id, "data")],
+            Output(self.ids("date"), "data"),
+            [Input(self.ids("graph"), "clickData")],
+            [State(self.ids("date"), "data")],
         )
         def _update_date(clickdata, date):
             """Store clicked date for use in other callback"""
