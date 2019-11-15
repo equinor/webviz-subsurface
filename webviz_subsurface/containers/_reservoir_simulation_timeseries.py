@@ -62,7 +62,6 @@ Plot options:
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if column_keys else None
         if csvfile and ensembles:
-        else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
             )

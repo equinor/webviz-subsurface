@@ -7,7 +7,7 @@ title: Reek Webviz Demonstration
 
 container_settings:
   scratch_ensembles:
-    iter-0: ./webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
+    iter-0: /mnt/media/scratch/webviz/fix-smry/webviz-subsurface/examples/webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
 
 pages:
 
@@ -56,3 +56,15 @@ pages:
     - container: ReservoirSimulationTimeSeries
       ensembles:
         - iter-0
+
+ - title: ReservoirSimulationTimeSeries (with options set)
+   content:
+    - container: ReservoirSimulationTimeSeries
+      ensembles:
+        - iter-0
+      options:
+        vector1: FOPT
+        vector2: FGPT
+        vector3: FWPT
+        date: '2003-02-01'
+        visualization: statistics_hist

@@ -26,6 +26,8 @@ def test_basic_example(dash_duo, tmp_path):
         "inplacevolumesonebyone",
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
+        "reservoirsimulationtimeseries",
+        "reservoirsimulationtimeseries_with_options_set",
         "parameterdistribution",
         "morris_plot",
         "last_page",
