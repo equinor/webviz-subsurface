@@ -8,7 +8,7 @@ env:
     - TESTDATA_REPO_OWNER="anders-kiaer"
     # If you want the CI to (temporarily) run against another branch than master,
     # change the value her from "master" to the relevant branch name.
-    - TESTDATA_REPO_BRANCH="deploy_app
+    - TESTDATA_REPO_BRANCH="deploy_app"
 
 addons:
   chrome: stable
