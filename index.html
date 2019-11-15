@@ -271,16 +271,37 @@ showing disk usage, per user, either as a pie chart or as a bar chart.</p>
 
 <h3>Volumetrics</h3>
 <p>This container visualizes inplace volumetrics results from
-csv files stored on standard format.</p>
+FMU ensembles. Input can be given either as aggregated csv files
+or as an ensemble name defined in 'container_settings' and csvfiles stored
+per realizations.
+In either case the csv files must follow FMU standards, that is it must have
+one or more of the following columns:
+'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.</p>
+<p>Remaining columns are seen as volumetric responses. Any names are allowed,
+but the following responses are given more descriptive names automatically:
+"BULK_OIL": "Bulk Volume (Oil)"
+"NET_OIL": "Net Volume (Oil)"
+"PORE_OIL": "Pore Volume (Oil)"
+"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
+"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
+"BULK_GAS": "Bulk Volume (Gas)"
+"NET_GAS": "Net Volume (Gas)"
+"PORV_GAS": "Pore Volume (Gas)"
+"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
+"GIIP_GAS": "Gas Initially in-place"
+"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
+"RECOVERABLE_GAS": "Recoverable Volume (Gas)"</p>
 <ul>
+<li><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
 </ul>
 <pre><code class='yaml'>  - container: InplaceVolumes
-    ensembles: some value
-    volfiles: some value
+    csvfile: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
+    volfiles: None  # Optional (default value shown here).
     volfolder: share/results/volumes  # Optional (default value shown here).
     response: STOIIP_OIL  # Optional (default value shown here).
 </code></pre>
@@ -288,17 +309,44 @@ csv files stored on standard format.</p>
 
 
 <h3>InplaceVolumesOneByOne</h3>
-<p>Visualizes inplace volumetrics related to a sensitivity run.
-Requires ensembles with <code>SENSNAME</code>and <code>SENSCASE</code> information.</p>
+<p>Visualizes inplace volumetrics related to a FMU ensemble with design matrix.
+Input can be given either as aggregated csv files for volumes and sensitivity information,
+or as an ensemble name defined in 'container_settings' and volumetric csv files
+stored per realizations.</p>
+<p>In either case the volumetric csv files must follow FMU standards, that is it must have
+one or more of the following columns:
+'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.</p>
+<p>Remaining columns are seen as volumetric responses. Any names are allowed,
+but the following responses are given more descriptive names automatically:
+"BULK_OIL": "Bulk Volume (Oil)"
+"NET_OIL": "Net Volume (Oil)"
+"PORE_OIL": "Pore Volume (Oil)"
+"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
+"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
+"BULK_GAS": "Bulk Volume (Gas)"
+"NET_GAS": "Net Volume (Gas)"
+"PORV_GAS": "Pore Volume (Gas)"
+"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
+"GIIP_GAS": "Gas Initially in-place"
+"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
+"RECOVERABLE_GAS": "Recoverable Volume (Gas)"</p>
+<p>The sensitivity information is extracted automatically if an ensemble is given as input,
+as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
+If aggregated csv files are given as input a csv file with the following columns are
+required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH</p>
 <ul>
+<li><code>csvfile_vol</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
+<li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
 </ul>
 <pre><code class='yaml'>  - container: InplaceVolumesOneByOne
-    ensembles: some value
-    volfiles: some value
+    csvfile_vol: None  # Optional (default value shown here).
+    csvfile_reals: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
+    volfiles: None  # Optional (default value shown here).
     volfolder: share/results/volumes  # Optional (default value shown here).
     response: STOIIP_OIL  # Optional (default value shown here).
 </code></pre>
@@ -357,13 +405,18 @@ and scatter plot for any given pair of parameters.</p>
 
 
 <h3>ParameterDistribution</h3>
-<p>This container shows parameter distribution per ensemble as a histogram
-with a marginal boxplot on top.</p>
+<p>This container shows parameter distributions for FMU ensembles.
+Parameters are visualized per ensemble as a histogram, and as a boxplot showing
+the parameter ranges for each ensemble.
+Input can be given either as an aggregated csv files with parameter information
+or as an ensemble name defined in <code>container_settings</code>.</p>
 <ul>
+<li><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 </ul>
 <pre><code class='yaml'>  - container: ParameterDistribution
-    ensembles: some value
+    csvfile: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -391,10 +444,18 @@ with a marginal boxplot on top.</p>
 
 
 <h3>ReservoirSimulationTimeSeriesOneByOne</h3>
-<p>Visualizes reservoir simulation time series for ensembles using design matrix.
-A tornadoplot can be calculated interactively for each date/vector.
+<p>Visualizes reservoir simulation time series related to a FMU ensemble with design matrix.
+Input can be given either as aggregated csv files for smry and sensitivity information,
+or as an ensemble name defined in 'container_settings'.</p>
+<p>A tornadoplot can be calculated interactively for each date/vector.
 The realizations for each sensitivity can be highlighted.</p>
+<p>The sensitivity information is extracted automatically if an ensemble is given as input,
+as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
+If aggregated csv files are given as input a csv file with the following columns are
+required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH</p>
 <ul>
+<li><code>csvfile_smry</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
+<li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
@@ -404,7 +465,9 @@ The realizations for each sensitivity can be highlighted.</p>
               or <code>yearly</code>.</li>
 </ul>
 <pre><code class='yaml'>  - container: ReservoirSimulationTimeSeriesOneByOne
-    ensembles: some value
+    csvfile_smry: None  # Optional (default value shown here).
+    csvfile_reals: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
     column_keys: None  # Optional (default value shown here).
     initial_vector: None  # Optional (default value shown here).
     sampling: monthly  # Optional (default value shown here).
@@ -430,10 +493,12 @@ The plots are linked and updates are done by clicking in the plots.</p>
 
 
 <h3>Subsurface map</h3>
-<p>This container visualizes the subsurface. Currently only supporting reservoir
-model grid maps. In addition to show a map, it can visualize the flow pattern
-in the simulation output using streamlines.</p>
+<p>This container visualizes reservoir grids in a map view, additionally it can
+visualize the flow pattern in the simulation output using streamlines.
+Input can be either a premade json object or data can be extracted from
+a FMU ensemble.</p>
 <ul>
+<li><code>jsonfile</code>: jsonfile with data.</li>
 <li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
 <li><code>map_value</code>: Which property to show in the map (e.g. <code>PERMX</code>).</li>
 <li><code>flow_value</code>: Which property to use for the streamlines animation
@@ -442,10 +507,11 @@ in the simulation output using streamlines.</p>
 <li><code>title</code>: Optional title for the container.</li>
 </ul>
 <pre><code class='yaml'>  - container: SubsurfaceMap
-    ensemble: some value
-    map_value: some value
-    flow_value: some value
-    time_step: some value
+    jsonfile: None  # Optional (default value shown here).
+    ensemble: None  # Optional (default value shown here).
+    map_value: None  # Optional (default value shown here).
+    flow_value: None  # Optional (default value shown here).
+    time_step: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
