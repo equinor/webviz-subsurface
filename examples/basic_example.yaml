@@ -12,32 +12,32 @@ pages:
  - title: InplaceVolumesOneByOne
    content: 
     - container: InplaceVolumesOneByOne
-      csvfile_vol: data/volumes.csv
-      csvfile_reals: data/realdata.csv
+      csvfile_vol: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/volumes.csv
+      csvfile_reals: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/realdata.csv
 
  - title: ReservoirSimulationTimeSeriesOneByOne
    content: 
     - container: ReservoirSimulationTimeSeriesOneByOne
-      csvfile_smry: data/smry.csv
-      csvfile_reals: data/realdata.csv
+      csvfile_smry: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/smry.csv
+      csvfile_reals: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/realdata.csv
       initial_vector: FOPT
       
  - title: InplaceVolumes
    content:
     - container: InplaceVolumes
-      csvfile: data/volumes.csv
+      csvfile: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/volumes.csv
 
  - title: ParameterDistribution
    content:
     - container: ParameterDistribution
-      csvfile: data/parameters.csv
+      csvfile: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/parameters.csv
 
  - title: Morris Plot
    content: 
     - container: MorrisPlot
-      csv_file: data/morris.csv
+      csv_file: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/morris.csv
 
  - title: Grid Viewer
    content:
     - container: SubsurfaceMap
-      jsonfile: data/subsurface-map.json
+      jsonfile: /mnt/media/scratch/webviz/csv/webviz-subsurface-testdata/aggregated_data/subsurface-map.json

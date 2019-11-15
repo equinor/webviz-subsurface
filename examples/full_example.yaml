@@ -43,8 +43,9 @@ pages:
  - title: ParameterDistribution
    content:
     - container: ParameterDistribution
-      csv_file: parameters.csv
-
+      ensembles:
+        - iter-0
+        
  - title: ParameterCorrelation
    content:
     - container: ParameterCorrelation

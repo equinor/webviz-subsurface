@@ -35,7 +35,8 @@ script:
   - pip install git+https://github.com/equinor/libecl
   - pip install git+https://github.com/equinor/fmu-ensemble
     #Need to find full path to testdata due to https://github.com/equinor/webviz-subsurface/issues/128
-  - sed -i "s&\./webviz-subsurface-testdata&$PWD/webviz-subsurface-testdata&g" examples/reek_example.yaml
+  - sed -i "s&\./webviz-subsurface-testdata&$PWD/webviz-subsurface-testdata&g" examples/full_example.yaml
+  - sed -i "s&\./webviz-subsurface-testdata&$PWD/webviz-subsurface-testdata&g" examples/basic_example.yaml
   - pytest tests --forked
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
