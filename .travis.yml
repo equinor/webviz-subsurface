@@ -3,6 +3,8 @@ dist: bionic
 
 env:
   global:
+    - DOCKER_USERNAME=webviz
+    - secure: TOBEUPDATED
     # If you want the CI to (temporarily) run against your fork of the testdada,
     # change the value her from "equinor" to your username.
     - TESTDATA_REPO_OWNER="anders-kiaer"
@@ -15,6 +17,7 @@ addons:
 
 services:
   - xvfb
+  - docker
 
 python:
   - "3.6"
@@ -40,8 +43,6 @@ script:
   - pylint webviz_subsurface tests setup.py
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
   - webviz certificate
-  - echo $TESTDATA_REPO_BRANCH
-  - echo $TESTDATA_REPO_OWNER
   - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
   - pip install git+https://github.com/equinor/libecl
   - pip install git+https://github.com/equinor/fmu-ensemble
@@ -54,6 +55,11 @@ script:
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
 
+  - webviz build ./webviz-subsurface-testdata/webviz_examples/raw_data.yaml --portable ./example_subsurface_app
+  - pushd example_subsurface_app
+  - docker build -t webviz/example_subsurface_image .
+  - popd
+
 deploy:
   - provider: pages
     skip_cleanup: true
@@ -64,7 +70,12 @@ deploy:
     on:
       branch: master
       repo: equinor/webviz-subsurface
-
+  - provider: script
+    script: bash deploy_docker_image.sh
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: equinor/webviz-subsurface
   - provider: pypi
     user: webviz
     password:
