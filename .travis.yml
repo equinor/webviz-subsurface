@@ -47,8 +47,8 @@ script:
   - pip install git+https://github.com/equinor/fmu-ensemble
     # Need to find full path to testdata due to https://github.com/equinor/webviz-subsurface/issues/128
   - pushd ./webviz-subsurface-testdata
-  - sed -i "s&\../&$PWD/&g" webviz-examples/raw_data.yaml
-  - sed -i "s&\../&$PWD/&g" webviz-examples/aggregated.yaml
+  - sed -i "s&\../&$PWD/&g" webviz_examples/raw_data.yaml
+  - sed -i "s&\../&$PWD/&g" webviz_examples/aggregated.yaml
   - popd
   - pytest tests --forked
   - git clone https://github.com/equinor/webviz-config.git
