@@ -342,6 +342,9 @@ Plot options:
             if vector3:
                 vectors.append(vector3)
 
+            # Ensure selected ensembles is a list
+            ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
+
             # Retrieve previous/current selected date
             date = json.loads(stored_date) if stored_date else None
 
@@ -352,6 +355,7 @@ Plot options:
                 if visualization == "statistics_hist":
                     titles.append(date)
 
+            # Make a plotly subplot figure
             fig = tools.make_subplots(
                 rows=len(vectors),
                 cols=2 if visualization == "statistics_hist" else 1,
@@ -364,32 +368,30 @@ Plot options:
             legends = []
             for i, vector in enumerate(vectors):
                 if calc_mode == "ensembles":
-                    ensembles = (
-                        ensembles if isinstance(ensembles, list) else [ensembles]
-                    )
                     data = filter_df(self.smry, ensembles, vector)
                 elif calc_mode == "delta_ensembles":
                     data = filter_df(self.smry, [base_ens, delta_ens], vector)
-                    data = delta_vector(data, base_ens, delta_ens)
+                    data = calculate_delta(data, base_ens, delta_ens)
                 else:
                     raise PreventUpdate
 
                 if visualization == "statistics":
-                    traces = render_statistics(data, vector, colors=self.ens_colors)
+                    traces = add_statistic_traces(data, vector, colors=self.ens_colors)
                 elif visualization == "realizations":
-                    traces = render_realizations(data, vector, colors=self.ens_colors)
+                    traces = add_realization_traces(
+                        data, vector, colors=self.ens_colors
+                    )
                 elif visualization == "statistics_hist":
-                    traces = render_statistics(data, vector, colors=self.ens_colors)
-                    histdata = render_histogram(
+                    traces = add_statistic_traces(data, vector, colors=self.ens_colors)
+                    histdata = add_histogram_traces(
                         data, vector, date=date, colors=self.ens_colors
                     )
-
                     for trace in histdata:
                         fig.append_trace(trace, i + 1, 2)
                 else:
                     raise PreventUpdate
 
-                # Renaming unwanted legends(only keep one for each ensemble)
+                # Remove unwanted legends(only keep one for each ensemble)
                 for trace in traces:
                     if trace.get("showlegend"):
                         if trace.get("legendgroup") in legends:
@@ -479,7 +481,7 @@ def filter_df(df, ensembles, vector):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def delta_vector(df, base_ens, delta_ens):
+def calculate_delta(df, base_ens, delta_ens):
     """Calculate delta between two ensembles"""
     base_df = (
         df.loc[df["ENSEMBLE"] == base_ens]
@@ -497,7 +499,7 @@ def delta_vector(df, base_ens, delta_ens):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_histogram(dframe, vector, date, colors):
+def add_histogram_traces(dframe, vector, date, colors):
     """Renders a histogram trace per ensemble for a given date"""
     dframe["DATE"] = dframe["DATE"].astype(str)
     data = dframe.loc[dframe["DATE"] == date]
@@ -518,7 +520,7 @@ def render_histogram(dframe, vector, date, colors):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_realizations(dframe, vector, colors):
+def add_realization_traces(dframe, vector, colors):
     """Renders line trace for each realization, includes history line if present"""
     traces = [
         {
@@ -536,11 +538,11 @@ def render_realizations(dframe, vector, colors):
     ]
 
     if f"{vector}H" in dframe.columns:
-        traces.append(render_history_trace(dframe, f"{vector}H"))
+        traces.append(add_history_trace(dframe, f"{vector}H"))
     return traces
 
 
-def render_history_trace(dframe, vector):
+def add_history_trace(dframe, vector):
     """Renders the history line"""
     df = dframe.loc[
         (dframe["REAL"] == dframe["REAL"].unique()[0])
@@ -557,7 +559,7 @@ def render_history_trace(dframe, vector):
     }
 
 
-def render_statistics(df, vector, colors):
+def add_statistic_traces(df, vector, colors):
     """Calculate statistics for a given vector for relevant ensembles"""
     quantiles = [10, 90]
     traces = []
@@ -574,18 +576,18 @@ def render_statistics(df, vector, colors):
         dframes["maximum"] = dframe.max()
         dframes["minimum"] = dframe.min()
         traces.extend(
-            render_statistic_trace(
+            add_fanchart_traces(
                 pd.concat(dframes, names=["STATISTIC"], sort=False)[vector],
                 colors.get(ensemble, colors[list(colors.keys())[0]]),
                 ensemble,
             )
         )
     if f"{vector}H" in df.columns:
-        traces.append(render_history_trace(df, f"{vector}H"))
+        traces.append(add_history_trace(df, f"{vector}H"))
     return traces
 
 
-def render_statistic_trace(vector_stats, color, legend_group: str):
+def add_fanchart_traces(vector_stats, color, legend_group: str):
     """Renders a fanchart for an ensemble vector"""
 
     fill_color = hex_to_rgb(color, 0.3)
