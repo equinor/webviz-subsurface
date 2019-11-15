@@ -1,5 +1,7 @@
 # This file demonstrates the usage of webviz-subsurface using aggregated files
-# The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
+# Additional data is needed to run this example, which can be found here:
+# https://github.com/equinor/webviz-subsurface-testdata
+# Clone this repo into the folder containing this file.
 
 title: Reek Webviz Demonstration
 
