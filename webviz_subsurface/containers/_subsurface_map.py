@@ -1,5 +1,6 @@
 import json
 from uuid import uuid4
+from pathlib import Path
 
 import pandas as pd
 import dash_html_components as html
@@ -14,10 +15,12 @@ from ..datainput import scratch_ensemble
 class SubsurfaceMap(WebvizContainerABC):
     """### Subsurface map
 
-This container visualizes the subsurface. Currently only supporting reservoir
-model grid maps. In addition to show a map, it can visualize the flow pattern
-in the simulation output using streamlines.
+This container visualizes reservoir grids in a map view, additionally it can
+visualize the flow pattern in the simulation output using streamlines.
+Input can be either a premade json object or data can be extracted from
+a FMU ensemble.
 
+* `jsonfile`: jsonfile with data.
 * `ensemble`: Which ensemble in `container_settings` to visualize.
 * `map_value`: Which property to show in the map (e.g. `PERMX`).
 * `flow_value`: Which property to use for the streamlines animation
@@ -27,18 +30,39 @@ in the simulation output using streamlines.
 """
 
     def __init__(
-        self, container_settings, ensemble, map_value: str, flow_value: str, time_step
+        self,
+        container_settings,
+        jsonfile: Path = None,
+        ensemble: str = None,
+        map_value: str = None,
+        flow_value: str = None,
+        time_step=None,
     ):
 
-        self.map_id = "map-{}".format(uuid4())
-        self.map_value = map_value
-        self.flow_value = flow_value
-        self.time_step = time_step
+        self.jsonfile = jsonfile if jsonfile else None
 
-        self.ensemble_path = container_settings["scratch_ensembles"][ensemble]
-        self.map_data = get_map_data(
-            self.ensemble_path, self.map_value, self.flow_value, self.time_step
-        )
+        if jsonfile and ensemble:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "jsonfile" or "ensemble", "map_value" '
+                '"flow_value" and "time_step"'
+            )
+        if jsonfile:
+            with open(get_path(jsonfile), "r") as filehandle:
+                self.map_data = json.dumps(json.load(filehandle))
+        elif ensemble and map_value and flow_value and time_step:
+            self.map_value = map_value
+            self.flow_value = flow_value
+            self.time_step = time_step
+            self.ensemble_path = container_settings["scratch_ensembles"][ensemble]
+            self.map_data = get_map_data(
+                self.ensemble_path, self.map_value, self.flow_value, self.time_step
+            )
+        else:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "jsonfile" or "ensemble", "map_value" '
+                '"flow_value" and "time_step"'
+            )
+        self.map_id = "map-{}".format(uuid4())
 
     @property
     def layout(self):
@@ -46,7 +70,9 @@ in the simulation output using streamlines.
 
     def add_webvizstore(self):
         return [
-            (
+            (get_path, [{"path": Path(self.jsonfile)}])
+            if self.jsonfile
+            else (
                 get_uncompressed_data,
                 [
                     {
@@ -149,3 +175,8 @@ def get_uncompressed_data(
         grid[new] = grid[old]
 
     return grid
+
+
+@webvizstore
+def get_path(path) -> Path:
+    return Path(path)

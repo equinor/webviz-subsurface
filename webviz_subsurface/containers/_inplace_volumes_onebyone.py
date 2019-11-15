@@ -1,17 +1,18 @@
-from uuid import uuid4
 import json
+from uuid import uuid4
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
-
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
-from webviz_config.common_cache import CACHE
 from webviz_config import WebvizContainerABC
+from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
+
 from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
 from ..datainput import extract_volumes, get_realizations
@@ -21,9 +22,38 @@ class InplaceVolumesOneByOne(WebvizContainerABC):
     # pylint: disable=too-many-instance-attributes
     """### InplaceVolumesOneByOne
 
-Visualizes inplace volumetrics related to a sensitivity run.
-Requires ensembles with `SENSNAME`and `SENSCASE` information.
+Visualizes inplace volumetrics related to a FMU ensemble with design matrix.
+Input can be given either as aggregated csv files for volumes and sensitivity information,
+or as an ensemble name defined in 'container_settings' and volumetric csv files
+stored per realizations.
 
+In either case the volumetric csv files must follow FMU standards, that is it must have
+one or more of the following columns:
+'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.
+
+Remaining columns are seen as volumetric responses. Any names are allowed,
+but the following responses are given more descriptive names automatically:
+"BULK_OIL": "Bulk Volume (Oil)"
+"NET_OIL": "Net Volume (Oil)"
+"PORE_OIL": "Pore Volume (Oil)"
+"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
+"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
+"BULK_GAS": "Bulk Volume (Gas)"
+"NET_GAS": "Net Volume (Gas)"
+"PORV_GAS": "Pore Volume (Gas)"
+"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
+"GIIP_GAS": "Gas Initially in-place"
+"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
+"RECOVERABLE_GAS": "Recoverable Volume (Gas)"
+
+The sensitivity information is extracted automatically if an ensemble is given as input,
+as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
+If aggregated csv files are given as input a csv file with the following columns are
+required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
+
+
+* `csvfile_vol`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
+* `csvfile_reals`: Aggregated csvfile for sensitivity information
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `volfiles`:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}
 * `volfolder`: Optional local folder for csv files
@@ -68,32 +98,50 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
         "SENSTYPE",
         "RUNPATH",
     ]
-
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,
         container_settings,
-        ensembles: list,
-        volfiles: dict,
+        csvfile_vol: Path = None,
+        csvfile_reals: Path = None,
+        ensembles: list = None,
+        volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
 
-        self.ens_paths = tuple(
-            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
-        )
+        self.csvfile_vol = csvfile_vol if csvfile_vol else None
+        self.csvfile_reals = csvfile_reals if csvfile_reals else None
 
-        self.volfiles = tuple(volfiles.items())
-        self.volfolder = volfolder
+        if csvfile_vol and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_reals" or '
+                '"ensembles" and "volfiles"'
+            )
+        if csvfile_vol and csvfile_reals:
+            volumes = read_csv(csvfile_vol)
+            realizations = read_csv(csvfile_reals)
+
+        elif ensembles and volfiles:
+            self.ens_paths = tuple(
+                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+            )
+            self.volfiles = tuple(volfiles.items())
+            self.volfolder = volfolder
+            # Extract volumetric dataframe
+            volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
+            # Extract realizations and sensitivity information
+            realizations = get_realizations(
+                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            )
+
+        else:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_reals" or '
+                '"ensembles" and "volfiles"'
+            )
         self.initial_response = response
-
-        # Extract volumetric dataframe
-        volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
-
-        # Extract realizations and sensitivity information
-        realizations = get_realizations(
-            ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-        )
 
         # Merge into one dataframe
         # (TODO: Should raise error if not all ensembles have sensitivity data)
@@ -118,27 +166,36 @@ Requires ensembles with `SENSNAME`and `SENSCASE` information.
         self.selectors_id = {x: f"{x}{uuid}" for x in self.selectors}
 
     def add_webvizstore(self):
-        return [
-            (
-                extract_volumes,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "volfolder": self.volfolder,
-                        "volfiles": self.volfiles,
-                    }
-                ],
-            ),
-            (
-                get_realizations,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            ),
-        ]
+        return (
+            [
+                (
+                    read_csv,
+                    [{"csv_file": self.csvfile_vol}, {"csv_file": self.csvfile_reals}],
+                )
+            ]
+            if self.csvfile_vol and self.csvfile_reals
+            else [
+                (
+                    extract_volumes,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "volfolder": self.volfolder,
+                            "volfiles": self.volfiles,
+                        }
+                    ],
+                ),
+                (
+                    get_realizations,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                ),
+            ]
+        )
 
     @property
     def tour_steps(self):
@@ -538,3 +595,9 @@ def filter_dataframe(dframe, columns, column_values):
         else:
             df = df.loc[df[col] == filt]
     return df
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_csv(csv_file) -> pd.DataFrame:
+    return pd.read_csv(csv_file, index_col=None)

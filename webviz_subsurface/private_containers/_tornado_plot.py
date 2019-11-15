@@ -7,8 +7,8 @@ from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 
-from webviz_config.common_cache import CACHE
 import webviz_core_components as wcc
+from webviz_config.common_cache import CACHE
 
 
 class TornadoPlot:

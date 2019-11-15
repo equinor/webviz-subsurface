@@ -1,12 +1,15 @@
 from uuid import uuid4
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
-import webviz_core_components as wcc
 from dash.dependencies import Input, Output
+import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizContainerABC
 
 from ..datainput import extract_volumes
@@ -16,8 +19,29 @@ class InplaceVolumes(WebvizContainerABC):
     """### Volumetrics
 
 This container visualizes inplace volumetrics results from
-csv files stored on standard format.
+FMU ensembles. Input can be given either as aggregated csv files
+or as an ensemble name defined in 'container_settings' and csvfiles stored
+per realizations.
+In either case the csv files must follow FMU standards, that is it must have
+one or more of the following columns:
+'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.
 
+Remaining columns are seen as volumetric responses. Any names are allowed,
+but the following responses are given more descriptive names automatically:
+"BULK_OIL": "Bulk Volume (Oil)"
+"NET_OIL": "Net Volume (Oil)"
+"PORE_OIL": "Pore Volume (Oil)"
+"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
+"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
+"BULK_GAS": "Bulk Volume (Gas)"
+"NET_GAS": "Net Volume (Gas)"
+"PORV_GAS": "Pore Volume (Gas)"
+"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
+"GIIP_GAS": "Gas Initially in-place"
+"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
+"RECOVERABLE_GAS": "Recoverable Volume (Gas)"
+
+* `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
 * `ensembles`: Which ensembles in `container_settings` to visualize.
 * `volfiles`:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)
 * `volfolder`: Optional local folder for csv files
@@ -28,12 +52,12 @@ csv files stored on standard format.
     RESPONSES = {
         "BULK_OIL": "Bulk Volume (Oil)",
         "NET_OIL": "Net Volume (Oil)",
-        "PORE_OIL": "Pore Volume (Oil)",
+        "PORV_OIL": "Pore Volume (Oil)",
         "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
         "STOIIP_OIL": "Stock Tank Oil Initially Inplace",
         "BULK_GAS": "Bulk Volume (Gas)",
         "NET_GAS": "Net Volume (Gas)",
-        "PORE_GAS": "Pore Volume (Gas)",
+        "PORV_GAS": "Pore Volume (Gas)",
         "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
         "GIIP_GAS": "Gas Initially in-place",
         "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
@@ -44,19 +68,36 @@ csv files stored on standard format.
         self,
         app,
         container_settings,
-        ensembles: list,
-        volfiles: dict,
+        csvfile: Path = None,
+        ensembles: list = None,
+        volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
+        self.csvfile = csvfile if csvfile else None
+        if csvfile and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
+            )
+        if csvfile:
+            self.volumes = read_csv(csvfile)
 
-        self.ens_paths = tuple(
-            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
-        )
-        self.volfiles = tuple(volfiles.items())
-        self.volfolder = volfolder
+        elif ensembles and volfiles:
+            self.ens_paths = tuple(
+                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+            )
+            self.volfiles = tuple(volfiles.items())
+            self.volfolder = volfolder
+            self.volumes = extract_volumes(
+                self.ens_paths, self.volfolder, self.volfiles
+            )
+
+        else:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
+            )
+
         self.initial_response = response
-        self.volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
         self.radio_plot_type_id = "radio-plot-type-{}".format(uuid4())
         self.response_id = "response-{}".format(uuid4())
         self.chart_id = "chart-{}".format(uuid4())
@@ -76,18 +117,22 @@ csv files stored on standard format.
         self.set_callbacks(app)
 
     def add_webvizstore(self):
-        return [
-            (
-                extract_volumes,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "volfolder": self.volfolder,
-                        "volfiles": self.volfiles,
-                    }
-                ],
-            )
-        ]
+        return (
+            [(read_csv, [{"csv_file": self.csvfile}])]
+            if self.csvfile
+            else [
+                (
+                    extract_volumes,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "volfolder": self.volfolder,
+                            "volfiles": self.volfiles,
+                        }
+                    ],
+                )
+            ]
+        )
 
     @property
     def vol_columns(self):
@@ -417,3 +462,9 @@ def filter_dataframe(dframe, columns, column_values):
         else:
             df = df.loc[df[col] == filt]
     return df
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_csv(csv_file) -> pd.DataFrame:
+    return pd.read_csv(csv_file, index_col=None)
