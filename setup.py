@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
-TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit"]
+TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit", "pytest-xdist"]
 
 setup(
     name="webviz-subsurface",
@@ -56,6 +56,6 @@ setup(
         "Topic :: Multimedia :: Graphics",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Visualization",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
 )
