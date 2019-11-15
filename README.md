@@ -13,13 +13,6 @@ plugins in [webviz-config](https://github.com/equinor/webviz-config).
 
 ### Installation
 
-As Dash is using Python3-only functionality, you should create a Python3
-virtual environment before installation. One way of doing this is
-```bash
-PATH_TO_VENV='./my_new_venv'
-python3 -m virtualenv $PATH_TO_VENV
-source $PATH_TO_VENV/bin/activate
-```
 
 The easiest way of installing this package is to run
 ```bash

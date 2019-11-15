@@ -42,7 +42,7 @@ script:
   - webviz certificate
   - echo $TESTDATA_REPO_BRANCH
   - echo $TESTDATA_REPO_OWNER
-  - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH git@github.com:$TESTDATA_REPO_OWNER/webviz-subsurface-testdata
+  - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
   - pip install git+https://github.com/equinor/libecl
   - pip install git+https://github.com/equinor/fmu-ensemble
     # Need to find full path to testdata due to https://github.com/equinor/webviz-subsurface/issues/128
