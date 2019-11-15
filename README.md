@@ -44,6 +44,32 @@ End-user documentation for the subsurface containers are automatically built
 and hosted on the [github pages](https://equinor.github.io/webviz-subsurface/)
 for this repository.
 
+### Examples
+
+Two examples are provided in the examples/ folder.
+For both examples it is first necessary to download [webviz-subsurface-testdata](https://github.com/equinor/webviz-subsurface-testdata).
+
+**basic_example.yaml**: Example of running webviz-subsurface with already processed files.
+
+```bash
+cd examples
+git clone https://github.com/equinor/webviz-subsurface-testdata
+webviz build basic_example.yaml
+```
+
+**full_example.yaml**: Example of running webviz-subsurface with raw FMU results.
+
+```bash
+git clone https://github.com/equinor/webviz-subsurface-testdata
+```
+
+Replace `./webviz-subsurface-testdata` in `examples/full_example.yaml` with the full path to the test data.
+
+```bash
+webviz build examples/full_example.yaml
+```
+
+
 ### Creating new elements
 
 If you are interested in creating new elements which can be configured through
