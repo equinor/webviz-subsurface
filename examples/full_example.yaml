@@ -7,7 +7,7 @@ title: Reek Webviz Demonstration
 
 container_settings:
   scratch_ensembles:
-    iter-0: /mnt/media/scratch/webviz/fix-smry/webviz-subsurface/examples/webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
+    iter-0: ./webviz-subsurface-testdata/reek_fullmatrix/realization-*/iter-0
 
 pages:
 

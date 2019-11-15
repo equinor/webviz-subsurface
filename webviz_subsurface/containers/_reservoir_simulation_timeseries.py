@@ -1,9 +1,9 @@
 from uuid import uuid4
-import json
 from pathlib import Path
+import json
+import yaml
 
 import pandas as pd
-
 import plotly.tools as tools
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
@@ -47,24 +47,32 @@ Plot options:
         "ENSEMBLE",
         "DATE",
     ]
-
+    # pylint:disable=too-many-arguments
     def __init__(
         self,
         app,
         container_settings,
         csvfile: Path = None,
         ensembles: list = None,
+        obsfile: Path = None,
         column_keys=None,
         sampling: str = "monthly",
         options: dict = None,
     ):
         self.csvfile = csvfile if csvfile else None
+        self.obsfile = obsfile if obsfile else None
         self.time_index = sampling
         self.column_keys = tuple(column_keys) if column_keys else None
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
             )
+        self.observations = {}
+        if obsfile:
+            with open(get_path(self.obsfile), "r") as stream:
+                self.observations = format_observations(
+                    yaml.safe_load(stream).get("smry", [dict()])
+                )
         if csvfile:
             self.smry = read_csv(csvfile)
         elif ensembles:
@@ -404,6 +412,11 @@ Plot options:
                             legends.append(trace.get("legendgroup"))
                     fig.append_trace(trace, i + 1, 1)
 
+                # Add observations
+                if self.observations.get(vector):
+                    for trace in add_observation_trace(self.observations.get(vector)):
+                        fig.append_trace(trace, i + 1, 1)
+
             # Add additional styling to layout
             fig["layout"].update(
                 height=800,
@@ -474,6 +487,13 @@ Plot options:
         )
 
 
+def format_observations(obslist):
+    try:
+        return {item.pop("key"): item for item in obslist}
+    except KeyError:
+        raise KeyError("Observation file has invalid format")
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_df(df, ensembles, vector):
     """Filter dataframe for current vector. Include history
@@ -520,6 +540,26 @@ def add_histogram_traces(dframe, vector, date, colors):
             "showlegend": False,
         }
         for ensemble, ens_df in data.groupby("ENSEMBLE")
+    ]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def add_observation_trace(obs):
+    return [
+        {
+            "x": [value.get("date"), []],
+            "y": [value.get("value"), []],
+            "marker": {"color": "black"},
+            "text": value.get("comment", None),
+            "hoverinfo": "y+x+text",
+            "showlegend": False,
+            "error_y": {
+                "type": "data",
+                "array": [value.get("error"), []],
+                "visible": True,
+            },
+        }
+        for value in obs.get("observations", [])
     ]
 
 
@@ -666,3 +706,8 @@ def hex_to_rgb(hex_string, opacity=1):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
+
+
+@webvizstore
+def get_path(path) -> Path:
+    return Path(path)
