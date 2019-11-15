@@ -53,14 +53,14 @@ For both examples it is first necessary to download [webviz-subsurface-testdata]
 
 ```bash
 cd examples
-git clone https://github.com/equinor/webviz-subsurface-testdata
+git clone --depth=1 https://github.com/equinor/webviz-subsurface-testdata
 webviz build basic_example.yaml
 ```
 
 **full_example.yaml**: Example of running webviz-subsurface with raw FMU results.
 
 ```bash
-git clone https://github.com/equinor/webviz-subsurface-testdata
+git clone --depth=1 https://github.com/equinor/webviz-subsurface-testdata
 ```
 
 Replace `./webviz-subsurface-testdata` in `examples/full_example.yaml` with the full path to the test data.
