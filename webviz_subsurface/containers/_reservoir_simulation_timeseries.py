@@ -190,7 +190,8 @@ Plot options:
                                 html.Div(
                                     [
                                         html.Label(
-                                            style={"fontSize": "12px"}, children="Ensemble A"
+                                            style={"fontSize": "12px"},
+                                            children="Ensemble A",
                                         ),
                                         dcc.Dropdown(
                                             id=self.ids("base_ens"),
@@ -206,7 +207,8 @@ Plot options:
                                 html.Div(
                                     [
                                         html.Label(
-                                            style={"fontSize": "12px"}, children="Ensemble B"
+                                            style={"fontSize": "12px"},
+                                            children="Ensemble B",
                                         ),
                                         dcc.Dropdown(
                                             id=self.ids("delta_ens"),
