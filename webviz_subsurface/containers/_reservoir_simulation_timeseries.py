@@ -9,7 +9,6 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
@@ -35,11 +34,11 @@ in container settings.
 * `options`: Options to initialize plots with. See below
 
 Plot options:
-    * 'vector1' : First vector to display
-    * 'vector2' : Second vector to display
-    * 'vector3' : Third vector to display
-    * 'visualization' : 'realizations', 'statistics' or 'statistics_hist',
-    * 'date' : Date to show in histograms
+    * `vector1` : First vector to display
+    * `vector2` : Second vector to display
+    * `vector3` : Third vector to display
+    * `visualization` : 'realizations', 'statistics' or 'statistics_hist',
+    * `date` : Date to show in histograms
 """
 
     ENSEMBLE_COLUMNS = [
