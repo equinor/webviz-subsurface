@@ -184,14 +184,14 @@ Plot options:
                     id=self.ids("calc_delta"),
                     style={"display": "none"},
                     children=[
-                        html.Label("Ensembles"),
+                        html.Label("Ensembles (A-B)"),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
                             children=[
                                 html.Div(
                                     [
                                         html.Label(
-                                            style={"fontSize": "12px"}, children="Base"
+                                            style={"fontSize": "12px"}, children="Ensemble A"
                                         ),
                                         dcc.Dropdown(
                                             id=self.ids("base_ens"),
@@ -207,7 +207,7 @@ Plot options:
                                 html.Div(
                                     [
                                         html.Label(
-                                            style={"fontSize": "12px"}, children="Delta"
+                                            style={"fontSize": "12px"}, children="Ensemble B"
                                         ),
                                         dcc.Dropdown(
                                             id=self.ids("delta_ens"),
