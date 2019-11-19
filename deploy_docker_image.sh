@@ -4,4 +4,4 @@ set -e
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-docker push webviz/example_subsurface_image:latest
+docker push webviz/example_subsurface_image:equinor-theme
