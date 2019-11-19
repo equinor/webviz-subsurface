@@ -12,8 +12,6 @@ env:
     # change the value her from "master" to the relevant branch name.
     - TESTDATA_REPO_BRANCH="deploy_app"
 
-install git+https://github.com/equinor/webviz-subsurface
-
 addons:
   chrome: stable
 
