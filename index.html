@@ -421,24 +421,33 @@ or as an ensemble name defined in <code>container_settings</code>.</p>
 <hr>
 
 
-<h3>Time series from reservoir simulations</h3>
+<h3>ReservoirSimulationTimeSeries</h3>
+<p>Visualizes reservoir simulation time series for FMU ensembles.
+Input can be given either as aggregated csv file or an ensemble defined
+in container settings.</p>
 <ul>
+<li><code>csvfile</code>: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.</li>
 <li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
               or <code>yearly</code>.</li>
-<li><code>base_ensembles</code>: List of ensembles to use as base ensemble in delta
-                    calculations.</li>
-<li><code>delta_ensembles</code>: List of ensembles to be compared with base ensemble.</li>
+<li><code>options</code>: Options to initialize plots with. See below</li>
 </ul>
+<p>Plot options:
+    * <code>vector1</code> : First vector to display
+    * <code>vector2</code> : Second vector to display
+    * <code>vector3</code> : Third vector to display
+    * <code>visualization</code> : 'realizations', 'statistics' or 'statistics_hist',
+    * <code>date</code> : Date to show in histograms</p>
 <pre><code class='yaml'>  - container: ReservoirSimulationTimeSeries
-    ensembles: some value
+    csvfile: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
+    obsfile: None  # Optional (default value shown here).
     column_keys: None  # Optional (default value shown here).
     sampling: monthly  # Optional (default value shown here).
-    base_ensembles: None  # Optional (default value shown here).
-    delta_ensembles: None  # Optional (default value shown here).
+    options: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
