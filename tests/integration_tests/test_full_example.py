@@ -28,6 +28,7 @@ def test_full_example(dash_duo, tmp_path):
         "inplacevolumes",
         "parameterdistribution",
         "parametercorrelation",
+        "reservoirsimulationtimeseries",
         "last_page",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()

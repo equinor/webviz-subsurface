@@ -56,3 +56,15 @@ pages:
     - container: ReservoirSimulationTimeSeries
       ensembles:
         - iter-0
+
+ - title: ReservoirSimulationTimeSeries (with options set)
+   content:
+    - container: ReservoirSimulationTimeSeries
+      ensembles:
+        - iter-0
+      options:
+        vector1: FOPT
+        vector2: FGPT
+        vector3: FWPT
+        date: 2003-02-01
+        visualization: statistics_hist

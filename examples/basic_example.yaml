@@ -29,6 +29,25 @@ pages:
     - container: InplaceVolumes
       csvfile: ./webviz-subsurface-testdata/aggregated_data/volumes.csv
 
+ - title: ReservoirSimulationTimeSeries
+   content: 
+    - container: ReservoirSimulationTimeSeries
+      csvfile: ./webviz-subsurface-testdata/aggregated_data/smry.csv
+      obsfile: ./webviz-subsurface-testdata/aggregated_data/observations.yml
+      options:
+        vector1: FOPR
+        
+ - title: ReservoirSimulationTimeSeries (with options set)
+   content:
+    - container: ReservoirSimulationTimeSeries
+      csvfile: ./webviz-subsurface-testdata/aggregated_data/smry.csv
+      options:
+        vector1: FOPT
+        vector2: FGPT
+        vector3: FWPT
+        date: 2003-02-01
+        visualization: statistics_hist
+
  - title: ParameterDistribution
    content:
     - container: ParameterDistribution
