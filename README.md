@@ -42,7 +42,7 @@ showing how a created application can look like, using the `master` branch of th
 
 ### Example webviz configuration files
 
-Examples `webviz` configuration files, and corresponding test data, is available at
+Example `webviz` configuration files, and corresponding test data, is available at
 https://github.com/equinor/webviz-subsurface-testdata.
 
 See that repository for instructions on how to download and run the examples.
