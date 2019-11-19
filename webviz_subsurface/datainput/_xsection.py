@@ -149,7 +149,7 @@ class XSectionFigure:
                     "y": zvals_copy,
                     "line": {"width": 10},
                     "marker": {"opacity": 0.5},
-                    "connectgaps": True,
+                    # "connectgaps": True,
                     # "name": f"Zone: {zone}",
                 }
             )

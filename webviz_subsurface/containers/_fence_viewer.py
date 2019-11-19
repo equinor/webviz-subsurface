@@ -99,7 +99,7 @@ class FenceViewer(WebvizContainerABC):
     @property
     def seismic_layout(self):
         return html.Div(
-            style=not self.segyfiles and {"display": "none"},
+            style={} if self.segyfiles else {"display": "none"},
             children=[
                 html.Label(children="Seismic"),
                 dcc.Dropdown(
@@ -185,7 +185,8 @@ class FenceViewer(WebvizContainerABC):
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
             )
-
+            print(xsect.data)
+            print(xsect.layout)
             return {"data": xsect.data, "layout": xsect.layout}
 
     def add_webvizstore(self):
