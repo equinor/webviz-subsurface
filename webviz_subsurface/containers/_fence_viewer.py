@@ -1,25 +1,18 @@
 from uuid import uuid4
 from pathlib import Path
-import json
-import numpy as np
-import pandas as pd
+from typing import List
 
-from matplotlib.colors import ListedColormap
-import xtgeo
-import dash
-from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
-
-# pylint: disable=no-name-in-module
-from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
-from webviz_subsurface_components import LayeredMap
 
-from ..datainput._xsection import XSection
+from ..datainput._xsection import XSectionFigure
+from ..datainput._seismic import load_cube_data
+from ..datainput._well import load_well
+from ..datainput._surface import load_surface
 
 
 class FenceViewer(WebvizContainerABC):
@@ -34,29 +27,36 @@ class FenceViewer(WebvizContainerABC):
 * `colors`: List of colors to use
 """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,
-        # segyfiles: list,
-        surfacepath: Path,
-        surfacenames: list,
-        surfaceattribute: str,
-        segyfiles: list = None,
-        wellfiles: list = None,
+        surfacefiles: List[Path],
+        wellfiles: List[Path],
+        segyfiles: List[Path] = None,
+        surfacenames: list = None,
+        zonelog: str = None,
         zunit="depth (m)",
-        colors: list = None,
+        zonecolors: list = None,
+        zmin: float = None,
+        zmax: float = None,
+        zonemin: int = 1,
     ):
         self.zunit = zunit
+        self.zmin = zmin
+        self.zmax = zmax
+        self.zonemin = zonemin
         self.surfacenames = surfacenames
-        self.surfaceattribute = surfaceattribute
-        self.surfacepath = surfacepath
-        self.segyfiles = segyfiles
-        self.wellfiles = wellfiles if wellfiles else []
-
-        # self.welllayers = make_well_layers(self.wellfiles)
-        self.initial_colors = (
-            colors
-            if colors
+        self.surfacefiles = [str(surface) for surface in surfacefiles]
+        self.wellfiles = [str(well) for well in wellfiles]
+        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
+        self.surfacenames = (
+            surfacenames if surfacenames else [surface.stem for surface in surfacefiles]
+        )
+        self.zonelog = zonelog
+        self.zonecolors = (
+            zonecolors
+            if zonecolors
             else [
                 "#67001f",
                 "#ab152a",
@@ -79,119 +79,70 @@ class FenceViewer(WebvizContainerABC):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
-    # @property
-    # def tour_steps(self):
-    #     return [
-    #         {"id": self.cube_id, "content": ("The currently visualized seismic cube.")},
-    #         {
-    #             "id": self.iline_map_id,
-    #             "content": (
-    #                 "Selected inline for the seismic cube. "
-    #                 "Adjacent views are updated by clicking MB1 "
-    #                 "in the plot. To zoom, hold MB1 and draw a vertical/horizontal "
-    #                 "line or a rectangle."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.xline_map_id,
-    #             "content": ("Selected crossline for the seismic cube "),
-    #         },
-    #         {
-    #             "id": self.zline_map_id,
-    #             "content": ("Selected zslice for the seismic cube "),
-    #         },
-    #         {
-    #             "id": self.color_scale_id,
-    #             "content": ("Click this button to change colorscale"),
-    #         },
-    #         {
-    #             "id": self.color_values_id,
-    #             "content": ("Drag either node of slider to truncate color ranges"),
-    #         },
-    #         {
-    #             "id": self.color_range_btn,
-    #             "content": (
-    #                 "Click this button to update color slider min/max and reset ranges."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.zoom_btn,
-    #             "content": ("Click this button to reset zoom/pan state in the plot"),
-    #         },
-    #     ]
-
     @property
-    def surface_layout(self):
-        """Layout for surface section"""
+    def well_layout(self):
         return html.Div(
             children=[
-                html.Div(
-                    # style=self.set_grid_layout("1fr 1fr"),
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Label(
-                          
-                                    children="Select surface",
-                                ),
-                                dcc.Dropdown(
-                                    id=self.ids("surfacename"),
-                                    options=[
-                                        {"label": Path(cube).stem, "value": cube}
-                                        for cube in self.surfacenames
-                                    ],
-                                    value=self.surfacenames[0],
-                                    multi=True,
-                                    clearable=False,
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            
-                            children=[
-                                html.Label(
-                                     children="Well"
-                                ),
-                                dcc.Dropdown(
-                                    id=self.ids("wells"),
-                                    options=[
-                                        {"label": Path(well).stem, "value": well}
-                                        for well in self.wellfiles
-                                    ],
-                                    value=self.wellfiles[0],
-                                    clearable=False,
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            
-                            children=[
-                                html.Label(
-                                   children="Well"
-                                ),
-                                dcc.Dropdown(
-                                    id=self.ids("cube"),
-                                    options=[
-                                        {"label": Path(segy).stem, "value": segy}
-                                        for segy in self.segyfiles
-                                    ],
-                                    value=self.segyfiles[0],
-                                    clearable=False,
-                                ),
-                            ],
-                        ),
+                html.Label(children="Well"),
+                dcc.Dropdown(
+                    id=self.ids("wells"),
+                    options=[
+                        {"label": Path(well).stem, "value": well}
+                        for well in self.wellfiles
                     ],
+                    value=self.wellfiles[0],
+                    clearable=False,
                 ),
-            ]
+            ],
         )
 
-        return
+    @property
+    def seismic_layout(self):
+        return html.Div(
+            style=not self.segyfiles and {"display": "none"},
+            children=[
+                html.Label(children="Seismic"),
+                dcc.Dropdown(
+                    id=self.ids("cube"),
+                    options=[
+                        {"label": Path(segy).stem, "value": segy}
+                        for segy in self.segyfiles
+                    ]
+                    if self.segyfiles
+                    else None,
+                    value=self.segyfiles[0] if self.segyfiles else None,
+                    clearable=False,
+                ),
+            ],
+        )
+
+    @property
+    def options_layout(self):
+        return dcc.Checklist(
+            id=self.ids("options"),
+            options=[
+                self.segyfiles and {"label": "Show seismic", "value": "show_seismic"},
+                {"label": "Show surface fill", "value": "show_surface_fill",},
+                self.zonelog and {"label": "Show zonelog", "value": "show_zonelog"},
+            ],
+            value=["show_surface_fill", "show_zonelog"],
+        )
 
     @property
     def layout(self):
         return html.Div(
-            style=self.set_grid_layout("1fr 3fr"),
-            children=[self.surface_layout, wcc.Graph(id=self.ids("graph"))],
+            # style=self.set_grid_layout("1fr 3fr"),
+            children=[
+                html.Div(
+                    style=self.set_grid_layout("1fr 1fr 1fr"),
+                    children=[
+                        self.well_layout,
+                        self.seismic_layout,
+                        self.options_layout,
+                    ],
+                ),
+                wcc.Graph(id=self.ids("graph")),
+            ],
         )
 
     @staticmethod
@@ -207,24 +158,33 @@ class FenceViewer(WebvizContainerABC):
         @app.callback(
             Output(self.ids("graph"), "figure"),
             [
-                Input(self.ids("surfacename"), "value"),
                 Input(self.ids("wells"), "value"),
                 Input(self.ids("cube"), "value"),
+                Input(self.ids("options"), "value"),
             ],
         )
-        def render_surface(surfacenames, well, cube):
-            well = xtgeo.Well(well)
-            xsect = XSection(well=well, nextend=50)
+        def _render_surface(well, cube, options):
+            well = load_well(str(get_path(well)))
+            xsect = XSectionFigure(
+                well=well, zmin=self.zmin, zmax=self.zmax, nextend=50
+            )
 
-            if surfacenames:
-                surfaces = load_surfaces(self.surfacepath, self.surfacenames, self.surfaceattribute)
-                xsect.plot_surfaces(surfaces=surfaces, fill=False)
+            surfaces = [load_surface(str(get_path(surf))) for surf in self.surfacefiles]
 
-            cube = xtgeo.Cube(str(get_path(cube)))
-            
-            xsect.plot_well(zonelogname="Zonelog", facieslogname="Faciesfg")
-            
-            xsect.plot_cube(cube)
+            xsect.plot_surfaces(
+                surfaces=surfaces,
+                surfacenames=self.surfacenames,
+                fill="show_surface_fill" in options,
+            )
+
+            if "show_seismic" in options:
+                cube = load_cube_data(str(get_path(cube)))
+                xsect.plot_cube(cube)
+
+            xsect.plot_well(
+                zonelogname=self.zonelog if "show_zonelog" in options else None,
+                zonemin=self.zonemin,
+            )
 
             return {"data": xsect.data, "layout": xsect.layout}
 
@@ -234,18 +194,6 @@ class FenceViewer(WebvizContainerABC):
             *[(get_path, [{"path": fn}]) for fn in self.surfacenames],
             *[(get_path, [{"path": fn}]) for fn in self.wellfiles],
         ]
-
-
-def load_surfaces(surfacepath, surfacenames, surfaceattribute):
-    surfacenames = (
-                surfacenames if isinstance(surfacenames, list) else [surfacenames]
-            )
-    return [
-        xtgeo.RegularSurface(
-            str(get_path(surfacepath / f"{name}--{surfaceattribute}.gri"))
-        )
-        for name in surfacenames
-    ]
 
 
 @webvizstore
