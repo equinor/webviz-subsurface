@@ -31,6 +31,7 @@ def test_basic_example(dash_duo, tmp_path):
         "reservoirsimulationtimeseries_with_options_set",
         "parameterdistribution",
         "morris_plot",
+        "grid_viewer",
         "last_page",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
