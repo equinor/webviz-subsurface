@@ -66,5 +66,5 @@ pages:
         vector1: FOPT
         vector2: FGPT
         vector3: FWPT
-        date: '2003-02-01'
+        date: 2003-02-01
         visualization: statistics_hist

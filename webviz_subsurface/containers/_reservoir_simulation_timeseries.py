@@ -2,6 +2,7 @@ from uuid import uuid4
 from pathlib import Path
 import json
 import yaml
+from datetime import datetime
 
 import pandas as pd
 import plotly.tools as tools
@@ -99,6 +100,12 @@ Plot options:
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.plotly_layout = app.webviz_settings["plotly_layout"]
         self.plot_options = options if options else {}
+        self.plot_options["date"] = (
+            str(self.plot_options.get("date"))
+            if self.plot_options.get("date")
+            else None
+        )
+
         colors = self.plotly_layout.get(
             "colors",
             [
