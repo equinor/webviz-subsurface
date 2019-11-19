@@ -6,7 +6,8 @@ def test_basic_example(dash_duo, tmp_path):
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
     subprocess.call(  # nosec
-        ["webviz", "build", "basic_example.yaml", "--portable", appdir], cwd="examples"
+        ["webviz", "build", "aggregated.yaml", "--portable", appdir],
+        cwd="./webviz-subsurface-testdata/webviz_examples",
     )
     # Remove Talisman
     fn = appdir / "webviz_app.py"
@@ -26,6 +27,8 @@ def test_basic_example(dash_duo, tmp_path):
         "inplacevolumesonebyone",
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
+        "reservoirsimulationtimeseries",
+        "reservoirsimulationtimeseries_with_options_set",
         "parameterdistribution",
         "morris_plot",
         "last_page",

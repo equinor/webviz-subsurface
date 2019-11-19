@@ -13,13 +13,6 @@ plugins in [webviz-config](https://github.com/equinor/webviz-config).
 
 ### Installation
 
-As Dash is using Python3-only functionality, you should create a Python3
-virtual environment before installation. One way of doing this is
-```bash
-PATH_TO_VENV='./my_new_venv'
-python3 -m virtualenv $PATH_TO_VENV
-source $PATH_TO_VENV/bin/activate
-```
 
 The easiest way of installing this package is to run
 ```bash
@@ -44,32 +37,15 @@ End-user documentation for the subsurface containers are automatically built
 and hosted on the [github pages](https://equinor.github.io/webviz-subsurface/)
 for this repository.
 
-### Examples
+There is also a [live demo application](https://webviz-subsurface-example.azurewebsites.net)
+showing how a created application can look like, using the `master` branch of this repository.
 
-Two examples are provided in the examples/ folder.
+### Example webviz configuration files
 
-For both examples it is first necessary to download [webviz-subsurface-testdata](https://github.com/equinor/webviz-subsurface-testdata).
+Example `webviz` configuration files, and corresponding test data, is available at
+https://github.com/equinor/webviz-subsurface-testdata.
 
-**basic_example.yaml**: Example of running webviz-subsurface with already processed files.
-
-```bash
-cd examples
-git clone --depth=1 https://github.com/equinor/webviz-subsurface-testdata
-webviz build basic_example.yaml
-```
-
-**full_example.yaml**: Example of running webviz-subsurface with raw FMU results.
-
-```bash
-git clone --depth=1 https://github.com/equinor/webviz-subsurface-testdata
-```
-
-Replace `./webviz-subsurface-testdata` in `examples/full_example.yaml` with the full path to the test data.
-
-```bash
-webviz build examples/full_example.yaml
-```
-
+See that repository for instructions on how to download and run the examples.
 
 ### Creating new elements
 
