@@ -191,7 +191,7 @@ class FenceViewer(WebvizContainerABC):
     def add_webvizstore(self):
         return [
             *[(get_path, [{"path": fn}]) for fn in self.segyfiles],
-            *[(get_path, [{"path": fn}]) for fn in self.surfacenames],
+            *[(get_path, [{"path": fn}]) for fn in self.surfacefiles],
             *[(get_path, [{"path": fn}]) for fn in self.wellfiles],
         ]
 
