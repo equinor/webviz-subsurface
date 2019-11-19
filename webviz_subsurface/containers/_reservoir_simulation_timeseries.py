@@ -469,10 +469,11 @@ Plot options:
             return json.dumps(date)
 
     def add_webvizstore(self):
-        return (
-            [(read_csv, [{"csv_file": self.csvfile}],)]
-            if self.csvfile
-            else [
+        functions = []
+        if self.csvfile:
+            functions.append((read_csv, [{"csv_file": self.csvfile}]))
+        else:
+            functions.append(
                 (
                     load_smry,
                     [
@@ -484,8 +485,10 @@ Plot options:
                         }
                     ],
                 )
-            ]
-        )
+            )
+        if self.obsfile:
+            functions.append((get_path, [{"path": self.obsfile}]))
+        return functions
 
 
 def format_observations(obslist):
