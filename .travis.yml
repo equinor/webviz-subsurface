@@ -75,10 +75,10 @@ deploy:
       branch: master
       repo: equinor/webviz-subsurface
   - provider: script
-    script: bash build_and_deploy_docker_image.sh
+    script: bash deploy_docker_image.sh
     skip_cleanup: true
     on:
-      tags: true
+      branch: master
       repo: equinor/webviz-subsurface
   - provider: pypi
     user: webviz
