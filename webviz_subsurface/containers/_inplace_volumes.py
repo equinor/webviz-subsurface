@@ -75,6 +75,7 @@ but the following responses are given more descriptive names automatically:
         response: str = "STOIIP_OIL",
     ):
         self.csvfile = csvfile if csvfile else None
+        self.colorway = app.webviz_settings.get("plotly_layout", {}).get("colorway", [])
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
@@ -101,11 +102,12 @@ but the following responses are given more descriptive names automatically:
         self.radio_plot_type_id = "radio-plot-type-{}".format(uuid4())
         self.response_id = "response-{}".format(uuid4())
         self.chart_id = "chart-{}".format(uuid4())
+        self.table_id = "table-{}".format(uuid4())
         self.radio_selectors_id = "radio-selectors-{}".format(uuid4())
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
         self.table_cols = [
             "response",
-            "selector",
+            "group",
             "mean",
             "stddev",
             "minimum",
@@ -147,7 +149,7 @@ but the following responses are given more descriptive names automatically:
     @property
     def plot_types(self):
         """List of available plots"""
-        return ["Histogram", "Per realization", "Box Plot", "Table"]
+        return ["Histogram", "Per realization", "Box Plot"]
 
     @property
     def selectors(self):
@@ -206,6 +208,7 @@ but the following responses are given more descriptive names automatically:
                                     ],
                                     value=value,
                                     multi=multi,
+                                    clearable=False,
                                 ),
                             ],
                         )
@@ -234,16 +237,6 @@ but the following responses are given more descriptive names automatically:
             "grid-template-columns": "5fr 1fr",
         }
 
-    @staticmethod
-    def group_radio_options(selectors):
-        """Returns options for a radio button used for grouping
-        volume results on a dataframe column.
-        The option 'NONE' is added to allow no grouping
-        """
-        options = ["NONE"]
-        options.extend(selectors)
-        return [{"label": i.lower().capitalize(), "value": i} for i in options]
-
     @property
     def plot_options_layout(self):
         """Row layout of dropdowns for plot options"""
@@ -265,6 +258,7 @@ but the following responses are given more descriptive names automatically:
                             value=self.initial_response
                             if self.initial_response in self.responses
                             else self.responses[0],
+                            clearable=False,
                         ),
                     ]
                 ),
@@ -275,6 +269,7 @@ but the following responses are given more descriptive names automatically:
                             id=self.radio_plot_type_id,
                             options=[{"label": i, "value": i} for i in self.plot_types],
                             value="Per realization",
+                            clearable=False,
                         ),
                     ]
                 ),
@@ -283,8 +278,12 @@ but the following responses are given more descriptive names automatically:
                         html.P("Group by:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.radio_selectors_id,
-                            options=self.group_radio_options(self.selectors),
-                            value="NONE",
+                            options=[
+                                {"label": i.lower().capitalize(), "value": i}
+                                for i in self.selectors
+                            ],
+                            value=None,
+                            placeholder="Not grouped",
                         ),
                     ]
                 ),
@@ -302,7 +301,19 @@ but the following responses are given more descriptive names automatically:
                         html.Div(
                             children=[
                                 self.plot_options_layout,
-                                html.Div(id=self.chart_id),
+                                html.Div(
+                                    style={"height": 400},
+                                    children=wcc.Graph(id=self.chart_id),
+                                ),
+                                html.Div(
+                                    dash_table.DataTable(
+                                        id=self.table_id,
+                                        columns=[
+                                            {"name": i, "id": i}
+                                            for i in self.table_cols
+                                        ],
+                                    )
+                                ),
                             ]
                         ),
                         html.Div(
@@ -317,7 +328,10 @@ but the following responses are given more descriptive names automatically:
         )
 
     def set_callbacks(self, app):
-        @app.callback(Output(self.chart_id, "children"), self.vol_callback_inputs)
+        @app.callback(
+            [Output(self.chart_id, "figure"), Output(self.table_id, "data")],
+            self.vol_callback_inputs,
+        )
         def _render_vol_chart(*args):
             """Renders a volume visualization either as a Plotly Graph or
             as a Dash table object.
@@ -338,27 +352,28 @@ but the following responses are given more descriptive names automatically:
             data = filter_dataframe(data, self.selectors, selections)
 
             # If not grouped make one trace
-            if group == "NONE":
+            if not group:
                 dframe = data.groupby("REAL").sum().reset_index()
-                traces = [plot_data(plot_type, dframe, response, "Total")]
+                plot_traces = [plot_data(plot_type, dframe, response, "Total")]
+                table = [plot_table(dframe, response, "Total")]
             # Else make one trace for each group member
             else:
-                traces = []
+                plot_traces = []
+                table = []
                 for name, vol_group_df in data.groupby(group):
                     dframe = vol_group_df.groupby("REAL").sum().reset_index()
                     trace = plot_data(plot_type, dframe, response, name)
                     if trace is not None:
-                        traces.append(trace)
-
-            # Make a dash table if table is selected
-            if plot_type == "Table":
-                return dash_table.DataTable(
-                    columns=[{"name": i, "id": i} for i in self.table_cols], data=traces
-                )
+                        plot_traces.append(trace)
+                        table.append(plot_table(dframe, response, name))
 
             # Else make a graph object
-            return wcc.Graph(
-                figure={"data": traces, "layout": plot_layout(plot_type, response)}
+            return (
+                {
+                    "data": plot_traces,
+                    "layout": plot_layout(plot_type, response, colors=self.colorway),
+                },
+                table,
             )
 
         @app.callback(
@@ -407,21 +422,6 @@ def plot_data(plot_type, dframe, response, name):
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
         output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
-    elif plot_type == "Table":
-        values.replace(0, np.nan, inplace=True)
-        try:
-            output = {
-                "response": response,
-                "selector": str(name),
-                "minimum": f"{values.min():.2e}",
-                "maximum": f"{values.max():.2e}",
-                "mean": f"{values.mean():.2e}",
-                "stddev": f"{values.std():.2e}",
-                "p10": f"{np.percentile(values, 90):.2e}",
-                "p90": f"{np.percentile(values, 10):.2e}",
-            }
-        except KeyError:
-            output = None
     else:
         output = None
 
@@ -429,25 +429,45 @@ def plot_data(plot_type, dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response):
+def plot_table(dframe, response, name):
+    values = dframe[response]
+    try:
+        output = {
+            "response": InplaceVolumes.RESPONSES.get(response, response),
+            "group": str(name),
+            "minimum": f"{values.min():.2e}",
+            "maximum": f"{values.max():.2e}",
+            "mean": f"{values.mean():.2e}",
+            "stddev": f"{values.std():.2e}",
+            "p10": f"{np.percentile(values, 90):.2e}",
+            "p90": f"{np.percentile(values, 10):.2e}",
+        }
+    except KeyError:
+        output = None
 
+    return output
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def plot_layout(plot_type, response, colors):
     if plot_type == "Histogram":
         output = {
-            "bargap": 0.05,
-            "xaxis": {"title": response},
+            "barmode": "overlay",
+            "bargap": 0.01,
+            "bargroupgap": 0.2,
+            "xaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
             "yaxis": {"title": "Count"},
         }
     elif plot_type == "Box Plot":
-        output = {"yaxis": {"title": response}}
-    elif plot_type == "Per Realization":
+        output = {"yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)}}
+    else:
         output = {
             "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-            "yaxis": {"title": response},
+            "yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
             "xaxis": {"title": "Realization"},
         }
-    else:
-        output = None
-
+    output["height"] = 400
+    output["colorway"] = colors
     return output
 
 
