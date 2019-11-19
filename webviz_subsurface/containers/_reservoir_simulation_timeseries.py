@@ -2,7 +2,6 @@ from uuid import uuid4
 from pathlib import Path
 import json
 import yaml
-from datetime import datetime
 
 import pandas as pd
 import plotly.tools as tools
