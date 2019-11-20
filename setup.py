@@ -29,6 +29,7 @@ setup(
             "ReservoirSimulationTimeSeriesOneByOne = "
             + "webviz_subsurface.containers:ReservoirSimulationTimeSeriesOneByOne",
             "SegyViewer = webviz_subsurface.containers:SegyViewer",
+            "WellCrossSection = webviz_subsurface.containers:WellCrossSection",
         ]
     },
     install_requires=[
