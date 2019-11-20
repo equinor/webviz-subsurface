@@ -72,7 +72,7 @@ The plots are linked and updates are done by clicking in the plots.
         self.state_store = f"state_store-{uuid}"
 
     def update_state(self, cubepath, **kwargs):
-        cube = load_cube_data(get_path(Path(cubepath)))
+        cube = load_cube_data(get_path(cubepath))
         state = {
             "cubepath": cubepath,
             "iline": int(cube.ilines[0]),
@@ -304,7 +304,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(state["cubepath"])
+            cube = load_cube_data(str(get_path(state["cubepath"])))
             shapes = [
                 {
                     "type": "line",
@@ -351,7 +351,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(state["cubepath"])
+            cube = load_cube_data(str(get_path(state["cubepath"])))
             shapes = [
                 {
                     "type": "line",
@@ -395,7 +395,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(state["cubepath"])
+            cube = load_cube_data(str(get_path(state["cubepath"])))
             shapes = [
                 {
                     "type": "line",
@@ -461,7 +461,7 @@ The plots are linked and updates are done by clicking in the plots.
         }
 
     def add_webvizstore(self):
-        return [(get_path, [{"path": Path(fn)}]) for fn in self.segyfiles]
+        return [(get_path, [{"path": fn}]) for fn in self.segyfiles]
 
 
 # pylint: disable=too-many-arguments
