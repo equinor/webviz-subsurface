@@ -1,6 +1,7 @@
+import json
 from uuid import uuid4
 from pathlib import Path
-import json
+from typing import List
 
 import dash
 from dash.exceptions import PreventUpdate
@@ -29,9 +30,11 @@ The plots are linked and updates are done by clicking in the plots.
 * `colors`: List of colors to use
 """
 
-    def __init__(self, app, segyfiles: list, zunit="depth (m)", colors: list = None):
+    def __init__(
+        self, app, segyfiles: List[Path], zunit="depth (m)", colors: list = None
+    ):
         self.zunit = zunit
-        self.segyfiles = segyfiles
+        self.segyfiles = [str(segy) for segy in segyfiles]
         self.initial_colors = (
             colors
             if colors
@@ -50,7 +53,7 @@ The plots are linked and updates are done by clicking in the plots.
                 "#053061",
             ]
         )
-        self.init_state = self.update_state(segyfiles[0])
+        self.init_state = self.update_state(self.segyfiles[0])
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
         self.make_uuids()
