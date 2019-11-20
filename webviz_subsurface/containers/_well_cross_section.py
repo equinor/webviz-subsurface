@@ -17,8 +17,8 @@ from ..datainput._well import load_well, make_well_layer
 from ..datainput._surface import load_surface, make_surface_layer
 
 
-class CrossSection(WebvizContainerABC):
-    """### CrossSection
+class WellCrossSection(WebvizContainerABC):
+    """### WellCrossSection
     Displays a cross section along a well with intersected surfaces,
     and optionally seismic cubes.
 
