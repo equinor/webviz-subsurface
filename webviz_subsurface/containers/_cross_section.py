@@ -2,7 +2,6 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 
-import numpy as np
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -14,21 +13,29 @@ from webviz_config.webviz_store import webvizstore
 
 from ..datainput._xsection import XSectionFigure
 from ..datainput._seismic import load_cube_data
-from ..datainput._well import load_well
-from ..datainput._surface import load_surface, get_surface_arr
-from ..datainput._image_processing import array_to_png, get_colormap
+from ..datainput._well import load_well, make_well_layer
+from ..datainput._surface import load_surface, make_surface_layer
 
 
-class FenceViewer(WebvizContainerABC):
-    """### SeismicFence
+class CrossSection(WebvizContainerABC):
+    """### CrossSection
+    Displays a cross section along a well with intersected surfaces,
+    and optionally seismic cubes.
 
 
 
 * `segyfiles`: List of file paths to segyfiles
-* `surfacenames`: List of file paths to surfaces
-* `wellfiles`: List of file paths to surfaces
+* `surfacefiles`: List of file paths to Irap binary surfaces
+* `surfacenames`: Corresponding list of displayed surface names
+* `wellfiles`: List of file paths to RMS wells
 * `zunit`: z-unit for display
-* `colors`: List of colors to use
+* `zonelog`: Name of zonelog
+* `zmin`: Visualized minimum z-value in cross section
+* `zmax`: Visualized maximum z-value in cross section
+* `zonemin`: First zonenumber to draw in log
+* `sampling`: Sampling interval of well fence i.e. horizonal distance (input)
+* `nextend`: Number if sampling to extend; e.g. 2 * 20
+
 """
 
     # pylint: disable=too-many-arguments
@@ -41,12 +48,11 @@ class FenceViewer(WebvizContainerABC):
         surfacenames: list = None,
         zonelog: str = None,
         zunit="depth (m)",
-        zonecolors: list = None,
         zmin: float = None,
         zmax: float = None,
         zonemin: int = 1,
-        nextend: int = 1,
-        sampling: int = 100,
+        nextend: int = 2,
+        sampling: int = 40,
     ):
         self.zunit = zunit
         self.sampling = sampling
@@ -62,24 +68,6 @@ class FenceViewer(WebvizContainerABC):
             surfacenames if surfacenames else [surface.stem for surface in surfacefiles]
         )
         self.zonelog = zonelog
-        self.zonecolors = (
-            zonecolors
-            if zonecolors
-            else [
-                "#67001f",
-                "#ab152a",
-                "#d05546",
-                "#ec9372",
-                "#fac8ac",
-                "#faeae1",
-                "#e6eff4",
-                "#bbd9e9",
-                "#7db7d6",
-                "#3a8bbf",
-                "#1f61a5",
-                "#053061",
-            ]
-        )
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -125,28 +113,58 @@ class FenceViewer(WebvizContainerABC):
         )
 
     @property
-    def options_layout(self):
-        return dcc.Checklist(
-            id=self.ids("options"),
-            options=[
-                self.segyfiles and {"label": "Show seismic", "value": "show_seismic"},
-                {"label": "Show surface fill", "value": "show_surface_fill",},
-                self.zonelog and {"label": "Show zonelog", "value": "show_zonelog"},
+    def viz_options_layout(self):
+        options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
+        value = ["show_surface_fill"]
+        if self.segyfiles:
+            options.append({"label": "Show seismic", "value": "show_seismic"})
+        if self.zonelog:
+            options.append({"label": "Show zonelog", "value": "show_zonelog"})
+            value.append("show_zonelog")
+
+        return dcc.Checklist(id=self.ids("options"), options=options, value=value,)
+
+    @property
+    def well_options(self):
+        return html.Div(
+            style={"marginLeft": "20px", "marginRight": "0px", "marginBotton": "0px"},
+            children=[
+                html.Div(
+                    children=[
+                        html.Label("Sampling"),
+                        dcc.Input(
+                            id=self.ids("sampling"),
+                            debounce=True,
+                            type="number",
+                            value=self.sampling,
+                        ),
+                    ]
+                ),
+                html.Div(
+                    children=[
+                        html.Label("Nextend"),
+                        dcc.Input(
+                            id=self.ids("nextend"),
+                            debounce=True,
+                            type="number",
+                            value=self.nextend,
+                        ),
+                    ]
+                ),
             ],
-            value=["show_surface_fill", "show_zonelog"],
         )
 
     @property
     def layout(self):
         return html.Div(
-            # style=self.set_grid_layout("1fr 3fr"),
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr 1fr 1fr 1fr"),
+                    style=self.set_grid_layout("1fr 1fr 1fr 1fr 1fr"),
                     children=[
                         self.well_layout,
+                        self.well_options,
                         self.seismic_layout,
-                        self.options_layout,
+                        self.viz_options_layout,
                         html.Button(id=self.ids("show_map"), children="Show map",),
                     ],
                 ),
@@ -190,16 +208,19 @@ class FenceViewer(WebvizContainerABC):
                 Input(self.ids("wells"), "value"),
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("options"), "value"),
+                Input(self.ids("sampling"), "value"),
+                Input(self.ids("nextend"), "value"),
             ],
         )
-        def _render_section(well, cube, options):
+        def _render_section(well, cube, options, sampling, nextend):
+            """Update cross section"""
             well = load_well(str(get_path(well)))
             xsect = XSectionFigure(
                 well=well,
                 zmin=self.zmin,
                 zmax=self.zmax,
-                nextend=self.nextend,
-                sampling=self.sampling,
+                nextend=int(nextend),
+                sampling=int(sampling),
             )
 
             surfaces = [load_surface(str(get_path(surf))) for surf in self.surfacefiles]
@@ -218,6 +239,7 @@ class FenceViewer(WebvizContainerABC):
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
             )
+            xsect.layout["margin"] = {"t": 0}
             return {"data": xsect.data, "layout": xsect.layout}
 
         @app.callback(
@@ -229,6 +251,7 @@ class FenceViewer(WebvizContainerABC):
             [State(self.ids("map_wrapper"), "style")],
         )
         def _show_map(nclicks, style):
+            """Show/hide map on button click"""
             btn = "Show Map"
             if not nclicks:
                 raise PreventUpdate
@@ -244,12 +267,12 @@ class FenceViewer(WebvizContainerABC):
             [Input(self.ids("wells"), "value")],
         )
         def _render_surface(wellname):
+            """Update map"""
             wellname = get_path(wellname)
             surface = load_surface(str(get_path(self.surfacefiles[0])))
             well = load_well(str(wellname))
-            arr = get_surface_arr(surface)
             s_layer = make_surface_layer(
-                arr, name=self.surfacenames[0], hillshading=True,
+                surface, name=self.surfacenames[0], hillshading=True,
             )
             well_layer = make_well_layer(well, wellname.stem)
             return [s_layer, well_layer], "keep"
@@ -265,54 +288,3 @@ class FenceViewer(WebvizContainerABC):
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
-
-
-def make_surface_layer(
-    arr,
-    name="surface",
-    min_val=None,
-    max_val=None,
-    color="viridis",
-    hillshading=False,
-    unit="m",
-):
-    bounds = [[np.min(arr[0]), np.min(arr[1])], [np.max(arr[0]), np.max(arr[1])]]
-    min_val = min_val if min_val else np.min(arr[2])
-    max_val = max_val if min_val else np.max(arr[2])
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": True,
-        "data": [
-            {
-                "type": "image",
-                "url": array_to_png(arr[2].copy()),
-                "colormap": get_colormap(color),
-                "bounds": bounds,
-                "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val else None,
-                "maxvalue": f"{max_val:.2f}" if max_val else None,
-                "unit": unit,
-            }
-        ],
-    }
-
-
-def make_well_layer(well, name="well", zmin=0):
-
-    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
-    positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": False,
-        "data": [
-            {
-                "type": "polyline",
-                "color": "black",
-                # "metadata": {"type": "well", "name": name},
-                "positions": positions,
-                "tooltip": name,
-            }
-        ],
-    }

@@ -118,7 +118,12 @@ class XSectionFigure:
         hvals_copy = ma.masked_where(zvals < self._zmin, hvals)
 
         self._data.append(
-            {"x": hvals_copy, "y": zvals_copy, "marker": {"color": "black"}}
+            {
+                "x": hvals_copy,
+                "y": zvals_copy,
+                "name": self._well.name,
+                "marker": {"color": "black"},
+            }
         )
 
         # ax.plot(hvals_copy, zvals_copy, linewidth=6, c="black")
@@ -137,7 +142,6 @@ class XSectionFigure:
             zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
         )
         zomax = int(df[zonelogname].max())
-
         for zone in range(zomin, zomax + 1):
 
             zvals_copy = ma.masked_where(zonevals != zone, zvals)
@@ -150,7 +154,7 @@ class XSectionFigure:
                     "line": {"width": 10},
                     "marker": {"opacity": 0.5},
                     # "connectgaps": True,
-                    # "name": f"Zone: {zone}",
+                    "name": f"Zone: {zone}",
                 }
             )
 
@@ -201,6 +205,7 @@ class XSectionFigure:
         alpha=0.7,
         interpolation="gaussian",
         sampling="nearest",
+        name="seismic",
     ):
         """Plot a cube backdrop.
 
@@ -250,6 +255,7 @@ class XSectionFigure:
                 "dy": y_inc,
                 "zsmooth": "best",
                 "showscale": False,
+                "name": name
                 # "colorscale": colors,
             }
         )
