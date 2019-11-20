@@ -524,6 +524,39 @@ a FMU ensemble.</p>
 </code></pre>
 <hr>
 
+
+<h3>WellCrossSection</h3>
+<pre><code>Displays a cross section along a well with intersected surfaces,
+and optionally seismic cubes.
+</code></pre>
+<ul>
+<li><code>segyfiles</code>: List of file paths to segyfiles</li>
+<li><code>surfacefiles</code>: List of file paths to Irap binary surfaces</li>
+<li><code>surfacenames</code>: Corresponding list of displayed surface names</li>
+<li><code>wellfiles</code>: List of file paths to RMS wells</li>
+<li><code>zunit</code>: z-unit for display</li>
+<li><code>zonelog</code>: Name of zonelog</li>
+<li><code>zmin</code>: Visualized minimum z-value in cross section</li>
+<li><code>zmax</code>: Visualized maximum z-value in cross section</li>
+<li><code>zonemin</code>: First zonenumber to draw in log</li>
+<li><code>sampling</code>: Sampling interval of well fence</li>
+<li><code>nextend</code>: Number to extend distance of sampling, e.g. 2<em>20 (nextend</em>sampling)</li>
+</ul>
+<pre><code class='yaml'>  - container: WellCrossSection
+    surfacefiles: some value
+    wellfiles: some value
+    segyfiles: None  # Optional (default value shown here).
+    surfacenames: None  # Optional (default value shown here).
+    zonelog: None  # Optional (default value shown here).
+    zunit: depth (m)  # Optional (default value shown here).
+    zmin: None  # Optional (default value shown here).
+    zmax: None  # Optional (default value shown here).
+    zonemin: 1  # Optional (default value shown here).
+    nextend: 2  # Optional (default value shown here).
+    sampling: 40  # Optional (default value shown here).
+</code></pre>
+<hr>
+
 </div>
 
 </div>
