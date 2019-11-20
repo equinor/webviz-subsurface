@@ -32,7 +32,6 @@ def test_basic_example(dash_duo, tmp_path):
         "parameterdistribution",
         "morris_plot",
         "grid_viewer",
-        "segyviewer",
         "last_page",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
