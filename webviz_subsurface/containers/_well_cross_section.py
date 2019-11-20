@@ -22,8 +22,6 @@ class WellCrossSection(WebvizContainerABC):
     Displays a cross section along a well with intersected surfaces,
     and optionally seismic cubes.
 
-
-
 * `segyfiles`: List of file paths to segyfiles
 * `surfacefiles`: List of file paths to Irap binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
@@ -33,8 +31,8 @@ class WellCrossSection(WebvizContainerABC):
 * `zmin`: Visualized minimum z-value in cross section
 * `zmax`: Visualized maximum z-value in cross section
 * `zonemin`: First zonenumber to draw in log
-* `sampling`: Sampling interval of well fence i.e. horizonal distance (input)
-* `nextend`: Number if sampling to extend; e.g. 2 * 20
+* `sampling`: Sampling interval of well fence
+* `nextend`: Number to extend distance of sampling, e.g. 2*20 (nextend*sampling)
 
 """
 

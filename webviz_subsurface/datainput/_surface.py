@@ -1,5 +1,4 @@
 import numpy as np
-
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
 
