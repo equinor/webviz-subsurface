@@ -2,17 +2,21 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 
-from dash.dependencies import Input, Output
+import numpy as np
+from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 
 from ..datainput._xsection import XSectionFigure
 from ..datainput._seismic import load_cube_data
 from ..datainput._well import load_well
-from ..datainput._surface import load_surface
+from ..datainput._surface import load_surface, get_surface_arr
+from ..datainput._image_processing import array_to_png, get_colormap
 
 
 class FenceViewer(WebvizContainerABC):
@@ -41,8 +45,12 @@ class FenceViewer(WebvizContainerABC):
         zmin: float = None,
         zmax: float = None,
         zonemin: int = 1,
+        nextend: int = 1,
+        sampling: int = 100,
     ):
         self.zunit = zunit
+        self.sampling = sampling
+        self.nextend = nextend
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
@@ -134,14 +142,35 @@ class FenceViewer(WebvizContainerABC):
             # style=self.set_grid_layout("1fr 3fr"),
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr 1fr 1fr"),
+                    style=self.set_grid_layout("1fr 1fr 1fr 1fr"),
                     children=[
                         self.well_layout,
                         self.seismic_layout,
                         self.options_layout,
+                        html.Button(id=self.ids("show_map"), children="Show map",),
                     ],
                 ),
-                wcc.Graph(id=self.ids("graph")),
+                html.Div(
+                    id=self.ids("viz_wrapper"),
+                    style={"position": "relative"},
+                    children=[
+                        html.Div(
+                            id=self.ids("map_wrapper"),
+                            style={
+                                "position": "absolute",
+                                "width": "30%",
+                                "height": "40%",
+                                "right": 0,
+                                "zIndex": 10000,
+                                "visibility": "hidden",
+                            },
+                            children=LayeredMap(
+                                height=400, id=self.ids("map"), layers=[]
+                            ),
+                        ),
+                        wcc.Graph(id=self.ids("graph")),
+                    ],
+                ),
             ],
         )
 
@@ -163,10 +192,14 @@ class FenceViewer(WebvizContainerABC):
                 Input(self.ids("options"), "value"),
             ],
         )
-        def _render_surface(well, cube, options):
+        def _render_section(well, cube, options):
             well = load_well(str(get_path(well)))
             xsect = XSectionFigure(
-                well=well, zmin=self.zmin, zmax=self.zmax, nextend=50
+                well=well,
+                zmin=self.zmin,
+                zmax=self.zmax,
+                nextend=self.nextend,
+                sampling=self.sampling,
             )
 
             surfaces = [load_surface(str(get_path(surf))) for surf in self.surfacefiles]
@@ -185,9 +218,41 @@ class FenceViewer(WebvizContainerABC):
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
             )
-            print(xsect.data)
-            print(xsect.layout)
             return {"data": xsect.data, "layout": xsect.layout}
+
+        @app.callback(
+            [
+                Output(self.ids("map_wrapper"), "style"),
+                Output(self.ids("show_map"), "children"),
+            ],
+            [Input(self.ids("show_map"), "n_clicks")],
+            [State(self.ids("map_wrapper"), "style")],
+        )
+        def _show_map(nclicks, style):
+            btn = "Show Map"
+            if not nclicks:
+                raise PreventUpdate
+            if nclicks % 2:
+                style["visibility"] = "visible"
+                btn = "Hide Map"
+            else:
+                style["visibility"] = "hidden"
+            return style, btn
+
+        @app.callback(
+            [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
+            [Input(self.ids("wells"), "value")],
+        )
+        def _render_surface(wellname):
+            wellname = get_path(wellname)
+            surface = load_surface(str(get_path(self.surfacefiles[0])))
+            well = load_well(str(wellname))
+            arr = get_surface_arr(surface)
+            s_layer = make_surface_layer(
+                arr, name=self.surfacenames[0], hillshading=True,
+            )
+            well_layer = make_well_layer(well, wellname.stem)
+            return [s_layer, well_layer], "keep"
 
     def add_webvizstore(self):
         return [
@@ -200,3 +265,54 @@ class FenceViewer(WebvizContainerABC):
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
+
+
+def make_surface_layer(
+    arr,
+    name="surface",
+    min_val=None,
+    max_val=None,
+    color="viridis",
+    hillshading=False,
+    unit="m",
+):
+    bounds = [[np.min(arr[0]), np.min(arr[1])], [np.max(arr[0]), np.max(arr[1])]]
+    min_val = min_val if min_val else np.min(arr[2])
+    max_val = max_val if min_val else np.max(arr[2])
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": True,
+        "data": [
+            {
+                "type": "image",
+                "url": array_to_png(arr[2].copy()),
+                "colormap": get_colormap(color),
+                "bounds": bounds,
+                "allowHillshading": hillshading,
+                "minvalue": f"{min_val:.2f}" if min_val else None,
+                "maxvalue": f"{max_val:.2f}" if max_val else None,
+                "unit": unit,
+            }
+        ],
+    }
+
+
+def make_well_layer(well, name="well", zmin=0):
+
+    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
+    positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": False,
+        "data": [
+            {
+                "type": "polyline",
+                "color": "black",
+                # "metadata": {"type": "well", "name": name},
+                "positions": positions,
+                "tooltip": name,
+            }
+        ],
+    }

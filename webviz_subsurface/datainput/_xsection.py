@@ -23,7 +23,7 @@ class XSectionFigure:
         zmax=None,
         well=None,
         surfaces=None,
-        sampling=20,
+        sampling=5,
         nextend=5,
         zonelogshift=0,
         surfacenames=None,
