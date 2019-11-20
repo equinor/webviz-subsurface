@@ -30,7 +30,9 @@ The plots are linked and updates are done by clicking in the plots.
 * `colors`: List of colors to use
 """
 
-    def __init__(self, app, segyfiles: List[Path], zunit="depth (m)", colors: list = None):
+    def __init__(
+        self, app, segyfiles: List[Path], zunit="depth (m)", colors: list = None
+    ):
         self.zunit = zunit
         self.segyfiles = [str(segy) for segy in segyfiles]
         self.initial_colors = (
