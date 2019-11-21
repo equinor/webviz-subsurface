@@ -41,7 +41,7 @@ def make_surface_layer(
     arr = get_surface_arr(surface)
     bounds = [[np.min(arr[0]), np.min(arr[1])], [np.max(arr[0]), np.max(arr[1])]]
     min_val = min_val if min_val else np.min(arr[2])
-    max_val = max_val if min_val else np.max(arr[2])
+    max_val = max_val if max_val else np.max(arr[2])
     return {
         "name": name,
         "checked": True,
