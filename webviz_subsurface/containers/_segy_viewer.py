@@ -75,9 +75,9 @@ The plots are linked and updates are done by clicking in the plots.
         cube = load_cube_data(get_path(cubepath))
         state = {
             "cubepath": cubepath,
-            "iline": int(cube.ilines[0]),
-            "xline": int(cube.xlines[0]),
-            "zslice": float(cube.zslices[0]),
+            "iline": int(cube.ilines[int(len(cube.ilines) / 2)]),
+            "xline": int(cube.xlines[int(len(cube.xlines) / 2)]),
+            "zslice": float(cube.zslices[int(len(cube.zslices) / 2)]),
             "min_value": float(f"{round(cube.values.min(), 2):2f}"),
             "max_value": float(f"{round(cube.values.max(), 2):2f}"),
             "color_min_value": float(f"{round(cube.values.min(), 2):2f}"),
