@@ -4,7 +4,7 @@ import json
 import yaml
 
 import pandas as pd
-import plotly.tools as tools
+from plotly.subplots import make_subplots
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -375,7 +375,7 @@ Plot options:
                     titles.append(date)
 
             # Make a plotly subplot figure
-            fig = tools.make_subplots(
+            fig = make_subplots(
                 rows=len(vectors),
                 cols=2 if visualization == "statistics_hist" else 1,
                 shared_xaxes=True,
@@ -406,7 +406,7 @@ Plot options:
                         data, vector, date=date, colors=self.ens_colors
                     )
                     for trace in histdata:
-                        fig.append_trace(trace, i + 1, 2)
+                        fig.add_trace(trace, i + 1, 2)
                 else:
                     raise PreventUpdate
 
@@ -417,12 +417,12 @@ Plot options:
                             trace["showlegend"] = False
                         else:
                             legends.append(trace.get("legendgroup"))
-                    fig.append_trace(trace, i + 1, 1)
+                    fig.add_trace(trace, i + 1, 1)
 
                 # Add observations
                 if self.observations.get(vector):
                     for trace in add_observation_trace(self.observations.get(vector)):
-                        fig.append_trace(trace, i + 1, 1)
+                        fig.add_trace(trace, i + 1, 1)
 
             # Add additional styling to layout
             fig["layout"].update(
