@@ -8,9 +8,6 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-
-# pylint: disable=no-name-in-module
-from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
@@ -160,7 +157,7 @@ The plots are linked and updates are done by clicking in the plots.
                         html.Label(
                             style={"textAlign": "center"}, children="Set colorscale"
                         ),
-                        DashColorscales(
+                        wcc.ColorScales(
                             id=self.color_scale_id,
                             colorscale=self.initial_colors,
                             nSwatches=12,
