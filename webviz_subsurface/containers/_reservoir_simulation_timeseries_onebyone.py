@@ -16,7 +16,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._private_containers.tornado_plot import TornadoPlot
-from .._datainput import load_smry, get_realizations
+from .._datainput.fmu_input import load_smry, get_realizations
 
 
 # pylint: disable=too-many-instance-attributes

@@ -11,6 +11,11 @@ except ImportError:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+def scratch_ensemble(ensemble_name, ensemble_path):
+    return ScratchEnsemble(ensemble_name, ensemble_path)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
     return EnsembleSet(
         ensemble_set_name,

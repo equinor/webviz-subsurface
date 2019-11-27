@@ -14,7 +14,7 @@ from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
-from .._datainput import load_smry
+from .._datainput.fmu_input import load_smry
 
 
 class ReservoirSimulationTimeSeries(WebvizContainerABC):

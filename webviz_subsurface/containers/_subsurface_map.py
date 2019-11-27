@@ -9,7 +9,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizContainerABC
 
-from .._datainput import scratch_ensemble
+from .._datainput.fmu_input import scratch_ensemble
 
 
 class SubsurfaceMap(WebvizContainerABC):
