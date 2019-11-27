@@ -12,7 +12,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizContainerABC
 
-from ..datainput import extract_volumes
+from .._datainput.inplace_volumes import extract_volumes
 
 
 class InplaceVolumes(WebvizContainerABC):

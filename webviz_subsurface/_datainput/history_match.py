@@ -9,10 +9,7 @@ try:
 except ImportError:  # fmu.ensemble is an optional dependency, e.g.
     pass  # for a portable webviz instance, it is never used.
 
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def scratch_ensemble(ensemble_name, ensemble_path):
-    return fmu.ensemble.ScratchEnsemble(ensemble_name, ensemble_path)
+from .fmu_input import scratch_ensemble
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

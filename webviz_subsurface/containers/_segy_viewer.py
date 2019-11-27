@@ -12,7 +12,7 @@ import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 
-from ..datainput._seismic import load_cube_data, get_iline, get_xline, get_zslice
+from .._datainput.seismic import load_cube_data, get_iline, get_xline, get_zslice
 
 
 class SegyViewer(WebvizContainerABC):

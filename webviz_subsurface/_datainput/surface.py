@@ -2,7 +2,7 @@ import numpy as np
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
 
-from ._image_processing import array_to_png, get_colormap
+from .image_processing import array_to_png, get_colormap
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

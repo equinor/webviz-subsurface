@@ -13,9 +13,9 @@ from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
-
-from ..datainput import extract_volumes, get_realizations
+from .._private_containers.tornado_plot import TornadoPlot
+from .._datainput.inplace_volumes import extract_volumes
+from .._datainput.fmu_input import get_realizations
 
 
 class InplaceVolumesOneByOne(WebvizContainerABC):

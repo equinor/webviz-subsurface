@@ -12,7 +12,8 @@ from dash_table import DataTable
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizContainerABC
 
-from ..datainput import scratch_ensemble, load_surface, get_wfence, get_hfence
+from .._datainput.fmu_input import scratch_ensemble
+from .._datainput.intersect import load_surface, get_wfence, get_hfence
 
 
 class Intersect(WebvizContainerABC):

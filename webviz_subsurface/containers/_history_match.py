@@ -8,7 +8,7 @@ import dash_html_components as html
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizContainerABC
 
-from ..datainput import extract_mismatch
+from .._datainput.history_match import extract_mismatch
 
 
 class HistoryMatch(WebvizContainerABC):

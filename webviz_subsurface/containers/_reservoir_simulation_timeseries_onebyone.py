@@ -14,9 +14,10 @@ import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_subsurface.private_containers._tornado_plot import TornadoPlot
 
-from ..datainput import load_smry, get_realizations
+from .._private_containers.tornado_plot import TornadoPlot
+from .._datainput.fmu_input import load_smry, get_realizations
+
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
