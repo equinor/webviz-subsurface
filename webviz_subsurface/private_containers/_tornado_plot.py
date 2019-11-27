@@ -2,6 +2,7 @@ from uuid import uuid4
 import json
 import pandas as pd
 
+import dash
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
@@ -30,24 +31,17 @@ The format of the json dump must be:
 
 Mouse events:
 The current case at mouse cursor can be retrieved by registering a callback
-that reads from `tornadoplot.hover_id` or `tornadoplot.click_id` if `allow_hover`
-or `allow_click` has been specified at initialization.
+that reads from  `tornadoplot.click_id` if `allow_click` has been specified at initialization.
 
 
 * `realizations`: Dataframe of realizations with corresponding sensitivity cases
 * `reference`: Which sensitivity to use as reference.
-* `allow_hover`: Registers a callback to store current data on mouse hover
 * `allow_click`: Registers a callback to store current data on mouse click
 
 """
 
     def __init__(
-        self,
-        app,
-        realizations,
-        reference="rms_seed",
-        allow_hover=False,
-        allow_click=False,
+        self, app, realizations, reference="rms_seed", allow_click=False,
     ):
 
         self.realizations = realizations
@@ -62,88 +56,118 @@ or `allow_click` has been specified at initialization.
         self.initial_reference = (
             reference if reference in self.sensnames else self.sensnames[0]
         )
-        self.allow_hover = allow_hover
         self.allow_click = allow_click
-        self._storage_id = f"{str(uuid4())}-tornado-data"
-        self._reference_id = f"{str(uuid4())}-reference"
-        self._graph_id = f"{str(uuid4())}-graph"
-        self._hover_id = f"{str(uuid4())}-hover"
-        self._click_id = f"{str(uuid4())}-click"
-        self._scale_id = f"{str(uuid4())}-scale"
-        self._cut_by_ref_id = f"{str(uuid4())}-cutref"
+        self.uid = uuid4()
         self.set_callbacks(app)
+
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     @property
     def storage_id(self):
         """The id of the dcc.Store component that holds the tornado data"""
-        return self._storage_id
-
-    @property
-    def hover_id(self):
-        """The id of the dcc.Store component that holds hover data"""
-        return self._hover_id
+        return self.ids("storage")
 
     @property
     def click_id(self):
         """The id of the dcc.Store component that holds click data"""
-        return self._click_id
+        return self.ids("click-store")
+
+    @staticmethod
+    def set_grid_layout(columns):
+        return {
+            "display": "grid",
+            "alignContent": "space-around",
+            "justifyContent": "space-between",
+            "gridTemplateColumns": f"{columns}",
+        }
 
     @property
     def layout(self):
         return html.Div(
             [
-                dcc.Store(id=self.storage_id),
                 html.Div(
-                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr"},
+                    style={"marginLeft": "20%"},
                     children=[
-                        html.Label("Reference"),
-                        html.Label("Scale"),
-                        html.Label("Cut by reference"),
-                    ],
-                ),
-                html.Div(
-                    style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr"},
-                    children=[
-                        dcc.Dropdown(
-                            id=self._reference_id,
-                            options=[{"label": r, "value": r} for r in self.sensnames],
-                            value=self.initial_reference,
-                            clearable=False,
+                        html.Label("Tornado Plot", style={"textAlign":"center","font-weight": "bold"}),
+                        html.Div(
+                            style=self.set_grid_layout("1fr 1fr"),
+                            children=[html.Label("Reference"), html.Label("Scale"),],
                         ),
-                        dcc.Dropdown(
-                            id=self._scale_id,
-                            options=[
-                                {"label": r, "value": r}
-                                for r in ["Percentage", "Absolute"]
+                        html.Div(
+                            style=self.set_grid_layout("1fr 1fr"),
+                            children=[
+                                dcc.Dropdown(
+                                    id=self.ids("reference"),
+                                    options=[
+                                        {"label": r, "value": r} for r in self.sensnames
+                                    ],
+                                    value=self.initial_reference,
+                                    clearable=False,
+                                ),
+                                dcc.Dropdown(
+                                    id=self.ids("scale"),
+                                    options=[
+                                        {"label": r, "value": r}
+                                        for r in ["Percentage", "Absolute"]
+                                    ],
+                                    value="Percentage",
+                                    clearable=False,
+                                ),
                             ],
-                            value="Percentage",
-                            clearable=False,
                         ),
-                        dcc.RadioItems(
-                            labelStyle={"display": "inline-block"},
-                            id=self._cut_by_ref_id,
-                            options=[
-                                {"label": "Off", "value": False},
-                                {"label": "On", "value": True},
+                        html.Div(
+                            style=self.set_grid_layout("1fr 1fr"),
+                            children=[
+                                html.Label(
+                                    style={"marginTop": "10px"},
+                                    children="Cut by reference",
+                                )
                             ],
-                            value=False,
                         ),
+                        html.Div(
+                            style=self.set_grid_layout("1fr 1fr"),
+                            children=[
+                                dcc.RadioItems(
+                                    labelStyle={"display": "inline-block"},
+                                    id=self.ids("cut-by-ref"),
+                                    options=[
+                                        {"label": "Off", "value": False},
+                                        {"label": "On", "value": True},
+                                    ],
+                                    value=False,
+                                ),
+                                html.Button(
+                                    style={
+                                        "position": "relative",
+                                        "top": "-50%",
+                                        "fontSize": "10px",
+                                    },
+                                    id=self.ids("reset"),
+                                    children="Clear selected",
+                                ),
+                            ],
+                        ),
+                        wcc.Graph(
+                            id=self.ids("tornado-graph"),
+                            config={"displayModeBar": False},
+                        ),
+                        dcc.Store(id=self.ids("storage")),
+                        dcc.Store(id=self.ids("click-store")),
                     ],
-                ),
-                wcc.Graph(id=self._graph_id, config={"displayModeBar": False}),
-                dcc.Store(id=self.hover_id),
-                dcc.Store(id=self.click_id),
+                )
             ]
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self._graph_id, "figure"),
+            Output(self.ids("tornado-graph"), "figure"),
             [
-                Input(self._reference_id, "value"),
-                Input(self._scale_id, "value"),
-                Input(self._cut_by_ref_id, "value"),
-                Input(self.storage_id, "children"),
+                Input(self.ids("reference"), "value"),
+                Input(self.ids("scale"), "value"),
+                Input(self.ids("cut-by-ref"), "value"),
+                Input(self.ids("storage"), "children"),
             ],
         )
         def _calc_tornado(reference, scale, cutbyref, data):
@@ -161,45 +185,40 @@ or `allow_click` has been specified at initialization.
             except KeyError:
                 return {}
 
-        if self.allow_hover:
-
-            @app.callback(
-                Output(self.hover_id, "children"), [Input(self._graph_id, "hoverData")]
-            )
-            def _save_hover_data(data):
-                try:
-                    real_low = data["points"][0]["customdata"]
-                    real_high = data["points"][1]["customdata"]
-                    sens_name = data["points"][0]["y"]
-                    return json.dumps(
-                        {
-                            "real_low": real_low,
-                            "real_high": real_high,
-                            "sens_name": sens_name,
-                        }
-                    )
-                except TypeError:
-                    raise PreventUpdate
-
         if self.allow_click:
 
             @app.callback(
-                Output(self.click_id, "children"), [Input(self._graph_id, "clickData")]
+                Output(self.ids("click-store"), "children"),
+                [
+                    Input(self.ids("tornado-graph"), "clickData"),
+                    Input(self.ids("reset"), "n_clicks"),
+                ],
             )
-            def _save_hover_data(data):
-                try:
-                    real_low = data["points"][0]["customdata"]
-                    real_high = data["points"][1]["customdata"]
-                    sens_name = data["points"][0]["y"]
-                    return json.dumps(
-                        {
-                            "real_low": real_low,
-                            "real_high": real_high,
-                            "sens_name": sens_name,
-                        }
-                    )
-                except TypeError:
+            def _save_click_data(data, nclicks):
+                if not dash.callback_context.triggered:
                     raise PreventUpdate
+
+                ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+
+                if ctx == self.ids("reset") and nclicks:
+
+                    return json.dumps(
+                        {"real_low": [], "real_high": [], "sens_name": None,}
+                    )
+                else:
+                    try:
+                        real_low = data["points"][0]["customdata"]
+                        real_high = data["points"][1]["customdata"]
+                        sens_name = data["points"][0]["y"]
+                        return json.dumps(
+                            {
+                                "real_low": real_low,
+                                "real_high": real_high,
+                                "sens_name": sens_name,
+                            }
+                        )
+                    except TypeError:
+                        raise PreventUpdate
 
 
 def scale_to_ref(value, ref, scale):

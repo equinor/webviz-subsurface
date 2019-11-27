@@ -4,6 +4,7 @@ import json
 
 import numpy as np
 import pandas as pd
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -21,17 +22,25 @@ from ..datainput import load_smry, get_realizations
 class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
     """### ReservoirSimulationTimeSeriesOneByOne
 
-Visualizes reservoir simulation time series related to a FMU ensemble with design matrix.
-Input can be given either as aggregated csv files for smry and sensitivity information,
+Visualizes reservoir simulation time series for sensitivity studies.
+
+A tornadoplot can be calculated interactively for each date/vector by choosing a data. After selecting
+a date individual sensitivities can be selected to highlight the realizations run with that sensitivity.
+
+Input can be given either as aggregated csv files for summary vectors and sensitivity information,
 or as an ensemble name defined in 'container_settings'.
 
-A tornadoplot can be calculated interactively for each date/vector.
-The realizations for each sensitivity can be highlighted.
+#### Time series input
+The time series input can either extracted automatically from the ensemble or provided as a standalone csv. 
+[Example file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv) 
+
+
+#### Sensitivity input
 
 The sensitivity information is extracted automatically if an ensemble is given as input,
-as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
-If aggregated csv files are given as input a csv file with the following columns are
-required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
+as long as *SENSCASE* and *SENSNAME* is found in *parameters.txt*.
+
+[Example csv file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv) 
 
 * `csvfile_smry`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
 * `csvfile_reals`: Aggregated csvfile for sensitivity information
@@ -125,26 +134,18 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             else self.smry_cols[0]
         )
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
-
-        self.make_uuids()
-
+        self.uid = uuid4()
         self.set_callbacks(app)
 
-    def make_uuids(self):
-        uuid = f"{uuid4()}"
-        self.smry_col_id = f"smry-col-{uuid}"
-        self.store_date_id = f"date-store{uuid}"
-        self.ensemble_id = f"ensemble-{uuid}"
-        self.table_id = f"table-{uuid}"
-        self.graph_id = f"graph-{uuid}"
-        self.graph_wrapper_id = f"graph-wrapper-{uuid}"
-        self.tornadowrapper_id = f"tornadowrapper-{uuid}"
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     @property
     def tour_steps(self):
         return [
             {
-                "id": self.graph_wrapper_id,
+                "id": self.ids("graph-wrapper"),
                 "content": (
                     "Selected time series displayed per realization. "
                     "Click in the plot to calculate tornadoplot for the "
@@ -152,7 +153,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                 ),
             },
             {
-                "id": self.tornadowrapper_id,
+                "id": self.ids("tornado-wrapper"),
                 "content": (
                     "Tornado plot for the currently displayed data. "
                     "Differences references can be set and sensitivities "
@@ -161,8 +162,8 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                     "relevant realizations in the main chart."
                 ),
             },
-            {"id": self.smry_col_id, "content": "Select time series"},
-            {"id": self.ensemble_id, "content": "Select ensemble"},
+            {"id": self.ids("vector"), "content": "Select time series"},
+            {"id": self.ids("ensemble"), "content": "Select ensemble"},
         ]
 
     @property
@@ -173,7 +174,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Ensemble"),
                 dcc.Dropdown(
-                    id=self.ensemble_id,
+                    id=self.ids("ensemble"),
                     options=[
                         {"label": i, "value": i}
                         for i in list(self.data["ENSEMBLE"].unique())
@@ -192,7 +193,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Time Series"),
                 dcc.Dropdown(
-                    id=self.smry_col_id,
+                    id=self.ids("vector"),
                     options=[{"label": i, "value": i} for i in self.smry_cols],
                     clearable=False,
                     value=self.initial_vector,
@@ -245,7 +246,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
     @property
     def layout(self):
         return html.Div(
-            style=self.set_grid_layout("3fr 1fr"),
+            style=self.set_grid_layout("4fr 2fr"),
             children=[
                 html.Div(
                     [
@@ -254,18 +255,18 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                             children=[
                                 self.ensemble_selector,
                                 self.smry_selector,
-                                dcc.Store(id=self.store_date_id),
+                                dcc.Store(id=self.ids("date-store")),
                             ],
                         ),
                         html.Div(
                             [
                                 html.Div(
-                                    id=self.graph_wrapper_id,
+                                    id=self.ids("graph-wrapper"),
                                     style={"height": "450px"},
-                                    children=wcc.Graph(id=self.graph_id),
+                                    children=wcc.Graph(id=self.ids("graph")),
                                 ),
                                 DataTable(
-                                    id=self.table_id,
+                                    id=self.ids("table"),
                                     sort_action="native",
                                     filter_action="native",
                                     page_action="native",
@@ -285,66 +286,23 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                         ),
                     ]
                 ),
-                html.Div(id=self.tornadowrapper_id, children=self.tornadoplot.layout),
+                html.Div(
+                    id=self.ids("tornado-wrapper"), children=self.tornadoplot.layout
+                ),
             ],
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.graph_wrapper_id, "children"),
-            [Input(self.ensemble_id, "value"), Input(self.smry_col_id, "value")],
-            [State(self.graph_id, "figure"), State(self.store_date_id, "children")],
-        )
-        def _render_lines(ensemble, vector, figure, date):
-            """Callback to update graph, and tornado
-            Since it is not possible to use the same Output object in two different
-            callbacks, a parent div is used to re-render the graph when changing
-            vector or ensemble
-            """
-
-            # Filter dataframe based on dropdown choices
-            data = filter_ensemble(self.data, ensemble, vector)
-            traces = [
-                {
-                    "type": "line",
-                    "marker": {"color": "grey"},
-                    "hoverinfo": "skip",
-                    "x": df["DATE"],
-                    "y": df[vector],
-                    "customdata": r,
-                }
-                for r, df in data.groupby(["REAL"])
-            ]
-            traces[0]["hoverinfo"] = "x"
-
-            # Check if a data has been clicked previously
-            # If so, add the vertical line to the figure
-            if date:
-                ymin = min([min(trace["y"]) for trace in figure["data"]])
-                ymax = max([max(trace["y"]) for trace in figure["data"]])
-                date = json.loads(date)
-                layout = {
-                    "shapes": [
-                        {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
-                    ],
-                    "showlegend": False,
-                }
-            else:
-                layout = {"showlegend": False}
-            return [
-                wcc.Graph(id=self.graph_id, figure={"data": traces, "layout": layout})
-            ]
-
-        @app.callback(
             [
-                Output(self.store_date_id, "children"),
-                Output(self.table_id, "data"),
+                # Output(self.ids("date-store"), "children"),
+                Output(self.ids("table"), "data"),
                 Output(self.tornadoplot.storage_id, "children"),
             ],
             [
-                Input(self.ensemble_id, "value"),
-                Input(self.graph_id, "clickData"),
-                Input(self.smry_col_id, "value"),
+                Input(self.ids("ensemble"), "value"),
+                Input(self.ids("graph"), "clickData"),
+                Input(self.ids("vector"), "value"),
             ],
         )
         def _render_date(ensemble, clickdata, vector):
@@ -359,7 +317,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows = calculate_table_rows(data, vector)
             return (
-                json.dumps(f"{date}"),
+                # json.dumps(f"{date}"),
                 table_rows,
                 json.dumps(
                     {
@@ -370,39 +328,79 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             )
 
         @app.callback(
-            Output(self.graph_id, "figure"),
+            Output(self.ids("graph"), "figure"),
             [
                 Input(self.tornadoplot.click_id, "children"),
-                Input(self.store_date_id, "children"),
+                # Input(self.ids("date-store"), "children"),
+                Input(self.ids("ensemble"), "value"),
+                Input(self.ids("vector"), "value"),
+                Input(self.ids("graph"), "clickData"),
             ],
-            [State(self.graph_id, "figure")],
+            [State(self.ids("graph"), "figure")],
         )
-        def _render_tornado(clickdata, date, figure):
+        def _render_tornado(tornado_click, ensemble, vector, date_click, figure):
             """Update graph with line coloring, vertical line and title"""
-            if not clickdata:
-                return figure
+            if not dash.callback_context.triggered:
+                raise PreventUpdate
+            ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
-            clickdata = json.loads(clickdata)
-            for trace in figure["data"]:
-                if trace["customdata"] in clickdata["real_low"]:
-                    trace["marker"] = {"color": "rgb(235, 0, 54)"}
-                    trace["opacity"] = 1
-                elif trace["customdata"] in clickdata["real_high"]:
-                    trace["marker"] = {"color": "rgb(36, 55, 70)"}
-                    trace["opacity"] = 1
-                else:
-                    trace["marker"] = {"color": "grey"}
-                    trace["opacity"] = 0.02
-            if date:
-                ymin = min([min(trace["y"]) for trace in figure["data"]])
-                ymax = max([max(trace["y"]) for trace in figure["data"]])
-                date = json.loads(date)
-                figure["layout"]["shapes"] = [
-                    {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+            # Redraw figure if ensemble/vector hanges
+            if ctx == self.ids("ensemble") or ctx == self.ids("vector"):
+                data = filter_ensemble(self.data, ensemble, vector)
+                traces = [
+                    {
+                        "type": "line",
+                        "marker": {"color": "grey"},
+                        "hoverinfo": "skip",
+                        "x": df["DATE"],
+                        "y": df[vector],
+                        "customdata": r,
+                    }
+                    for r, df in data.groupby(["REAL"])
                 ]
+                traces[0]["hoverinfo"] = "x"
+                layout = {"showlegend": False}
+                figure = {"data": traces, "layout": layout}
+
+            # Update line colors if a sensitivity is selected in tornado
+            if tornado_click:
+                tornado_click = json.loads(tornado_click)
+                if not tornado_click.get("real_low"):
+                    for trace in figure["data"]:
+                        trace["marker"] = {"color": "grey"}
+                        trace["opacity"] = 1
+                else:
+                    for trace in figure["data"]:
+                        if trace["customdata"] in tornado_click["real_low"]:
+                            trace["marker"] = {"color": "rgb(235, 0, 54)"}
+                            trace["opacity"] = 1
+                        elif trace["customdata"] in tornado_click["real_high"]:
+                            trace["marker"] = {"color": "rgb(36, 55, 70)"}
+                            trace["opacity"] = 1
+                        else:
+                            trace["marker"] = {"color": "grey"}
+                            trace["opacity"] = 0.02
+
+            # Show date line on click, remove if tornado is resetted
+            if date_click:
+                if (
+                    tornado_click
+                    and not tornado_click.get("real_low")
+                    and figure["layout"].get("shapes")
+                ):
+                    figure["layout"]["shapes"] = []
+                    figure["layout"]["title"] = None
+                    return figure
+                else:
+                    date = date_click["points"][0]["x"]
+                    ymin = min([min(trace["y"]) for trace in figure["data"]])
+                    ymax = max([max(trace["y"]) for trace in figure["data"]])
+                    figure["layout"]["shapes"] = [
+                        {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+                    ]
                 figure["layout"][
                     "title"
-                ] = f"Date: {date}, sensitivity: {clickdata['sens_name']}"
+                ] = f"Date: {date}, sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
 
             return figure
 

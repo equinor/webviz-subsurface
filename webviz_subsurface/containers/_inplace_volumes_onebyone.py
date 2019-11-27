@@ -23,34 +23,39 @@ class InplaceVolumesOneByOne(WebvizContainerABC):
     """### InplaceVolumesOneByOne
 
 Visualizes inplace volumetrics related to a FMU ensemble with design matrix.
+
 Input can be given either as aggregated csv files for volumes and sensitivity information,
-or as an ensemble name defined in 'container_settings' and volumetric csv files
+or as an ensemble name defined in *container_settings* and volumetric csv files
 stored per realizations.
 
-In either case the volumetric csv files must follow FMU standards, that is it must have
-one or more of the following columns:
-'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.
+####Volumetric input
+The volumetric csv files must follow FMU standards.
+[Example csv file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv) 
+
+One of the columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* must be present.
 
 Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:
-"BULK_OIL": "Bulk Volume (Oil)"
-"NET_OIL": "Net Volume (Oil)"
-"PORE_OIL": "Pore Volume (Oil)"
-"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
-"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
-"BULK_GAS": "Bulk Volume (Gas)"
-"NET_GAS": "Net Volume (Gas)"
-"PORV_GAS": "Pore Volume (Gas)"
-"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
-"GIIP_GAS": "Gas Initially in-place"
-"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
-"RECOVERABLE_GAS": "Recoverable Volume (Gas)"
+
+- **BULK_OIL**: Bulk Volume (Oil)
+- **NET_OIL**: Net Volume (Oil)
+- **PORE_OIL**: Pore Volume (Oil)
+- **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
+- **STOIIP_OIL**: Stock Tank Oil Initially Inplace
+- **BULK_GAS**: Bulk Volume (Gas)
+- **NET_GAS**: Net Volume (Gas)
+- **PORV_GAS**: Pore Volume (Gas)
+- **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
+- **GIIP_GAS**: Gas Initially in-place
+- **RECOVERABLE_OIL**: Recoverable Volume (Oil)
+- **RECOVERABLE_GAS**: Recoverable Volume (Gas)
+
+#### Sensitivity input
 
 The sensitivity information is extracted automatically if an ensemble is given as input,
-as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
-If aggregated csv files are given as input a csv file with the following columns are
-required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
+as long as *SENSCASE* and *SENSNAME* is found in 'parameters.txt'.
 
+[Example csv file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv) 
 
 * `csvfile_vol`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
 * `csvfile_reals`: Aggregated csvfile for sensitivity information
@@ -149,21 +154,13 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
 
         # Initialize a tornado plot. Data is added in callback
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
-        self.make_uuids()
+        self.uid = uuid4()
+        self.selectors_id = {x: self.ids(x) for x in self.selectors}
         self.set_callbacks(app)
 
-    def make_uuids(self):
-        uuid = f"{uuid4()}"
-        self.graph_wrapper_id = f"graph-wrapper-{uuid}"
-        self.plot_type_id = f"plot-type-{uuid}"
-        self.graph_id = f"graph-{uuid}"
-        self.table_id = f"table-{uuid}"
-        self.response_id = f"response-{uuid}"
-        self.tornadowrapper_id = f"tornadowrapper-{uuid}"
-        self.source_id = f"source-{uuid}"
-        self.ensemble_id = f"ensemble-{uuid}"
-        self.filter_selectors_id = f"filter-selectors-{uuid}"
-        self.selectors_id = {x: f"{x}{uuid}" for x in self.selectors}
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     def add_webvizstore(self):
         return (
@@ -201,11 +198,11 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
     def tour_steps(self):
         return [
             {
-                "id": self.graph_id,
+                "id": self.ids("graph"),
                 "content": "The chart shows inplace volumetrics results.",
             },
             {
-                "id": self.table_id,
+                "id": self.ids("table"),
                 "content": (
                     "The table shows statistics per sensitivity parameter. "
                     "Rows can be filtered by searching, and sorted by "
@@ -213,11 +210,11 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                 ),
             },
             {
-                "id": self.response_id,
+                "id": self.ids("response"),
                 "content": "Select the volumetric calculation to display.",
             },
             {
-                "id": self.plot_type_id,
+                "id": self.ids("plot-type"),
                 "content": (
                     "Controls the type of the visualized chart. "
                     "Per realization shows bars per realization, "
@@ -225,7 +222,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                 ),
             },
             {
-                "id": self.tornadowrapper_id,
+                "id": self.ids("tornado-wrapper"),
                 "content": (
                     "Displays tornado plot for the currently selected data. "
                     "Differences references can be set and sensitivities "
@@ -235,21 +232,21 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                 ),
             },
             {
-                "id": self.ensemble_id,
+                "id": self.ids("ensemble"),
                 "content": (
                     "If several ensembles are available, the active ensemble "
                     "can be selected here."
                 ),
             },
             {
-                "id": self.source_id,
+                "id": self.ids("source"),
                 "content": (
                     "If volumes have been calculated for different grids. "
                     "E.g. geogrid and eclipsegrid, the active grid can be selected here."
                 ),
             },
             {
-                "id": self.filter_selectors_id,
+                "id": self.ids("filters"),
                 "content": (
                     "Filter on different combinations of e.g. zones, facies and regions "
                     "(The options will vary dependent on what was included "
@@ -286,7 +283,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Ensemble"),
                 dcc.Dropdown(
-                    id=self.ensemble_id,
+                    id=self.ids("ensemble"),
                     options=[
                         {"label": i, "value": i}
                         for i in list(self.volumes["ENSEMBLE"].unique())
@@ -304,7 +301,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Plot Type"),
                 dcc.RadioItems(
-                    id=self.plot_type_id,
+                    id=self.ids("plot-type"),
                     options=[
                         {"label": i, "value": i}
                         for i in ["Per Realization", "Box Plot"]
@@ -323,7 +320,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Volumetric calculation"),
                 dcc.Dropdown(
-                    id=self.response_id,
+                    id=self.ids("response"),
                     style={"width": "75%"},
                     options=[
                         {
@@ -348,7 +345,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             children=[
                 html.Label("Grid source"),
                 dcc.Dropdown(
-                    id=self.source_id,
+                    id=self.ids("source"),
                     options=[
                         {"label": i, "value": i}
                         for i in list(self.volumes["SOURCE"].unique())
@@ -409,7 +406,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                                 self.source_selector,
                                 html.Label("Filters"),
                                 html.Div(
-                                    id=self.filter_selectors_id,
+                                    id=self.ids("filters"),
                                     children=self.filter_selectors,
                                 ),
                             ]
@@ -424,10 +421,11 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                                     ],
                                 ),
                                 html.Div(
-                                    id=self.graph_wrapper_id, style={"height": "450px"}
+                                    id=self.ids("graph-wrapper"),
+                                    style={"height": "450px"},
                                 ),
                                 DataTable(
-                                    id=self.table_id,
+                                    id=self.ids("table"),
                                     sort_action="native",
                                     filter_action="native",
                                     page_action="native",
@@ -440,14 +438,9 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                             ]
                         ),
                         html.Div(
-                            id=self.tornadowrapper_id,
+                            id=self.ids("tornado-wrapper"),
                             style={"visibility": "visible"},
-                            children=[
-                                html.Label(
-                                    "Tornado Plot", style={"font-weight": "bold"}
-                                ),
-                                self.tornadoplot.layout,
-                            ],
+                            children=[self.tornadoplot.layout,],
                         ),
                     ],
                 )
@@ -457,18 +450,18 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
     def set_callbacks(self, app):
         @app.callback(
             [
-                Output(self.graph_wrapper_id, "children"),
+                Output(self.ids("graph-wrapper"), "children"),
                 Output(self.tornadoplot.storage_id, "children"),
-                Output(self.table_id, "data"),
+                Output(self.ids("table"), "data"),
             ],
             [
                 Input(i, "value")
                 for sublist in [
                     [
-                        self.plot_type_id,
-                        self.ensemble_id,
-                        self.response_id,
-                        self.source_id,
+                        self.ids("plot-type"),
+                        self.ids("ensemble"),
+                        self.ids("response"),
+                        self.ids("source"),
                     ],
                     list(self.selectors_id.values()),
                 ]
@@ -492,7 +485,7 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                 plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
-                    id=self.graph_id,
+                    id=self.ids("graph"),
                     figure={
                         "data": [
                             {
@@ -502,17 +495,14 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
                                 "type": "bar",
                             }
                         ],
-                        "layout": {
-                            "title": "Click on Tornado bar to highlight realizations",
-                            "xaxis": {"title": "Realization"},
-                        },
+                        "layout": {"xaxis": {"title": "Realizations"},},
                     },
                 )
             elif plot_type == "Box Plot":
                 # One box per sensitivity name
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
-                    id=self.graph_id,
+                    id=self.ids("graph"),
                     figure={
                         "data": [
                             {
@@ -540,9 +530,9 @@ required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH
             return figure, tornado, table
 
         @app.callback(
-            Output(self.graph_id, "figure"),
+            Output(self.ids("graph"), "figure"),
             [Input(self.tornadoplot.click_id, "children")],
-            [State(self.plot_type_id, "value"), State(self.graph_id, "figure")],
+            [State(self.ids("plot-type"), "value"), State(self.ids("graph"), "figure")],
         )
         def _color_chart(hoverdata, plot_type, figure):
             """Callback to update barchart color on tornado plot click"""
