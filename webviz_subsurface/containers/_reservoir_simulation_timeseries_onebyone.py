@@ -24,23 +24,25 @@ class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
 
 Visualizes reservoir simulation time series for sensitivity studies.
 
-A tornadoplot can be calculated interactively for each date/vector by choosing a data. After selecting
-a date individual sensitivities can be selected to highlight the realizations run with that sensitivity.
+A tornadoplot can be calculated interactively for each date/vector by choosing a data.
+After selecting a date individual sensitivities can be selected to highlight the realizations
+run with that sensitivity.
 
-Input can be given either as aggregated csv files for summary vectors and sensitivity information,
-or as an ensemble name defined in 'container_settings'.
+Input can be given either as aggregated csv files for summary vectors and sensitivity
+information, or as an ensemble name defined in 'container_settings'.
 
 #### Time series input
-The time series input can either extracted automatically from the ensemble or provided as a standalone csv. 
-[Example file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv) 
+The time series input can either extracted automatically from the ensemble or
+provided as a standalone csv.
+[Example file](
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv)
 
 
 #### Sensitivity input
 
 The sensitivity information is extracted automatically if an ensemble is given as input,
-as long as *SENSCASE* and *SENSNAME* is found in *parameters.txt*.
-
-[Example csv file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv) 
+as long as *SENSCASE* and *SENSNAME* is found in *parameters.txt*.[Example csv file](
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv)
 
 * `csvfile_smry`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
 * `csvfile_reals`: Aggregated csvfile for sensitivity information
@@ -391,16 +393,17 @@ as long as *SENSCASE* and *SENSNAME* is found in *parameters.txt*.
                     figure["layout"]["shapes"] = []
                     figure["layout"]["title"] = None
                     return figure
-                else:
-                    date = date_click["points"][0]["x"]
-                    ymin = min([min(trace["y"]) for trace in figure["data"]])
-                    ymax = max([max(trace["y"]) for trace in figure["data"]])
-                    figure["layout"]["shapes"] = [
-                        {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
-                    ]
-                figure["layout"][
-                    "title"
-                ] = f"Date: {date}, sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
+
+                date = date_click["points"][0]["x"]
+                ymin = min([min(trace["y"]) for trace in figure["data"]])
+                ymax = max([max(trace["y"]) for trace in figure["data"]])
+                figure["layout"]["shapes"] = [
+                    {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+                ]
+                figure["layout"]["title"] = (
+                    f"Date: {date}, "
+                    f"sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
+                )
 
             return figure
 

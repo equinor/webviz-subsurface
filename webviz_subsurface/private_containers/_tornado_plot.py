@@ -90,7 +90,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 html.Div(
                     style={"marginLeft": "20%"},
                     children=[
-                        html.Label("Tornado Plot", style={"textAlign":"center","font-weight": "bold"}),
+                        html.Label(
+                            "Tornado Plot",
+                            style={"textAlign": "center", "font-weight": "bold"},
+                        ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
                             children=[html.Label("Reference"), html.Label("Scale"),],
@@ -205,20 +208,19 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                     return json.dumps(
                         {"real_low": [], "real_high": [], "sens_name": None,}
                     )
-                else:
-                    try:
-                        real_low = data["points"][0]["customdata"]
-                        real_high = data["points"][1]["customdata"]
-                        sens_name = data["points"][0]["y"]
-                        return json.dumps(
-                            {
-                                "real_low": real_low,
-                                "real_high": real_high,
-                                "sens_name": sens_name,
-                            }
-                        )
-                    except TypeError:
-                        raise PreventUpdate
+                try:
+                    real_low = data["points"][0]["customdata"]
+                    real_high = data["points"][1]["customdata"]
+                    sens_name = data["points"][0]["y"]
+                    return json.dumps(
+                        {
+                            "real_low": real_low,
+                            "real_high": real_high,
+                            "sens_name": sens_name,
+                        }
+                    )
+                except TypeError:
+                    raise PreventUpdate
 
 
 def scale_to_ref(value, ref, scale):
