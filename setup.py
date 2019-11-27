@@ -34,7 +34,7 @@ setup(
     },
     install_requires=[
         "scipy~=1.2",
-        # "dash-daq~=0.1",
+        "dash-daq~=0.1",
         "matplotlib~=3.0",
         "pillow~=6.1",
         "xtgeo~=2.1",

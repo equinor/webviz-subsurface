@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 import pandas as pd
-# import dash_daq as daq
+import dash_daq as daq
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -153,7 +153,7 @@ and scatter plot for any given pair of parameters.
                         html.Label("Show density plot", style={"font-weight": "bold"}),
                         # ToggleSwitch module attribute in dash-daq is set at runtime
                         # pylint: disable=no-member, not-callable
-                        # daq.ToggleSwitch(id=self.density_id, value=True),
+                        daq.ToggleSwitch(id=self.density_id, value=True),
                     ],
                 ),
             ],
