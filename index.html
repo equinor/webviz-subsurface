@@ -309,31 +309,34 @@ but the following responses are given more descriptive names automatically:
 
 
 <h3>InplaceVolumesOneByOne</h3>
-<p>Visualizes inplace volumetrics related to a FMU ensemble with design matrix.
-Input can be given either as aggregated csv files for volumes and sensitivity information,
-or as an ensemble name defined in 'container_settings' and volumetric csv files
+<p>Visualizes inplace volumetrics related to a FMU ensemble with design matrix.</p>
+<p>Input can be given either as aggregated csv files for volumes and sensitivity information,
+or as an ensemble name defined in <em>container_settings</em> and volumetric csv files
 stored per realizations.</p>
-<p>In either case the volumetric csv files must follow FMU standards, that is it must have
-one or more of the following columns:
-'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.</p>
+<h4>Volumetric input</h4>
+<p>The volumetric csv files must follow FMU standards.
+<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv">Example csv file</a></p>
+<p>One of the columns: <em>ZONE</em>, <em>REGION</em>, <em>FACIES</em>, <em>LICENSE</em> must be present.</p>
 <p>Remaining columns are seen as volumetric responses. Any names are allowed,
-but the following responses are given more descriptive names automatically:
-"BULK_OIL": "Bulk Volume (Oil)"
-"NET_OIL": "Net Volume (Oil)"
-"PORE_OIL": "Pore Volume (Oil)"
-"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
-"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
-"BULK_GAS": "Bulk Volume (Gas)"
-"NET_GAS": "Net Volume (Gas)"
-"PORV_GAS": "Pore Volume (Gas)"
-"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
-"GIIP_GAS": "Gas Initially in-place"
-"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
-"RECOVERABLE_GAS": "Recoverable Volume (Gas)"</p>
+but the following responses are given more descriptive names automatically:</p>
+<ul>
+<li><strong>BULK_OIL</strong>: Bulk Volume (Oil)</li>
+<li><strong>NET_OIL</strong>: Net Volume (Oil)</li>
+<li><strong>PORE_OIL</strong>: Pore Volume (Oil)</li>
+<li><strong>HCPV_OIL</strong>: Hydro Carbon Pore Volume (Oil)</li>
+<li><strong>STOIIP_OIL</strong>: Stock Tank Oil Initially Inplace</li>
+<li><strong>BULK_GAS</strong>: Bulk Volume (Gas)</li>
+<li><strong>NET_GAS</strong>: Net Volume (Gas)</li>
+<li><strong>PORV_GAS</strong>: Pore Volume (Gas)</li>
+<li><strong>HCPV_GAS</strong>: Hydro Carbon Pore Volume (Gas)</li>
+<li><strong>GIIP_GAS</strong>: Gas Initially in-place</li>
+<li><strong>RECOVERABLE_OIL</strong>: Recoverable Volume (Oil)</li>
+<li><strong>RECOVERABLE_GAS</strong>: Recoverable Volume (Gas)</li>
+</ul>
+<h4>Sensitivity input</h4>
 <p>The sensitivity information is extracted automatically if an ensemble is given as input,
-as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
-If aggregated csv files are given as input a csv file with the following columns are
-required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH</p>
+as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.</p>
+<p><a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv">Example csv file</a></p>
 <ul>
 <li><code>csvfile_vol</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
 <li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
@@ -453,15 +456,19 @@ in container settings.</p>
 
 
 <h3>ReservoirSimulationTimeSeriesOneByOne</h3>
-<p>Visualizes reservoir simulation time series related to a FMU ensemble with design matrix.
-Input can be given either as aggregated csv files for smry and sensitivity information,
-or as an ensemble name defined in 'container_settings'.</p>
-<p>A tornadoplot can be calculated interactively for each date/vector.
-The realizations for each sensitivity can be highlighted.</p>
+<p>Visualizes reservoir simulation time series for sensitivity studies.</p>
+<p>A tornadoplot can be calculated interactively for each date/vector by choosing a data.
+After selecting a date individual sensitivities can be selected to highlight the realizations
+run with that sensitivity.</p>
+<p>Input can be given either as aggregated csv files for summary vectors and sensitivity
+information, or as an ensemble name defined in 'container_settings'.</p>
+<h4>Time series input</h4>
+<p>The time series input can either extracted automatically from the ensemble or
+provided as a standalone csv.
+<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv">Example file</a></p>
+<h4>Sensitivity input</h4>
 <p>The sensitivity information is extracted automatically if an ensemble is given as input,
-as long as 'SENSCASE' and 'SENSNAME' is found in 'parameters.txt'.
-If aggregated csv files are given as input a csv file with the following columns are
-required: ENSEMBLE,REAL,SENSCASE,SENSNAME,SENSTYPE,RUNPATH</p>
+as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.txt</em>.<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv">Example csv file</a></p>
 <ul>
 <li><code>csvfile_smry</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
 <li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
