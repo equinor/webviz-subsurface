@@ -13,7 +13,7 @@ from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from ..datainput import load_parameters
+from .._datainput import load_parameters
 
 
 class ParameterDistribution(WebvizContainerABC):

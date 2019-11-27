@@ -11,10 +11,10 @@ from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizContainerABC
 from webviz_config.webviz_store import webvizstore
 
-from ..datainput._xsection import XSectionFigure
-from ..datainput._seismic import load_cube_data
-from ..datainput._well import load_well, make_well_layer
-from ..datainput._surface import load_surface, make_surface_layer
+from .._datainput.xsection import XSectionFigure
+from .._datainput.seismic import load_cube_data
+from .._datainput.well import load_well, make_well_layer
+from .._datainput.surface import load_surface, make_surface_layer
 
 
 class WellCrossSection(WebvizContainerABC):
