@@ -200,7 +200,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
-                "id": self.ids(""),
+                "id": self.ids("layout"),
                 "content": (
                     "Dashboard displaying inplace volumetric results "
                     "from a sensitivity study. "
@@ -400,7 +400,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def layout(self):
         """Main layout"""
         return html.Div(
-            [
+            id=self.ids("layout"),
+            children=[
                 html.Div(
                     style=self.set_grid_layout("1fr 3fr 2fr"),
                     children=[
@@ -444,11 +445,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         html.Div(
                             id=self.ids("tornado-wrapper"),
                             style={"visibility": "visible"},
-                            children=[self.tornadoplot.layout,],
+                            children=[self.tornadoplot.layout],
                         ),
                     ],
                 )
-            ]
+            ],
         )
 
     def set_callbacks(self, app):
@@ -499,7 +500,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "type": "bar",
                             }
                         ],
-                        "layout": {"xaxis": {"title": "Realizations"},},
+                        "layout": {"xaxis": {"title": "Realizations"}},
                     },
                 )
             elif plot_type == "Box Plot":

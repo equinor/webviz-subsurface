@@ -129,7 +129,7 @@ but the following responses are given more descriptive names automatically:
     def tour_steps(self):
         return [
             {
-                "id": self.ids(""),
+                "id": self.ids("layout"),
                 "content": ("Dashboard displaying inplace volumetric results. "),
             },
             {
@@ -349,7 +349,8 @@ but the following responses are given more descriptive names automatically:
     def layout(self):
         """Main layout"""
         return html.Div(
-            [
+            id=self.ids("layout"),
+            children=[
                 html.Div(
                     style=self.style_layout,
                     children=[
@@ -382,7 +383,7 @@ but the following responses are given more descriptive names automatically:
                         ),
                     ],
                 )
-            ]
+            ],
         )
 
     def set_callbacks(self, app):

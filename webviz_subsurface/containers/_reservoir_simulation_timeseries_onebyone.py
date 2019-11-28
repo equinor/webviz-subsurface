@@ -148,7 +148,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
-                "id": self.ids(""),
+                "id": self.ids("layout"),
                 "content": (
                     "Dashboard displaying time series from a sensitivity study. "
                 ),
@@ -253,6 +253,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     @property
     def layout(self):
         return html.Div(
+            id=self.ids("layout"),
             style=self.set_grid_layout("4fr 2fr"),
             children=[
                 html.Div(

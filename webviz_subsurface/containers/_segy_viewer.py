@@ -83,7 +83,7 @@ The plots are linked and updates are done by clicking in the plots.
     def tour_steps(self):
         return [
             {
-                "id": self.ids(""),
+                "id": self.ids("layout"),
                 "content": (
                     "Visualizes SEG-Y cubes. Display different slices "
                     "of the cube by clicking (MB1) in the different plots. "
@@ -227,7 +227,9 @@ The plots are linked and updates are done by clicking in the plots.
 
     @property
     def layout(self):
-        return html.Div(children=[self.settings_layout, self.plot_layout])
+        return html.Div(
+            id=self.ids("layout"), children=[self.settings_layout, self.plot_layout]
+        )
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app):
