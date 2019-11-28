@@ -83,17 +83,21 @@ The plots are linked and updates are done by clicking in the plots.
     def tour_steps(self):
         return [
             {
+                "id": self.ids(""),
+                "content": (
+                    "Visualizes SEG-Y cubes. Display different slices "
+                    "of the cube by clicking (MB1) in the different plots. "
+                    "To zoom, hold MB1 and draw a vertical/horizontal "
+                    "line or a rectangle."
+                ),
+            },
+            {
                 "id": self.ids("cube"),
                 "content": ("The currently visualized seismic cube."),
             },
             {
                 "id": self.ids("inline"),
-                "content": (
-                    "Selected inline for the seismic cube. "
-                    "Adjacent views are updated by clicking MB1 "
-                    "in the plot. To zoom, hold MB1 and draw a vertical/horizontal "
-                    "line or a rectangle."
-                ),
+                "content": ("Selected inline for the seismic cube. "),
             },
             {
                 "id": self.ids("xline"),
