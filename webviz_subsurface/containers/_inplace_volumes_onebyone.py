@@ -223,16 +223,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     "while the boxplot shows the range per sensitivity."
                 ),
             },
-            {
-                "id": self.ids("tornado-wrapper"),
-                "content": (
-                    "Displays tornado plot for the currently selected data. "
-                    "Differences references can be set and sensitivities "
-                    "smaller than the reference can be filtered out. "
-                    "Click on the bar of a sensitivity to highlight the "
-                    "relevant realizations in the main chart."
-                ),
-            },
+            *self.tornadoplot.tour_steps,
             {
                 "id": self.ids("ensemble"),
                 "content": (

@@ -65,6 +65,40 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         return f"{element}-id-{self.uid}"
 
     @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.ids("tornado-graph"),
+                "content": (
+                    "Shows tornado plot for a selected date. Individual sensitivites "
+                    "can be clicked. (The plot is empty until a date has been selected)."
+                ),
+            },
+            {
+                "id": self.ids("reference"),
+                "content": (
+                    "Set reference sensitivity for which to calculate tornado plot"
+                ),
+            },
+            {
+                "id": self.ids("scale"),
+                "content": (
+                    "Set tornadoplot scale to either percentage or absolute values"
+                ),
+            },
+            {
+                "id": self.ids("cut-by-ref"),
+                "content": (
+                    "Remove sensitivities smaller than the reference from the plot"
+                ),
+            },
+            {
+                "id": self.ids("reset"),
+                "content": "Clears the currently selected sensitivity",
+            },
+        ]
+
+    @property
     def storage_id(self):
         """The id of the dcc.Store component that holds the tornado data"""
         return self.ids("storage")

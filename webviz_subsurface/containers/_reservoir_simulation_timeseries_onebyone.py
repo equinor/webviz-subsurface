@@ -156,15 +156,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ),
             },
             {
-                "id": self.ids("tornado-wrapper"),
+                "id": self.ids("table"),
                 "content": (
-                    "Tornado plot for the currently displayed data. "
-                    "Differences references can be set and sensitivities "
-                    "smaller than the reference can be filtered out. "
-                    "Click on the bar of a sensitivity to highlight the "
-                    "relevant realizations in the main chart."
+                    "Table statistics for all sensitivities for the selected date"
                 ),
             },
+            *self.tornadoplot.tour_steps,
             {"id": self.ids("vector"), "content": "Select time series"},
             {"id": self.ids("ensemble"), "content": "Select ensemble"},
         ]
