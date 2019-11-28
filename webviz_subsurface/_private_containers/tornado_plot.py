@@ -67,13 +67,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
     @property
     def tour_steps(self):
         return [
-            {
-                "id": self.ids("tornado-graph"),
-                "content": (
-                    "Shows tornado plot for a selected date. Individual sensitivites "
-                    "can be clicked. (The plot is empty until a date has been selected)."
-                ),
-            },
+            {"id": self.ids("tornado-graph"), "content": ("Shows tornado plot."),},
             {
                 "id": self.ids("reference"),
                 "content": (
