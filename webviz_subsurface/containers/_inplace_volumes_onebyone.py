@@ -200,8 +200,19 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
+                "id": self.ids(""),
+                "content": (
+                    "Dashboard displaying inplace volumetric results "
+                    "from a sensitivity study. "
+                ),
+            },
+            {
                 "id": self.ids("graph"),
-                "content": "The chart shows inplace volumetrics results.",
+                "content": (
+                    "Chart showing results for the current selection. "
+                    "Different charts and options can be selected from the menu above. "
+                    "Different sensitivities can be highlighted by clicking in the tornado plot"
+                ),
             },
             {
                 "id": self.ids("table"),

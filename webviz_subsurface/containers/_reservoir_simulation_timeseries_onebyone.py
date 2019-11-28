@@ -148,11 +148,18 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
+                "id": self.ids(""),
+                "content": (
+                    "Dashboard displaying time series from a sensitivity study. "
+                ),
+            },
+            {
                 "id": self.ids("graph-wrapper"),
                 "content": (
                     "Selected time series displayed per realization. "
                     "Click in the plot to calculate tornadoplot for the "
-                    "corresponding date"
+                    "corresponding date, then click on the tornado plot to "
+                    "highlight the corresponding sensitivity."
                 ),
             },
             {
