@@ -15,7 +15,9 @@ except DistributionNotFound:
 def subscribe(scratch_ensembles, config_folder):
     if scratch_ensembles is not None:
         for ensemble_name, ensemble_path in scratch_ensembles.items():
-            scratch_ensembles[ensemble_name] = str(config_folder / ensemble_path)
+            if not pathlib.Path(ensemble_path).is_absolute():
+                scratch_ensembles[ensemble_name] = str(config_folder / ensemble_path)
+
             if not glob.glob(scratch_ensembles[ensemble_name]):
                 raise ValueError(
                     f"Ensemble {ensemble_name} is said to be located at {ensemble_path},"
