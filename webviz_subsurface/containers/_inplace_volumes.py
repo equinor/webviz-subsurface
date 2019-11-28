@@ -20,7 +20,7 @@ class InplaceVolumes(WebvizContainerABC):
 
 This container visualizes inplace volumetrics results from
 FMU ensembles. Input can be given either as aggregated csv files
-or as an ensemble name defined in 'container_settings' and csvfiles stored
+or as an ensemble name defined in 'shared_settings' and csvfiles stored
 per realizations.
 In either case the csv files must follow FMU standards, that is it must have
 one or more of the following columns:
@@ -42,7 +42,7 @@ but the following responses are given more descriptive names automatically:
 "RECOVERABLE_GAS": "Recoverable Volume (Gas)"
 
 * `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `volfiles`:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)
 * `volfolder`: Optional local folder for csv files
 * `response`: Optional initial visualized volume response
@@ -67,7 +67,6 @@ but the following responses are given more descriptive names automatically:
     def __init__(
         self,
         app,
-        container_settings,
         csvfile: Path = None,
         ensembles: list = None,
         volfiles: dict = None,
@@ -85,7 +84,8 @@ but the following responses are given more descriptive names automatically:
 
         elif ensembles and volfiles:
             self.ens_paths = tuple(
-                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+                for ens in ensembles
             )
             self.volfiles = tuple(volfiles.items())
             self.volfolder = volfolder

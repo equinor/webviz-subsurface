@@ -21,7 +21,7 @@ Input can be either a premade json object or data can be extracted from
 a FMU ensemble.
 
 * `jsonfile`: jsonfile with data.
-* `ensemble`: Which ensemble in `container_settings` to visualize.
+* `ensemble`: Which ensemble in `shared_settings` to visualize.
 * `map_value`: Which property to show in the map (e.g. `PERMX`).
 * `flow_value`: Which property to use for the streamlines animation
   (e.g. `FLOWAT`).
@@ -31,7 +31,7 @@ a FMU ensemble.
 
     def __init__(
         self,
-        container_settings,
+        app,
         jsonfile: Path = None,
         ensemble: str = None,
         map_value: str = None,
@@ -53,7 +53,9 @@ a FMU ensemble.
             self.map_value = map_value
             self.flow_value = flow_value
             self.time_step = time_step
-            self.ensemble_path = container_settings["scratch_ensembles"][ensemble]
+            self.ensemble_path = app.webviz_settings["shared_settings"][
+                "scratch_ensembles"
+            ][ensemble]
             self.map_data = get_map_data(
                 self.ensemble_path, self.map_value, self.flow_value, self.time_step
             )
