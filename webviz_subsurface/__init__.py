@@ -1,4 +1,5 @@
 import glob
+import pathlib
 from pkg_resources import get_distribution, DistributionNotFound
 
 import webviz_config
