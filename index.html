@@ -224,20 +224,20 @@ rely on the setting <code>scratch_ensemble</code> configuration within the
 <code>container_settings</code>.
 I.e. you could have</p>
 <pre><code class="yaml">title: Reek Webviz Demonstration
-username: some_username
-password: some_password
 
-container_settings:
+shared_settings:
   scratch_ensembles:
     iter-0: /scratch/my_ensemble/realization-*/iter-0
     iter-1: /scratch/my_ensemble/realization-*/iter-1
 
 pages:
 
- - title: Front page
-   content:
-    - container: SummaryStats
-      ensemble: iter-0
+  - title: Front page
+    content:
+      - container: ReservoirSimulationTimeSeries
+        ensembles:
+          - iter-0
+          - iter-1
 </code></pre><div style='margin-left: 40px;'>
 
 <h3>Disk usage</h3>
@@ -258,7 +258,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.</p>
 <h3>History match</h3>
 <p>This container visualizes the quality of the history match.</p>
 <ul>
-<li><code>ensembles</code>: List of the ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: List of the ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>observation_File</code>: Path to the observation <code>.yaml</code> file.</li>
 <li><code>title</code>: Optional title for the container.</li>
 </ul>
@@ -299,7 +299,7 @@ but the following responses are given more descriptive names automatically:</p>
 <li>
 <p><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</p>
 </li>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
@@ -317,7 +317,7 @@ but the following responses are given more descriptive names automatically:</p>
 <h3>InplaceVolumesOneByOne</h3>
 <p>Visualizes inplace volumetrics related to a FMU ensemble with design matrix.</p>
 <p>Input can be given either as aggregated csv files for volumes and sensitivity information,
-or as an ensemble name defined in <em>container_settings</em> and volumetric csv files
+or as an ensemble name defined in <em>shared_settings</em> and volumetric csv files
 stored per realizations.</p>
 <h4>Volumetric input</h4>
 <p>The volumetric csv files must follow FMU standards.
@@ -347,7 +347,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.
 <ul>
 <li><code>csvfile_vol</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
 <li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
@@ -404,7 +404,7 @@ effect with other parameters.</p>
 <p>This container shows parameter correlation using a correlation matrix,
 and scatter plot for any given pair of parameters.</p>
 <ul>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>drop_constants</code>: Drop constant parameters</li>
 </ul>
 <pre><code class='yaml'>  - container: ParameterCorrelation
@@ -419,10 +419,10 @@ and scatter plot for any given pair of parameters.</p>
 Parameters are visualized per ensemble as a histogram, and as a boxplot showing
 the parameter ranges for each ensemble.
 Input can be given either as an aggregated csv files with parameter information
-or as an ensemble name defined in <code>container_settings</code>.</p>
+or as an ensemble name defined in <code>shared_settings</code>.</p>
 <ul>
 <li><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns</li>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 </ul>
 <pre><code class='yaml'>  - container: ParameterDistribution
     csvfile: None  # Optional (default value shown here).
@@ -437,7 +437,7 @@ Input can be given either as aggregated csv file or an ensemble defined
 in container settings.</p>
 <ul>
 <li><code>csvfile</code>: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.</li>
@@ -468,7 +468,7 @@ in container settings.</p>
 After selecting a date individual sensitivities can be selected to highlight the realizations
 run with that sensitivity.</p>
 <p>Input can be given either as aggregated csv files for summary vectors and sensitivity
-information, or as an ensemble name defined in 'container_settings'.</p>
+information, or as an ensemble name defined in 'shared_settings'.</p>
 <h4>Time series input</h4>
 <p>The time series input can either extracted automatically from the ensemble or
 provided as a standalone csv.
@@ -479,7 +479,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 <ul>
 <li><code>csvfile_smry</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
 <li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
-<li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.</li>
@@ -522,7 +522,7 @@ Input can be either a premade json object or data can be extracted from
 a FMU ensemble.</p>
 <ul>
 <li><code>jsonfile</code>: jsonfile with data.</li>
-<li><code>ensemble</code>: Which ensemble in <code>container_settings</code> to visualize.</li>
+<li><code>ensemble</code>: Which ensemble in <code>shared_settings</code> to visualize.</li>
 <li><code>map_value</code>: Which property to show in the map (e.g. <code>PERMX</code>).</li>
 <li><code>flow_value</code>: Which property to use for the streamlines animation
   (e.g. <code>FLOWAT</code>).</li>
