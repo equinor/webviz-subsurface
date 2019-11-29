@@ -269,30 +269,36 @@ showing disk usage, per user, either as a pie chart or as a bar chart.</p>
 <hr>
 
 
-<h3>Volumetrics</h3>
+<h3>InplaceVolumes</h3>
 <p>This container visualizes inplace volumetrics results from
-FMU ensembles. Input can be given either as aggregated csv files
-or as an ensemble name defined in 'container_settings' and csvfiles stored
-per realizations.
-In either case the csv files must follow FMU standards, that is it must have
-one or more of the following columns:
-'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.</p>
+FMU ensembles.</p>
+<p>Input can be given either as aggregated csv files for volumes or or as an ensemble name
+defined in <em>container_settings</em> and volumetric csv files stored per realizations.</p>
+<h4>Volumetric input</h4>
+<p>The volumetric csv files must follow FMU standards.
+<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv">Example csv file</a></p>
+<p>The columns: <em>ZONE</em>, <em>REGION</em>, <em>FACIES</em>, <em>LICENSE</em> and <em>SOURCE</em> will be used as available
+filters if present. (<em>SOURCE</em> is relevant if calculations are done for multiple grids).</p>
 <p>Remaining columns are seen as volumetric responses. Any names are allowed,
-but the following responses are given more descriptive names automatically:
-"BULK_OIL": "Bulk Volume (Oil)"
-"NET_OIL": "Net Volume (Oil)"
-"PORE_OIL": "Pore Volume (Oil)"
-"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
-"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
-"BULK_GAS": "Bulk Volume (Gas)"
-"NET_GAS": "Net Volume (Gas)"
-"PORV_GAS": "Pore Volume (Gas)"
-"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
-"GIIP_GAS": "Gas Initially in-place"
-"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
-"RECOVERABLE_GAS": "Recoverable Volume (Gas)"</p>
+but the following responses are given more descriptive names automatically:</p>
 <ul>
-<li><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
+<li><strong>BULK_OIL</strong>: Bulk Volume (Oil)</li>
+<li><strong>NET_OIL</strong>: Net Volume (Oil)</li>
+<li><strong>PORE_OIL</strong>: Pore Volume (Oil)</li>
+<li><strong>HCPV_OIL</strong>: Hydro Carbon Pore Volume (Oil)</li>
+<li><strong>STOIIP_OIL</strong>: Stock Tank Oil Initially In Place</li>
+<li><strong>BULK_GAS</strong>: Bulk Volume (Gas)</li>
+<li><strong>NET_GAS</strong>: Net Volume (Gas)</li>
+<li><strong>PORV_GAS</strong>: Pore Volume (Gas)</li>
+<li><strong>HCPV_GAS</strong>: Hydro Carbon Pore Volume (Gas)</li>
+<li><strong>GIIP_GAS</strong>: Gas Initially In Place</li>
+<li><strong>RECOVERABLE_OIL</strong>: Recoverable Volume (Oil)</li>
+<li>
+<p><strong>RECOVERABLE_GAS</strong>: Recoverable Volume (Gas)</p>
+</li>
+<li>
+<p><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</p>
+</li>
 <li><code>ensembles</code>: Which ensembles in <code>container_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
@@ -316,7 +322,8 @@ stored per realizations.</p>
 <h4>Volumetric input</h4>
 <p>The volumetric csv files must follow FMU standards.
 <a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv">Example csv file</a></p>
-<p>One of the columns: <em>ZONE</em>, <em>REGION</em>, <em>FACIES</em>, <em>LICENSE</em> must be present.</p>
+<p>The columns: <em>ZONE</em>, <em>REGION</em>, <em>FACIES</em>, <em>LICENSE</em> and <em>SOURCE</em> will be used as available
+filters if present. (<em>SOURCE</em> is relevant if calculations are done for multiple grids).</p>
 <p>Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:</p>
 <ul>
@@ -324,12 +331,12 @@ but the following responses are given more descriptive names automatically:</p>
 <li><strong>NET_OIL</strong>: Net Volume (Oil)</li>
 <li><strong>PORE_OIL</strong>: Pore Volume (Oil)</li>
 <li><strong>HCPV_OIL</strong>: Hydro Carbon Pore Volume (Oil)</li>
-<li><strong>STOIIP_OIL</strong>: Stock Tank Oil Initially Inplace</li>
+<li><strong>STOIIP_OIL</strong>: Stock Tank Oil Initially In Place</li>
 <li><strong>BULK_GAS</strong>: Bulk Volume (Gas)</li>
 <li><strong>NET_GAS</strong>: Net Volume (Gas)</li>
 <li><strong>PORV_GAS</strong>: Pore Volume (Gas)</li>
 <li><strong>HCPV_GAS</strong>: Hydro Carbon Pore Volume (Gas)</li>
-<li><strong>GIIP_GAS</strong>: Gas Initially in-place</li>
+<li><strong>GIIP_GAS</strong>: Gas Initially In Place</li>
 <li><strong>RECOVERABLE_OIL</strong>: Recoverable Volume (Oil)</li>
 <li><strong>RECOVERABLE_GAS</strong>: Recoverable Volume (Gas)</li>
 </ul>
