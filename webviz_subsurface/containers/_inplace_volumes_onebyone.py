@@ -33,7 +33,8 @@ The volumetric csv files must follow FMU standards.
 [Example csv file](
 https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv)
 
-One of the columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* must be present.
+The columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* and *SOURCE* will be used as available
+filters if present. (*SOURCE* is relevant if calculations are done for multiple grids).
 
 Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:
@@ -42,12 +43,12 @@ but the following responses are given more descriptive names automatically:
 - **NET_OIL**: Net Volume (Oil)
 - **PORE_OIL**: Pore Volume (Oil)
 - **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
-- **STOIIP_OIL**: Stock Tank Oil Initially Inplace
+- **STOIIP_OIL**: Stock Tank Oil Initially In Place
 - **BULK_GAS**: Bulk Volume (Gas)
 - **NET_GAS**: Net Volume (Gas)
 - **PORV_GAS**: Pore Volume (Gas)
 - **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
-- **GIIP_GAS**: Gas Initially in-place
+- **GIIP_GAS**: Gas Initially In Place
 - **RECOVERABLE_OIL**: Recoverable Volume (Oil)
 - **RECOVERABLE_GAS**: Recoverable Volume (Gas)
 
@@ -73,12 +74,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         "NET_OIL": "Net Volume (Oil)",
         "PORV_OIL": "Pore Volume (Oil)",
         "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially Inplace",
+        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
         "BULK_GAS": "Bulk Volume (Gas)",
         "NET_GAS": "Net Volume (Gas)",
         "PORV_GAS": "Pore Volume (Gas)",
         "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially in-place",
+        "GIIP_GAS": "Gas Initially In Place",
         "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
         "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
     }
@@ -202,8 +203,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             {
                 "id": self.ids("layout"),
                 "content": (
-                    "Dashboard displaying inplace volumetric results "
-                    "from a sensitivity study. "
+                    "Dashboard displaying in place volumetric results "
+                    "from a sensitivity study."
                 ),
             },
             {
@@ -211,7 +212,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 "content": (
                     "Chart showing results for the current selection. "
                     "Different charts and options can be selected from the menu above. "
-                    "Different sensitivities can be highlighted by clicking in the tornado plot"
+                    "Different sensitivities can be highlighted by clicking in the tornado plot."
                 ),
             },
             {

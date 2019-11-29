@@ -16,7 +16,7 @@ from .._datainput.inplace_volumes import extract_volumes
 
 
 class InplaceVolumes(WebvizContainerABC):
-    """### Volumetrics
+    """### InplaceVolumes
 
 This container visualizes inplace volumetrics results from
 FMU ensembles.
@@ -24,12 +24,13 @@ FMU ensembles.
 Input can be given either as aggregated csv files for volumes or or as an ensemble name
 defined in *container_settings* and volumetric csv files stored per realizations.
 
-####Volumetric input
+#### Volumetric input
 The volumetric csv files must follow FMU standards.
 [Example csv file](
 https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv)
 
-One of the columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* must be present.
+The columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* and *SOURCE* will be used as available
+filters if present. (*SOURCE* is relevant if calculations are done for multiple grids).
 
 Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:
@@ -38,12 +39,12 @@ but the following responses are given more descriptive names automatically:
 - **NET_OIL**: Net Volume (Oil)
 - **PORE_OIL**: Pore Volume (Oil)
 - **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
-- **STOIIP_OIL**: Stock Tank Oil Initially Inplace
+- **STOIIP_OIL**: Stock Tank Oil Initially In Place
 - **BULK_GAS**: Bulk Volume (Gas)
 - **NET_GAS**: Net Volume (Gas)
 - **PORV_GAS**: Pore Volume (Gas)
 - **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
-- **GIIP_GAS**: Gas Initially in-place
+- **GIIP_GAS**: Gas Initially In Place
 - **RECOVERABLE_OIL**: Recoverable Volume (Oil)
 - **RECOVERABLE_GAS**: Recoverable Volume (Gas)
 
@@ -60,12 +61,12 @@ but the following responses are given more descriptive names automatically:
         "NET_OIL": "Net Volume (Oil)",
         "PORV_OIL": "Pore Volume (Oil)",
         "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially Inplace",
+        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
         "BULK_GAS": "Bulk Volume (Gas)",
         "NET_GAS": "Net Volume (Gas)",
         "PORV_GAS": "Pore Volume (Gas)",
         "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially in-place",
+        "GIIP_GAS": "Gas Initially In Place",
         "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
         "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
     }
@@ -130,7 +131,7 @@ but the following responses are given more descriptive names automatically:
         return [
             {
                 "id": self.ids("layout"),
-                "content": ("Dashboard displaying inplace volumetric results. "),
+                "content": ("Dashboard displaying in place volumetric results. "),
             },
             {
                 "id": self.ids("graph"),
@@ -451,22 +452,24 @@ but the following responses are given more descriptive names automatically:
 
             return False, list(self.volumes["ENSEMBLE"].unique())[0]
 
-        @app.callback(
-            [
-                Output(self.selectors_id["SOURCE"], "multi"),
-                Output(self.selectors_id["SOURCE"], "value"),
-            ],
-            [Input(self.ids("group"), "value")],
-        )
-        def _set_source_selector(group_by):
-            """If iteration is selected as group by set the iteration
-            selector to allow multiple selections, else use single selection
-            """
+        if "SOURCE" in self.selectors:
 
-            if group_by == "SOURCE":
-                return True, list(self.volumes["SOURCE"].unique())
+            @app.callback(
+                [
+                    Output(self.selectors_id["SOURCE"], "multi"),
+                    Output(self.selectors_id["SOURCE"], "value"),
+                ],
+                [Input(self.ids("group"), "value")],
+            )
+            def _set_source_selector(group_by):
+                """If iteration is selected as group by set the iteration
+                selector to allow multiple selections, else use single selection
+                """
 
-            return False, list(self.volumes["SOURCE"].unique())[0]
+                if group_by == "SOURCE" and "SOURCE" in self.selectors:
+                    return True, list(self.volumes["SOURCE"].unique())
+
+                return False, list(self.volumes["SOURCE"].unique())[0]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
