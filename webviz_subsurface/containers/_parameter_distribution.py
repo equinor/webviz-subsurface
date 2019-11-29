@@ -57,12 +57,34 @@ or as an ensemble name defined in `shared_settings`.
             for col in list(self.parameters.columns)
             if col not in ["REAL", "ENSEMBLE"]
         ]
-        self.uid = f"{uuid4()}"
-        self.histogram_id = f"histogram-id-{self.uid}"
-        self.prev_btn_id = f"prev-btn-id-{self.uid}"
-        self.next_btn_id = f"next-btn-id-{self.uid}"
-        self.pcol_id = f"pcol-id-{self.uid}"
+        self.uid = uuid4()
         self.set_callbacks(app)
+
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.ids("layout"),
+                "content": ("Dashboard displaying distribution of input parameters"),
+            },
+            {
+                "id": self.ids("graph"),
+                "content": (
+                    "Visualization of currently selected parameter as histogram "
+                    "series and distribution range per ensemble."
+                ),
+            },
+            {
+                "id": self.ids("parameter"),
+                "content": (
+                    "Select visualized parameter by selecting or searching the list."
+                ),
+            },
+        ]
 
     @staticmethod
     def set_grid_layout(columns):
@@ -85,13 +107,14 @@ or as an ensemble name defined in `shared_settings`.
     @property
     def layout(self):
         return html.Div(
-            [
+            id=self.ids("layout"),
+            children=[
                 html.H5("Select parameter distribution"),
                 html.Div(
                     style=self.set_grid_layout("8fr 1fr 2fr"),
                     children=[
                         dcc.Dropdown(
-                            id=self.pcol_id,
+                            id=self.ids("parameter"),
                             options=[
                                 {"value": col, "label": col}
                                 for col in self.parameter_columns
@@ -99,18 +122,21 @@ or as an ensemble name defined in `shared_settings`.
                             value=self.parameter_columns[0],
                             clearable=False,
                         ),
-                        self.make_buttons(self.prev_btn_id, self.next_btn_id),
+                        self.make_buttons(self.ids("prev-btn"), self.ids("next-btn")),
                     ],
                 ),
-                wcc.Graph(id=self.histogram_id),
-            ]
+                wcc.Graph(id=self.ids("graph")),
+            ],
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.pcol_id, "value"),
-            [Input(self.prev_btn_id, "n_clicks"), Input(self.next_btn_id, "n_clicks")],
-            [State(self.pcol_id, "value")],
+            Output(self.ids("parameter"), "value"),
+            [
+                Input(self.ids("prev-btn"), "n_clicks"),
+                Input(self.ids("next-btn"), "n_clicks"),
+            ],
+            [State(self.ids("parameter"), "value")],
         )
         def _set_parameter_from_btn(_prev_click, _next_click, column):
 
@@ -118,14 +144,14 @@ or as an ensemble name defined in `shared_settings`.
             if not ctx:
                 raise PreventUpdate
             callback = ctx[0]["prop_id"]
-            if callback == f"{self.prev_btn_id}.n_clicks":
+            if callback == f"{self.ids('prev-btn')}.n_clicks":
                 column = prev_value(column, self.parameter_columns)
-            elif callback == f"{self.next_btn_id}.n_clicks":
+            elif callback == f"{self.ids('next-btn')}.n_clicks":
                 column = next_value(column, self.parameter_columns)
             return column
 
         @app.callback(
-            Output(self.histogram_id, "figure"), [Input(self.pcol_id, "value")]
+            Output(self.ids("graph"), "figure"), [Input(self.ids("parameter"), "value")]
         )
         def _set_parameter(column):
             param = self.parameters[[column, "REAL", "ENSEMBLE"]]
@@ -146,7 +172,7 @@ or as an ensemble name defined in `shared_settings`.
 
     def add_webvizstore(self):
         return [
-            (read_csv, [{"csv_file": self.csvfile,}],)
+            (read_csv, [{"csv_file": self.csvfile}])
             if self.csvfile
             else (
                 load_parameters,

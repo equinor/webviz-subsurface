@@ -16,30 +16,38 @@ from .._datainput.inplace_volumes import extract_volumes
 
 
 class InplaceVolumes(WebvizContainerABC):
-    """### Volumetrics
+    """### InplaceVolumes
 
 This container visualizes inplace volumetrics results from
-FMU ensembles. Input can be given either as aggregated csv files
-or as an ensemble name defined in 'shared_settings' and csvfiles stored
-per realizations.
-In either case the csv files must follow FMU standards, that is it must have
-one or more of the following columns:
-'ZONE', 'REGION', 'FACIES', 'LICENSE' - these columns are used to filter the data.
+FMU ensembles.
+
+Input can be given either as aggregated csv files for volumes or or as an ensemble name
+defined in *container_settings* and volumetric csv files stored per realizations.
+
+#### Volumetric input
+
+The volumetric csv files must follow FMU standards.
+[Example csv file](
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv)
+
+The columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* and *SOURCE* will be used as available
+filters if present. (*SOURCE* is relevant if calculations are done for multiple grids).
 
 Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:
-"BULK_OIL": "Bulk Volume (Oil)"
-"NET_OIL": "Net Volume (Oil)"
-"PORE_OIL": "Pore Volume (Oil)"
-"HCPV_OIL": "Hydro Carbon Pore Volume (Oil)"
-"STOIIP_OIL": "Stock Tank Oil Initially Inplace"
-"BULK_GAS": "Bulk Volume (Gas)"
-"NET_GAS": "Net Volume (Gas)"
-"PORV_GAS": "Pore Volume (Gas)"
-"HCPV_GAS": "Hydro Carbon Pore Volume (Gas)"
-"GIIP_GAS": "Gas Initially in-place"
-"RECOVERABLE_OIL": "Recoverable Volume (Oil)"
-"RECOVERABLE_GAS": "Recoverable Volume (Gas)"
+
+- **BULK_OIL**: Bulk Volume (Oil)
+- **NET_OIL**: Net Volume (Oil)
+- **PORE_OIL**: Pore Volume (Oil)
+- **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
+- **STOIIP_OIL**: Stock Tank Oil Initially In Place
+- **BULK_GAS**: Bulk Volume (Gas)
+- **NET_GAS**: Net Volume (Gas)
+- **PORV_GAS**: Pore Volume (Gas)
+- **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
+- **GIIP_GAS**: Gas Initially In Place
+- **RECOVERABLE_OIL**: Recoverable Volume (Oil)
+- **RECOVERABLE_GAS**: Recoverable Volume (Gas)
 
 * `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
@@ -54,15 +62,26 @@ but the following responses are given more descriptive names automatically:
         "NET_OIL": "Net Volume (Oil)",
         "PORV_OIL": "Pore Volume (Oil)",
         "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially Inplace",
+        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
         "BULK_GAS": "Bulk Volume (Gas)",
         "NET_GAS": "Net Volume (Gas)",
         "PORV_GAS": "Pore Volume (Gas)",
         "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially in-place",
+        "GIIP_GAS": "Gas Initially In Place",
         "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
         "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
     }
+
+    TABLE_STATISTICS = [
+        "response",
+        "group",
+        "mean",
+        "stddev",
+        "minimum",
+        "p90",
+        "p10",
+        "maximum",
+    ]
 
     def __init__(
         self,
@@ -99,24 +118,62 @@ but the following responses are given more descriptive names automatically:
             )
 
         self.initial_response = response
-        self.radio_plot_type_id = "radio-plot-type-{}".format(uuid4())
-        self.response_id = "response-{}".format(uuid4())
-        self.chart_id = "chart-{}".format(uuid4())
-        self.table_id = "table-{}".format(uuid4())
-        self.radio_selectors_id = "radio-selectors-{}".format(uuid4())
+        self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
-        self.table_cols = [
-            "response",
-            "group",
-            "mean",
-            "stddev",
-            "minimum",
-            "p90",
-            "p10",
-            "maximum",
-        ]
 
         self.set_callbacks(app)
+
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.ids("layout"),
+                "content": ("Dashboard displaying in place volumetric results. "),
+            },
+            {
+                "id": self.ids("graph"),
+                "content": (
+                    "Chart showing results for the current selection. "
+                    "Different charts and options can be selected from the menu above."
+                ),
+            },
+            {
+                "id": self.ids("table"),
+                "content": (
+                    "The table shows statistics for the current active selection. "
+                    "Rows can be filtered by searching, and sorted by "
+                    "clicking on a column header."
+                ),
+            },
+            {
+                "id": self.ids("response"),
+                "content": "Select the volumetric calculation to display.",
+            },
+            {
+                "id": self.ids("plot-type"),
+                "content": (
+                    "Controls the type of the visualized chart. "
+                    "Per realization shows bars per realization, "
+                    "while the boxplot shows the range per sensitivity."
+                ),
+            },
+            {
+                "id": self.ids("group"),
+                "content": ("Allows grouping of results on a given category."),
+            },
+            {
+                "id": self.ids("filters"),
+                "content": (
+                    "Filter on different combinations of e.g. zones, facies and regions "
+                    "(The options will vary dependent on what was included "
+                    "in the calculation.)"
+                ),
+            },
+        ]
 
     def add_webvizstore(self):
         return (
@@ -168,9 +225,9 @@ but the following responses are given more descriptive names automatically:
         selector columns in the volumes dataframe
         """
         inputs = []
-        inputs.append(Input(self.response_id, "value"))
-        inputs.append(Input(self.radio_plot_type_id, "value"))
-        inputs.append(Input(self.radio_selectors_id, "value"))
+        inputs.append(Input(self.ids("response"), "value"))
+        inputs.append(Input(self.ids("plot-type"), "value"))
+        inputs.append(Input(self.ids("group"), "value"))
         for selector in self.selectors:
             inputs.append(Input(self.selectors_id[selector], "value"))
         return inputs
@@ -247,7 +304,7 @@ but the following responses are given more descriptive names automatically:
                     children=[
                         html.P("Response:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
-                            id=self.response_id,
+                            id=self.ids("response"),
                             options=[
                                 {
                                     "label": InplaceVolumes.RESPONSES.get(i, i),
@@ -266,7 +323,7 @@ but the following responses are given more descriptive names automatically:
                     children=[
                         html.P("Plot type:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
-                            id=self.radio_plot_type_id,
+                            id=self.ids("plot-type"),
                             options=[{"label": i, "value": i} for i in self.plot_types],
                             value="Per realization",
                             clearable=False,
@@ -277,7 +334,7 @@ but the following responses are given more descriptive names automatically:
                     children=[
                         html.P("Group by:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
-                            id=self.radio_selectors_id,
+                            id=self.ids("group"),
                             options=[
                                 {"label": i.lower().capitalize(), "value": i}
                                 for i in self.selectors
@@ -294,7 +351,8 @@ but the following responses are given more descriptive names automatically:
     def layout(self):
         """Main layout"""
         return html.Div(
-            [
+            id=self.ids("layout"),
+            children=[
                 html.Div(
                     style=self.style_layout,
                     children=[
@@ -303,14 +361,14 @@ but the following responses are given more descriptive names automatically:
                                 self.plot_options_layout,
                                 html.Div(
                                     style={"height": 400},
-                                    children=wcc.Graph(id=self.chart_id),
+                                    children=wcc.Graph(id=self.ids("graph")),
                                 ),
                                 html.Div(
                                     dash_table.DataTable(
-                                        id=self.table_id,
+                                        id=self.ids("table"),
                                         columns=[
                                             {"name": i, "id": i}
-                                            for i in self.table_cols
+                                            for i in InplaceVolumes.TABLE_STATISTICS
                                         ],
                                     )
                                 ),
@@ -319,17 +377,20 @@ but the following responses are given more descriptive names automatically:
                         html.Div(
                             children=[
                                 html.P("Filters:", style={"font-weight": "bold"}),
-                                html.Div(children=self.selector_dropdowns),
+                                html.Div(
+                                    id=self.ids("filters"),
+                                    children=self.selector_dropdowns,
+                                ),
                             ]
                         ),
                     ],
                 )
-            ]
+            ],
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            [Output(self.chart_id, "figure"), Output(self.table_id, "data")],
+            [Output(self.ids("graph"), "figure"), Output(self.ids("table"), "data")],
             self.vol_callback_inputs,
         )
         def _render_vol_chart(*args):
@@ -381,7 +442,7 @@ but the following responses are given more descriptive names automatically:
                 Output(self.selectors_id["ENSEMBLE"], "multi"),
                 Output(self.selectors_id["ENSEMBLE"], "value"),
             ],
-            [Input(self.radio_selectors_id, "value")],
+            [Input(self.ids("group"), "value")],
         )
         def _set_iteration_selector(group_by):
             """If iteration is selected as group by set the iteration
@@ -392,22 +453,24 @@ but the following responses are given more descriptive names automatically:
 
             return False, list(self.volumes["ENSEMBLE"].unique())[0]
 
-        @app.callback(
-            [
-                Output(self.selectors_id["SOURCE"], "multi"),
-                Output(self.selectors_id["SOURCE"], "value"),
-            ],
-            [Input(self.radio_selectors_id, "value")],
-        )
-        def _set_source_selector(group_by):
-            """If iteration is selected as group by set the iteration
-            selector to allow multiple selections, else use single selection
-            """
+        if "SOURCE" in self.selectors:
 
-            if group_by == "SOURCE":
-                return True, list(self.volumes["SOURCE"].unique())
+            @app.callback(
+                [
+                    Output(self.selectors_id["SOURCE"], "multi"),
+                    Output(self.selectors_id["SOURCE"], "value"),
+                ],
+                [Input(self.ids("group"), "value")],
+            )
+            def _set_source_selector(group_by):
+                """If iteration is selected as group by set the iteration
+                selector to allow multiple selections, else use single selection
+                """
 
-            return False, list(self.volumes["SOURCE"].unique())[0]
+                if group_by == "SOURCE" and "SOURCE" in self.selectors:
+                    return True, list(self.volumes["SOURCE"].unique())
+
+                return False, list(self.volumes["SOURCE"].unique())[0]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

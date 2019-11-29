@@ -53,20 +53,12 @@ The plots are linked and updates are done by clicking in the plots.
         self.init_state = self.update_state(self.segyfiles[0])
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
-        self.make_uuids()
+        self.uid = uuid4()
         self.set_callbacks(app)
 
-    def make_uuids(self):
-        uuid = f"{uuid4()}"
-        self.cube_id = f"cube_id-{uuid}"
-        self.iline_map_id = f"iline_map_id-{uuid}"
-        self.xline_map_id = f"xline_map_id-{uuid}"
-        self.zline_map_id = f"zline_map_id-{uuid}"
-        self.color_values_id = f"color_values_id-{uuid}"
-        self.color_scale_id = f"color_scale_id-{uuid}"
-        self.color_range_btn = f"color_range_btn-{uuid}"
-        self.zoom_btn = f"zoom_btn-{uuid}"
-        self.state_store = f"state_store-{uuid}"
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     def update_state(self, cubepath, **kwargs):
         cube = load_cube_data(get_path(cubepath))
@@ -90,41 +82,48 @@ The plots are linked and updates are done by clicking in the plots.
     @property
     def tour_steps(self):
         return [
-            {"id": self.cube_id, "content": ("The currently visualized seismic cube.")},
             {
-                "id": self.iline_map_id,
+                "id": self.ids("layout"),
                 "content": (
-                    "Selected inline for the seismic cube. "
-                    "Adjacent views are updated by clicking MB1 "
-                    "in the plot. To zoom, hold MB1 and draw a vertical/horizontal "
+                    "Visualizes SEG-Y cubes. Display different slices "
+                    "of the cube by clicking (MB1) in the different plots. "
+                    "To zoom, hold MB1 and draw a vertical/horizontal "
                     "line or a rectangle."
                 ),
             },
             {
-                "id": self.xline_map_id,
-                "content": ("Selected crossline for the seismic cube "),
+                "id": self.ids("cube"),
+                "content": "The currently visualized seismic cube.",
             },
             {
-                "id": self.zline_map_id,
-                "content": ("Selected zslice for the seismic cube "),
+                "id": self.ids("inline"),
+                "content": "Selected inline for the seismic cube.",
             },
             {
-                "id": self.color_scale_id,
-                "content": ("Click this button to change colorscale"),
+                "id": self.ids("xline"),
+                "content": "Selected crossline for the seismic cube.",
             },
             {
-                "id": self.color_values_id,
-                "content": ("Drag either node of slider to truncate color ranges"),
+                "id": self.ids("zslice"),
+                "content": "Selected zslice for the seismic cube.",
             },
             {
-                "id": self.color_range_btn,
+                "id": self.ids("color-scale"),
+                "content": "Click this button to change colorscale",
+            },
+            {
+                "id": self.ids("color-values"),
+                "content": "Drag either node of slider to truncate color ranges.",
+            },
+            {
+                "id": self.ids("color-reset"),
                 "content": (
                     "Click this button to update color slider min/max and reset ranges."
                 ),
             },
             {
-                "id": self.zoom_btn,
-                "content": ("Click this button to reset zoom/pan state in the plot"),
+                "id": self.ids("zoom"),
+                "content": "Click this button to reset zoom/pan state in the plot.",
             },
         ]
 
@@ -141,7 +140,7 @@ The plots are linked and updates are done by clicking in the plots.
                             children="Select seismic cube",
                         ),
                         dcc.Dropdown(
-                            id=self.cube_id,
+                            id=self.ids("cube"),
                             options=[
                                 {"label": Path(cube).stem, "value": cube}
                                 for cube in self.segyfiles
@@ -158,7 +157,7 @@ The plots are linked and updates are done by clicking in the plots.
                             style={"textAlign": "center"}, children="Set colorscale"
                         ),
                         wcc.ColorScales(
-                            id=self.color_scale_id,
+                            id=self.ids("color-scale"),
                             colorscale=self.initial_colors,
                             nSwatches=12,
                         ),
@@ -171,7 +170,7 @@ The plots are linked and updates are done by clicking in the plots.
                             style={"textAlign": "center"}, children="Set color range"
                         ),
                         dcc.RangeSlider(
-                            id=self.color_values_id,
+                            id=self.ids("color-values"),
                             min=self.init_state["min_value"],
                             max=self.init_state["max_value"],
                             value=[
@@ -187,8 +186,8 @@ The plots are linked and updates are done by clicking in the plots.
                         ),
                     ],
                 ),
-                html.Button(id=self.color_range_btn, children="Reset Range"),
-                html.Button(id=self.zoom_btn, children="Reset zoom"),
+                html.Button(id=self.ids("color-reset"), children="Reset Range"),
+                html.Button(id=self.ids("zoom"), children="Reset zoom"),
             ],
         )
 
@@ -203,13 +202,13 @@ The plots are linked and updates are done by clicking in the plots.
                         html.Div(
                             style={"height": "400px"},
                             children=wcc.Graph(
-                                config={"displayModeBar": False}, id=self.iline_map_id
+                                config={"displayModeBar": False}, id=self.ids("inline")
                             ),
                         ),
                         html.Div(
                             style={"height": "400px"},
                             children=wcc.Graph(
-                                config={"displayModeBar": False}, id=self.xline_map_id
+                                config={"displayModeBar": False}, id=self.ids("xline")
                             ),
                         ),
                     ]
@@ -217,32 +216,39 @@ The plots are linked and updates are done by clicking in the plots.
                 html.Div(
                     style={"height": "876px"},
                     children=wcc.Graph(
-                        config={"displayModeBar": False}, id=self.zline_map_id
+                        config={"displayModeBar": False}, id=self.ids("zslice")
                     ),
                 ),
-                dcc.Store(id=self.state_store, data=json.dumps(self.init_state)),
+                dcc.Store(
+                    id=self.ids("state-storage"), data=json.dumps(self.init_state)
+                ),
             ],
         )
 
     @property
     def layout(self):
-        return html.Div(children=[self.settings_layout, self.plot_layout])
+        return html.Div(
+            id=self.ids("layout"), children=[self.settings_layout, self.plot_layout]
+        )
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.state_store, "data"),
+            Output(self.ids("state-storage"), "data"),
             [
-                Input(self.cube_id, "value"),
-                Input(self.iline_map_id, "clickData"),
-                Input(self.xline_map_id, "clickData"),
-                Input(self.zline_map_id, "clickData"),
-                Input(self.color_values_id, "value"),
-                Input(self.color_scale_id, "colorscale"),
-                Input(self.zoom_btn, "n_clicks"),
-                Input(self.color_range_btn, "n_clicks"),
+                Input(self.ids("cube"), "value"),
+                Input(self.ids("inline"), "clickData"),
+                Input(self.ids("xline"), "clickData"),
+                Input(self.ids("zslice"), "clickData"),
+                Input(self.ids("color-values"), "value"),
+                Input(self.ids("color-scale"), "colorscale"),
+                Input(self.ids("zoom"), "n_clicks"),
+                Input(self.ids("color-reset"), "n_clicks"),
             ],
-            [State(self.zline_map_id, "figure"), State(self.state_store, "data")],
+            [
+                State(self.ids("zslice"), "figure"),
+                State(self.ids("state-storage"), "data"),
+            ],
         )
         # pylint: disable=unused-argument,too-many-arguments
         def _update_state(
@@ -262,17 +268,17 @@ The plots are linked and updates are done by clicking in the plots.
             store = json.loads(store)
             ctx = dash.callback_context.triggered[0]["prop_id"]
             x_was_clicked = (
-                xcd if xcd and ctx == f"{self.xline_map_id}.clickData" else None
+                xcd if xcd and ctx == f"{self.ids('xline')}.clickData" else None
             )
             i_was_clicked = (
-                icd if icd and ctx == f"{self.iline_map_id}.clickData" else None
+                icd if icd and ctx == f"{self.ids('inline')}.clickData" else None
             )
             z_was_clicked = (
-                zcd if zcd and ctx == f"{self.zline_map_id}.clickData" else None
+                zcd if zcd and ctx == f"{self.ids('zslice')}.clickData" else None
             )
-            if ctx == f"{self.cube_id}.value":
+            if ctx == f"{self.ids('cube')}.value":
                 store = self.update_state(cubepath)
-            if ctx == f"{self.zoom_btn}.n_clicks":
+            if ctx == f"{self.ids('zoom')}.n_clicks":
                 store["uirevision"] = str(uuid4())
             if x_was_clicked:
                 store["iline"] = xcd["points"][0]["x"]
@@ -284,7 +290,7 @@ The plots are linked and updates are done by clicking in the plots.
             if i_was_clicked:
                 store["xline"] = icd["points"][0]["x"]
                 store["zslice"] = icd["points"][0]["y"]
-            if ctx == f"{self.color_range_btn}.n_clicks":
+            if ctx == f"{self.ids('color-reset')}.n_clicks":
                 store["color_min_value"] = store["min_value"]
                 store["color_max_value"] = store["max_value"]
             else:
@@ -294,7 +300,8 @@ The plots are linked and updates are done by clicking in the plots.
             return json.dumps(store)
 
         @app.callback(
-            Output(self.zline_map_id, "figure"), [Input(self.state_store, "data")]
+            Output(self.ids("zslice"), "figure"),
+            [Input(self.ids("state-storage"), "data")],
         )
         def _set_zslice(state):
             """Updates z-slice heatmap"""
@@ -341,7 +348,8 @@ The plots are linked and updates are done by clicking in the plots.
             return fig
 
         @app.callback(
-            Output(self.iline_map_id, "figure"), [Input(self.state_store, "data")]
+            Output(self.ids("inline"), "figure"),
+            [Input(self.ids("state-storage"), "data")],
         )
         def _set_iline(state):
             """Updates inline heatmap"""
@@ -385,7 +393,8 @@ The plots are linked and updates are done by clicking in the plots.
             return fig
 
         @app.callback(
-            Output(self.xline_map_id, "figure"), [Input(self.state_store, "data")]
+            Output(self.ids("xline"), "figure"),
+            [Input(self.ids("state-storage"), "data")],
         )
         def _set_xline(state):
             """Update xline heatmap"""
@@ -429,13 +438,13 @@ The plots are linked and updates are done by clicking in the plots.
 
         @app.callback(
             [
-                Output(self.color_values_id, "min"),
-                Output(self.color_values_id, "max"),
-                Output(self.color_values_id, "value"),
-                Output(self.color_values_id, "step"),
+                Output(self.ids("color-values"), "min"),
+                Output(self.ids("color-values"), "max"),
+                Output(self.ids("color-values"), "value"),
+                Output(self.ids("color-values"), "step"),
             ],
-            [Input(self.color_range_btn, "n_clicks")],
-            [State(self.state_store, "data")],
+            [Input(self.ids("color-reset"), "n_clicks")],
+            [State(self.ids("state-storage"), "data")],
         )
         # pylint: disable=unused-argument
         def _reset_color_range(btn_clicked, state):

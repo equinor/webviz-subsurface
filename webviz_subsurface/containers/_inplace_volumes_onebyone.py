@@ -28,12 +28,13 @@ Input can be given either as aggregated csv files for volumes and sensitivity in
 or as an ensemble name defined in *shared_settings* and volumetric csv files
 stored per realizations.
 
-####Volumetric input
+#### Volumetric input
 The volumetric csv files must follow FMU standards.
 [Example csv file](
 https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv)
 
-One of the columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* must be present.
+The columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* and *SOURCE* will be used as available
+filters if present. (*SOURCE* is relevant if calculations are done for multiple grids).
 
 Remaining columns are seen as volumetric responses. Any names are allowed,
 but the following responses are given more descriptive names automatically:
@@ -42,12 +43,12 @@ but the following responses are given more descriptive names automatically:
 - **NET_OIL**: Net Volume (Oil)
 - **PORE_OIL**: Pore Volume (Oil)
 - **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
-- **STOIIP_OIL**: Stock Tank Oil Initially Inplace
+- **STOIIP_OIL**: Stock Tank Oil Initially In Place
 - **BULK_GAS**: Bulk Volume (Gas)
 - **NET_GAS**: Net Volume (Gas)
 - **PORV_GAS**: Pore Volume (Gas)
 - **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
-- **GIIP_GAS**: Gas Initially in-place
+- **GIIP_GAS**: Gas Initially In Place
 - **RECOVERABLE_OIL**: Recoverable Volume (Oil)
 - **RECOVERABLE_GAS**: Recoverable Volume (Gas)
 
@@ -73,12 +74,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         "NET_OIL": "Net Volume (Oil)",
         "PORV_OIL": "Pore Volume (Oil)",
         "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially Inplace",
+        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
         "BULK_GAS": "Bulk Volume (Gas)",
         "NET_GAS": "Net Volume (Gas)",
         "PORV_GAS": "Pore Volume (Gas)",
         "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially in-place",
+        "GIIP_GAS": "Gas Initially In Place",
         "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
         "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
     }
@@ -200,8 +201,19 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
+                "id": self.ids("layout"),
+                "content": (
+                    "Dashboard displaying in place volumetric results "
+                    "from a sensitivity study."
+                ),
+            },
+            {
                 "id": self.ids("graph"),
-                "content": "The chart shows inplace volumetrics results.",
+                "content": (
+                    "Chart showing results for the current selection. "
+                    "Different charts and options can be selected from the menu above. "
+                    "Different sensitivities can be highlighted by clicking in the tornado plot."
+                ),
             },
             {
                 "id": self.ids("table"),
@@ -223,16 +235,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     "while the boxplot shows the range per sensitivity."
                 ),
             },
-            {
-                "id": self.ids("tornado-wrapper"),
-                "content": (
-                    "Displays tornado plot for the currently selected data. "
-                    "Differences references can be set and sensitivities "
-                    "smaller than the reference can be filtered out. "
-                    "Click on the bar of a sensitivity to highlight the "
-                    "relevant realizations in the main chart."
-                ),
-            },
+            *self.tornadoplot.tour_steps,
             {
                 "id": self.ids("ensemble"),
                 "content": (
@@ -398,7 +401,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def layout(self):
         """Main layout"""
         return html.Div(
-            [
+            id=self.ids("layout"),
+            children=[
                 html.Div(
                     style=self.set_grid_layout("1fr 3fr 2fr"),
                     children=[
@@ -442,11 +446,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         html.Div(
                             id=self.ids("tornado-wrapper"),
                             style={"visibility": "visible"},
-                            children=[self.tornadoplot.layout,],
+                            children=[self.tornadoplot.layout],
                         ),
                     ],
                 )
-            ]
+            ],
         )
 
     def set_callbacks(self, app):
@@ -497,7 +501,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "type": "bar",
                             }
                         ],
-                        "layout": {"xaxis": {"title": "Realizations"},},
+                        "layout": {"xaxis": {"title": "Realizations"}},
                     },
                 )
             elif plot_type == "Box Plot":
