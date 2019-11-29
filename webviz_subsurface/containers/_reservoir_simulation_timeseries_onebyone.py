@@ -30,7 +30,7 @@ After selecting a date individual sensitivities can be selected to highlight the
 run with that sensitivity.
 
 Input can be given either as aggregated csv files for summary vectors and sensitivity
-information, or as an ensemble name defined in 'container_settings'.
+information, or as an ensemble name defined in 'shared_settings'.
 
 #### Time series input
 The time series input can either extracted automatically from the ensemble or
@@ -47,7 +47,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
 * `csvfile_smry`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
 * `csvfile_reals`: Aggregated csvfile for sensitivity information
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
@@ -80,7 +80,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def __init__(
         self,
         app,
-        container_settings,
         csvfile_smry: Path = None,
         csvfile_reals: Path = None,
         ensembles: list = None,
@@ -106,7 +105,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
         elif ensembles:
             self.ens_paths = tuple(
-                (ensemble, container_settings["scratch_ensembles"][ensemble])
+                (
+                    ensemble,
+                    app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                        ensemble
+                    ],
+                )
                 for ensemble in ensembles
             )
             # Extract realizations and sensitivity information

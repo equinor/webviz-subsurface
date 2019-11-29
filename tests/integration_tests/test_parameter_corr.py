@@ -15,13 +15,13 @@ def test_parameter_corr(dash_duo):
     app.scripts.config.serve_locally = True
     app.config.suppress_callback_exceptions = True
     CACHE.init_app(app.server)
-    container_settings = {"scratch_ensembles": {"iter-0": ""}}
+    app.webviz_settings = {"shared_settings": {"scratch_ensembles": {"iter-0": ""}}}
     ensembles = ["iter-0"]
 
     with mock.patch(get_parameters) as mock_parameters:
         mock_parameters.return_value = pd.read_csv("tests/data/parameters.csv")
 
-        p = ParameterCorrelation(app, container_settings, ensembles)
+        p = ParameterCorrelation(app, ensembles)
 
         app.layout = p.layout
         dash_duo.start_server(app)

@@ -6,20 +6,20 @@ rely on the setting `scratch_ensemble` configuration within the
 I.e. you could have
 ```yaml
 title: Reek Webviz Demonstration
-username: some_username
-password: some_password
 
-container_settings:
+shared_settings:
   scratch_ensembles:
     iter-0: /scratch/my_ensemble/realization-*/iter-0
     iter-1: /scratch/my_ensemble/realization-*/iter-1
 
 pages:
 
- - title: Front page
-   content:
-    - container: SummaryStats
-      ensemble: iter-0
+  - title: Front page
+    content:
+      - container: ReservoirSimulationTimeSeries
+        ensembles:
+          - iter-0
+          - iter-1
 ```
 """
 

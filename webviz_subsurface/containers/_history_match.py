@@ -16,16 +16,17 @@ class HistoryMatch(WebvizContainerABC):
 
 This container visualizes the quality of the history match.
 
-* `ensembles`: List of the ensembles in `container_settings` to visualize.
+* `ensembles`: List of the ensembles in `shared_settings` to visualize.
 * `observation_File`: Path to the observation `.yaml` file.
 * `title`: Optional title for the container.
 """
 
-    def __init__(self, container_settings, ensembles, observation_file: Path):
+    def __init__(self, app, ensembles, observation_file: Path):
 
         self.observation_file = observation_file
         self.ens_paths = tuple(
-            (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+            (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            for ens in ensembles
         )
 
         data = extract_mismatch(self.ens_paths, self.observation_file)

@@ -25,7 +25,7 @@ Input can be given either as aggregated csv file or an ensemble defined
 in container settings.
 
 * `csvfile`: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
@@ -46,7 +46,6 @@ Plot options:
     def __init__(
         self,
         app,
-        container_settings,
         csvfile: Path = None,
         ensembles: list = None,
         obsfile: Path = None,
@@ -72,7 +71,12 @@ Plot options:
             self.smry = read_csv(csvfile)
         elif ensembles:
             self.ens_paths = tuple(
-                (ensemble, container_settings["scratch_ensembles"][ensemble])
+                (
+                    ensemble,
+                    app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                        ensemble
+                    ],
+                )
                 for ensemble in ensembles
             )
             self.smry = load_smry(

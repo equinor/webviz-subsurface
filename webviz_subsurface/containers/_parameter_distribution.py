@@ -23,15 +23,13 @@ This container shows parameter distributions for FMU ensembles.
 Parameters are visualized per ensemble as a histogram, and as a boxplot showing
 the parameter ranges for each ensemble.
 Input can be given either as an aggregated csv files with parameter information
-or as an ensemble name defined in `container_settings`.
+or as an ensemble name defined in `shared_settings`.
 
 * `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 """
 
-    def __init__(
-        self, app, container_settings, csvfile: Path = None, ensembles: list = None
-    ):
+    def __init__(self, app, csvfile: Path = None, ensembles: list = None):
 
         self.csvfile = csvfile if csvfile else None
 
@@ -43,7 +41,8 @@ or as an ensemble name defined in `container_settings`.
             self.parameters = read_csv(csvfile)
         elif ensembles:
             self.ensembles = tuple(
-                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+                for ens in ensembles
             )
             self.parameters = load_parameters(
                 ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
