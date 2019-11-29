@@ -141,7 +141,7 @@ Plot options:
         return [
             {
                 "id": self.ids("layout"),
-                "content": ("Dashboard displaying reservoir simulation time series."),
+                "content": "Dashboard displaying reservoir simulation time series.",
             },
             {
                 "id": self.ids("graph"),

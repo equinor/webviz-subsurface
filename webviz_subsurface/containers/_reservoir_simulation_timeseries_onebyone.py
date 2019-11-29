@@ -150,7 +150,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             {
                 "id": self.ids("layout"),
                 "content": (
-                    "Dashboard displaying time series from a sensitivity study. "
+                    "Dashboard displaying time series from a sensitivity study."
                 ),
             },
             {
@@ -165,7 +165,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             {
                 "id": self.ids("table"),
                 "content": (
-                    "Table statistics for all sensitivities for the selected date"
+                    "Table statistics for all sensitivities for the selected date."
                 ),
             },
             *self.tornadoplot.tour_steps,

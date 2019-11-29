@@ -93,27 +93,27 @@ The plots are linked and updates are done by clicking in the plots.
             },
             {
                 "id": self.ids("cube"),
-                "content": ("The currently visualized seismic cube."),
+                "content": "The currently visualized seismic cube.",
             },
             {
                 "id": self.ids("inline"),
-                "content": ("Selected inline for the seismic cube. "),
+                "content": "Selected inline for the seismic cube.",
             },
             {
                 "id": self.ids("xline"),
-                "content": ("Selected crossline for the seismic cube "),
+                "content": "Selected crossline for the seismic cube.",
             },
             {
                 "id": self.ids("zslice"),
-                "content": ("Selected zslice for the seismic cube "),
+                "content": "Selected zslice for the seismic cube.",
             },
             {
                 "id": self.ids("color-scale"),
-                "content": ("Click this button to change colorscale"),
+                "content": "Click this button to change colorscale",
             },
             {
                 "id": self.ids("color-values"),
-                "content": ("Drag either node of slider to truncate color ranges"),
+                "content": "Drag either node of slider to truncate color ranges.",
             },
             {
                 "id": self.ids("color-reset"),
@@ -123,7 +123,7 @@ The plots are linked and updates are done by clicking in the plots.
             },
             {
                 "id": self.ids("zoom"),
-                "content": ("Click this button to reset zoom/pan state in the plot"),
+                "content": "Click this button to reset zoom/pan state in the plot.",
             },
         ]
 
