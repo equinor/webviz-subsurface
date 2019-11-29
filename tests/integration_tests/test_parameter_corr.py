@@ -15,7 +15,6 @@ def test_parameter_corr(dash_duo):
     app.scripts.config.serve_locally = True
     app.config.suppress_callback_exceptions = True
     CACHE.init_app(app.server)
-
     app.webviz_settings = {"shared_settings": {"scratch_ensembles": {"iter-0": ""}}}
     ensembles = ["iter-0"]
 
