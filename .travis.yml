@@ -59,7 +59,7 @@ script:
   - webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
   - pushd example_subsurface_app
     # Related to https://github.com/equinor/webviz-config/issues/150:
-  - echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
+  - echo "RUN pip install --user git+https://github.com/anders-kiaer/webviz-subsurface.git@portable_shared_settings" >> Dockerfile
   - echo "RUN pip install --user git+https://github.com/anders-kiaer/webviz-config.git@portable_shared_settings" >> Dockerfile  # Temporarily
   - docker build -t webviz/example_subsurface_image:equinor-theme .
   - popd
