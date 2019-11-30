@@ -61,6 +61,10 @@ script:
   - echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
   - docker build -t webviz/example_subsurface_image:equinor-theme .
   - popd
+  - export DOCKER_RUN_ID=`docker run -d webviz/example_subsurface_image:equinor-theme`
+  - sleep 1m
+  - docker logs $DOCKER_RUN_ID
+  - docker stop $DOCKER_RUN_ID
 
 deploy:
   - provider: pages
