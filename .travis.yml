@@ -43,7 +43,6 @@ script:
   - pip install .
   - pip install .[tests]
   - pip install dash[testing]
-  - pip install --upgrade git+https://github.com/anders-kiaer/webviz-config.git@portable_shared_settings # Temporarily
   - black --check webviz_subsurface tests setup.py
   - pylint webviz_subsurface tests setup.py
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
@@ -60,13 +59,8 @@ script:
   - pushd example_subsurface_app
     # Related to https://github.com/equinor/webviz-config/issues/150:
   - echo "RUN pip install --user git+https://github.com/anders-kiaer/webviz-subsurface.git@portable_shared_settings" >> Dockerfile
-  - echo "RUN pip install --user git+https://github.com/anders-kiaer/webviz-config.git@portable_shared_settings" >> Dockerfile  # Temporarily
   - docker build -t webviz/example_subsurface_image:equinor-theme .
   - popd
-  - export DOCKER_RUN_ID=`docker run -d webviz/example_subsurface_image:equinor-theme`  # Temporarily
-  - sleep 1m  # Temporarily
-  - docker logs $DOCKER_RUN_ID  # Temporarily
-  - docker stop $DOCKER_RUN_ID  # Temporarily
 
 deploy:
   - provider: pages
