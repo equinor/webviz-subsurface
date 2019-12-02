@@ -31,6 +31,14 @@ def load_parameters(
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).parameters
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def load_csv(
+    ensemble_paths: tuple, csv_file: str, ensemble_set_name: str = "EnsembleSet"
+) -> pd.DataFrame:
+
+    return load_ensemble_set(ensemble_paths, ensemble_set_name).load_csv(csv_file)
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
