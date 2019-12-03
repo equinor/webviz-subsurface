@@ -462,7 +462,7 @@ Plot options:
                     fig.add_trace(trace, i + 1, 1)
 
                 # Add observations
-                if self.observations.get(vector):
+                if calc_mode != "delta_ensembles" and self.observations.get(vector):
                     for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
 
