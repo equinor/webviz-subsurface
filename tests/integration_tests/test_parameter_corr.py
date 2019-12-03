@@ -15,7 +15,10 @@ def test_parameter_corr(dash_duo):
     app.scripts.config.serve_locally = True
     app.config.suppress_callback_exceptions = True
     CACHE.init_app(app.server)
-    app.webviz_settings = {"shared_settings": {"scratch_ensembles": {"iter-0": ""}}}
+    app.webviz_settings = {
+        "shared_settings": {"scratch_ensembles": {"iter-0": ""}},
+        "plotly_settings": {},
+    }
     ensembles = ["iter-0"]
 
     with mock.patch(get_parameters) as mock_parameters:
