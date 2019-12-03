@@ -512,7 +512,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 )
             elif plot_type == "Box Plot":
                 layout = {"title": "Distribution for each sensitivity"}
-                layout.update(self.plotly_layout),
+                layout.update(self.plotly_layout)
 
                 # One box per sensitivity name
                 figure = wcc.Graph(
