@@ -710,7 +710,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": legend_group,
+            "name": "mean",
             "x": vector_stats["mean"].index.tolist(),
             "y": vector_stats["mean"].values,
             "mode": "lines",
