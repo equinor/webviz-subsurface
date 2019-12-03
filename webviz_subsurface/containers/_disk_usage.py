@@ -33,6 +33,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
         self.users = self.disk_usage["userid"]
         self.usage = self.disk_usage["usageKB"] / (1024 ** 2)
         self.set_callbacks(app)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
 
     @property
     def layout(self):
@@ -84,14 +85,13 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                     }
                 ]
                 layout = {
-                    "yaxis": {"title": "Usage in Gigabytes", "family": "Equinor"},
-                    "xaxis": {"title": "User name", "family": "Equinor"},
+                    "yaxis": {"title": "Usage in Gigabytes"},
+                    "xaxis": {"title": "User name"},
                 }
 
             layout["height"] = 800
             layout["width"] = 1000
-            layout["font"] = {"family": "Equinor"}
-            layout["hoverlabel"] = {"font": {"family": "Equinor"}}
+            layout.update(self.plotly_layout)
 
             return {"data": data, "layout": layout}
 

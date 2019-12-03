@@ -68,6 +68,7 @@ class WellCrossSection(WebvizContainerABC):
         self.zonelog = zonelog
         self.uid = uuid4()
         self.set_callbacks(app)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
 
     def ids(self, element):
         """Generate unique id for dom element"""
@@ -238,7 +239,10 @@ class WellCrossSection(WebvizContainerABC):
                 zonemin=self.zonemin,
             )
             xsect.layout["margin"] = {"t": 0}
-            return {"data": xsect.data, "layout": xsect.layout}
+            layout = xsect.layout
+            layout.update(self.plotly_layout)
+
+            return {"data": xsect.data, "layout": layout}
 
         @app.callback(
             [

@@ -53,6 +53,7 @@ and scatter plot for any given pair of parameters.
         self.ens_p2_id = f"ens-p2-id-{self.uid}"
         self.density_id = f"density-id-{self.uid}"
 
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
         self.set_callbacks(app)
 
     @property
@@ -210,6 +211,8 @@ and scatter plot for any given pair of parameters.
                 }
             ]
             fig["layout"]["shapes"] = shape
+            fig["layout"].update(self.plotly_layout)
+
             return fig
 
         @app.callback(
@@ -224,7 +227,9 @@ and scatter plot for any given pair of parameters.
             ],
         )
         def _update_scatter(ens1, param1, ens2, param2, color, density):
-            return render_scatter(ens1, param1, ens2, param2, color, density)
+            return render_scatter(
+                ens1, param1, ens2, param2, color, density, self.plotly_layout
+            )
 
         @app.callback(
             [
@@ -258,7 +263,7 @@ def get_parameters(ensemble_path) -> pd.DataFrame:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_scatter(ens1, x_col, ens2, y_col, color, density):
+def render_scatter(ens1, x_col, ens2, y_col, color, density, plotly_layout):
     if ens1 == ens2:
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
     else:
@@ -362,6 +367,8 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
             "showline": False,
         },
     }
+
+    layout.update(plotly_layout)
 
     return {"data": data, "layout": layout}
 

@@ -140,7 +140,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             if initial_vector and initial_vector in self.smry_cols
             else self.smry_cols[0]
         )
-        self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
+
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
+        self.tornadoplot = TornadoPlot(
+            app, realizations, plotly_layout=self.plotly_layout, allow_click=True
+        )
         self.uid = uuid4()
         self.set_callbacks(app)
 

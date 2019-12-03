@@ -53,6 +53,8 @@ The plots are linked and updates are done by clicking in the plots.
         self.init_state = self.update_state(self.segyfiles[0])
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
+
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -344,6 +346,7 @@ The plots are linked and updates are done by clicking in the plots.
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
+            fig["layout"].update(self.plotly_layout)
 
             return fig
 
@@ -390,6 +393,8 @@ The plots are linked and updates are done by clicking in the plots.
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
+            fig["layout"].update(self.plotly_layout)
+
             return fig
 
         @app.callback(
@@ -434,6 +439,8 @@ The plots are linked and updates are done by clicking in the plots.
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
+            fig["layout"].update(self.plotly_layout)
+
             return fig
 
         @app.callback(

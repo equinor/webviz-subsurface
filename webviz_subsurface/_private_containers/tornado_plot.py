@@ -41,7 +41,12 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
 """
 
     def __init__(
-        self, app, realizations, reference="rms_seed", allow_click=False,
+        self,
+        app,
+        realizations,
+        plotly_layout=None,
+        reference="rms_seed",
+        allow_click=False,
     ):
 
         self.realizations = realizations
@@ -59,6 +64,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         self.allow_click = allow_click
         self.uid = uuid4()
         self.set_callbacks(app)
+        self.plotly_layout = {} if plotly_layout is None else plotly_layout
 
     def ids(self, element):
         """Generate unique id for dom element"""
@@ -212,7 +218,9 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 self.realizations["ENSEMBLE"] == data["ENSEMBLE"]
             ]
             try:
-                return tornado_plot(realizations, values, reference, scale, cutbyref)
+                return tornado_plot(
+                    realizations, values, self.plotly_layout, reference, scale, cutbyref
+                )
             except KeyError:
                 return {}
 
@@ -288,7 +296,12 @@ def cut_by_ref(tornadotable, refname):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def tornado_plot(
-    realizations, data, reference="rms_seed", scale="Percentage", cutbyref=True
+    realizations,
+    data,
+    plotly_layout,
+    reference="rms_seed",
+    scale="Percentage",
+    cutbyref=True,
 ):  # pylint: disable=too-many-locals
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
@@ -394,6 +407,45 @@ def tornado_plot(
     df = sort_by_max(df)
     # Return tornado data as Plotly figure
 
+    layout = {
+        "barmode": "relative",
+        "margin": {"l": 50, "r": 50, "b": 20, "t": 50},
+        "xaxis": {
+            "title": scale,
+            "autorange": True,
+            "showgrid": False,
+            "zeroline": False,
+            "showline": True,
+            "automargin": True,
+        },
+        "yaxis": {
+            "autorange": True,
+            "showgrid": False,
+            "zeroline": False,
+            "showline": False,
+            "automargin": True,
+        },
+        "showlegend": False,
+        "annotations": [
+            {
+                "x": 0,
+                "y": len(list(df["low"])),
+                "xref": "x",
+                "yref": "y",
+                "text": f"Reference avg: {ref_avg:.2f}",
+                "showarrow": True,
+                "align": "center",
+                "arrowhead": 2,
+                "arrowsize": 1,
+                "arrowwidth": 1,
+                "arrowcolor": "#636363",
+                "ax": 20,
+                "ay": -25,
+            }
+        ],
+    }
+    layout.update(plotly_layout)
+
     return {
         "data": [
             dict(
@@ -431,41 +483,5 @@ def tornado_plot(
                 marker=dict(color="rgb(36, 55, 70)"),
             ),
         ],
-        "layout": {
-            "barmode": "relative",
-            "margin": {"l": 50, "r": 50, "b": 20, "t": 50},
-            "xaxis": {
-                "title": scale,
-                "autorange": True,
-                "showgrid": False,
-                "zeroline": False,
-                "showline": True,
-                "automargin": True,
-            },
-            "yaxis": {
-                "autorange": True,
-                "showgrid": False,
-                "zeroline": False,
-                "showline": False,
-                "automargin": True,
-            },
-            "showlegend": False,
-            "annotations": [
-                {
-                    "x": 0,
-                    "y": len(list(df["low"])),
-                    "xref": "x",
-                    "yref": "y",
-                    "text": f"Reference avg: {ref_avg:.2f}",
-                    "showarrow": True,
-                    "align": "center",
-                    "arrowhead": 2,
-                    "arrowsize": 1,
-                    "arrowwidth": 1,
-                    "arrowcolor": "#636363",
-                    "ax": 20,
-                    "ay": -25,
-                }
-            ],
-        },
+        "layout": layout,
     }

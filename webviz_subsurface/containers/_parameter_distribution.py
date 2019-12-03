@@ -59,6 +59,7 @@ or as an ensemble name defined in `shared_settings`.
         ]
         self.uid = uuid4()
         self.set_callbacks(app)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
 
     def ids(self, element):
         """Generate unique id for dom element"""
@@ -167,6 +168,8 @@ or as an ensemble name defined in `shared_settings`.
                 range_x=[param[column].min(), param[column].max()],
                 marginal="box",
             ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=", "")))
+
+            plot["layout"].update(self.plotly_layout)
 
             return plot
 

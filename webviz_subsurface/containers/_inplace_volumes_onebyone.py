@@ -156,7 +156,10 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self.volumes = pd.merge(volumes, realizations, on=["ENSEMBLE", "REAL"])
 
         # Initialize a tornado plot. Data is added in callback
-        self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
+        self.tornadoplot = TornadoPlot(
+            app, realizations, plotly_layout=self.plotly_layout, allow_click=True
+        )
         self.uid = uuid4()
         self.selectors_id = {x: self.ids(x) for x in self.selectors}
         self.set_callbacks(app)
@@ -489,6 +492,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             if plot_type == "Per Realization":
                 # One bar per realization
                 plot_data = data.groupby("REAL").sum().reset_index()
+                layout = {"xaxis": {"title": "Realizations"}}
+                layout.update(self.plotly_layout)
+
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.ids("graph"),
@@ -501,10 +507,13 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "type": "bar",
                             }
                         ],
-                        "layout": {"xaxis": {"title": "Realizations"}},
+                        "layout": layout,
                     },
                 )
             elif plot_type == "Box Plot":
+                layout = {"title": "Distribution for each sensitivity"}
+                layout.update(self.plotly_layout),
+
                 # One box per sensitivity name
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
@@ -520,7 +529,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             }
                             for sensname, dframe in data.groupby(["SENSNAME"])
                         ],
-                        "layout": {"title": "Distribution for each sensitivity"},
+                        "layout": layout,
                     },
                 )
             tornado = json.dumps(
@@ -555,6 +564,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 else:
                     colors.append("grey")
             figure["data"][0]["marker"] = {"color": colors}
+            figure["layout"].update(self.plotly_layout)
+
             return figure
 
 

@@ -93,7 +93,6 @@ but the following responses are given more descriptive names automatically:
         response: str = "STOIIP_OIL",
     ):
         self.csvfile = csvfile if csvfile else None
-        self.colorway = app.webviz_settings.get("plotly_layout", {}).get("colorway", [])
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
@@ -122,6 +121,7 @@ but the following responses are given more descriptive names automatically:
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
 
         self.set_callbacks(app)
+        self.plotly_layout = app.webviz_settings["plotly_layout"]
 
     def ids(self, element):
         """Generate unique id for dom element"""
@@ -432,7 +432,9 @@ but the following responses are given more descriptive names automatically:
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, colors=self.colorway),
+                    "layout": plot_layout(
+                        plot_type, response, plotly_layout=self.plotly_layout
+                    ),
                 },
                 table,
             )
@@ -512,7 +514,7 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, colors):
+def plot_layout(plot_type, response, plotly_layout):
     if plot_type == "Histogram":
         output = {
             "barmode": "overlay",
@@ -530,7 +532,7 @@ def plot_layout(plot_type, response, colors):
             "xaxis": {"title": "Realization"},
         }
     output["height"] = 400
-    output["colorway"] = colors
+    output.update(plotly_layout)
     return output
 
 
