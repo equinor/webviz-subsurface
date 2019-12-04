@@ -6,7 +6,7 @@
 
 ## Webviz subsurface
 
-> :sparkles::eyeglasses: **[Live demo application](https://webviz-subsurface-example.azurewebsites.net)
+> :sparkles::eyeglasses: **[Live demo application](https://webviz-subsurface-example.azurewebsites.net)**
 
 ### Introduction
 
