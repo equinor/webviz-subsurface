@@ -204,13 +204,13 @@ The types of response_filters are:
                 values = self.responsedf[col_name]
                 children.append(html.Label(col_name))
                 children.append(make_range_slider(domid, values, col_name))
-        return html.Div(children=children)
+        return html.Div(style={"zIndex": 1000}, children=children)
 
     @property
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
         return html.Div(
-            style=self.set_grid_layout("1fr 1fr"),
+            style=self.set_grid_layout("1fr 1fr 1fr 1fr"),
             children=[
                 html.Div(
                     [
@@ -245,23 +245,25 @@ The types of response_filters are:
     def layout(self):
         """Main layout"""
         return html.Div(
-            style=self.set_grid_layout("2fr 2fr 1fr")
-            if self.response_filters
-            else self.set_grid_layout("2fr 2fr"),
             children=[
+                self.control_layout,
                 html.Div(
-                    style={"height": "100%", "width": "100%"},
+                    style=self.set_grid_layout("2fr 2fr 1fr")
+                    if self.response_filters
+                    else self.set_grid_layout("2fr 2fr"),
                     children=[
-                        self.control_layout,
-                        html.Div(children=wcc.Graph(self.ids("correlation-graph")),),
+                        html.Div(
+                            children=[
+                                html.Div(
+                                    children=wcc.Graph(self.ids("correlation-graph")),
+                                ),
+                            ],
+                        ),
+                        html.Div(children=[wcc.Graph(self.ids("distribution-graph"))],),
+                        self.filter_layout if self.response_filters else html.Div(),
                     ],
                 ),
-                html.Div(
-                    style={"height": "100%", "width": "100%"},
-                    children=[wcc.Graph(self.ids("distribution-graph"))],
-                ),
-                self.filter_layout if self.response_filters else html.Div(),
-            ],
+            ]
         )
 
     @staticmethod
@@ -340,9 +342,14 @@ The types of response_filters are:
                 corr_response = (
                     corrdf[response].dropna().drop(["REAL", response], axis=0)
                 )
-                return make_correlation_plot(corr_response)
+                return make_correlation_plot(corr_response, response, self.corr_method)
             except KeyError:
-                return {"data": []}
+                return {
+                    "layout": {
+                        "title": "<b>Cannot calculate correlation for given selection</b><br>"
+                        "Select a different response or filter setting."
+                    }
+                }
 
         @app.callback(
             Output(self.ids("distribution-graph"), "figure"),
@@ -465,27 +472,32 @@ def _correlate(inputdf, method="pearson"):
     )
 
 
-def make_correlation_plot(series):
+def make_correlation_plot(series, response, corr_method):
+    """Make Plotly trace for correlation plot"""
+
     return {
         "data": [
             {"x": series.values, "y": series.index, "orientation": "h", "type": "bar"}
         ],
         "layout": {
             "barmode": "relative",
-            "margin": {"l": 200, "r": 50, "b": 20, "t": 50},
+            "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
             "font": {"size": 8},
-            "height": 800,
+            "height": 750,
             "xaxis": {"range": [-1, 1]},
+            "title": f"Correlations ({corr_method}) between {response} and input parameters",
         },
     }
 
 
 def make_distribution_plot(df, parameter, response):
-    # Make a plotly subplot figure
+    """Make plotly traces for scatterplot and histograms for selected
+    response and input parameter"""
+
+    real_text = [f"Realization:{r}" for r in df["REAL"]]
     fig = make_subplots(
         rows=4,
         cols=2,
-        vertical_spacing=0.05,
         specs=[
             [{"colspan": 2, "rowspan": 2}, None],
             [None, None],
@@ -500,6 +512,7 @@ def make_distribution_plot(df, parameter, response):
             "mode": "markers",
             "x": df[parameter],
             "y": df[response],
+            "text": real_text,
         },
         1,
         1,
@@ -532,6 +545,8 @@ def make_distribution_plot(df, parameter, response):
             "yaxis": {"title": response},
             "xaxis2": {"title": parameter},
             "xaxis3": {"title": response},
+            "title": f"Distribution of {response} and {parameter}",
+            "font": {"size": 8},
         }
     )
     return fig
