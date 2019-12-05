@@ -24,7 +24,7 @@ This container shows correlation between numerical input parameters and response
 Input can be given either as:
 
 - Aggregated csv files for parameters and responses,
-- An ensemble name defined in container_settings and a local csv file for responses
+- An ensemble name defined in shared_settings and a local csv file for responses
 stored per realizations.
 
 **Note**: Non-numerical (string-based) input parameters and responses are removed.
@@ -35,7 +35,7 @@ Arguments:
 
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
 * `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `response_file`: Local (per realization) csv file for response parameters.
 * `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
 as row filtering before aggregation. (See below for filter types).
@@ -57,7 +57,6 @@ The types of response_filters are:
     def __init__(
         self,
         app,
-        container_settings,
         parameter_csv: Path = None,
         response_csv: Path = None,
         ensembles: list = None,
@@ -92,7 +91,8 @@ The types of response_filters are:
 
         elif ensembles and response_file:
             self.ens_paths = tuple(
-                (ens, container_settings["scratch_ensembles"][ens]) for ens in ensembles
+                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+                for ens in ensembles
             )
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
@@ -131,6 +131,46 @@ The types of response_filters are:
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
+
+    @property
+    def tour_steps(self):
+        steps = [
+            {
+                "id": self.ids("layout"),
+                "content": (
+                    "Dashboard displaying correlation between selected "
+                    "response and input parameters."
+                ),
+            },
+            {
+                "id": self.ids("correlation-graph"),
+                "content": (
+                    "Visualization of the correlations between currently selected "
+                    "response and input parameters ranked by the absolute correlation "
+                    "coefficient. Click on any correlation to visualize the distribution "
+                    "between that parameter and the response."
+                ),
+            },
+            {
+                "id": self.ids("distribution-graph"),
+                "content": (
+                    "Visualized the distribution of the response and the selected input parameter "
+                    "in the correlation chart."
+                ),
+            },
+            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
+            {"id": self.ids("responses"), "content": ("Select the active response."),},
+        ]
+        if self.response_filters:
+            steps.append(
+                {
+                    "id": self.ids("filter-wrapper"),
+                    "content": (
+                        "Filter the response data before calculating correlations."
+                    ),
+                },
+            )
+        return steps
 
     @property
     def responses(self):
@@ -184,7 +224,7 @@ The types of response_filters are:
     def filter_layout(self):
         """Layout to display selectors for response filters"""
         if not self.response_filters:
-            return html.Div()
+            return html.Div(id=self.ids("filter-wrapper"))
         children = [html.Label("Filters")]
         for col_name, col_type in self.response_filters.items():
             domid = self.ids(f"filter-{col_name}")
@@ -204,7 +244,9 @@ The types of response_filters are:
                 values = self.responsedf[col_name]
                 children.append(html.Label(col_name))
                 children.append(make_range_slider(domid, values, col_name))
-        return html.Div(style={"zIndex": 1000}, children=children)
+        return html.Div(
+            id=self.ids("filter-wrapper"), style={"zIndex": 1000}, children=children
+        )
 
     @property
     def control_layout(self):
@@ -245,6 +287,7 @@ The types of response_filters are:
     def layout(self):
         """Main layout"""
         return html.Div(
+            id=self.ids("layout"),
             children=[
                 self.control_layout,
                 html.Div(
@@ -263,7 +306,7 @@ The types of response_filters are:
                         self.filter_layout if self.response_filters else html.Div(),
                     ],
                 ),
-            ]
+            ],
         )
 
     @staticmethod
