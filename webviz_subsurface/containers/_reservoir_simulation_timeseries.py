@@ -25,7 +25,7 @@ Input can be given either as aggregated csv file or an ensemble defined
 in container settings.
 
 * `csvfile`: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
                  can be used.
@@ -41,16 +41,11 @@ Plot options:
     * `date` : Date to show in histograms
 """
 
-    ENSEMBLE_COLUMNS = [
-        "REAL",
-        "ENSEMBLE",
-        "DATE",
-    ]
+    ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
     # pylint:disable=too-many-arguments
     def __init__(
         self,
         app,
-        container_settings,
         csvfile: Path = None,
         ensembles: list = None,
         obsfile: Path = None,
@@ -76,7 +71,12 @@ Plot options:
             self.smry = read_csv(csvfile)
         elif ensembles:
             self.ens_paths = tuple(
-                (ensemble, container_settings["scratch_ensembles"][ensemble])
+                (
+                    ensemble,
+                    app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                        ensemble
+                    ],
+                )
                 for ensemble in ensembles
             )
             self.smry = load_smry(
@@ -139,6 +139,45 @@ Plot options:
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.ids("layout"),
+                "content": "Dashboard displaying reservoir simulation time series.",
+            },
+            {
+                "id": self.ids("graph"),
+                "content": (
+                    "Visualization of selected time series. "
+                    "Different options can be set in the menu to the left."
+                ),
+            },
+            {
+                "id": self.ids("ensemble"),
+                "content": (
+                    "Display time series from one or several ensembles. "
+                    "Different ensembles will be overlain in the same plot."
+                ),
+            },
+            {
+                "id": self.ids("vectors"),
+                "content": (
+                    "Display up to three different time series. "
+                    "Each time series will be visualized in a separate plot."
+                ),
+            },
+            {
+                "id": self.ids("visualization"),
+                "content": (
+                    "Choose between different visualizations. 1. Show time series as "
+                    "individual lines per realization. 2. Show statistical fanchart per "
+                    "ensemble. 3. Show statistical fanchart per ensemble and histogram "
+                    "per date. Select a data by clicking in the plot."
+                ),
+            },
+        ]
 
     @staticmethod
     def set_grid_layout(columns):
@@ -231,20 +270,22 @@ Plot options:
                         ),
                     ],
                 ),
-            ],
+            ]
         )
 
     @property
     def layout(self):
         return html.Div(
+            id=self.ids("layout"),
             style=self.set_grid_layout("1fr 4fr"),
             children=[
                 html.Div(
                     children=[
                         html.Div(
+                            id=self.ids("vectors"),
                             style={"padding": "10px"},
                             children=[
-                                html.Div(children=[self.delta_layout],),
+                                html.Div(children=[self.delta_layout]),
                                 html.Label(
                                     style={"marginTop": "25px"}, children="Time Series"
                                 ),
@@ -284,6 +325,7 @@ Plot options:
                             ],
                         ),
                         html.Div(
+                            id=self.ids("visualization"),
                             style={"padding": "10px"},
                             children=[
                                 html.Div("Visualization"),
@@ -420,7 +462,7 @@ Plot options:
                     fig.add_trace(trace, i + 1, 1)
 
                 # Add observations
-                if self.observations.get(vector):
+                if calc_mode != "delta_ensembles" and self.observations.get(vector):
                     for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
 
@@ -436,17 +478,17 @@ Plot options:
                 bargap=0.01,
                 bargroupgap=0.2,
             )
-
-            # Remove linked x-axis for histograms
-            if "xaxis2" in fig["layout"]:
-                fig["layout"]["xaxis2"]["matches"] = None
-                fig["layout"]["xaxis2"]["showticklabels"] = True
-            if "xaxis4" in fig["layout"]:
-                fig["layout"]["xaxis4"]["matches"] = None
-                fig["layout"]["xaxis4"]["showticklabels"] = True
-            if "xaxis6" in fig["layout"]:
-                fig["layout"]["xaxis6"]["matches"] = None
-                fig["layout"]["xaxis6"]["showticklabels"] = True
+            if visualization == "statistics_hist":
+                # Remove linked x-axis for histograms
+                if "xaxis2" in fig["layout"]:
+                    fig["layout"]["xaxis2"]["matches"] = None
+                    fig["layout"]["xaxis2"]["showticklabels"] = True
+                if "xaxis4" in fig["layout"]:
+                    fig["layout"]["xaxis4"]["matches"] = None
+                    fig["layout"]["xaxis4"]["showticklabels"] = True
+                if "xaxis6" in fig["layout"]:
+                    fig["layout"]["xaxis6"]["matches"] = None
+                    fig["layout"]["xaxis6"]["showticklabels"] = True
             return fig
 
         @app.callback(
@@ -668,7 +710,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": legend_group,
+            "name": "mean",
             "x": vector_stats["mean"].index.tolist(),
             "y": vector_stats["mean"].values,
             "mode": "lines",

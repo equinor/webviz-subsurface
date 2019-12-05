@@ -30,14 +30,15 @@ class ParameterCorrelation(WebvizContainerABC):
 This container shows parameter correlation using a correlation matrix,
 and scatter plot for any given pair of parameters.
 
-* `ensembles`: Which ensembles in `container_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `drop_constants`: Drop constant parameters
 """
 
-    def __init__(self, app, container_settings, ensembles, drop_constants: bool = True):
+    def __init__(self, app, ensembles, drop_constants: bool = True):
 
         self.ensembles = {
-            ens: container_settings["scratch_ensembles"][ens] for ens in ensembles
+            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            for ens in ensembles
         }
         self.drop_constants = drop_constants
         self.uid = f"{uuid4()}"

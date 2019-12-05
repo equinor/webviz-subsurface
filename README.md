@@ -4,7 +4,9 @@
 [![Python 3.6 | 3.7](https://img.shields.io/badge/python-3.6%20|%203.7-blue.svg)](https://www.python.org/)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
-## Webviz subsurface configuration 
+## Webviz subsurface
+
+> :sparkles::eyeglasses: **[Live demo application](https://webviz-subsurface-example.azurewebsites.net)**
 
 ### Introduction
 
@@ -18,24 +20,19 @@ The easiest way of installing this package is to run
 ```bash
 pip install webviz-subsurface
 ```
+Add `--upgrade` if you have installed earlier, but want to upgrade to a newer version.
 
-If you want to install the latest code you can instead run
+If you want to install the latest, unreleased, code you can instead run
 ```bash
-git clone git@github.com:Equinor/webviz-subsurface.git
-cd webviz-subsurface
-pip install .
+pip install git+https://github.com/equinor/webviz-subsurface
 ```
 
 ### Usage and documentation
 
 For general usage, see the documentation on
-[webviz-config](https://github.com/equinor/webviz-config). Take a look at
-[this configuration example](./examples/basic_example.yaml)
-for something subsurface specific.
-
-End-user documentation for the subsurface containers are automatically built
-and hosted on the [github pages](https://equinor.github.io/webviz-subsurface/)
-for this repository.
+[webviz-config](https://github.com/equinor/webviz-config). End-user documentation for
+the subsurface containers are automatically built and hosted on the 
+[github pages](https://equinor.github.io/webviz-subsurface/) for this repository.
 
 There is also a [live demo application](https://webviz-subsurface-example.azurewebsites.net)
 showing how a created application can look like, using the `master` branch of this repository.
@@ -63,4 +60,4 @@ bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best 
 ### Disclaimer
 
 This is a tool under heavy development. The current configuration file layout,
-also for subsurface pages, will therefore see large changes.
+also for subsurface containers, will therefore see large changes.

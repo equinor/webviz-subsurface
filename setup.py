@@ -40,7 +40,7 @@ setup(
         "matplotlib~=3.0",
         "pillow~=6.1",
         "xtgeo~=2.1",
-        "webviz-config>=0.0.24",
+        "webviz-config>=0.0.35",
         "webviz-subsurface-components>=0.0.3",
     ],
     tests_require=TESTS_REQUIRE,
