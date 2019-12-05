@@ -427,7 +427,7 @@ The types of response_filters are:
         if self.parameter_csv and self.response_csv:
             return [
                 (read_csv, [{"csv_file": self.parameter_csv,}],),
-                (read_csv, [{"csv_file": self.parameter_csv,}],),
+                (read_csv, [{"csv_file": self.response_csv,}],),
             ]
         return [
             (
