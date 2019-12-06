@@ -431,6 +431,52 @@ or as an ensemble name defined in <code>shared_settings</code>.</p>
 <hr>
 
 
+<h3>Parameter and response correlation</h3>
+<p>This container shows correlation between numerical input parameters and responses.</p>
+<p>Input can be given either as:</p>
+<ul>
+<li>Aggregated csv files for parameters and responses,</li>
+<li>An ensemble name defined in shared_settings and a local csv file for responses
+stored per realizations.</li>
+</ul>
+<p><strong>Note</strong>: Non-numerical (string-based) input parameters and responses are removed.</p>
+<p><strong>Note</strong>: The response csv file will be aggregated per realization.</p>
+<p>Arguments:</p>
+<ul>
+<li><code>parameter_csv</code>: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.</li>
+<li><code>response_csv</code>: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+<li><code>response_file</code>: Local (per realization) csv file for response parameters.</li>
+<li>
+<p><code>response_filters</code>: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).</p>
+</li>
+<li>
+<p><code>response_ignore</code>: Response (columns in csv) to ignore (cannot use with response_include).</p>
+</li>
+<li><code>response_include</code>: Response (columns in csv) to include (cannot use with response_ignore).</li>
+<li><code>aggreation</code>: How to aggregate responses per realization. Either <code>sum</code> or <code>mean</code>.</li>
+<li><code>corr_method</code>: Correlation algorithm. Either <code>pearson</code> or <code>spearman</code>.</li>
+</ul>
+<p>The types of response_filters are:</p>
+<pre><code>- `single`: Dropdown with single selection.
+- `multi`: Dropdown with multiple selection.
+- `range`: Slider with range selection.
+</code></pre>
+<pre><code class='yaml'>  - container: ParameterResponseCorrelation
+    parameter_csv: None  # Optional (default value shown here).
+    response_csv: None  # Optional (default value shown here).
+    ensembles: None  # Optional (default value shown here).
+    response_file: None  # Optional (default value shown here).
+    response_filters: None  # Optional (default value shown here).
+    response_ignore: None  # Optional (default value shown here).
+    response_include: None  # Optional (default value shown here).
+    aggregation: sum  # Optional (default value shown here).
+    corr_method: pearson  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>ReservoirSimulationTimeSeries</h3>
 <p>Visualizes reservoir simulation time series for FMU ensembles.
 Input can be given either as aggregated csv file or an ensemble defined
