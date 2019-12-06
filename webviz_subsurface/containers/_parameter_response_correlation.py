@@ -23,8 +23,8 @@ This container shows correlation between numerical input parameters and response
 
 Input can be given either as:
 
-- Aggregated csv files for parameters and responses,
-- An ensemble name defined in shared_settings and a local csv file for responses
+  - Aggregated csv files for parameters and responses,
+  - An ensemble name defined in shared_settings and a local csv file for responses
 stored per realizations.
 
 **Note**: Non-numerical (string-based) input parameters and responses are removed.
