@@ -17,6 +17,8 @@ setup(
         "webviz_config_containers": [
             "ParameterDistribution = webviz_subsurface.containers:ParameterDistribution",
             "ParameterCorrelation = webviz_subsurface.containers:ParameterCorrelation",
+            "ParameterResponseCorrelation = "
+            + "webviz_subsurface.containers:ParameterResponseCorrelation",
             "DiskUsage = webviz_subsurface.containers:DiskUsage",
             "SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap",
             "HistoryMatch = webviz_subsurface.containers:HistoryMatch",
