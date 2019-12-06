@@ -93,7 +93,6 @@ but the following responses are given more descriptive names automatically:
         response: str = "STOIIP_OIL",
     ):
         self.csvfile = csvfile if csvfile else None
-        self.colorway = app.webviz_settings.get("plotly_layout", {}).get("colorway", [])
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
@@ -120,7 +119,7 @@ but the following responses are given more descriptive names automatically:
         self.initial_response = response
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
-
+        self.plotly_theme = app.webviz_settings["plotly_theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -432,7 +431,7 @@ but the following responses are given more descriptive names automatically:
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, colors=self.colorway),
+                    "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
                 },
                 table,
             )
@@ -512,26 +511,32 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, colors):
+def plot_layout(plot_type, response, theme):
+    layout = theme["layout"]
     if plot_type == "Histogram":
-        output = {
-            "barmode": "overlay",
-            "bargap": 0.01,
-            "bargroupgap": 0.2,
-            "xaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
-            "yaxis": {"title": "Count"},
-        }
+        layout.update(
+            {
+                "barmode": "overlay",
+                "bargap": 0.01,
+                "bargroupgap": 0.2,
+                "xaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+                "yaxis": {"title": "Count"},
+            }
+        )
     elif plot_type == "Box Plot":
-        output = {"yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)}}
+        layout.update(
+            {"yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)}}
+        )
     else:
-        output = {
-            "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-            "yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
-            "xaxis": {"title": "Realization"},
-        }
-    output["height"] = 400
-    output["colorway"] = colors
-    return output
+        layout.update(
+            {
+                "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
+                "yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+                "xaxis": {"title": "Realization"},
+            }
+        )
+    layout.update({"height": 400})
+    return layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
