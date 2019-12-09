@@ -131,7 +131,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             realizations = read_csv(csvfile_reals)
 
         elif ensembles and volfiles:
-            self.ens_paths = {ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            self.ens_paths = {
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
             }
             self.volfiles = volfiles

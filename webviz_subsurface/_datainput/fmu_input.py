@@ -19,7 +19,10 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 def load_ensemble_set(ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"):
     return EnsembleSet(
         ensemble_set_name,
-        [ScratchEnsemble(ens_name, ens_path) for ens_name, ens_path in ensemble_paths.items()],
+        [
+            ScratchEnsemble(ens_name, ens_path)
+            for ens_name, ens_path in ensemble_paths.items()
+        ],
     )
 
 

@@ -24,7 +24,10 @@ This container visualizes the quality of the history match.
     def __init__(self, app, ensembles, observation_file: Path):
 
         self.observation_file = observation_file
-        self.ens_paths = {ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens] for ens in ensembles}
+        self.ens_paths = {
+            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            for ens in ensembles
+        }
 
         data = extract_mismatch(self.ens_paths, self.observation_file)
         self.hm_data = json.dumps(HistoryMatch._prepare_data(data))

@@ -103,7 +103,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             realizations = read_csv(csvfile_reals)
 
         elif ensembles:
-            self.ens_paths = {ensemble, app.webviz_settings["shared_settings"]["scratch_ensembles"][ensemble] for ensemble in ensembles}
+            self.ens_paths = {
+                ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                    ensemble
+                ]
+                for ensemble in ensembles
+            }
             # Extract realizations and sensitivity information
             realizations = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"

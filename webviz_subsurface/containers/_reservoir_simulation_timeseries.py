@@ -70,9 +70,11 @@ Plot options:
         if csvfile:
             self.smry = read_csv(csvfile)
         elif ensembles:
-            self.ens_paths = {ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ensemble
-                    ] for ensemble in ensembles
+            self.ens_paths = {
+                ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                    ensemble
+                ]
+                for ensemble in ensembles
             }
             self.smry = load_smry(
                 ensemble_paths=self.ens_paths,
