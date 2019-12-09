@@ -102,11 +102,10 @@ but the following responses are given more descriptive names automatically:
             self.volumes = read_csv(csvfile)
 
         elif ensembles and volfiles:
-            self.ens_paths = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            self.ens_paths = {ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
-            )
-            self.volfiles = tuple(volfiles.items())
+            }
+            self.volfiles = volfiles
             self.volfolder = volfolder
             self.volumes = extract_volumes(
                 self.ens_paths, self.volfolder, self.volfiles

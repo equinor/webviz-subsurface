@@ -40,10 +40,7 @@ or as an ensemble name defined in `shared_settings`.
         if csvfile:
             self.parameters = read_csv(csvfile)
         elif ensembles:
-            self.ensembles = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
-                for ens in ensembles
-            )
+            self.ensembles = {ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens] for ens in ensembles}
             self.parameters = load_parameters(
                 ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
             )

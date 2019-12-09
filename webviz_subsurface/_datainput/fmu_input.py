@@ -16,17 +16,17 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_ensemble_set(ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"):
+def load_ensemble_set(ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"):
     return EnsembleSet(
         ensemble_set_name,
-        [ScratchEnsemble(ens_name, ens_path) for ens_name, ens_path in ensemble_paths],
+        [ScratchEnsemble(ens_name, ens_path) for ens_name, ens_path in ensemble_paths.items()],
     )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_parameters(
-    ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
+    ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).parameters
@@ -35,7 +35,7 @@ def load_parameters(
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_csv(
-    ensemble_paths: tuple, csv_file: str, ensemble_set_name: str = "EnsembleSet"
+    ensemble_paths: dict, csv_file: str, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).load_csv(csv_file)
@@ -44,21 +44,21 @@ def load_csv(
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_smry(
-    ensemble_paths: tuple,
+    ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
     time_index=str,
-    column_keys=tuple,
+    column_keys=list,
 ) -> pd.DataFrame:
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).get_smry(
-        time_index=time_index, column_keys=list(column_keys) if column_keys else None
+        time_index=time_index, column_keys=column_keys
     )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_realizations(
-    ensemble_paths: tuple, ensemble_set_name: str = "EnsembleSet"
+    ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
     """Extracts realization info from a fmu.ensemble.EnsembleSet
     The information extracted is the ensemble name, realization number,
@@ -96,7 +96,7 @@ def find_sens_type(senscase):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def find_surfaces(ensemble_paths: tuple, suffix="*.gri", delimiter="--"):
+def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--"):
     """Reads surface file names stored in standard FMU format, and returns a dictionary
     on the following format:
     surface_property:
@@ -109,7 +109,7 @@ def find_surfaces(ensemble_paths: tuple, suffix="*.gri", delimiter="--"):
     """
     # Create list of all files in all realizations in all ensembles
     files = []
-    for _, path in ensemble_paths:
+    for _, path in ensemble_paths.items():
         path = Path(path)
         files += glob.glob(str(path / "share" / "results" / "maps" / suffix))
 

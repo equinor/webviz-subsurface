@@ -53,10 +53,10 @@ Plot options:
         sampling: str = "monthly",
         options: dict = None,
     ):
-        self.csvfile = csvfile if csvfile else None
-        self.obsfile = obsfile if obsfile else None
+        self.csvfile = csvfile
+        self.obsfile = obsfile
         self.time_index = sampling
-        self.column_keys = tuple(column_keys) if column_keys else None
+        self.column_keys = column_key
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
@@ -70,15 +70,10 @@ Plot options:
         if csvfile:
             self.smry = read_csv(csvfile)
         elif ensembles:
-            self.ens_paths = tuple(
-                (
-                    ensemble,
-                    app.webviz_settings["shared_settings"]["scratch_ensembles"][
+            self.ens_paths = {ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
                         ensemble
-                    ],
-                )
-                for ensemble in ensembles
-            )
+                    ] for ensemble in ensembles
+            }
             self.smry = load_smry(
                 ensemble_paths=self.ens_paths,
                 ensemble_set_name="EnsembleSet",
