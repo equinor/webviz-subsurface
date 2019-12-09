@@ -56,7 +56,7 @@ Plot options:
         self.csvfile = csvfile
         self.obsfile = obsfile
         self.time_index = sampling
-        self.column_keys = column_key
+        self.column_keys = column_keys
         if csvfile and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
