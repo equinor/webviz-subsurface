@@ -586,7 +586,7 @@ def calculate_delta(df, base_ens, delta_ens):
         .drop("ENSEMBLE", axis=1)
     )
     dframe = base_df.sub(delta_df).reset_index()
-    dframe["ENSEMBLE"] = f"{base_ens}-{delta_ens}"
+    dframe["ENSEMBLE"] = f"({base_ens}) - ({delta_ens})"
     return dframe.fillna(0)
 
 
@@ -706,7 +706,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
     line_color = hex_to_rgb(color, 1)
     return [
         {
-            "name": "maximum",
+            "name": legend_group,
+            "hovertext": "Maximum",
             "x": vector_stats["maximum"].index.tolist(),
             "y": vector_stats["maximum"].values,
             "mode": "lines",
@@ -715,7 +716,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "p10",
+            "name": legend_group,
+            "hovertext": "P10",
             "x": vector_stats["p10"].index.tolist(),
             "y": vector_stats["p10"].values,
             "mode": "lines",
@@ -726,7 +728,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "mean",
+            "name": legend_group,
+            "hovertext": "Mean",
             "x": vector_stats["mean"].index.tolist(),
             "y": vector_stats["mean"].values,
             "mode": "lines",
@@ -737,7 +740,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": True,
         },
         {
-            "name": "p90",
+            "name": legend_group,
+            "hovertext": "P90",
             "x": vector_stats["p90"].index.tolist(),
             "y": vector_stats["p90"].values,
             "mode": "lines",
@@ -748,7 +752,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "minimum",
+            "name": legend_group,
+            "hovertext": "Minimum",
             "x": vector_stats["minimum"].index.tolist(),
             "y": vector_stats["minimum"].values,
             "mode": "lines",
