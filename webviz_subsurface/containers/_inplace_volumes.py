@@ -13,6 +13,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizContainerABC
 
 from .._datainput.inplace_volumes import extract_volumes
+from .._abbreviations import VOLUME_TERMINOLOGY
 
 
 class InplaceVolumes(WebvizContainerABC):
@@ -56,21 +57,6 @@ but the following responses are given more descriptive names automatically:
 * `response`: Optional initial visualized volume response
 
 """
-
-    RESPONSES = {
-        "BULK_OIL": "Bulk Volume (Oil)",
-        "NET_OIL": "Net Volume (Oil)",
-        "PORV_OIL": "Pore Volume (Oil)",
-        "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
-        "BULK_GAS": "Bulk Volume (Gas)",
-        "NET_GAS": "Net Volume (Gas)",
-        "PORV_GAS": "Pore Volume (Gas)",
-        "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially In Place",
-        "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
-        "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
-    }
 
     TABLE_STATISTICS = [
         "response",
@@ -306,10 +292,7 @@ but the following responses are given more descriptive names automatically:
                         dcc.Dropdown(
                             id=self.ids("response"),
                             options=[
-                                {
-                                    "label": InplaceVolumes.RESPONSES.get(i, i),
-                                    "value": i,
-                                }
+                                {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
                                 for i in self.responses
                             ],
                             value=self.initial_response
@@ -496,7 +479,7 @@ def plot_table(dframe, response, name):
     values = dframe[response]
     try:
         output = {
-            "response": InplaceVolumes.RESPONSES.get(response, response),
+            "response": VOLUME_TERMINOLOGY.get(response, response),
             "group": str(name),
             "minimum": f"{values.min():.2e}",
             "maximum": f"{values.max():.2e}",
@@ -518,15 +501,15 @@ def plot_layout(plot_type, response, colors):
             "barmode": "overlay",
             "bargap": 0.01,
             "bargroupgap": 0.2,
-            "xaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+            "xaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
             "yaxis": {"title": "Count"},
         }
     elif plot_type == "Box Plot":
-        output = {"yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)}}
+        output = {"yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)}}
     else:
         output = {
             "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-            "yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+            "yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
             "xaxis": {"title": "Realization"},
         }
     output["height"] = 400

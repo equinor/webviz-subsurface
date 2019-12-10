@@ -7,8 +7,8 @@ import pandas as pd
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
-import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
+import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -16,6 +16,7 @@ from webviz_config.webviz_store import webvizstore
 from .._private_containers.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations
+from .._abbreviations import VOLUME_TERMINOLOGY
 
 
 class InplaceVolumesOneByOne(WebvizContainerABC):
@@ -68,21 +69,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 * `response`: Optional initial visualized volume response
 
 """
-
-    RESPONSES = {
-        "BULK_OIL": "Bulk Volume (Oil)",
-        "NET_OIL": "Net Volume (Oil)",
-        "PORV_OIL": "Pore Volume (Oil)",
-        "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
-        "BULK_GAS": "Bulk Volume (Gas)",
-        "NET_GAS": "Net Volume (Gas)",
-        "PORV_GAS": "Pore Volume (Gas)",
-        "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially In Place",
-        "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
-        "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
-    }
 
     FILTERS = ["ZONE", "REGION", "FACIES", "LICENSE"]
 
@@ -328,10 +314,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     id=self.ids("response"),
                     style={"width": "75%"},
                     options=[
-                        {
-                            "label": InplaceVolumesOneByOne.RESPONSES.get(i, i),
-                            "value": i,
-                        }
+                        {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
                         for i in self.responses
                     ],
                     clearable=False,
