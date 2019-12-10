@@ -22,5 +22,5 @@
   "GIIP_TOTAL": "Gas initially in place (total)",
   "RECOVERABLE_OIL": "Recoverable volume (oil zone)",
   "RECOVERABLE_GAS": "Recoverable volume (gas zone)",
-  "RECOVERABLE_GAS": "Recoverable volume (total)"
+  "RECOVERABLE_TOTAL": "Recoverable volume (total)"
 }
