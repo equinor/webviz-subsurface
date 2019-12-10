@@ -300,7 +300,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         for i in ["Per realization", "Box plot"]
                     ],
                     labelStyle={"display": "inline-block"},
-                    value="Per Realization",
+                    value="Per realization",
                 ),
             ]
         )
@@ -512,6 +512,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": {"title": "Distribution for each sensitivity"},
                     },
                 )
+            else:
+                print(plot_type)
             tornado = json.dumps(
                 {
                     "ENSEMBLE": ensemble,

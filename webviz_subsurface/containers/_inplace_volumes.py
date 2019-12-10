@@ -192,7 +192,7 @@ but the following responses are given more descriptive names automatically:
     @property
     def plot_types(self):
         """List of available plots"""
-        return ["Histogram", "Per realization", "Box Plot"]
+        return ["Histogram", "Per realization", "Box plot"]
 
     @property
     def selectors(self):
@@ -472,7 +472,7 @@ def plot_data(plot_type, dframe, response, name):
         if values.nunique() == 1:
             values = values[0]
         output = {"x": values, "type": "histogram", "name": name}
-    elif plot_type == "Box Plot":
+    elif plot_type == "Box plot":
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
         output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
@@ -512,7 +512,7 @@ def plot_layout(plot_type, response, colors):
             "xaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
             "yaxis": {"title": "Count"},
         }
-    elif plot_type == "Box Plot":
+    elif plot_type == "Box plot":
         output = {"yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)}}
     else:
         output = {
