@@ -475,7 +475,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             table = calculate_table_rows(data, response)
 
             # Make Plotly figure
-            if plot_type == "Per Realization":
+            if plot_type == "Per realization":
                 # One bar per realization
                 plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
@@ -493,7 +493,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": {"xaxis": {"title": "Realizations"}},
                     },
                 )
-            elif plot_type == "Box Plot":
+            elif plot_type == "Box plot":
                 # One box per sensitivity name
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
@@ -531,7 +531,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         )
         def _color_chart(hoverdata, plot_type, figure):
             """Callback to update barchart color on tornado plot click"""
-            if not hoverdata or plot_type != "Per Realization":
+            if not hoverdata or plot_type != "Per realization":
                 return figure
             hoverdata = json.loads(hoverdata)
             reals = figure["data"][0]["x"]
