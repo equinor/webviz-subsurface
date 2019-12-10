@@ -50,7 +50,6 @@ script:
   - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
   - pip install git+https://github.com/equinor/libecl
   - pip install git+https://github.com/equinor/fmu-ensemble
-  - pip install --upgrade git+https://github.com/anders-kiaer/webviz-config.git@mutable_objects_store
   - pytest tests --forked
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
@@ -58,7 +57,6 @@ script:
   - pip install webviz-config-equinor
   - webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
   - pushd example_subsurface_app
-  - echo "RUN pip install --user --upgrade git+https://github.com/anders-kiaer/webviz-config.git@mutable_objects_store" >> Dockerfile
     # Related to https://github.com/equinor/webviz-config/issues/150:
   - echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
   - docker build -t webviz/example_subsurface_image:equinor-theme .

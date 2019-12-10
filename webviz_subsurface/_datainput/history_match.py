@@ -20,7 +20,8 @@ def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
     """
 
     list_ens = [
-        scratch_ensemble(ensemble_name, path) for (ensemble_name, path) in ens_paths.items()
+        scratch_ensemble(ensemble_name, path)
+        for (ensemble_name, path) in ens_paths.items()
     ]
 
     ens_data = fmu.ensemble.EnsembleSet("HistoryMatch", list_ens)
