@@ -76,38 +76,42 @@ class WellCrossSection(WebvizContainerABC):
     @property
     def well_layout(self):
         return html.Div(
-            children=[
-                html.Label(children="Well"),
-                dcc.Dropdown(
-                    id=self.ids("wells"),
-                    options=[
-                        {"label": Path(well).stem, "value": well}
-                        for well in self.wellfiles
-                    ],
-                    value=self.wellfiles[0],
-                    clearable=False,
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Well:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("wells"),
+                        options=[
+                            {"label": Path(well).stem, "value": well}
+                            for well in self.wellfiles
+                        ],
+                        value=self.wellfiles[0],
+                        clearable=False,
+                    ),
+                ]
+            ),
         )
 
     @property
     def seismic_layout(self):
         return html.Div(
             style={} if self.segyfiles else {"display": "none"},
-            children=[
-                html.Label(children="Seismic"),
-                dcc.Dropdown(
-                    id=self.ids("cube"),
-                    options=[
-                        {"label": Path(segy).stem, "value": segy}
-                        for segy in self.segyfiles
-                    ]
-                    if self.segyfiles
-                    else None,
-                    value=self.segyfiles[0] if self.segyfiles else None,
-                    clearable=False,
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Seismic:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("cube"),
+                        options=[
+                            {"label": Path(segy).stem, "value": segy}
+                            for segy in self.segyfiles
+                        ]
+                        if self.segyfiles
+                        else None,
+                        value=self.segyfiles[0] if self.segyfiles else None,
+                        clearable=False,
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -128,26 +132,30 @@ class WellCrossSection(WebvizContainerABC):
             style={"marginLeft": "20px", "marginRight": "0px", "marginBotton": "0px"},
             children=[
                 html.Div(
-                    children=[
-                        html.Label("Sampling"),
-                        dcc.Input(
-                            id=self.ids("sampling"),
-                            debounce=True,
-                            type="number",
-                            value=self.sampling,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Sampling:", style={"font-weight": "bold"}),
+                            dcc.Input(
+                                id=self.ids("sampling"),
+                                debounce=True,
+                                type="number",
+                                value=self.sampling,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    children=[
-                        html.Label("Nextend"),
-                        dcc.Input(
-                            id=self.ids("nextend"),
-                            debounce=True,
-                            type="number",
-                            value=self.nextend,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Nextend:", style={"font-weight": "bold"}),
+                            dcc.Input(
+                                id=self.ids("nextend"),
+                                debounce=True,
+                                type="number",
+                                value=self.nextend,
+                            ),
+                        ]
+                    )
                 ),
             ],
         )
@@ -264,15 +272,16 @@ class WellCrossSection(WebvizContainerABC):
             [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
             [Input(self.ids("wells"), "value")],
         )
-        def _render_surface(wellname):
+        def _render_surface(wellfile):
             """Update map"""
-            wellname = get_path(wellname)
+            wellname = Path(wellfile).stem
+            wellfile = get_path(wellfile)
             surface = load_surface(str(get_path(self.surfacefiles[0])))
-            well = load_well(str(wellname))
+            well = load_well(str(wellfile))
             s_layer = make_surface_layer(
                 surface, name=self.surfacenames[0], hillshading=True,
             )
-            well_layer = make_well_layer(well, wellname.stem)
+            well_layer = make_well_layer(well, wellname)
             return [s_layer, well_layer], "keep"
 
     def add_webvizstore(self):

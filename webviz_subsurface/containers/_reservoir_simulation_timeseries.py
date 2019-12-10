@@ -180,12 +180,13 @@ Plot options:
         ]
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns, padding=0):
         return {
             "display": "grid",
             "alignContent": "space-around",
             "justifyContent": "space-between",
             "gridTemplateColumns": f"{columns}",
+            "padding": f"{padding}px",
         }
 
     @property
@@ -195,40 +196,54 @@ Plot options:
             children=[
                 html.Div(
                     style={"display": show_delta},
-                    children=[
-                        html.Label("Mode"),
-                        dcc.RadioItems(
-                            id=self.ids("mode"),
-                            style={"marginBottom": "25px"},
-                            options=[
-                                {"label": "Show ensembles", "value": "ensembles"},
-                                {
-                                    "label": "Calculate ensemble deltas",
-                                    "value": "delta_ensembles",
-                                },
-                            ],
-                            value="ensembles",
-                        ),
-                    ],
+                    children=html.Label(
+                        children=[
+                            html.Span("Mode:", style={"font-weight": "bold"}),
+                            dcc.RadioItems(
+                                id=self.ids("mode"),
+                                style={"marginBottom": "25px"},
+                                options=[
+                                    {
+                                        "label": "Individual ensembles",
+                                        "value": "ensembles",
+                                    },
+                                    {
+                                        "label": "Delta between ensembles",
+                                        "value": "delta_ensembles",
+                                    },
+                                ],
+                                value="ensembles",
+                            ),
+                        ]
+                    ),
                 ),
                 html.Div(
                     id=self.ids("show_ensembles"),
-                    children=[
-                        html.Label("Ensembles"),
-                        dcc.Dropdown(
-                            id=self.ids("ensemble"),
-                            clearable=False,
-                            multi=True,
-                            options=[{"label": i, "value": i} for i in self.ensembles],
-                            value=self.ensembles[0],
-                        ),
-                    ],
+                    children=html.Label(
+                        children=[
+                            html.Span(
+                                "Selected ensembles:", style={"font-weight": "bold"}
+                            ),
+                            dcc.Dropdown(
+                                id=self.ids("ensemble"),
+                                clearable=False,
+                                multi=True,
+                                options=[
+                                    {"label": i, "value": i} for i in self.ensembles
+                                ],
+                                value=self.ensembles[0],
+                            ),
+                        ],
+                    ),
                 ),
                 html.Div(
                     id=self.ids("calc_delta"),
                     style={"display": "none"},
                     children=[
-                        html.Label("Ensembles (A-B)"),
+                        html.Span(
+                            "Selected ensemble delta (A-B):",
+                            style={"font-weight": "bold"},
+                        ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
                             children=[
@@ -277,17 +292,17 @@ Plot options:
     def layout(self):
         return html.Div(
             id=self.ids("layout"),
-            style=self.set_grid_layout("1fr 4fr"),
+            style=self.set_grid_layout("1fr 4fr", padding=10),
             children=[
                 html.Div(
                     children=[
+                        html.Div(children=[self.delta_layout]),
                         html.Div(
                             id=self.ids("vectors"),
-                            style={"padding": "10px"},
+                            style={"marginTop": "25px"},
                             children=[
-                                html.Div(children=[self.delta_layout]),
-                                html.Label(
-                                    style={"marginTop": "25px"}, children="Time Series"
+                                html.Span(
+                                    "Time series:", style={"font-weight": "bold"}
                                 ),
                                 dcc.Dropdown(
                                     style={"marginTop": "5px", "marginBottom": "5px"},
@@ -326,23 +341,24 @@ Plot options:
                         ),
                         html.Div(
                             id=self.ids("visualization"),
-                            style={"padding": "10px"},
+                            style={"marginTop": "25px"},
                             children=[
-                                html.Div("Visualization"),
+                                html.Span(
+                                    "Visualization:", style={"font-weight": "bold"}
+                                ),
                                 dcc.RadioItems(
                                     id=self.ids("statistics"),
                                     options=[
                                         {
-                                            "label": "Time series realization plot",
+                                            "label": "Individual realizations",
                                             "value": "realizations",
                                         },
                                         {
-                                            "label": "Time series fanchart",
+                                            "label": "Statistical fanchart",
                                             "value": "statistics",
                                         },
                                         {
-                                            "label": "Time series fanchart and histogram "
-                                            "for a selected date",
+                                            "label": "Statistical fanchart and histogram",
                                             "value": "statistics_hist",
                                         },
                                     ],

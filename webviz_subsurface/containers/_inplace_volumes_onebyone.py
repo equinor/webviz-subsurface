@@ -271,18 +271,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Ensemble"),
-                dcc.Dropdown(
-                    id=self.ids("ensemble"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.volumes["ENSEMBLE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.volumes["ENSEMBLE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Ensemble:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("ensemble"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.volumes["ENSEMBLE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.volumes["ENSEMBLE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -290,12 +292,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Radiobuttons to select plot type"""
         return html.Div(
             children=[
-                html.Label("Plot Type"),
+                html.Span("Plot type:", style={"font-weight": "bold"}),
                 dcc.RadioItems(
                     id=self.ids("plot-type"),
                     options=[
                         {"label": i, "value": i}
-                        for i in ["Per Realization", "Box Plot"]
+                        for i in ["Per realization", "Box plot"]
                     ],
                     labelStyle={"display": "inline-block"},
                     value="Per Realization",
@@ -308,21 +310,23 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select volumetric response"""
         return html.Div(
             style={"paddingLeft": "30px"},
-            children=[
-                html.Label("Volumetric calculation"),
-                dcc.Dropdown(
-                    id=self.ids("response"),
-                    style={"width": "75%"},
-                    options=[
-                        {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
-                        for i in self.responses
-                    ],
-                    clearable=False,
-                    value=self.initial_response
-                    if self.initial_response in self.responses
-                    else self.responses[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("response"),
+                        style={"width": "75%"},
+                        options=[
+                            {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                            for i in self.responses
+                        ],
+                        clearable=False,
+                        value=self.initial_response
+                        if self.initial_response in self.responses
+                        else self.responses[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -330,18 +334,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select grid source of volume files"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Grid source"),
-                dcc.Dropdown(
-                    id=self.ids("source"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.volumes["SOURCE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.volumes["SOURCE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Grid source:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("source"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.volumes["SOURCE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.volumes["SOURCE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -393,7 +399,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             children=[
                                 self.ensemble_selector,
                                 self.source_selector,
-                                html.Label("Filters"),
+                                html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),
                                     children=self.filter_selectors,

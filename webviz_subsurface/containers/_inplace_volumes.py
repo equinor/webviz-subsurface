@@ -287,45 +287,53 @@ but the following responses are given more descriptive names automatically:
             style=self.style_plot_options,
             children=[
                 html.Div(
-                    children=[
-                        html.P("Response:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("response"),
-                            options=[
-                                {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
-                                for i in self.responses
-                            ],
-                            value=self.initial_response
-                            if self.initial_response in self.responses
-                            else self.responses[0],
-                            clearable=False,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Response:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("response"),
+                                options=[
+                                    {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                                    for i in self.responses
+                                ],
+                                value=self.initial_response
+                                if self.initial_response in self.responses
+                                else self.responses[0],
+                                clearable=False,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    children=[
-                        html.P("Plot type:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("plot-type"),
-                            options=[{"label": i, "value": i} for i in self.plot_types],
-                            value="Per realization",
-                            clearable=False,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Plot type:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("plot-type"),
+                                options=[
+                                    {"label": i, "value": i} for i in self.plot_types
+                                ],
+                                value="Per realization",
+                                clearable=False,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    children=[
-                        html.P("Group by:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("group"),
-                            options=[
-                                {"label": i.lower().capitalize(), "value": i}
-                                for i in self.selectors
-                            ],
-                            value=None,
-                            placeholder="Not grouped",
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Group by:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("group"),
+                                options=[
+                                    {"label": i.lower().capitalize(), "value": i}
+                                    for i in self.selectors
+                                ],
+                                value=None,
+                                placeholder="Not grouped",
+                            ),
+                        ]
+                    )
                 ),
             ],
         )
