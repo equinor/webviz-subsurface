@@ -90,10 +90,10 @@ The types of response_filters are:
             self.responsedf = read_csv(self.response_csv)
 
         elif ensembles and response_file:
-            self.ens_paths = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            self.ens_paths = {
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
-            )
+            }
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
