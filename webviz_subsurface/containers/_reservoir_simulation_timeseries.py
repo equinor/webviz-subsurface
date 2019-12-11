@@ -177,12 +177,13 @@ Plot options:
         ]
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns, padding=0):
         return {
             "display": "grid",
             "alignContent": "space-around",
             "justifyContent": "space-between",
             "gridTemplateColumns": f"{columns}",
+            "padding": f"{padding}px",
         }
 
     @property
@@ -192,40 +193,54 @@ Plot options:
             children=[
                 html.Div(
                     style={"display": show_delta},
-                    children=[
-                        html.Label("Mode"),
-                        dcc.RadioItems(
-                            id=self.ids("mode"),
-                            style={"marginBottom": "25px"},
-                            options=[
-                                {"label": "Show ensembles", "value": "ensembles"},
-                                {
-                                    "label": "Calculate ensemble deltas",
-                                    "value": "delta_ensembles",
-                                },
-                            ],
-                            value="ensembles",
-                        ),
-                    ],
+                    children=html.Label(
+                        children=[
+                            html.Span("Mode:", style={"font-weight": "bold"}),
+                            dcc.RadioItems(
+                                id=self.ids("mode"),
+                                style={"marginBottom": "25px"},
+                                options=[
+                                    {
+                                        "label": "Individual ensembles",
+                                        "value": "ensembles",
+                                    },
+                                    {
+                                        "label": "Delta between ensembles",
+                                        "value": "delta_ensembles",
+                                    },
+                                ],
+                                value="ensembles",
+                            ),
+                        ]
+                    ),
                 ),
                 html.Div(
                     id=self.ids("show_ensembles"),
-                    children=[
-                        html.Label("Ensembles"),
-                        dcc.Dropdown(
-                            id=self.ids("ensemble"),
-                            clearable=False,
-                            multi=True,
-                            options=[{"label": i, "value": i} for i in self.ensembles],
-                            value=self.ensembles[0],
-                        ),
-                    ],
+                    children=html.Label(
+                        children=[
+                            html.Span(
+                                "Selected ensembles:", style={"font-weight": "bold"}
+                            ),
+                            dcc.Dropdown(
+                                id=self.ids("ensemble"),
+                                clearable=False,
+                                multi=True,
+                                options=[
+                                    {"label": i, "value": i} for i in self.ensembles
+                                ],
+                                value=self.ensembles[0],
+                            ),
+                        ],
+                    ),
                 ),
                 html.Div(
                     id=self.ids("calc_delta"),
                     style={"display": "none"},
                     children=[
-                        html.Label("Ensembles (A-B)"),
+                        html.Span(
+                            "Selected ensemble delta (A-B):",
+                            style={"font-weight": "bold"},
+                        ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
                             children=[
@@ -274,17 +289,17 @@ Plot options:
     def layout(self):
         return html.Div(
             id=self.ids("layout"),
-            style=self.set_grid_layout("1fr 4fr"),
+            style=self.set_grid_layout("1fr 4fr", padding=10),
             children=[
                 html.Div(
                     children=[
+                        html.Div(children=[self.delta_layout]),
                         html.Div(
                             id=self.ids("vectors"),
-                            style={"padding": "10px"},
+                            style={"marginTop": "25px"},
                             children=[
-                                html.Div(children=[self.delta_layout]),
-                                html.Label(
-                                    style={"marginTop": "25px"}, children="Time Series"
+                                html.Span(
+                                    "Time series:", style={"font-weight": "bold"}
                                 ),
                                 dcc.Dropdown(
                                     style={"marginTop": "5px", "marginBottom": "5px"},
@@ -323,23 +338,24 @@ Plot options:
                         ),
                         html.Div(
                             id=self.ids("visualization"),
-                            style={"padding": "10px"},
+                            style={"marginTop": "25px"},
                             children=[
-                                html.Div("Visualization"),
+                                html.Span(
+                                    "Visualization:", style={"font-weight": "bold"}
+                                ),
                                 dcc.RadioItems(
                                     id=self.ids("statistics"),
                                     options=[
                                         {
-                                            "label": "Time series realization plot",
+                                            "label": "Individual realizations",
                                             "value": "realizations",
                                         },
                                         {
-                                            "label": "Time series fanchart",
+                                            "label": "Statistical fanchart",
                                             "value": "statistics",
                                         },
                                         {
-                                            "label": "Time series fanchart and histogram "
-                                            "for a selected date",
+                                            "label": "Statistical fanchart and histogram",
                                             "value": "statistics_hist",
                                         },
                                     ],
@@ -567,7 +583,7 @@ def calculate_delta(df, base_ens, delta_ens):
         .drop("ENSEMBLE", axis=1)
     )
     dframe = base_df.sub(delta_df).reset_index()
-    dframe["ENSEMBLE"] = f"{base_ens}-{delta_ens}"
+    dframe["ENSEMBLE"] = f"({base_ens}) - ({delta_ens})"
     return dframe.fillna(0)
 
 
@@ -687,7 +703,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
     line_color = hex_to_rgb(color, 1)
     return [
         {
-            "name": "maximum",
+            "name": legend_group,
+            "hovertext": "Maximum",
             "x": vector_stats["maximum"].index.tolist(),
             "y": vector_stats["maximum"].values,
             "mode": "lines",
@@ -696,7 +713,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "p10",
+            "name": legend_group,
+            "hovertext": "P10",
             "x": vector_stats["p10"].index.tolist(),
             "y": vector_stats["p10"].values,
             "mode": "lines",
@@ -707,7 +725,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "mean",
+            "name": legend_group,
+            "hovertext": "Mean",
             "x": vector_stats["mean"].index.tolist(),
             "y": vector_stats["mean"].values,
             "mode": "lines",
@@ -718,7 +737,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": True,
         },
         {
-            "name": "p90",
+            "name": legend_group,
+            "hovertext": "P90",
             "x": vector_stats["p90"].index.tolist(),
             "y": vector_stats["p90"].values,
             "mode": "lines",
@@ -729,7 +749,8 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "showlegend": False,
         },
         {
-            "name": "minimum",
+            "name": legend_group,
+            "hovertext": "Minimum",
             "x": vector_stats["minimum"].index.tolist(),
             "y": vector_stats["minimum"].values,
             "mode": "lines",

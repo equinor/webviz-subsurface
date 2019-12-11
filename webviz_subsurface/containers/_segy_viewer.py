@@ -134,40 +134,40 @@ The plots are linked and updates are done by clicking in the plots.
             style=self.set_grid_layout("3fr 2fr 5fr 1fr 1fr"),
             children=[
                 html.Div(
-                    children=[
-                        html.Label(
-                            style={"textAlign": "center"},
-                            children="Select seismic cube",
-                        ),
-                        dcc.Dropdown(
-                            id=self.ids("cube"),
-                            options=[
-                                {"label": Path(cube).stem, "value": cube}
-                                for cube in self.segyfiles
-                            ],
-                            value=self.segyfiles[0],
-                            clearable=False,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Seismic cube:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("cube"),
+                                options=[
+                                    {"label": Path(cube).stem, "value": cube}
+                                    for cube in self.segyfiles
+                                ],
+                                value=self.segyfiles[0],
+                                clearable=False,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    style={"zIndex": 2000},
-                    children=[
-                        html.Label(
-                            style={"textAlign": "center"}, children="Set colorscale"
-                        ),
-                        wcc.ColorScales(
-                            id=self.ids("color-scale"),
-                            colorscale=self.initial_colors,
-                            nSwatches=12,
-                        ),
-                    ],
+                    style={"zIndex": 2000, "paddingLeft": "10px"},
+                    children=html.Label(
+                        children=[
+                            html.Span("Colorscale:", style={"font-weight": "bold"}),
+                            wcc.ColorScales(
+                                id=self.ids("color-scale"),
+                                colorscale=self.initial_colors,
+                                nSwatches=12,
+                            ),
+                        ]
+                    ),
                 ),
                 html.Div(
                     style={"marginRight": "50px", "marginLeft": "50px"},
                     children=[
-                        html.Label(
-                            style={"textAlign": "center"}, children="Set color range"
+                        html.P(
+                            "Color range",
+                            style={"textAlign": "center", "font-weight": "bold"},
                         ),
                         dcc.RangeSlider(
                             id=self.ids("color-values"),

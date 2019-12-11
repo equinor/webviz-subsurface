@@ -178,18 +178,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Ensemble"),
-                dcc.Dropdown(
-                    id=self.ids("ensemble"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.data["ENSEMBLE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.data["ENSEMBLE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Ensemble", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("ensemble"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.data["ENSEMBLE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.data["ENSEMBLE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -197,15 +199,17 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Time Series"),
-                dcc.Dropdown(
-                    id=self.ids("vector"),
-                    options=[{"label": i, "value": i} for i in self.smry_cols],
-                    clearable=False,
-                    value=self.initial_vector,
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Time series:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("vector"),
+                        options=[{"label": i, "value": i} for i in self.smry_cols],
+                        clearable=False,
+                        value=self.initial_vector,
+                    ),
+                ]
+            ),
         )
 
     def add_webvizstore(self):

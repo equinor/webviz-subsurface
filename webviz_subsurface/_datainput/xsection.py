@@ -66,6 +66,7 @@ class XSectionFigure:
                 "title": "Depth",
                 "zeroline": False,
             },
+            "legend": {"traceorder": "normal"},
         }
 
     @property
@@ -317,13 +318,11 @@ class XSectionFigure:
         # ax, bba = self._currentax(axisname=axisname)
 
         # either use surfaces from __init__, or override with surfaces
-        # speciefied here
+        # specified here
 
-        nlen = len(surfaces)
+        for i, surface in enumerate(surfaces):
 
-        for i in range(nlen):
-
-            hfence1 = surfaces[i].get_randomline(self.fence).copy()
+            hfence1 = surface.get_randomline(self.fence).copy()
             self._data.append(
                 {
                     "type": "line",

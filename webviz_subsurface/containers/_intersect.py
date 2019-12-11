@@ -24,7 +24,7 @@ The input are surfaces from a FMU ensemble stored on standardized
 format with standardized naming (share/results/maps/name--category.gri)
 and a folder of well files stored in RMS well format.
 
-* `ensemble`: Which ensemble in `container_settings` to visualize.
+* `ensemble`: Which ensemble in `shared_settings` to visualize.
 * `well_path`: File folder with wells in rmswell format
 * `surface_cat`: Surface category to look for in the file names
 * `surface_names`: List of surface names to look for in the file names
