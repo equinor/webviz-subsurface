@@ -503,7 +503,8 @@ def plot_table(dframe, response, name):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(plot_type, response, theme):
-    layout = theme["layout"]
+    layout = {}
+    layout.update(theme["layout"])
     layout["height"] = 400
     if plot_type == "Histogram":
         layout.update(

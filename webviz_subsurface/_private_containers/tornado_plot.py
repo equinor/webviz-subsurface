@@ -483,4 +483,4 @@ def tornado_plot(
             ],
         }
     )
-    return {'data':plot_data, 'layout':layout}
+    return {"data": plot_data, "layout": layout}

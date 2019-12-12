@@ -357,7 +357,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
-
             # Redraw figure if ensemble/vector hanges
             if ctx == self.ids("ensemble") or ctx == self.ids("vector"):
                 layout = {}
@@ -375,7 +374,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     for r, df in data.groupby(["REAL"])
                 ]
                 traces[0]["hoverinfo"] = "x"
-                layout.update({"showlegend": False})
+                layout.update({"showlegend": False, "margin": {"t": 50}})
                 figure = {"data": traces, "layout": layout}
 
             # Update line colors if a sensitivity is selected in tornado
@@ -388,10 +387,14 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 else:
                     for trace in figure["data"]:
                         if trace["customdata"] in tornado_click["real_low"]:
-                            trace["marker"] = {"color": "rgb(235, 0, 54)"}
+                            trace["marker"] = {
+                                "color": self.plotly_theme["layout"]["colorway"][0]
+                            }
                             trace["opacity"] = 1
                         elif trace["customdata"] in tornado_click["real_high"]:
-                            trace["marker"] = {"color": "rgb(36, 55, 70)"}
+                            trace["marker"] = {
+                                "color": self.plotly_theme["layout"]["colorway"][1]
+                            }
                             trace["opacity"] = 1
                         else:
                             trace["marker"] = {"color": "grey"}

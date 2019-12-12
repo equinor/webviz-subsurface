@@ -478,7 +478,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             # Make Plotly figure
             layout = {}
             layout.update(self.plotly_theme["layout"])
-            layout.update({'margin':{'l': 100}})
+            layout.update({"margin": {"l": 100}})
             if plot_type == "Per realization":
                 # One bar per realization
                 layout.update({"xaxis": {"title": "Realizations"}})
