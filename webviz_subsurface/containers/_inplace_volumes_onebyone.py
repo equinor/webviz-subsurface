@@ -145,6 +145,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
         self.uid = uuid4()
         self.selectors_id = {x: self.ids(x) for x in self.selectors}
+        self.plotly_theme = app.webviz_settings["plotly_theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -475,8 +476,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             table = calculate_table_rows(data, response)
 
             # Make Plotly figure
+            layout = {}
+            layout.update(self.plotly_theme["layout"])
+            layout.update({'margin':{'l': 100}})
             if plot_type == "Per realization":
                 # One bar per realization
+                layout.update({"xaxis": {"title": "Realizations"}})
                 plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
@@ -490,11 +495,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "type": "bar",
                             }
                         ],
-                        "layout": {"xaxis": {"title": "Realizations"}},
+                        "layout": layout,
                     },
                 )
             elif plot_type == "Box plot":
                 # One box per sensitivity name
+                layout.update({"title": "Distribution for each sensitivity"})
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.ids("graph"),
@@ -509,11 +515,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             }
                             for sensname, dframe in data.groupby(["SENSNAME"])
                         ],
-                        "layout": {"title": "Distribution for each sensitivity"},
+                        "layout": layout,
                     },
                 )
-            else:
-                print(plot_type)
             tornado = json.dumps(
                 {
                     "ENSEMBLE": ensemble,

@@ -138,6 +138,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         )
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
         self.uid = uuid4()
+        self.plotly_theme = app.webviz_settings["plotly_theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -356,8 +357,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
+
             # Redraw figure if ensemble/vector hanges
             if ctx == self.ids("ensemble") or ctx == self.ids("vector"):
+                layout = {}
+                layout.update(self.plotly_theme["layout"])
                 data = filter_ensemble(self.data, ensemble, vector)
                 traces = [
                     {
@@ -371,7 +375,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     for r, df in data.groupby(["REAL"])
                 ]
                 traces[0]["hoverinfo"] = "x"
-                layout = {"showlegend": False}
+                layout.update({"showlegend": False})
                 figure = {"data": traces, "layout": layout}
 
             # Update line colors if a sensitivity is selected in tornado

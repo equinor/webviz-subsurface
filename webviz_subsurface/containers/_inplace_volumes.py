@@ -527,7 +527,7 @@ def plot_layout(plot_type, response, theme):
         )
 
     # output["colorway"] = colors
-    return output
+    return layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

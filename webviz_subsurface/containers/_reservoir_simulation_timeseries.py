@@ -101,8 +101,6 @@ Plot options:
             if self.plot_options.get("date")
             else None
         )
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
-
         self.allow_delta = len(self.ensembles) > 1
         self.uid = uuid4()
         self.set_callbacks(app)
