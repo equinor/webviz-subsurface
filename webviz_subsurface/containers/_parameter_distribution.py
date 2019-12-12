@@ -40,10 +40,10 @@ or as an ensemble name defined in `shared_settings`.
         if csvfile:
             self.parameters = read_csv(csvfile)
         elif ensembles:
-            self.ensembles = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            self.ensembles = {
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
-            )
+            }
             self.parameters = load_parameters(
                 ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
             )
@@ -110,7 +110,7 @@ or as an ensemble name defined in `shared_settings`.
         return html.Div(
             id=self.ids("layout"),
             children=[
-                html.H5("Select parameter distribution"),
+                html.Span("Parameter distribution:", style={"font-weight": "bold"}),
                 html.Div(
                     style=self.set_grid_layout("8fr 1fr 2fr"),
                     children=[

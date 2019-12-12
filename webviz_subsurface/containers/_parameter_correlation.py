@@ -93,7 +93,7 @@ and scatter plot for any given pair of parameters.
                             ],
                         ),
                         html.Label(
-                            "Parameter horisontal axis", style={"font-weight": "bold"}
+                            "Parameter horisontal axis:", style={"font-weight": "bold"}
                         ),
                         html.Div(
                             style={
@@ -116,7 +116,7 @@ and scatter plot for any given pair of parameters.
                             ],
                         ),
                         html.Label(
-                            "Parameter vertical axis", style={"font-weight": "bold"}
+                            "Parameter vertical axis:", style={"font-weight": "bold"}
                         ),
                         html.Div(
                             style={
@@ -138,7 +138,7 @@ and scatter plot for any given pair of parameters.
                                 ),
                             ],
                         ),
-                        html.Label("Color scatter by", style={"font-weight": "bold"}),
+                        html.Label("Color scatter by:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.scatter_color_id,
                             options=[{"label": p, "value": p} for p in self.p_cols],
@@ -152,7 +152,7 @@ and scatter plot for any given pair of parameters.
                         "grid-template-columns": "3fr 1fr 4fr",
                     },
                     children=[
-                        html.Label("Show density plot", style={"font-weight": "bold"}),
+                        html.Label("Show density plot:", style={"font-weight": "bold"}),
                         # ToggleSwitch module attribute in dash-daq is set at runtime
                         # pylint: disable=no-member, not-callable
                         daq.ToggleSwitch(id=self.density_id, value=False),

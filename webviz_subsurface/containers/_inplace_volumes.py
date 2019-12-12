@@ -13,6 +13,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizContainerABC
 
 from .._datainput.inplace_volumes import extract_volumes
+from .._abbreviations import VOLUME_TERMINOLOGY
 
 
 class InplaceVolumes(WebvizContainerABC):
@@ -57,21 +58,6 @@ but the following responses are given more descriptive names automatically:
 
 """
 
-    RESPONSES = {
-        "BULK_OIL": "Bulk Volume (Oil)",
-        "NET_OIL": "Net Volume (Oil)",
-        "PORV_OIL": "Pore Volume (Oil)",
-        "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
-        "BULK_GAS": "Bulk Volume (Gas)",
-        "NET_GAS": "Net Volume (Gas)",
-        "PORV_GAS": "Pore Volume (Gas)",
-        "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially In Place",
-        "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
-        "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
-    }
-
     TABLE_STATISTICS = [
         "response",
         "group",
@@ -101,11 +87,11 @@ but the following responses are given more descriptive names automatically:
             self.volumes = read_csv(csvfile)
 
         elif ensembles and volfiles:
-            self.ens_paths = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            self.ens_paths = {
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
-            )
-            self.volfiles = tuple(volfiles.items())
+            }
+            self.volfiles = volfiles
             self.volfolder = volfolder
             self.volumes = extract_volumes(
                 self.ens_paths, self.volfolder, self.volfiles
@@ -205,7 +191,7 @@ but the following responses are given more descriptive names automatically:
     @property
     def plot_types(self):
         """List of available plots"""
-        return ["Histogram", "Per realization", "Box Plot"]
+        return ["Histogram", "Per realization", "Box plot"]
 
     @property
     def selectors(self):
@@ -300,48 +286,53 @@ but the following responses are given more descriptive names automatically:
             style=self.style_plot_options,
             children=[
                 html.Div(
-                    children=[
-                        html.P("Response:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("response"),
-                            options=[
-                                {
-                                    "label": InplaceVolumes.RESPONSES.get(i, i),
-                                    "value": i,
-                                }
-                                for i in self.responses
-                            ],
-                            value=self.initial_response
-                            if self.initial_response in self.responses
-                            else self.responses[0],
-                            clearable=False,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Response:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("response"),
+                                options=[
+                                    {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                                    for i in self.responses
+                                ],
+                                value=self.initial_response
+                                if self.initial_response in self.responses
+                                else self.responses[0],
+                                clearable=False,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    children=[
-                        html.P("Plot type:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("plot-type"),
-                            options=[{"label": i, "value": i} for i in self.plot_types],
-                            value="Per realization",
-                            clearable=False,
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Plot type:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("plot-type"),
+                                options=[
+                                    {"label": i, "value": i} for i in self.plot_types
+                                ],
+                                value="Per realization",
+                                clearable=False,
+                            ),
+                        ]
+                    )
                 ),
                 html.Div(
-                    children=[
-                        html.P("Group by:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("group"),
-                            options=[
-                                {"label": i.lower().capitalize(), "value": i}
-                                for i in self.selectors
-                            ],
-                            value=None,
-                            placeholder="Not grouped",
-                        ),
-                    ]
+                    children=html.Label(
+                        children=[
+                            html.Span("Group by:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("group"),
+                                options=[
+                                    {"label": i.lower().capitalize(), "value": i}
+                                    for i in self.selectors
+                                ],
+                                value=None,
+                                placeholder="Not grouped",
+                            ),
+                        ]
+                    )
                 ),
             ],
         )
@@ -480,7 +471,7 @@ def plot_data(plot_type, dframe, response, name):
         if values.nunique() == 1:
             values = values[0]
         output = {"x": values, "type": "histogram", "name": name}
-    elif plot_type == "Box Plot":
+    elif plot_type == "Box plot":
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
         output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
@@ -495,7 +486,7 @@ def plot_table(dframe, response, name):
     values = dframe[response]
     try:
         output = {
-            "response": InplaceVolumes.RESPONSES.get(response, response),
+            "response": VOLUME_TERMINOLOGY.get(response, response),
             "group": str(name),
             "minimum": f"{values.min():.2e}",
             "maximum": f"{values.max():.2e}",
@@ -513,30 +504,30 @@ def plot_table(dframe, response, name):
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(plot_type, response, theme):
     layout = theme["layout"]
+    layout["height"] = 400
     if plot_type == "Histogram":
         layout.update(
             {
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+                "xaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
                 "yaxis": {"title": "Count"},
             }
         )
-    elif plot_type == "Box Plot":
-        layout.update(
-            {"yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)}}
-        )
+    elif plot_type == "Box plot":
+        layout.update({"yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)}})
     else:
         layout.update(
             {
                 "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-                "yaxis": {"title": InplaceVolumes.RESPONSES.get(response, response)},
+                "yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
                 "xaxis": {"title": "Realization"},
             }
         )
-    layout.update({"height": 400})
-    return layout
+
+    # output["colorway"] = colors
+    return output
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

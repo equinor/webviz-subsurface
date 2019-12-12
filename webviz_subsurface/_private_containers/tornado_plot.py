@@ -124,7 +124,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                         ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
-                            children=[html.Label("Reference"), html.Label("Scale"),],
+                            children=[html.Label("Reference:"), html.Label("Scale:"),],
                         ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
@@ -153,7 +153,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             children=[
                                 html.Label(
                                     style={"marginTop": "10px"},
-                                    children="Cut by reference",
+                                    children="Cut by reference:",
                                 )
                             ],
                         ),
