@@ -15,6 +15,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
 from .._datainput.fmu_input import load_smry
+from .._abbreviations import SIMULATION_VECTOR_TERMINOLOGY
 
 
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
@@ -139,6 +140,13 @@ Plot options:
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
+
+    @staticmethod
+    def get_human_readable_labels(vector):
+        short_description = SIMULATION_VECTOR_TERMINOLOGY[vector]["short_description"] if vector in SIMULATION_VECTOR_TERMINOLOGY else vector
+        unit = SIMULATION_VECTOR_TERMINOLOGY[vector]["unit"] if vector in SIMULATION_VECTOR_TERMINOLOGY else None
+
+        return short_description, unit
 
     @property
     def tour_steps(self):
@@ -412,7 +420,7 @@ Plot options:
             # Titles for subplots
             titles = []
             for vect in vectors:
-                titles.append(vect)
+                titles.append(ReservoirSimulationTimeSeries.get_human_readable_labels(vect)[0])
                 if visualization == "statistics_hist":
                     titles.append(date)
 
@@ -478,6 +486,9 @@ Plot options:
                 bargap=0.01,
                 bargroupgap=0.2,
             )
+
+            fig["layout"]["yaxis"]["ticksuffix"] = " Sm\u00B3/Sm\u00B3"
+
             if visualization == "statistics_hist":
                 # Remove linked x-axis for histograms
                 if "xaxis2" in fig["layout"]:
