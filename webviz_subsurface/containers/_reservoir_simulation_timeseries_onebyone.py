@@ -89,10 +89,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     ):
 
         self.time_index = sampling
-        self.column_keys = tuple(column_keys) if column_keys else None
-
-        self.csvfile_smry = csvfile_smry if csvfile_smry else None
-        self.csvfile_reals = csvfile_reals if csvfile_reals else None
+        self.column_keys = column_keys
+        self.csvfile_smry = csvfile_smry
+        self.csvfile_reals = csvfile_reals
 
         if csvfile_smry and ensembles:
             raise ValueError(
@@ -104,15 +103,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             realizations = read_csv(csvfile_reals)
 
         elif ensembles:
-            self.ens_paths = tuple(
-                (
-                    ensemble,
-                    app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ensemble
-                    ],
-                )
+            self.ens_paths = {
+                ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                    ensemble
+                ]
                 for ensemble in ensembles
-            )
+            }
             # Extract realizations and sensitivity information
             realizations = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
@@ -182,18 +178,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Ensemble"),
-                dcc.Dropdown(
-                    id=self.ids("ensemble"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.data["ENSEMBLE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.data["ENSEMBLE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Ensemble", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("ensemble"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.data["ENSEMBLE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.data["ENSEMBLE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -201,15 +199,17 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Time Series"),
-                dcc.Dropdown(
-                    id=self.ids("vector"),
-                    options=[{"label": i, "value": i} for i in self.smry_cols],
-                    clearable=False,
-                    value=self.initial_vector,
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Time series:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("vector"),
+                        options=[{"label": i, "value": i} for i in self.smry_cols],
+                        clearable=False,
+                        value=self.initial_vector,
+                    ),
+                ]
+            ),
         )
 
     def add_webvizstore(self):

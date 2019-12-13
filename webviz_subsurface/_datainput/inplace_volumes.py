@@ -22,10 +22,10 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
     Files must be stored on standardized csv format.
     """
     dfs = []
-    for ens_name, ens_path in list(ensemble_paths):
+    for ens_name, ens_path in ensemble_paths.items():
         ens_dfs = []
         ens = scratch_ensemble(ens_name, ens_path)
-        for volname, volfile in volfiles:
+        for volname, volfile in volfiles.items():
             try:
                 path = os.path.join(volfolder, volfile)
                 df = ens.load_csv(path)

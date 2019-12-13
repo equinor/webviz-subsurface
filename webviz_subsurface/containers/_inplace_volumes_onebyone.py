@@ -7,8 +7,8 @@ import pandas as pd
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
-import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
+import webviz_core_components as wcc
 from webviz_config import WebvizContainerABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -16,6 +16,7 @@ from webviz_config.webviz_store import webvizstore
 from .._private_containers.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations
+from .._abbreviations import VOLUME_TERMINOLOGY
 
 
 class InplaceVolumesOneByOne(WebvizContainerABC):
@@ -69,21 +70,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
 """
 
-    RESPONSES = {
-        "BULK_OIL": "Bulk Volume (Oil)",
-        "NET_OIL": "Net Volume (Oil)",
-        "PORV_OIL": "Pore Volume (Oil)",
-        "HCPV_OIL": "Hydro Carbon Pore Volume (Oil)",
-        "STOIIP_OIL": "Stock Tank Oil Initially In Place",
-        "BULK_GAS": "Bulk Volume (Gas)",
-        "NET_GAS": "Net Volume (Gas)",
-        "PORV_GAS": "Pore Volume (Gas)",
-        "HCPV_GAS": "Hydro Carbon Pore Volume (Gas)",
-        "GIIP_GAS": "Gas Initially In Place",
-        "RECOVERABLE_OIL": "Recoverable Volume (Oil)",
-        "RECOVERABLE_GAS": "Recoverable Volume (Gas)",
-    }
-
     FILTERS = ["ZONE", "REGION", "FACIES", "LICENSE"]
 
     TABLE_STATISTICS = [
@@ -131,11 +117,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             realizations = read_csv(csvfile_reals)
 
         elif ensembles and volfiles:
-            self.ens_paths = tuple(
-                (ens, app.webviz_settings["shared_settings"]["scratch_ensembles"][ens])
+            self.ens_paths = {
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
-            )
-            self.volfiles = tuple(volfiles.items())
+            }
+            self.volfiles = volfiles
             self.volfolder = volfolder
             # Extract volumetric dataframe
             volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
@@ -285,18 +271,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Ensemble"),
-                dcc.Dropdown(
-                    id=self.ids("ensemble"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.volumes["ENSEMBLE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.volumes["ENSEMBLE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Ensemble:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("ensemble"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.volumes["ENSEMBLE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.volumes["ENSEMBLE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -304,15 +292,15 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Radiobuttons to select plot type"""
         return html.Div(
             children=[
-                html.Label("Plot Type"),
+                html.Span("Plot type:", style={"font-weight": "bold"}),
                 dcc.RadioItems(
                     id=self.ids("plot-type"),
                     options=[
                         {"label": i, "value": i}
-                        for i in ["Per Realization", "Box Plot"]
+                        for i in ["Per realization", "Box plot"]
                     ],
                     labelStyle={"display": "inline-block"},
-                    value="Per Realization",
+                    value="Per realization",
                 ),
             ]
         )
@@ -322,24 +310,23 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select volumetric response"""
         return html.Div(
             style={"paddingLeft": "30px"},
-            children=[
-                html.Label("Volumetric calculation"),
-                dcc.Dropdown(
-                    id=self.ids("response"),
-                    style={"width": "75%"},
-                    options=[
-                        {
-                            "label": InplaceVolumesOneByOne.RESPONSES.get(i, i),
-                            "value": i,
-                        }
-                        for i in self.responses
-                    ],
-                    clearable=False,
-                    value=self.initial_response
-                    if self.initial_response in self.responses
-                    else self.responses[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("response"),
+                        style={"width": "75%"},
+                        options=[
+                            {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                            for i in self.responses
+                        ],
+                        clearable=False,
+                        value=self.initial_response
+                        if self.initial_response in self.responses
+                        else self.responses[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -347,18 +334,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         """Dropdown to select grid source of volume files"""
         return html.Div(
             style={"paddingBottom": "30px"},
-            children=[
-                html.Label("Grid source"),
-                dcc.Dropdown(
-                    id=self.ids("source"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in list(self.volumes["SOURCE"].unique())
-                    ],
-                    clearable=False,
-                    value=list(self.volumes["SOURCE"])[0],
-                ),
-            ],
+            children=html.Label(
+                children=[
+                    html.Span("Grid source:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("source"),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.volumes["SOURCE"].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.volumes["SOURCE"])[0],
+                    ),
+                ]
+            ),
         )
 
     @property
@@ -410,7 +399,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             children=[
                                 self.ensemble_selector,
                                 self.source_selector,
-                                html.Label("Filters"),
+                                html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),
                                     children=self.filter_selectors,
@@ -486,7 +475,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             table = calculate_table_rows(data, response)
 
             # Make Plotly figure
-            if plot_type == "Per Realization":
+            if plot_type == "Per realization":
                 # One bar per realization
                 plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
@@ -504,7 +493,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": {"xaxis": {"title": "Realizations"}},
                     },
                 )
-            elif plot_type == "Box Plot":
+            elif plot_type == "Box plot":
                 # One box per sensitivity name
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
@@ -523,6 +512,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": {"title": "Distribution for each sensitivity"},
                     },
                 )
+            else:
+                print(plot_type)
             tornado = json.dumps(
                 {
                     "ENSEMBLE": ensemble,
@@ -542,7 +533,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         )
         def _color_chart(hoverdata, plot_type, figure):
             """Callback to update barchart color on tornado plot click"""
-            if not hoverdata or plot_type != "Per Realization":
+            if not hoverdata or plot_type != "Per realization":
                 return figure
             hoverdata = json.loads(hoverdata)
             reals = figure["data"][0]["x"]
