@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 import dash_daq as daq
 import dash_html_components as html
@@ -51,9 +52,16 @@ and scatter plot for any given pair of parameters.
         self.ens_matrix_id = f"ens-matrix-id-{self.uid}"
         self.ens_p1_id = f"ens-p1-id-{self.uid}"
         self.ens_p2_id = f"ens-p2-id-{self.uid}"
-        self.density_id = f"density-id-{self.uid}"
-
+        
+        self.uid = uuid4()
         self.set_callbacks(app)
+
+        
+        
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
+
 
     @property
     def p_cols(self):
@@ -64,10 +72,10 @@ and scatter plot for any given pair of parameters.
 
     @property
     def matrix_plot(self):
-        return wcc.Graph(
+        return html.Div(style={"height": '400px'}, children=wcc.Graph(
             id=self.matrix_id,
             clickData={"points": [{"x": self.p_cols[0], "y": self.p_cols[0]}]},
-        )
+        ))
 
     @property
     def control_div(self):
@@ -145,16 +153,17 @@ and scatter plot for any given pair of parameters.
                     ]
                 ),
                 html.Div(
-                    style={
-                        "padding-top": 20,
-                        "display": "grid",
-                        "grid-template-columns": "3fr 1fr 4fr",
-                    },
+                    style={"padding-top": 20,},
                     children=[
-                        html.Label("Show density plot:", style={"font-weight": "bold"}),
-                        # ToggleSwitch module attribute in dash-daq is set at runtime
-                        # pylint: disable=no-member, not-callable
-                        daq.ToggleSwitch(id=self.density_id, value=True),
+                        dcc.Checklist(
+                            id=self.ids("density"),
+                            options=[
+                                {
+                                    "label": "Show scatterplot density",
+                                    "value": "density",
+                                }
+                            ],
+                        ),
                     ],
                 ),
             ],
@@ -169,7 +178,7 @@ and scatter plot for any given pair of parameters.
                     children=[html.Div(children=[self.matrix_plot]), self.control_div],
                 ),
                 html.Div(
-                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
+                    style={"display": "grid",  "grid-template-columns": "3fr 2fr"},
                     children=wcc.Graph(id=self.scatter_id),
                 ),
             ]
@@ -220,7 +229,7 @@ and scatter plot for any given pair of parameters.
                 Input(self.ens_p2_id, "value"),
                 Input(self.p2_drop_id, "value"),
                 Input(self.scatter_color_id, "value"),
-                Input(self.density_id, "value"),
+                Input(self.ids("density"), "value"),
             ],
         )
         def _update_scatter(ens1, param1, ens2, param2, color, density):
@@ -393,23 +402,26 @@ def get_corr_data(ensemble_path, drop_constants=True):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(ensemble_path, drop_constants=True):
-    corr_data = get_corr_data(ensemble_path, drop_constants)
-
+    corrdf = get_corr_data(ensemble_path, drop_constants)
+    corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))
     data = {
         "type": "heatmap",
-        "x": corr_data.columns,
-        "y": corr_data.columns,
-        "z": list(corr_data.values),
+        "x": corrdf.columns,
+        "y": corrdf.columns,
+        "z": list(corrdf.values),
         "zmin": -1,
         "zmax": 1,
     }
 
     layout = {
-        "uirevision": "keep_matrix",
-        "title": "Pairwise correlation matrix",
+        # "uirevision": "keep_matrix",
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(0,0,0,0)",
         "margin": {"t": 50, "b": 50},
-        "xaxis": {"ticks": "", "showticklabels": False},
-        "yaxis": {"ticks": "", "showticklabels": False},
+        "xaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
+        "yaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
+        # "colorway": ["red", "green"],
     }
 
     return {"data": [data], "layout": layout}
+    
