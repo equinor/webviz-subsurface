@@ -2,7 +2,6 @@ from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-import dash_daq as daq
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -42,26 +41,12 @@ and scatter plot for any given pair of parameters.
             for ens in ensembles
         }
         self.drop_constants = drop_constants
-        self.uid = f"{uuid4()}"
-        self.p1_drop_id = f"p1-dropd-{self.uid}"
-        self.p2_drop_id = f"p2-dropd-{self.uid}"
-        self.scatter_id = f"scatter-id-{self.uid}"
-        self.scatter_color_id = f"scatter-color-id-{self.uid}"
-        self.scatter_size_id = f"scatter-size-id-{self.uid}"
-        self.matrix_id = f"chart-id-{self.uid}"
-        self.ens_matrix_id = f"ens-matrix-id-{self.uid}"
-        self.ens_p1_id = f"ens-p1-id-{self.uid}"
-        self.ens_p2_id = f"ens-p2-id-{self.uid}"
-        
         self.uid = uuid4()
         self.set_callbacks(app)
 
-        
-        
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
-
 
     @property
     def p_cols(self):
@@ -72,10 +57,13 @@ and scatter plot for any given pair of parameters.
 
     @property
     def matrix_plot(self):
-        return html.Div(style={"height": '400px'}, children=wcc.Graph(
-            id=self.matrix_id,
-            clickData={"points": [{"x": self.p_cols[0], "y": self.p_cols[0]}]},
-        ))
+        return html.Div(
+            style={"height": "400px"},
+            children=wcc.Graph(
+                id=self.ids("matrix"),
+                clickData={"points": [{"x": self.p_cols[0], "y": self.p_cols[0]}]},
+            ),
+        )
 
     @property
     def control_div(self):
@@ -95,7 +83,7 @@ and scatter plot for any given pair of parameters.
                             },
                             children=[
                                 Widgets.dropdown_from_dict(
-                                    self.ens_matrix_id, self.ensembles
+                                    self.ids("ensemble-all"), self.ensembles
                                 )
                             ],
                         ),
@@ -110,7 +98,7 @@ and scatter plot for any given pair of parameters.
                             },
                             children=[
                                 dcc.Dropdown(
-                                    id=self.p1_drop_id,
+                                    id=self.ids("parameter1"),
                                     options=[
                                         {"label": p, "value": p} for p in self.p_cols
                                     ],
@@ -118,7 +106,7 @@ and scatter plot for any given pair of parameters.
                                     clearable=False,
                                 ),
                                 Widgets.dropdown_from_dict(
-                                    self.ens_p1_id, self.ensembles
+                                    self.ids("ensemble-1"), self.ensembles
                                 ),
                             ],
                         ),
@@ -133,7 +121,7 @@ and scatter plot for any given pair of parameters.
                             },
                             children=[
                                 dcc.Dropdown(
-                                    id=self.p2_drop_id,
+                                    id=self.ids("parameter2"),
                                     options=[
                                         {"label": p, "value": p} for p in self.p_cols
                                     ],
@@ -141,13 +129,13 @@ and scatter plot for any given pair of parameters.
                                     clearable=False,
                                 ),
                                 Widgets.dropdown_from_dict(
-                                    self.ens_p2_id, self.ensembles
+                                    self.ids("ensemble-2"), self.ensembles
                                 ),
                             ],
                         ),
                         html.Label("Color scatter by:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
-                            id=self.scatter_color_id,
+                            id=self.ids("scatter-color"),
                             options=[{"label": p, "value": p} for p in self.p_cols],
                         ),
                     ]
@@ -178,19 +166,19 @@ and scatter plot for any given pair of parameters.
                     children=[html.Div(children=[self.matrix_plot]), self.control_div],
                 ),
                 html.Div(
-                    style={"display": "grid",  "grid-template-columns": "3fr 2fr"},
-                    children=wcc.Graph(id=self.scatter_id),
+                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
+                    children=wcc.Graph(id=self.ids("scatter")),
                 ),
             ]
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.matrix_id, "figure"),
+            Output(self.ids("matrix"), "figure"),
             [
-                Input(self.ens_matrix_id, "value"),
-                Input(self.p1_drop_id, "value"),
-                Input(self.p2_drop_id, "value"),
+                Input(self.ids("ensemble-all"), "value"),
+                Input(self.ids("parameter1"), "value"),
+                Input(self.ids("parameter2"), "value"),
             ],
         )
         def _update_matrix(ens, param1, param2):
@@ -222,13 +210,13 @@ and scatter plot for any given pair of parameters.
             return fig
 
         @app.callback(
-            Output(self.scatter_id, "figure"),
+            Output(self.ids("scatter"), "figure"),
             [
-                Input(self.ens_p1_id, "value"),
-                Input(self.p1_drop_id, "value"),
-                Input(self.ens_p2_id, "value"),
-                Input(self.p2_drop_id, "value"),
-                Input(self.scatter_color_id, "value"),
+                Input(self.ids("ensemble-1"), "value"),
+                Input(self.ids("parameter1"), "value"),
+                Input(self.ids("ensemble-2"), "value"),
+                Input(self.ids("parameter2"), "value"),
+                Input(self.ids("scatter-color"), "value"),
                 Input(self.ids("density"), "value"),
             ],
         )
@@ -237,12 +225,15 @@ and scatter plot for any given pair of parameters.
 
         @app.callback(
             [
-                Output(self.p1_drop_id, "value"),
-                Output(self.p2_drop_id, "value"),
-                Output(self.ens_p1_id, "value"),
-                Output(self.ens_p2_id, "value"),
+                Output(self.ids("parameter1"), "value"),
+                Output(self.ids("parameter2"), "value"),
+                Output(self.ids("ensemble-1"), "value"),
+                Output(self.ids("ensemble-2"), "value"),
             ],
-            [Input(self.matrix_id, "clickData"), Input(self.ens_matrix_id, "value")],
+            [
+                Input(self.ids("matrix"), "clickData"),
+                Input(self.ids("ensemble-all"), "value"),
+            ],
         )
         def _update_from_click(cell_data, ens):
             try:
@@ -263,7 +254,11 @@ and scatter plot for any given pair of parameters.
 @webvizstore
 def get_parameters(ensemble_path) -> pd.DataFrame:
 
-    return scratch_ensemble("", ensemble_path).parameters
+    return (
+        scratch_ensemble("", ensemble_path)
+        .parameters.apply(pd.to_numeric, errors="coerce")
+        .dropna(how="all", axis="columns")
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -385,11 +380,7 @@ def get_corr_data(ensemble_path, drop_constants=True):
     Passing tuple or list to drop on multiple axes is deprecated since
     version 0.23.0. Therefor split in 2x .dropnan()
     """
-    data = (
-        get_parameters(ensemble_path)
-        .apply(pd.to_numeric, errors="coerce")
-        .dropna(how="all", axis="columns")
-    )
+    data = get_parameters(ensemble_path)
 
     return (
         data.corr()
@@ -403,6 +394,7 @@ def get_corr_data(ensemble_path, drop_constants=True):
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(ensemble_path, drop_constants=True):
     corrdf = get_corr_data(ensemble_path, drop_constants)
+    # pylint: disable=no-member
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))
     data = {
         "type": "heatmap",
@@ -414,14 +406,11 @@ def render_matrix(ensemble_path, drop_constants=True):
     }
 
     layout = {
-        # "uirevision": "keep_matrix",
         "paper_bgcolor": "rgba(0,0,0,0)",
         "plot_bgcolor": "rgba(0,0,0,0)",
         "margin": {"t": 50, "b": 50},
         "xaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
         "yaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
-        # "colorway": ["red", "green"],
     }
 
     return {"data": [data], "layout": layout}
-    
