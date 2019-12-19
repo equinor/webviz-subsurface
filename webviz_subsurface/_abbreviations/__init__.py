@@ -21,7 +21,10 @@ def simulation_vector_description(vector):
     else:
         description = vector_name
         warnings.warn(
-            f"Could not find any description for vector {vector_name}. Consider adding it in the GitHub repo https://github.com/equinor/webviz-subsurface?",
+            (
+                f"Could not find description for vector {vector_name}. Consider adding"
+                " it in the GitHub repo https://github.com/equinor/webviz-subsurface?"
+            ),
             UserWarning,
         )
 
