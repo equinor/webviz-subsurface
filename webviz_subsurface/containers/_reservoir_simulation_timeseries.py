@@ -15,7 +15,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
 from .._datainput.fmu_input import load_smry
-from .._abbreviations import SIMULATION_VECTOR_TERMINOLOGY
+from .._abbreviations import simulation_vector_description
 
 
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
@@ -94,6 +94,11 @@ Plot options:
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
             if not c.endswith("H")
         ]
+        self.dropdown_options = [
+            {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
+            for vec in self.smry_cols
+        ]
+
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.plotly_layout = app.webviz_settings["plotly_layout"]
         self.plot_options = options if options else {}
@@ -137,13 +142,6 @@ Plot options:
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
-
-    @staticmethod
-    def get_human_readable_labels(vector):
-        short_description = SIMULATION_VECTOR_TERMINOLOGY[vector]["short_description"] if vector in SIMULATION_VECTOR_TERMINOLOGY else vector
-        unit = SIMULATION_VECTOR_TERMINOLOGY[vector]["unit"] if vector in SIMULATION_VECTOR_TERMINOLOGY else None
-
-        return short_description, unit
 
     @property
     def tour_steps(self):
@@ -310,36 +308,35 @@ Plot options:
                                     "Time series:", style={"font-weight": "bold"}
                                 ),
                                 dcc.Dropdown(
-                                    style={"marginTop": "5px", "marginBottom": "5px"},
+                                    style={
+                                        "marginTop": "5px",
+                                        "marginBottom": "5px",
+                                        "fontSize": ".95em",
+                                    },
                                     id=self.ids("vector1"),
                                     clearable=False,
                                     multi=False,
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get(
                                         "vector1", self.smry_cols[0]
                                     ),
                                 ),
                                 dcc.Dropdown(
-                                    style={"marginBottom": "5px"},
+                                    style={"marginBottom": "5px", "fontSize": ".95em"},
                                     id=self.ids("vector2"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get("vector2", None),
                                 ),
                                 dcc.Dropdown(
+                                    style={"fontSize": ".95em"},
                                     id=self.ids("vector3"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get("vector3", None),
                                 ),
                             ],
@@ -433,7 +430,7 @@ Plot options:
             # Titles for subplots
             titles = []
             for vect in vectors:
-                titles.append(ReservoirSimulationTimeSeries.get_human_readable_labels(vect)[0])
+                titles.append(simulation_vector_description(vect))
                 if visualization == "statistics_hist":
                     titles.append(date)
 
@@ -499,8 +496,6 @@ Plot options:
                 bargap=0.01,
                 bargroupgap=0.2,
             )
-
-            fig["layout"]["yaxis"]["ticksuffix"] = " Sm\u00B3/Sm\u00B3"
 
             if visualization == "statistics_hist":
                 # Remove linked x-axis for histograms
