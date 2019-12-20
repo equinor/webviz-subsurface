@@ -15,6 +15,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
 from .._datainput.fmu_input import load_smry
+from .._abbreviations import simulation_vector_description
 
 
 class ReservoirSimulationTimeSeries(WebvizContainerABC):
@@ -93,6 +94,11 @@ Plot options:
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
             if not c.endswith("H")
         ]
+        self.dropdown_options = [
+            {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
+            for vec in self.smry_cols
+        ]
+
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.plotly_layout = app.webviz_settings["plotly_layout"]
         self.plot_options = options if options else {}
@@ -302,36 +308,35 @@ Plot options:
                                     "Time series:", style={"font-weight": "bold"}
                                 ),
                                 dcc.Dropdown(
-                                    style={"marginTop": "5px", "marginBottom": "5px"},
+                                    style={
+                                        "marginTop": "5px",
+                                        "marginBottom": "5px",
+                                        "fontSize": ".95em",
+                                    },
                                     id=self.ids("vector1"),
                                     clearable=False,
                                     multi=False,
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get(
                                         "vector1", self.smry_cols[0]
                                     ),
                                 ),
                                 dcc.Dropdown(
-                                    style={"marginBottom": "5px"},
+                                    style={"marginBottom": "5px", "fontSize": ".95em"},
                                     id=self.ids("vector2"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get("vector2", None),
                                 ),
                                 dcc.Dropdown(
+                                    style={"fontSize": ".95em"},
                                     id=self.ids("vector3"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
-                                    options=[
-                                        {"label": i, "value": i} for i in self.smry_cols
-                                    ],
+                                    options=self.dropdown_options,
                                     value=self.plot_options.get("vector3", None),
                                 ),
                             ],
@@ -425,7 +430,7 @@ Plot options:
             # Titles for subplots
             titles = []
             for vect in vectors:
-                titles.append(vect)
+                titles.append(simulation_vector_description(vect))
                 if visualization == "statistics_hist":
                     titles.append(date)
 
@@ -491,6 +496,7 @@ Plot options:
                 bargap=0.01,
                 bargroupgap=0.2,
             )
+
             if visualization == "statistics_hist":
                 # Remove linked x-axis for histograms
                 if "xaxis2" in fig["layout"]:
