@@ -26,7 +26,7 @@ def test_parameter_corr(dash_duo):
         app.layout = p.layout
         dash_duo.start_server(app)
 
-        my_component = dash_duo.find_element(f"#{p.ens_matrix_id}")
+        my_component = dash_duo.find_element(f"#{p.ids('ensemble-all')}")
 
         if not my_component.text.startswith("iter-0"):
             raise AssertionError()
