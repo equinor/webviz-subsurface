@@ -17,6 +17,7 @@ from webviz_config.webviz_store import webvizstore
 
 from .._private_containers.tornado_plot import TornadoPlot
 from .._datainput.fmu_input import load_smry, get_realizations
+from .._abbreviations import simulation_vector_description
 
 
 # pylint: disable=too-many-instance-attributes
@@ -205,7 +206,13 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     html.Span("Time series:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("vector"),
-                        options=[{"label": i, "value": i} for i in self.smry_cols],
+                        options=[
+                            {
+                                "label": f"{simulation_vector_description(vec)} ({vec})",
+                                "value": vec,
+                            }
+                            for vec in self.smry_cols
+                        ],
                         clearable=False,
                         value=self.initial_vector,
                     ),
