@@ -386,7 +386,9 @@ The types of response_filters are:
                 corr_response = (
                     corrdf[response].dropna().drop(["REAL", response], axis=0)
                 )
-                return make_correlation_plot(corr_response, response, self.plotly_theme, self.corr_method)
+                return make_correlation_plot(
+                    corr_response, response, self.plotly_theme, self.corr_method
+                )
             except KeyError:
                 return {
                     "layout": {
@@ -563,22 +565,10 @@ def make_distribution_plot(df, parameter, response, theme):
         1,
     )
     fig.add_trace(
-        {
-            "type": "histogram",
-            "x": df[parameter],
-            "showlegend": False,
-        },
-        3,
-        1,
+        {"type": "histogram", "x": df[parameter], "showlegend": False,}, 3, 1,
     )
     fig.add_trace(
-        {
-            "type": "histogram",
-            "x": df[response],
-            "showlegend": False,
-        },
-        3,
-        2,
+        {"type": "histogram", "x": df[response], "showlegend": False,}, 3, 2,
     )
     fig["layout"].update(
         {
