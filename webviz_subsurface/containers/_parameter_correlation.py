@@ -382,7 +382,7 @@ def get_corr_data(ensemble_path, drop_constants=True):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_matrix(ensemble_path, drop_constants=True):
+def render_matrix(ensemble_path, theme, drop_constants=True):
     corrdf = get_corr_data(ensemble_path, drop_constants)
     # pylint: disable=no-member
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))

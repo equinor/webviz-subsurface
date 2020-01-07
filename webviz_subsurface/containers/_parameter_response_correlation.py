@@ -125,6 +125,7 @@ The types of response_filters are:
                 inplace=True,
             )
 
+        self.plotly_theme = app.webviz_settings["plotly_theme"]
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -385,7 +386,7 @@ The types of response_filters are:
                 corr_response = (
                     corrdf[response].dropna().drop(["REAL", response], axis=0)
                 )
-                return make_correlation_plot(corr_response, response, self.corr_method)
+                return make_correlation_plot(corr_response, response, self.plotly_theme, self.corr_method)
             except KeyError:
                 return {
                     "layout": {
@@ -421,7 +422,7 @@ The types of response_filters are:
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
                 ["REAL", parameter, response]
             ]
-            return make_distribution_plot(df, parameter, response)
+            return make_distribution_plot(df, parameter, response, self.plotly_theme)
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -515,7 +516,7 @@ def _correlate(inputdf, method="pearson"):
     )
 
 
-def make_correlation_plot(series, response, corr_method):
+def make_correlation_plot(series, response, theme, corr_method):
     """Make Plotly trace for correlation plot"""
 
     return {
@@ -523,6 +524,7 @@ def make_correlation_plot(series, response, corr_method):
             {"x": series.values, "y": series.index, "orientation": "h", "type": "bar"}
         ],
         "layout": {
+            "colorway": theme["layout"]["colorway"],
             "barmode": "relative",
             "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
             "font": {"size": 8},
@@ -533,7 +535,7 @@ def make_correlation_plot(series, response, corr_method):
     }
 
 
-def make_distribution_plot(df, parameter, response):
+def make_distribution_plot(df, parameter, response, theme):
     """Make plotly traces for scatterplot and histograms for selected
     response and input parameter"""
 
@@ -563,7 +565,6 @@ def make_distribution_plot(df, parameter, response):
     fig.add_trace(
         {
             "type": "histogram",
-            "marker": {"color": "rgb(31, 119, 180)"},
             "x": df[parameter],
             "showlegend": False,
         },
@@ -573,7 +574,6 @@ def make_distribution_plot(df, parameter, response):
     fig.add_trace(
         {
             "type": "histogram",
-            "marker": {"color": "rgb(31, 119, 180)"},
             "x": df[response],
             "showlegend": False,
         },
@@ -582,6 +582,7 @@ def make_distribution_plot(df, parameter, response):
     )
     fig["layout"].update(
         {
+            "colorway": theme["layout"]["colorway"],
             "height": 800,
             "bargap": 0.05,
             "xaxis": {"title": parameter,},
