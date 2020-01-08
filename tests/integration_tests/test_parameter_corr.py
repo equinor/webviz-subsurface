@@ -2,10 +2,10 @@ import mock
 import dash
 import pandas as pd
 from webviz_config.common_cache import CACHE
-from webviz_config.containers import ParameterCorrelation
+from webviz_config.plugins import ParameterCorrelation
 
 # mocked functions
-get_parameters = "webviz_subsurface.containers._parameter_correlation.get_parameters"
+get_parameters = "webviz_subsurface.plugins._parameter_correlation.get_parameters"
 
 
 def test_parameter_corr(dash_duo):

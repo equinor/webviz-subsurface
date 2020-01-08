@@ -8,22 +8,24 @@ from dash.dependencies import Input, Output
 from webviz_subsurface_components import Morris
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 
-class MorrisPlot(WebvizContainerABC):
+class MorrisPlot(WebvizPluginABC):
     """### Morris
 
-This container renders a visualization of the Morris sampling method.
+Renders a visualization of the Morris sampling method.
 The Morris method can be used to screen parameters for how they
 influence model response, both individually and through interaction
 effect with other parameters.
 
 * `csv_file`: Input data
-* `title`: Optional title for the container.
+* `title`: Optional title for the plugin.
 """
 
     def __init__(self, app, csv_file: Path):
+
+        super().__init__()
 
         self.graph_id = "graph-{}".format(uuid4())
         self.vector_id = "vector-{}".format(uuid4())

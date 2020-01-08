@@ -1,8 +1,8 @@
-"""### _Subsurface specific containers_
+"""### _Subsurface specific plugins_
 
-These are containers relevant within subsurface workflows. Most of them
+These are plugins relevant within subsurface workflows. Most of them
 rely on the setting `scratch_ensemble` configuration within the
-`container_settings`.
+`plugin_settings`.
 I.e. you could have
 ```yaml
 title: Reek Webviz Demonstration
@@ -16,7 +16,7 @@ pages:
 
   - title: Front page
     content:
-      - container: ReservoirSimulationTimeSeries
+      - plugin: ReservoirSimulationTimeSeries
         ensembles:
           - iter-0
           - iter-1
