@@ -9,17 +9,17 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._datainput.fmu_input import load_parameters
 
 
-class ParameterDistribution(WebvizContainerABC):
+class ParameterDistribution(WebvizPluginABC):
     """### ParameterDistribution
 
-This container shows parameter distributions for FMU ensembles.
+Shows parameter distributions for FMU ensembles.
 Parameters are visualized per ensemble as a histogram, and as a boxplot showing
 the parameter ranges for each ensemble.
 Input can be given either as an aggregated csv files with parameter information
@@ -30,6 +30,8 @@ or as an ensemble name defined in `shared_settings`.
 """
 
     def __init__(self, app, csvfile: Path = None, ensembles: list = None):
+
+        super().__init__()
 
         self.csvfile = csvfile if csvfile else None
 

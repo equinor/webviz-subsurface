@@ -9,17 +9,17 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .._private_containers.tornado_plot import TornadoPlot
+from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations
 from .._abbreviations import VOLUME_TERMINOLOGY
 
 
-class InplaceVolumesOneByOne(WebvizContainerABC):
+class InplaceVolumesOneByOne(WebvizPluginABC):
     # pylint: disable=too-many-instance-attributes
     """### InplaceVolumesOneByOne
 
@@ -103,6 +103,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
+
+        super().__init__()
 
         self.csvfile_vol = csvfile_vol if csvfile_vol else None
         self.csvfile_reals = csvfile_reals if csvfile_reals else None

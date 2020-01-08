@@ -9,16 +9,16 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 
 from .._datainput.seismic import load_cube_data, get_iline, get_xline, get_zslice
 
 
-class SegyViewer(WebvizContainerABC):
+class SegyViewer(WebvizPluginABC):
     """### SegyViewer
 
-Inspired by [SegyViewer for Python](https://github.com/equinor/segyviewer) this container
+Inspired by [SegyViewer for Python](https://github.com/equinor/segyviewer) this plugin
 visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
 The plots are linked and updates are done by clicking in the plots.
 
@@ -30,6 +30,9 @@ The plots are linked and updates are done by clicking in the plots.
     def __init__(
         self, app, segyfiles: List[Path], zunit="depth (m)", colors: list = None
     ):
+
+        super().__init__()
+
         self.zunit = zunit
         self.segyfiles = [str(segy) for segy in segyfiles]
         self.initial_colors = (

@@ -6,22 +6,24 @@ import numpy as np
 from scipy.stats import chi2
 import dash_html_components as html
 import webviz_subsurface_components as wsc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.history_match import extract_mismatch
 
 
-class HistoryMatch(WebvizContainerABC):
+class HistoryMatch(WebvizPluginABC):
     """### History match
 
-This container visualizes the quality of the history match.
+Visualizes the quality of the history match.
 
 * `ensembles`: List of the ensembles in `shared_settings` to visualize.
 * `observation_File`: Path to the observation `.yaml` file.
-* `title`: Optional title for the container.
+* `title`: Optional title for the plugin.
 """
 
     def __init__(self, app, ensembles, observation_file: Path):
+
+        super().__init__()
 
         self.observation_file = observation_file
         self.ens_paths = {

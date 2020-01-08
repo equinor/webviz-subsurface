@@ -15,15 +15,15 @@ from webviz_config.common_cache import CACHE
 class TornadoPlot:
     """### TornadoPlot
 
-This private container visualizes a Tornado plot.
-It is meant to be used as a component in other containers.
-The container is initialized with a dataframe of realizations with corresponding sensitivities,
+This private plugin visualizes a Tornado plot.
+It is meant to be used as a component in other plugin, and is initialized
+ with a dataframe of realizations with corresponding sensitivities,
 but without the response values that are to be plotted.
-Instead the container registers a dcc.Store which will contain the response values.
+Instead we registers a dcc.Store which will contain the response values.
 
 To use:
-1. Initialize an instance of this class in a container
-2. Add tornadoplot.layout to the container layout
+1. Initialize an instance of this class in a plugin.
+2. Add tornadoplot.layout to the plugin layout
 3. Register a callback that writes a json dump to tornadoplot.storage_id
 The format of the json dump must be:
 {'ENSEMBLE': name of ensemble,

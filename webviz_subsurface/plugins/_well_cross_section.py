@@ -8,7 +8,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 
 from .._datainput.xsection import XSectionFigure
@@ -17,7 +17,7 @@ from .._datainput.well import load_well, make_well_layer
 from .._datainput.surface import load_surface, make_surface_layer
 
 
-class WellCrossSection(WebvizContainerABC):
+class WellCrossSection(WebvizPluginABC):
     """### WellCrossSection
     Displays a cross section along a well with intersected surfaces,
     and optionally seismic cubes.
@@ -52,6 +52,9 @@ class WellCrossSection(WebvizContainerABC):
         nextend: int = 2,
         sampling: int = 40,
     ):
+
+        super().__init__()
+
         self.zunit = zunit
         self.sampling = sampling
         self.nextend = nextend

@@ -11,15 +11,15 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
 
-class ParameterResponseCorrelation(WebvizContainerABC):
+class ParameterResponseCorrelation(WebvizPluginABC):
     """### Parameter and response correlation
 
-This container shows correlation between numerical input parameters and responses.
+This plugin shows correlation between numerical input parameters and responses.
 
 Input can be given either as:
 
@@ -67,6 +67,8 @@ The types of response_filters are:
         aggregation: str = "sum",
         corr_method: str = "pearson",
     ):
+
+        super().__init__()
 
         self.parameter_csv = parameter_csv if parameter_csv else None
         self.response_csv = response_csv if response_csv else None

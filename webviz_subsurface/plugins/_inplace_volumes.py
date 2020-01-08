@@ -10,20 +10,20 @@ from dash.dependencies import Input, Output
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.inplace_volumes import extract_volumes
 from .._abbreviations import VOLUME_TERMINOLOGY
 
 
-class InplaceVolumes(WebvizContainerABC):
+class InplaceVolumes(WebvizPluginABC):
     """### InplaceVolumes
 
-This container visualizes inplace volumetrics results from
+This plugin visualizes inplace volumetrics results from
 FMU ensembles.
 
 Input can be given either as aggregated csv files for volumes or or as an ensemble name
-defined in *container_settings* and volumetric csv files stored per realizations.
+defined in *plugin_settings* and volumetric csv files stored per realizations.
 
 #### Volumetric input
 
@@ -78,6 +78,9 @@ but the following responses are given more descriptive names automatically:
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
+
+        super().__init__()
+
         self.csvfile = csvfile if csvfile else None
         if csvfile and ensembles:
             raise ValueError(

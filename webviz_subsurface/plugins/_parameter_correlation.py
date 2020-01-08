@@ -8,7 +8,7 @@ import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.fmu_input import scratch_ensemble
 
@@ -24,10 +24,10 @@ class Widgets:
         )
 
 
-class ParameterCorrelation(WebvizContainerABC):
+class ParameterCorrelation(WebvizPluginABC):
     """### Parameter correlation
 
-This container shows parameter correlation using a correlation matrix,
+Shows parameter correlation using a correlation matrix,
 and scatter plot for any given pair of parameters.
 
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
@@ -35,6 +35,8 @@ and scatter plot for any given pair of parameters.
 """
 
     def __init__(self, app, ensembles, drop_constants: bool = True):
+
+        super().__init__()
 
         self.ensembles = {
             ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]

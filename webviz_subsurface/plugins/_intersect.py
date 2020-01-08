@@ -10,16 +10,16 @@ import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.fmu_input import scratch_ensemble
 from .._datainput.intersect import load_surface, get_wfence, get_hfence
 
 
-class Intersect(WebvizContainerABC):
+class Intersect(WebvizPluginABC):
     """### Intersect
 
-This container visualizes surfaces intersected along a well path.
+This plugin visualizes surfaces intersected along a well path.
 The input are surfaces from a FMU ensemble stored on standardized
 format with standardized naming (share/results/maps/name--category.gri)
 and a folder of well files stored in RMS well format.
@@ -65,7 +65,7 @@ and a folder of well files stored in RMS well format.
     def __init__(
         self,
         app,
-        container_settings,
+        plugin_settings,
         ensemble,
         well_path,
         surface_cat,
@@ -73,8 +73,10 @@ and a folder of well files stored in RMS well format.
         well_suffix=".rmswell",
     ):
 
+        super().__init__()
+
         self.well_path = well_path
-        self.ensemble_path = container_settings["scratch_ensembles"][ensemble]
+        self.ensemble_path = plugin_settings["scratch_ensembles"][ensemble]
         self.ensemble = scratch_ensemble(ensemble, self.ensemble_path)
         self.well_suffix = well_suffix
         self.surface_cat = surface_cat

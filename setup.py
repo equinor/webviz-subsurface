@@ -7,7 +7,7 @@ TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit", "pytest
 
 setup(
     name="webviz-subsurface",
-    description="Webviz config containers for subsurface data",
+    description="Webviz config plugins for subsurface data",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     url="https://github.com/equinor/webviz-subsurface",
@@ -15,24 +15,24 @@ setup(
     packages=find_packages(exclude=["tests"]),
     package_data={"webviz_subsurface": ["_abbreviations/*.json"]},
     entry_points={
-        "webviz_config_containers": [
-            "ParameterDistribution = webviz_subsurface.containers:ParameterDistribution",
-            "ParameterCorrelation = webviz_subsurface.containers:ParameterCorrelation",
+        "webviz_config_plugins": [
+            "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
+            "ParameterCorrelation = webviz_subsurface.plugins:ParameterCorrelation",
             "ParameterResponseCorrelation = "
-            + "webviz_subsurface.containers:ParameterResponseCorrelation",
-            "DiskUsage = webviz_subsurface.containers:DiskUsage",
-            "SubsurfaceMap = webviz_subsurface.containers:SubsurfaceMap",
-            "HistoryMatch = webviz_subsurface.containers:HistoryMatch",
-            "Intersect = webviz_subsurface.containers:Intersect",
-            "MorrisPlot = webviz_subsurface.containers:MorrisPlot",
-            "InplaceVolumes = webviz_subsurface.containers:InplaceVolumes",
-            "InplaceVolumesOneByOne = webviz_subsurface.containers:InplaceVolumesOneByOne",
+            + "webviz_subsurface.plugins:ParameterResponseCorrelation",
+            "DiskUsage = webviz_subsurface.plugins:DiskUsage",
+            "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
+            "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
+            "Intersect = webviz_subsurface.plugins:Intersect",
+            "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
+            "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
+            "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
             "ReservoirSimulationTimeSeries = "
-            + "webviz_subsurface.containers:ReservoirSimulationTimeSeries",
+            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
             "ReservoirSimulationTimeSeriesOneByOne = "
-            + "webviz_subsurface.containers:ReservoirSimulationTimeSeriesOneByOne",
-            "SegyViewer = webviz_subsurface.containers:SegyViewer",
-            "WellCrossSection = webviz_subsurface.containers:WellCrossSection",
+            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
+            "SegyViewer = webviz_subsurface.plugins:SegyViewer",
+            "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
         ]
     },
     install_requires=[
@@ -41,7 +41,10 @@ setup(
         "pillow~=6.1",
         "xtgeo~=2.1",
         "webviz-config>=0.0.35",
-        "webviz-subsurface-components>=0.0.3",
+        # webviz-subsurface-components is part of the webviz-subsurface project,
+        # just located in a separate repository for convenience,
+        # and is therefore pinned exactly here:
+        "webviz-subsurface-components==0.0.16",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},

@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
@@ -18,12 +18,12 @@ from .._datainput.fmu_input import load_smry
 from .._abbreviations import simulation_vector_description
 
 
-class ReservoirSimulationTimeSeries(WebvizContainerABC):
+class ReservoirSimulationTimeSeries(WebvizPluginABC):
     """### ReservoirSimulationTimeSeries
 
 Visualizes reservoir simulation time series for FMU ensembles.
 Input can be given either as aggregated csv file or an ensemble defined
-in container settings.
+in plugin settings.
 
 * `csvfile`: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
@@ -54,6 +54,9 @@ Plot options:
         sampling: str = "monthly",
         options: dict = None,
     ):
+
+        super().__init__()
+
         self.csvfile = csvfile
         self.obsfile = obsfile
         self.time_index = sampling
