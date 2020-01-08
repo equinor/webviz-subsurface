@@ -13,24 +13,24 @@
 
 <body>
 
-<div class='container'>
+<div class="container">
 
 <h1>Webviz configuration guide</h1>
 
 <h2>Fundamental configuration</h2>
 
-A configuration consists of some mandatory properties (title, username,
-password) and one or more pages. Each page has a title, and potentially some
+A configuration consists of some mandatory properties (e.g. app title)
+and one or more pages. Each page has a title, and potentially some
 content. The content can be one or more items.
 
-Containers represent predefined content, which takes one or more arguments.
-A list and description of all available different containers is listed below.
+Plugins represent predefined content, which takes one or more arguments.
+A list and description of all available different plugins is listed below.
 
-Content which is not containers are interpreted as text paragraphs.
+Content which is not plugins are interpreted as text paragraphs.
 
 A basic example configuration is shown below.
 
-<pre><code class='yaml'># This file demonstrates the most basic usage of webviz in a FMU setting
+<pre><code class="yaml"># This file demonstrates the most basic usage of webviz in a FMU setting
 # The configuration files uses YAML (https://en.wikipedia.org/wiki/YAML).
 
 title: Reek Webviz Demonstration
@@ -39,72 +39,72 @@ pages:
 
  - title: Front page
    content:
-    - container: BannerImage
-      image: ./example_banner.png
-      title: My banner image
+    - BannerImage:
+        image: ./example_banner.png
+        title: My banner image
     - Webviz created from configuration file.
     - Some other text, potentially with strange letters like &#197;re, Sm&#248;rbukk S&#248;r.
 
  - title: Markdown example
    content:
-    - container: Markdown
-      markdown_file: ./example-markdown.md
+    - Markdown:
+        markdown_file: ./example-markdown.md
 
  - title: Table example
    content:
-    - container: DataTable
-      csv_file: ./example_data.csv
+    - DataTable:
+        csv_file: ./example_data.csv
 
  - title: PDF example
    content:
-    - container: EmbedPdf
-      pdf_file: ./example.pdf
+    - EmbedPdf:
+        pdf_file: ./example.pdf
 
  - title: Syntax highlighting example
    content:
-    - container: SyntaxHighlighter
-      filename: ./basic_example.yaml
+    - SyntaxHighlighter:
+        filename: ./basic_example.yaml
 
  - title: Tour example
    content:
-    - container: ExampleTour
+    - ExampleTour:
 
  - title: Plot a table
    content:
-    - container: TablePlotter
-      csv_file: ./example_data.csv
-      filter_cols:
+    - TablePlotter:
+        csv_file: ./example_data.csv
+        filter_cols:
           - Well
           - Segment
           - Average permeability (D)
-      contact_person:
-        name: Ola Nordmann
-        phone: +47 12345678
-        email: some@email.com
+        contact_person:
+          name: Ola Nordmann
+          phone: +47 12345678
+          email: some@email.com
 
  - title: Plot a table (locked)
    content:
-    - container: TablePlotter
-      csv_file: ./example_data.csv
-      lock: true
-      plot_options:
-        x: Well
-        y: Initial reservoir pressure (bar)
-        size: Average permeability (D)
-        facet_col: Segment
-      contact_person:
-        name: Kari Nordmann
-        phone: 12345678
-        email: someother@email.com
+    - TablePlotter:
+        csv_file: ./example_data.csv
+        lock: true
+        plot_options:
+          x: Well
+          y: Initial reservoir pressure (bar)
+          size: Average permeability (D)
+          facet_col: Segment
+        contact_person:
+          name: Kari Nordmann
+          phone: 12345678
+          email: someother@email.com
 </code></pre>
 
-<h2>Container documentation</h2><h3><em>Basic containers</em></h3>
-<p>These are the basic Webviz configuration containers, distributed through
-the utility itself.</p><div style='margin-left: 40px;'>
+<h2>Plugin documentation</h2><h3><em>Basic plugins</em></h3>
+<p>These are the basic Webviz configuration plugins, distributed through
+the utility itself.</p><div style="margin-left: 40px;">
 
 <h3>Banner image</h3>
-<p>This container adds a full width <em>banner image</em>, with an optional overlayed
-title. Useful on e.g. the front page for introducing a field or project.</p>
+<p>Adds a full width <em>banner image</em>, with an optional overlayed title.
+Useful on e.g. the front page for introducing a field or project.</p>
 <ul>
 <li><code>image</code>: Path to the picture you want to add. Either absolute path or
   relative to the configuration file.</li>
@@ -113,20 +113,19 @@ title. Useful on e.g. the front page for introducing a field or project.</p>
 <li><code>shadow</code>: Set to <code>False</code> if you do not want text shadow for the title.</li>
 <li><code>height</code>: Height of the banner image (in pixels).</li>
 </ul>
-<pre><code class='yaml'>  - container: BannerImage
-    image: some value
-    title:   # Optional (default value shown here).
-    color: white  # Optional (default value shown here).
-    shadow: True  # Optional (default value shown here).
-    height: 300  # Optional (default value shown here).
+<pre><code class="yaml">    - BannerImage:
+        image: some value
+        title:   # Optional (default value shown here).
+        color: white  # Optional (default value shown here).
+        shadow: True  # Optional (default value shown here).
+        height: 300  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Data table</h3>
-<p>This container adds a table to the webviz instance, using tabular data from
-a provided csv file. If feature is requested, the data could also come from
-a database.</p>
+<p>Adds a table to the webviz instance, using tabular data from a provided csv file.
+If feature is requested, the data could also come from a database.</p>
 <ul>
 <li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
               path or relative to the configuration file.</li>
@@ -137,17 +136,17 @@ a database.</p>
 <li><code>pagination</code>: If <code>True</code>, only a subset of the table is displayed at once.
                 Different subsets can be viewed from 'previous/next' buttons</li>
 </ul>
-<pre><code class='yaml'>  - container: DataTable
-    csv_file: some value
-    sorting: True  # Optional (default value shown here).
-    filtering: True  # Optional (default value shown here).
-    pagination: True  # Optional (default value shown here).
+<pre><code class="yaml">    - DataTable:
+        csv_file: some value
+        sorting: True  # Optional (default value shown here).
+        filtering: True  # Optional (default value shown here).
+        pagination: True  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Embed PDF file</h3>
-<p>This container embeds a given PDF file into the page.</p>
+<p>Embeds a given PDF file into the page.</p>
 <ul>
 <li><code>pdf_file</code>: Path to the PDF file to include. Either absolute path or
   relative to the configuration file.</li>
@@ -156,10 +155,10 @@ a database.</p>
 </ul>
 <p><em>Note</em>: Webviz does not scan your PDF for malicious code.
 Make sure it comes from a trusted source.</p>
-<pre><code class='yaml'>  - container: EmbedPdf
-    pdf_file: some value
-    height: 80  # Optional (default value shown here).
-    width: 100  # Optional (default value shown here).
+<pre><code class="yaml">    - EmbedPdf:
+        pdf_file: some value
+        height: 80  # Optional (default value shown here).
+        width: 100  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -171,38 +170,36 @@ To specify the dimensions write e.g.</p>
 <pre><code class="markdown">![width=40%,height=300px](./example_banner.png &quot;Some caption&quot;)
 </code></pre>
 
-<p>This container renders and includes the content from a Markdown file. Images
-are supported, and should in the markdown file be given as either relative
-paths to the markdown file itself, or absolute paths.</p>
+<p>Renders and includes the content from a Markdown file. Images are supported,
+and should in the markdown file be given as either relative paths to
+the markdown file itself, or absolute paths.</p>
 <ul>
 <li><code>markdown_file</code>: Path to the markdown file to render and include. Either
   absolute path or relative to the configuration file.</li>
 </ul>
-<pre><code class='yaml'>  - container: Markdown
-    markdown_file: some value
+<pre><code class="yaml">    - Markdown:
+        markdown_file: some value
 </code></pre>
 <hr>
 
 
 <h3>Syntax highlighter</h3>
-<p>This container adds support for syntax highlighting of code. Language is
-automatically detected.</p>
+<p>Adds support for syntax highlighting of code. Language is automatically detected.</p>
 <ul>
 <li><code>filename</code>: Path to a file containing the code to highlight.</li>
 <li><code>dark_theme</code>: If <code>True</code>, the code is shown with a dark theme. Default is
                 <code>False</code> giving a light theme.</li>
 </ul>
-<pre><code class='yaml'>  - container: SyntaxHighlighter
-    filename: some value
-    dark_theme: False  # Optional (default value shown here).
+<pre><code class="yaml">    - SyntaxHighlighter:
+        filename: some value
+        dark_theme: False  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>TablePlotter</h3>
-<p>This container adds a plotter to the webviz instance, using tabular data from
-a provided csv file. If feature is requested, the data could also come from
-a database.</p>
+<p>Adds a plotter to the webviz instance, using tabular data from a provided csv file.
+If feature is requested, the data could also come from a database.</p>
 <ul>
 <li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
               path or relative to the configuration file.</li>
@@ -210,18 +207,18 @@ a database.</p>
 <li><code>lock</code>: If <code>True</code>, only the plot is shown, all dropdowns for changing
           plot options are hidden.</li>
 </ul>
-<pre><code class='yaml'>  - container: TablePlotter
-    csv_file: some value
-    plot_options: None  # Optional (default value shown here).
-    filter_cols: None  # Optional (default value shown here).
-    lock: False  # Optional (default value shown here).
+<pre><code class="yaml">    - TablePlotter:
+        csv_file: some value
+        plot_options: None  # Optional (default value shown here).
+        filter_cols: None  # Optional (default value shown here).
+        lock: False  # Optional (default value shown here).
 </code></pre>
 <hr>
 
-</div><h3><em>Subsurface specific containers</em></h3>
-<p>These are containers relevant within subsurface workflows. Most of them
+</div><h3><em>Subsurface specific plugins</em></h3>
+<p>These are plugins relevant within subsurface workflows. Most of them
 rely on the setting <code>scratch_ensemble</code> configuration within the
-<code>container_settings</code>.
+<code>plugin_settings</code>.
 I.e. you could have</p>
 <pre><code class="yaml">title: Reek Webviz Demonstration
 
@@ -234,46 +231,46 @@ pages:
 
   - title: Front page
     content:
-      - container: ReservoirSimulationTimeSeries
+      - plugin: ReservoirSimulationTimeSeries
         ensembles:
           - iter-0
           - iter-1
-</code></pre><div style='margin-left: 40px;'>
+</code></pre><div style="margin-left: 40px;">
 
 <h3>Disk usage</h3>
-<p>This container adds functionality for standard visualization of disk usage in
-FMU projects. It adds a dashboard element where the user can choose between
+<p>Adds functionality for standard visualization of disk usage in FMU projects.
+It adds a dashboard element where the user can choose between
 showing disk usage, per user, either as a pie chart or as a bar chart.</p>
 <ul>
 <li><code>scratch_dir</code>: Path to the directory you want to show disk usage for, e.g.
   <code>/scratch/fmu</code>.</li>
-<li><code>title</code>: Optional title for the container.</li>
+<li><code>title</code>: Optional title for the plugin.</li>
 </ul>
-<pre><code class='yaml'>  - container: DiskUsage
-    scratch_dir: some value
+<pre><code class="yaml">    - DiskUsage:
+        scratch_dir: some value
 </code></pre>
 <hr>
 
 
 <h3>History match</h3>
-<p>This container visualizes the quality of the history match.</p>
+<p>Visualizes the quality of the history match.</p>
 <ul>
 <li><code>ensembles</code>: List of the ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>observation_File</code>: Path to the observation <code>.yaml</code> file.</li>
-<li><code>title</code>: Optional title for the container.</li>
+<li><code>title</code>: Optional title for the plugin.</li>
 </ul>
-<pre><code class='yaml'>  - container: HistoryMatch
-    ensembles: some value
-    observation_file: some value
+<pre><code class="yaml">    - HistoryMatch:
+        ensembles: some value
+        observation_file: some value
 </code></pre>
 <hr>
 
 
 <h3>InplaceVolumes</h3>
-<p>This container visualizes inplace volumetrics results from
+<p>This plugin visualizes inplace volumetrics results from
 FMU ensembles.</p>
 <p>Input can be given either as aggregated csv files for volumes or or as an ensemble name
-defined in <em>container_settings</em> and volumetric csv files stored per realizations.</p>
+defined in <em>plugin_settings</em> and volumetric csv files stored per realizations.</p>
 <h4>Volumetric input</h4>
 <p>The volumetric csv files must follow FMU standards.
 <a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv">Example csv file</a></p>
@@ -304,12 +301,12 @@ but the following responses are given more descriptive names automatically:</p>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
 </ul>
-<pre><code class='yaml'>  - container: InplaceVolumes
-    csvfile: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
-    volfiles: None  # Optional (default value shown here).
-    volfolder: share/results/volumes  # Optional (default value shown here).
-    response: STOIIP_OIL  # Optional (default value shown here).
+<pre><code class="yaml">    - InplaceVolumes:
+        csvfile: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        volfiles: None  # Optional (default value shown here).
+        volfolder: share/results/volumes  # Optional (default value shown here).
+        response: STOIIP_OIL  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -352,19 +349,19 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.
 <li><code>volfolder</code>: Optional local folder for csv files</li>
 <li><code>response</code>: Optional initial visualized volume response</li>
 </ul>
-<pre><code class='yaml'>  - container: InplaceVolumesOneByOne
-    csvfile_vol: None  # Optional (default value shown here).
-    csvfile_reals: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
-    volfiles: None  # Optional (default value shown here).
-    volfolder: share/results/volumes  # Optional (default value shown here).
-    response: STOIIP_OIL  # Optional (default value shown here).
+<pre><code class="yaml">    - InplaceVolumesOneByOne:
+        csvfile_vol: None  # Optional (default value shown here).
+        csvfile_reals: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        volfiles: None  # Optional (default value shown here).
+        volfolder: share/results/volumes  # Optional (default value shown here).
+        response: STOIIP_OIL  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Intersect</h3>
-<p>This container visualizes surfaces intersected along a well path.
+<p>This plugin visualizes surfaces intersected along a well path.
 The input are surfaces from a FMU ensemble stored on standardized
 format with standardized naming (share/results/maps/name--category.gri)
 and a folder of well files stored in RMS well format.</p>
@@ -375,47 +372,48 @@ and a folder of well files stored in RMS well format.</p>
 <li><code>surface_names</code>: List of surface names to look for in the file names</li>
 <li><code>well_suffix</code>:  Optional suffix for well files. Default is .rmswell</li>
 </ul>
-<pre><code class='yaml'>  - container: Intersect
-    ensemble: some value
-    well_path: some value
-    surface_cat: some value
-    surface_names: some value
-    well_suffix: .rmswell  # Optional (default value shown here).
+<pre><code class="yaml">    - Intersect:
+        plugin_settings: some value
+        ensemble: some value
+        well_path: some value
+        surface_cat: some value
+        surface_names: some value
+        well_suffix: .rmswell  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Morris</h3>
-<p>This container renders a visualization of the Morris sampling method.
+<p>Renders a visualization of the Morris sampling method.
 The Morris method can be used to screen parameters for how they
 influence model response, both individually and through interaction
 effect with other parameters.</p>
 <ul>
 <li><code>csv_file</code>: Input data</li>
-<li><code>title</code>: Optional title for the container.</li>
+<li><code>title</code>: Optional title for the plugin.</li>
 </ul>
-<pre><code class='yaml'>  - container: MorrisPlot
-    csv_file: some value
+<pre><code class="yaml">    - MorrisPlot:
+        csv_file: some value
 </code></pre>
 <hr>
 
 
 <h3>Parameter correlation</h3>
-<p>This container shows parameter correlation using a correlation matrix,
+<p>Shows parameter correlation using a correlation matrix,
 and scatter plot for any given pair of parameters.</p>
 <ul>
 <li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>drop_constants</code>: Drop constant parameters</li>
 </ul>
-<pre><code class='yaml'>  - container: ParameterCorrelation
-    ensembles: some value
-    drop_constants: True  # Optional (default value shown here).
+<pre><code class="yaml">    - ParameterCorrelation:
+        ensembles: some value
+        drop_constants: True  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>ParameterDistribution</h3>
-<p>This container shows parameter distributions for FMU ensembles.
+<p>Shows parameter distributions for FMU ensembles.
 Parameters are visualized per ensemble as a histogram, and as a boxplot showing
 the parameter ranges for each ensemble.
 Input can be given either as an aggregated csv files with parameter information
@@ -424,15 +422,15 @@ or as an ensemble name defined in <code>shared_settings</code>.</p>
 <li><code>csvfile</code>: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns</li>
 <li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 </ul>
-<pre><code class='yaml'>  - container: ParameterDistribution
-    csvfile: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
+<pre><code class="yaml">    - ParameterDistribution:
+        csvfile: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Parameter and response correlation</h3>
-<p>This container shows correlation between numerical input parameters and responses.</p>
+<p>This plugin shows correlation between numerical input parameters and responses.</p>
 <p>Input can be given either as:</p>
 <ul>
 <li>Aggregated csv files for parameters and responses,</li>
@@ -463,16 +461,16 @@ as row filtering before aggregation. (See below for filter types).</p>
 - `multi`: Dropdown with multiple selection.
 - `range`: Slider with range selection.
 </code></pre>
-<pre><code class='yaml'>  - container: ParameterResponseCorrelation
-    parameter_csv: None  # Optional (default value shown here).
-    response_csv: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
-    response_file: None  # Optional (default value shown here).
-    response_filters: None  # Optional (default value shown here).
-    response_ignore: None  # Optional (default value shown here).
-    response_include: None  # Optional (default value shown here).
-    aggregation: sum  # Optional (default value shown here).
-    corr_method: pearson  # Optional (default value shown here).
+<pre><code class="yaml">    - ParameterResponseCorrelation:
+        parameter_csv: None  # Optional (default value shown here).
+        response_csv: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        response_file: None  # Optional (default value shown here).
+        response_filters: None  # Optional (default value shown here).
+        response_ignore: None  # Optional (default value shown here).
+        response_include: None  # Optional (default value shown here).
+        aggregation: sum  # Optional (default value shown here).
+        corr_method: pearson  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -480,7 +478,7 @@ as row filtering before aggregation. (See below for filter types).</p>
 <h3>ReservoirSimulationTimeSeries</h3>
 <p>Visualizes reservoir simulation time series for FMU ensembles.
 Input can be given either as aggregated csv file or an ensemble defined
-in container settings.</p>
+in plugin settings.</p>
 <ul>
 <li><code>csvfile</code>: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
 <li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
@@ -497,13 +495,13 @@ in container settings.</p>
     * <code>vector3</code> : Third vector to display
     * <code>visualization</code> : 'realizations', 'statistics' or 'statistics_hist',
     * <code>date</code> : Date to show in histograms</p>
-<pre><code class='yaml'>  - container: ReservoirSimulationTimeSeries
-    csvfile: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
-    obsfile: None  # Optional (default value shown here).
-    column_keys: None  # Optional (default value shown here).
-    sampling: monthly  # Optional (default value shown here).
-    options: None  # Optional (default value shown here).
+<pre><code class="yaml">    - ReservoirSimulationTimeSeries:
+        csvfile: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        obsfile: None  # Optional (default value shown here).
+        column_keys: None  # Optional (default value shown here).
+        sampling: monthly  # Optional (default value shown here).
+        options: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -533,19 +531,19 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 <li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
               or <code>yearly</code>.</li>
 </ul>
-<pre><code class='yaml'>  - container: ReservoirSimulationTimeSeriesOneByOne
-    csvfile_smry: None  # Optional (default value shown here).
-    csvfile_reals: None  # Optional (default value shown here).
-    ensembles: None  # Optional (default value shown here).
-    column_keys: None  # Optional (default value shown here).
-    initial_vector: None  # Optional (default value shown here).
-    sampling: monthly  # Optional (default value shown here).
+<pre><code class="yaml">    - ReservoirSimulationTimeSeriesOneByOne:
+        csvfile_smry: None  # Optional (default value shown here).
+        csvfile_reals: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        column_keys: None  # Optional (default value shown here).
+        initial_vector: None  # Optional (default value shown here).
+        sampling: monthly  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>SegyViewer</h3>
-<p>Inspired by <a href="https://github.com/equinor/segyviewer">SegyViewer for Python</a> this container
+<p>Inspired by <a href="https://github.com/equinor/segyviewer">SegyViewer for Python</a> this plugin
 visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
 The plots are linked and updates are done by clicking in the plots.</p>
 <ul>
@@ -553,16 +551,16 @@ The plots are linked and updates are done by clicking in the plots.</p>
 <li><code>zunit</code>: z-unit for display</li>
 <li><code>colors</code>: List of colors to use</li>
 </ul>
-<pre><code class='yaml'>  - container: SegyViewer
-    segyfiles: some value
-    zunit: depth (m)  # Optional (default value shown here).
-    colors: None  # Optional (default value shown here).
+<pre><code class="yaml">    - SegyViewer:
+        segyfiles: some value
+        zunit: depth (m)  # Optional (default value shown here).
+        colors: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
 
 <h3>Subsurface map</h3>
-<p>This container visualizes reservoir grids in a map view, additionally it can
+<p>This plugin visualizes reservoir grids in a map view, additionally it can
 visualize the flow pattern in the simulation output using streamlines.
 Input can be either a premade json object or data can be extracted from
 a FMU ensemble.</p>
@@ -573,14 +571,14 @@ a FMU ensemble.</p>
 <li><code>flow_value</code>: Which property to use for the streamlines animation
   (e.g. <code>FLOWAT</code>).</li>
 <li><code>time_step</code>: Which report or time step to use in the simulation output.</li>
-<li><code>title</code>: Optional title for the container.</li>
+<li><code>title</code>: Optional title for the plugin.</li>
 </ul>
-<pre><code class='yaml'>  - container: SubsurfaceMap
-    jsonfile: None  # Optional (default value shown here).
-    ensemble: None  # Optional (default value shown here).
-    map_value: None  # Optional (default value shown here).
-    flow_value: None  # Optional (default value shown here).
-    time_step: None  # Optional (default value shown here).
+<pre><code class="yaml">    - SubsurfaceMap:
+        jsonfile: None  # Optional (default value shown here).
+        ensemble: None  # Optional (default value shown here).
+        map_value: None  # Optional (default value shown here).
+        flow_value: None  # Optional (default value shown here).
+        time_step: None  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -602,18 +600,18 @@ and optionally seismic cubes.
 <li><code>sampling</code>: Sampling interval of well fence</li>
 <li><code>nextend</code>: Number to extend distance of sampling, e.g. 2<em>20 (nextend</em>sampling)</li>
 </ul>
-<pre><code class='yaml'>  - container: WellCrossSection
-    surfacefiles: some value
-    wellfiles: some value
-    segyfiles: None  # Optional (default value shown here).
-    surfacenames: None  # Optional (default value shown here).
-    zonelog: None  # Optional (default value shown here).
-    zunit: depth (m)  # Optional (default value shown here).
-    zmin: None  # Optional (default value shown here).
-    zmax: None  # Optional (default value shown here).
-    zonemin: 1  # Optional (default value shown here).
-    nextend: 2  # Optional (default value shown here).
-    sampling: 40  # Optional (default value shown here).
+<pre><code class="yaml">    - WellCrossSection:
+        surfacefiles: some value
+        wellfiles: some value
+        segyfiles: None  # Optional (default value shown here).
+        surfacenames: None  # Optional (default value shown here).
+        zonelog: None  # Optional (default value shown here).
+        zunit: depth (m)  # Optional (default value shown here).
+        zmin: None  # Optional (default value shown here).
+        zmax: None  # Optional (default value shown here).
+        zonemin: 1  # Optional (default value shown here).
+        nextend: 2  # Optional (default value shown here).
+        sampling: 40  # Optional (default value shown here).
 </code></pre>
 <hr>
 
