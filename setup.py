@@ -40,7 +40,7 @@ setup(
         "matplotlib~=3.0",
         "pillow~=6.1",
         "xtgeo~=2.1",
-        "webviz-config>=0.0.35",
+        "webviz-config>=0.0.41",
         # webviz-subsurface-components is part of the webviz-subsurface project,
         # just located in a separate repository for convenience,
         # and is therefore pinned exactly here:

@@ -43,6 +43,8 @@ and scatter plot for any given pair of parameters.
             for ens in ensembles
         }
         self.drop_constants = drop_constants
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -191,7 +193,9 @@ and scatter plot for any given pair of parameters.
             and it is not possible to assign callbacks to individual
             elements of a Plotly graph object
             """
-            fig = render_matrix(ens, self.drop_constants)
+            fig = render_matrix(
+                ens, theme=self.plotly_theme, drop_constants=self.drop_constants
+            )
             # Finds index of the currently selected cell
             x_index = list(fig["data"][0]["x"]).index(param1)
             y_index = list(fig["data"][0]["y"]).index(param2)
@@ -223,7 +227,9 @@ and scatter plot for any given pair of parameters.
             ],
         )
         def _update_scatter(ens1, param1, ens2, param2, color, density):
-            return render_scatter(ens1, param1, ens2, param2, color, density)
+            return render_scatter(
+                ens1, param1, ens2, param2, color, density, self.plotly_theme
+            )
 
         @app.callback(
             [
@@ -264,7 +270,7 @@ def get_parameters(ensemble_path) -> pd.DataFrame:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_scatter(ens1, x_col, ens2, y_col, color, density):
+def render_scatter(ens1, x_col, ens2, y_col, color, density, theme):
     if ens1 == ens2:
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
     else:
@@ -285,24 +291,8 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
             "showlegend": False,
         }
     )
-    data.append(
-        {
-            "x": x,
-            "type": "histogram",
-            "yaxis": "y2",
-            "showlegend": False,
-            "marker": {"color": "rgb(31, 119, 180)"},
-        }
-    )
-    data.append(
-        {
-            "y": y,
-            "type": "histogram",
-            "xaxis": "x2",
-            "showlegend": False,
-            "marker": {"color": "rgb(31, 119, 180)"},
-        }
-    )
+    data.append({"x": x, "type": "histogram", "yaxis": "y2", "showlegend": False})
+    data.append({"y": y, "type": "histogram", "xaxis": "x2", "showlegend": False})
     if density:
         data.append(
             {
@@ -324,7 +314,6 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
                 ],
                 "contours": {
                     "coloring": "fill",
-                    # 'end': 80.05,
                     "showlines": True,
                     "size": 5,
                     "start": 5,
@@ -339,6 +328,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density):
     layout = {
         "margin": {"t": 20, "b": 50, "l": 200, "r": 200},
         "bargap": 0.05,
+        "colorway": theme["layout"]["colorway"],
         "xaxis": {
             "title": x_col,
             "domain": [0, 0.85],
@@ -394,10 +384,11 @@ def get_corr_data(ensemble_path, drop_constants=True):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_matrix(ensemble_path, drop_constants=True):
+def render_matrix(ensemble_path, theme, drop_constants=True):
     corrdf = get_corr_data(ensemble_path, drop_constants)
     # pylint: disable=no-member
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))
+
     data = {
         "type": "heatmap",
         "x": corrdf.columns,
@@ -405,8 +396,8 @@ def render_matrix(ensemble_path, drop_constants=True):
         "z": list(corrdf.values),
         "zmin": -1,
         "zmax": 1,
+        "colorscale": theme["layout"]["colorscale"]["sequential"],
     }
-
     layout = {
         "paper_bgcolor": "rgba(0,0,0,0)",
         "plot_bgcolor": "rgba(0,0,0,0)",

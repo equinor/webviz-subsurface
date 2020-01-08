@@ -58,6 +58,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         )
         self.allow_click = allow_click
         self.uid = uuid4()
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -212,7 +213,14 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 self.realizations["ENSEMBLE"] == data["ENSEMBLE"]
             ]
             try:
-                return tornado_plot(realizations, values, reference, scale, cutbyref)
+                return tornado_plot(
+                    realizations,
+                    values,
+                    plotly_theme=self.plotly_theme,
+                    reference=reference,
+                    scale=scale,
+                    cutbyref=cutbyref,
+                )
             except KeyError:
                 return {}
 
@@ -288,7 +296,12 @@ def cut_by_ref(tornadotable, refname):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def tornado_plot(
-    realizations, data, reference="rms_seed", scale="Percentage", cutbyref=True
+    realizations,
+    data,
+    plotly_theme,
+    reference="rms_seed",
+    scale="Percentage",
+    cutbyref=True,
 ):  # pylint: disable=too-many-locals
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
@@ -394,44 +407,44 @@ def tornado_plot(
     df = sort_by_max(df)
     # Return tornado data as Plotly figure
 
-    return {
-        "data": [
-            dict(
-                type="bar",
-                y=df["sensname"],
-                x=df["low"],
-                name="low",
-                customdata=df["low_reals"],
-                hovertext=[
-                    f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
-                    f"{min(reals) if reals else None}-{max(reals) if reals else None}"
-                    for label, val, reals in zip(
-                        df["low_label"], df["true_low"], df["low_reals"]
-                    )
-                ],
-                hoverinfo="x+text",
-                orientation="h",
-                marker=dict(color="rgb(235, 0, 54)"),
-            ),
-            dict(
-                type="bar",
-                y=df["sensname"],
-                x=df["high"],
-                name="high",
-                customdata=df["high_reals"],
-                hovertext=[
-                    f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
-                    f"{min(reals) if reals else None}-{max(reals) if reals else None}"
-                    for label, val, reals in zip(
-                        df["high_label"], df["true_high"], df["high_reals"]
-                    )
-                ],
-                hoverinfo="x+text",
-                orientation="h",
-                marker=dict(color="rgb(36, 55, 70)"),
-            ),
-        ],
-        "layout": {
+    plot_data = [
+        dict(
+            type="bar",
+            y=df["sensname"],
+            x=df["low"],
+            name="low",
+            customdata=df["low_reals"],
+            hovertext=[
+                f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
+                f"{min(reals) if reals else None}-{max(reals) if reals else None}"
+                for label, val, reals in zip(
+                    df["low_label"], df["true_low"], df["low_reals"]
+                )
+            ],
+            hoverinfo="x+text",
+            orientation="h",
+        ),
+        dict(
+            type="bar",
+            y=df["sensname"],
+            x=df["high"],
+            name="high",
+            customdata=df["high_reals"],
+            hovertext=[
+                f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
+                f"{min(reals) if reals else None}-{max(reals) if reals else None}"
+                for label, val, reals in zip(
+                    df["high_label"], df["true_high"], df["high_reals"]
+                )
+            ],
+            hoverinfo="x+text",
+            orientation="h",
+        ),
+    ]
+    layout = {}
+    layout.update(plotly_theme["layout"])
+    layout.update(
+        {
             "barmode": "relative",
             "margin": {"l": 50, "r": 50, "b": 20, "t": 50},
             "xaxis": {
@@ -448,6 +461,7 @@ def tornado_plot(
                 "zeroline": False,
                 "showline": False,
                 "automargin": True,
+                "title": None,
             },
             "showlegend": False,
             "annotations": [
@@ -467,5 +481,6 @@ def tornado_plot(
                     "ay": -25,
                 }
             ],
-        },
-    }
+        }
+    )
+    return {"data": plot_data, "layout": layout}

@@ -60,6 +60,7 @@ or as an ensemble name defined in `shared_settings`.
             if col not in ["REAL", "ENSEMBLE"]
         ]
         self.uid = uuid4()
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -168,6 +169,7 @@ or as an ensemble name defined in `shared_settings`.
                 nbins=10,
                 range_x=[param[column].min(), param[column].max()],
                 marginal="box",
+                template=self.plotly_theme,
             ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=", "")))
 
             return plot

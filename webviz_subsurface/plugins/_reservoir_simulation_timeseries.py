@@ -103,41 +103,13 @@ Plot options:
         ]
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        self.plotly_layout = app.webviz_settings["plotly_layout"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.plot_options = options if options else {}
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
             else None
         )
-
-        colors = self.plotly_layout.get(
-            "colors",
-            [
-                "#243746",
-                "#eb0036",
-                "#919ba2",
-                "#7d0023",
-                "#66737d",
-                "#4c9ba1",
-                "#a44c65",
-                "#80b7bc",
-                "#ff1243",
-                "#919ba2",
-                "#be8091",
-                "#b2d4d7",
-                "#ff597b",
-                "#bdc3c7",
-                "#d8b2bd",
-                "#ffe7d6",
-                "#d5eaf4",
-                "#ff88a1",
-            ],
-        )
-        self.ens_colors = {
-            ens: colors[self.ensembles.index(ens)] for ens in self.ensembles
-        }
-
         self.allow_delta = len(self.ensembles) > 1
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -145,6 +117,37 @@ Plot options:
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
+
+    @property
+    def ens_colors(self):
+        try:
+            colors = self.plotly_theme["layout"]["colorway"]
+        except KeyError:
+            print("test")
+            colors = self.plotly_theme.get(
+                "colorway",
+                [
+                    "#243746",
+                    "#eb0036",
+                    "#919ba2",
+                    "#7d0023",
+                    "#66737d",
+                    "#4c9ba1",
+                    "#a44c65",
+                    "#80b7bc",
+                    "#ff1243",
+                    "#919ba2",
+                    "#be8091",
+                    "#b2d4d7",
+                    "#ff597b",
+                    "#bdc3c7",
+                    "#d8b2bd",
+                    "#ffe7d6",
+                    "#d5eaf4",
+                    "#ff88a1",
+                ],
+            )
+        return {ens: colors[self.ensembles.index(ens)] for ens in self.ensembles}
 
     @property
     def tour_steps(self):
@@ -490,10 +493,10 @@ Plot options:
             # Add additional styling to layout
             fig["layout"].update(
                 height=800,
-                font=self.plotly_layout.get("font"),
-                hoverlabel=self.plotly_layout.get("hoverlabel"),
-                paper_bgcolor=self.plotly_layout.get("paper_bgcolor", "rgba(0,0,0,0)"),
-                plot_bgcolor=self.plotly_layout.get("plot_bgcolor", "rgba(0,0,0,0)"),
+                font=self.plotly_theme.get("font"),
+                hoverlabel=self.plotly_theme.get("hoverlabel"),
+                paper_bgcolor=self.plotly_theme.get("paper_bgcolor", "rgba(0,0,0,0)"),
+                plot_bgcolor=self.plotly_theme.get("plot_bgcolor", "rgba(0,0,0,0)"),
                 margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
