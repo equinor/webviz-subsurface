@@ -125,7 +125,7 @@ The types of response_filters are:
                 inplace=True,
             )
 
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
 

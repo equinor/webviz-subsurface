@@ -58,7 +58,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         )
         self.allow_click = allow_click
         self.uid = uuid4()
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):

@@ -41,7 +41,7 @@ and scatter plot for any given pair of parameters.
             for ens in ensembles
         }
         self.drop_constants = drop_constants
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
 
         self.uid = uuid4()
         self.set_callbacks(app)

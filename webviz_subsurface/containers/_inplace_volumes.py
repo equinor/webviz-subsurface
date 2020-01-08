@@ -105,7 +105,7 @@ but the following responses are given more descriptive names automatically:
         self.initial_response = response
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):

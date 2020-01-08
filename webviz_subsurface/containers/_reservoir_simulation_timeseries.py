@@ -100,7 +100,7 @@ Plot options:
         ]
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.plot_options = options if options else {}
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))

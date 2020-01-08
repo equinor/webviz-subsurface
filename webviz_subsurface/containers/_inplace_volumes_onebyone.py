@@ -145,7 +145,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
         self.uid = uuid4()
         self.selectors_id = {x: self.ids(x) for x in self.selectors}
-        self.plotly_theme = app.webviz_settings["plotly_theme"]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):
