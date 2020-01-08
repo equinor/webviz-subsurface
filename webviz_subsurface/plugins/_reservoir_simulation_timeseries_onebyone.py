@@ -11,17 +11,17 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash_table import DataTable
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .._private_containers.tornado_plot import TornadoPlot
+from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.fmu_input import load_smry, get_realizations
 from .._abbreviations import simulation_vector_description
 
 
 # pylint: disable=too-many-instance-attributes
-class ReservoirSimulationTimeSeriesOneByOne(WebvizContainerABC):
+class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):
     """### ReservoirSimulationTimeSeriesOneByOne
 
 Visualizes reservoir simulation time series for sensitivity studies.
@@ -88,6 +88,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         initial_vector=None,
         sampling: str = "monthly",
     ):
+
+        super().__init__()
 
         self.time_index = sampling
         self.column_keys = column_keys

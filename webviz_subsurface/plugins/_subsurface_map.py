@@ -7,15 +7,15 @@ import dash_html_components as html
 from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 from .._datainput.fmu_input import scratch_ensemble
 
 
-class SubsurfaceMap(WebvizContainerABC):
+class SubsurfaceMap(WebvizPluginABC):
     """### Subsurface map
 
-This container visualizes reservoir grids in a map view, additionally it can
+This plugin visualizes reservoir grids in a map view, additionally it can
 visualize the flow pattern in the simulation output using streamlines.
 Input can be either a premade json object or data can be extracted from
 a FMU ensemble.
@@ -26,7 +26,7 @@ a FMU ensemble.
 * `flow_value`: Which property to use for the streamlines animation
   (e.g. `FLOWAT`).
 * `time_step`: Which report or time step to use in the simulation output.
-* `title`: Optional title for the container.
+* `title`: Optional title for the plugin.
 """
 
     def __init__(
@@ -38,6 +38,8 @@ a FMU ensemble.
         flow_value: str = None,
         time_step=None,
     ):
+
+        super().__init__()
 
         self.jsonfile = jsonfile if jsonfile else None
 

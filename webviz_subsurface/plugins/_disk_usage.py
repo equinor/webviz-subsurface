@@ -8,22 +8,24 @@ import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 
 
-class DiskUsage(WebvizContainerABC):
+class DiskUsage(WebvizPluginABC):
     """### Disk usage
 
-This container adds functionality for standard visualization of disk usage in
-FMU projects. It adds a dashboard element where the user can choose between
+Adds functionality for standard visualization of disk usage in FMU projects.
+It adds a dashboard element where the user can choose between
 showing disk usage, per user, either as a pie chart or as a bar chart.
 
 * `scratch_dir`: Path to the directory you want to show disk usage for, e.g.
   `/scratch/fmu`.
-* `title`: Optional title for the container.
+* `title`: Optional title for the plugin.
 """
 
     def __init__(self, app, scratch_dir: str):
+
+        super().__init__()
 
         self.scratch_dir = scratch_dir
         self.chart_id = "chart-id-{}".format(uuid4())
