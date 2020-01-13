@@ -132,6 +132,19 @@ class XSectionFigure:
     def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zonemin):
         """Plot the zone log as colored segments."""
 
+
+        colors = [
+            "#1f77b4",  # muted blue
+            "#ff7f0e",  # safety orange
+            "#2ca02c",  # cooked asparagus green
+            "#d62728",  # brick red
+            "#9467bd",  # muted purple
+            "#8c564b",  # chestnut brown
+            "#e377c2",  # raspberry yogurt pink
+            "#7f7f7f",  # middle gray
+            "#bcbd22",  # curry yellow-green
+            "#17becf",  # blue-teal
+        ]
         if zonelogname not in df.columns:
             return
 
@@ -143,7 +156,7 @@ class XSectionFigure:
             zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
         )
         zomax = int(df[zonelogname].max())
-        for zone in range(zomin, zomax + 1):
+        for i, zone in enumerate(range(zomin, zomax + 1)):
 
             zvals_copy = ma.masked_where(zonevals != zone, zvals)
             hvals_copy = ma.masked_where(zonevals != zone, hvals)
@@ -152,7 +165,9 @@ class XSectionFigure:
                 {
                     "x": hvals_copy,
                     "y": zvals_copy,
-                    "line": {"width": 10},
+                    "line": {"width": 10, "color": colors[i]},
+                    "fillcolor": colors[i],
+            
                     "marker": {"opacity": 0.5},
                     # "connectgaps": True,
                     "name": f"Zone: {zone}",
@@ -333,3 +348,75 @@ class XSectionFigure:
                     # "marker": {"color": s_color},
                 }
             )
+
+    def plot_statistical_surface(self, surface_statistics, color):
+        fill_color = hex_to_rgb(color, 0.3)
+        line_color = hex_to_rgb(color, 1)
+        self.data.extend([
+        {
+            # "name": legend_group,
+            "hovertext": "Maximum",
+            "y": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 1],
+            "x": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 0],
+            "mode": "lines",
+            "line": {"width": 0, "color": line_color},
+            # "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            # "name": legend_group,
+            "hovertext": "P10",
+            "y": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 1],
+            "x": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 0],
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            # "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            # "name": legend_group,
+            "hovertext": "Mean",
+            "y": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 1],
+            "x": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 0],
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"color": line_color},
+            # "legendgroup": legend_group,
+            "showlegend": True,
+        },
+        {
+            # "name": legend_group,
+            "hovertext": "P90",
+            "y": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 1],
+            "x": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 0],
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            # "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            # "name": legend_group,
+            "hovertext": "Minimum",
+            "y": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 1],
+            "x": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 0],
+            "mode": "lines",
+            "fill": "tonexty",
+            "fillcolor": fill_color,
+            "line": {"width": 0, "color": line_color},
+            # "legendgroup": legend_group,
+            "showlegend": False,
+        },
+    ])
+
+def hex_to_rgb(hex_string, opacity=1):
+    """Converts a hex color to rgb"""
+    hex_string = hex_string.lstrip("#")
+    hlen = len(hex_string)
+    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
+    rgb.append(opacity)
+    return f"rgba{tuple(rgb)}"

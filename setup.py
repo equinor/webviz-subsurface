@@ -33,6 +33,7 @@ setup(
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
+            "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
         ]
     },
     install_requires=[
