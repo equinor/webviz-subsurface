@@ -3,7 +3,7 @@ import pandas as pd
 import dash
 from dash.dependencies import Input, Output
 import dash_html_components as html
-from webviz_subsurface.private_containers._surface_selector import SurfaceSelector
+from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
 surface_context = {
