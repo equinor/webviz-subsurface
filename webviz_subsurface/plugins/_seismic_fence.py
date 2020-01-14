@@ -15,23 +15,22 @@ import dash_core_components as dcc
 # pylint: disable=no-name-in-module
 from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
-from webviz_config import WebvizContainerABC
+from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_subsurface_components import LayeredMap
 
-from ..datainput._seismic import load_cube_data, get_iline, get_xline, get_zslice
-from ..datainput._surface import get_surface_arr, get_surface_fence
-from ..datainput.layeredmap._image_processing import array_to_png, get_colormap
+from .._datainput.seismic import load_cube_data
+from .._datainput.surface import get_surface_arr, make_surface_layer, get_surface_fence
+from .._datainput.image_processing import array_to_png, get_colormap
 
 
-class SeismicFence(WebvizContainerABC):
+class SeismicFence(WebvizPluginABC):
     """### SeismicFence
 
 
 
 * `segyfiles`: List of file paths to segyfiles
 * `surfacefiles`: List of file paths to surfaces
-* `wellfiles`: List of file paths to surfaces
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
@@ -41,16 +40,14 @@ class SeismicFence(WebvizContainerABC):
         app,
         segyfiles: list,
         surfacefiles: list,
-        wellfiles: list = None,
         zunit="depth (m)",
         colors: list = None,
     ):
+
+        super().__init__()
         self.zunit = zunit
         self.segyfiles = segyfiles
         self.surfacefiles = surfacefiles
-        self.wellfiles = wellfiles if wellfiles else []
-        print("asdasdasdasd", self.wellfiles)
-        self.welllayers = make_well_layers(self.wellfiles)
         self.initial_colors = (
             colors
             if colors
@@ -69,26 +66,17 @@ class SeismicFence(WebvizContainerABC):
                 "#053061",
             ]
         )
-        self.make_uuids()
+        self.uid = uuid4()
         self.set_callbacks(app)
 
-    def make_uuids(self):
-        uuid = f"{uuid4()}"
-        self.cube_id = f"cube_id-{uuid}"
-        self.surface_id = f"surface_id-{uuid}"
-        self.surface_type_id = f"surface_type_id-{uuid}"
-        self.map_id = f"map_id-{uuid}"
-        self.fence_id = f"fence_id-{uuid}"
-        self.color_values_id = f"color_values_id-{uuid}"
-        self.color_scale_id = f"color_scale_id-{uuid}"
-        self.color_range_btn = f"color_range_btn-{uuid}"
-        self.zoom_btn = f"zoom_btn-{uuid}"
-        self.state_store = f"state_store-{uuid}"
+    def ids(self, element):
+        """Generate unique id for dom element"""
+        return f"{element}-id-{self.uid}"
 
     # @property
     # def tour_steps(self):
     #     return [
-    #         {"id": self.cube_id, "content": ("The currently visualized seismic cube.")},
+    #         {"id": self.ids('cube'), "content": ("The currently visualized seismic cube.")},
     #         {
     #             "id": self.iline_map_id,
     #             "content": (
@@ -107,15 +95,15 @@ class SeismicFence(WebvizContainerABC):
     #             "content": ("Selected zslice for the seismic cube "),
     #         },
     #         {
-    #             "id": self.color_scale_id,
+    #             "id": self.ids('color-scale'),
     #             "content": ("Click this button to change colorscale"),
     #         },
     #         {
-    #             "id": self.color_values_id,
+    #             "id": self.ids('color-values'),
     #             "content": ("Drag either node of slider to truncate color ranges"),
     #         },
     #         {
-    #             "id": self.color_range_btn,
+    #             "id": self.ids('color-range-btn'),
     #             "content": (
     #                 "Click this button to update color slider min/max and reset ranges."
     #             ),
@@ -141,7 +129,7 @@ class SeismicFence(WebvizContainerABC):
                                     children="Select surface",
                                 ),
                                 dcc.Dropdown(
-                                    id=self.surface_id,
+                                    id=self.ids("surface"),
                                     options=[
                                         {"label": Path(cube).stem, "value": cube}
                                         for cube in self.surfacefiles
@@ -158,7 +146,7 @@ class SeismicFence(WebvizContainerABC):
                                     style={"textAlign": "center"}, children="Display as"
                                 ),
                                 dcc.RadioItems(
-                                    id=self.surface_type_id,
+                                    id=self.ids("surface-type"),
                                     options=[
                                         {"label": "Surface", "value": "surface"},
                                         {
@@ -177,7 +165,7 @@ class SeismicFence(WebvizContainerABC):
                         html.Div(
                             style={"height": "800px", "zIndex": -9999},
                             children=LayeredMap(
-                                id=self.map_id,
+                                id=self.ids("map-view"),
                                 draw_toolbar_polyline=True,
                                 hillShading=True,
                                 layers=[],
@@ -205,7 +193,7 @@ class SeismicFence(WebvizContainerABC):
                                     children="Select seismic cube",
                                 ),
                                 dcc.Dropdown(
-                                    id=self.cube_id,
+                                    id=self.ids("cube"),
                                     options=[
                                         {"label": Path(cube).stem, "value": cube}
                                         for cube in self.segyfiles
@@ -223,7 +211,7 @@ class SeismicFence(WebvizContainerABC):
                                     children="Set colorscale",
                                 ),
                                 DashColorscales(
-                                    id=self.color_scale_id,
+                                    id=self.ids("color-scale"),
                                     colorscale=self.initial_colors,
                                     nSwatches=12,
                                 ),
@@ -237,19 +225,20 @@ class SeismicFence(WebvizContainerABC):
                                     children="Set color range",
                                 ),
                                 dcc.RangeSlider(
-                                    id=self.color_values_id,
+                                    id=self.ids("color-values"),
                                     tooltip={"always_visible": True},
                                 ),
                             ],
                         ),
-                        html.Button(id=self.color_range_btn, children="Reset Range"),
-                        # html.Button(id=self.zoom_btn, children="Reset zoom"),
+                        html.Button(
+                            id=self.ids("color-range-btn"), children="Reset Range"
+                        ),
                     ],
                 ),
                 html.Div(
                     style={"height": "800px"},
                     children=wcc.Graph(
-                        config={"displayModeBar": False}, id=self.fence_id
+                        config={"displayModeBar": False}, id=self.ids("fence-view")
                     ),
                 ),
             ]
@@ -273,13 +262,13 @@ class SeismicFence(WebvizContainerABC):
 
     def set_callbacks(self, app):
         @app.callback(
-            [Output(self.map_id, "layers"), Output(self.map_id, "uirevision")],
+            Output(self.ids("map-view"), "layers"),
             [
-                Input(self.surface_id, "value"),
-                Input(self.surface_type_id, "value"),
-                Input(self.cube_id, "value"),
-                Input(self.color_values_id, "value"),
-                Input(self.color_scale_id, "colorscale"),
+                Input(self.ids("surface"), "value"),
+                Input(self.ids("surface-type"), "value"),
+                Input(self.ids("cube"), "value"),
+                Input(self.ids("color-values"), "value"),
+                Input(self.ids("color-scale"), "colorscale"),
             ],
         )
         def render_surface(
@@ -298,28 +287,26 @@ class SeismicFence(WebvizContainerABC):
                 color = ListedColormap(colorscale) if colorscale else "viridis"
                 cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
+                surface.values = surface.values.filled(0)
 
-            arr = get_surface_arr(surface)
             s_layer = make_surface_layer(
-                arr,
+                surface,
                 name="surface",
                 min_val=min_val,
                 max_val=max_val,
                 color=color,
                 hillshading=hillshading,
             )
-            # layers = self.welllayers.extend(s_layer)
-
-            return [s_layer, *self.welllayers], "keep"
+            return [s_layer]
 
         @app.callback(
-            Output(self.fence_id, "figure"),
+            Output(self.ids("fence-view"), "figure"),
             [
-                Input(self.map_id, "polyline_points"),
-                Input(self.cube_id, "value"),
-                Input(self.surface_id, "value"),
-                Input(self.color_values_id, "value"),
-                Input(self.color_scale_id, "colorscale"),
+                Input(self.ids("map-view"), "polyline_points"),
+                Input(self.ids("cube"), "value"),
+                Input(self.ids("surface"), "value"),
+                Input(self.ids("color-values"), "value"),
+                Input(self.ids("color-scale"), "colorscale"),
             ],
         )
         def render_fence(coords, cubepath, surfacepath, color_values, colorscale):
@@ -347,13 +334,13 @@ class SeismicFence(WebvizContainerABC):
 
         @app.callback(
             [
-                Output(self.color_values_id, "min"),
-                Output(self.color_values_id, "max"),
-                Output(self.color_values_id, "value"),
-                Output(self.color_values_id, "step"),
+                Output(self.ids("color-values"), "min"),
+                Output(self.ids("color-values"), "max"),
+                Output(self.ids("color-values"), "value"),
+                Output(self.ids("color-values"), "step"),
             ],
-            [Input(self.color_range_btn, "n_clicks")],
-            [State(self.cube_id, "value")],
+            [Input(self.ids("color-range-btn"), "n_clicks")],
+            [State(self.ids("cube"), "value")],
         )
         def update_color_slider(clicks, cubepath):
             cube = load_cube_data(get_path(cubepath))
@@ -368,7 +355,6 @@ class SeismicFence(WebvizContainerABC):
         return [
             *[(get_path, [{"path": fn}]) for fn in self.segyfiles],
             *[(get_path, [{"path": fn}]) for fn in self.surfacefiles],
-            *[(get_path, [{"path": fn}]) for fn in self.wellfiles],
         ]
 
 
@@ -444,37 +430,6 @@ def make_heatmap(
     }
 
 
-def make_surface_layer(
-    arr,
-    name="surface",
-    min_val=None,
-    max_val=None,
-    color="viridis",
-    hillshading=False,
-    unit="m",
-):
-    bounds = [[np.min(arr[0]), np.min(arr[1])], [np.max(arr[0]), np.max(arr[1])]]
-    min_val = min_val if min_val else np.min(arr[2])
-    max_val = max_val if min_val else np.max(arr[2])
-    return {
-        "name": "surface",
-        "checked": True,
-        "base_layer": True,
-        "data": [
-            {
-                "type": "image",
-                "url": array_to_png(arr[2].copy()),
-                "colormap": get_colormap(color),
-                "bounds": bounds,
-                "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val else None,
-                "maxvalue": f"{max_val:.2f}" if max_val else None,
-                "unit": unit,
-            }
-        ],
-    }
-
-
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
@@ -489,42 +444,3 @@ def get_fencespec(coords):
     poly = xtgeo.Polygons()
     poly.dataframe = df
     return poly.get_fence(asnumpy=True)
-
-
-def make_well_layer(fn, zmin=0):
-
-    # reduce the well data by Pandas operations
-    print(get_path(fn))
-    # return
-    wo = xtgeo.Well(str(get_path(fn)))
-    wo.dataframe = wo.dataframe[wo.dataframe["Z_TVDSS"] > zmin]
-    positions = wo.dataframe[["X_UTME", "Y_UTMN"]].values
-    return {
-        "name": Path(fn).stem,
-        "checked": True,
-        "base_layer": False,
-        "data": [
-            {
-                "type": "polyline",
-                "color": "black",
-                "tooltip": Path(fn).stem,
-                # "metadata": {"type": "well", "name": name},
-                "positions": positions,
-            }
-        ],
-    }
-    # # Create a relative XYLENGTH vector (0.0 where well starts)
-    # wo.create_relative_hlen()
-    # dfr = wo.dataframe
-
-    # # get the well trajectory (numpies) as copy
-    # zv = dfr["Z_TVDSS"].values.copy()
-    # hv = dfr["R_HLEN"].values.copy()
-    # zv_copy = np.ma.masked_where(zv < zmin, zv)
-    # hv_copy = np.ma.masked_where(zv < zmin, hv)
-    # return zv_copy, hv_copy
-
-
-def make_well_layers(wellpaths):
-
-    return [make_well_layer(fn) for fn in wellpaths]
