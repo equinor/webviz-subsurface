@@ -31,6 +31,7 @@ class SeismicFence(WebvizContainerABC):
 
 * `segyfiles`: List of file paths to segyfiles
 * `surfacefiles`: List of file paths to surfaces
+* `wellfiles`: List of file paths to surfaces
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
