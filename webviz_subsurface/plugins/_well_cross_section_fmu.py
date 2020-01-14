@@ -27,13 +27,21 @@ from .._datainput.surface import make_surface_layer
 
 class WellCrossSectionFMU(WebvizPluginABC):
     """### WellCrossSection
-    Displays a cross section along a well with intersected surfaces,
-    and optionally seismic cubes.
+    Displays a cross section along a well with intersected statistical surfaces,
+    from an FMU ensemble and optionally seismic cubes.
 
-* `segyfiles`: List of file paths to segyfiles
-* `surfacefiles`: List of file paths to Irap binary surfaces
+    Statistical surfaces are calculated automatically from surfaces stored
+    per realization.
+
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
+* `surfacefiles`: Surface file names (without folder)
 * `surfacenames`: Corresponding list of displayed surface names
+* `surfacefolder`: The surface folder
+* `surfacenames`: Surface names for visualization
 * `wellfiles`: List of file paths to RMS wells
+* `wellfolder`: Alternatively provide a folder with RMS wells
+* `wellsuffix`: File suffix for wells in well folder.
+* `segyfiles`: List of file paths to segyfiles
 * `zunit`: z-unit for display
 * `zonelog`: Name of zonelog
 * `zmin`: Visualized minimum z-value in cross section
