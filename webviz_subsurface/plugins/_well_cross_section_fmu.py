@@ -2,7 +2,11 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import io
+import pickle
 
+import numpy as np
+
+import xtgeo
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -44,12 +48,13 @@ class WellCrossSectionFMU(WebvizPluginABC):
         self,
         app,
         ensembles,
-        surfacefiles: List[Path],
-        surfaceattributes: List = None,
+        surfacefiles: list,
         wellfiles: List[Path] = None,
-        segyfiles: List[Path] = None,
+        wellfolder: Path = None,
+        wellsuffix: str = ".w",
         surfacenames: list = None,
-        surfacenames_visual: List = None,
+        surfacefolder: Path = "share/results/maps",
+        segyfiles: List[Path] = None,
         zonelog: str = None,
         zunit="depth (m)",
         zmin: float = None,
@@ -61,29 +66,52 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
         super().__init__()
 
+        if wellfiles and wellfolder:
+            raise ValueError(
+                'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
+            )
+        if not wellfiles and not wellfolder:
+            raise ValueError(
+                'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
+            )
+        self.wellfiles = (
+            glob.glob(str(wellfolder / wellsuffix))
+            if wellfolder
+            else [str(well) for well in wellfiles]
+        )
+
+        self.surfacefolder = surfacefolder
+        self.surfacefiles = surfacefiles
+
+        if surfacenames:
+            if len(surfacenames) != len(surfacefiles):
+                raise ValueError(
+                    "List of surface names specified should be same length as list of surfacefiles"
+                )
+            self.surfacenames = surfacenames
+        else:
+            self.surfacenames = surfacefiles
+
         self.ensembles = {
             ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        # print(find_files(self.ensembles, 'share/results/maps', '*.gri'))
+
         self.realizations = get_realizations(
             ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
         )
+
         self.zunit = zunit
         self.sampling = sampling
         self.nextend = nextend
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
-        self.surfacenames = surfacenames
-        self.surfacefiles = [str(surface) for surface in surfacefiles]
-        self.wellfiles = [str(well) for well in wellfiles]
         self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
-        self.surfacenames_visual = (
-            surfacenames_visual if surfacenames_visual else surfacenames
-        )
+
         self.zonelog = zonelog
         self.uid = uuid4()
+
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -114,18 +142,35 @@ class WellCrossSectionFMU(WebvizPluginABC):
         return html.Div(
             children=html.Label(
                 children=[
-                    html.Span("Well:", style={"font-weight": "bold"}),
+                    html.Span("Surface:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("surfacenames"),
                         options=[
-                            {"label": visname, "value": name}
-                            for visname, name in zip(
-                                self.surfacenames_visual, self.surfacenames
-                            )
+                            {"label": name, "value": name} for name in self.surfacenames
                         ],
                         value=self.surfacenames[0],
                         clearable=False,
                         multi=True,
+                    ),
+                ]
+            ),
+        )
+
+    @property
+    def ensemble_layout(self):
+        return html.Div(
+            children=html.Label(
+                children=[
+                    html.Span("Ensemble:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("ensembles"),
+                        options=[
+                            {"label": ens, "value": ens}
+                            for ens in self.ensembles.keys()
+                        ],
+                        value=list(self.ensembles.keys())[0],
+                        clearable=False,
+                        multi=False,
                     ),
                 ]
             ),
@@ -200,6 +245,24 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
 
     @property
+    def map_layout(self):
+        return html.Div(
+            style=self.set_grid_layout("1fr 1fr"),
+            children=[
+                html.Button(id=self.ids("show_map"), children="Show stddev map",),
+                dcc.Dropdown(
+                    id=self.ids("stddev-surface"),
+                    options=[
+                        {"label": name, "value": name} for name in self.surfacenames
+                    ],
+                    value=self.surfacenames[0],
+                    clearable=False,
+                    multi=False,
+                ),
+            ],
+        )
+
+    @property
     def layout(self):
         return html.Div(
             children=[
@@ -208,11 +271,14 @@ class WellCrossSectionFMU(WebvizPluginABC):
                     children=[
                         self.well_layout,
                         self.well_options,
-                        self.seismic_layout,
+                        html.Div(self.seismic_layout),
                         self.viz_options_layout,
-                        html.Button(id=self.ids("show_map"), children="Show map",),
-                        self.surface_names_layout,
+                        self.map_layout,
                     ],
+                ),
+                html.Div(
+                    style=self.set_grid_layout("1fr 1fr 1fr 1fr 1fr"),
+                    children=[self.surface_names_layout, self.ensemble_layout],
                 ),
                 html.Div(
                     id=self.ids("viz_wrapper"),
@@ -252,6 +318,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             Output(self.ids("graph"), "figure"),
             [
                 Input(self.ids("surfacenames"), "value"),
+                Input(self.ids("ensembles"), "value"),
                 Input(self.ids("wells"), "value"),
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("options"), "value"),
@@ -259,8 +326,17 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 Input(self.ids("nextend"), "value"),
             ],
         )
-        def _render_section(surfacenames, well, cube, options, sampling, nextend):
+        def _render_section(
+            surfacenames, ensemble, well, cube, options, sampling, nextend
+        ):
             """Update cross section"""
+
+            surfacenames = (
+                surfacenames if isinstance(surfacenames, list) else [surfacenames]
+            )
+            surfacefiles = [
+                self.surfacefiles[surfacenames.index(name)] for name in surfacenames
+            ]
 
             well = load_well(str(get_path(well)))
             xsect = XSectionFigure(
@@ -269,9 +345,6 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 zmax=self.zmax,
                 nextend=int(nextend),
                 sampling=int(sampling),
-            )
-            surfacenames = (
-                surfacenames if isinstance(surfacenames, list) else [surfacenames]
             )
 
             colors = [
@@ -285,12 +358,34 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 "#7f7f7f",  # middle gray
                 "#bcbd22",  # curry yellow-green
                 "#17becf",  # blue-teal
+                "#1f77b4",  # muted blue
+                "#ff7f0e",  # safety orange
+                "#2ca02c",  # cooked asparagus green
+                "#d62728",  # brick red
+                "#9467bd",  # muted purple
+                "#8c564b",  # chestnut brown
+                "#e377c2",  # raspberry yogurt pink
+                "#7f7f7f",  # middle gray
+                "#bcbd22",  # curry yellow-green
+                "#17becf",  # blue-teal
+                "#1f77b4",  # muted blue
+                "#ff7f0e",  # safety orange
+                "#2ca02c",  # cooked asparagus green
+                "#d62728",  # brick red
+                "#9467bd",  # muted purple
+                "#8c564b",  # chestnut brown
+                "#e377c2",  # raspberry yogurt pink
+                "#7f7f7f",  # middle gray
+                "#bcbd22",  # curry yellow-green
+                "#17becf",  # blue-teal
             ]
-            for i, surfacename in enumerate(surfacenames):
-                stat = calculate_surface_statistics(
-                    self.realizations, "iter-0", surfacename, "ds_extracted_horizons"
+            for i, surfacefile in enumerate(surfacefiles):
+                stat = self.calculate_surface_statistics(
+                    self.realizations, ensemble, surfacefile, self.surfacefolder
                 )
-                xsect.plot_statistical_surface(stat, color=colors[i])
+                xsect.plot_statistical_surface(
+                    stat, color=colors[i], fill="show_surface_fill" in options
+                )
 
             if "show_seismic" in options:
                 cube = load_cube_data(str(get_path(cube)))
@@ -303,75 +398,75 @@ class WellCrossSectionFMU(WebvizPluginABC):
             xsect.layout["margin"] = {"t": 0}
             return {"data": xsect.data, "layout": xsect.layout}
 
-        # @app.callback(
-        #     [
-        #         Output(self.ids("map_wrapper"), "style"),
-        #         Output(self.ids("show_map"), "children"),
-        #     ],
-        #     [Input(self.ids("show_map"), "n_clicks")],
-        #     [State(self.ids("map_wrapper"), "style")],
-        # )
-        # def _show_map(nclicks, style):
-        #     """Show/hide map on button click"""
-        #     btn = "Show Map"
-        #     if not nclicks:
-        #         raise PreventUpdate
-        #     if nclicks % 2:
-        #         style["visibility"] = "visible"
-        #         btn = "Hide Map"
-        #     else:
-        #         style["visibility"] = "hidden"
-        #     return style, btn
+        @app.callback(
+            [
+                Output(self.ids("map_wrapper"), "style"),
+                Output(self.ids("show_map"), "children"),
+            ],
+            [Input(self.ids("show_map"), "n_clicks")],
+            [State(self.ids("map_wrapper"), "style")],
+        )
+        def _show_map(nclicks, style):
+            """Show/hide map on button click"""
+            btn = "Show Map"
+            if not nclicks:
+                raise PreventUpdate
+            if nclicks % 2:
+                style["visibility"] = "visible"
+                btn = "Hide Map"
+            else:
+                style["visibility"] = "hidden"
+            return style, btn
 
-        # @app.callback(
-        #     [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
-        #     [Input(self.ids("wells"), "value")],
-        # )
-        # def _render_surface(wellfile):
-        #     """Update map"""
-        #     wellname = Path(wellfile).stem
-        #     wellfile = get_path(wellfile)
-        #     surface = load_surface(str(get_path(self.surfacefiles[0])))
-        #     well = load_well(str(wellfile))
-        #     s_layer = make_surface_layer(
-        #         surface, name=self.surfacenames[0], hillshading=True,
-        #     )
-        #     well_layer = make_well_layer(well, wellname)
-        #     return [s_layer, well_layer], "keep"
+        @app.callback(
+            [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
+            [
+                Input(self.ids("wells"), "value"),
+                Input(self.ids("stddev-surface"), "value"),
+                Input(self.ids("ensembles"), "value"),
+            ],
+        )
+        def _render_surface(wellfile, surfacename, ensemble):
+            """Update map"""
+            wellname = Path(wellfile).stem
+            wellfile = get_path(wellfile)
+            well = load_well(str(wellfile))
+            well_layer = make_well_layer(well, wellname)
+
+            surface = self.calculate_surface_statistics(
+                self.realizations,
+                ensemble,
+                self.surfacefiles[self.surfacenames.index(surfacename)],
+            )["stddev"]
+
+            surface_layer = make_surface_layer(
+                surface, name=surfacename, hillshading=True,
+            )
+            return [surface_layer, well_layer], "keep"
 
     def add_webvizstore(self):
         stat_functions = []
-        for reals, reals_df in self.realizations.groupby("ENSEMBLE"):
-            for surfacename in [
-                "topupperreek",
-                "topmidreek",
-                "toplowerreek",
-                "baselowerreek",
-            ]:
-                for surfaceattr in ["ds_extracted_horizons"]:
-                    fns = [
-                        make_fmu_file_path(real, surfacename, surfaceattr)
-                        for real in list(reals_df["RUNPATH"])
-                    ]
-                    for stat in ["mean", "maximum", "minimum", "p10", "p90"]:
-                        stat_functions.append(
-                            (
-                                get_surface_statistic,
-                                [
-                                    {
-                                        "fns": fns,
-                                        "statistic": stat,
-                                        "ensemble": "iter-0",
-                                        "surfacename": surfacename,
-                                        "surfaceattr": "ds_extracted_horizons",
-                                    }
-                                ],
-                            ))
+        for ens in list(self.realizations["ENSEMBLE"].unique()):
+            for surfacefile in self.surfacefiles:
+                for stat in ["mean", "maximum", "minimum", "p10", "p90", "stddev"]:
+                    stat_functions.append(
+                        (
+                            self.get_surface_statistic,
+                            [
+                                {
+                                    "self": self,
+                                    "statistic": stat,
+                                    "ensemble": ens,
+                                    "surfacefile": surfacefile,
+                                }
+                            ],
+                        )
+                    )
         for fn in self.segyfiles:
             stat_functions.append((get_path, [{"path": fn}]))
         for fn in self.wellfiles:
             stat_functions.append((get_path, [{"path": fn}]))
-                        
+
         stat_functions.append(
             (
                 get_realizations,
@@ -385,83 +480,58 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
         return stat_functions
 
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @webvizstore
+    def get_surface_statistic(self, statistic, ensemble, surfacefile) -> io.BytesIO:
+        real_paths = list(
+            self.realizations[self.realizations["ENSEMBLE"] == ensemble]["RUNPATH"]
+        )
+        fns = [
+            str(Path(Path(real_path) / Path(self.surfacefolder) / Path(surfacefile)))
+            for real_path in real_paths
+        ]
+        surfaces = get_surfaces(fns)
+        if statistic == "mean":
+            surface = surfaces.apply(np.nanmean, axis=0)
+        if statistic == "maximum":
+            surface = surfaces.apply(np.nanmax, axis=0)
+        if statistic == "minimum":
+            surface = surfaces.apply(np.nanmin, axis=0)
+        if statistic == "p10":
+            surface = surfaces.apply(np.nanpercentile, 10, axis=0)
+        if statistic == "p90":
+            surface = surfaces.apply(np.nanpercentile, 90, axis=0)
+        if statistic == "stddev":
+            surface = surfaces.apply(np.nanstd, axis=0)
+        return io.BytesIO(pickle.dumps(surface))
+
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    def calculate_surface_statistics(self, ensemble, surfacefile):
+        return {
+            "mean": pickle.loads(
+                self.get_surface_statistic("mean", ensemble, surfacefile).read()
+            ),
+            "maximum": pickle.loads(
+                self.get_surface_statistic("maximum", ensemble, surfacefile).read()
+            ),
+            "minimum": pickle.loads(
+                self.get_surface_statistic("minimum", ensemble, surfacefile).read()
+            ),
+            "p10": pickle.loads(
+                self.get_surface_statistic("p10", ensemble, surfacefile).read()
+            ),
+            "p90": pickle.loads(
+                self.get_surface_statistic("p90", ensemble, surfacefile).read()
+            ),
+            "stddev": pickle.loads(
+                self.get_surface_statistic("stddev", ensemble, surfacefile).read()
+            ),
+        }
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_surfaces(fns):
-    import xtgeo
-
     return xtgeo.surface.surfaces.Surfaces(fns)
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def get_surface_statistic(
-    fns, statistic, ensemble, surfacename, surfaceattr
-) -> io.BytesIO:
-    import io, pickle
-    import xtgeo
-    import numpy as np
-
-    surfaces = get_surfaces(fns)
-    if statistic == "mean":
-        surface = surfaces.apply(np.nanmean, axis=0)
-    if statistic == "maximum":
-        surface = surfaces.apply(np.nanmax, axis=0)
-    if statistic == "minimum":
-        surface = surfaces.apply(np.nanmin, axis=0)
-    if statistic == "p10":
-        surface = surfaces.apply(np.nanpercentile, 10, axis=0)
-    if statistic == "p90":
-        surface = surfaces.apply(np.nanpercentile, 90, axis=0)
-    return io.BytesIO(pickle.dumps(surface))
-    return surface
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_surface_statistics(realdf, ensemble, surfacename, surfaceattr):
-    import xtgeo
-    import numpy as np
-    import pandas as pd
-    import pickle
-
-    real_paths = list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
-    fns = [make_fmu_file_path(real, surfacename, surfaceattr) for real in real_paths]
-    print(fns)
-    return {
-        "mean": pickle.loads(
-            get_surface_statistic(
-                fns, "mean", ensemble, surfacename, surfaceattr
-            ).read()
-        ),
-        "maximum": pickle.loads(
-            get_surface_statistic(
-                fns, "maximum", ensemble, surfacename, surfaceattr
-            ).read()
-        ),
-        "minimum": pickle.loads(
-            get_surface_statistic(
-                fns, "minimum", ensemble, surfacename, surfaceattr
-            ).read()
-        ),
-        "p10": pickle.loads(
-            get_surface_statistic(fns, "p10", ensemble, surfacename, surfaceattr).read()
-        ),
-        "p90": pickle.loads(
-            get_surface_statistic(fns, "p90", ensemble, surfacename, surfaceattr).read()
-        ),
-    }
-
-
-def make_fmu_file_path(
-    basepath: Path,
-    name,
-    attr,
-    folder: Path = "share/results/maps",
-    suffix=".gri",
-    sep="--",
-):
-    filename = Path(name + sep + attr + suffix)
-    return str(Path(basepath / Path(folder) / filename))
 
 
 @webvizstore

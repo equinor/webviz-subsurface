@@ -144,6 +144,26 @@ class XSectionFigure:
             "#7f7f7f",  # middle gray
             "#bcbd22",  # curry yellow-green
             "#17becf",  # blue-teal
+            "#1f77b4",  # muted blue
+            "#ff7f0e",  # safety orange
+            "#2ca02c",  # cooked asparagus green
+            "#d62728",  # brick red
+            "#9467bd",  # muted purple
+            "#8c564b",  # chestnut brown
+            "#e377c2",  # raspberry yogurt pink
+            "#7f7f7f",  # middle gray
+            "#bcbd22",  # curry yellow-green
+            "#17becf",  # blue-teal
+            "#1f77b4",  # muted blue
+            "#ff7f0e",  # safety orange
+            "#2ca02c",  # cooked asparagus green
+            "#d62728",  # brick red
+            "#9467bd",  # muted purple
+            "#8c564b",  # chestnut brown
+            "#e377c2",  # raspberry yogurt pink
+            "#7f7f7f",  # middle gray
+            "#bcbd22",  # curry yellow-green
+            "#17becf",  # blue-teal
         ]
         if zonelogname not in df.columns:
             return
@@ -349,7 +369,7 @@ class XSectionFigure:
                 }
             )
 
-    def plot_statistical_surface(self, surface_statistics, color):
+    def plot_statistical_surface(self, surface_statistics, color, fill=False):
         fill_color = hex_to_rgb(color, 0.3)
         line_color = hex_to_rgb(color, 1)
         self.data.extend([
@@ -359,7 +379,7 @@ class XSectionFigure:
             "y": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 1],
             "x": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 0],
             "mode": "lines",
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0 if fill else 1, "color": line_color},
             # "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -369,9 +389,9 @@ class XSectionFigure:
             "y": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 1],
             "x": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 0],
             "mode": "lines",
-            "fill": "tonexty",
+            "fill": "tonexty" if fill else None,
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0 if fill else 1, "color": line_color},
             # "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -381,7 +401,7 @@ class XSectionFigure:
             "y": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 1],
             "x": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 0],
             "mode": "lines",
-            "fill": "tonexty",
+            "fill": "tonexty" if fill else None,
             "fillcolor": fill_color,
             "line": {"color": line_color},
             # "legendgroup": legend_group,
@@ -393,9 +413,9 @@ class XSectionFigure:
             "y": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 1],
             "x": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 0],
             "mode": "lines",
-            "fill": "tonexty",
+            "fill": "tonexty" if fill else None,
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0 if fill else 1, "color": line_color},
             # "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -405,9 +425,9 @@ class XSectionFigure:
             "y": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 1],
             "x": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 0],
             "mode": "lines",
-            "fill": "tonexty",
+            "fill": "tonexty" if fill else None,
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0 if fill else 1, "color": line_color},
             # "legendgroup": legend_group,
             "showlegend": False,
         },
