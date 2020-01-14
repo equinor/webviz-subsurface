@@ -2,6 +2,7 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import io
+import glob
 import pickle
 
 import numpy as np
@@ -21,7 +22,7 @@ from .._datainput.fmu_input import get_realizations
 from .._datainput.xsection import XSectionFigure
 from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well, make_well_layer
-from .._datainput.surface import load_surface, make_surface_layer, get_surface_arr
+from .._datainput.surface import make_surface_layer
 
 
 class WellCrossSectionFMU(WebvizPluginABC):
@@ -43,7 +44,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
 """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
         app,
@@ -330,10 +331,12 @@ class WellCrossSectionFMU(WebvizPluginABC):
             surfacenames, ensemble, well, cube, options, sampling, nextend
         ):
             """Update cross section"""
-
+            # Ensure list
             surfacenames = (
                 surfacenames if isinstance(surfacenames, list) else [surfacenames]
             )
+            # Sort selected surfaces
+            surfacenames = [name for name in self.surfacenames if name in surfacenames]
             surfacefiles = [
                 self.surfacefiles[surfacenames.index(name)] for name in surfacenames
             ]
@@ -379,12 +382,16 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 "#bcbd22",  # curry yellow-green
                 "#17becf",  # blue-teal
             ]
+
             for i, surfacefile in enumerate(surfacefiles):
-                stat = self.calculate_surface_statistics(
+                stat_surfs = calculate_surface_statistics(
                     self.realizations, ensemble, surfacefile, self.surfacefolder
                 )
                 xsect.plot_statistical_surface(
-                    stat, color=colors[i], fill="show_surface_fill" in options
+                    stat_surfs,
+                    name=surfacenames[i],
+                    color=colors[i],
+                    fill="show_surface_fill" in options,
                 )
 
             if "show_seismic" in options:
@@ -408,7 +415,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
         def _show_map(nclicks, style):
             """Show/hide map on button click"""
-            btn = "Show Map"
+            btn = "Show Stddev Map"
             if not nclicks:
                 raise PreventUpdate
             if nclicks % 2:
@@ -432,11 +439,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
             wellfile = get_path(wellfile)
             well = load_well(str(wellfile))
             well_layer = make_well_layer(well, wellname)
-
-            surface = self.calculate_surface_statistics(
+            surface = calculate_surface_statistics(
                 self.realizations,
                 ensemble,
                 self.surfacefiles[self.surfacenames.index(surfacename)],
+                self.surfacefolder,
             )["stddev"]
 
             surface_layer = make_surface_layer(
@@ -448,24 +455,23 @@ class WellCrossSectionFMU(WebvizPluginABC):
         stat_functions = []
         for ens in list(self.realizations["ENSEMBLE"].unique()):
             for surfacefile in self.surfacefiles:
-                for stat in ["mean", "maximum", "minimum", "p10", "p90", "stddev"]:
-                    stat_functions.append(
-                        (
-                            self.get_surface_statistic,
-                            [
-                                {
-                                    "self": self,
-                                    "statistic": stat,
-                                    "ensemble": ens,
-                                    "surfacefile": surfacefile,
-                                }
-                            ],
-                        )
+                stat_functions.append(
+                    (
+                        get_surface_statistics,
+                        [
+                            {
+                                "realdf": self.realizations,
+                                "ensemble": ens,
+                                "surfacefile": surfacefile,
+                                "surfacefolder": self.surfacefolder,
+                            }
+                        ],
                     )
-        for fn in self.segyfiles:
-            stat_functions.append((get_path, [{"path": fn}]))
-        for fn in self.wellfiles:
-            stat_functions.append((get_path, [{"path": fn}]))
+                )
+        for filename in self.segyfiles:
+            stat_functions.append((get_path, [{"path": filename}]))
+        for filename in self.wellfiles:
+            stat_functions.append((get_path, [{"path": filename}]))
 
         stat_functions.append(
             (
@@ -480,53 +486,35 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
         return stat_functions
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    @webvizstore
-    def get_surface_statistic(self, statistic, ensemble, surfacefile) -> io.BytesIO:
-        real_paths = list(
-            self.realizations[self.realizations["ENSEMBLE"] == ensemble]["RUNPATH"]
-        )
-        fns = [
-            str(Path(Path(real_path) / Path(self.surfacefolder) / Path(surfacefile)))
-            for real_path in real_paths
-        ]
-        surfaces = get_surfaces(fns)
-        if statistic == "mean":
-            surface = surfaces.apply(np.nanmean, axis=0)
-        if statistic == "maximum":
-            surface = surfaces.apply(np.nanmax, axis=0)
-        if statistic == "minimum":
-            surface = surfaces.apply(np.nanmin, axis=0)
-        if statistic == "p10":
-            surface = surfaces.apply(np.nanpercentile, 10, axis=0)
-        if statistic == "p90":
-            surface = surfaces.apply(np.nanpercentile, 90, axis=0)
-        if statistic == "stddev":
-            surface = surfaces.apply(np.nanstd, axis=0)
-        return io.BytesIO(pickle.dumps(surface))
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def calculate_surface_statistics(self, ensemble, surfacefile):
-        return {
-            "mean": pickle.loads(
-                self.get_surface_statistic("mean", ensemble, surfacefile).read()
-            ),
-            "maximum": pickle.loads(
-                self.get_surface_statistic("maximum", ensemble, surfacefile).read()
-            ),
-            "minimum": pickle.loads(
-                self.get_surface_statistic("minimum", ensemble, surfacefile).read()
-            ),
-            "p10": pickle.loads(
-                self.get_surface_statistic("p10", ensemble, surfacefile).read()
-            ),
-            "p90": pickle.loads(
-                self.get_surface_statistic("p90", ensemble, surfacefile).read()
-            ),
-            "stddev": pickle.loads(
-                self.get_surface_statistic("stddev", ensemble, surfacefile).read()
-            ),
-        }
+@webvizstore
+def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder) -> io.BytesIO:
+    real_paths = list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
+    fns = [
+        str(Path(Path(real_path) / Path(surfacefolder) / Path(surfacefile)))
+        for real_path in real_paths
+    ]
+    surfaces = get_surfaces(fns)
+
+    return io.BytesIO(
+        pickle.dumps(
+            {
+                "mean": surfaces.apply(np.nanmean, axis=0),
+                "maximum": surfaces.apply(np.nanmax, axis=0),
+                "minimum": surfaces.apply(np.nanmin, axis=0),
+                "p10": surfaces.apply(np.nanpercentile, 10, axis=0),
+                "p90": surfaces.apply(np.nanpercentile, 90, axis=0),
+                "stddev": surfaces.apply(np.nanstd, axis=0),
+            }
+        )
+    )
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def calculate_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
+    return pickle.loads(
+        get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder).read()
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

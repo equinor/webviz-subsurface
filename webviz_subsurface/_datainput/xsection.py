@@ -132,7 +132,6 @@ class XSectionFigure:
     def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zonemin):
         """Plot the zone log as colored segments."""
 
-
         colors = [
             "#1f77b4",  # muted blue
             "#ff7f0e",  # safety orange
@@ -187,7 +186,6 @@ class XSectionFigure:
                     "y": zvals_copy,
                     "line": {"width": 10, "color": colors[i]},
                     "fillcolor": colors[i],
-            
                     "marker": {"opacity": 0.5},
                     # "connectgaps": True,
                     "name": f"Zone: {zone}",
@@ -369,69 +367,92 @@ class XSectionFigure:
                 }
             )
 
-    def plot_statistical_surface(self, surface_statistics, color, fill=False):
+    def plot_statistical_surface(self, surface_statistics, name, color, fill=False):
         fill_color = hex_to_rgb(color, 0.3)
         line_color = hex_to_rgb(color, 1)
-        self.data.extend([
-        {
-            # "name": legend_group,
-            "hovertext": "Maximum",
-            "y": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 1],
-            "x": surface_statistics['maximum'].get_randomline(self.fence).copy()[:, 0],
-            "mode": "lines",
-            "line": {"width": 0 if fill else 1, "color": line_color},
-            # "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            # "name": legend_group,
-            "hovertext": "P10",
-            "y": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 1],
-            "x": surface_statistics['p10'].get_randomline(self.fence).copy()[:, 0],
-            "mode": "lines",
-            "fill": "tonexty" if fill else None,
-            "fillcolor": fill_color,
-            "line": {"width": 0 if fill else 1, "color": line_color},
-            # "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            # "name": legend_group,
-            "hovertext": "Mean",
-            "y": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 1],
-            "x": surface_statistics['mean'].get_randomline(self.fence).copy()[:, 0],
-            "mode": "lines",
-            "fill": "tonexty" if fill else None,
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            # "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            # "name": legend_group,
-            "hovertext": "P90",
-            "y": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 1],
-            "x": surface_statistics['p90'].get_randomline(self.fence).copy()[:, 0],
-            "mode": "lines",
-            "fill": "tonexty" if fill else None,
-            "fillcolor": fill_color,
-            "line": {"width": 0 if fill else 1, "color": line_color},
-            # "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            # "name": legend_group,
-            "hovertext": "Minimum",
-            "y": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 1],
-            "x": surface_statistics['minimum'].get_randomline(self.fence).copy()[:, 0],
-            "mode": "lines",
-            "fill": "tonexty" if fill else None,
-            "fillcolor": fill_color,
-            "line": {"width": 0 if fill else 1, "color": line_color},
-            # "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ])
+        self.data.extend(
+            [
+                {
+                    "name": name,
+                    "hovertext": "Maximum",
+                    "y": surface_statistics["maximum"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 1],
+                    "x": surface_statistics["maximum"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 0],
+                    "mode": "lines",
+                    "line": {"width": 0 if fill else 1, "color": line_color},
+                    "legendgroup": name,
+                    "showlegend": False,
+                },
+                {
+                    "name": name,
+                    "hovertext": "P10",
+                    "y": surface_statistics["p10"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 1],
+                    "x": surface_statistics["p10"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 0],
+                    "mode": "lines",
+                    "fill": "tonexty" if fill else None,
+                    "fillcolor": fill_color,
+                    "line": {"width": 0 if fill else 1, "color": line_color},
+                    "legendgroup": name,
+                    "showlegend": False,
+                },
+                {
+                    "name": name,
+                    "hovertext": "Mean",
+                    "y": surface_statistics["mean"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 1],
+                    "x": surface_statistics["mean"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 0],
+                    "mode": "lines",
+                    "fill": "tonexty" if fill else None,
+                    "fillcolor": fill_color,
+                    "line": {"color": line_color},
+                    "legendgroup": name,
+                    "showlegend": True,
+                },
+                {
+                    "name": name,
+                    "hovertext": "P90",
+                    "y": surface_statistics["p90"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 1],
+                    "x": surface_statistics["p90"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 0],
+                    "mode": "lines",
+                    "fill": "tonexty" if fill else None,
+                    "fillcolor": fill_color,
+                    "line": {"width": 0 if fill else 1, "color": line_color},
+                    "legendgroup": name,
+                    "showlegend": False,
+                },
+                {
+                    "name": name,
+                    "hovertext": "Minimum",
+                    "y": surface_statistics["minimum"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 1],
+                    "x": surface_statistics["minimum"]
+                    .get_randomline(self.fence)
+                    .copy()[:, 0],
+                    "mode": "lines",
+                    "fill": "tonexty" if fill else None,
+                    "fillcolor": fill_color,
+                    "line": {"width": 0 if fill else 1, "color": line_color},
+                    "legendgroup": name,
+                    "showlegend": False,
+                },
+            ]
+        )
+
 
 def hex_to_rgb(hex_string, opacity=1):
     """Converts a hex color to rgb"""
