@@ -39,4 +39,4 @@ def test_basic_example(dash_duo, tmp_path):
 
         if dash_duo.get_logs() != []:
             print(page)
-            raise AssertionError()
+            raise AssertionError(page)
