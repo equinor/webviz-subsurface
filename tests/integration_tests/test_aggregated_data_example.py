@@ -29,7 +29,7 @@ def test_basic_example(dash_duo, tmp_path):
         "inplacevolumes",
         "reservoirsimulationtimeseries",
         "reservoirsimulationtimeseries_with_options_set",
-        "parameterdistribution",
+        # "parameterdistribution",
         "morris_plot",
         "grid_viewer",
         "seg-y_viewer",
