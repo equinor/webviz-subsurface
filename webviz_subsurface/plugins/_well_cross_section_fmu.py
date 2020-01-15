@@ -49,6 +49,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
 * `zonemin`: First zonenumber to draw in log
 * `sampling`: Sampling interval of well fence
 * `nextend`: Number to extend distance of sampling, e.g. 2*20 (nextend*sampling)
+* `colors`: List of colors corresponding to surfaces
 
 """
 
@@ -58,11 +59,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
         app,
         ensembles,
         surfacefiles: list,
+        surfacenames: list = None,
+        surfacefolder: Path = "share/results/maps",
         wellfiles: List[Path] = None,
         wellfolder: Path = None,
         wellsuffix: str = ".w",
-        surfacenames: list = None,
-        surfacefolder: Path = "share/results/maps",
         segyfiles: List[Path] = None,
         zonelog: str = None,
         zunit="depth (m)",
@@ -71,6 +72,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         zonemin: int = 1,
         nextend: int = 2,
         sampling: int = 40,
+        colors: list = None,
     ):
 
         super().__init__()
@@ -119,8 +121,25 @@ class WellCrossSectionFMU(WebvizPluginABC):
         self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
 
         self.zonelog = zonelog
-        self.uid = uuid4()
 
+        self.colors = (
+            colors
+            if colors
+            else [
+                "#1f77b4",  # muted blue
+                "#ff7f0e",  # safety orange
+                "#2ca02c",  # cooked asparagus green
+                "#d62728",  # brick red
+                "#9467bd",  # muted purple
+                "#8c564b",  # chestnut brown
+                "#e377c2",  # raspberry yogurt pink
+                "#7f7f7f",  # middle gray
+                "#bcbd22",  # curry yellow-green
+                "#17becf",  # blue-teal
+            ]
+        )
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.uid = uuid4()
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -143,7 +162,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         clearable=False,
                     ),
                 ]
-            ),
+            )
         )
 
     @property
@@ -162,7 +181,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         multi=True,
                     ),
                 ]
-            ),
+            )
         )
 
     @property
@@ -182,7 +201,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         multi=False,
                     ),
                 ]
-            ),
+            )
         )
 
     @property
@@ -217,7 +236,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
             value.append("show_zonelog")
 
-        return dcc.Checklist(id=self.ids("options"), options=options, value=value,)
+        return dcc.Checklist(id=self.ids("options"), options=options, value=value)
 
     @property
     def well_options(self):
@@ -258,7 +277,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Button(id=self.ids("show_map"), children="Show stddev map",),
+                html.Button(id=self.ids("show_map"), children="Show stddev map"),
                 dcc.Dropdown(
                     id=self.ids("stddev-surface"),
                     options=[
@@ -310,7 +329,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         wcc.Graph(id=self.ids("graph")),
                     ],
                 ),
-            ],
+            ]
         )
 
     @staticmethod
@@ -346,9 +365,9 @@ class WellCrossSectionFMU(WebvizPluginABC):
             # Sort selected surfaces
             surfacenames = [name for name in self.surfacenames if name in surfacenames]
             surfacefiles = [
-                self.surfacefiles[surfacenames.index(name)] for name in surfacenames
+                self.surfacefiles[self.surfacenames.index(name)]
+                for name in surfacenames
             ]
-
             well = load_well(str(get_path(well)))
             xsect = XSectionFigure(
                 well=well,
@@ -356,50 +375,16 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 zmax=self.zmax,
                 nextend=int(nextend),
                 sampling=int(sampling),
+                surfacenames=self.surfacenames,
+                surfacecolors=self.colors,
             )
 
-            colors = [
-                "#1f77b4",  # muted blue
-                "#ff7f0e",  # safety orange
-                "#2ca02c",  # cooked asparagus green
-                "#d62728",  # brick red
-                "#9467bd",  # muted purple
-                "#8c564b",  # chestnut brown
-                "#e377c2",  # raspberry yogurt pink
-                "#7f7f7f",  # middle gray
-                "#bcbd22",  # curry yellow-green
-                "#17becf",  # blue-teal
-                "#1f77b4",  # muted blue
-                "#ff7f0e",  # safety orange
-                "#2ca02c",  # cooked asparagus green
-                "#d62728",  # brick red
-                "#9467bd",  # muted purple
-                "#8c564b",  # chestnut brown
-                "#e377c2",  # raspberry yogurt pink
-                "#7f7f7f",  # middle gray
-                "#bcbd22",  # curry yellow-green
-                "#17becf",  # blue-teal
-                "#1f77b4",  # muted blue
-                "#ff7f0e",  # safety orange
-                "#2ca02c",  # cooked asparagus green
-                "#d62728",  # brick red
-                "#9467bd",  # muted purple
-                "#8c564b",  # chestnut brown
-                "#e377c2",  # raspberry yogurt pink
-                "#7f7f7f",  # middle gray
-                "#bcbd22",  # curry yellow-green
-                "#17becf",  # blue-teal
-            ]
-
-            for i, surfacefile in enumerate(surfacefiles):
+            for surfacename, surfacefile in zip(surfacenames, surfacefiles):
                 stat_surfs = calculate_surface_statistics(
                     self.realizations, ensemble, surfacefile, self.surfacefolder
                 )
                 xsect.plot_statistical_surface(
-                    stat_surfs,
-                    name=surfacenames[i],
-                    color=colors[i],
-                    fill="show_surface_fill" in options,
+                    stat_surfs, name=surfacename, fill="show_surface_fill" in options
                 )
 
             if "show_seismic" in options:
@@ -410,6 +395,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
             )
+            xsect.layout.update(self.plotly_theme["layout"])
             xsect.layout["margin"] = {"t": 0}
             return {"data": xsect.data, "layout": xsect.layout}
 
@@ -455,7 +441,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             )["stddev"]
 
             surface_layer = make_surface_layer(
-                surface, name=surfacename, hillshading=True,
+                surface, name=surfacename, hillshading=True
             )
             return [surface_layer, well_layer], "keep"
 

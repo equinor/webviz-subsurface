@@ -27,6 +27,7 @@ class XSectionFigure:
         nextend=5,
         zonelogshift=0,
         surfacenames=None,
+        surfacecolors=None,
         cube=None,
         grid=None,
         gridproperty=None,
@@ -40,6 +41,7 @@ class XSectionFigure:
         self._sampling = sampling
         self._surfaces = surfaces
         self._surfacenames = surfacenames
+        self._surfacecolors = surfacecolors
         self._cube = cube
         self._grid = grid
         self._gridproperty = gridproperty
@@ -85,9 +87,7 @@ class XSectionFigure:
                 raise ValueError("Input well is None")  # should be more flexible
         return self._fence
 
-    def plot_well(
-        self, zonelogname="ZONELOG", facieslogname=None, zonemin=0,
-    ):
+    def plot_well(self, zonelogname="ZONELOG", facieslogname=None, zonemin=0):
         """Input an XTGeo Well object and plot it."""
         well = self._well
 
@@ -343,7 +343,7 @@ class XSectionFigure:
         )
 
     def plot_surfaces(
-        self, fill=False, surfaces=None, surfacenames=None,
+        self, fill=False, surfaces=None, surfacenames=None
     ):  # pylint: disable=too-many-branches, too-many-statements
 
         """Input a surface list (ordered from top to base) , and plot them."""
@@ -367,7 +367,10 @@ class XSectionFigure:
                 }
             )
 
-    def plot_statistical_surface(self, surface_statistics, name, color, fill=False):
+    def plot_statistical_surface(self, surface_statistics, name, fill=False):
+        color = self._surfacecolors[
+            self._surfacenames.index(name) % len(self._surfacecolors)
+        ]
         fill_color = hex_to_rgb(color, 0.3)
         line_color = hex_to_rgb(color, 1)
         self.data.extend(
