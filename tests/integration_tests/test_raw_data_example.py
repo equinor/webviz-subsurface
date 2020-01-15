@@ -27,7 +27,7 @@ def test_full_example(dash_duo, tmp_path):
         "inplacevolumesonebyone",
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
-        "parameterdistribution",
+        # "parameterdistribution",
         "parametercorrelation",
         "reservoirsimulationtimeseries",
         "last_page",
