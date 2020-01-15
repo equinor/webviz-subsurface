@@ -1,12 +1,10 @@
 from uuid import uuid4
 from pathlib import Path
-import json
-import numpy as np
+from typing import List
 import pandas as pd
 
 from matplotlib.colors import ListedColormap
 import xtgeo
-import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -15,22 +13,23 @@ import dash_core_components as dcc
 # pylint: disable=no-name-in-module
 from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
+from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
-from webviz_subsurface_components import LayeredMap
 
 from .._datainput.seismic import load_cube_data
-from .._datainput.surface import get_surface_arr, make_surface_layer, get_surface_fence
-from .._datainput.image_processing import array_to_png, get_colormap
+from .._datainput.surface import make_surface_layer, get_surface_fence
 
 
-class SeismicFence(WebvizPluginABC):
-    """### SeismicFence
+class SeismicCrossSection(WebvizPluginABC):
+    """### SeismicCrossSection
 
 
 
 * `segyfiles`: List of file paths to segyfiles
+* `segyfiles`: Corresponding list of displayed surface names
 * `surfacefiles`: List of file paths to surfaces
+* `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
@@ -38,16 +37,35 @@ class SeismicFence(WebvizPluginABC):
     def __init__(
         self,
         app,
-        segyfiles: list,
-        surfacefiles: list,
+        segyfiles: List[Path],
+        surfacefiles: List[Path],
+        surfacenames: list = None,
+        segynames: list = None,
         zunit="depth (m)",
         colors: list = None,
     ):
 
         super().__init__()
         self.zunit = zunit
-        self.segyfiles = segyfiles
-        self.surfacefiles = surfacefiles
+        self.segyfiles = [str(segyfile) for segyfile in segyfiles]
+        self.surfacefiles = [str(surffile) for surffile in surfacefiles]
+        if surfacenames:
+            if len(surfacenames) != len(surfacefiles):
+                raise ValueError(
+                    "List of surface names specified should be same length as list of surfacefiles"
+                )
+            self.surfacenames = surfacenames
+        else:
+            self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
+        if segynames:
+            if len(segynames) != len(segyfiles):
+                raise ValueError(
+                    "List of surface names specified should be same length as list of segyfiles"
+                )
+            self.segynames = segynames
+        else:
+            self.segynames = [Path(segyfile).stem for segyfile in segyfiles]
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.initial_colors = (
             colors
             if colors
@@ -131,10 +149,12 @@ class SeismicFence(WebvizPluginABC):
                                 dcc.Dropdown(
                                     id=self.ids("surface"),
                                     options=[
-                                        {"label": Path(cube).stem, "value": cube}
-                                        for cube in self.surfacefiles
+                                        {"label": name, "value": str(path)}
+                                        for name, path in zip(
+                                            self.surfacenames, self.surfacefiles
+                                        )
                                     ],
-                                    value=self.surfacefiles[0],
+                                    value=str(self.surfacefiles[0]),
                                     clearable=False,
                                 ),
                             ]
@@ -176,8 +196,6 @@ class SeismicFence(WebvizPluginABC):
             ]
         )
 
-        return
-
     @property
     def seismic_layout(self):
         """Layout for color and other settings"""
@@ -195,10 +213,10 @@ class SeismicFence(WebvizPluginABC):
                                 dcc.Dropdown(
                                     id=self.ids("cube"),
                                     options=[
-                                        {"label": Path(cube).stem, "value": cube}
+                                        {"label": Path(cube).stem, "value": str(cube)}
                                         for cube in self.segyfiles
                                     ],
-                                    value=self.segyfiles[0],
+                                    value=str(self.segyfiles[0]),
                                     clearable=False,
                                 ),
                             ]
@@ -271,10 +289,11 @@ class SeismicFence(WebvizPluginABC):
                 Input(self.ids("color-scale"), "colorscale"),
             ],
         )
-        def render_surface(
+        def _render_surface(
             surfacepath, surface_type, cubepath, color_values, colorscale
         ):
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)), cubepath)
+
+            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
             hillshading = True
             min_val = None
             max_val = None
@@ -309,17 +328,19 @@ class SeismicFence(WebvizPluginABC):
                 Input(self.ids("color-scale"), "colorscale"),
             ],
         )
-        def render_fence(coords, cubepath, surfacepath, color_values, colorscale):
+        def _render_fence(coords, cubepath, surfacepath, color_values, colorscale):
             if not coords:
                 raise PreventUpdate
             cube = load_cube_data(get_path(cubepath))
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)), cubepath)
+
+            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,
                 s_arr=s_arr,
+                s_name=surfacepath,
                 colorscale=colorscale,
                 xmin=hmin,
                 xmax=hmax,
@@ -330,7 +351,6 @@ class SeismicFence(WebvizPluginABC):
                 xaxis_title="Distance along fence",
                 yaxis_title=self.zunit,
             )
-            raise PreventUpdate
 
         @app.callback(
             [
@@ -342,9 +362,9 @@ class SeismicFence(WebvizPluginABC):
             [Input(self.ids("color-range-btn"), "n_clicks")],
             [State(self.ids("cube"), "value")],
         )
-        def update_color_slider(clicks, cubepath):
-            cube = load_cube_data(get_path(cubepath))
+        def _update_color_slider(_clicks, cubepath):
 
+            cube = load_cube_data(get_path(cubepath))
             minv = float(f"{round(cube.values.min(), 2):2f}")
             maxv = float(f"{round(cube.values.max(), 2):2f}")
             value = [minv, maxv]
@@ -358,7 +378,7 @@ class SeismicFence(WebvizPluginABC):
         ]
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-locals
 def make_heatmap(
     arr,
     s_arr,
@@ -375,8 +395,6 @@ def make_heatmap(
     uirevision=None,
     showscale=True,
     reverse_y=True,
-    xaxis=None,
-    yaxis=None,
     text=None,
     title=None,
     yaxis_title=None,
@@ -385,7 +403,6 @@ def make_heatmap(
 
     x_inc = (xmax - xmin) / arr.shape[1]
     y_inc = (ymax - ymin) / arr.shape[0]
-    """Createst heatmap plot"""
     colors = (
         [[i / (len(colorscale) - 1), color] for i, color in enumerate(colorscale)]
         if colorscale
@@ -395,6 +412,7 @@ def make_heatmap(
         "data": [
             {
                 "type": "heatmap",
+                "name": "seismic",
                 "text": text if text else None,
                 "z": arr.tolist(),
                 "x0": xmin,
@@ -413,6 +431,7 @@ def make_heatmap(
                 "type": "line",
                 "y": s_arr[:, 2],
                 "x": s_arr[:, 3],
+                "name": s_name,
                 "marker": {"color": s_color},
             },
         ],

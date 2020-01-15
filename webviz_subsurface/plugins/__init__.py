@@ -38,7 +38,7 @@ from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
 )
 from ._segy_viewer import SegyViewer
-from ._seismic_fence import SeismicFence
+from ._seismic_cross_section import SeismicCrossSection
 from ._well_cross_section import WellCrossSection
 
 
@@ -55,6 +55,6 @@ __all__ = [
     "ReservoirSimulationTimeSeries",
     "ReservoirSimulationTimeSeriesOneByOne",
     "SegyViewer",
-    "SeismicFence",
+    "SeismicCrossSection",
     "WellCrossSection",
 ]
