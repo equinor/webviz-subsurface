@@ -38,5 +38,4 @@ def test_basic_example(dash_duo, tmp_path):
         dash_duo.wait_for_element(f"#{page}").click()
 
         if dash_duo.get_logs() != []:
-            print(page)
-            raise AssertionError(page)
+            raise AssertionError(dash_duo.get_logs())
