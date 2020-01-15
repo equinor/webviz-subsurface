@@ -9,9 +9,6 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-
-# pylint: disable=no-name-in-module
-from dash_colorscales import DashColorscales
 import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
@@ -228,7 +225,7 @@ class SeismicCrossSection(WebvizPluginABC):
                                     style={"textAlign": "center"},
                                     children="Set colorscale",
                                 ),
-                                DashColorscales(
+                                wcc.Colorscales(
                                     id=self.ids("color-scale"),
                                     colorscale=self.initial_colors,
                                     nSwatches=12,
