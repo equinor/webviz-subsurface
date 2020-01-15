@@ -225,7 +225,7 @@ class SeismicCrossSection(WebvizPluginABC):
                                     style={"textAlign": "center"},
                                     children="Set colorscale",
                                 ),
-                                wcc.Colorscales(
+                                wcc.ColorScales(
                                     id=self.ids("color-scale"),
                                     colorscale=self.initial_colors,
                                     nSwatches=12,
