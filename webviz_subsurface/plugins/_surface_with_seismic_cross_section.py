@@ -1,8 +1,8 @@
 from uuid import uuid4
 from pathlib import Path
 from typing import List
-import pandas as pd
 
+import pandas as pd
 from matplotlib.colors import ListedColormap
 import xtgeo
 from dash.exceptions import PreventUpdate
@@ -48,7 +48,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zunit = zunit
         self.segyfiles = [str(segyfile) for segyfile in segyfiles]
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
-        if surfacenames:
+        if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
                 raise ValueError(
                     "List of surface names specified should be same length as list of surfacefiles"
@@ -56,7 +56,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
-        if segynames:
+        if segynames is not None:
             if len(segynames) != len(segyfiles):
                 raise ValueError(
                     "List of surface names specified should be same length as list of segyfiles"
@@ -67,7 +67,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.initial_colors = (
             colors
-            if colors
+            if colors is not None
             else [
                 "#67001f",
                 "#ab152a",
@@ -486,10 +486,17 @@ def get_path(path) -> Path:
 
 def get_fencespec(coords):
     """Create a XTGeo fence spec from polyline coordinates"""
-    coords_dict = [{"X_UTME": c[1], "Y_UTMN": c[0], "Z_TVDSS": 0} for c in coords]
-    df = pd.DataFrame().from_dict(coords_dict)
-    df["POLY_ID"] = 1
-    df["NAME"] = "test"
     poly = xtgeo.Polygons()
-    poly.dataframe = df
+    poly.dataframe = pd.DataFrame(
+        [
+            {
+                "X_UTME": c[1],
+                "Y_UTMN": c[0],
+                "Z_TVDSS": 0,
+                "POLY_ID": 1,
+                "NAME": "polyline",
+            }
+            for c in coords
+        ]
+    )
     return poly.get_fence(asnumpy=True)
