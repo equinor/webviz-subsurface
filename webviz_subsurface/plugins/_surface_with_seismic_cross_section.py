@@ -25,8 +25,8 @@ This plugin visualizes surfaces in a map view and seismic in a cross section vie
 The cross section is defined by a polyline interactively edited in the map view.
 
 
-* `segyfiles`: List of file paths to segyfiles
-* `segyfiles`: Corresponding list of displayed surface names
+* `segyfiles`: List of file paths to SEG-Y files
+* `segynames`: Corresponding list of displayed seismic names
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
@@ -158,12 +158,12 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 dcc.Dropdown(
                                     id=self.ids("surface"),
                                     options=[
-                                        {"label": name, "value": str(path)}
+                                        {"label": name, "value": path}
                                         for name, path in zip(
                                             self.surfacenames, self.surfacefiles
                                         )
                                     ],
-                                    value=str(self.surfacefiles[0]),
+                                    value=self.surfacefiles[0],
                                     clearable=False,
                                 ),
                             ]
@@ -229,10 +229,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 dcc.Dropdown(
                                     id=self.ids("cube"),
                                     options=[
-                                        {"label": Path(cube).stem, "value": str(cube)}
+                                        {"label": Path(cube).stem, "value": cube}
                                         for cube in self.segyfiles
                                     ],
-                                    value=str(self.segyfiles[0]),
+                                    value=self.segyfiles[0],
                                     clearable=False,
                                 ),
                             ]
@@ -370,7 +370,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             return make_heatmap(
                 values,
                 s_arr=s_arr,
-                s_name=surfacepath,
+                s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
                 colorscale=colorscale,
                 xmin=hmin,
                 xmax=hmax,
@@ -395,8 +395,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         def _update_color_slider(_clicks, cubepath):
 
             cube = load_cube_data(get_path(cubepath))
-            minv = float(f"{round(cube.values.min(), 2):2f}")
-            maxv = float(f"{round(cube.values.max(), 2):2f}")
+            minv = float(f"{cube.values.min():2f}")
+            maxv = float(f"{cube.values.max():2f}")
             value = [minv, maxv]
             step = (maxv - minv) / 100
             return minv, maxv, value, step
