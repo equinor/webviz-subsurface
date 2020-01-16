@@ -40,7 +40,6 @@ install:
   - export PATH=$PATH:$PWD
 
 script:
-  - pip install dash~=1.7.0
   - pip install .
   - pip install .[tests]
   - pip install dash[testing]

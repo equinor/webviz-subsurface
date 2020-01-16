@@ -45,7 +45,7 @@ setup(
         # webviz-subsurface-components is part of the webviz-subsurface project,
         # just located in a separate repository for convenience,
         # and is therefore pinned exactly here:
-        "webviz-subsurface-components==0.0.16",
+        "webviz-subsurface-components==0.0.18",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
