@@ -32,7 +32,8 @@ setup(
             "ReservoirSimulationTimeSeriesOneByOne = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
-            "SeismicCrossSection = webviz_subsurface.plugins:SeismicCrossSection",
+            "SurfaceWithSeismicCrossSection = "
+            + "webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
         ]
     },
