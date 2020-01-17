@@ -35,7 +35,7 @@ def make_surface_layer(
     max_val=None,
     color="viridis",
     hillshading=False,
-    unit="m",
+    unit="",
 ):
     """Make LayeredMap surface image base layer"""
     arr = get_surface_arr(surface)
