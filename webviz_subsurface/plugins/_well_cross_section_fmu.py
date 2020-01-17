@@ -174,7 +174,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         options=[
                             {"label": name, "value": name} for name in self.surfacenames
                         ],
-                        value=self.surfacenames[0],
+                        value=self.surfacenames,
                         clearable=False,
                         multi=True,
                     ),

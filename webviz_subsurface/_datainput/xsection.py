@@ -373,18 +373,29 @@ class XSectionFigure:
         ]
         fill_color = hex_to_rgb(color, 0.3)
         line_color = hex_to_rgb(color, 1)
+        x_arr = surface_statistics["mean"].get_randomline(self.fence).copy()[:, 0]
+        stat = {
+            key: surface_statistics[key].get_randomline(self.fence).copy()[:, 1]
+            for key in ["maximum", "minimum", "p90", "p10", "mean", "stddev"]
+        }
         self.data.extend(
             [
                 {
                     "name": name,
                     "hovertext": "Maximum",
-                    "y": surface_statistics["maximum"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 1],
-                    "x": surface_statistics["maximum"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 0],
+                    "y": stat["maximum"],
+                    "x": x_arr,
                     "mode": "lines",
+                    "hovertext": [
+                        f"Minimum: {stat['minimum'][i]:.2f} <br>"
+                        f"P10: {stat['p10'][i]:.2f} <br>"
+                        f"Mean: {stat['mean'][i]:.2f} <br>"
+                        f"P90: {stat['p90'][i]:.2f} <br>"
+                        f"Maximum: {stat['maximum'][i]:.2f} <br>"
+                        f"Std.Dev: {stat['stddev'][i]:.2f}"
+                        for i, _ in enumerate(x_arr)
+                    ],
+                    "hoverinfo": "text+name",
                     "line": {"width": 0 if fill else 1, "color": line_color},
                     "legendgroup": name,
                     "showlegend": False,
@@ -392,13 +403,10 @@ class XSectionFigure:
                 {
                     "name": name,
                     "hovertext": "P10",
-                    "y": surface_statistics["p10"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 1],
-                    "x": surface_statistics["p10"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 0],
+                    "y": stat["p10"],
+                    "x": x_arr,
                     "mode": "lines",
+                    "hoverinfo": "skip",
                     "fill": "tonexty" if fill else None,
                     "fillcolor": fill_color,
                     "line": {"width": 0 if fill else 1, "color": line_color},
@@ -408,13 +416,10 @@ class XSectionFigure:
                 {
                     "name": name,
                     "hovertext": "Mean",
-                    "y": surface_statistics["mean"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 1],
-                    "x": surface_statistics["mean"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 0],
+                    "y": stat["mean"],
+                    "x": x_arr,
                     "mode": "lines",
+                    "hoverinfo": "skip",
                     "fill": "tonexty" if fill else None,
                     "fillcolor": fill_color,
                     "line": {"color": line_color},
@@ -424,13 +429,10 @@ class XSectionFigure:
                 {
                     "name": name,
                     "hovertext": "P90",
-                    "y": surface_statistics["p90"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 1],
-                    "x": surface_statistics["p90"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 0],
+                    "y": stat["p90"],
+                    "x": x_arr,
                     "mode": "lines",
+                    "hoverinfo": "skip",
                     "fill": "tonexty" if fill else None,
                     "fillcolor": fill_color,
                     "line": {"width": 0 if fill else 1, "color": line_color},
@@ -440,13 +442,10 @@ class XSectionFigure:
                 {
                     "name": name,
                     "hovertext": "Minimum",
-                    "y": surface_statistics["minimum"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 1],
-                    "x": surface_statistics["minimum"]
-                    .get_randomline(self.fence)
-                    .copy()[:, 0],
+                    "y": stat["minimum"],
+                    "x": x_arr,
                     "mode": "lines",
+                    "hoverinfo": "skip",
                     "fill": "tonexty" if fill else None,
                     "fillcolor": fill_color,
                     "line": {"width": 0 if fill else 1, "color": line_color},
