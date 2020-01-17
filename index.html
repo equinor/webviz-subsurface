@@ -583,6 +583,32 @@ a FMU ensemble.</p>
 <hr>
 
 
+<h3>SurfaceWithGridCrossSection</h3>
+<p>This plugin visualizes surfaces in a map view and grid parameters in a cross section view.
+The cross section is defined by a polyline interactively edited in the map view.</p>
+<p>NOTE: This is an experimental plugin exploring how we can visualize 3D grid data in Webviz.
+The performance is currently slow for large grids.</p>
+<ul>
+<li><code>gridfile</code>: Path to grid geometry (ROFF format)</li>
+<li><code>gridparameterfiles</code>: List of file paths to grid parameters (ROFF format)</li>
+<li><code>gridparameternames</code>: Corresponding list of displayed parameter names</li>
+<li><code>surfacefiles</code>: List of file paths to Irap Binary surfaces</li>
+<li><code>surfacenames</code>: Corresponding list of displayed surface names</li>
+<li><code>zunit</code>: z-unit for display</li>
+<li><code>colors</code>: List of colors to use</li>
+</ul>
+<pre><code class="yaml">    - SurfaceWithGridCrossSection:
+        gridfile: some value
+        gridparameterfiles: some value
+        surfacefiles: some value
+        gridparameternames: None  # Optional (default value shown here).
+        surfacenames: None  # Optional (default value shown here).
+        zunit: depth (m)  # Optional (default value shown here).
+        colors: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>SurfaceWithSeismicCrossSection</h3>
 <p>This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.</p>
