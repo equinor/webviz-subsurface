@@ -32,6 +32,8 @@ setup(
             "ReservoirSimulationTimeSeriesOneByOne = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
+            "SurfaceWithSeismicCrossSection = "
+            + "webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
         ]
@@ -45,7 +47,7 @@ setup(
         # webviz-subsurface-components is part of the webviz-subsurface project,
         # just located in a separate repository for convenience,
         # and is therefore pinned exactly here:
-        "webviz-subsurface-components==0.0.16",
+        "webviz-subsurface-components==0.0.19",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
