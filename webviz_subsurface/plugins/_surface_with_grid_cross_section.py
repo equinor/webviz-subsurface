@@ -103,7 +103,7 @@ The performance is currently slow for large grids.
             {
                 "id": self.ids("layout"),
                 "content": (
-                    "Plugin to display surfaces and random lines from a seismic cube. "
+                    "Plugin to display surfaces and random lines from a 3D grid parameter. "
                 ),
             },
             {"id": self.ids("surface"), "content": ("The visualized surface."),},
@@ -117,7 +117,7 @@ The performance is currently slow for large grids.
             {
                 "id": self.ids("fence-view"),
                 "content": (
-                    "Cross section view of the seismic cube along the edited line. "
+                    "Cross section view of the grid parameter along the edited line. "
                     "The view is empty until a random line is drawn in the map view."
                 ),
             },
@@ -125,10 +125,13 @@ The performance is currently slow for large grids.
                 "id": self.ids("surface-type"),
                 "content": (
                     "Display the z-value of the surface (e.g. depth) or "
-                    "the seismic value where the surface intersect the seismic cube."
+                    "the grid parameter value where the surface intersect the grid."
                 ),
             },
-            {"id": self.ids("cube"), "content": "The visualized cube.",},
+            {
+                "id": self.ids("gridparameter"),
+                "content": "The visualized grid parameter.",
+            },
             {
                 "id": self.ids("color-scale"),
                 "content": ("Click this button to change colorscale"),
@@ -186,7 +189,7 @@ The performance is currently slow for large grids.
                                             "value": "surface",
                                         },
                                         {
-                                            "label": "Display seismic attribute as z-value",
+                                            "label": "Display grid parameter value",
                                             "value": "attribute",
                                         },
                                     ],
