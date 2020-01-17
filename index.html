@@ -583,6 +583,28 @@ a FMU ensemble.</p>
 <hr>
 
 
+<h3>SurfaceWithSeismicCrossSection</h3>
+<p>This plugin visualizes surfaces in a map view and seismic in a cross section view.
+The cross section is defined by a polyline interactively edited in the map view.</p>
+<ul>
+<li><code>segyfiles</code>: List of file paths to SEG-Y files</li>
+<li><code>segynames</code>: Corresponding list of displayed seismic names</li>
+<li><code>surfacefiles</code>: List of file paths to Irap Binary surfaces</li>
+<li><code>surfacenames</code>: Corresponding list of displayed surface names</li>
+<li><code>zunit</code>: z-unit for display</li>
+<li><code>colors</code>: List of colors to use</li>
+</ul>
+<pre><code class="yaml">    - SurfaceWithSeismicCrossSection:
+        segyfiles: some value
+        surfacefiles: some value
+        surfacenames: None  # Optional (default value shown here).
+        segynames: None  # Optional (default value shown here).
+        zunit: depth (m)  # Optional (default value shown here).
+        colors: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>WellCrossSection</h3>
 <pre><code>Displays a cross section along a well with intersected surfaces,
 and optionally seismic cubes.
