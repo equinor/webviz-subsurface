@@ -402,9 +402,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             return minv, maxv, value, step
 
     def add_webvizstore(self):
-        return [(get_path, [{"path": fn}]) for fn in self.segyfiles] + [
-            (get_path, [{"path": fn}]) for fn in self.surfacefiles
-        ]
+        return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
 
 
 # pylint: disable=too-many-arguments, too-many-locals
