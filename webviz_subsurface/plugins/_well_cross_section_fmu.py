@@ -19,7 +19,7 @@ from webviz_config.common_cache import CACHE
 from .._datainput.fmu_input import get_realizations
 from .._datainput.xsection import XSectionFigure
 from .._datainput.seismic import load_cube_data
-from .._datainput.well import load_well, make_well_layer
+from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer
 
 # pylint: disable=too-many-instance-attributes
@@ -116,7 +116,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
-        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else None
+        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
 
         self.zonelog = zonelog
 
@@ -166,6 +166,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
     @property
     def surface_names_layout(self):
         return html.Div(
+            style=self.set_style(marginTop="20px"),
             children=html.Label(
                 children=[
                     html.Span("Surface:", style={"font-weight": "bold"}),
@@ -179,12 +180,13 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         multi=True,
                     ),
                 ]
-            )
+            ),
         )
 
     @property
     def ensemble_layout(self):
         return html.Div(
+            style=self.set_style(marginTop="20px"),
             children=html.Label(
                 children=[
                     html.Span("Ensemble:", style={"font-weight": "bold"}),
@@ -199,35 +201,35 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         multi=False,
                     ),
                 ]
-            )
+            ),
         )
 
     @property
     def seismic_layout(self):
-        if self.segyfiles is not None:
-            return (
-                html.Div(
-                    style={} if self.segyfiles else {"display": "none"},
-                    children=html.Label(
-                        children=[
-                            html.Span("Seismic:", style={"font-weight": "bold"}),
-                            dcc.Dropdown(
-                                id=self.ids("cube"),
-                                options=[
-                                    {"label": Path(segy).stem, "value": segy}
-                                    for segy in self.segyfiles
-                                ],
-                                value=self.segyfiles[0],
-                                clearable=False,
-                            ),
-                        ]
-                    ),
+        if self.segyfiles:
+            return html.Div(
+                style=self.set_style(marginTop="20px")
+                if self.segyfiles
+                else {"display": "none"},
+                children=html.Label(
+                    children=[
+                        html.Span("Seismic:", style={"font-weight": "bold"}),
+                        dcc.Dropdown(
+                            id=self.ids("cube"),
+                            options=[
+                                {"label": Path(segy).stem, "value": segy}
+                                for segy in self.segyfiles
+                            ],
+                            value=self.segyfiles[0],
+                            clearable=False,
+                        ),
+                    ]
                 ),
             )
         return html.Div(id=self.ids("cube"))
 
     @property
-    def viz_options_layout(self):
+    def intersection_option(self):
         options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
         value = ["show_surface_fill"]
         if self.segyfiles is not None:
@@ -236,48 +238,41 @@ class WellCrossSectionFMU(WebvizPluginABC):
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
             value.append("show_zonelog")
 
-        return dcc.Checklist(id=self.ids("options"), options=options, value=value)
-
-    @property
-    def well_options(self):
         return html.Div(
-            style={"marginLeft": "20px", "marginRight": "0px", "marginBotton": "0px"},
+            style=self.set_style(marginTop="20px"),
             children=[
+                html.Label("Intersection settings", style={"font-weight": "bold"}),
                 html.Div(
-                    children=html.Label(
-                        children=[
-                            html.Span("Sampling:", style={"font-weight": "bold"}),
-                            dcc.Input(
-                                id=self.ids("sampling"),
-                                debounce=True,
-                                type="number",
-                                value=self.sampling,
-                            ),
-                        ]
-                    )
+                    style=self.set_grid_layout("1fr 1fr"),
+                    children=[
+                        html.Label("Sampling"),
+                        html.Label("Extension"),
+                        dcc.Input(
+                            id=self.ids("sampling"),
+                            debounce=True,
+                            type="number",
+                            value=self.sampling,
+                        ),
+                        dcc.Input(
+                            id=self.ids("nextend"),
+                            debounce=True,
+                            type="number",
+                            value=self.nextend,
+                        ),
+                    ],
                 ),
-                html.Div(
-                    children=html.Label(
-                        children=[
-                            html.Span("Nextend:", style={"font-weight": "bold"}),
-                            dcc.Input(
-                                id=self.ids("nextend"),
-                                debounce=True,
-                                type="number",
-                                value=self.nextend,
-                            ),
-                        ]
-                    )
-                ),
+                dcc.Checklist(id=self.ids("options"), options=options, value=value),
             ],
         )
 
     @property
-    def map_layout(self):
+    def stddev_map_layout(self):
         return html.Div(
-            style=self.set_grid_layout("1fr 1fr"),
+            style=self.set_style(columns="1fr 1fr", width="50%", marginLeft="50px"),
             children=[
-                html.Button(id=self.ids("show_map"), children="Show stddev map"),
+                html.Button(
+                    id=self.ids("show_map"), children="Show standard deviation"
+                ),
                 dcc.Dropdown(
                     id=self.ids("stddev-surface"),
                     options=[
@@ -293,20 +288,16 @@ class WellCrossSectionFMU(WebvizPluginABC):
     @property
     def layout(self):
         return html.Div(
+            style=self.set_style(columns="1fr 8fr"),
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr 1fr 1fr 1fr 1fr"),
                     children=[
                         self.well_layout,
-                        self.well_options,
-                        html.Div(self.seismic_layout),
-                        self.viz_options_layout,
-                        self.map_layout,
+                        self.surface_names_layout,
+                        self.seismic_layout,
+                        self.ensemble_layout,
+                        self.intersection_option,
                     ],
-                ),
-                html.Div(
-                    style=self.set_grid_layout("1fr 1fr 1fr 1fr 1fr"),
-                    children=[self.surface_names_layout, self.ensemble_layout],
                 ),
                 html.Div(
                     id=self.ids("viz_wrapper"),
@@ -326,24 +317,42 @@ class WellCrossSectionFMU(WebvizPluginABC):
                                 height=400, id=self.ids("map"), layers=[]
                             ),
                         ),
+                        self.stddev_map_layout,
                         wcc.Graph(id=self.ids("graph")),
+                        dcc.Store(id=self.ids("fencespec"), data=[]),
                     ],
                 ),
-            ]
+            ],
         )
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_style(columns=None, **kwargs):
+        if columns is not None:
+            return {
+                "display": "grid",
+                "alignContent": "space-around",
+                "justifyContent": "space-between",
+                "gridTemplateColumns": f"{columns}",
+                **kwargs,
+            }
+        return {**kwargs}
+
+    @staticmethod
+    def set_grid_layout(columns, **kwargs):
         return {
             "display": "grid",
             "alignContent": "space-around",
             "justifyContent": "space-between",
             "gridTemplateColumns": f"{columns}",
+            **kwargs,
         }
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("graph"), "figure"),
+            [
+                Output(self.ids("graph"), "figure"),
+                Output(self.ids("fencespec"), "data"),
+            ],
             [
                 Input(self.ids("surfacenames"), "value"),
                 Input(self.ids("ensembles"), "value"),
@@ -397,7 +406,8 @@ class WellCrossSectionFMU(WebvizPluginABC):
             )
             xsect.layout.update(self.plotly_theme["layout"])
             xsect.layout["margin"] = {"t": 0}
-            return {"data": xsect.data, "layout": xsect.layout}
+            fencespec = [[coord[0], coord[1]] for coord in xsect.fence]
+            return {"data": xsect.data, "layout": xsect.layout}, fencespec
 
         @app.callback(
             [
@@ -422,17 +432,20 @@ class WellCrossSectionFMU(WebvizPluginABC):
         @app.callback(
             [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
             [
-                Input(self.ids("wells"), "value"),
+                Input(self.ids("fencespec"), "data"),
                 Input(self.ids("stddev-surface"), "value"),
                 Input(self.ids("ensembles"), "value"),
             ],
         )
-        def _render_surface(wellfile, surfacename, ensemble):
+        def _render_surface(fencespec, surfacename, ensemble):
             """Update map"""
-            wellname = Path(wellfile).stem
-            wellfile = get_path(wellfile)
-            well = load_well(str(wellfile))
-            well_layer = make_well_layer(well, wellname)
+            intersect_layer = {
+                "name": "Well",
+                "checked": True,
+                "base_layer": False,
+                "data": [{"type": "polyline", "color": "red", "positions": fencespec,}],
+            }
+
             surface = get_surface_statistics(
                 self.realizations,
                 ensemble,
@@ -443,7 +456,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             surface_layer = make_surface_layer(
                 surface, name=surfacename, hillshading=True
             )
-            return [surface_layer, well_layer], "keep"
+            return [surface_layer, intersect_layer], "keep"
 
     def add_webvizstore(self):
         stat_functions = []

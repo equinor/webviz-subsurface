@@ -382,7 +382,6 @@ class XSectionFigure:
             [
                 {
                     "name": name,
-                    "hovertext": "Maximum",
                     "y": stat["maximum"],
                     "x": x_arr,
                     "mode": "lines",
