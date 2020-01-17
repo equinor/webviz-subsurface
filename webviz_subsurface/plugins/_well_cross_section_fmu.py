@@ -2,11 +2,9 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import io
-import glob
-import pickle
+import json
 
 import numpy as np
-
 import xtgeo
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
@@ -24,7 +22,7 @@ from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well, make_well_layer
 from .._datainput.surface import make_surface_layer
 
-
+# pylint: too-many-instance-attributes
 class WellCrossSectionFMU(WebvizPluginABC):
     """### WellCrossSection
     Displays a cross section along a well with intersected statistical surfaces,
@@ -86,7 +84,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
             )
         self.wellfiles = (
-            glob.glob(str(wellfolder / wellsuffix))
+            [str(well) for well in wellfolder.glob(f"*{wellsuffix}")]
             if wellfolder
             else [str(well) for well in wellfiles]
         )
@@ -380,7 +378,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             )
 
             for surfacename, surfacefile in zip(surfacenames, surfacefiles):
-                stat_surfs = calculate_surface_statistics(
+                stat_surfs = get_surface_statistics(
                     self.realizations, ensemble, surfacefile, self.surfacefolder
                 )
                 xsect.plot_statistical_surface(
@@ -433,7 +431,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             wellfile = get_path(wellfile)
             well = load_well(str(wellfile))
             well_layer = make_well_layer(well, wellname)
-            surface = calculate_surface_statistics(
+            surface = get_surface_statistics(
                 self.realizations,
                 ensemble,
                 self.surfacefiles[self.surfacenames.index(surfacename)],
@@ -451,7 +449,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             for surfacefile in self.surfacefiles:
                 stat_functions.append(
                     (
-                        get_surface_statistics,
+                        calculate_surface_statistics,
                         [
                             {
                                 "realdf": self.realizations,
@@ -482,7 +480,9 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
 
 @webvizstore
-def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder) -> io.BytesIO:
+def calculate_surface_statistics(
+    realdf, ensemble, surfacefile, surfacefolder
+) -> io.BytesIO:
     real_paths = list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
     fns = [
         str(Path(Path(real_path) / Path(surfacefolder) / Path(surfacefile)))
@@ -491,24 +491,46 @@ def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder) -> io.B
     surfaces = get_surfaces(fns)
 
     return io.BytesIO(
-        pickle.dumps(
+        json.dumps(
             {
-                "mean": surfaces.apply(np.nanmean, axis=0),
-                "maximum": surfaces.apply(np.nanmax, axis=0),
-                "minimum": surfaces.apply(np.nanmin, axis=0),
-                "p10": surfaces.apply(np.nanpercentile, 10, axis=0),
-                "p90": surfaces.apply(np.nanpercentile, 90, axis=0),
-                "stddev": surfaces.apply(np.nanstd, axis=0),
+                "mean": surface_to_json(surfaces.apply(np.nanmean, axis=0)),
+                "maximum": surface_to_json(surfaces.apply(np.nanmax, axis=0)),
+                "minimum": surface_to_json(surfaces.apply(np.nanmin, axis=0)),
+                "p10": surface_to_json(surfaces.apply(np.nanpercentile, 10, axis=0)),
+                "p90": surface_to_json(surfaces.apply(np.nanpercentile, 90, axis=0)),
+                "stddev": surface_to_json(surfaces.apply(np.nanstd, axis=0)),
             }
-        )
+        ).encode()
     )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
-    return pickle.loads(
-        get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder).read()
+def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
+    surfaces = json.load(
+        calculate_surface_statistics(realdf, ensemble, surfacefile, surfacefolder)
     )
+    return {
+        statistic: surface_from_json(surface) for statistic, surface in surfaces.items()
+    }
+
+
+def surface_to_json(surface):
+    return json.dumps(
+        {
+            "ncol": surface.ncol,
+            "nrow": surface.nrow,
+            "xori": surface.xori,
+            "yori": surface.yori,
+            "rotation": surface.rotation,
+            "xinc": surface.xinc,
+            "yinc": surface.yinc,
+            "values": surface.values.tolist(),
+        }
+    )
+
+
+def surface_from_json(surfaceobj):
+    return xtgeo.RegularSurface(**json.loads(surfaceobj))
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
