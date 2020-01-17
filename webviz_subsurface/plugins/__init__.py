@@ -38,6 +38,7 @@ from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
 )
 from ._segy_viewer import SegyViewer
+from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._well_cross_section import WellCrossSection
 
@@ -55,6 +56,7 @@ __all__ = [
     "ReservoirSimulationTimeSeries",
     "ReservoirSimulationTimeSeriesOneByOne",
     "SegyViewer",
+    "SurfaceWithGridCrossSection",
     "SurfaceWithSeismicCrossSection",
     "WellCrossSection",
 ]
