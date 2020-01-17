@@ -29,13 +29,13 @@ def test_basic_example(dash_duo, tmp_path):
         "inplacevolumes",
         "reservoirsimulationtimeseries",
         "reservoirsimulationtimeseries_with_options_set",
-        "parameterdistribution",
+        # "parameterdistribution",
         "morris_plot",
         "grid_viewer",
         "seg-y_viewer",
         "last_page",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
-
-    if dash_duo.get_logs() != []:
-        raise AssertionError()
+        logs = dash_duo.get_logs()
+        if logs != []:
+            raise AssertionError(logs)
