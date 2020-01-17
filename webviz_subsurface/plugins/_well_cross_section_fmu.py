@@ -116,7 +116,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
-        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
+        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else None
 
         self.zonelog = zonelog
 
@@ -204,33 +204,35 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
     @property
     def seismic_layout(self):
-        return html.Div(
-            style={} if self.segyfiles else {"display": "none"},
-            children=html.Label(
-                children=[
-                    html.Span("Seismic:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.ids("cube"),
-                        options=[
-                            {"label": Path(segy).stem, "value": segy}
-                            for segy in self.segyfiles
+        if self.segyfiles is not None:
+            return (
+                html.Div(
+                    style={} if self.segyfiles else {"display": "none"},
+                    children=html.Label(
+                        children=[
+                            html.Span("Seismic:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("cube"),
+                                options=[
+                                    {"label": Path(segy).stem, "value": segy}
+                                    for segy in self.segyfiles
+                                ],
+                                value=self.segyfiles[0],
+                                clearable=False,
+                            ),
                         ]
-                        if self.segyfiles
-                        else None,
-                        value=self.segyfiles[0] if self.segyfiles else None,
-                        clearable=False,
                     ),
-                ]
-            ),
-        )
+                ),
+            )
+        return html.Div(id=self.ids("cube"))
 
     @property
     def viz_options_layout(self):
         options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
         value = ["show_surface_fill"]
-        if self.segyfiles:
+        if self.segyfiles is not None:
             options.append({"label": "Show seismic", "value": "show_seismic"})
-        if self.zonelog:
+        if self.zonelog is not None:
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
             value.append("show_zonelog")
 
@@ -460,8 +462,9 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         ],
                     )
                 )
-        for filename in self.segyfiles:
-            stat_functions.append((get_path, [{"path": filename}]))
+        if self.segyfiles is not None:
+            for filename in self.segyfiles:
+                stat_functions.append((get_path, [{"path": filename}]))
         for filename in self.wellfiles:
             stat_functions.append((get_path, [{"path": filename}]))
 
