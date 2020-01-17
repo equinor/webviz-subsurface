@@ -24,6 +24,8 @@ class SurfaceWithGridCrossSection(WebvizPluginABC):
 This plugin visualizes surfaces in a map view and grid parameters in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
 
+NOTE: This is an experimental plugin exploring how we can visualize 3D grid data in Webviz.
+The performance is currently slow for large grids.
 
 * `gridfile`: Path to grid geometry (ROFF format)
 * `gridparameterfiles`: List of file paths to grid parameters (ROFF format)
