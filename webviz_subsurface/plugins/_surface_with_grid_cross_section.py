@@ -45,7 +45,6 @@ The performance is currently slow for large grids.
         surfacefiles: List[Path],
         gridparameternames: list = None,
         surfacenames: list = None,
-        segynames: list = None,
         zunit="depth (m)",
         colors: list = None,
     ):
