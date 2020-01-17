@@ -7,10 +7,10 @@ env:
     - secure: "sLDLwUOpGnqaJwG7NkpHVUZ0v4A60utj1XS4WV8WVWgiyENkgLgdRP4AKhyx3rZtARbfItrUaaIIdKVbGK0E/neZt1Q+2yqBS16ikQAZ7iISCzugx9hXCxHV7GSsK5mdwrqRhjS0LGxFbT5ust5FZEdeaqily/XpU7fi3BpRLL2L3t30CCLle1kUJSfxt0ocYaCenI3peVTnauUSkjQCFc8rwAyGgCxw6u6sX6S5Rfd1rK/fiCdKzkv2yXs+9D6U8tqC1vFIq0FDhe9nSMkMiYEWJpcwKoEOU4451Y+sz0I21ckD6YOurmXOPPQipOpYdGDPbgJ5Q9YR3mVUgJrEOByGWWSz8CEdSMpK2ZplRqitEXr5o0BgJA/PbmT8wAh7sp/d9lLWtx0piMzpymaZHvyafX/A/xeXDHrsR/5yFwldf3e9DbVbOc+BWvY8AALAWm9ac0GdlglRpLjuRV8RxO/YkLXEjVHa+7Dz2KjIbozEQQvZ1anWxjBK/5Q6QyhGncW+N//CTcxAzYF8/PtyRGdjcLsj8COlMk6gTtqXZLYEs++DfQtH3+8q5MyeuyChG+A9wn35AP8heUVFG73xA8rVSzoM6gzkCc27u7eo3ugEhRvXygz6gLSl0PaGqVvi3F0v7Id6tlhlBz6mdOGUdUR1eMOBBEPkMJLXBnFvtV0="
     # If you want the CI to (temporarily) run against your fork of the testdada,
     # change the value her from "equinor" to your username.
-    - TESTDATA_REPO_OWNER="equinor"
+    - TESTDATA_REPO_OWNER="hanskallekleiv"
     # If you want the CI to (temporarily) run against another branch than master,
     # change the value her from "master" to the relevant branch name.
-    - TESTDATA_REPO_BRANCH="master"
+    - TESTDATA_REPO_BRANCH="wellcross-fmu"
 
 addons:
   chrome: stable

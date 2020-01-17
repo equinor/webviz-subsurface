@@ -22,7 +22,7 @@ from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well, make_well_layer
 from .._datainput.surface import make_surface_layer
 
-# pylint: too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 class WellCrossSectionFMU(WebvizPluginABC):
     """### WellCrossSection
     Displays a cross section along a well with intersected statistical surfaces,
