@@ -83,9 +83,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
             raise ValueError(
                 'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
             )
+        self.wellfolder = wellfolder
+        self.wellsuffix = wellsuffix
         self.wellfiles = (
-            [str(well) for well in wellfolder.glob(f"*{wellsuffix}")]
-            if wellfolder
+            json.load(find_files(wellfolder, wellsuffix))
+            if wellfolder is not None
             else [str(well) for well in wellfiles]
         )
 
@@ -232,7 +234,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
     def intersection_option(self):
         options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
         value = ["show_surface_fill"]
-        if self.segyfiles is not None:
+        if self.segyfiles:
             options.append({"label": "Show seismic", "value": "show_seismic"})
         if self.zonelog is not None:
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
@@ -459,10 +461,10 @@ class WellCrossSectionFMU(WebvizPluginABC):
             return [surface_layer, intersect_layer], "keep"
 
     def add_webvizstore(self):
-        stat_functions = []
+        store_functions = []
         for ens in list(self.realizations["ENSEMBLE"].unique()):
             for surfacefile in self.surfacefiles:
-                stat_functions.append(
+                store_functions.append(
                     (
                         calculate_surface_statistics,
                         [
@@ -477,11 +479,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 )
         if self.segyfiles is not None:
             for filename in self.segyfiles:
-                stat_functions.append((get_path, [{"path": filename}]))
+                store_functions.append((get_path, [{"path": filename}]))
         for filename in self.wellfiles:
-            stat_functions.append((get_path, [{"path": filename}]))
+            store_functions.append((get_path, [{"path": filename}]))
 
-        stat_functions.append(
+        store_functions.append(
             (
                 get_realizations,
                 [
@@ -492,7 +494,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 ],
             )
         )
-        return stat_functions
+        if self.wellfolder is not None:
+            store_functions.append(
+                (find_files, [{"folder": self.wellfolder, "suffix": self.wellsuffix}])
+            )
+        return store_functions
 
 
 @webvizstore
@@ -557,3 +563,12 @@ def get_surfaces(fns):
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
+
+
+@webvizstore
+def find_files(folder, suffix) -> io.BytesIO:
+    return io.BytesIO(
+        json.dumps(
+            sorted([str(filename) for filename in folder.glob(f"*{suffix}")])
+        ).encode()
+    )
