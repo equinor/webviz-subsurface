@@ -232,7 +232,10 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
     @property
     def intersection_option(self):
-        options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
+        options = [
+            {"label": "Keep zoom state", "value": "keep_zoom_state"},
+            {"label": "Show surface fill", "value": "show_surface_fill"},
+        ]
         value = ["show_surface_fill"]
         if self.segyfiles:
             options.append({"label": "Show seismic", "value": "show_seismic"})
@@ -406,10 +409,13 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
             )
-            xsect.layout.update(self.plotly_theme["layout"])
-            xsect.layout["margin"] = {"t": 0}
+            layout = xsect.layout
+            layout.update(self.plotly_theme["layout"])
+            layout["margin"] = {"t": 0}
+            if "keep_zoom_state" in options:
+                layout["uirevision"] = "keep"
             fencespec = [[coord[0], coord[1]] for coord in xsect.fence]
-            return {"data": xsect.data, "layout": xsect.layout}, fencespec
+            return {"data": xsect.data, "layout": layout}, fencespec
 
         @app.callback(
             [
