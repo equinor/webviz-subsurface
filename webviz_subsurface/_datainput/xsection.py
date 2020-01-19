@@ -42,7 +42,23 @@ class XSectionFigure:
         self._sampling = sampling
         self._surfaces = surfaces
         self._surfacenames = surfacenames
-        self._surfacecolors = surfacecolors
+        self._surfacecolors = (
+            surfacecolors
+            if surfacecolors is not None
+            else [
+                "#1f77b4",  # muted blue
+                "#ff7f0e",  # safety orange
+                "#2ca02c",  # cooked asparagus green
+                "#d62728",  # brick red
+                "#9467bd",  # muted purple
+                "#8c564b",  # chestnut brown
+                "#e377c2",  # raspberry yogurt pink
+                "#7f7f7f",  # middle gray
+                "#bcbd22",  # curry yellow-green
+                "#17becf",  # blue-teal
+            ]
+        )
+
         self._cube = cube
         self._grid = grid
         self._gridproperty = gridproperty
