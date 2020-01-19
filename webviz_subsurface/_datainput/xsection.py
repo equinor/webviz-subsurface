@@ -1,4 +1,5 @@
 import numpy.ma as ma
+import numpy as np
 
 
 class XSectionFigure:
@@ -132,38 +133,6 @@ class XSectionFigure:
     def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zonemin):
         """Plot the zone log as colored segments."""
 
-        colors = [
-            "#1f77b4",  # muted blue
-            "#ff7f0e",  # safety orange
-            "#2ca02c",  # cooked asparagus green
-            "#d62728",  # brick red
-            "#9467bd",  # muted purple
-            "#8c564b",  # chestnut brown
-            "#e377c2",  # raspberry yogurt pink
-            "#7f7f7f",  # middle gray
-            "#bcbd22",  # curry yellow-green
-            "#17becf",  # blue-teal
-            "#1f77b4",  # muted blue
-            "#ff7f0e",  # safety orange
-            "#2ca02c",  # cooked asparagus green
-            "#d62728",  # brick red
-            "#9467bd",  # muted purple
-            "#8c564b",  # chestnut brown
-            "#e377c2",  # raspberry yogurt pink
-            "#7f7f7f",  # middle gray
-            "#bcbd22",  # curry yellow-green
-            "#17becf",  # blue-teal
-            "#1f77b4",  # muted blue
-            "#ff7f0e",  # safety orange
-            "#2ca02c",  # cooked asparagus green
-            "#d62728",  # brick red
-            "#9467bd",  # muted purple
-            "#8c564b",  # chestnut brown
-            "#e377c2",  # raspberry yogurt pink
-            "#7f7f7f",  # middle gray
-            "#bcbd22",  # curry yellow-green
-            "#17becf",  # blue-teal
-        ]
         if zonelogname not in df.columns:
             return
 
@@ -175,17 +144,25 @@ class XSectionFigure:
             zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
         )
         zomax = int(df[zonelogname].max())
-        for i, zone in enumerate(range(zomin, zomax + 1)):
 
+        # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:])[0]
+        for transition in zone_transitions:
+            if transition != len(zonevals) - 1:
+                zvals = np.insert(zvals, transition, zvals[transition + 1])
+                hvals = np.insert(hvals, transition, hvals[transition + 1])
+                zonevals = np.insert(zonevals, transition, zonevals[transition])
+
+        for i, zone in enumerate(range(zomin, zomax + 1)):
             zvals_copy = ma.masked_where(zonevals != zone, zvals)
             hvals_copy = ma.masked_where(zonevals != zone, hvals)
-
+            color = self._surfacecolors[i % len(self._surfacecolors)]
             self._data.append(
                 {
                     "x": hvals_copy,
                     "y": zvals_copy,
-                    "line": {"width": 10, "color": colors[i]},
-                    "fillcolor": colors[i],
+                    "line": {"width": 10, "color": color},
+                    "fillcolor": color,
                     "marker": {"opacity": 0.5},
                     # "connectgaps": True,
                     "name": f"Zone: {zone}",
@@ -367,15 +344,24 @@ class XSectionFigure:
                 }
             )
 
-    def plot_statistical_surface(self, surface_statistics, name, fill=False):
+    def plot_statistical_surface(
+        self, statistical_surfaces: dict, name: str, fill: bool = False
+    ):
+        """Plot statistical surfaces (p10/p90/min/max/mean) as fanchart
+
+        Args:
+            statistical_surfaces: Dict of xtgeo surfaces
+            name: Name of surface (e.g. horizon name)
+            fill: Toggles fill between surfaces
+        """
         color = self._surfacecolors[
             self._surfacenames.index(name) % len(self._surfacecolors)
         ]
         fill_color = hex_to_rgb(color, 0.3)
         line_color = hex_to_rgb(color, 1)
-        x_arr = surface_statistics["mean"].get_randomline(self.fence).copy()[:, 0]
+        x_arr = statistical_surfaces["mean"].get_randomline(self.fence).copy()[:, 0]
         stat = {
-            key: surface_statistics[key].get_randomline(self.fence).copy()[:, 1]
+            key: statistical_surfaces[key].get_randomline(self.fence).copy()[:, 1]
             for key in ["maximum", "minimum", "p90", "p10", "mean", "stddev"]
         }
         self.data.extend(
@@ -401,7 +387,6 @@ class XSectionFigure:
                 },
                 {
                     "name": name,
-                    "hovertext": "P10",
                     "y": stat["p10"],
                     "x": x_arr,
                     "mode": "lines",
@@ -414,7 +399,6 @@ class XSectionFigure:
                 },
                 {
                     "name": name,
-                    "hovertext": "Mean",
                     "y": stat["mean"],
                     "x": x_arr,
                     "mode": "lines",
@@ -427,7 +411,6 @@ class XSectionFigure:
                 },
                 {
                     "name": name,
-                    "hovertext": "P90",
                     "y": stat["p90"],
                     "x": x_arr,
                     "mode": "lines",
@@ -440,7 +423,6 @@ class XSectionFigure:
                 },
                 {
                     "name": name,
-                    "hovertext": "Minimum",
                     "y": stat["minimum"],
                     "x": x_arr,
                     "mode": "lines",
