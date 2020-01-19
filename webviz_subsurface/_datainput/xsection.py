@@ -146,13 +146,14 @@ class XSectionFigure:
         zomax = int(df[zonelogname].max())
 
         # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
-        zone_transitions = np.where(zonevals[:-1] != zonevals[1:])[0]
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:])
         for transition in zone_transitions:
-            if transition != len(zonevals) - 1:
+            try:
                 zvals = np.insert(zvals, transition, zvals[transition + 1])
                 hvals = np.insert(hvals, transition, hvals[transition + 1])
                 zonevals = np.insert(zonevals, transition, zonevals[transition])
-
+            except IndexError:
+                pass
         for i, zone in enumerate(range(zomin, zomax + 1)):
             zvals_copy = ma.masked_where(zonevals != zone, zvals)
             hvals_copy = ma.masked_where(zonevals != zone, hvals)
