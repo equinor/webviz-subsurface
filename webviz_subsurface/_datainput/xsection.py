@@ -130,16 +130,14 @@ class XSectionFigure:
 
         # ax.plot(hvals_copy, zvals_copy, linewidth=6, c="black")
 
-    def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zonemin):
+    def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zomin=-999):
         """Plot the zone log as colored segments."""
 
         if zonelogname not in df.columns:
             return
 
         zonevals = df[zonelogname].values
-        zomin = zonemin
         zomax = 0
-
         zomin = (
             zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
         )
@@ -165,7 +163,7 @@ class XSectionFigure:
                     "line": {"width": 10, "color": color},
                     "fillcolor": color,
                     "marker": {"opacity": 0.5},
-                    # "connectgaps": True,
+                    "showlegend": False,
                     "name": f"Zone: {zone}",
                 }
             )
