@@ -64,6 +64,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
         wellsuffix: str = ".w",
         segyfiles: List[Path] = None,
         zonelog: str = None,
+        marginal_logs: list = None,
         zunit="depth (m)",
         zmin: float = None,
         zmax: float = None,
@@ -75,11 +76,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
 
         super().__init__()
 
-        if wellfiles and wellfolder:
-            raise ValueError(
-                'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
-            )
-        if not wellfiles and not wellfolder:
+        if wellfiles is not None == wellfolder is not None:
             raise ValueError(
                 'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
             )
@@ -111,15 +108,14 @@ class WellCrossSectionFMU(WebvizPluginABC):
         self.realizations = get_realizations(
             ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
         )
-
+        self.marginal_logs = marginal_logs
         self.zunit = zunit
         self.sampling = sampling
         self.nextend = nextend
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
-        self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
-
+        self.segyfiles = [] if segyfiles is None else [str(segy) for segy in segyfiles]
         self.zonelog = zonelog
 
         self.colors = (
@@ -139,6 +135,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
             ]
         )
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.colors = self.plotly_theme["layout"]["colorway"]
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -178,7 +175,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                             {"label": name, "value": name} for name in self.surfacenames
                         ],
                         value=self.surfacenames,
-                        clearable=False,
+                        clearable=True,
                         multi=True,
                     ),
                 ]
@@ -231,6 +228,27 @@ class WellCrossSectionFMU(WebvizPluginABC):
         return html.Div(id=self.ids("cube"))
 
     @property
+    def marginal_log_layout(self):
+        if self.marginal_logs is not None:
+            return html.Div(
+                children=html.Label(
+                    children=[
+                        html.Span("Marginal log:", style={"font-weight": "bold"}),
+                        dcc.Dropdown(
+                            id=self.ids("marginal-log"),
+                            options=[
+                                {"label": log, "value": log}
+                                for log in self.marginal_logs
+                            ],
+                            placeholder="Display log",
+                            clearable=True,
+                        ),
+                    ]
+                ),
+            )
+        return html.Div(id=self.ids("marginal-log"))
+
+    @property
     def intersection_option(self):
         options = [
             {"label": "Keep zoom state", "value": "keep_zoom_state"},
@@ -271,19 +289,33 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
 
     @property
-    def stddev_map_layout(self):
+    def map_layout(self):
         return html.Div(
-            style=self.set_style(columns="1fr 1fr", width="50%", marginLeft="50px"),
+            style=self.set_style(columns="2fr 1fr"),
             children=[
-                html.Button(
-                    id=self.ids("show_map"), children="Show standard deviation"
-                ),
                 dcc.Dropdown(
-                    id=self.ids("stddev-surface"),
+                    id=self.ids("surface-name"),
                     options=[
                         {"label": name, "value": name} for name in self.surfacenames
                     ],
                     value=self.surfacenames[0],
+                    clearable=False,
+                    multi=False,
+                ),
+                dcc.Dropdown(
+                    id=self.ids("surface-type"),
+                    options=[
+                        {"label": name, "value": name}
+                        for name in [
+                            "stddev",
+                            "mean",
+                            "p10",
+                            "p90",
+                            "minimum",
+                            "maximum",
+                        ]
+                    ],
+                    value="stddev",
                     clearable=False,
                     multi=False,
                 ),
@@ -301,6 +333,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         self.surface_names_layout,
                         self.seismic_layout,
                         self.ensemble_layout,
+                        self.marginal_log_layout,
                         self.intersection_option,
                     ],
                 ),
@@ -308,22 +341,28 @@ class WellCrossSectionFMU(WebvizPluginABC):
                     id=self.ids("viz_wrapper"),
                     style={"position": "relative"},
                     children=[
+                        html.Div(wcc.Graph(id=self.ids("graph"))),
                         html.Div(
                             id=self.ids("map_wrapper"),
                             style={
                                 "position": "absolute",
                                 "width": "30%",
                                 "height": "40%",
-                                "right": 0,
+                                "right": 100,
+                                "top": 350,
                                 "zIndex": 10000,
                                 "visibility": "hidden",
                             },
-                            children=LayeredMap(
-                                height=400, id=self.ids("map"), layers=[]
-                            ),
+                            children=[
+                                self.map_layout,
+                                LayeredMap(height=400, id=self.ids("map"), layers=[]),
+                            ],
                         ),
-                        self.stddev_map_layout,
-                        wcc.Graph(id=self.ids("graph")),
+                        html.Button(
+                            style={"float": "right"},
+                            id=self.ids("show_map"),
+                            children="Show map",
+                        ),
                         dcc.Store(id=self.ids("fencespec"), data=[]),
                     ],
                 ),
@@ -366,10 +405,11 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 Input(self.ids("options"), "value"),
                 Input(self.ids("sampling"), "value"),
                 Input(self.ids("nextend"), "value"),
+                Input(self.ids("marginal-log"), "value"),
             ],
         )
         def _render_section(
-            surfacenames, ensemble, well, cube, options, sampling, nextend
+            surfacenames, ensemble, well, cube, options, sampling, nextend, marginal_log
         ):
             """Update cross section"""
             # Ensure list
@@ -391,6 +431,8 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 sampling=int(sampling),
                 surfacenames=self.surfacenames,
                 surfacecolors=self.colors,
+                show_marginal=marginal_log is not None,
+                zunit=self.zunit,
             )
 
             for surfacename, surfacefile in zip(surfacenames, surfacefiles):
@@ -408,10 +450,10 @@ class WellCrossSectionFMU(WebvizPluginABC):
             xsect.plot_well(
                 zonelogname=self.zonelog if "show_zonelog" in options else None,
                 zonemin=self.zonemin,
+                marginal_log=marginal_log,
             )
             layout = xsect.layout
             layout.update(self.plotly_theme["layout"])
-            layout["margin"] = {"t": 0}
             if "keep_zoom_state" in options:
                 layout["uirevision"] = "keep"
             fencespec = [[coord[0], coord[1]] for coord in xsect.fence]
@@ -427,25 +469,25 @@ class WellCrossSectionFMU(WebvizPluginABC):
         )
         def _show_map(nclicks, style):
             """Show/hide map on button click"""
-            btn = "Show Stddev Map"
+
             if not nclicks:
                 raise PreventUpdate
             if nclicks % 2:
                 style["visibility"] = "visible"
-                btn = "Hide Map"
-            else:
-                style["visibility"] = "hidden"
-            return style, btn
+                return style, "Hide Map"
+            style["visibility"] = "hidden"
+            return style, "Show map"
 
         @app.callback(
             [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
             [
                 Input(self.ids("fencespec"), "data"),
-                Input(self.ids("stddev-surface"), "value"),
+                Input(self.ids("surface-name"), "value"),
+                Input(self.ids("surface-type"), "value"),
                 Input(self.ids("ensembles"), "value"),
             ],
         )
-        def _render_surface(fencespec, surfacename, ensemble):
+        def _render_surface(fencespec, surfacename, surfacetype, ensemble):
             """Update map"""
             intersect_layer = {
                 "name": "Well",
@@ -459,7 +501,7 @@ class WellCrossSectionFMU(WebvizPluginABC):
                 ensemble,
                 self.surfacefiles[self.surfacenames.index(surfacename)],
                 self.surfacefolder,
-            )["stddev"]
+            )[surfacetype]
 
             surface_layer = make_surface_layer(
                 surface, name=surfacename, hillshading=True
@@ -467,7 +509,9 @@ class WellCrossSectionFMU(WebvizPluginABC):
             return [surface_layer, intersect_layer], "keep"
 
     def add_webvizstore(self):
-        store_functions = []
+        store_functions = [
+            (get_path, [{"path": fn}]) for fn in self.segyfiles + self.wellfiles
+        ]
         for ens in list(self.realizations["ENSEMBLE"].unique()):
             for surfacefile in self.surfacefiles:
                 store_functions.append(
@@ -483,11 +527,6 @@ class WellCrossSectionFMU(WebvizPluginABC):
                         ],
                     )
                 )
-        if self.segyfiles is not None:
-            for filename in self.segyfiles:
-                store_functions.append((get_path, [{"path": filename}]))
-        for filename in self.wellfiles:
-            store_functions.append((get_path, [{"path": filename}]))
 
         store_functions.append(
             (
