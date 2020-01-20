@@ -18,7 +18,7 @@ def make_well_layer(well, name="well", zmin=0):
         "data": [
             {
                 "type": "polyline",
-                "color": "black",
+                "color": "red",
                 "positions": positions,
                 "tooltip": name,
             }
