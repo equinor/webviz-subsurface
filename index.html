@@ -663,6 +663,52 @@ and optionally seismic cubes.
 </code></pre>
 <hr>
 
+
+<h3>WellCrossSectionFMU</h3>
+<p>Well cross-section displaying statistical surfaces from a FMU ensemble.</p>
+<p>Statistical surfaces are calculated automatically from surfaces stored
+per realization.</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+<li><code>surfacefiles</code>: Surface file names (without folder)</li>
+<li><code>surfacenames</code>: Corresponding list of displayed surface names</li>
+<li><code>surfacefolder</code>: Realization relative folder containing the surface files</li>
+<li><code>surfacenames</code>: Surface names for visualization</li>
+<li><code>wellfiles</code>: List of file paths to RMS wells</li>
+<li><code>wellfolder</code>: Alternatively provide a folder with RMS wells</li>
+<li><code>wellsuffix</code>: File suffix for wells in well folder.</li>
+<li><code>segyfiles</code>: List of file paths to segyfiles</li>
+<li><code>zunit</code>: z-unit for display</li>
+<li><code>zonelog</code>: Name of zonelog in wellfiles (displayed along well trajectory)</li>
+<li><code>marginal_logs</code>: Logs to be displayed in separate horizontal plot</li>
+<li><code>zmin</code>: Visualized minimum z-value in cross section</li>
+<li><code>zmax</code>: Visualized maximum z-value in cross section</li>
+<li><code>zonemin</code>: First zonenumber to draw in log</li>
+<li><code>sampling</code>: Horizontal sampling interval</li>
+<li><code>nextend</code>: Horizontal extension beyond well path (0 is no extension)</li>
+<li><code>colors</code>: List of colors corresponding to surfaces</li>
+</ul>
+<pre><code class="yaml">    - WellCrossSectionFMU:
+        ensembles: some value
+        surfacefiles: some value
+        surfacenames: None  # Optional (default value shown here).
+        surfacefolder: share/results/maps  # Optional (default value shown here).
+        wellfiles: None  # Optional (default value shown here).
+        wellfolder: None  # Optional (default value shown here).
+        wellsuffix: .w  # Optional (default value shown here).
+        segyfiles: None  # Optional (default value shown here).
+        zonelog: None  # Optional (default value shown here).
+        marginal_logs: None  # Optional (default value shown here).
+        zunit: depth (m)  # Optional (default value shown here).
+        zmin: None  # Optional (default value shown here).
+        zmax: None  # Optional (default value shown here).
+        zonemin: 1  # Optional (default value shown here).
+        nextend: 2  # Optional (default value shown here).
+        sampling: 40  # Optional (default value shown here).
+        colors: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
 </div>
 
 </div>
