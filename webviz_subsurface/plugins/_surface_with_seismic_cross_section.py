@@ -1,6 +1,7 @@
 from uuid import uuid4
 from pathlib import Path
 from typing import List
+import math
 
 import pandas as pd
 from matplotlib.colors import ListedColormap
@@ -398,7 +399,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             minv = float(f"{cube.values.min():2f}")
             maxv = float(f"{cube.values.max():2f}")
             value = [minv, maxv]
-            step = (maxv - minv) / 100
+            step = 10 ** math.floor(math.log10((maxv - minv) / 100))
             return minv, maxv, value, step
 
     def add_webvizstore(self):

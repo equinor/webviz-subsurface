@@ -1,6 +1,7 @@
 from uuid import uuid4
 from pathlib import Path
 from typing import List
+import math
 
 import pandas as pd
 from matplotlib.colors import ListedColormap
@@ -417,7 +418,7 @@ The performance is currently slow for large grids.
             minv = float(f"{gridparameter.values.min():2f}")
             maxv = float(f"{gridparameter.values.max():2f}")
             value = [minv, maxv]
-            step = (maxv - minv) / 100
+            step = 10 ** math.floor(math.log10((maxv - minv) / 100))
             return minv, maxv, value, step
 
     def add_webvizstore(self):
