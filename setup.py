@@ -37,6 +37,7 @@ setup(
             "SurfaceWithSeismicCrossSection = "
             + "webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
+            "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
         ]
     },
     install_requires=[
@@ -44,7 +45,7 @@ setup(
         "matplotlib~=3.0",
         "pillow~=6.1",
         "xtgeo~=2.1",
-        "webviz-config>=0.0.41",
+        "webviz-config>=0.0.43",
         # webviz-subsurface-components is part of the webviz-subsurface project,
         # just located in a separate repository for convenience,
         # and is therefore pinned exactly here:
