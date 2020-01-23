@@ -165,35 +165,17 @@ another_property:
             ],
         )
 
-    @property
-    def name_selector(self):
+    def selector(self, wrapper_id, dropdown_id, title, btn_prev, btn_next):
         return html.Div(
-            id=self.name_wrapper_id,
+            id=wrapper_id,
             style={"display": "none"},
             children=[
-                html.H6("Surface name"),
+                html.H6(title),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
-                        dcc.Dropdown(id=self.name_id, clearable=False),
-                        self.make_buttons(self.name_id_btn_prev, self.name_id_btn_next),
-                    ],
-                ),
-            ],
-        )
-
-    @property
-    def date_selector(self):
-        return html.Div(
-            id=self.date_wrapper_id,
-            style={"display": "none"},
-            children=[
-                html.H6("Date"),
-                html.Div(
-                    style=self.set_grid_layout("6fr 1fr"),
-                    children=[
-                        dcc.Dropdown(id=self.date_id, clearable=False),
-                        self.make_buttons(self.date_id_btn_prev, self.date_id_btn_next),
+                        dcc.Dropdown(id=dropdown_id, clearable=False),
+                        self.make_buttons(btn_prev, btn_next),
                     ],
                 ),
             ],
@@ -304,8 +286,20 @@ another_property:
                     style=self.set_grid_layout("1fr"),
                     children=[
                         self.attribute_selector,
-                        self.name_selector,
-                        self.date_selector,
+                        self.selector(
+                            self.name_wrapper_id,
+                            self.name_id,
+                            "Surface name",
+                            self.name_id_btn_prev,
+                            self.name_id_btn_next,
+                        ),
+                        self.selector(
+                            self.date_wrapper_id,
+                            self.date_id,
+                            "Date",
+                            self.date_id_btn_prev,
+                            self.date_id_btn_next,
+                        ),
                     ],
                 ),
                 self.ensemble_selector,
