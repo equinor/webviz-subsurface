@@ -71,107 +71,72 @@ and scatter plot for any given pair of parameters.
 
     @property
     def control_div(self):
-        return html.Div(
-            style={"padding-top": 10},
-            children=[
-                html.Div(
-                    children=[
-                        html.Label(
-                            "Set ensemble in all plots:", style={"font-weight": "bold"}
-                        ),
-                        html.Div(
-                            style={
-                                "padding-bottom": 20,
-                                "display": "grid",
-                                "grid-template-columns": "1fr 4fr",
-                            },
-                            children=[
-                                Widgets.dropdown_from_dict(
-                                    self.ids("ensemble-all"), self.ensembles
-                                )
-                            ],
-                        ),
-                        html.Label(
-                            "Parameter horisontal axis:", style={"font-weight": "bold"}
-                        ),
-                        html.Div(
-                            style={
-                                "padding-bottom": 20,
-                                "display": "grid",
-                                "grid-template-columns": "4fr 1fr",
-                            },
-                            children=[
-                                dcc.Dropdown(
-                                    id=self.ids("parameter1"),
-                                    options=[
-                                        {"label": p, "value": p} for p in self.p_cols
-                                    ],
-                                    value=self.p_cols[0],
-                                    clearable=False,
-                                ),
-                                Widgets.dropdown_from_dict(
-                                    self.ids("ensemble-1"), self.ensembles
-                                ),
-                            ],
-                        ),
-                        html.Label(
-                            "Parameter vertical axis:", style={"font-weight": "bold"}
-                        ),
-                        html.Div(
-                            style={
-                                "padding-bottom": 20,
-                                "display": "grid",
-                                "grid-template-columns": "4fr 1fr",
-                            },
-                            children=[
-                                dcc.Dropdown(
-                                    id=self.ids("parameter2"),
-                                    options=[
-                                        {"label": p, "value": p} for p in self.p_cols
-                                    ],
-                                    value=self.p_cols[0],
-                                    clearable=False,
-                                ),
-                                Widgets.dropdown_from_dict(
-                                    self.ids("ensemble-2"), self.ensembles
-                                ),
-                            ],
-                        ),
-                        html.Label("Color scatter by:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id=self.ids("scatter-color"),
-                            options=[{"label": p, "value": p} for p in self.p_cols],
-                        ),
-                    ]
-                ),
-                html.Div(
-                    style={"padding-top": 20,},
-                    children=[
-                        dcc.Checklist(
-                            id=self.ids("density"),
-                            options=[
-                                {
-                                    "label": "Show scatterplot density",
-                                    "value": "density",
-                                }
-                            ],
-                        ),
-                    ],
-                ),
-            ],
-        )
+        return [
+            html.Div(
+                style={"padding": "5px"},
+                children=[
+                    html.Label(
+                        "Set ensemble in all plots:", style={"font-weight": "bold"},
+                    ),
+                    Widgets.dropdown_from_dict(
+                        self.ids("ensemble-all"), self.ensembles
+                    ),
+                ],
+            ),
+            html.Div(
+                style={"padding": "5px"},
+                children=[
+                    html.Label(
+                        "Parameter horizontal axis:", style={"font-weight": "bold"},
+                    ),
+                    dcc.Dropdown(
+                        id=self.ids("parameter1"),
+                        options=[{"label": p, "value": p} for p in self.p_cols],
+                        value=self.p_cols[0],
+                        clearable=False,
+                    ),
+                    Widgets.dropdown_from_dict(self.ids("ensemble-1"), self.ensembles),
+                ],
+            ),
+            html.Div(
+                style={"padding": "5px"},
+                children=[
+                    html.Label(
+                        "Parameter vertical axis:", style={"font-weight": "bold"}
+                    ),
+                    dcc.Dropdown(
+                        id=self.ids("parameter2"),
+                        options=[{"label": p, "value": p} for p in self.p_cols],
+                        value=self.p_cols[0],
+                        clearable=False,
+                    ),
+                    Widgets.dropdown_from_dict(self.ids("ensemble-2"), self.ensembles),
+                ],
+            ),
+            html.Div(
+                style={"padding": "5px"},
+                children=[
+                    html.Label("Color scatter by:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids("scatter-color"),
+                        options=[{"label": p, "value": p} for p in self.p_cols],
+                    ),
+                ],
+            ),
+            dcc.Checklist(
+                id=self.ids("density"),
+                style={"padding": "5px"},
+                options=[{"label": "Show scatterplot density", "value": "density",}],
+            ),
+        ]
 
     @property
     def layout(self):
         return html.Div(
             children=[
-                html.Div(
-                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
-                    children=[html.Div(children=[self.matrix_plot]), self.control_div],
-                ),
-                html.Div(
-                    style={"display": "grid", "grid-template-columns": "3fr 2fr"},
-                    children=wcc.Graph(id=self.ids("scatter")),
+                wcc.FlexBox(self.control_div),
+                wcc.FlexBox(
+                    children=[self.matrix_plot, wcc.Graph(id=self.ids("scatter"))]
                 ),
             ]
         )

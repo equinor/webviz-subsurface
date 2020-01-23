@@ -126,7 +126,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         return html.Div(
             [
                 html.Div(
-                    style={"marginLeft": "20%"},
+                    style={"marginLeft": "10px"},
                     children=[
                         html.Label(
                             "Tornado Plot",

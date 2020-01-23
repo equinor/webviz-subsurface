@@ -266,24 +266,19 @@ per realization.
             style=self.set_style(marginTop="20px"),
             children=[
                 html.Label("Intersection settings", style={"font-weight": "bold"}),
-                html.Div(
-                    style=self.set_grid_layout("1fr 1fr"),
-                    children=[
-                        html.Label("Sampling"),
-                        html.Label("Extension"),
-                        dcc.Input(
-                            id=self.ids("sampling"),
-                            debounce=True,
-                            type="number",
-                            value=self.sampling,
-                        ),
-                        dcc.Input(
-                            id=self.ids("nextend"),
-                            debounce=True,
-                            type="number",
-                            value=self.nextend,
-                        ),
-                    ],
+                html.Label("Sampling"),
+                dcc.Input(
+                    id=self.ids("sampling"),
+                    debounce=True,
+                    type="number",
+                    value=self.sampling,
+                ),
+                html.Label("Extension"),
+                dcc.Input(
+                    id=self.ids("nextend"),
+                    debounce=True,
+                    type="number",
+                    value=self.nextend,
                 ),
                 dcc.Checklist(id=self.ids("options"), options=options, value=value),
             ],
@@ -291,8 +286,7 @@ per realization.
 
     @property
     def map_layout(self):
-        return html.Div(
-            style=self.set_style(columns="2fr 1fr"),
+        return wcc.FlexBox(
             children=[
                 dcc.Dropdown(
                     id=self.ids("surface-name"),
@@ -325,10 +319,10 @@ per realization.
 
     @property
     def layout(self):
-        return html.Div(
-            style=self.set_style(columns="1fr 8fr"),
+        return wcc.FlexBox(
             children=[
                 html.Div(
+                    style={"flex": 1},
                     children=[
                         self.well_layout,
                         self.surface_names_layout,
@@ -340,7 +334,7 @@ per realization.
                 ),
                 html.Div(
                     id=self.ids("viz_wrapper"),
-                    style={"position": "relative"},
+                    style={"position": "relative", "flex": 8},
                     children=[
                         html.Div(wcc.Graph(id=self.ids("graph"))),
                         html.Div(
@@ -381,16 +375,6 @@ per realization.
                 **kwargs,
             }
         return {**kwargs}
-
-    @staticmethod
-    def set_grid_layout(columns, **kwargs):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-            **kwargs,
-        }
 
     def set_callbacks(self, app):
         @app.callback(

@@ -257,12 +257,12 @@ class RelativePermeability(WebvizPluginABC):
 
     @property
     def layout(self):
-        return html.Div(
+        return wcc.FlexBox(
             id=self.uuid("layout"),
-            style=self.set_grid_layout("1fr 4fr", padding=10),
             children=[
                 html.Div(
                     id=self.uuid("filters"),
+                    style={"flex": "1"},
                     children=[
                         html.Label(
                             id=self.uuid("sataxis_selector"),
@@ -397,7 +397,9 @@ class RelativePermeability(WebvizPluginABC):
                         ),
                     ],
                 ),
-                html.Div([wcc.Graph(id=self.uuid("graph")),]),
+                html.Div(
+                    style={"flex": "4"}, children=wcc.Graph(id=self.uuid("graph"))
+                ),
             ],
         )
 

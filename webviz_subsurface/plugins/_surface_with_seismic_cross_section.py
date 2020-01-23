@@ -144,8 +144,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         """Layout for surface section"""
         return html.Div(
             children=[
-                html.Div(
-                    style=self.set_grid_layout("1fr 1fr"),
+                wcc.FlexBox(
                     children=[
                         html.Div(
                             children=[
@@ -170,7 +169,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                             ]
                         ),
                         html.Div(
-                            style={"marginRight": "50px", "marginLeft": "50px"},
                             children=[
                                 dcc.RadioItems(
                                     id=self.ids("surface-type"),
@@ -215,8 +213,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         """Layout for color and other settings"""
         return html.Div(
             children=[
-                html.Div(
-                    style=self.set_grid_layout("3fr 2fr"),
+                wcc.FlexBox(
                     children=[
                         html.Div(
                             children=[
@@ -255,12 +252,16 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 ),
                             ],
                         ),
+                    ]
+                ),
+                wcc.FlexBox(
+                    children=[
                         html.Div(
                             style={
                                 "marginRight": "50px",
                                 "marginTop": "20px",
-                                "marginLeft": "50px",
                                 "marginBottom": "0px",
+                                "flex": 1,
                             },
                             children=[
                                 html.Label(
@@ -276,8 +277,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 ),
                             ],
                         ),
-                        html.Button(
-                            id=self.ids("color-range-btn"), children="Reset Range"
+                        html.Div(
+                            style={"flex": 1},
+                            children=html.Button(
+                                id=self.ids("color-range-btn"), children="Reset Range"
+                            ),
                         ),
                     ],
                 ),
@@ -292,20 +296,13 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     @property
     def layout(self):
-        return html.Div(
+        return wcc.FlexBox(
             id=self.ids("layout"),
-            style=self.set_grid_layout("1fr 1fr"),
-            children=[self.surface_layout, self.seismic_layout],
+            children=[
+                html.Div(style={"flex": 1}, children=self.surface_layout),
+                html.Div(style={"flex": 1}, children=self.seismic_layout),
+            ],
         )
-
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
 
     def set_callbacks(self, app):
         @app.callback(

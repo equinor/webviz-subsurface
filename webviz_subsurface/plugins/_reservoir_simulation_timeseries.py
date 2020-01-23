@@ -337,13 +337,13 @@ Plot options:
 
     @property
     def layout(self):
-        return html.Div(
+        return wcc.FlexBox(
             id=self.ids("layout"),
-            style=self.set_grid_layout("1fr 4fr", padding=10),
             children=[
                 html.Div(
+                    style={"flex": 1},
                     children=[
-                        html.Div(children=[self.delta_layout]),
+                        self.delta_layout,
                         html.Div(
                             id=self.ids("vectors"),
                             style={"marginTop": "25px"},
@@ -417,16 +417,20 @@ Plot options:
                                 ),
                             ],
                         ),
-                    ]
+                    ],
                 ),
                 html.Div(
-                    [
-                        wcc.Graph(id=self.ids("graph")),
+                    style={"flex": 3},
+                    children=[
+                        html.Div(
+                            style={"height": "300px"},
+                            children=wcc.Graph(id=self.ids("graph"),),
+                        ),
                         dcc.Store(
                             id=self.ids("date"),
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
-                    ]
+                    ],
                 ),
             ],
         )
