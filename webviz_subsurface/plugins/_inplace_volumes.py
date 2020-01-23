@@ -261,30 +261,9 @@ but the following responses are given more descriptive names automatically:
         return dropdowns
 
     @property
-    def style_plot_options(self):
-        """Simple grid layout for the selector row"""
-        return {
-            "display": "grid",
-            "align-content": "space-around",
-            "justify-content": "space-between",
-            "grid-template-columns": "2fr 1fr 1fr 1fr",
-        }
-
-    @property
-    def style_layout(self):
-        """Simple grid layout for the main elements"""
-        return {
-            "display": "grid",
-            "align-content": "space-around",
-            "justify-content": "space-between",
-            "grid-template-columns": "5fr 1fr",
-        }
-
-    @property
     def plot_options_layout(self):
         """Row layout of dropdowns for plot options"""
-        return html.Div(
-            style=self.style_plot_options,
+        return wcc.FlexBox(
             children=[
                 html.Div(
                     children=html.Label(
@@ -341,13 +320,15 @@ but the following responses are given more descriptive names automatically:
     @property
     def layout(self):
         """Main layout"""
-        return html.Div(
+        return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
                 html.Div(
-                    style=self.style_layout,
+                    style={"flex": 5},
                     children=[
+                        self.plot_options_layout,
                         html.Div(
+<<<<<<< HEAD
                             children=[
                                 self.plot_options_layout,
                                 html.Div(
@@ -356,18 +337,31 @@ but the following responses are given more descriptive names automatically:
                                 ),
                                 html.Div(dash_table.DataTable(id=self.ids("table"))),
                             ]
+=======
+                            style={"height": 400},
+                            children=wcc.Graph(id=self.ids("graph")),
+>>>>>>> Added flexbox
                         ),
                         html.Div(
-                            children=[
-                                html.P("Filters:", style={"font-weight": "bold"}),
-                                html.Div(
-                                    id=self.ids("filters"),
-                                    children=self.selector_dropdowns,
-                                ),
-                            ]
+                            dash_table.DataTable(
+                                id=self.ids("table"),
+                                columns=[
+                                    {"name": i, "id": i}
+                                    for i in InplaceVolumes.TABLE_STATISTICS
+                                ],
+                            )
                         ),
                     ],
-                )
+                ),
+                html.Div(
+                    style={"flex": 1},
+                    children=[
+                        html.P("Filters:", style={"font-weight": "bold"}),
+                        html.Div(
+                            id=self.ids("filters"), children=self.selector_dropdowns,
+                        ),
+                    ],
+                ),
             ],
         )
 

@@ -358,25 +358,21 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             for selector in self.selectors
         ]
 
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
-
     @property
     def layout(self):
         """Main layout"""
         return html.Div(
             id=self.ids("layout"),
             children=[
+<<<<<<< HEAD
                 html.Div(
                     style=self.set_grid_layout("1fr 3fr 4fr"),
+=======
+                wcc.FlexBox(
+>>>>>>> Added flexbox
                     children=[
                         html.Div(
+                            style={"flex": 1},
                             children=[
                                 self.selector("Ensemble", "ensemble", "ENSEMBLE"),
                                 self.selector("Grid source", "source", "SOURCE"),
@@ -385,12 +381,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     id=self.ids("filters"),
                                     children=self.filter_selectors,
                                 ),
-                            ]
+                            ],
                         ),
                         html.Div(
+                            style={"flex": 3},
                             children=[
-                                html.Div(
-                                    style=self.set_grid_layout("2fr 1fr"),
+                                wcc.FlexBox(
                                     children=[
                                         self.response_selector,
                                         self.plot_selector,
@@ -407,11 +403,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     page_action="native",
                                     page_size=10,
                                 ),
-                            ]
+                            ],
                         ),
                         html.Div(
                             id=self.ids("tornado-wrapper"),
-                            style={"visibility": "visible"},
+                            style={"visibility": "visible", "flex": 2},
                             children=[self.tornadoplot.layout],
                         ),
                     ],
