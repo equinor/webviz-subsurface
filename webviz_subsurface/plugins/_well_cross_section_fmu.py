@@ -556,7 +556,6 @@ def calculate_surface_statistics(
         for real_path in real_paths
     ]
     surfaces = get_surfaces(fns)
-
     return io.BytesIO(
         json.dumps(
             {
@@ -582,6 +581,8 @@ def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
 
 
 def surface_to_json(surface):
+    values = surface.values
+    values = values.filled(np.nan)
     return json.dumps(
         {
             "ncol": surface.ncol,
@@ -591,7 +592,7 @@ def surface_to_json(surface):
             "rotation": surface.rotation,
             "xinc": surface.xinc,
             "yinc": surface.yinc,
-            "values": surface.values.tolist(),
+            "values": values.tolist(),
         }
     )
 
