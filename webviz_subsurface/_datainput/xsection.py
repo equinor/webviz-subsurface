@@ -213,7 +213,7 @@ class XSectionFigure:
                 1,
             )
 
-    def _plot_well_faclog(self, df, zvals, hvals, facieslogname, facieslist=None):
+    def _plot_well_faclog(self, df, zvals, hvals, facieslogname):
         """Plot the facies log as colored segments.
 
         Args:
@@ -221,7 +221,6 @@ class XSectionFigure:
             zvals (ndarray): The numpy Z TVD array.
             hvals (ndarray): The numpy Length  array.
             facieslogname (str): name of the facies log.
-            facieslist (list): List of values to be plotted as facies
         """
 
         if facieslogname not in df.columns:
@@ -229,9 +228,6 @@ class XSectionFigure:
 
         frecord = self._well.get_logrecord(facieslogname)
         frecord = {val: fname for val, fname in frecord.items() if val >= 0}
-
-        if facieslist is None:
-            facieslist = list(frecord.keys())
 
         faciesvalues = df[facieslogname].values
 
