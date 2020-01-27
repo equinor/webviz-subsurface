@@ -581,8 +581,6 @@ def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
 
 
 def surface_to_json(surface):
-    values = surface.values
-    values = values.filled(np.nan)
     return json.dumps(
         {
             "ncol": surface.ncol,
@@ -592,7 +590,7 @@ def surface_to_json(surface):
             "rotation": surface.rotation,
             "xinc": surface.xinc,
             "yinc": surface.yinc,
-            "values": values.tolist(),
+            "values": surface.values.copy().filled(np.nan).tolist(),
         }
     )
 
