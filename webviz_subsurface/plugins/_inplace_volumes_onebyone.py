@@ -186,6 +186,25 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             ]
         )
 
+    def selector(self, label, id_name, column):
+        return html.Div(
+            style={"paddingBottom": "30px"},
+            children=html.Label(
+                children=[
+                    html.Span(f"{label}:", style={"font-weight": "bold"}),
+                    dcc.Dropdown(
+                        id=self.ids(id_name),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in list(self.volumes[column].unique())
+                        ],
+                        clearable=False,
+                        value=list(self.volumes[column])[0],
+                    ),
+                ]
+            ),
+        )
+
     @property
     def tour_steps(self):
         return [
@@ -270,27 +289,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         ]
 
     @property
-    def ensemble_selector(self):
-        """Dropdown to select ensemble"""
-        return html.Div(
-            style={"paddingBottom": "30px"},
-            children=html.Label(
-                children=[
-                    html.Span("Ensemble:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.ids("ensemble"),
-                        options=[
-                            {"label": i, "value": i}
-                            for i in list(self.volumes["ENSEMBLE"].unique())
-                        ],
-                        clearable=False,
-                        value=list(self.volumes["ENSEMBLE"])[0],
-                    ),
-                ]
-            ),
-        )
-
-    @property
     def plot_selector(self):
         """Radiobuttons to select plot type"""
         return html.Div(
@@ -327,27 +325,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         value=self.initial_response
                         if self.initial_response in self.responses
                         else self.responses[0],
-                    ),
-                ]
-            ),
-        )
-
-    @property
-    def source_selector(self):
-        """Dropdown to select grid source of volume files"""
-        return html.Div(
-            style={"paddingBottom": "30px"},
-            children=html.Label(
-                children=[
-                    html.Span("Grid source:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.ids("source"),
-                        options=[
-                            {"label": i, "value": i}
-                            for i in list(self.volumes["SOURCE"].unique())
-                        ],
-                        clearable=False,
-                        value=list(self.volumes["SOURCE"])[0],
                     ),
                 ]
             ),
@@ -400,8 +377,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     children=[
                         html.Div(
                             children=[
-                                self.ensemble_selector,
-                                self.source_selector,
+                                self.selector("Ensemble", "ensemble", "ENSEMBLE"),
+                                self.selector("Grid source", "source", "SOURCE"),
                                 html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),

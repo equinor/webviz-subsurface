@@ -26,13 +26,15 @@ Visualizes the quality of the history match.
         super().__init__()
 
         self.observation_file = observation_file
+
+        self.ensembles = ensembles
         self.ens_paths = {
             ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
             for ens in ensembles
         }
 
         data = extract_mismatch(self.ens_paths, self.observation_file)
-        self.hm_data = json.dumps(HistoryMatch._prepare_data(data))
+        self.hm_data = json.dumps(self._prepare_data(data))
 
         self.hm_id = "hm-id-{}".format(uuid4())
 
@@ -49,25 +51,23 @@ Visualizes the quality of the history match.
             )
         ]
 
-    @staticmethod
-    def _prepare_data(data):
+    def _prepare_data(self, data):
         data = data.copy().reset_index()
 
-        ensemble_labels = data.ensemble_name.unique().tolist()
         num_obs_groups = len(data.obs_group_name.unique())
 
         data["avg_pos"] = data["total_pos"] / data["number_data_points"]
         data["avg_neg"] = data["total_neg"] / data["number_data_points"]
 
         iterations = []
-        for ensemble in ensemble_labels:
+        for ensemble in self.ensembles:
             df = data[data.ensemble_name == ensemble]
             iterations.append(df.groupby("obs_group_name").mean())
 
         sorted_iterations = HistoryMatch._sort_iterations(iterations)
 
         iterations_dict = HistoryMatch._iterations_to_dict(
-            sorted_iterations, ensemble_labels
+            sorted_iterations, self.ensembles
         )
 
         confidence_sorted = _get_sorted_edges(num_obs_groups)

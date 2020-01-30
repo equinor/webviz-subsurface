@@ -22,7 +22,7 @@ def subscribe(scratch_ensembles, config_folder, portable):
             if not portable and not glob.glob(scratch_ensembles[ensemble_name]):
                 raise ValueError(
                     f"Ensemble {ensemble_name} is said to be located at {ensemble_path},"
-                    "but that wildcard path does not give any matches."
+                    " but that wildcard path does not give any matches."
                 )
 
     return scratch_ensembles

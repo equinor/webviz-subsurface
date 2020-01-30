@@ -11,7 +11,7 @@ SIMULATION_VECTOR_TERMINOLOGY = json.loads(
 
 
 def simulation_vector_description(vector):
-    [vector_name, node] = vector.split(":") if ":" in vector else [vector, None]
+    [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
 
     if vector_name in SIMULATION_VECTOR_TERMINOLOGY:
         metadata = SIMULATION_VECTOR_TERMINOLOGY[vector_name]
