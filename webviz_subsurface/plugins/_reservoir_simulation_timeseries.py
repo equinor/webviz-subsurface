@@ -344,6 +344,7 @@ Plot options:
                                         "marginBottom": "5px",
                                         "fontSize": ".95em",
                                     },
+                                    optionHeight=55,
                                     id=self.ids("vector1"),
                                     clearable=False,
                                     multi=False,
@@ -354,6 +355,7 @@ Plot options:
                                 ),
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px", "fontSize": ".95em"},
+                                    optionHeight=55,
                                     id=self.ids("vector2"),
                                     clearable=True,
                                     multi=False,
@@ -363,6 +365,7 @@ Plot options:
                                 ),
                                 dcc.Dropdown(
                                     style={"fontSize": ".95em"},
+                                    optionHeight=55,
                                     id=self.ids("vector3"),
                                     clearable=True,
                                     multi=False,
