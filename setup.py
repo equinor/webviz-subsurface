@@ -41,11 +41,12 @@ setup(
         ]
     },
     install_requires=[
-        "webviz-config>=0.0.45",
         "scipy~=1.2",
         "matplotlib~=3.0",
+        "pandas~=0.24",
         "pillow~=6.1",
         "xtgeo~=2.1",
+        "webviz-config>=0.0.45",
         # webviz-subsurface-components is part of the webviz-subsurface project,
         # just located in a separate repository for convenience,
         # and is therefore pinned exactly here:
