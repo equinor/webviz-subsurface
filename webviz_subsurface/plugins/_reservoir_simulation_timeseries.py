@@ -18,6 +18,31 @@ from .._datainput.fmu_input import load_smry
 from .._abbreviations import simulation_vector_description
 
 
+def _historical_vector(vector, return_historical=True):
+    """This is a unnecessary complex function, trying to make a best guess
+    on converting between historical and non-historical vector names, while
+    waiting for a robust/correct solution, e.g. something like
+    https://github.com/equinor/fmu-ensemble/issues/87
+
+    If return_historical is `True`, the corresponding guessed historical vector name
+    is returned. If `False` the corresponding non-historical vector name is returned,
+    but in this case if the input vector is not believed to be a historical vector,
+    None is returned.
+    """
+
+    parts = vector.split(":", 1)
+
+    if return_historical:
+        parts[0] += "H"
+        return ":".join(parts)
+
+    if not parts[0].endswith("H"):
+        return None
+
+    parts[0] = parts[0][:-1]
+    return ":".join(parts)
+
+
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
     """### ReservoirSimulationTimeSeries
 
@@ -93,10 +118,11 @@ Plot options:
 
         self.smry_cols = [
             c
-            for c in [*self.smry.columns]
+            for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
-            if not c.endswith("H")
+            and not _historical_vector(c, False) in self.smry.columns
         ]
+
         self.dropdown_options = [
             {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
             for vec in self.smry_cols
@@ -123,7 +149,6 @@ Plot options:
         try:
             colors = self.plotly_theme["layout"]["colorway"]
         except KeyError:
-            print("test")
             colors = self.plotly_theme.get(
                 "colorway",
                 [
@@ -576,8 +601,9 @@ def filter_df(df, ensembles, vector):
     """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", vector, "DATE"]
-    if f"{vector}H" in df.columns:
-        columns.append(f"{vector}H")
+    if _historical_vector(vector) in df.columns:
+        columns.append(_historical_vector(vector))
+
     return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
 
@@ -658,8 +684,8 @@ def add_realization_traces(dframe, vector, colors):
         for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
     ]
 
-    if f"{vector}H" in dframe.columns:
-        traces.append(add_history_trace(dframe, f"{vector}H"))
+    if _historical_vector(vector) in dframe.columns:
+        traces.append(add_history_trace(dframe, _historical_vector(vector)))
     return traces
 
 
