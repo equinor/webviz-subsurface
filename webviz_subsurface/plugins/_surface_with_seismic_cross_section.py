@@ -14,6 +14,7 @@ import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
+from webviz_config.utils import calculate_slider_step
 
 from .._datainput.seismic import load_cube_data
 from .._datainput.surface import make_surface_layer, get_surface_fence
@@ -399,7 +400,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             minv = float(f"{cube.values.min():2f}")
             maxv = float(f"{cube.values.max():2f}")
             value = [minv, maxv]
-            step = 10 ** math.floor(math.log10((maxv - minv) / 100))
+            step = calculate_slider_step(minv, maxv, steps=100)
             return minv, maxv, value, step
 
     def add_webvizstore(self):
