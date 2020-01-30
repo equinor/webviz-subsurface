@@ -1,7 +1,6 @@
 from uuid import uuid4
 from pathlib import Path
 from typing import List
-import math
 
 import pandas as pd
 from matplotlib.colors import ListedColormap
