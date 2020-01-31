@@ -11,6 +11,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
+from webviz_config.utils import calculate_slider_step
 
 from .._datainput.seismic import load_cube_data, get_iline, get_xline, get_zslice
 
@@ -181,11 +182,11 @@ The plots are linked and updates are done by clicking in the plots.
                                 self.init_state["max_value"],
                             ],
                             tooltip={"always_visible": True},
-                            step=(
-                                self.init_state["max_value"]
-                                - self.init_state["min_value"]
-                            )
-                            / 100,
+                            step=calculate_slider_step(
+                                min_value=self.init_state["min_value"],
+                                max_value=self.init_state["max_value"],
+                                steps=100,
+                            ),
                         ),
                     ],
                 ),
@@ -457,7 +458,7 @@ The plots are linked and updates are done by clicking in the plots.
             minv = state["min_value"]
             maxv = state["max_value"]
             value = [minv, maxv]
-            step = (maxv - minv) / 100
+            step = calculate_slider_step(min_value=minv, max_value=maxv, steps=100)
             return minv, maxv, value, step
 
     @staticmethod

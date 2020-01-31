@@ -12,6 +12,7 @@ import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config.utils import calculate_slider_step
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -600,7 +601,11 @@ def make_range_slider(domid, values, col_name):
         id=domid,
         min=values.min(),
         max=values.max(),
-        step=(values.max() - values.min()) / len(list(values.unique())) - 1,
+        step=calculate_slider_step(
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
+        ),
         value=[values.min(), values.max()],
         marks={
             str(values.min()): {"label": f"{values.min():.2f}"},
