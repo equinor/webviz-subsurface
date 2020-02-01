@@ -1,17 +1,33 @@
 language: python
 dist: bionic
 
+env:
+  global:
+    - DOCKER_USERNAME=webviz
+    - secure: "sLDLwUOpGnqaJwG7NkpHVUZ0v4A60utj1XS4WV8WVWgiyENkgLgdRP4AKhyx3rZtARbfItrUaaIIdKVbGK0E/neZt1Q+2yqBS16ikQAZ7iISCzugx9hXCxHV7GSsK5mdwrqRhjS0LGxFbT5ust5FZEdeaqily/XpU7fi3BpRLL2L3t30CCLle1kUJSfxt0ocYaCenI3peVTnauUSkjQCFc8rwAyGgCxw6u6sX6S5Rfd1rK/fiCdKzkv2yXs+9D6U8tqC1vFIq0FDhe9nSMkMiYEWJpcwKoEOU4451Y+sz0I21ckD6YOurmXOPPQipOpYdGDPbgJ5Q9YR3mVUgJrEOByGWWSz8CEdSMpK2ZplRqitEXr5o0BgJA/PbmT8wAh7sp/d9lLWtx0piMzpymaZHvyafX/A/xeXDHrsR/5yFwldf3e9DbVbOc+BWvY8AALAWm9ac0GdlglRpLjuRV8RxO/YkLXEjVHa+7Dz2KjIbozEQQvZ1anWxjBK/5Q6QyhGncW+N//CTcxAzYF8/PtyRGdjcLsj8COlMk6gTtqXZLYEs++DfQtH3+8q5MyeuyChG+A9wn35AP8heUVFG73xA8rVSzoM6gzkCc27u7eo3ugEhRvXygz6gLSl0PaGqVvi3F0v7Id6tlhlBz6mdOGUdUR1eMOBBEPkMJLXBnFvtV0="
+    # If you want the CI to (temporarily) run against your fork of the testdada,
+    # change the value her from "equinor" to your username.
+    - TESTDATA_REPO_OWNER="equinor"
+    # If you want the CI to (temporarily) run against another branch than master,
+    # change the value her from "master" to the relevant branch name.
+    - TESTDATA_REPO_BRANCH="master"
+
 addons:
   chrome: stable
 
 services:
   - xvfb
+  - docker
 
 python:
   - "3.6"
+  - "3.7"
+  - "3.8"
 
-matrix:
+jobs:
   fast_finish: true
+  allow_failures:
+    - python: "3.8"
 
 before_install:
   - sudo apt-get -qq update
@@ -19,7 +35,7 @@ before_install:
   - pip install --upgrade pip
 
 install:
-  - wget https://chromedriver.storage.googleapis.com/76.0.3809.12/chromedriver_linux64.zip
+  - wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
   - unzip chromedriver_linux64.zip
   - export PATH=$PATH:$PWD
 
@@ -30,9 +46,21 @@ script:
   - black --check webviz_subsurface tests setup.py
   - pylint webviz_subsurface tests setup.py
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-  - pytest tests
+  - webviz certificate
+  - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+  - pip install git+https://github.com/equinor/libecl
+  - pip install git+https://github.com/equinor/fmu-ensemble
+  - pytest tests --forked
   - git clone https://github.com/equinor/webviz-config.git
   - pushd ./webviz-config/docs; python build_docs.py; popd
+
+  - pip install webviz-config-equinor
+  - webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
+  - pushd example_subsurface_app
+    # Related to https://github.com/equinor/webviz-config/issues/150:
+  - echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
+  - docker build -t webviz/example_subsurface_image:equinor-theme .
+  - popd
 
 deploy:
   - provider: pages
@@ -42,11 +70,21 @@ deploy:
       secure: Itu6xFJa/txPZVULLGKpWeb4h3FKevfa82w6IwA6WSQxiSiJPcnQIOjQeSV+xvq4hKtIIZWhLru6n71uXxkTa3ZB9KMzDBGFya4v3x4/QHOpUy8n0VkQh6hIIaROGLyRGdh1iXi5G+Ke+31vs8FycsDD7xScDIHaL9lFzQAgB6tBU+jwCCB8q7XOHzLZh8AEnkgtaMCzG9Vv9ATB7MZafssCVhmkIngBLODSuvctkZHLx4nn6qkLIVk36dKxA4rRY9ayNOL1LtcIcnrN8q0lg5RVp+tAV6NvgsIgeFwrLPXCcM7eGYlZDKNkOtsXjzYnCtjIV7WHNj9Y/hgZb2TYBnUyZjgKPki+CMnW0uYnp9u6LaHAdnWR5yKF74WarDKPdquiI3PAlGnUkWUhUtmQhYEX3uROE2SIKbUv319ihDebCdQMDsLnmPyZvm8oRseZGKUq+XoP9mcv4FgB1+eXeQxWQsIUjeJ83D8qoX6PN7OHPKxuw27Pp0H+JAbT6U6NK/8g+orFUeJMsUEKhmvvFqdwLaYj3jfKZIkwrbKYQ5Xz9EkK8ORWODPkk3CNbwlASw2ohQpSuKg3NzVwJ80oDLMhg1YaLXyf/kBiQwbgEyYeWITDWm3JPUWM81TJYqIXoA8MEGmTOzlRegzANpElhnRjtArY9pwc7WbW6oHY4/s=
     keep_history: true
     on:
+      python: "3.6"
       branch: master
-
+      repo: equinor/webviz-subsurface
+  - provider: script
+    script: bash deploy_docker_image.sh
+    skip_cleanup: true
+    on:
+      python: "3.6"
+      branch: master
+      repo: equinor/webviz-subsurface
   - provider: pypi
     user: webviz
     password:
       secure: raZvnkESL4A7R2s/IW0amym1p4rOvg3WeJ1hpnS13+97OPWnj3QgusHFmxlbU8JV1LzeotDrLJKDFtNxUSJlqi52SuM1MnaGA4zrngF4yHCgfCNHIRNMYRh53jcEra8vE0QVMv3k+0uQHV2bHnvCkFDTa3ktJo6ovCIrBH+RBRSukz2KlzNiUToNZvvUX5fI9jBCk7vDarWOc9YJqew5gsKzeOPp7pdvis5Em3T0psB6Y3Gg56w8jZ/NrpEwtJ+otxBlgk+Qrwg4c/7PqJ8Ib8JHXmnLMKHv/SXdBpJObq+2lI8bdgxM8RDKXGwi+5/p29B5tmzaS37fmJZ25Js7ZfnND3hjvEnnJMiDKjBT4qEqsIA7wSZfbBVczRjd3uf8BoqVAE/O9/kG9LJn+zcvLy3+Neb4Gi7e1bgJ20DgPupRU6D6UR7TiFtkiksF97pjfcOYRQ5iM/y+y6Uhj1BT2mONg4XMgUa6PO/JF3OanOwbcz5EfEa3fAvQu90CV71o150hvIrarQiGhKoD7B533Ehh+gSWgvN8TF6rR26UvqIntqyaVGAbAzcGGFQmF1pE0ZRtrSlk9xShH4jxD5EPRnx7G9ip+sU/cfneNFRKG/HAPIh6AOiWqnKlZx0oDaF7eWB78/wGAk4K5YFb1C7nM6fyLzCDDxrJrgvtNXovTgw=
     on:
+      python: "3.6"
       tags: true
+      repo: equinor/webviz-subsurface
