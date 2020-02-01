@@ -119,10 +119,17 @@ def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--"):
             if len(stem) < 2:
                 continue
             if len(stem) < 3:
-                files.append({'path':realpath, 'name':stem[0], 'attribute':stem[1]})
+                files.append({"path": realpath, "name": stem[0], "attribute": stem[1]})
             else:
-                files.append({'path':realpath, 'name':stem[0], 'attribute':stem[1], 'date':stem[2]})
-            
+                files.append(
+                    {
+                        "path": realpath,
+                        "name": stem[0],
+                        "attribute": stem[1],
+                        "date": stem[2],
+                    }
+                )
+
     # Store surface name, attribute and date as Pandas dataframe
     df = pd.DataFrame(files)
     return df

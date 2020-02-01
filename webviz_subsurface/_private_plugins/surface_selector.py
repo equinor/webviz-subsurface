@@ -39,7 +39,7 @@ another_property:
 """
 
     def __init__(self, app, config, ensembles):
-        print(config)
+
         self._configuration = {
             attr: {
                 "names": list(dframe["name"].unique()),
@@ -52,7 +52,7 @@ another_property:
         # self._configuration = self.read_config(config)
         self._ensembles = ensembles
         self._storage_id = f"{str(uuid4())}-surface-selector"
-        print(self._configuration)
+
         self.set_ids()
         self.set_callbacks(app)
 
@@ -83,21 +83,8 @@ another_property:
         self.date_id = f"{uuid}-date"
         self.date_id_btn_prev = f"{uuid}-date-btn-prev"
         self.date_id_btn_next = f"{uuid}-date-btn-next"
-        self.ensemble_id = f"{uuid}-ens"
-        self.ensemble_id_btn_prev = f"{uuid}-ensemble-btn-prev"
-        self.ensemble_id_btn_next = f"{uuid}-ensemble-btn-next"
-        self.realization_id = f"{uuid}-real"
-        self.realization_id_btn_prev = f"{uuid}-realization-btn-prev"
-        self.realization_id_btn_next = f"{uuid}-realization-btn-next"
         self.name_wrapper_id = f"{uuid}-name-wrapper"
         self.date_wrapper_id = f"{uuid}-date-wrapper"
-        self.ens_wrapper_id = f"{uuid}-ens-wrapper"
-        self.real_wrapper_id = f"{uuid}-real-wrapper"
-        self.aggreal_id = f"{uuid}-aggreal"
-        self.sens_name_id = f"{uuid}-sens-name-id"
-        self.sens_case_id = f"{uuid}-sens-case-id"
-        self.sens_name_wrapper_id = f"{uuid}-sens-name-wrapper-id"
-        self.sens_case_wrapper_id = f"{uuid}-sens-case-wrapper-id"
 
     @property
     def attrs(self):
@@ -109,7 +96,6 @@ another_property:
     def _dates_in_attr(self, attr):
         return self._configuration[attr].get("dates", None)
 
-   
     @property
     def attribute_selector(self):
         return html.Div(
@@ -261,7 +247,6 @@ another_property:
             if callback == f"{self.attr_id_btn_next}.n_clicks":
                 return next_value(current_value, self.attrs)
 
-      
         @app.callback(
             [
                 Output(self.name_id, "options"),
@@ -324,8 +309,6 @@ another_property:
             options = [{"label": format_date(date), "value": date} for date in dates]
             return options, value, {}
 
-
-
         @app.callback(
             Output(self.storage_id, "children"),
             [
@@ -334,16 +317,13 @@ another_property:
                 Input(self.date_id, "value"),
             ],
         )
-        def _set_data(
-            attr, name, date
-        ):
+        def _set_data(attr, name, date):
 
             """
             Stores current selections to dcc.Store. The information can
             be retrieved as a json string from a dash callback Input.
             E.g. [Input(surfselector.storage_id, 'children')]
             """
-        
 
             # Preventing update if selections are not valid (waiting for the other callbacks)
             if not name in self._names_in_attr(attr):
@@ -351,8 +331,8 @@ another_property:
             if not date in self._dates_in_attr(attr):
                 raise PreventUpdate
             if not date:
-                return json.dumps(name+'--'+attr)
-            return json.dumps(name+'--'+attr+'--'+date)
+                return json.dumps(name + "--" + attr)
+            return json.dumps(name + "--" + attr + "--" + date)
 
 
 def prev_value(current_value, options):
