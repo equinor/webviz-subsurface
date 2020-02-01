@@ -101,7 +101,7 @@ another_property:
         return html.Div(
             style={"display": "grid"},
             children=[
-                html.P("Surface property"),
+                html.Label("Surface property"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -147,8 +147,8 @@ another_property:
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.I(id=prev_id, children="<"),
-                html.I(id=next_id, children=">"),
+                html.Button(style={'fontSize':'1rem', 'padding':'10px', 'textTransform':'none'},id=prev_id, children="Prev"),
+                html.Button(style={'fontSize':'1rem', 'padding':'10px', 'textTransform':'none'},id=next_id, children="Next"),
             ],
         )
 
@@ -157,7 +157,7 @@ another_property:
             id=wrapper_id,
             style={"display": "none"},
             children=[
-                html.P("Surface name"),
+                html.Label("Surface name"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -174,7 +174,7 @@ another_property:
             id=self.date_wrapper_id,
             style={"display": "none"},
             children=[
-                html.P("Date"),
+                html.Label("Date"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -191,18 +191,14 @@ another_property:
     def set_grid_layout(columns):
         return {
             "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
             "gridTemplateColumns": f"{columns}",
         }
 
     @property
     def layout(self):
         return html.Div(
-            style={"fontSize": "12px", "marginLeft": "25px"},
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr"),
                     children=[
                         self.attribute_selector,
                         self.selector(
@@ -356,6 +352,7 @@ def format_date(date_string):
     20010101 => Jan 2001
     20010101_20010601 => (Jan 2001) - (June 2001)
     20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
+    date_string = str(date_string)
     if len(date_string) == 8:
         return datetime.strptime(date_string, "%Y%m%d").strftime("%b %Y")
 
