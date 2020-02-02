@@ -1,6 +1,7 @@
 from uuid import uuid4
 from pathlib import Path
 import json
+import io
 
 import numpy as np
 import xtgeo
@@ -10,6 +11,8 @@ from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 
+from webviz_config.webviz_store import webvizstore
+from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
@@ -45,6 +48,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         self.selector = SurfaceSelector(app, self.config, ensembles)
         self.selector2 = SurfaceSelector(app, self.config, ensembles)
         self.selector3 = SurfaceSelector(app, self.config, ensembles)
+
         self.set_callbacks(app)
 
     def add_webvizstore(self):
@@ -68,7 +72,9 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         df = self.ens_df.loc[self.ens_df["ENSEMBLE"] == ensemble].copy()
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
-        return list(df["REAL"])
+        reals = list(df["REAL"])
+        reals.extend(["Mean", "P10", "P90", "StdDev", "Min", "Max"])
+        return reals
 
     @property
     def map_id(self):
@@ -150,8 +156,11 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                             self.uuid("ensemble"), self.uuid("realization")
                         ),
                         LayeredMap(
-                            sync_ids=[self.uuid('map2'), self.uuid('map3')],
-                            id=self.uuid("map"), height=600, layers=[], hillShading=True
+                            sync_ids=[self.uuid("map2"), self.uuid("map3")],
+                            id=self.uuid("map"),
+                            height=600,
+                            layers=[],
+                            hillShading=True,
                         ),
                     ],
                 ),
@@ -163,7 +172,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                             self.uuid("ensemble2"), self.uuid("realization2")
                         ),
                         LayeredMap(
-                            sync_ids=[self.uuid('map'), self.uuid('map3')],
+                            sync_ids=[self.uuid("map"), self.uuid("map3")],
                             id=self.uuid("map2"),
                             height=600,
                             layers=[],
@@ -198,7 +207,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                             )
                         ),
                         LayeredMap(
-                            sync_ids=[self.uuid('map'), self.uuid('map2')],
+                            sync_ids=[self.uuid("map"), self.uuid("map2")],
                             id=self.uuid("map3"),
                             height=600,
                             layers=[],
@@ -216,7 +225,20 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
             ]["RUNPATH"].unique()[0]
         )
-        return str(runpath / "share" / "results" / "maps" / f"{data}.gri")
+        print(runpath / "share" / "results" / "maps" / f"{data}.gri")
+        return str(
+            get_path(str(runpath / "share" / "results" / "maps" / f"{data}.gri"))
+        )
+
+    def get_ens_runpath(self, data, ensemble):
+        data = json.loads(data)
+        runpaths = self.ens_df.loc[(self.ens_df["ENSEMBLE"] == ensemble)][
+            "RUNPATH"
+        ].unique()
+        return [
+            str((Path(runpath) / "share" / "results" / "maps" / f"{data}.gri"))
+            for runpath in runpaths
+        ]
 
     def set_callbacks(self, app):
         pass
@@ -233,32 +255,130 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 Input(self.uuid("realization"), "value"),
                 Input(self.selector2.storage_id, "children"),
                 Input(self.uuid("ensemble2"), "value"),
-                Input(self.uuid("realization"), "value"),
+                Input(self.uuid("realization2"), "value"),
                 Input(self.uuid("calculation"), "value"),
             ],
         )
         def _set_base_layer(data, ensemble, real, data2, ensemble2, real2, calculation):
             if not data or not data2:
                 raise PreventUpdate
-            surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
-            surface2 = xtgeo.RegularSurface(self.get_runpath(data2, ensemble2, real2))
+            if real in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+                surface = xtgeo.RegularSurface().from_file(
+                    calculate_surface(self.get_ens_runpath(data, ensemble), real)
+                )
+            else:
+                surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
+            if real2 in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+                surface2 = xtgeo.RegularSurface().from_file(
+                    calculate_surface(self.get_ens_runpath(data2, ensemble2), real2)
+                )
+            else:
+                surface2 = xtgeo.RegularSurface(
+                    self.get_runpath(data2, ensemble2, real2)
+                )
 
             surface3 = surface.copy()
             try:
-                if calculation == 'Difference':
+                if calculation == "Difference":
                     surface3.values = surface3.values - surface2.values
-                if calculation == 'Sum':
+                if calculation == "Sum":
                     surface3.values = surface3.values + surface2.values
-                if calculation == 'Product':
+                if calculation == "Product":
                     surface3.values = surface3.values * surface2.values
-                if calculation == 'Quotient':
+                if calculation == "Quotient":
                     surface3.values = surface3.values / surface2.values
-                layers3 = [make_surface_layer(surface3, name="surface", color="viridis", hillshading=True)]
+                layers3 = [
+                    make_surface_layer(
+                        surface3, name="surface", color="viridis", hillshading=True
+                    )
+                ]
             except ValueError:
                 layers3 = []
 
-            surface_layer = make_surface_layer(surface, name="surface", color="viridis", hillshading=True)
-            surface_layer2 = make_surface_layer(surface2, name="surface", color="viridis", hillshading=True)
-            
+            surface_layer = make_surface_layer(
+                surface, name="surface", color="viridis", hillshading=True
+            )
+            surface_layer2 = make_surface_layer(
+                surface2, name="surface", color="viridis", hillshading=True
+            )
+
             return [surface_layer], [surface_layer2], layers3
 
+    def add_webvizstore(self):
+        store_functions = []
+        filenames = []
+        # Generate all file names
+        for attr, values in self.config.items():
+            for name in values["names"]:
+                filename = f"{name}--{attr}"
+                for date in values["dates"]:
+                    if date is not None:
+                        filename += f"--{date}"
+                    filename += f".gri"
+                    filenames.append(filename)
+
+        # Copy all realization files
+        for runpath in self.ens_df["RUNPATH"].unique():
+            for filename in filenames:
+                path = Path(runpath) / "share" / "results" / "maps" / filename
+                if path.exists():
+                    store_functions.append((get_path, [{"path": str(path)}],))
+
+        # Calculate and store statistics
+        for ens, ens_df in self.ens_df.groupby("ENSEMBLE"):
+            runpaths = list(ens_df["RUNPATH"].unique())
+            for filename in filenames:
+                paths = [
+                    str(Path(runpath) / "share" / "results" / "maps" / filename)
+                    for runpath in runpaths
+                ]            
+                for statistic in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+                    store_functions.append(
+                        (calculate_surface, [{"fns": paths, "statistic": statistic}],)
+                    )
+                    print('ok')
+
+        store_functions.append(
+            (
+                get_realizations,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
+            )
+        )
+        return store_functions
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def calculate_surface(fns, statistic) -> io.BytesIO:
+    surfaces = xtgeo.Surfaces(fns)
+    stream = io.BytesIO()
+    if len(surfaces.surfaces) == 0:
+        surface = xtgeo.RegularSurface()
+        surface.to_file(stream)
+        return stream
+    if statistic == "Mean":
+        surface = surfaces.apply(np.nanmean, axis=0)
+    if statistic == "StdDev":
+        surface = surfaces.apply(np.nanstd, axis=0)
+    if statistic == "Min":
+        surface = surfaces.apply(np.nanmin, axis=0)
+    if statistic == "Max":
+        surface = surfaces.apply(np.nanmax, axis=0)
+    if statistic == "P10":
+        surface = surfaces.apply(np.nanpercentile, 10, axis=0)
+    if statistic == "P90":
+        surface = surfaces.apply(np.nanpercentile, 90, axis=0)
+    
+    surface.to_file(stream)
+    return stream
+
+
+@webvizstore
+def get_path(path) -> Path:
+    print(path)
+    return Path(path)

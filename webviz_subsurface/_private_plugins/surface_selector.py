@@ -2,6 +2,8 @@ from datetime import datetime
 from uuid import uuid4
 import json
 import yaml
+
+import numpy as np
 import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -40,16 +42,7 @@ another_property:
 
     def __init__(self, app, config, ensembles):
 
-        self._configuration = {
-            attr: {
-                "names": list(dframe["name"].unique()),
-                "dates": list(dframe["date"].unique())
-                if "date" in dframe.columns
-                else [None],
-            }
-            for attr, dframe in config.groupby("attribute")
-        }
-        # self._configuration = self.read_config(config)
+        self._configuration = self.read_config(config)
         self._ensembles = ensembles
         self._storage_id = f"{str(uuid4())}-surface-selector"
 
@@ -94,7 +87,12 @@ another_property:
         return self._configuration[attr].get("names", None)
 
     def _dates_in_attr(self, attr):
-        return self._configuration[attr].get("dates", None)
+        dates = self._configuration[attr].get("dates", None)
+        if dates is not None:
+            if dates == [np.nan]:
+                dates = None
+        print(dates)
+        return dates
 
     @property
     def attribute_selector(self):
@@ -289,9 +287,11 @@ another_property:
         )
         def _update_date(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
+            print(ctx)
             if not ctx:
                 raise PreventUpdate
             dates = self._dates_in_attr(attr)
+            print('daaaaaaaaaaaates', dates)
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
@@ -324,7 +324,7 @@ another_property:
             # Preventing update if selections are not valid (waiting for the other callbacks)
             if not name in self._names_in_attr(attr):
                 raise PreventUpdate
-            if not date in self._dates_in_attr(attr):
+            if date and not date in self._dates_in_attr(attr):
                 raise PreventUpdate
             if not date:
                 return json.dumps(name + "--" + attr)
