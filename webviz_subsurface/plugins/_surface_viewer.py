@@ -230,7 +230,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
             ]["RUNPATH"].unique()[0]
         )
-        print(runpath / "share" / "results" / "maps" / f"{data}.gri")
+        
         return str(
             get_path(str(runpath / "share" / "results" / "maps" / f"{data}.gri"))
         )
@@ -339,9 +339,9 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 ]            
                 for statistic in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
                     store_functions.append(
-                        (calculate_surface, [{"fns": paths, "statistic": statistic}],)
+                        (save_surface, [{"fns": paths, "statistic": statistic}],)
                     )
-                    print('ok')
+                    
 
         store_functions.append(
             (
@@ -357,15 +357,17 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         return store_functions
 
 
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+def calculate_surface(fns, statistic):
+    return json.load(save_surface(fns, statistic))
+
+
 @webvizstore
-def calculate_surface(fns, statistic) -> io.BytesIO:
+def save_surface(fns, statistic) -> io.BytesIO:
     surfaces = xtgeo.Surfaces(fns)
-    stream = io.BytesIO()
     if len(surfaces.surfaces) == 0:
         surface = xtgeo.RegularSurface()
-        surface.to_file(stream)
-        return stream
     if statistic == "Mean":
         surface = surfaces.apply(np.nanmean, axis=0)
     if statistic == "StdDev":
@@ -378,12 +380,35 @@ def calculate_surface(fns, statistic) -> io.BytesIO:
         surface = surfaces.apply(np.nanpercentile, 10, axis=0)
     if statistic == "P90":
         surface = surfaces.apply(np.nanpercentile, 90, axis=0)
-    
-    surface.to_file(stream)
-    return stream
+
+    return io.BytesIO(json.dumps(surface_to_json(surface)).encode())
+
+
+def surface_to_json(surface):
+    return json.dumps(
+        {
+            "ncol": surface.ncol,
+            "nrow": surface.nrow,
+            "xori": surface.xori,
+            "yori": surface.yori,
+            "rotation": surface.rotation,
+            "xinc": surface.xinc,
+            "yinc": surface.yinc,
+            "values": surface.values.copy().filled(np.nan).tolist(),
+        }
+    )
+
+
+def surface_from_json(surfaceobj):
+    return xtgeo.RegularSurface(**json.loads(surfaceobj))
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_surfaces(fns):
+    return xtgeo.surface.surfaces.Surfaces(fns)
 
 
 @webvizstore
 def get_path(path) -> Path:
-    print(path)
+    
     return Path(path)
