@@ -23,8 +23,9 @@ from .._datainput.surface import make_surface_layer
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'WARNING').upper()
+LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
+
 
 class SurfaceViewer(WebvizPluginABC):
     """### SurfaceViewer
@@ -230,7 +231,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
             ]["RUNPATH"].unique()[0]
         )
-        
+
         return str(
             get_path(str(runpath / "share" / "results" / "maps" / f"{data}.gri"))
         )
@@ -268,15 +269,15 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             if not data or not data2:
                 raise PreventUpdate
             if real in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
-                surface = xtgeo.RegularSurface().from_file(
-                    calculate_surface(self.get_ens_runpath(data, ensemble), real)
-                )
+                surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
+
             else:
                 surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
             if real2 in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
-                surface2 = xtgeo.RegularSurface().from_file(
-                    calculate_surface(self.get_ens_runpath(data2, ensemble2), real2)
+                surface2 = calculate_surface(
+                    self.get_ens_runpath(data2, ensemble2), real2
                 )
+
             else:
                 surface2 = xtgeo.RegularSurface(
                     self.get_runpath(data2, ensemble2, real2)
@@ -336,12 +337,11 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 paths = [
                     str(Path(runpath) / "share" / "results" / "maps" / filename)
                     for runpath in runpaths
-                ]            
+                ]
                 for statistic in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
                     store_functions.append(
                         (save_surface, [{"fns": paths, "statistic": statistic}],)
                     )
-                    
 
         store_functions.append(
             (
@@ -357,10 +357,9 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         return store_functions
 
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_surface(fns, statistic):
-    return json.load(save_surface(fns, statistic))
+    return surface_from_json(json.load(save_surface(fns, statistic)))
 
 
 @webvizstore
@@ -381,7 +380,7 @@ def save_surface(fns, statistic) -> io.BytesIO:
     if statistic == "P90":
         surface = surfaces.apply(np.nanpercentile, 90, axis=0)
 
-    return io.BytesIO(json.dumps(surface_to_json(surface)).encode())
+    return io.BytesIO(surface_to_json(surface).encode())
 
 
 def surface_to_json(surface):
@@ -400,7 +399,7 @@ def surface_to_json(surface):
 
 
 def surface_from_json(surfaceobj):
-    return xtgeo.RegularSurface(**json.loads(surfaceobj))
+    return xtgeo.RegularSurface(**surfaceobj)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -410,5 +409,5 @@ def get_surfaces(fns):
 
 @webvizstore
 def get_path(path) -> Path:
-    
+
     return Path(path)
