@@ -18,7 +18,7 @@ import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
 from webviz_subsurface._datainput.image_processing import get_colormap, array_to_png
 from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
-from .._datainput.surface import make_surface_layer
+from .._datainput.surface import make_surface_layer, get_surface_arr
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
@@ -73,7 +73,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
         reals = list(df["REAL"])
-        reals.extend(["Mean", "P10", "P90", "StdDev", "Min", "Max"])
+        reals.extend(["Mean", "StdDev", "Min", "Max"])
         return reals
 
     @property
@@ -155,63 +155,12 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                         self.ensemble_layout(
                             self.uuid("ensemble"), self.uuid("realization")
                         ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map2"), self.uuid("map3")],
+                        wcc.Graph(
+                            # sync_ids=[self.uuid("map2"), self.uuid("map3")],
                             id=self.uuid("map"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={"margin": "10px", "flex": 4},
-                    children=[
-                        self.selector2.layout,
-                        self.ensemble_layout(
-                            self.uuid("ensemble2"), self.uuid("realization2")
-                        ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map"), self.uuid("map3")],
-                            id=self.uuid("map2"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={"margin": "10px", "flex": 4},
-                    children=[
-                        html.Label("Lock name"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Lock attribute"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Lock date"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Calculation"),
-                        html.Div(
-                            dcc.Dropdown(
-                                id=self.uuid("calculation"),
-                                value="Difference",
-                                clearable=False,
-                                options=[
-                                    {"label": i, "value": i}
-                                    for i in [
-                                        "Difference",
-                                        "Sum",
-                                        "Product",
-                                        "Quotient",
-                                    ]
-                                ],
-                            )
-                        ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map"), self.uuid("map2")],
-                            id=self.uuid("map3"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
+                            # height=600,
+                            # layers=[],
+                            # hillShading=True,
                         ),
                     ],
                 ),
@@ -225,7 +174,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
             ]["RUNPATH"].unique()[0]
         )
-        print(runpath / "share" / "results" / "maps" / f"{data}.gri")
+        
         return str(
             get_path(str(runpath / "share" / "results" / "maps" / f"{data}.gri"))
         )
@@ -244,65 +193,50 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         pass
 
         @app.callback(
-            [
-                Output(self.uuid("map"), "layers"),
-                Output(self.uuid("map2"), "layers"),
-                Output(self.uuid("map3"), "layers"),
-            ],
+            Output(self.uuid("map"), "figure"),
             [
                 Input(self.selector.storage_id, "children"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("realization"), "value"),
-                Input(self.selector2.storage_id, "children"),
-                Input(self.uuid("ensemble2"), "value"),
-                Input(self.uuid("realization2"), "value"),
-                Input(self.uuid("calculation"), "value"),
             ],
         )
-        def _set_base_layer(data, ensemble, real, data2, ensemble2, real2, calculation):
-            if not data or not data2:
+        def _set_base_layer(data, ensemble, real):
+            from timeit import default_timer as timer
+            start = timer()
+            if not data:
                 raise PreventUpdate
-            if real in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+            if real in ["Mean", "StdDev", "Min", "Max"]:
                 surface = xtgeo.RegularSurface().from_file(
                     calculate_surface(self.get_ens_runpath(data, ensemble), real)
                 )
             else:
                 surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
-            if real2 in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
-                surface2 = xtgeo.RegularSurface().from_file(
-                    calculate_surface(self.get_ens_runpath(data2, ensemble2), real2)
-                )
-            else:
-                surface2 = xtgeo.RegularSurface(
-                    self.get_runpath(data2, ensemble2, real2)
-                )
 
-            surface3 = surface.copy()
-            try:
-                if calculation == "Difference":
-                    surface3.values = surface3.values - surface2.values
-                if calculation == "Sum":
-                    surface3.values = surface3.values + surface2.values
-                if calculation == "Product":
-                    surface3.values = surface3.values * surface2.values
-                if calculation == "Quotient":
-                    surface3.values = surface3.values / surface2.values
-                layers3 = [
-                    make_surface_layer(
-                        surface3, name="surface", color="viridis", hillshading=True
-                    )
-                ]
-            except ValueError:
-                layers3 = []
+            import plotly.express as px
+            
 
-            surface_layer = make_surface_layer(
-                surface, name="surface", color="viridis", hillshading=True
-            )
-            surface_layer2 = make_surface_layer(
-                surface2, name="surface", color="viridis", hillshading=True
-            )
 
-            return [surface_layer], [surface_layer2], layers3
+            arr = get_surface_arr(surface)[2]
+
+            # fig = px.imshow(get_surface_arr(surface)[2])
+            fig = {
+                "data": [
+                    {
+                        "coloraxis": "coloraxis",
+                        "type": "heatmap",
+                        "z": arr,
+                    }
+                ],
+                "layout": {"margin": {"t": 60},
+                    "template": "...",
+                    "xaxis": {"constrain": "domain", "scaleanchor": "y"},
+                    "yaxis": {"autorange": "reversed", "constrain": "domain"},
+                },
+            }
+
+            end = timer()
+            
+            return fig
 
     def add_webvizstore(self):
         store_functions = []
@@ -310,13 +244,15 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         # Generate all file names
         for attr, values in self.config.items():
             for name in values["names"]:
-                filename = f"{name}--{attr}"
+                
                 for date in values["dates"]:
+
+                    filename = f"{name}--{attr}"
                     if date is not None:
                         filename += f"--{date}"
                     filename += f".gri"
+                    
                     filenames.append(filename)
-
         # Copy all realization files
         for runpath in self.ens_df["RUNPATH"].unique():
             for filename in filenames:
@@ -331,12 +267,12 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 paths = [
                     str(Path(runpath) / "share" / "results" / "maps" / filename)
                     for runpath in runpaths
-                ]            
-                for statistic in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+                ]
+                for statistic in ["Mean", "StdDev", "Min", "Max"]:
                     store_functions.append(
                         (calculate_surface, [{"fns": paths, "statistic": statistic}],)
                     )
-                    print('ok')
+                    
 
         store_functions.append(
             (
@@ -352,7 +288,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         return store_functions
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+# @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def calculate_surface(fns, statistic) -> io.BytesIO:
     surfaces = xtgeo.Surfaces(fns)
@@ -373,12 +309,12 @@ def calculate_surface(fns, statistic) -> io.BytesIO:
         surface = surfaces.apply(np.nanpercentile, 10, axis=0)
     if statistic == "P90":
         surface = surfaces.apply(np.nanpercentile, 90, axis=0)
-    
+
     surface.to_file(stream)
     return stream
 
 
 @webvizstore
 def get_path(path) -> Path:
-    print(path)
+    
     return Path(path)
