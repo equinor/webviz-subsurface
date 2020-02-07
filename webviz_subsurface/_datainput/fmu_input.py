@@ -119,7 +119,14 @@ def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--"):
             if len(stem) < 2:
                 continue
             if len(stem) < 3:
-                files.append({"path": realpath, "name": stem[0], "attribute": stem[1], "date":None})
+                files.append(
+                    {
+                        "path": realpath,
+                        "name": stem[0],
+                        "attribute": stem[1],
+                        "date": None,
+                    }
+                )
             else:
                 files.append(
                     {

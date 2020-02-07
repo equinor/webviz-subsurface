@@ -38,10 +38,10 @@ def make_surface_layer(
     unit="",
 ):
     """Make LayeredMap surface image base layer"""
-    arr = get_surface_arr(surface)
+    zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
-    min_val = min_val if min_val else np.min(arr[2])
-    max_val = max_val if max_val else np.max(arr[2])
+    min_val = min_val if min_val else np.nanmin(zvalues)
+    max_val = max_val if max_val else np.nanmax(zvalues)
     return {
         "name": name,
         "checked": True,
@@ -49,7 +49,7 @@ def make_surface_layer(
         "data": [
             {
                 "type": "image",
-                "url": array_to_png(arr[2].copy()),
+                "url": array_to_png(zvalues.copy()),
                 "colormap": get_colormap(color),
                 "bounds": bounds,
                 "allowHillshading": hillshading,

@@ -6,21 +6,20 @@ import os
 import logging
 import numpy as np
 import xtgeo
-import dash_table
-from dash.dependencies import Input, Output
+import dash
+from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
-
+from webviz_subsurface_components import LayeredMap
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
-from webviz_subsurface._datainput.image_processing import get_colormap, array_to_png
-from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
+
+from .._datainput.fmu_input import get_realizations, find_surfaces
 from .._datainput.surface import make_surface_layer
-from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
+from .._private_plugins.surface_selector import SurfaceSelector
 
 
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
@@ -41,7 +40,6 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        app.logger.info("ksajdfksdjfhlasdjfhlaksdjf")
 
         # Find surfaces
         self.config = find_surfaces(self.ens_paths)
@@ -57,19 +55,6 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self):
-        return [
-            (
-                get_realizations,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            )
-        ]
-
     @property
     def ensembles(self):
         return list(self.ens_df["ENSEMBLE"].unique())
@@ -79,7 +64,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
         reals = list(df["REAL"])
-        reals.extend(["Mean", "P10", "P90", "StdDev", "Min", "Max"])
+        reals.extend(["Mean", "StdDev", "Min", "Max"])
         return reals
 
     @property
@@ -95,19 +80,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             "gridTemplateColumns": f"{columns}",
         }
 
-    # @property
-    # def surface_table(self):
-    #     return dash_table.DataTable(
-    #         id=self.uuid("table"),
-    #         columns=[{"name": i, "id": i, 'hidden':True if i == 'path' else False} for i in self.config.columns],
-    #         data=self.config.to_dict("rows"),
-    #         sort_action="native",
-    #         filter_action="native",
-    #         page_action="native",
-    #         selected_rows=[0],
-    #     )
-
-    def ensemble_layout(self, ensId, realId):
+    def ensemble_layout(self, ensemble_id, real_id, real_prev_id, real_next_id):
         return wcc.FlexBox(
             children=[
                 html.Div(
@@ -121,7 +94,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                         for ens in self.ensembles
                                     ],
                                     value=self.ensembles[0],
-                                    id=ensId,
+                                    id=ensemble_id,
                                     clearable=False,
                                 )
                             ]
@@ -132,6 +105,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                     children=[
                         html.Label("Realization"),
                         html.Div(
+                            style=self.set_grid_layout("2fr 1fr 1fr"),
                             children=[
                                 dcc.Dropdown(
                                     options=[
@@ -139,10 +113,28 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                         for real in self.realizations(self.ensembles[0])
                                     ],
                                     value=self.realizations(self.ensembles[0])[0],
-                                    id=realId,
+                                    id=real_id,
                                     clearable=False,
-                                )
-                            ]
+                                ),
+                                html.Button(
+                                    style={
+                                        "fontSize": "1rem",
+                                        "padding": "10px",
+                                        "textTransform": "none",
+                                    },
+                                    id=real_prev_id,
+                                    children="Prev",
+                                ),
+                                html.Button(
+                                    style={
+                                        "fontSize": "1rem",
+                                        "padding": "10px",
+                                        "textTransform": "none",
+                                    },
+                                    id=real_next_id,
+                                    children="Next",
+                                ),
+                            ],
                         ),
                     ]
                 ),
@@ -151,77 +143,107 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
 
     @property
     def layout(self):
-        return wcc.FlexBox(
-            style={"fontSize": ".9rem"},
-            children=[
-                html.Div(
-                    style={"margin": "10px", "flex": 4},
+        return html.Div(
+            [
+                wcc.FlexBox(
+                    style={"fontSize": ".9rem"},
                     children=[
-                        self.selector.layout,
-                        self.ensemble_layout(
-                            self.uuid("ensemble"), self.uuid("realization")
-                        ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map2"), self.uuid("map3")],
-                            id=self.uuid("map"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={"margin": "10px", "flex": 4},
-                    children=[
-                        self.selector2.layout,
-                        self.ensemble_layout(
-                            self.uuid("ensemble2"), self.uuid("realization2")
-                        ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map"), self.uuid("map3")],
-                            id=self.uuid("map2"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={"margin": "10px", "flex": 4},
-                    children=[
-                        html.Label("Lock name"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Lock attribute"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Lock date"),
-                        html.Div(dcc.Dropdown()),
-                        html.Label("Calculation"),
                         html.Div(
-                            dcc.Dropdown(
-                                id=self.uuid("calculation"),
-                                value="Difference",
-                                clearable=False,
-                                options=[
-                                    {"label": i, "value": i}
-                                    for i in [
-                                        "Difference",
-                                        "Sum",
-                                        "Product",
-                                        "Quotient",
-                                    ]
-                                ],
-                            )
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                self.selector.layout,
+                                self.ensemble_layout(
+                                    ensemble_id=self.uuid("ensemble"),
+                                    real_id=self.uuid("realization"),
+                                    real_prev_id=self.uuid("realization-prev"),
+                                    real_next_id=self.uuid("realization-next"),
+                                ),
+                            ],
                         ),
-                        LayeredMap(
-                            sync_ids=[self.uuid("map"), self.uuid("map2")],
-                            id=self.uuid("map3"),
-                            height=600,
-                            layers=[],
-                            hillShading=True,
+                        html.Div(
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                self.selector2.layout,
+                                self.ensemble_layout(
+                                    ensemble_id=self.uuid("ensemble2"),
+                                    real_id=self.uuid("realization2"),
+                                    real_prev_id=self.uuid("realization2-prev"),
+                                    real_next_id=self.uuid("realization2-next"),
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                html.Label("Lock name"),
+                                html.Div(dcc.Dropdown()),
+                                html.Label("Lock attribute"),
+                                html.Div(dcc.Dropdown()),
+                                html.Label("Lock date"),
+                                html.Div(dcc.Dropdown()),
+                                html.Label("Calculation"),
+                                html.Div(
+                                    dcc.Dropdown(
+                                        id=self.uuid("calculation"),
+                                        value="Difference",
+                                        clearable=False,
+                                        options=[
+                                            {"label": i, "value": i}
+                                            for i in [
+                                                "Difference",
+                                                "Sum",
+                                                "Product",
+                                                "Quotient",
+                                            ]
+                                        ],
+                                    )
+                                ),
+                            ],
                         ),
                     ],
                 ),
-            ],
+                wcc.FlexBox(
+                    style={"fontSize": ".9rem"},
+                    children=[
+                        html.Div(
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                LayeredMap(
+                                    sync_ids=[self.uuid("map2"), self.uuid("map3")],
+                                    id=self.uuid("map"),
+                                    height=600,
+                                    layers=[],
+                                    hillShading=True,
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                LayeredMap(
+                                    sync_ids=[self.uuid("map"), self.uuid("map3")],
+                                    id=self.uuid("map2"),
+                                    height=600,
+                                    layers=[],
+                                    hillShading=True,
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={"margin": "10px", "flex": 4},
+                            children=[
+                                LayeredMap(
+                                    sync_ids=[self.uuid("map"), self.uuid("map2")],
+                                    id=self.uuid("map3"),
+                                    height=600,
+                                    layers=[],
+                                    hillShading=True,
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ]
         )
 
     def get_runpath(self, data, ensemble, real):
@@ -247,8 +269,6 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         ]
 
     def set_callbacks(self, app):
-        pass
-
         @app.callback(
             [
                 Output(self.uuid("map"), "layers"),
@@ -268,12 +288,12 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         def _set_base_layer(data, ensemble, real, data2, ensemble2, real2, calculation):
             if not data or not data2:
                 raise PreventUpdate
-            if real in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+            if real in ["Mean", "StdDev", "Min", "Max"]:
                 surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
 
             else:
                 surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
-            if real2 in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+            if real2 in ["Mean", "StdDev", "Min", "Max"]:
                 surface2 = calculate_surface(
                     self.get_ens_runpath(data2, ensemble2), real2
                 )
@@ -310,14 +330,64 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
 
             return [surface_layer], [surface_layer2], layers3
 
+        @app.callback(
+            Output(self.uuid("realization"), "value"),
+            [
+                Input(self.uuid("realization-prev"), "n_clicks"),
+                Input(self.uuid("realization-next"), "n_clicks"),
+            ],
+            [
+                State(self.uuid("realization"), "value"),
+                State(self.uuid("realization"), "options"),
+            ],
+        )
+        def _update_real(_n_prev, _n_next, current_value, options):
+            options = [opt["value"] for opt in options]
+            ctx = dash.callback_context.triggered
+            if not ctx or not current_value:
+                raise PreventUpdate
+            if not ctx[0]["value"]:
+                return current_value
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.uuid('realization-prev')}.n_clicks":
+                return prev_value(current_value, options)
+            if callback == f"{self.uuid('realization-next')}.n_clicks":
+                return next_value(current_value, options)
+            return current_value
+
+        @app.callback(
+            Output(self.uuid("realization2"), "value"),
+            [
+                Input(self.uuid("realization2-prev"), "n_clicks"),
+                Input(self.uuid("realization2-next"), "n_clicks"),
+            ],
+            [
+                State(self.uuid("realization2"), "value"),
+                State(self.uuid("realization2"), "options"),
+            ],
+        )
+        def _update_real(_n_prev, _n_next, current_value, options):
+            options = [opt["value"] for opt in options]
+            ctx = dash.callback_context.triggered
+            if not ctx or not current_value:
+                raise PreventUpdate
+            if not ctx[0]["value"]:
+                return current_value
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.uuid('realization2-prev')}.n_clicks":
+                return prev_value(current_value, options)
+            if callback == f"{self.uuid('realization2-next')}.n_clicks":
+                return next_value(current_value, options)
+            return current_value
+
     def add_webvizstore(self):
         store_functions = []
         filenames = []
         # Generate all file names
         for attr, values in self.config.items():
             for name in values["names"]:
-                filename = f"{name}--{attr}"
                 for date in values["dates"]:
+                    filename = f"{name}--{attr}"
                     if date is not None:
                         filename += f"--{date}"
                     filename += f".gri"
@@ -331,14 +401,14 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                     store_functions.append((get_path, [{"path": str(path)}],))
 
         # Calculate and store statistics
-        for ens, ens_df in self.ens_df.groupby("ENSEMBLE"):
+        for _, ens_df in self.ens_df.groupby("ENSEMBLE"):
             runpaths = list(ens_df["RUNPATH"].unique())
             for filename in filenames:
                 paths = [
                     str(Path(runpath) / "share" / "results" / "maps" / filename)
                     for runpath in runpaths
                 ]
-                for statistic in ["Mean", "P10", "P90", "StdDev", "Min", "Max"]:
+                for statistic in ["Mean", "StdDev", "Min", "Max"]:
                     store_functions.append(
                         (save_surface, [{"fns": paths, "statistic": statistic}],)
                     )
@@ -411,3 +481,19 @@ def get_surfaces(fns):
 def get_path(path) -> Path:
 
     return Path(path)
+
+
+def prev_value(current_value, options):
+    try:
+        index = options.index(current_value)
+        return options[max(0, index - 1)]
+    except ValueError:
+        return current_value
+
+
+def next_value(current_value, options):
+    try:
+        index = options.index(current_value)
+        return options[min(len(options) - 1, index + 1)]
+    except ValueError:
+        return current_value

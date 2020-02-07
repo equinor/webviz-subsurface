@@ -145,8 +145,24 @@ another_property:
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Button(style={'fontSize':'1rem', 'padding':'10px', 'textTransform':'none'},id=prev_id, children="Prev"),
-                html.Button(style={'fontSize':'1rem', 'padding':'10px', 'textTransform':'none'},id=next_id, children="Next"),
+                html.Button(
+                    style={
+                        "fontSize": "1rem",
+                        "padding": "10px",
+                        "textTransform": "none",
+                    },
+                    id=prev_id,
+                    children="Prev",
+                ),
+                html.Button(
+                    style={
+                        "fontSize": "1rem",
+                        "padding": "10px",
+                        "textTransform": "none",
+                    },
+                    id=next_id,
+                    children="Next",
+                ),
             ],
         )
 
@@ -155,31 +171,12 @@ another_property:
             id=wrapper_id,
             style={"display": "none"},
             children=[
-                html.Label("Surface name"),
+                html.Label(title),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=dropdown_id, clearable=False),
                         self._make_buttons(btn_prev, btn_next),
-                    ],
-                ),
-            ],
-        )
-
-    @property
-    def date_selector(self):
-        return html.Div(
-            id=self.date_wrapper_id,
-            style={"display": "none"},
-            children=[
-                html.Label("Date"),
-                html.Div(
-                    style=self.set_grid_layout("6fr 1fr"),
-                    children=[
-                        dcc.Dropdown(id=self.date_id, clearable=False),
-                        self._make_buttons(
-                            self.date_id_btn_prev, self.date_id_btn_next
-                        ),
                     ],
                 ),
             ],
@@ -291,7 +288,7 @@ another_property:
             if not ctx:
                 raise PreventUpdate
             dates = self._dates_in_attr(attr)
-            print('daaaaaaaaaaaates', dates)
+            print("daaaaaaaaaaaates", dates)
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
