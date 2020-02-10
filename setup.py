@@ -46,7 +46,7 @@ setup(
         "pandas~=0.24",
         "pillow~=6.1",
         "xtgeo~=2.1",
-        "webviz-config>=0.0.46",
+        "webviz-config>=0.0.48",
         "webviz-subsurface-components>=0.0.20",
     ],
     tests_require=TESTS_REQUIRE,
