@@ -58,6 +58,7 @@ The plots are linked and updates are done by clicking in the plots.
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
         self.uid = uuid4()
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -343,6 +344,7 @@ The plots are linked and updates are done by clicking in the plots.
 
             fig = make_heatmap(
                 zslice_arr,
+                self.plotly_theme,
                 showscale=True,
                 text=str(state["zslice"]),
                 title=f'Zslice {state["zslice"]} ({self.zunit})',
@@ -391,6 +393,7 @@ The plots are linked and updates are done by clicking in the plots.
 
             fig = make_heatmap(
                 iline_arr,
+                self.plotly_theme,
                 xaxis=cube.xlines,
                 yaxis=cube.zslices,
                 title=f'Inline {state["iline"]}',
@@ -435,6 +438,7 @@ The plots are linked and updates are done by clicking in the plots.
             xline_arr = get_xline(cube, state["xline"])
             fig = make_heatmap(
                 xline_arr,
+                self.plotly_theme,
                 xaxis=cube.ilines,
                 yaxis=cube.zslices,
                 title=f'Crossline {state["xline"]}',
@@ -483,8 +487,10 @@ The plots are linked and updates are done by clicking in the plots.
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 def make_heatmap(
     arr,
+    theme,
     height=400,
     zmin=None,
     zmax=None,
@@ -505,6 +511,22 @@ def make_heatmap(
         if colorscale
         else "RdBu"
     )
+    layout = {}
+    layout.update(theme["layout"])
+    layout.update(
+        {
+            "height": height,
+            "title": title,
+            "uirevision": uirevision,
+            "margin": {"b": 50, "t": 50, "r": 0},
+            "yaxis": {
+                "title": yaxis_title,
+                "autorange": "reversed" if reverse_y else None,
+            },
+            "xaxis": {"title": xaxis_title},
+        }
+    )
+
     return {
         "data": [
             {
@@ -520,17 +542,7 @@ def make_heatmap(
                 "zmax": zmax,
             }
         ],
-        "layout": {
-            "height": height,
-            "title": title,
-            "uirevision": uirevision,
-            "margin": {"b": 50, "t": 50, "r": 0},
-            "yaxis": {
-                "title": yaxis_title,
-                "autorange": "reversed" if reverse_y else None,
-            },
-            "xaxis": {"title": xaxis_title},
-        },
+        "layout": layout,
     }
 
 

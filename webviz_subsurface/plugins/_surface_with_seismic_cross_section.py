@@ -371,6 +371,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             return make_heatmap(
                 values,
                 s_arr=s_arr,
+                theme=self.plotly_theme,
                 s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
                 colorscale=colorscale,
                 xmin=hmin,
@@ -410,6 +411,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 def make_heatmap(
     arr,
     s_arr,
+    theme,
     s_color="black",
     s_name=None,
     height=800,
@@ -435,6 +437,22 @@ def make_heatmap(
         [[i / (len(colorscale) - 1), color] for i, color in enumerate(colorscale)]
         if colorscale
         else "RdBu"
+    )
+
+    layout = {}
+    layout.update(theme["layout"])
+    layout.update(
+        {
+            "height": height,
+            "title": title,
+            "uirevision": uirevision,
+            "margin": {"b": 50, "t": 0, "r": 0},
+            "yaxis": {
+                "title": yaxis_title,
+                "autorange": "reversed" if reverse_y else None,
+            },
+            "xaxis": {"title": xaxis_title},
+        }
     )
     return {
         "data": [
@@ -463,17 +481,7 @@ def make_heatmap(
                 "marker": {"color": s_color},
             },
         ],
-        "layout": {
-            "height": height,
-            "title": title,
-            "uirevision": uirevision,
-            "margin": {"b": 50, "t": 0, "r": 0},
-            "yaxis": {
-                "title": yaxis_title,
-                "autorange": "reversed" if reverse_y else None,
-            },
-            "xaxis": {"title": xaxis_title},
-        },
+        "layout": layout,
     }
 
 
