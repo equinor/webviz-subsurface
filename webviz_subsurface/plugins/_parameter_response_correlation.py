@@ -523,20 +523,23 @@ def _correlate(inputdf, method="pearson"):
 
 def make_correlation_plot(series, response, theme, corr_method):
     """Make Plotly trace for correlation plot"""
+    layout = theme_layout(
+        theme,
+        {
+            "barmode": "relative",
+            "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
+            "height": 750,
+            "xaxis": {"range": [-1, 1]},
+            "title": f"Correlations ({corr_method}) between {response} and input parameters",
+        },
+    )
+    layout["font"].update({"size": 8})
 
     return {
         "data": [
             {"x": series.values, "y": series.index, "orientation": "h", "type": "bar"}
         ],
-        "layout": {
-            "colorway": theme["layout"]["colorway"],
-            "barmode": "relative",
-            "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
-            "font": {"size": 8},
-            "height": 750,
-            "xaxis": {"range": [-1, 1]},
-            "title": f"Correlations ({corr_method}) between {response} and input parameters",
-        },
+        "layout": layout,
     }
 
 
@@ -574,18 +577,20 @@ def make_distribution_plot(df, parameter, response, theme):
         {"type": "histogram", "x": df[response], "showlegend": False,}, 3, 2,
     )
     fig["layout"].update(
-        {
-            "colorway": theme["layout"]["colorway"],
-            "height": 800,
-            "bargap": 0.05,
-            "xaxis": {"title": parameter,},
-            "yaxis": {"title": response},
-            "xaxis2": {"title": parameter},
-            "xaxis3": {"title": response},
-            "title": f"Distribution of {response} and {parameter}",
-            "font": {"size": 8},
-        }
+        theme_layout(
+            theme,
+            {
+                "height": 800,
+                "bargap": 0.05,
+                "xaxis": {"title": parameter,},
+                "yaxis": {"title": response},
+                "xaxis2": {"title": parameter},
+                "xaxis3": {"title": response},
+                "title": f"Distribution of {response} and {parameter}",
+            },
+        )
     )
+    fig["layout"]["font"].update({"size": 8})
     return fig
 
 
@@ -612,6 +617,13 @@ def make_range_slider(domid, values, col_name):
             str(values.max()): {"label": f"{values.max():.2f}"},
         },
     )
+
+
+def theme_layout(theme, specific_layout):
+    layout = {}
+    layout.update(theme["layout"])
+    layout.update(specific_layout)
+    return layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

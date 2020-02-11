@@ -519,12 +519,9 @@ Plot options:
                         fig.add_trace(trace, i + 1, 1)
 
             # Add additional styling to layout
+            fig["layout"].update(self.plotly_theme["layout"])
             fig["layout"].update(
                 height=800,
-                font=self.plotly_theme.get("font"),
-                hoverlabel=self.plotly_theme.get("hoverlabel"),
-                paper_bgcolor=self.plotly_theme.get("paper_bgcolor", "rgba(0,0,0,0)"),
-                plot_bgcolor=self.plotly_theme.get("plot_bgcolor", "rgba(0,0,0,0)"),
                 margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
