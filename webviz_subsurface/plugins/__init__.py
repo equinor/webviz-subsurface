@@ -42,7 +42,6 @@ from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
-from ._parallel_parameters import ParallelParameters
 from ._quality_check_realizations import QualityCheckRealizations
 
 __all__ = [
@@ -61,6 +60,5 @@ __all__ = [
     "SurfaceWithGridCrossSection",
     "SurfaceWithSeismicCrossSection",
     "WellCrossSection",
-    "ParallelParameters",
     "QualityCheckRealizations",
 ]
