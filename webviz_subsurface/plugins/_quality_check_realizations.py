@@ -249,7 +249,7 @@ def make_status_df(ens_paths, status_file) -> pd.DataFrame:
     ens = ""
 
     # Loop through identified filepaths.
-    for index, row in df.iterrows(): # pylint: disable=unused-variable
+    for index, row in df.iterrows():  # pylint: disable=unused-variable
         # Load each json-file to a DataFrame for the realization
         with open(row["FULLPATH"]) as fjson:
             status_dict = json.load(fjson)
