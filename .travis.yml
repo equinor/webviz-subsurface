@@ -12,6 +12,11 @@ env:
     # change the value her from "master" to the relevant branch name.
     - TESTDATA_REPO_BRANCH="master"
 
+cache:
+  timeout: 300
+  directories:
+    - ./webviz-subsurface-testdata
+
 addons:
   chrome: stable
 
@@ -43,7 +48,13 @@ script:
   - pylint webviz_subsurface tests setup.py
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
   - webviz certificate
-  - git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+  - |
+    if [ -d "./webviz-subsurface-testdata" ]; then
+      echo "Cached subsurface testdata exists... reuse"
+    else
+      echo "Cached subsurface testdata does NOT exist... clone from github"
+      git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+    fi
   - pip install git+https://github.com/equinor/libecl
   - pip install git+https://github.com/equinor/fmu-ensemble
   - pytest tests --forked
