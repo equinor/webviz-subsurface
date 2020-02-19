@@ -36,6 +36,11 @@ def test_basic_example(dash_duo, tmp_path):
         "last_page",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
-        logs = dash_duo.get_logs()
+        logs = [
+            log
+            for log in dash_duo.get_logs()
+            if "TypeError: Cannot read property 'hardwareConcurrency' of undefined"
+            not in log["message"]
+        ]
         if logs != []:
             raise AssertionError(logs)
