@@ -49,7 +49,7 @@ script:
   - bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
   - webviz certificate
   - |
-    if [ -d "./webviz-subsurface-testdata" ]; then
+    if [ -f "./webviz-subsurface-testdata/README.md" ]; then
       echo "Cached subsurface testdata exists... reuse"
     else
       echo "Cached subsurface testdata does NOT exist... clone from github"
