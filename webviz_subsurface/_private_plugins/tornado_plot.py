@@ -446,7 +446,7 @@ def tornado_plot(
     layout.update(
         {
             "barmode": "relative",
-            "margin": {"l": 50, "r": 50, "b": 20, "t": 50},
+            "margin": {"l": 0, "r": 0, "b": 20, "t": 50},
             "xaxis": {
                 "title": scale,
                 "autorange": True,
