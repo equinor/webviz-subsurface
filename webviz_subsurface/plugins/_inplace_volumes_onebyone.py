@@ -486,13 +486,16 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     figure={
                         "data": [
                             {
-                                "y": dframe.groupby("REAL")
+                                "y": senscase_df.groupby("REAL")
                                 .sum()
                                 .reset_index()[response],
-                                "name": sensname,
+                                "name": f"{sensname} ({senscase})",
                                 "type": "box",
                             }
-                            for sensname, dframe in data.groupby(["SENSNAME"])
+                            for sensname, sensname_df in data.groupby(["SENSNAME"])
+                            for senscase, senscase_df in sensname_df.groupby(
+                                ["SENSCASE"]
+                            )
                         ],
                         "layout": layout,
                     },

@@ -192,7 +192,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             for i in list(self.data["ENSEMBLE"].unique())
                         ],
                         clearable=False,
-                        value=list(self.data["ENSEMBLE"])[0],
+                        value=list(self.data["ENSEMBLE"].unique())[0],
                     ),
                 ]
             ),
@@ -221,6 +221,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ]
             ),
         )
+
+    @property
+    def initial_date(self):
+        df = self.data[self.data["ENSEMBLE"] == self.data["ENSEMBLE"].unique()[0]]
+        return df["DATE"].max()
 
     def add_webvizstore(self):
         return (
@@ -285,7 +290,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 html.Div(
                                     id=self.ids("graph-wrapper"),
                                     style={"height": "450px"},
-                                    children=wcc.Graph(id=self.ids("graph")),
+                                    children=wcc.Graph(
+                                        id=self.ids("graph"),
+                                        clickData={
+                                            "points": [{"x": self.initial_date}]
+                                        },
+                                    ),
                                 ),
                                 DataTable(
                                     id=self.ids("table"),
@@ -334,7 +344,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 date = clickdata["points"][0]["x"]
             except TypeError:
                 raise PreventUpdate
-
             data = filter_ensemble(self.data, ensemble, vector)
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows = calculate_table_rows(data, vector)
