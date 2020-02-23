@@ -19,6 +19,7 @@ import webviz_core_components as wcc
 
 from .._datainput.fmu_input import get_realizations, find_surfaces
 from .._datainput.surface import make_surface_layer, load_surface
+from .._datainput.well import make_well_layers
 from .._private_plugins.surface_selector import SurfaceSelector
 
 
@@ -32,7 +33,14 @@ A plugin to covisualize surfaces from an ensemble.
                 all surface attributes will be included.
 """
 
-    def __init__(self, app, ensembles, attributes: list = None):
+    def __init__(
+        self,
+        app,
+        ensembles,
+        attributes: list = None,
+        wellfolder: Path = None,
+        wellsuffix: str = ".w",
+    ):
 
         super().__init__()
         self.ens_paths = {
@@ -49,6 +57,14 @@ A plugin to covisualize surfaces from an ensemble.
             if self.surfacedf.empty:
                 raise ValueError("No surfaces found with the given attributes")
         self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
+        self.wellfolder = wellfolder
+        self.wellsuffix = wellsuffix
+        self.wellfiles = (
+            json.load(find_files(wellfolder, wellsuffix))
+            if wellfolder is not None
+            else None
+        )
+        self.well_layer = make_well_layers(self.wellfiles) if self.wellfiles else None
         # Extract realizations and sensitivity information
         self.ens_df = get_realizations(
             ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
@@ -335,13 +351,12 @@ A plugin to covisualize surfaces from an ensemble.
                     surface3.values = surface3.values * surface2.values
                 if calculation == "Quotient":
                     surface3.values = surface3.values / surface2.values
-                layers3 = [
-                    make_surface_layer(
-                        surface3, name="surface", color="viridis", hillshading=True
-                    )
-                ]
+                surface_layer3 = make_surface_layer(
+                    surface3, name="surface", color="viridis", hillshading=True
+                )
+
             except ValueError:
-                layers3 = []
+                surface_layer3 = None
 
             surface_layer = make_surface_layer(
                 surface, name="surface", color="viridis", hillshading=True
@@ -350,7 +365,11 @@ A plugin to covisualize surfaces from an ensemble.
                 surface2, name="surface", color="viridis", hillshading=True
             )
 
-            return [surface_layer], [surface_layer2], layers3
+            return (
+                [surface_layer, self.well_layer],
+                [surface_layer2, self.well_layer],
+                [surface_layer3, self.well_layer],
+            )
 
         def _update_from_btn(_n_prev, _n_next, current_value, options):
             """Updates dropdown value if previous/next btn is clicked"""
@@ -393,6 +412,7 @@ A plugin to covisualize surfaces from an ensemble.
                 ],
             )
         ]
+
         filenames = []
         # Generate all file names
         for attr, values in self.surfaceconfig.items():
@@ -423,7 +443,14 @@ A plugin to covisualize surfaces from an ensemble.
                     store_functions.append(
                         (save_surface, [{"fns": paths, "statistic": statistic}])
                     )
-
+        if self.wellfolder is not None:
+            store_functions.append(
+                (find_files, [{"folder": self.wellfolder, "suffix": self.wellsuffix}])
+            )
+        if self.wellfiles is not None:
+            store_functions.extend(
+                [(get_path, [{"path": fn}]) for fn in self.wellfiles]
+            )
         store_functions.append(
             (
                 get_realizations,
@@ -521,3 +548,12 @@ def surfacedf_to_dict(df):
         }
         for attr, dframe in df.groupby("attribute")
     }
+
+
+@webvizstore
+def find_files(folder, suffix) -> io.BytesIO:
+    return io.BytesIO(
+        json.dumps(
+            sorted([str(filename) for filename in folder.glob(f"*{suffix}")])
+        ).encode()
+    )
