@@ -229,7 +229,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                     height=600,
                                     layers=[],
                                     hillShading=True,
-                                ),
+                                )
                             ],
                         ),
                         html.Div(
@@ -241,7 +241,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                     height=600,
                                     layers=[],
                                     hillShading=True,
-                                ),
+                                )
                             ],
                         ),
                         html.Div(
@@ -253,7 +253,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                     height=600,
                                     layers=[],
                                     hillShading=True,
-                                ),
+                                )
                             ],
                         ),
                     ],
@@ -345,105 +345,33 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
 
             return [surface_layer], [surface_layer2], layers3
 
-        @app.callback(
-            Output(self.uuid("realization"), "value"),
-            [
-                Input(self.uuid("realization-prev"), "n_clicks"),
-                Input(self.uuid("realization-next"), "n_clicks"),
-            ],
-            [
-                State(self.uuid("realization"), "value"),
-                State(self.uuid("realization"), "options"),
-            ],
-        )
-        def _update_real(_n_prev, _n_next, current_value, options):
+        def _update_from_btn(_n_prev, _n_next, current_value, options):
+            """Updates dropdown value if previous/next btn is clicked"""
             options = [opt["value"] for opt in options]
             ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
+            if not ctx or current_value is None:
                 raise PreventUpdate
             if not ctx[0]["value"]:
                 return current_value
             callback = ctx[0]["prop_id"]
-            if callback == f"{self.uuid('realization-prev')}.n_clicks":
+            if "-prev" in callback:
                 return prev_value(current_value, options)
-            if callback == f"{self.uuid('realization-next')}.n_clicks":
+            if "next" in callback:
                 return next_value(current_value, options)
             return current_value
 
-        @app.callback(
-            Output(self.uuid("realization2"), "value"),
-            [
-                Input(self.uuid("realization2-prev"), "n_clicks"),
-                Input(self.uuid("realization2-next"), "n_clicks"),
-            ],
-            [
-                State(self.uuid("realization2"), "value"),
-                State(self.uuid("realization2"), "options"),
-            ],
-        )
-        def _update_real2(_n_prev, _n_next, current_value, options):
-            options = [opt["value"] for opt in options]
-            ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
-                raise PreventUpdate
-            if not ctx[0]["value"]:
-                return current_value
-            callback = ctx[0]["prop_id"]
-            if callback == f"{self.uuid('realization2-prev')}.n_clicks":
-                return prev_value(current_value, options)
-            if callback == f"{self.uuid('realization2-next')}.n_clicks":
-                return next_value(current_value, options)
-            return current_value
-
-        @app.callback(
-            Output(self.uuid("ensemble"), "value"),
-            [
-                Input(self.uuid("ensemble-prev"), "n_clicks"),
-                Input(self.uuid("ensemble-next"), "n_clicks"),
-            ],
-            [
-                State(self.uuid("ensemble"), "value"),
-                State(self.uuid("ensemble"), "options"),
-            ],
-        )
-        def _update_ens(_n_prev, _n_next, current_value, options):
-            options = [opt["value"] for opt in options]
-            ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
-                raise PreventUpdate
-            if not ctx[0]["value"]:
-                return current_value
-            callback = ctx[0]["prop_id"]
-            if callback == f"{self.uuid('ensemble-prev')}.n_clicks":
-                return prev_value(current_value, options)
-            if callback == f"{self.uuid('ensemble-next')}.n_clicks":
-                return next_value(current_value, options)
-            return current_value
-
-        @app.callback(
-            Output(self.uuid("ensemble2"), "value"),
-            [
-                Input(self.uuid("ensemble2-prev"), "n_clicks"),
-                Input(self.uuid("ensemble2-next"), "n_clicks"),
-            ],
-            [
-                State(self.uuid("ensemble2"), "value"),
-                State(self.uuid("ensemble2"), "options"),
-            ],
-        )
-        def _update_ens2(_n_prev, _n_next, current_value, options):
-            options = [opt["value"] for opt in options]
-            ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
-                raise PreventUpdate
-            if not ctx[0]["value"]:
-                return current_value
-            callback = ctx[0]["prop_id"]
-            if callback == f"{self.uuid('realization2-prev')}.n_clicks":
-                return prev_value(current_value, options)
-            if callback == f"{self.uuid('realization2-next')}.n_clicks":
-                return next_value(current_value, options)
-            return current_value
+        for btn_name in ["ensemble", "realization", "ensemble2", "realization2"]:
+            app.callback(
+                Output(self.uuid(f"{btn_name}"), "value"),
+                [
+                    Input(self.uuid(f"{btn_name}-prev"), "n_clicks"),
+                    Input(self.uuid(f"{btn_name}-next"), "n_clicks"),
+                ],
+                [
+                    State(self.uuid(f"{btn_name}"), "value"),
+                    State(self.uuid(f"{btn_name}"), "options"),
+                ],
+            )(_update_from_btn)
 
     def add_webvizstore(self):
         store_functions = []
@@ -463,7 +391,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             for filename in filenames:
                 path = Path(runpath) / "share" / "results" / "maps" / filename
                 if path.exists():
-                    store_functions.append((get_path, [{"path": str(path)}],))
+                    store_functions.append((get_path, [{"path": str(path)}]))
 
         # Calculate and store statistics
         for _, ens_df in self.ens_df.groupby("ENSEMBLE"):
@@ -475,7 +403,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 ]
                 for statistic in ["Mean", "StdDev", "Min", "Max"]:
                     store_functions.append(
-                        (save_surface, [{"fns": paths, "statistic": statistic}],)
+                        (save_surface, [{"fns": paths, "statistic": statistic}])
                     )
 
         store_functions.append(
@@ -560,5 +488,6 @@ def next_value(current_value, options):
     try:
         index = options.index(current_value)
         return options[min(len(options) - 1, index + 1)]
+
     except ValueError:
         return current_value
