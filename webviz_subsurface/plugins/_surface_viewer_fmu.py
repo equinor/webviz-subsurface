@@ -2,8 +2,7 @@ from uuid import uuid4
 from pathlib import Path
 import json
 import io
-import os
-import logging
+
 import numpy as np
 import xtgeo
 import dash
@@ -11,26 +10,43 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
-from webviz_subsurface_components import LayeredMap
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
+from webviz_subsurface_components import LayeredMap
 
-from .._datainput.fmu_input import get_realizations, find_surfaces
-from .._datainput.surface import make_surface_layer, load_surface
-from .._datainput.well import make_well_layers
-from .._private_plugins.surface_selector import SurfaceSelector
+from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
+from webviz_subsurface._datainput.surface import make_surface_layer, load_surface
+from webviz_subsurface._datainput.well import make_well_layers
+from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
 class SurfaceViewerFMU(WebvizPluginABC):
     """### SurfaceViewerFMU
 
 A plugin to covisualize surfaces from an ensemble.
+There are 3 separate map views. 2 views can be set independently, while
+the 3rd view displays the resulting map by combining the other maps e.g.
+by taking the difference or summing the values.
+
+There is flexibility in which combinations of surfaces that are displayed
+and calculated, such that surfaces can e.g. be compared across ensembles.
+
+The available maps are gathered from the `share/results/maps/` folder
+for each realization. Statistical calculations across the ensemble(s) are
+done on the fly. If the ensemble or surfaces have a large size it is recommended
+to run webviz in `portable` mode so that the statistical surfaces are pre-calculated
+and available for instant viewing.
 
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `attributes`: List of surface attributes to include, if not given
                 all surface attributes will be included.
+* `attribute_settings`: Dictionary with setting for each attribute.
+                Available settings are 'min' and 'max' to truncate colorscale,
+                as well as 'color' to set the colormap (default is viridis).
+* `wellfolder`: Folder with RMS wells
+* `wellsuffix`: File suffix for wells in well folder.
 """
 
     def __init__(
@@ -38,6 +54,7 @@ A plugin to covisualize surfaces from an ensemble.
         app,
         ensembles,
         attributes: list = None,
+        attribute_settings: dict = None,
         wellfolder: Path = None,
         wellsuffix: str = ".w",
     ):
@@ -56,6 +73,7 @@ A plugin to covisualize surfaces from an ensemble.
             ]
             if self.surfacedf.empty:
                 raise ValueError("No surfaces found with the given attributes")
+        self.attribute_settings = attribute_settings if attribute_settings else {}
         self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
@@ -238,6 +256,23 @@ A plugin to covisualize surfaces from an ensemble.
                                         ],
                                     )
                                 ),
+                                html.Label("Truncate Min / Max"),
+                                wcc.FlexBox(
+                                    children=[
+                                        dcc.Input(
+                                            debounce=True,
+                                            type="number",
+                                            id=self.uuid("truncate-diff-min"),
+                                            style={"maxWidth": "20%"},
+                                        ),
+                                        dcc.Input(
+                                            debounce=True,
+                                            type="number",
+                                            id=self.uuid("truncate-diff-max"),
+                                            style={"maxWidth": "20%"},
+                                        ),
+                                    ]
+                                ),
                             ],
                         ),
                     ],
@@ -281,13 +316,17 @@ A plugin to covisualize surfaces from an ensemble.
                                 )
                             ],
                         ),
+                        dcc.Store(
+                            id=self.uuid("attribute-settings"),
+                            data=json.dumps(self.attribute_settings),
+                        ),
                     ],
                 ),
             ]
         )
 
     def get_runpath(self, data, ensemble, real):
-        data = json.loads(data)
+        data = make_fmu_filename(data)
         runpath = Path(
             self.ens_df.loc[
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
@@ -299,7 +338,7 @@ A plugin to covisualize surfaces from an ensemble.
         )
 
     def get_ens_runpath(self, data, ensemble):
-        data = json.loads(data)
+        data = make_fmu_filename(data)
         runpaths = self.ens_df.loc[(self.ens_df["ENSEMBLE"] == ensemble)][
             "RUNPATH"
         ].unique()
@@ -323,11 +362,30 @@ A plugin to covisualize surfaces from an ensemble.
                 Input(self.uuid("ensemble2"), "value"),
                 Input(self.uuid("realization2"), "value"),
                 Input(self.uuid("calculation"), "value"),
+                Input(self.uuid("attribute-settings"), "data"),
+                Input(self.uuid("truncate-diff-min"), "value"),
+                Input(self.uuid("truncate-diff-max"), "value"),
             ],
         )
-        def _set_base_layer(data, ensemble, real, data2, ensemble2, real2, calculation):
+        # pylint: disable=too-many-arguments, too-many-locals
+        def _set_base_layer(
+            data,
+            ensemble,
+            real,
+            data2,
+            ensemble2,
+            real2,
+            calculation,
+            attribute_settings,
+            diff_min,
+            diff_max,
+        ):
             if not data or not data2:
                 raise PreventUpdate
+            data = json.loads(data)
+            data2 = json.loads(data2)
+            attribute_settings = json.loads(attribute_settings)
+
             if real in ["Mean", "StdDev", "Min", "Max"]:
                 surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
 
@@ -341,34 +399,58 @@ A plugin to covisualize surfaces from an ensemble.
             else:
                 surface2 = load_surface(self.get_runpath(data2, ensemble2, real2))
 
-            surface3 = surface.copy()
-            try:
-                if calculation == "Difference":
-                    surface3.values = surface3.values - surface2.values
-                if calculation == "Sum":
-                    surface3.values = surface3.values + surface2.values
-                if calculation == "Product":
-                    surface3.values = surface3.values * surface2.values
-                if calculation == "Quotient":
-                    surface3.values = surface3.values / surface2.values
-                surface_layer3 = make_surface_layer(
-                    surface3, name="surface", color="viridis", hillshading=True
-                )
-
-            except ValueError:
-                surface_layer3 = None
-
             surface_layer = make_surface_layer(
-                surface, name="surface", color="viridis", hillshading=True
+                surface,
+                name="surface",
+                color=attribute_settings.get(data["attr"], {}).get("color", "viridis"),
+                min_val=attribute_settings.get(data["attr"], {}).get("min", None),
+                max_val=attribute_settings.get(data["attr"], {}).get("max", None),
+                hillshading=True,
             )
             surface_layer2 = make_surface_layer(
-                surface2, name="surface", color="viridis", hillshading=True
+                surface2,
+                name="surface",
+                color=attribute_settings.get(data2["attr"], {}).get("color", "viridis"),
+                min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
+                max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
+                hillshading=True,
             )
+
+            surface3 = surface.copy()
+            try:
+                values = surface3.values.copy()
+                if calculation == "Difference":
+                    values = values - surface2.values
+                if calculation == "Sum":
+                    values = values + surface2.values
+                if calculation == "Product":
+                    values = values * surface2.values
+                if calculation == "Quotient":
+                    values = values / surface2.values
+                if diff_min:
+                    values[values <= diff_min] = diff_min
+                if diff_max:
+                    values[values >= diff_max] = diff_max
+                surface3.values = values
+                diff_layers = [
+                    make_surface_layer(
+                        surface3,
+                        name="surface",
+                        color=attribute_settings.get(data["attr"], {}).get(
+                            "color", "viridis"
+                        ),
+                        hillshading=True,
+                    ),
+                    self.well_layer,
+                ]
+
+            except ValueError:
+                diff_layers = [self.well_layer]
 
             return (
                 [surface_layer, self.well_layer],
                 [surface_layer2, self.well_layer],
-                [surface_layer3, self.well_layer],
+                diff_layers,
             )
 
         def _update_from_btn(_n_prev, _n_next, current_value, options):
@@ -557,3 +639,9 @@ def find_files(folder, suffix) -> io.BytesIO:
             sorted([str(filename) for filename in folder.glob(f"*{suffix}")])
         ).encode()
     )
+
+
+def make_fmu_filename(data):
+    if data["date"] is None:
+        return f"{data['name']}--{data['attr']}"
+    return f"{data['name']}--{data['attr']}--{data['date']}"

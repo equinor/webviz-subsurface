@@ -319,9 +319,7 @@ another_property:
                 raise PreventUpdate
             if date and not date in self._dates_in_attr(attr):
                 raise PreventUpdate
-            if not date:
-                return json.dumps(name + "--" + attr)
-            return json.dumps(name + "--" + attr + "--" + date)
+            return json.dumps({"name": name, "attr": attr, "date": date})
 
 
 def prev_value(current_value, options):
