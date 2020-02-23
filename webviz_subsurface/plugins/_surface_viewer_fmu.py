@@ -25,7 +25,11 @@ from .._private_plugins.surface_selector import SurfaceSelector
 class SurfaceViewerFMU(WebvizPluginABC):
     """### SurfaceViewerFMU
 
-Plugin to covisualize surfaces from an ensemble.
+A plugin to covisualize surfaces from an ensemble.
+
+* `ensembles`: Which ensembles in `shared_settings` to visualize.
+* `attributes`: List of surface attributes to include, if not given
+                all surface attributes will be included.
 """
 
     def __init__(self, app, ensembles, attributes: list = None):
@@ -319,9 +323,7 @@ Plugin to covisualize surfaces from an ensemble.
                 )
 
             else:
-                surface2 = load_surface(
-                    self.get_runpath(data2, ensemble2, real2)
-                )
+                surface2 = load_surface(self.get_runpath(data2, ensemble2, real2))
 
             surface3 = surface.copy()
             try:
