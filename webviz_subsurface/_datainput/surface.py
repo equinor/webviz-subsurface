@@ -53,8 +53,8 @@ def make_surface_layer(
                 "colormap": get_colormap(color),
                 "bounds": bounds,
                 "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val else None,
-                "maxvalue": f"{max_val:.2f}" if max_val else None,
+                "minvalue": f"{min_val:.2f}" if min_val is not None else None,
+                "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
                 "unit": unit,
             }
         ],
