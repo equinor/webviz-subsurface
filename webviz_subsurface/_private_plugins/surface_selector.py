@@ -91,7 +91,6 @@ another_property:
         if dates is not None:
             if dates == [np.nan]:
                 dates = None
-        print(dates)
         return dates
 
     @property
@@ -99,7 +98,7 @@ another_property:
         return html.Div(
             style={"display": "grid"},
             children=[
-                html.Label("Surface property"),
+                html.Label("Surface attribute"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -184,10 +183,7 @@ another_property:
 
     @staticmethod
     def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "gridTemplateColumns": f"{columns}",
-        }
+        return {"display": "grid", "gridTemplateColumns": f"{columns}"}
 
     @property
     def layout(self):
@@ -210,10 +206,10 @@ another_property:
                             self.date_id_btn_prev,
                             self.date_id_btn_next,
                         ),
-                    ],
+                    ]
                 ),
                 dcc.Store(id=self.storage_id),
-            ],
+            ]
         )
 
     def set_callbacks(self, app):
@@ -284,11 +280,11 @@ another_property:
         )
         def _update_date(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
-            print(ctx)
+
             if not ctx:
                 raise PreventUpdate
             dates = self._dates_in_attr(attr)
-            print("daaaaaaaaaaaates", dates)
+
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
