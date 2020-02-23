@@ -22,10 +22,6 @@ from .._datainput.surface import make_surface_layer
 from .._private_plugins.surface_selector import SurfaceSelector
 
 
-LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
-logging.basicConfig(level=LOGLEVEL)
-
-
 class SurfaceViewer(WebvizPluginABC):
     """### SurfaceViewer
 
@@ -80,13 +76,16 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             "gridTemplateColumns": f"{columns}",
         }
 
-    def ensemble_layout(self, ensemble_id, real_id, real_prev_id, real_next_id):
+    def ensemble_layout(
+        self, ensemble_id, ens_prev_id, ens_next_id, real_id, real_prev_id, real_next_id
+    ):
         return wcc.FlexBox(
             children=[
                 html.Div(
                     [
                         html.Label("Ensemble"),
                         html.Div(
+                            style=self.set_grid_layout("12fr 1fr 1fr"),
                             children=[
                                 dcc.Dropdown(
                                     options=[
@@ -96,16 +95,34 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                     value=self.ensembles[0],
                                     id=ensemble_id,
                                     clearable=False,
-                                )
-                            ]
+                                ),
+                                html.Button(
+                                    style={
+                                        "fontSize": "1rem",
+                                        "padding": "10px",
+                                        "textTransform": "none",
+                                    },
+                                    id=ens_prev_id,
+                                    children="Prev",
+                                ),
+                                html.Button(
+                                    style={
+                                        "fontSize": "1rem",
+                                        "padding": "10px",
+                                        "textTransform": "none",
+                                    },
+                                    id=ens_next_id,
+                                    children="Next",
+                                ),
+                            ],
                         ),
                     ]
                 ),
                 html.Div(
                     children=[
-                        html.Label("Realization"),
+                        html.Label("Realization / Statistic"),
                         html.Div(
-                            style=self.set_grid_layout("2fr 1fr 1fr"),
+                            style=self.set_grid_layout("12fr 1fr 1fr"),
                             children=[
                                 dcc.Dropdown(
                                     options=[
@@ -146,7 +163,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         return html.Div(
             [
                 wcc.FlexBox(
-                    style={"fontSize": ".9rem"},
+                    style={"fontSize": "1rem"},
                     children=[
                         html.Div(
                             style={"margin": "10px", "flex": 4},
@@ -154,6 +171,8 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                 self.selector.layout,
                                 self.ensemble_layout(
                                     ensemble_id=self.uuid("ensemble"),
+                                    ens_prev_id=self.uuid("ensemble-prev"),
+                                    ens_next_id=self.uuid("ensemble-next"),
                                     real_id=self.uuid("realization"),
                                     real_prev_id=self.uuid("realization-prev"),
                                     real_next_id=self.uuid("realization-next"),
@@ -166,6 +185,8 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                                 self.selector2.layout,
                                 self.ensemble_layout(
                                     ensemble_id=self.uuid("ensemble2"),
+                                    ens_prev_id=self.uuid("ensemble2-prev"),
+                                    ens_next_id=self.uuid("ensemble2-next"),
                                     real_id=self.uuid("realization2"),
                                     real_prev_id=self.uuid("realization2-prev"),
                                     real_next_id=self.uuid("realization2-next"),
@@ -175,12 +196,6 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                         html.Div(
                             style={"margin": "10px", "flex": 4},
                             children=[
-                                html.Label("Lock name"),
-                                html.Div(dcc.Dropdown()),
-                                html.Label("Lock attribute"),
-                                html.Div(dcc.Dropdown()),
-                                html.Label("Lock date"),
-                                html.Div(dcc.Dropdown()),
                                 html.Label("Calculation"),
                                 html.Div(
                                     dcc.Dropdown(
@@ -203,7 +218,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                     ],
                 ),
                 wcc.FlexBox(
-                    style={"fontSize": ".9rem"},
+                    style={"fontSize": "1rem"},
                     children=[
                         html.Div(
                             style={"margin": "10px", "flex": 4},
@@ -366,7 +381,57 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 State(self.uuid("realization2"), "options"),
             ],
         )
-        def _update_real(_n_prev, _n_next, current_value, options):
+        def _update_real2(_n_prev, _n_next, current_value, options):
+            options = [opt["value"] for opt in options]
+            ctx = dash.callback_context.triggered
+            if not ctx or not current_value:
+                raise PreventUpdate
+            if not ctx[0]["value"]:
+                return current_value
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.uuid('realization2-prev')}.n_clicks":
+                return prev_value(current_value, options)
+            if callback == f"{self.uuid('realization2-next')}.n_clicks":
+                return next_value(current_value, options)
+            return current_value
+
+        @app.callback(
+            Output(self.uuid("ensemble"), "value"),
+            [
+                Input(self.uuid("ensemble-prev"), "n_clicks"),
+                Input(self.uuid("ensemble-next"), "n_clicks"),
+            ],
+            [
+                State(self.uuid("ensemble"), "value"),
+                State(self.uuid("ensemble"), "options"),
+            ],
+        )
+        def _update_ens(_n_prev, _n_next, current_value, options):
+            options = [opt["value"] for opt in options]
+            ctx = dash.callback_context.triggered
+            if not ctx or not current_value:
+                raise PreventUpdate
+            if not ctx[0]["value"]:
+                return current_value
+            callback = ctx[0]["prop_id"]
+            if callback == f"{self.uuid('ensemble-prev')}.n_clicks":
+                return prev_value(current_value, options)
+            if callback == f"{self.uuid('ensemble-next')}.n_clicks":
+                return next_value(current_value, options)
+            return current_value
+
+        @app.callback(
+            Output(self.uuid("ensemble2"), "value"),
+            [
+                Input(self.uuid("ensemble2-prev"), "n_clicks"),
+                Input(self.uuid("ensemble2-next"), "n_clicks"),
+            ],
+            [
+                State(self.uuid("ensemble2"), "value"),
+                State(self.uuid("ensemble2"), "options"),
+            ],
+        )
+        def _update_ens2(_n_prev, _n_next, current_value, options):
             options = [opt["value"] for opt in options]
             ctx = dash.callback_context.triggered
             if not ctx or not current_value:
