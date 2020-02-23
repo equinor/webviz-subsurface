@@ -37,7 +37,7 @@ from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
 )
-from ._surface_viewer import SurfaceViewer
+from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._segy_viewer import SegyViewer
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
@@ -57,7 +57,7 @@ __all__ = [
     "InplaceVolumesOneByOne",
     "ReservoirSimulationTimeSeries",
     "ReservoirSimulationTimeSeriesOneByOne",
-    "SurfaceViewer",
+    "SurfaceViewerFMU",
     "SegyViewer",
     "SurfaceWithGridCrossSection",
     "SurfaceWithSeismicCrossSection",

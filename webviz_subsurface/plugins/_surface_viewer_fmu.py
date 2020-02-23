@@ -18,18 +18,17 @@ from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
 
 from .._datainput.fmu_input import get_realizations, find_surfaces
-from .._datainput.surface import make_surface_layer
+from .._datainput.surface import make_surface_layer, load_surface
 from .._private_plugins.surface_selector import SurfaceSelector
 
 
-class SurfaceViewer(WebvizPluginABC):
-    """### SurfaceViewer
+class SurfaceViewerFMU(WebvizPluginABC):
+    """### SurfaceViewerFMU
 
-Viewer for FMU surfaces. Automatically finds all surfaces for a given
-scratch ensembleset. Allows viewing of individual realizations or aggregations.
+Plugin to covisualize surfaces from an ensemble.
 """
 
-    def __init__(self, app, ensembles):
+    def __init__(self, app, ensembles, attributes: list = None):
 
         super().__init__()
         self.ens_paths = {
@@ -38,16 +37,22 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
         }
 
         # Find surfaces
-        self.config = find_surfaces(self.ens_paths)
+        self.surfacedf = find_surfaces(self.ens_paths)
+        if attributes is not None:
+            self.surfacedf = self.surfacedf[
+                self.surfacedf["attribute"].isin(attributes)
+            ]
+            if self.surfacedf.empty:
+                raise ValueError("No surfaces found with the given attributes")
+        self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
         # Extract realizations and sensitivity information
         self.ens_df = get_realizations(
             ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
         )
         self._storage_id = f"{str(uuid4())}-surface-viewer"
         self._map_id = f"{str(uuid4())}-map-id"
-        self.selector = SurfaceSelector(app, self.config, ensembles)
-        self.selector2 = SurfaceSelector(app, self.config, ensembles)
-        self.selector3 = SurfaceSelector(app, self.config, ensembles)
+        self.selector = SurfaceSelector(app, self.surfaceconfig, ensembles)
+        self.selector2 = SurfaceSelector(app, self.surfaceconfig, ensembles)
 
         self.set_callbacks(app)
 
@@ -307,14 +312,14 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
                 surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
 
             else:
-                surface = xtgeo.RegularSurface(self.get_runpath(data, ensemble, real))
+                surface = load_surface(self.get_runpath(data, ensemble, real))
             if real2 in ["Mean", "StdDev", "Min", "Max"]:
                 surface2 = calculate_surface(
                     self.get_ens_runpath(data2, ensemble2), real2
                 )
 
             else:
-                surface2 = xtgeo.RegularSurface(
+                surface2 = load_surface(
                     self.get_runpath(data2, ensemble2, real2)
                 )
 
@@ -356,7 +361,7 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             callback = ctx[0]["prop_id"]
             if "-prev" in callback:
                 return prev_value(current_value, options)
-            if "next" in callback:
+            if "-next" in callback:
                 return next_value(current_value, options)
             return current_value
 
@@ -374,10 +379,21 @@ scratch ensembleset. Allows viewing of individual realizations or aggregations.
             )(_update_from_btn)
 
     def add_webvizstore(self):
-        store_functions = []
+        store_functions = [
+            (
+                find_surfaces,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "suffix": "*.gri",
+                        "delimiter": "--",
+                    }
+                ],
+            )
+        ]
         filenames = []
         # Generate all file names
-        for attr, values in self.config.items():
+        for attr, values in self.surfaceconfig.items():
             for name in values["names"]:
                 for date in values["dates"]:
                     filename = f"{name}--{attr}"
@@ -491,3 +507,15 @@ def next_value(current_value, options):
 
     except ValueError:
         return current_value
+
+
+def surfacedf_to_dict(df):
+    return {
+        attr: {
+            "names": list(dframe["name"].unique()),
+            "dates": list(dframe["date"].unique())
+            if "date" in dframe.columns
+            else None,
+        }
+        for attr, dframe in df.groupby("attribute")
+    }
