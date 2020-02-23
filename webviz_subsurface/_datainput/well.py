@@ -28,11 +28,11 @@ def make_well_layer(well, name="well", zmin=0):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def make_well_layers(fns, zmin=0):
+def make_well_layers(wellfiles, zmin=0):
     """Make layeredmap wells layer"""
     data = []
-    for fn in fns:
-        well = load_well(fn)
+    for wellfile in wellfiles:
+        well = load_well(wellfile)
         well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
         positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
         data.append(
