@@ -2,13 +2,12 @@ from uuid import uuid4
 from pathlib import Path
 
 import pandas as pd
-import plotly.express as px
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -128,7 +127,7 @@ or as an ensemble name defined in `shared_settings`.
                         self.make_buttons(self.ids("prev-btn"), self.ids("next-btn")),
                     ],
                 ),
-                wcc.Graph(id=self.ids("graph")),
+                wsc.PriorPosteriorDistribution(id=self.ids("graph")),
             ],
         )
 
@@ -154,25 +153,24 @@ or as an ensemble name defined in `shared_settings`.
             return column
 
         @app.callback(
-            Output(self.ids("graph"), "figure"), [Input(self.ids("parameter"), "value")]
+            Output(self.ids("graph"), "data"), [Input(self.ids("parameter"), "value")]
         )
         def _set_parameter(column):
             param = self.parameters[[column, "REAL", "ENSEMBLE"]]
 
-            plot = px.histogram(
-                param,
-                x=column,
-                y="REAL",
-                color="ENSEMBLE",
-                hover_data=["REAL"],
-                barmode="overlay",
-                nbins=10,
-                range_x=[param[column].min(), param[column].max()],
-                marginal="box",
-                template=self.plotly_theme,
-            ).for_each_trace(lambda t: t.update(name=t.name.replace("ENSEMBLE=", "")))
+            ensembles = param["ENSEMBLE"].unique().tolist()
 
-            return plot
+            iterations = []
+            values = []
+            labels = []
+
+            for ensemble in ensembles:
+                df = param[param["ENSEMBLE"] == ensemble]
+                iterations.append(ensemble)
+                values.append(df[column].tolist())
+                labels.append([f"Realization {real}" for real in df["REAL"].tolist()])
+
+            return {"iterations": iterations, "values": values, "labels": labels}
 
     def add_webvizstore(self):
         return [

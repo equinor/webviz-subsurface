@@ -8,3 +8,4 @@ venv
 *.pyc
 .DS_Store
 dist
+*~

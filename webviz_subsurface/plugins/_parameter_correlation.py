@@ -325,39 +325,41 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density, theme):
                 "type": "histogram2dcontour",
             }
         )
-    layout = {
-        "margin": {"t": 20, "b": 50, "l": 200, "r": 200},
-        "bargap": 0.05,
-        "colorway": theme["layout"]["colorway"],
-        "xaxis": {
-            "title": x_col,
-            "domain": [0, 0.85],
-            "showgrid": False,
-            "showline": False,
-            "zeroline": False,
-            "showlegend": False,
+    layout = theme_layout(
+        theme,
+        {
+            "margin": {"t": 20, "b": 50, "l": 200, "r": 200},
+            "bargap": 0.05,
+            "xaxis": {
+                "title": x_col,
+                "domain": [0, 0.85],
+                "showgrid": False,
+                "showline": False,
+                "zeroline": False,
+                "showlegend": False,
+            },
+            "xaxis2": {
+                "domain": [0.85, 1],
+                "showgrid": False,
+                "showline": False,
+                "zeroline": False,
+                "showticklabels": False,
+            },
+            "yaxis": {
+                "title": y_col,
+                "domain": [0, 0.85],
+                "showgrid": False,
+                "zeroline": False,
+            },
+            "yaxis2": {
+                "domain": [0.85, 1],
+                "showgrid": False,
+                "zeroline": False,
+                "showticklabels": False,
+                "showline": False,
+            },
         },
-        "xaxis2": {
-            "domain": [0.85, 1],
-            "showgrid": False,
-            "showline": False,
-            "zeroline": False,
-            "showticklabels": False,
-        },
-        "yaxis": {
-            "title": y_col,
-            "domain": [0, 0.85],
-            "showgrid": False,
-            "zeroline": False,
-        },
-        "yaxis2": {
-            "domain": [0.85, 1],
-            "showgrid": False,
-            "zeroline": False,
-            "showticklabels": False,
-            "showline": False,
-        },
-    }
+    )
 
     return {"data": data, "layout": layout}
 
@@ -398,12 +400,22 @@ def render_matrix(ensemble_path, theme, drop_constants=True):
         "zmax": 1,
         "colorscale": theme["layout"]["colorscale"]["sequential"],
     }
-    layout = {
-        "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(0,0,0,0)",
-        "margin": {"t": 50, "b": 50},
-        "xaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
-        "yaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
-    }
+    layout = theme_layout(
+        theme,
+        {
+            "paper_bgcolor": "rgba(0,0,0,0)",
+            "plot_bgcolor": "rgba(0,0,0,0)",
+            "margin": {"t": 50, "b": 50},
+            "xaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
+            "yaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
+        },
+    )
 
     return {"data": [data], "layout": layout}
+
+
+def theme_layout(theme, specific_layout):
+    layout = {}
+    layout.update(theme["layout"])
+    layout.update(specific_layout)
+    return layout

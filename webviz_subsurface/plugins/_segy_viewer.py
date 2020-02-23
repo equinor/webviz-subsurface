@@ -58,6 +58,7 @@ The plots are linked and updates are done by clicking in the plots.
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
         self.uid = uuid4()
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -134,10 +135,11 @@ The plots are linked and updates are done by clicking in the plots.
     @property
     def settings_layout(self):
         """Layout for color and other settings"""
-        return html.Div(
-            style=self.set_grid_layout("3fr 2fr 5fr 1fr 1fr"),
+        return wcc.FlexBox(
+            style={"margin": "50px"},
             children=[
                 html.Div(
+                    style={"width": "100%"},
                     children=html.Label(
                         children=[
                             html.Span("Seismic cube:", style={"font-weight": "bold"}),
@@ -151,23 +153,24 @@ The plots are linked and updates are done by clicking in the plots.
                                 clearable=False,
                             ),
                         ]
-                    )
-                ),
-                html.Div(
-                    style={"zIndex": 2000, "paddingLeft": "10px"},
-                    children=html.Label(
-                        children=[
-                            html.Span("Colorscale:", style={"font-weight": "bold"}),
-                            wcc.ColorScales(
-                                id=self.ids("color-scale"),
-                                colorscale=self.initial_colors,
-                                nSwatches=12,
-                            ),
-                        ]
                     ),
                 ),
                 html.Div(
-                    style={"marginRight": "50px", "marginLeft": "50px"},
+                    style={"marginRight": "50px", "width": "50%", "marginLeft": "50px"},
+                    children=[
+                        html.Label(
+                            style={"font-weight": "bold", "textAlign": "center"},
+                            children="Set colorscale",
+                        ),
+                        wcc.ColorScales(
+                            id=self.ids("color-scale"),
+                            colorscale=self.initial_colors,
+                            nSwatches=12,
+                        ),
+                    ],
+                ),
+                html.Div(
+                    style={"marginRight": "50px", "width": "50%", "marginLeft": "50px"},
                     children=[
                         html.P(
                             "Color range",
@@ -196,43 +199,48 @@ The plots are linked and updates are done by clicking in the plots.
         )
 
     @property
-    def plot_layout(self):
-        """Layout for main plots"""
-        return html.Div(
-            style=self.set_grid_layout("2fr 1fr"),
-            children=[
-                html.Div(
-                    children=[
-                        html.Div(
-                            style={"height": "400px"},
-                            children=wcc.Graph(
-                                config={"displayModeBar": False}, id=self.ids("inline")
-                            ),
-                        ),
-                        html.Div(
-                            style={"height": "400px"},
-                            children=wcc.Graph(
-                                config={"displayModeBar": False}, id=self.ids("xline")
-                            ),
-                        ),
-                    ]
-                ),
-                html.Div(
-                    style={"height": "876px"},
-                    children=wcc.Graph(
-                        config={"displayModeBar": False}, id=self.ids("zslice")
-                    ),
-                ),
-                dcc.Store(
-                    id=self.ids("state-storage"), data=json.dumps(self.init_state)
-                ),
-            ],
-        )
-
-    @property
     def layout(self):
         return html.Div(
-            id=self.ids("layout"), children=[self.settings_layout, self.plot_layout]
+            id=self.ids("layout"),
+            children=wcc.FlexBox(
+                children=[
+                    html.Div(
+                        style={"width": "50%"},
+                        children=[
+                            html.Div(
+                                style={"minWidth": "200px", "height": "400px"},
+                                children=wcc.Graph(
+                                    config={"displayModeBar": False},
+                                    id=self.ids("inline"),
+                                ),
+                            ),
+                            html.Div(
+                                style={"minWidth": "200px", "height": "400px"},
+                                children=wcc.Graph(
+                                    config={"displayModeBar": False},
+                                    id=self.ids("xline"),
+                                ),
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        style={"width": "50%"},
+                        children=[
+                            html.Div(
+                                style={"minWidth": "200px", "height": "400px"},
+                                children=wcc.Graph(
+                                    config={"displayModeBar": False},
+                                    id=self.ids("zslice"),
+                                ),
+                            ),
+                            self.settings_layout,
+                        ],
+                    ),
+                    dcc.Store(
+                        id=self.ids("state-storage"), data=json.dumps(self.init_state)
+                    ),
+                ]
+            ),
         )
 
     # pylint: disable=too-many-statements
@@ -336,19 +344,21 @@ The plots are linked and updates are done by clicking in the plots.
 
             fig = make_heatmap(
                 zslice_arr,
-                height=800,
+                self.plotly_theme,
                 showscale=True,
                 text=str(state["zslice"]),
                 title=f'Zslice {state["zslice"]} ({self.zunit})',
                 xaxis_title="Inline",
                 yaxis_title="Crossline",
+                reverse_y=False,
                 zmin=state["color_min_value"],
                 zmax=state["color_max_value"],
                 colorscale=state["colorscale"],
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
-
+            fig["layout"]["xaxis"].update({"constrain": "domain"})
+            fig["layout"]["yaxis"].update({"scaleanchor": "x"})
             return fig
 
         @app.callback(
@@ -383,6 +393,7 @@ The plots are linked and updates are done by clicking in the plots.
 
             fig = make_heatmap(
                 iline_arr,
+                self.plotly_theme,
                 xaxis=cube.xlines,
                 yaxis=cube.zslices,
                 title=f'Inline {state["iline"]}',
@@ -427,6 +438,7 @@ The plots are linked and updates are done by clicking in the plots.
             xline_arr = get_xline(cube, state["xline"])
             fig = make_heatmap(
                 xline_arr,
+                self.plotly_theme,
                 xaxis=cube.ilines,
                 yaxis=cube.zslices,
                 title=f'Crossline {state["xline"]}',
@@ -475,8 +487,10 @@ The plots are linked and updates are done by clicking in the plots.
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 def make_heatmap(
     arr,
+    theme,
     height=400,
     zmin=None,
     zmax=None,
@@ -497,6 +511,22 @@ def make_heatmap(
         if colorscale
         else "RdBu"
     )
+    layout = {}
+    layout.update(theme["layout"])
+    layout.update(
+        {
+            "height": height,
+            "title": title,
+            "uirevision": uirevision,
+            "margin": {"b": 50, "t": 50, "r": 0},
+            "yaxis": {
+                "title": yaxis_title,
+                "autorange": "reversed" if reverse_y else None,
+            },
+            "xaxis": {"title": xaxis_title},
+        }
+    )
+
     return {
         "data": [
             {
@@ -512,17 +542,7 @@ def make_heatmap(
                 "zmax": zmax,
             }
         ],
-        "layout": {
-            "height": height,
-            "title": title,
-            "uirevision": uirevision,
-            "margin": {"b": 50, "t": 50, "r": 0},
-            "yaxis": {
-                "title": yaxis_title,
-                "autorange": "reversed" if reverse_y else None,
-            },
-            "xaxis": {"title": xaxis_title},
-        },
+        "layout": layout,
     }
 
 
