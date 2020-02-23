@@ -26,15 +26,9 @@ surface_context = {
 }
 
 return_value = {
-    "attribute": "oilthickness",
     "name": "lowerreek",
+    "attr": "oilthickness",
     "date": "20030101_20010601",
-    "ensemble": "iter-0",
-    "aggregation": "mean",
-    "realization": [0, 1, 2],
-    "sensname": None,
-    "senscase": None,
-    "all_senscases": [],
 }
 
 
