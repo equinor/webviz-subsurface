@@ -40,8 +40,8 @@ def make_surface_layer(
     """Make LayeredMap surface image base layer"""
     zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
-    min_val = min_val if min_val else np.nanmin(zvalues)
-    max_val = max_val if max_val else np.nanmax(zvalues)
+    min_val = min_val if min_val is not None else np.nanmin(zvalues)
+    max_val = max_val if max_val is not None else np.nanmax(zvalues)
     return {
         "name": name,
         "checked": True,

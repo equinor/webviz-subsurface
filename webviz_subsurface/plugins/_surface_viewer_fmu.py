@@ -427,11 +427,11 @@ and available for instant viewing.
                     values = values * surface2.values
                 if calculation == "Quotient":
                     values = values / surface2.values
-                if diff_min:
+                if diff_min is not None:
                     values[values <= diff_min] = diff_min
-                if diff_max:
+                if diff_max is not None:
                     values[values >= diff_max] = diff_max
-                surface3.values = values
+                surface3.values = values.copy()
                 diff_layers = [
                     make_surface_layer(
                         surface3,
@@ -446,7 +446,6 @@ and available for instant viewing.
 
             except ValueError:
                 diff_layers = [self.well_layer]
-
             return (
                 [surface_layer, self.well_layer],
                 [surface_layer2, self.well_layer],
