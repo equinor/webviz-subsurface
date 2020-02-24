@@ -18,7 +18,8 @@ def get_surface_arr(surface, unrotate=True, flip=True):
     if flip:
         x = np.flip(x.transpose(), axis=0)
         y = np.flip(y.transpose(), axis=0)
-        z = np.flip(z.transpose(), axis=0).filled(np.nan)
+        z = np.flip(z.transpose(), axis=0)
+    z.filled(np.nan)
     return [x, y, z]
 
 

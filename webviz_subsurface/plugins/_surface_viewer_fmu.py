@@ -1,4 +1,3 @@
-from uuid import uuid4
 from pathlib import Path
 import json
 import io
@@ -87,8 +86,6 @@ and available for instant viewing.
         self.ens_df = get_realizations(
             ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
         )
-        self._storage_id = f"{str(uuid4())}-surface-viewer"
-        self._map_id = f"{str(uuid4())}-map-id"
         self.selector = SurfaceSelector(app, self.surfaceconfig, ensembles)
         self.selector2 = SurfaceSelector(app, self.surfaceconfig, ensembles)
 
@@ -102,13 +99,7 @@ and available for instant viewing.
         df = self.ens_df.loc[self.ens_df["ENSEMBLE"] == ensemble].copy()
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
-        reals = list(df["REAL"])
-        reals.extend(["Mean", "StdDev", "Min", "Max"])
-        return reals
-
-    @property
-    def map_id(self):
-        return self._map_id
+        return list(df["REAL"]) + ["Mean", "StdDev", "Min", "Max"]
 
     @staticmethod
     def set_grid_layout(columns):
@@ -259,17 +250,25 @@ and available for instant viewing.
                                 html.Label("Truncate Min / Max"),
                                 wcc.FlexBox(
                                     children=[
-                                        dcc.Input(
-                                            debounce=True,
-                                            type="number",
-                                            id=self.uuid("truncate-diff-min"),
-                                            style={"maxWidth": "20%"},
+                                        html.Div(
+                                            style={"width": "20%", "flex": 1},
+                                            children=[
+                                                dcc.Input(
+                                                    debounce=True,
+                                                    type="number",
+                                                    id=self.uuid("truncate-diff-min"),
+                                                )
+                                            ],
                                         ),
-                                        dcc.Input(
-                                            debounce=True,
-                                            type="number",
-                                            id=self.uuid("truncate-diff-max"),
-                                            style={"maxWidth": "20%"},
+                                        html.Div(
+                                            style={"width": "20%", "flex": 1},
+                                            children=[
+                                                dcc.Input(
+                                                    debounce=True,
+                                                    type="number",
+                                                    id=self.uuid("truncate-diff-max"),
+                                                )
+                                            ],
                                         ),
                                     ]
                                 ),
@@ -325,7 +324,7 @@ and available for instant viewing.
             ]
         )
 
-    def get_runpath(self, data, ensemble, real):
+    def get_real_runpath(self, data, ensemble, real):
         data = make_fmu_filename(data)
         runpath = Path(
             self.ens_df.loc[
@@ -390,14 +389,14 @@ and available for instant viewing.
                 surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
 
             else:
-                surface = load_surface(self.get_runpath(data, ensemble, real))
+                surface = load_surface(self.get_real_runpath(data, ensemble, real))
             if real2 in ["Mean", "StdDev", "Min", "Max"]:
                 surface2 = calculate_surface(
                     self.get_ens_runpath(data2, ensemble2), real2
                 )
 
             else:
-                surface2 = load_surface(self.get_runpath(data2, ensemble2, real2))
+                surface2 = load_surface(self.get_real_runpath(data2, ensemble2, real2))
 
             surface_layer = make_surface_layer(
                 surface,
@@ -421,15 +420,15 @@ and available for instant viewing.
                 values = surface3.values.copy()
                 if calculation == "Difference":
                     values = values - surface2.values
-                if calculation == "Sum":
+                elif calculation == "Sum":
                     values = values + surface2.values
-                if calculation == "Product":
+                elif calculation == "Product":
                     values = values * surface2.values
-                if calculation == "Quotient":
+                elif calculation == "Quotient":
                     values = values / surface2.values
-                if diff_min is not None:
+                elif diff_min is not None:
                     values[values <= diff_min] = diff_min
-                if diff_max is not None:
+                elif diff_max is not None:
                     values[values >= diff_max] = diff_max
                 surface3.values = values.copy()
                 diff_layers = [
@@ -556,19 +555,20 @@ def save_surface(fns, statistic) -> io.BytesIO:
     surfaces = xtgeo.Surfaces(fns)
     if len(surfaces.surfaces) == 0:
         surface = xtgeo.RegularSurface()
-    if statistic == "Mean":
+    elif statistic == "Mean":
         surface = surfaces.apply(np.nanmean, axis=0)
-    if statistic == "StdDev":
+    elif statistic == "StdDev":
         surface = surfaces.apply(np.nanstd, axis=0)
-    if statistic == "Min":
+    elif statistic == "Min":
         surface = surfaces.apply(np.nanmin, axis=0)
-    if statistic == "Max":
+    elif statistic == "Max":
         surface = surfaces.apply(np.nanmax, axis=0)
-    if statistic == "P10":
+    elif statistic == "P10":
         surface = surfaces.apply(np.nanpercentile, 10, axis=0)
-    if statistic == "P90":
+    elif statistic == "P90":
         surface = surfaces.apply(np.nanpercentile, 90, axis=0)
-
+    else:
+        surface = xtgeo.RegularSurface()
     return io.BytesIO(surface_to_json(surface).encode())
 
 
@@ -598,7 +598,6 @@ def get_surfaces(fns):
 
 @webvizstore
 def get_path(path) -> Path:
-
     return Path(path)
 
 
@@ -641,6 +640,7 @@ def find_files(folder, suffix) -> io.BytesIO:
 
 
 def make_fmu_filename(data):
-    if data["date"] is None:
-        return f"{data['name']}--{data['attr']}"
-    return f"{data['name']}--{data['attr']}--{data['date']}"
+    filename = f"{data['name']}--{data['attr']}"
+    if data["date"] is not None:
+        filename += f"--{data['date']}"
+    return filename

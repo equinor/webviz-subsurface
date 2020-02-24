@@ -88,9 +88,8 @@ another_property:
 
     def _dates_in_attr(self, attr):
         dates = self._configuration[attr].get("dates", None)
-        if dates is not None:
-            if dates == [np.nan]:
-                dates = None
+        if dates is not None and dates == [np.nan]:
+            return None
         return dates
 
     @property
@@ -117,28 +116,6 @@ another_property:
                 ),
             ],
         )
-
-    @property
-    def style_left_btn(self):
-        return {
-            "border": "solid black",
-            "border-width": "0 3px 3px 0",
-            "display": "inline-block",
-            "padding": "3px",
-            "transform": "rotate(135deg)",
-            "-webkit-transform": "rotate(135deg)",
-        }
-
-    @property
-    def style_right_btn(self):
-        return {
-            "border": "solid black",
-            "border-width": "0 3px 3px 0",
-            "display": "inline-block",
-            "padding": "3px",
-            "transform": "rotate(-45deg)",
-            "-webkit-transform": "rotate(-45deg)",
-        }
 
     def _make_buttons(self, prev_id, next_id):
         return html.Div(

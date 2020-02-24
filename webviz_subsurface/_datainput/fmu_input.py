@@ -117,29 +117,15 @@ def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--") -> pd.Da
         path = Path(path)
         for realpath in glob.glob(str(path / "share" / "results" / "maps" / suffix)):
             stem = Path(realpath).stem.split(delimiter)
-            if len(stem) < 2:
-                continue
-            if len(stem) < 3:
+            if len(stem) >= 2:
                 files.append(
                     {
                         "path": realpath,
                         "name": stem[0],
                         "attribute": stem[1],
-                        "date": None,
-                    }
-                )
-            else:
-                files.append(
-                    {
-                        "path": realpath,
-                        "name": stem[0],
-                        "attribute": stem[1],
-                        "date": stem[2],
+                        "date": stem[2] if len(stem) >= 3 else None,
                     }
                 )
 
     # Store surface name, attribute and date as Pandas dataframe
-    df = pd.DataFrame(files)
-    # return df
-    # Group dataframe by surface attribute and return unique names and dates
-    return df
+    return pd.DataFrame(files)
