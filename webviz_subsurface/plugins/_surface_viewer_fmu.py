@@ -426,9 +426,9 @@ and available for instant viewing.
                     values = values * surface2.values
                 elif calculation == "Quotient":
                     values = values / surface2.values
-                elif diff_min is not None:
+                if diff_min is not None:
                     values[values <= diff_min] = diff_min
-                elif diff_max is not None:
+                if diff_max is not None:
                     values[values >= diff_max] = diff_max
                 surface3.values = values.copy()
                 diff_layers = [

@@ -113,7 +113,7 @@ def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--") -> pd.Da
     """
     # Create list of all files in all realizations in all ensembles
     files = []
-    for _, path in ensemble_paths.items():
+    for path in ensemble_paths.values():
         path = Path(path)
         for realpath in glob.glob(str(path / "share" / "results" / "maps" / suffix)):
             stem = Path(realpath).stem.split(delimiter)
