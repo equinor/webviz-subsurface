@@ -82,7 +82,11 @@ and available for instant viewing.
             if wellfolder is not None
             else None
         )
-        self.well_layer = make_well_layers(self.wellfiles) if self.wellfiles else None
+        self.well_layer = (
+            make_well_layers([get_path(wellfile) for wellfile in self.wellfiles])
+            if self.wellfiles
+            else None
+        )
         # Extract realizations and sensitivity information
         self.ens_df = get_realizations(
             ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
