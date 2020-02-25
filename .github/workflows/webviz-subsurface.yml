@@ -1,0 +1,114 @@
+name: webviz-subsurface
+
+on:
+  push:
+  release:
+    types:
+      - published
+  
+jobs:
+
+  webviz-subsurface:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8']
+
+    steps:
+
+    - name: Checkout commit locally
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install webviz-subsurface with dependencies
+      run: |
+        pip install --upgrade pip
+        pip install .
+
+    - name: Install test dependencies
+      run: |
+        pip install .[tests] 
+        pip install dash[testing]
+        wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        export PATH=$PATH:$PWD
+
+    - name: List all installed packages
+      run: pip freeze
+
+    - name: Check code style & linting
+      run: |
+        black --check webviz_subsurface tests setup.py
+        pylint webviz_subsurface tests setup.py
+        bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+
+    - name: Run tests
+      env:  
+        # If you want the CI to (temporarily) run against your fork of the testdada,
+        # change the value her from "equinor" to your username.
+        TESTDATA_REPO_OWNER: equinor
+        # If you want the CI to (temporarily) run against another branch than master,
+        # change the value her from "master" to the relevant branch name.
+        TESTDATA_REPO_BRANCH: master
+      run: |
+        webviz certificate
+        git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+        pip install git+https://github.com/equinor/fmu-ensemble
+        pytest ./tests --headless --forked
+        git clone https://github.com/equinor/webviz-config.git
+        pushd ./webviz-config/docs
+        python build_docs.py
+        popd
+
+    - name: Build Docker example image
+      run: |
+        pip install webviz-config-equinor
+        webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
+        pushd example_subsurface_app
+        # Related to https://github.com/equinor/webviz-config/issues/150:
+        echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
+        docker build -t webviz/example_subsurface_image:equinor-theme .
+        popd
+
+    - name: Update Docker Hub example image
+      if: github.ref == 'master' && matrix.python-version == '3.6'
+      run: |
+        echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
+        docker push webviz/example_subsurface_image:equinor-theme
+
+    - name: Build and deploy Python package
+      if: github.event_name == 'release' && matrix.python-version == '3.6'
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
+      run: |
+        python -m pip install --upgrade setuptools wheel twine
+        python setup.py sdist bdist_wheel
+        twine upload dist/*
+
+    - name: Update GitHub pages
+      if: github.ref == 'master' && matrix.python-version == '3.6'
+      run: |
+        cp -R ./webviz-config/docs/_build ../_build
+
+        git config --local user.email "webviz-github-action"
+        git config --local user.name "webviz-github-action"
+        git fetch origin gh-pages
+        git checkout --track origin/gh-pages
+        git clean -f -f -d -x
+        git rm -r *
+        
+        cp -R ../_build/* .
+
+        git add .
+
+        if git diff-index --quiet HEAD; then
+          echo "No changes in documentation. Skip documentation deploy."
+        else
+          git commit -m "Update Github Pages"
+          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+        fi
