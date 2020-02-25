@@ -2,6 +2,8 @@ from datetime import datetime
 from uuid import uuid4
 import json
 import yaml
+
+import numpy as np
 import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -39,9 +41,11 @@ another_property:
 """
 
     def __init__(self, app, config, ensembles):
+
         self._configuration = self.read_config(config)
         self._ensembles = ensembles
         self._storage_id = f"{str(uuid4())}-surface-selector"
+
         self.set_ids()
         self.set_callbacks(app)
 
@@ -72,73 +76,28 @@ another_property:
         self.date_id = f"{uuid}-date"
         self.date_id_btn_prev = f"{uuid}-date-btn-prev"
         self.date_id_btn_next = f"{uuid}-date-btn-next"
-        self.ensemble_id = f"{uuid}-ens"
-        self.ensemble_id_btn_prev = f"{uuid}-ensemble-btn-prev"
-        self.ensemble_id_btn_next = f"{uuid}-ensemble-btn-next"
-        self.realization_id = f"{uuid}-real"
-        self.realization_id_btn_prev = f"{uuid}-realization-btn-prev"
-        self.realization_id_btn_next = f"{uuid}-realization-btn-next"
         self.name_wrapper_id = f"{uuid}-name-wrapper"
         self.date_wrapper_id = f"{uuid}-date-wrapper"
-        self.ens_wrapper_id = f"{uuid}-ens-wrapper"
-        self.real_wrapper_id = f"{uuid}-real-wrapper"
-        self.aggreal_id = f"{uuid}-aggreal"
-        self.sens_name_id = f"{uuid}-sens-name-id"
-        self.sens_case_id = f"{uuid}-sens-case-id"
-        self.sens_name_wrapper_id = f"{uuid}-sens-name-wrapper-id"
-        self.sens_case_wrapper_id = f"{uuid}-sens-case-wrapper-id"
 
     @property
     def attrs(self):
         return list(self._configuration.keys())
 
-    def names_in_attr(self, attr):
+    def _names_in_attr(self, attr):
         return self._configuration[attr].get("names", None)
 
-    def dates_in_attr(self, attr):
-        return self._configuration[attr].get("dates", None)
-
-    @property
-    def ensembles(self):
-        return list(self._ensembles["ENSEMBLE"].unique())
-
-    def sens_names(self, ensemble):
-        sensnames = list(
-            self._ensembles.loc[self._ensembles["ENSEMBLE"] == ensemble][
-                "SENSNAME"
-            ].unique()
-        )
-        if sensnames[0] is None:
+    def _dates_in_attr(self, attr):
+        dates = self._configuration[attr].get("dates", None)
+        if dates is not None and dates == [np.nan]:
             return None
-        return sensnames
-
-    def sens_cases(self, ensemble, sensname):
-        senscases = list(
-            self._ensembles.loc[
-                (self._ensembles["ENSEMBLE"] == ensemble)
-                & (self._ensembles["SENSNAME"] == sensname)
-            ]["SENSCASE"].unique()
-        )
-        if senscases and senscases[0] is None:
-            return None
-        return senscases
-
-    def realizations(self, ensemble, sensname=None, senstype=None):
-        df = self._ensembles.loc[self._ensembles["ENSEMBLE"] == ensemble].copy()
-        if sensname and senstype:
-            df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
-        return list(df["REAL"])
-
-    @property
-    def aggregations(self):
-        return ["mean", "stddev", "min", "max", "p10", "p90"]
+        return dates
 
     @property
     def attribute_selector(self):
         return html.Div(
             style={"display": "grid"},
             children=[
-                html.H6("Surface property"),
+                html.Label("Surface attribute"),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
@@ -150,18 +109,36 @@ another_property:
                             value=self.attrs[0],
                             clearable=False,
                         ),
-                        self.make_buttons(self.attr_id_btn_prev, self.attr_id_btn_next),
+                        self._make_buttons(
+                            self.attr_id_btn_prev, self.attr_id_btn_next
+                        ),
                     ],
                 ),
             ],
         )
 
-    def make_buttons(self, prev_id, next_id):
+    def _make_buttons(self, prev_id, next_id):
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Button(id=prev_id, children="<="),
-                html.Button(id=next_id, children="=>"),
+                html.Button(
+                    style={
+                        "fontSize": "1rem",
+                        "padding": "10px",
+                        "textTransform": "none",
+                    },
+                    id=prev_id,
+                    children="Prev",
+                ),
+                html.Button(
+                    style={
+                        "fontSize": "1rem",
+                        "padding": "10px",
+                        "textTransform": "none",
+                    },
+                    id=next_id,
+                    children="Next",
+                ),
             ],
         )
 
@@ -170,120 +147,26 @@ another_property:
             id=wrapper_id,
             style={"display": "none"},
             children=[
-                html.H6(title),
+                html.Label(title),
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
                         dcc.Dropdown(id=dropdown_id, clearable=False),
-                        self.make_buttons(btn_prev, btn_next),
+                        self._make_buttons(btn_prev, btn_next),
                     ],
                 ),
-            ],
-        )
-
-    @property
-    def ensemble_selector(self):
-        return html.Div(
-            id=self.ens_wrapper_id,
-            style={"display": "grid"},
-            children=[
-                html.H6("Ensemble"),
-                html.Div(
-                    style=self.set_grid_layout("6fr 1fr"),
-                    children=[
-                        dcc.Dropdown(
-                            id=self.ensemble_id,
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles[0],
-                            clearable=False,
-                        ),
-                        self.make_buttons(
-                            self.ensemble_id_btn_prev, self.ensemble_id_btn_next
-                        ),
-                    ],
-                ),
-            ],
-        )
-
-    @property
-    def realization_selector(self):
-        return html.Div(
-            id=self.real_wrapper_id,
-            children=[
-                html.Div(
-                    style=self.set_grid_layout("3fr 3fr 1fr 3fr 3fr"),
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Label("Mode"),
-                                dcc.Dropdown(
-                                    id=self.aggreal_id,
-                                    options=[
-                                        {
-                                            "label": "Aggregation",
-                                            "value": "Aggregation",
-                                        },
-                                        {
-                                            "label": "Realization",
-                                            "value": "Realization",
-                                        },
-                                    ],
-                                    value="Aggregation",
-                                    clearable=False,
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            children=[
-                                html.Label("Realization"),
-                                dcc.Dropdown(id=self.realization_id, clearable=False),
-                            ]
-                        ),
-                        html.Div(
-                            children=[
-                                html.Label("Prev/Next"),
-                                self.make_buttons(
-                                    self.realization_id_btn_prev,
-                                    self.realization_id_btn_next,
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            id=self.sens_name_wrapper_id,
-                            children=[
-                                html.Label("Sensitivity name"),
-                                dcc.Dropdown(id=self.sens_name_id, clearable=False),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.sens_case_wrapper_id,
-                            children=[
-                                html.Label("Sensitivity case"),
-                                dcc.Dropdown(id=self.sens_case_id, clearable=False),
-                            ],
-                        ),
-                    ],
-                )
             ],
         )
 
     @staticmethod
     def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
+        return {"display": "grid", "gridTemplateColumns": f"{columns}"}
 
     @property
     def layout(self):
         return html.Div(
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr"),
                     children=[
                         self.attribute_selector,
                         self.selector(
@@ -300,10 +183,8 @@ another_property:
                             self.date_id_btn_prev,
                             self.date_id_btn_next,
                         ),
-                    ],
+                    ]
                 ),
-                self.ensemble_selector,
-                self.realization_selector,
                 dcc.Store(id=self.storage_id),
             ]
         )
@@ -331,27 +212,6 @@ another_property:
                 return next_value(current_value, self.attrs)
 
         @app.callback(
-            Output(self.ensemble_id, "value"),
-            [
-                Input(self.ensemble_id_btn_prev, "n_clicks"),
-                Input(self.ensemble_id_btn_next, "n_clicks"),
-            ],
-            [State(self.ensemble_id, "value")],
-        )
-        def _update_ensemble(_n_prev, _n_next, current_value):
-            ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
-                raise PreventUpdate
-            if not ctx[0]["value"]:
-                return current_value
-            callback = ctx[0]["prop_id"]
-            if callback == f"{self.ensemble_id_btn_prev}.n_clicks":
-                return prev_value(current_value, self.ensembles)
-            if callback == f"{self.ensemble_id_btn_next}.n_clicks":
-                return next_value(current_value, self.ensembles)
-            return current_value
-
-        @app.callback(
             [
                 Output(self.name_id, "options"),
                 Output(self.name_id, "value"),
@@ -368,7 +228,7 @@ another_property:
             ctx = dash.callback_context.triggered
             if not ctx:
                 raise PreventUpdate
-            names = self.names_in_attr(attr)
+            names = self._names_in_attr(attr)
             if not names:
                 return None, None, {"visibility": "hidden"}
 
@@ -397,9 +257,11 @@ another_property:
         )
         def _update_date(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
+
             if not ctx:
                 raise PreventUpdate
-            dates = self.dates_in_attr(attr)
+            dates = self._dates_in_attr(attr)
+
             if not dates or not dates[0]:
                 return [], None, {"visibility": "hidden"}
 
@@ -414,120 +276,27 @@ another_property:
             return options, value, {}
 
         @app.callback(
-            [
-                Output(self.realization_id, "options"),
-                Output(self.realization_id, "value"),
-                Output(self.realization_id, "style"),
-            ],
-            [
-                Input(self.ensemble_id, "value"),
-                Input(self.aggreal_id, "value"),
-                Input(self.realization_id_btn_prev, "n_clicks"),
-                Input(self.realization_id_btn_next, "n_clicks"),
-                Input(self.sens_name_id, "value"),
-                Input(self.sens_case_id, "value"),
-            ],
-            [State(self.realization_id, "value")],
-        )
-        def _update_real(
-            ensemble, aggreal, _n_prev, _n_next, sens_name, sens_case, current_value
-        ):
-            ctx = dash.callback_context.triggered
-            if not ctx:
-                raise PreventUpdate
-            if aggreal == "Aggregation":
-                reals = self.aggregations
-            else:
-                reals = self.realizations(ensemble, sens_name, sens_case)
-            if not reals:
-                return [], None, {"visibility": "hidden"}
-            callback = ctx[0]["prop_id"]
-            if callback == f"{self.realization_id_btn_prev}.n_clicks":
-                value = prev_value(current_value, reals)
-            elif callback == f"{self.realization_id_btn_next}.n_clicks":
-                value = next_value(current_value, reals)
-            else:
-                value = current_value if current_value in reals else reals[0]
-            options = [{"value": real, "label": real} for real in reals]
-            return options, value, {}
-
-        @app.callback(
-            [
-                Output(self.sens_name_id, "options"),
-                Output(self.sens_name_id, "value"),
-                Output(self.sens_name_wrapper_id, "style"),
-            ],
-            [Input(self.ensemble_id, "value")],
-            [State(self.sens_name_id, "value")],
-        )
-        def _update_sens_name(ensemble, current_value):
-            sens_names = self.sens_names(ensemble)
-            if not sens_names:
-                return [], None, {"visibility": "hidden"}
-            value = current_value if current_value in sens_names else sens_names[0]
-            options = [{"value": sens, "label": sens} for sens in sens_names]
-            return options, value, {}
-
-        @app.callback(
-            [
-                Output(self.sens_case_id, "options"),
-                Output(self.sens_case_id, "value"),
-                Output(self.sens_case_wrapper_id, "style"),
-            ],
-            [Input(self.sens_name_id, "value")],
-            [State(self.ensemble_id, "value"), State(self.sens_case_id, "value")],
-        )
-        def _update_sens_case(sensname, ensemble, current_value):
-            sens_cases = self.sens_cases(ensemble, sensname)
-            if not sens_cases:
-                return [], None, {"visibility": "hidden"}
-            value = current_value if current_value in sens_cases else sens_cases[0]
-            options = [{"value": sens, "label": sens} for sens in sens_cases]
-            return options, value, {}
-
-        @app.callback(
             Output(self.storage_id, "children"),
             [
                 Input(self.attr_id, "value"),
                 Input(self.name_id, "value"),
                 Input(self.date_id, "value"),
-                Input(self.ensemble_id, "value"),
-                Input(self.aggreal_id, "value"),
-                Input(self.realization_id, "value"),
-                Input(self.sens_name_id, "value"),
-                Input(self.sens_case_id, "value"),
             ],
         )
-        def _set_data(
-            attr, name, date, ensemble, aggreal, calculation, sens_name, sens_case
-        ):
+        def _set_data(attr, name, date):
 
             """
             Stores current selections to dcc.Store. The information can
             be retrieved as a json string from a dash callback Input.
             E.g. [Input(surfselector.storage_id, 'children')]
             """
-            reals = self.realizations(ensemble, sens_name, sens_case)
-            all_senscases = [
-                {
-                    "case": senscase,
-                    "realizations": self.realizations(ensemble, sens_name, senscase),
-                }
-                for senscase in self.sens_cases(ensemble, sens_name)
-            ]
-            return json.dumps(
-                {
-                    "attribute": attr,
-                    "name": name,
-                    "date": date,
-                    "ensemble": ensemble,
-                    "aggregation": calculation if aggreal == "Aggregation" else None,
-                    "realization": reals if aggreal == "Aggregation" else calculation,
-                    "sensname": sens_name,
-                    "senscase": sens_case,
-                    "all_senscases": all_senscases,
-                }
-            )
+
+            # Preventing update if selections are not valid (waiting for the other callbacks)
+            if not name in self._names_in_attr(attr):
+                raise PreventUpdate
+            if date and not date in self._dates_in_attr(attr):
+                raise PreventUpdate
+            return json.dumps({"name": name, "attr": attr, "date": date})
 
 
 def prev_value(current_value, options):
@@ -551,6 +320,7 @@ def format_date(date_string):
     20010101 => Jan 2001
     20010101_20010601 => (Jan 2001) - (June 2001)
     20010101_20010106 => (01 Jan 2001) - (06 Jan 2001)"""
+    date_string = str(date_string)
     if len(date_string) == 8:
         return datetime.strptime(date_string, "%Y%m%d").strftime("%b %Y")
 
