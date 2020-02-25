@@ -459,26 +459,26 @@ and available for instant viewing.
                     hillshading=True,
                 )
             ]
-            surface3 = calculate_surface_difference(surface, surface2, calculation)
-            # try:
-            if diff_min is not None:
-                surface3.values[surface3.values <= diff_min] = diff_min
-            if diff_max is not None:
-                surface3.values[surface3.values >= diff_max] = diff_max
-            diff_layers = []
-            diff_layers.append(
-                make_surface_layer(
-                    surface3,
-                    name="surface",
-                    color=attribute_settings.get(data["attr"], {}).get(
-                        "color", "viridis"
-                    ),
-                    hillshading=True,
-                )
-            )
 
-            # except ValueError:
-            #     diff_layers = []
+            try:
+                surface3 = calculate_surface_difference(surface, surface2, calculation)
+                if diff_min is not None:
+                    surface3.values[surface3.values <= diff_min] = diff_min
+                if diff_max is not None:
+                    surface3.values[surface3.values >= diff_max] = diff_max
+                diff_layers = []
+                diff_layers.append(
+                    make_surface_layer(
+                        surface3,
+                        name="surface",
+                        color=attribute_settings.get(data["attr"], {}).get(
+                            "color", "viridis"
+                        ),
+                        hillshading=True,
+                    )
+                )
+            except ValueError:
+                diff_layers = []
             if self.well_layer:
                 surface_layers.append(self.well_layer)
                 surface_layers2.append(self.well_layer)
