@@ -583,6 +583,39 @@ a FMU ensemble.</p>
 <hr>
 
 
+<h3>SurfaceViewerFMU</h3>
+<p>A plugin to covisualize surfaces from an ensemble.
+There are 3 separate map views. 2 views can be set independently, while
+the 3rd view displays the resulting map by combining the other maps e.g.
+by taking the difference or summing the values.</p>
+<p>There is flexibility in which combinations of surfaces that are displayed
+and calculated, such that surfaces can e.g. be compared across ensembles.</p>
+<p>The available maps are gathered from the <code>share/results/maps/</code> folder
+for each realization. Statistical calculations across the ensemble(s) are
+done on the fly. If the ensemble or surfaces have a large size it is recommended
+to run webviz in <code>portable</code> mode so that the statistical surfaces are pre-calculated
+and available for instant viewing.</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+<li><code>attributes</code>: List of surface attributes to include, if not given
+                all surface attributes will be included.</li>
+<li><code>attribute_settings</code>: Dictionary with setting for each attribute.
+                Available settings are 'min' and 'max' to truncate colorscale,
+                'color' to set the colormap (default is viridis) and <code>unit</code> as
+                displayed label.</li>
+<li><code>wellfolder</code>: Folder with RMS wells</li>
+<li><code>wellsuffix</code>: File suffix for wells in well folder.</li>
+</ul>
+<pre><code class="yaml">    - SurfaceViewerFMU:
+        ensembles: some value
+        attributes: None  # Optional (default value shown here).
+        attribute_settings: None  # Optional (default value shown here).
+        wellfolder: None  # Optional (default value shown here).
+        wellsuffix: .w  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>SurfaceWithGridCrossSection</h3>
 <p>This plugin visualizes surfaces in a map view and grid parameters in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.</p>
