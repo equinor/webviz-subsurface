@@ -549,4 +549,3 @@ def make_heatmap(
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
-
