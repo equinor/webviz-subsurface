@@ -43,7 +43,8 @@ and available for instant viewing.
                 all surface attributes will be included.
 * `attribute_settings`: Dictionary with setting for each attribute.
                 Available settings are 'min' and 'max' to truncate colorscale,
-                as well as 'color' to set the colormap (default is viridis).
+                'color' to set the colormap (default is viridis) and `unit` as
+                displayed label.
 * `wellfolder`: Folder with RMS wells
 * `wellsuffix`: File suffix for wells in well folder.
 """
@@ -100,6 +101,31 @@ and available for instant viewing.
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
         return list(df["REAL"]) + ["Mean", "StdDev", "Min", "Max"]
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.uuid("layout"),
+                "content": (
+                    "Dashboard to compare surfaces from a FMU ensemble. "
+                    "The two left views can be set independently, while the right "
+                    "view shows a calculated surface."
+                ),
+            },
+            {
+                "id": self.uuid("settings-view1"),
+                "content": ("Settings for the first map view"),
+            },
+            {
+                "id": self.uuid("settings-view2"),
+                "content": ("Settings for the second map view"),
+            },
+            {
+                "id": self.uuid("settings-view3"),
+                "content": ("Settings for the calculated map view"),
+            },
+        ]
 
     @staticmethod
     def set_grid_layout(columns):
@@ -195,11 +221,13 @@ and available for instant viewing.
     @property
     def layout(self):
         return html.Div(
-            [
+            id=self.uuid("layout"),
+            children=[
                 wcc.FlexBox(
                     style={"fontSize": "1rem"},
                     children=[
                         html.Div(
+                            id=self.uuid("settings-view1"),
                             style={"margin": "10px", "flex": 4},
                             children=[
                                 self.selector.layout,
@@ -215,6 +243,7 @@ and available for instant viewing.
                         ),
                         html.Div(
                             style={"margin": "10px", "flex": 4},
+                            id=self.uuid("settings-view2"),
                             children=[
                                 self.selector2.layout,
                                 self.ensemble_layout(
@@ -229,6 +258,7 @@ and available for instant viewing.
                         ),
                         html.Div(
                             style={"margin": "10px", "flex": 4},
+                            id=self.uuid("settings-view3"),
                             children=[
                                 html.Label("Calculation"),
                                 html.Div(
@@ -247,27 +277,28 @@ and available for instant viewing.
                                         ],
                                     )
                                 ),
-                                html.Label("Truncate Min / Max"),
                                 wcc.FlexBox(
                                     children=[
                                         html.Div(
                                             style={"width": "20%", "flex": 1},
                                             children=[
+                                                html.Label("Truncate Min"),
                                                 dcc.Input(
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-min"),
-                                                )
+                                                ),
                                             ],
                                         ),
                                         html.Div(
                                             style={"width": "20%", "flex": 1},
                                             children=[
+                                                html.Label("Truncate Max"),
                                                 dcc.Input(
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-max"),
-                                                )
+                                                ),
                                             ],
                                         ),
                                     ]
@@ -321,7 +352,7 @@ and available for instant viewing.
                         ),
                     ],
                 ),
-            ]
+            ],
         )
 
     def get_real_runpath(self, data, ensemble, real):
@@ -398,56 +429,59 @@ and available for instant viewing.
             else:
                 surface2 = load_surface(self.get_real_runpath(data2, ensemble2, real2))
 
-            surface_layer = make_surface_layer(
-                surface,
-                name="surface",
-                color=attribute_settings.get(data["attr"], {}).get("color", "viridis"),
-                min_val=attribute_settings.get(data["attr"], {}).get("min", None),
-                max_val=attribute_settings.get(data["attr"], {}).get("max", None),
-                hillshading=True,
-            )
-            surface_layer2 = make_surface_layer(
-                surface2,
-                name="surface",
-                color=attribute_settings.get(data2["attr"], {}).get("color", "viridis"),
-                min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
-                max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
-                hillshading=True,
-            )
-
-            surface3 = surface.copy()
-            try:
-                values = surface3.values.copy()
-                if calculation == "Difference":
-                    values = values - surface2.values
-                elif calculation == "Sum":
-                    values = values + surface2.values
-                elif calculation == "Product":
-                    values = values * surface2.values
-                elif calculation == "Quotient":
-                    values = values / surface2.values
-                if diff_min is not None:
-                    values[values <= diff_min] = diff_min
-                if diff_max is not None:
-                    values[values >= diff_max] = diff_max
-                surface3.values = values.copy()
-                diff_layers = [
-                    make_surface_layer(
-                        surface3,
-                        name="surface",
-                        color=attribute_settings.get(data["attr"], {}).get(
-                            "color", "viridis"
-                        ),
-                        hillshading=True,
+            surface_layers = [
+                make_surface_layer(
+                    surface,
+                    name="surface",
+                    color=attribute_settings.get(data["attr"], {}).get(
+                        "color", "viridis"
                     ),
-                    self.well_layer,
-                ]
+                    min_val=attribute_settings.get(data["attr"], {}).get("min", None),
+                    max_val=attribute_settings.get(data["attr"], {}).get("max", None),
+                    unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
+                    hillshading=True,
+                )
+            ]
+            surface_layers2 = [
+                make_surface_layer(
+                    surface2,
+                    name="surface",
+                    color=attribute_settings.get(data2["attr"], {}).get(
+                        "color", "viridis"
+                    ),
+                    min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
+                    max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
+                    unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
+                    hillshading=True,
+                )
+            ]
+            surface3 = calculate_surface_difference(surface, surface2, calculation)
+            # try:
+            if diff_min is not None:
+                surface3.values[surface3.values <= diff_min] = diff_min
+            if diff_max is not None:
+                surface3.values[surface3.values >= diff_max] = diff_max
+            diff_layers = []
+            diff_layers.append(
+                make_surface_layer(
+                    surface3,
+                    name="surface",
+                    color=attribute_settings.get(data["attr"], {}).get(
+                        "color", "viridis"
+                    ),
+                    hillshading=True,
+                )
+            )
 
-            except ValueError:
-                diff_layers = [self.well_layer]
+            # except ValueError:
+            #     diff_layers = []
+            if self.well_layer:
+                surface_layers.append(self.well_layer)
+                surface_layers2.append(self.well_layer)
+                diff_layers.append(self.well_layer)
             return (
-                [surface_layer, self.well_layer],
-                [surface_layer2, self.well_layer],
+                surface_layers,
+                surface_layers2,
                 diff_layers,
             )
 
@@ -644,3 +678,16 @@ def make_fmu_filename(data):
     if data["date"] is not None:
         filename += f"--{data['date']}"
     return filename
+
+
+def calculate_surface_difference(surface, surface2, calculation="Difference"):
+    surface3 = surface.copy()
+    if calculation == "Difference":
+        surface3.values = surface3.values - surface2.values
+    elif calculation == "Sum":
+        surface3.values = surface3.values + surface2.values
+    elif calculation == "Product":
+        surface3.values = surface3.values * surface2.values
+    elif calculation == "Quotient":
+        surface3.values = surface3.values / surface2.values
+    return surface3

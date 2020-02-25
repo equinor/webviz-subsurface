@@ -56,7 +56,7 @@ def make_surface_layer(
                 "allowHillshading": hillshading,
                 "minvalue": f"{min_val:.2f}" if min_val is not None else None,
                 "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
-                "unit": unit,
+                "unit": str(unit),
             }
         ],
     }
