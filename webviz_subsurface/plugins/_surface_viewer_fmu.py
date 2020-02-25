@@ -305,7 +305,10 @@ and available for instant viewing.
                                                 ),
                                             ],
                                         ),
-                                        html.Label(style={'fontSize':'1.2rem'},id=self.uuid("map3-label")),
+                                        html.Label(
+                                            style={"fontSize": "1.2rem"},
+                                            id=self.uuid("map3-label"),
+                                        ),
                                     ]
                                 ),
                             ],
