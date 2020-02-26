@@ -39,6 +39,8 @@ setup(
             + "webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
+            "ParameterParallelCoordinates = "
+            + "webviz_subsurface.plugins:ParameterParallelCoordinates",
         ]
     },
     install_requires=[
