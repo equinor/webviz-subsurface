@@ -429,6 +429,20 @@ or as an ensemble name defined in <code>shared_settings</code>.</p>
 <hr>
 
 
+<h3>ParameterParallelCoordinates</h3>
+<p>This plugin visualizes parameters used for individual realizations in FMU ensembles.
+Useful to investigate initial distributions, and convergence of parameters over multiple iterations</p>
+<p>Input:
+* <code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.
+* 'visual_parameters': List of default visualized parameteres.
+If undefined: all parameters visualized.</p>
+<pre><code class="yaml">    - ParameterParallelCoordinates:
+        ensembles: some value
+        visual_parameters: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Parameter and response correlation</h3>
 <p>This plugin shows correlation between numerical input parameters and responses.</p>
 <p>Input can be given either as:</p>
