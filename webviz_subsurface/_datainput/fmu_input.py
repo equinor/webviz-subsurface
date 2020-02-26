@@ -1,5 +1,7 @@
 from pathlib import Path
 import glob
+from typing import Union
+
 import pandas as pd
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -16,11 +18,17 @@ def scratch_ensemble(ensemble_name, ensemble_path):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_ensemble_set(ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"):
+def load_ensemble_set(
+    ensemble_paths: dict,
+    ensemble_set_name: str = "EnsembleSet",
+    filter_file: Union[str, None] = "OK",
+):
     return EnsembleSet(
         ensemble_set_name,
         [
             ScratchEnsemble(ens_name, ens_path)
+            if filter_file is None
+            else ScratchEnsemble(ens_name, ens_path).filter(filter_file)
             for ens_name, ens_path in ensemble_paths.items()
         ],
     )
