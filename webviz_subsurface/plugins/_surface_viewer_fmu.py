@@ -305,6 +305,10 @@ and available for instant viewing.
                                                 ),
                                             ],
                                         ),
+                                        html.Label(
+                                            style={"fontSize": "1.2rem"},
+                                            id=self.uuid("map3-label"),
+                                        ),
                                     ]
                                 ),
                             ],
@@ -387,6 +391,7 @@ and available for instant viewing.
                 Output(self.uuid("map"), "layers"),
                 Output(self.uuid("map2"), "layers"),
                 Output(self.uuid("map3"), "layers"),
+                Output(self.uuid("map3-label"), "children"),
             ],
             [
                 Input(self.selector.storage_id, "children"),
@@ -459,35 +464,35 @@ and available for instant viewing.
                     hillshading=True,
                 )
             ]
-            surface3 = calculate_surface_difference(surface, surface2, calculation)
-            # try:
-            if diff_min is not None:
-                surface3.values[surface3.values <= diff_min] = diff_min
-            if diff_max is not None:
-                surface3.values[surface3.values >= diff_max] = diff_max
-            diff_layers = []
-            diff_layers.append(
-                make_surface_layer(
-                    surface3,
-                    name="surface",
-                    color=attribute_settings.get(data["attr"], {}).get(
-                        "color", "viridis"
-                    ),
-                    hillshading=True,
-                )
-            )
 
-            # except ValueError:
-            #     diff_layers = []
+            try:
+                surface3 = calculate_surface_difference(surface, surface2, calculation)
+                if diff_min is not None:
+                    surface3.values[surface3.values <= diff_min] = diff_min
+                if diff_max is not None:
+                    surface3.values[surface3.values >= diff_max] = diff_max
+                diff_layers = []
+                diff_layers.append(
+                    make_surface_layer(
+                        surface3,
+                        name="surface",
+                        color=attribute_settings.get(data["attr"], {}).get(
+                            "color", "viridis"
+                        ),
+                        hillshading=True,
+                    )
+                )
+                error_label = ""
+            except ValueError:
+                diff_layers = []
+                error_label = (
+                    "Cannot calculate because the surfaces have different geometries"
+                )
             if self.well_layer:
                 surface_layers.append(self.well_layer)
                 surface_layers2.append(self.well_layer)
                 diff_layers.append(self.well_layer)
-            return (
-                surface_layers,
-                surface_layers2,
-                diff_layers,
-            )
+            return (surface_layers, surface_layers2, diff_layers, error_label)
 
         def _update_from_btn(_n_prev, _n_next, current_value, options):
             """Updates dropdown value if previous/next btn is clicked"""
