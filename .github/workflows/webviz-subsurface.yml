@@ -37,7 +37,8 @@ jobs:
         #sudo dpkg -i packages-microsoft-prod.deb
         #sudo apt-get update
         sudo apt-get install blobfuse -y
-        mkdir -p /mnt/blobfusetmp
+        sudo mkdir -p /mnt/blobfusetmp
+        sudo chmod a+rwx /mnt/blobfusetmp
         echo $PWD   
         mkdir ./mounted_container
         blobfuse $PWD/mounted_container --container-name=webvizexampleblob --tmp-path=/mnt/blobfusetmp 
