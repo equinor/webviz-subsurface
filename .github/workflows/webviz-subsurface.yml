@@ -75,7 +75,7 @@ jobs:
         popd
 
     - name: Update Docker Hub example image
-      if: github.ref == 'master' && matrix.python-version == '3.6'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
       run: |
         echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
         docker push webviz/example_subsurface_image:equinor-theme
@@ -91,7 +91,7 @@ jobs:
         twine upload dist/*
 
     - name: Update GitHub pages
-      if: github.ref == 'master' && matrix.python-version == '3.6'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
       run: |
         cp -R ./webviz-config/docs/_build ../_build
 
