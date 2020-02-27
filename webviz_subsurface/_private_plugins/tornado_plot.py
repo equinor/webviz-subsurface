@@ -384,14 +384,17 @@ def tornado_plot(
     for sensname, sens_name_df in pd.DataFrame(arr).groupby(["sensname"]):
         low = sens_name_df.loc[sens_name_df["values_ref"].idxmin()]
         high = sens_name_df.loc[sens_name_df["values_ref"].idxmax()]
+
         arr2.append(
             {
-                "low": low["values_ref"] if low["values_ref"] < 0 else 0,
+                "low": calc_low_x(low["values_ref"], high["values_ref"]),
+                "low_base": calc_low_base(low["values_ref"], high["values_ref"]),
                 "low_label": low["senscase"],
                 "true_low": low["values"],
                 "low_reals": low["reals"],
                 "sensname": sensname,
-                "high": high["values_ref"] if high["values_ref"] > 0 else 0,
+                "high": calc_high_x(low["values_ref"], high["values_ref"]),
+                "high_base": calc_high_base(low["values_ref"], high["values_ref"]),
                 "high_label": high["senscase"],
                 "true_high": high["values"],
                 "high_reals": high["reals"],
@@ -413,6 +416,7 @@ def tornado_plot(
             y=df["sensname"],
             x=df["low"],
             name="low",
+            base=df["low_base"],
             customdata=df["low_reals"],
             hovertext=[
                 f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
@@ -429,6 +433,7 @@ def tornado_plot(
             y=df["sensname"],
             x=df["high"],
             name="high",
+            base=df["high_base"],
             customdata=df["high_reals"],
             hovertext=[
                 f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
@@ -484,3 +489,73 @@ def tornado_plot(
         }
     )
     return {"data": plot_data, "layout": layout}
+
+
+def calc_low_base(low, high):
+    """
+    From the low and high value of a parameter,
+    calculates the base (starting x value) of the
+    bar visualizing low values.
+    >>> calc_low_base(1, 2)
+    1
+    >>> calc_low_base(-2, -1)
+    -1
+    >>> calc_low_base(-1, 1)
+    0
+    """
+    if low < 0:
+        return min(0, high)
+    return low
+
+
+def calc_high_base(low, high):
+    """
+    From the low and high value of a parameter,
+    calculates the base (starting x value) of the bar
+    visualizing high values.
+    >>> calc_high_base(1, 2)
+    1
+    >>> calc_high_base(-1, 1)
+    0
+    >>> calc_high_base(1, 2)
+    1
+    """
+    if high > 0:
+        return max(0, low)
+    return high
+
+
+def calc_high_x(low, high):
+    """
+    From the low and high value of a parameter,
+    calculates the x-value (length of bar) of the bar
+    visualizing high values.
+    >>> calc_high_x(-1, 1)
+    1
+    >>> calc_high_x(0.5, 1)
+    0.5
+    >>> calc_high_x(-4, -3)
+    0
+    """
+    if high > 0:
+        base = max(0, low)
+        return high - base
+    return 0
+
+
+def calc_low_x(low, high):
+    """
+    From the low and high value of a parameter,
+    calculates the x-value (length of bar) of the bar
+    visualizing low values.
+    >>> calc_low_x(-1, 1)
+    -1
+    >>> calc_low_x(-1, -0.5)
+    -0.5
+    >>> calc_low_x(1, 3)
+    0
+    """
+    if low < 0:
+        base = min(0, high)
+        return low - base
+    return 0
