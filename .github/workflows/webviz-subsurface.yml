@@ -65,6 +65,7 @@ jobs:
         popd
 
     - name: Mount extended Azure blob dataset
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
       env:
         # These will later come from GitHub secrets when merged, even
         # though they strictly DO NOT need to be secret (since the data set is anyway open).
@@ -79,7 +80,7 @@ jobs:
 
         rm -rf ./webviz-subsurface-testdata/reek_history_match/*
         blobfuse $PWD/webviz-subsurface-testdata/reek_history_match --container-name=webvizexampleblob --tmp-path=/mnt/blobfusetmp 
-  
+
     - name: Build Docker example image
       run: |
         pip install webviz-config-equinor
