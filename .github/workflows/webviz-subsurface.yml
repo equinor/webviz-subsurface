@@ -24,6 +24,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Mount extended Azure blob dataset
+      run: |
+        #wget https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
+        #sudo dpkg -i packages-microsoft-prod.deb
+        #sudo apt-get update
+        sudo apt-get install blobfuse -y
+
     - name: Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
@@ -63,13 +70,6 @@ jobs:
         pushd ./webviz-config/docs
         python build_docs.py
         popd
-
-    - name: Mount extended Azure blob dataset
-      run: |
-        wget https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
-        sudo dpkg -i packages-microsoft-prod.deb
-        sudo apt-get update
-        sudo apt-get install blobfuse -y
 
     - name: Build Docker example image
       run: |
