@@ -24,27 +24,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Mount extended Azure blob dataset
-      env:
-        # These will later come from GitHub secrets when merged, even
-        # though they strictly DO NOT need to be secret (since the data set is anyway open).
-        # However before merge, the key here will be reset to a new one anyhow, in order
-        # to 100% ensure network download traffic usage is only due to master branch pushes.
-        AZURE_STORAGE_ACCOUNT: webvizexampledata
-        AZURE_STORAGE_ACCESS_KEY: 6wUAcpiWLEwi1Z5MrgqvMgMHR9sQpAFV1fnBrMOENQJeQAU7k8eB7hKdapJ8RpCaRQwC4dUBh8jSNECgX4Kpeg==
-      run: |
-        #wget https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
-        #sudo dpkg -i packages-microsoft-prod.deb
-        #sudo apt-get update
-        sudo apt-get install blobfuse -y
-        sudo mkdir -p /mnt/blobfusetmp
-        sudo chmod a+rwx /mnt/blobfusetmp
-        echo $PWD   
-        mkdir ./mounted_container
-        blobfuse $PWD/mounted_container --container-name=webvizexampleblob --tmp-path=/mnt/blobfusetmp 
-        cd ./mounted_container
-        ls
-
     - name: Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
@@ -85,6 +64,22 @@ jobs:
         python build_docs.py
         popd
 
+    - name: Mount extended Azure blob dataset
+      env:
+        # These will later come from GitHub secrets when merged, even
+        # though they strictly DO NOT need to be secret (since the data set is anyway open).
+        # However before merge (and/or after each commit), the key here will be reset to a new one anyhow, in order
+        # to 100% ensure network download traffic usage is only due to master branch pushes.
+        AZURE_STORAGE_ACCOUNT: webvizexampledata
+        AZURE_STORAGE_ACCESS_KEY: 6wUAcpiWLEwi1Z5MrgqvMgMHR9sQpAFV1fnBrMOENQJeQAU7k8eB7hKdapJ8RpCaRQwC4dUBh8jSNECgX4Kpeg==
+      run: |
+        sudo apt-get install blobfuse -y
+        sudo mkdir /mnt/blobfusetmp
+        sudo chmod a+rwx /mnt/blobfusetmp
+
+        rm -rf ./webviz-subsurface-testdata/reek_history_match/*
+        blobfuse $PWD/webviz-subsurface-testdata/reek_history_match --container-name=webvizexampleblob --tmp-path=/mnt/blobfusetmp 
+  
     - name: Build Docker example image
       run: |
         pip install webviz-config-equinor
