@@ -87,7 +87,7 @@ If undefined: all parameters visualized.
                             ],
                             clearable=False,
                             multi=True,
-                            value=self.ensembles[0],
+                            value=self.ensembles,
                         ),
                     ]
                 ),
