@@ -74,41 +74,41 @@ jobs:
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
-    - name: Update Docker Hub example image
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
-      run: |
-        echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
-        docker push webviz/example_subsurface_image:equinor-theme
+    #- name: Update Docker Hub example image
+    #  if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
+    #  run: |
+    #    echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
+    #    docker push webviz/example_subsurface_image:equinor-theme
 
-    - name: Build and deploy Python package
-      if: github.event_name == 'release' && matrix.python-version == '3.6'
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
-      run: |
-        python -m pip install --upgrade setuptools wheel twine
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
+    #- name: Build and deploy Python package
+    #  if: github.event_name == 'release' && matrix.python-version == '3.6'
+    #  env:
+    #    TWINE_USERNAME: __token__
+    #    TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
+    #  run: |
+    #    python -m pip install --upgrade setuptools wheel twine
+    #    python setup.py sdist bdist_wheel
+    #    twine upload dist/*
 
-    - name: Update GitHub pages
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
-      run: |
-        cp -R ./webviz-config/docs/_build ../_build
-
-        git config --local user.email "webviz-github-action"
-        git config --local user.name "webviz-github-action"
-        git fetch origin gh-pages
-        git checkout --track origin/gh-pages
-        git clean -f -f -d -x
-        git rm -r *
-        
-        cp -R ../_build/* .
-
-        git add .
-
-        if git diff-index --quiet HEAD; then
-          echo "No changes in documentation. Skip documentation deploy."
-        else
-          git commit -m "Update Github Pages"
-          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
-        fi
+    #- name: Update GitHub pages
+    #  if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
+    #  run: |
+    #    cp -R ./webviz-config/docs/_build ../_build
+    #
+    #    git config --local user.email "webviz-github-action"
+    #    git config --local user.name "webviz-github-action"
+    #    git fetch origin gh-pages
+    #    git checkout --track origin/gh-pages
+    #    git clean -f -f -d -x
+    #    git rm -r *
+    #    
+    #    cp -R ../_build/* .
+    #
+    #    git add .
+    #
+    #    if git diff-index --quiet HEAD; then
+    #      echo "No changes in documentation. Skip documentation deploy."
+    #    else
+    #      git commit -m "Update Github Pages"
+    #      git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+    #    fi
