@@ -44,6 +44,7 @@ from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
+from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
 
 
 __all__ = [
@@ -64,4 +65,5 @@ __all__ = [
     "SurfaceWithSeismicCrossSection",
     "WellCrossSection",
     "ParameterParallelCoordinates",
+    "RunningTimeAnalysisFMU",
 ]

@@ -37,10 +37,11 @@ def load_ensemble_set(
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_parameters(
-    ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"
+    ensemble_paths: dict,
+    ensemble_set_name: str = "EnsembleSet",
+    filter_file: Union[str, None] = "OK",
 ) -> pd.DataFrame:
-
-    return load_ensemble_set(ensemble_paths, ensemble_set_name).parameters
+    return load_ensemble_set(ensemble_paths, ensemble_set_name, filter_file).parameters
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

@@ -41,6 +41,7 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "ParameterParallelCoordinates = "
             + "webviz_subsurface.plugins:ParameterParallelCoordinates",
+            "RunningTimeAnalysisFMU =  webviz_subsurface.plugins:RunningTimeAnalysisFMU",
         ]
     },
     install_requires=[
