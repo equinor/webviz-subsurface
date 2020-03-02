@@ -316,7 +316,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("response"),
-                        style={"width": "75%"},
                         options=[
                             {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
                             for i in self.responses
