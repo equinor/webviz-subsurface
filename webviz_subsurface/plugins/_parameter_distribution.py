@@ -101,8 +101,24 @@ or as an ensemble name defined in `shared_settings`.
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
-                html.Button(id=prev_id, children="<="),
-                html.Button(id=next_id, children="=>"),
+                html.Button(
+                    id=prev_id,
+                    style={
+                        "fontSize": "2rem",
+                        "paddingLeft": "5px",
+                        "paddingRight": "5px",
+                    },
+                    children="⬅",
+                ),
+                html.Button(
+                    id=next_id,
+                    style={
+                        "fontSize": "2rem",
+                        "paddingLeft": "5px",
+                        "paddingRight": "5px",
+                    },
+                    children="➡",
+                ),
             ],
         )
 

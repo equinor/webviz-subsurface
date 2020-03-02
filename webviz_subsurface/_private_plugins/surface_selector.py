@@ -123,21 +123,21 @@ another_property:
             children=[
                 html.Button(
                     style={
-                        "fontSize": "1rem",
-                        "padding": "10px",
-                        "textTransform": "none",
+                        "fontSize": "2rem",
+                        "paddingLeft": "5px",
+                        "paddingRight": "5px",
                     },
                     id=prev_id,
-                    children="Prev",
+                    children="⬅",
                 ),
                 html.Button(
                     style={
-                        "fontSize": "1rem",
-                        "padding": "10px",
-                        "textTransform": "none",
+                        "fontSize": "2rem",
+                        "paddingLeft": "5px",
+                        "paddingRight": "5px",
                     },
                     id=next_id,
-                    children="Next",
+                    children="➡",
                 ),
             ],
         )
