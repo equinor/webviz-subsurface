@@ -15,7 +15,7 @@ from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
-from .._datainput.fmu_input import get_realizations
+from .._datainput.fmu_input import get_realizations, find_sens_type
 from .._abbreviations import VOLUME_TERMINOLOGY
 
 
@@ -62,7 +62,7 @@ as long as *SENSCASE* and *SENSNAME* is found in 'parameters.txt'.
 https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv)
 
 * `csvfile_vol`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
-* `csvfile_reals`: Aggregated csvfile for sensitivity information
+* `csvfile_parameters`: Aggregated csvfile for sensitivity information
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `volfiles`:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}
 * `volfolder`: Optional local folder for csv files
@@ -97,7 +97,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self,
         app,
         csvfile_vol: Path = None,
-        csvfile_reals: Path = None,
+        csvfile_parameters: Path = None,
         ensembles: list = None,
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
@@ -107,16 +107,19 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         super().__init__()
 
         self.csvfile_vol = csvfile_vol if csvfile_vol else None
-        self.csvfile_reals = csvfile_reals if csvfile_reals else None
+        self.csvfile_parameters = csvfile_parameters if csvfile_parameters else None
 
         if csvfile_vol and ensembles:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_reals" or '
+                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_parameters" or '
                 '"ensembles" and "volfiles"'
             )
-        if csvfile_vol and csvfile_reals:
+        if csvfile_vol and csvfile_parameters:
             volumes = read_csv(csvfile_vol)
-            realizations = read_csv(csvfile_reals)
+            parameters = read_csv(csvfile_parameters)
+            parameters["SENSTYPE"] = parameters.apply(
+                lambda row: find_sens_type(row.SENSCASE), axis=1
+            )
 
         elif ensembles and volfiles:
             self.ens_paths = {
@@ -128,23 +131,23 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             # Extract volumetric dataframe
             volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
             # Extract realizations and sensitivity information
-            realizations = get_realizations(
+            parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
 
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_reals" or '
+                'Incorrent arguments. Either provide a "csvfile_vol" and "csvfile_parameters" or '
                 '"ensembles" and "volfiles"'
             )
         self.initial_response = response
 
         # Merge into one dataframe
         # (TODO: Should raise error if not all ensembles have sensitivity data)
-        self.volumes = pd.merge(volumes, realizations, on=["ENSEMBLE", "REAL"])
+        self.volumes = pd.merge(volumes, parameters, on=["ENSEMBLE", "REAL"])
 
         # Initialize a tornado plot. Data is added in callback
-        self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
+        self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
         self.uid = uuid4()
         self.selectors_id = {x: self.ids(x) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
@@ -159,10 +162,13 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             [
                 (
                     read_csv,
-                    [{"csv_file": self.csvfile_vol}, {"csv_file": self.csvfile_reals}],
+                    [
+                        {"csv_file": self.csvfile_vol},
+                        {"csv_file": self.csvfile_parameters},
+                    ],
                 )
             ]
-            if self.csvfile_vol and self.csvfile_reals
+            if self.csvfile_vol and self.csvfile_parameters
             else [
                 (
                     extract_volumes,
@@ -372,7 +378,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             id=self.ids("layout"),
             children=[
                 html.Div(
-                    style=self.set_grid_layout("1fr 3fr 2fr"),
+                    style=self.set_grid_layout("1fr 3fr 4fr"),
                     children=[
                         html.Div(
                             children=[

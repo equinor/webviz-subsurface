@@ -16,7 +16,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
-from .._datainput.fmu_input import load_smry, get_realizations
+from .._datainput.fmu_input import load_smry, get_realizations, find_sens_type
 from .._abbreviations import simulation_vector_description
 
 
@@ -47,7 +47,7 @@ as long as *SENSCASE* and *SENSNAME* is found in *parameters.txt*.[Example csv f
 https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv)
 
 * `csvfile_smry`: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
-* `csvfile_reals`: Aggregated csvfile for sensitivity information
+* `csvfile_parameters`: Aggregated csvfile for sensitivity information
 * `ensembles`: Which ensembles in `shared_settings` to visualize.
 * `column_keys`: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
@@ -82,7 +82,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self,
         app,
         csvfile_smry: Path = None,
-        csvfile_reals: Path = None,
+        csvfile_parameters: Path = None,
         ensembles: list = None,
         column_keys=None,
         initial_vector=None,
@@ -94,16 +94,19 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self.time_index = sampling
         self.column_keys = column_keys
         self.csvfile_smry = csvfile_smry
-        self.csvfile_reals = csvfile_reals
+        self.csvfile_parameters = csvfile_parameters
 
         if csvfile_smry and ensembles:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_reals" or '
+                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_parameters" or '
                 '"ensembles"'
             )
-        if csvfile_smry and csvfile_reals:
+        if csvfile_smry and csvfile_parameters:
             smry = read_csv(csvfile_smry)
-            realizations = read_csv(csvfile_reals)
+            parameters = read_csv(csvfile_parameters)
+            parameters["SENSTYPE"] = parameters.apply(
+                lambda row: find_sens_type(row.SENSCASE), axis=1
+            )
 
         elif ensembles:
             self.ens_paths = {
@@ -113,7 +116,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 for ensemble in ensembles
             }
             # Extract realizations and sensitivity information
-            realizations = get_realizations(
+            parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
             smry = load_smry(
@@ -124,11 +127,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             )
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_reals" or '
+                'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_parameters" or '
                 '"ensembles"'
             )
 
-        self.data = pd.merge(smry, realizations, on=["ENSEMBLE", "REAL"])
+        self.data = pd.merge(smry, parameters, on=["ENSEMBLE", "REAL"])
         self.smry_cols = [
             c
             for c in self.data.columns
@@ -139,7 +142,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             if initial_vector and initial_vector in self.smry_cols
             else self.smry_cols[0]
         )
-        self.tornadoplot = TornadoPlot(app, realizations, allow_click=True)
+        self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
         self.uid = uuid4()
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
@@ -232,10 +235,13 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             [
                 (
                     read_csv,
-                    [{"csv_file": self.csvfile_smry}, {"csv_file": self.csvfile_reals}],
+                    [
+                        {"csv_file": self.csvfile_smry},
+                        {"csv_file": self.csvfile_parameters},
+                    ],
                 )
             ]
-            if self.csvfile_smry and self.csvfile_reals
+            if self.csvfile_smry and self.csvfile_parameters
             else [
                 (
                     load_smry,
@@ -273,12 +279,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def layout(self):
         return html.Div(
             id=self.ids("layout"),
-            style=self.set_grid_layout("4fr 2fr"),
+            style=self.set_grid_layout("3fr 3fr"),
             children=[
                 html.Div(
                     [
                         html.Div(
-                            style=self.set_grid_layout("1fr 1fr 1fr"),
+                            style=self.set_grid_layout("1fr 2fr"),
                             children=[
                                 self.ensemble_selector,
                                 self.smry_selector,
