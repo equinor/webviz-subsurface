@@ -136,6 +136,19 @@ Plot options:
             if self.plot_options.get("date")
             else None
         )
+        # Check if initially plotted vectors exist in data, raise ValueError if not.
+        missing_vectors = [
+            value
+            for key, value in self.plot_options.items()
+            if key in ["vector1", "vector2", "vector3"] and value not in self.smry_cols
+        ]
+        if missing_vectors:
+            raise ValueError(
+                f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
+                "ReservoirSimulationTimeSeries. Check that the vectors exist in your data, and "
+                "that they are not missing in a non-default column_keys list in the yaml config "
+                "file."
+            )
         self.allow_delta = len(self.ensembles) > 1
         self.uid = uuid4()
         self.set_callbacks(app)
