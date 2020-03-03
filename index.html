@@ -348,7 +348,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.
 <p><a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv">Example csv file</a></p>
 <ul>
 <li><code>csvfile_vol</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE' and 'SOURCE' columns</li>
-<li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
+<li><code>csvfile_parameters</code>: Aggregated csvfile for sensitivity information</li>
 <li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>volfiles</code>:  Key/value pair of csv files E.g. {geogrid: geogrid--oil.csv}</li>
 <li><code>volfolder</code>: Optional local folder for csv files</li>
@@ -356,7 +356,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.
 </ul>
 <pre><code class="yaml">    - InplaceVolumesOneByOne:
         csvfile_vol: None  # Optional (default value shown here).
-        csvfile_reals: None  # Optional (default value shown here).
+        csvfile_parameters: None  # Optional (default value shown here).
         ensembles: None  # Optional (default value shown here).
         volfiles: None  # Optional (default value shown here).
         volfolder: share/results/volumes  # Optional (default value shown here).
@@ -541,7 +541,7 @@ provided as a standalone csv.
 as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.txt</em>.<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/realdata.csv">Example csv file</a></p>
 <ul>
 <li><code>csvfile_smry</code>: Aggregated csvfile for volumes with 'REAL', 'ENSEMBLE', 'DATE' and vector columns</li>
-<li><code>csvfile_reals</code>: Aggregated csvfile for sensitivity information</li>
+<li><code>csvfile_parameters</code>: Aggregated csvfile for sensitivity information</li>
 <li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
 <li><code>column_keys</code>: List of vectors to extract. If not given, all vectors
                  from the simulations will be extracted. Wild card asterisk *
@@ -552,7 +552,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 </ul>
 <pre><code class="yaml">    - ReservoirSimulationTimeSeriesOneByOne:
         csvfile_smry: None  # Optional (default value shown here).
-        csvfile_reals: None  # Optional (default value shown here).
+        csvfile_parameters: None  # Optional (default value shown here).
         ensembles: None  # Optional (default value shown here).
         column_keys: None  # Optional (default value shown here).
         initial_vector: None  # Optional (default value shown here).
