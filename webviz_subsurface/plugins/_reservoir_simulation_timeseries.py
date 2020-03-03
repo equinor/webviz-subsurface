@@ -15,7 +15,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
 from .._datainput.fmu_input import load_smry
-from .._abbreviations import simulation_vector_description
+from .._abbreviations.reservoir_simulation import simulation_vector_description
 
 
 def _historical_vector(vector, return_historical=True):

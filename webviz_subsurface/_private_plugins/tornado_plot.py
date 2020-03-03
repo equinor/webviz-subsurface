@@ -7,9 +7,10 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
-
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
+
+from .._abbreviations.number_formatting import si_prefixed
 
 
 class TornadoPlot:
@@ -25,9 +26,17 @@ To use:
 1. Initialize an instance of this class in a plugin.
 2. Add tornadoplot.layout to the plugin layout
 3. Register a callback that writes a json dump to tornadoplot.storage_id
-The format of the json dump must be:
+The format of the json dump must be ('ENSEMBLE' and 'data' are mandatory, the others optional):
 {'ENSEMBLE': name of ensemble,
- 'data': 2d array of realizations / response values}
+ 'data': 2d array of realizations / response values
+ 'number_format' (str): Format of the numeric part based on the Python Format Specification
+  Mini-Language e.g. '#.3g' for 3 significant digits, '.2f' for two decimals, or '.0f' for no
+  decimals.
+ 'unit' (str): String to append at the end as a unit.
+ 'spaced' (bool): Include a space between last numerical digit and SI-prefix.
+ 'locked_si_prefix' (str or int): Lock the SI prefix to either a string (e.g. 'm' (milli) or 'M'
+  (mega)), or an integer which is the base 10 exponent (e.g. 3 for kilo, -3 for milli).
+}
 
 Mouse events:
 The current case at mouse cursor can be retrieved by registering a callback
@@ -220,6 +229,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                     reference=reference,
                     scale=scale,
                     cutbyref=cutbyref,
+                    number_format=data.get("number_format", ""),
+                    unit=data.get("unit", ""),
+                    spaced=data.get("spaced", True),
+                    locked_si_prefix=data.get("locked_si_prefix", None),
                 )
             except KeyError:
                 return {}
@@ -295,6 +308,7 @@ def cut_by_ref(tornadotable, refname):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+# pylint: disable=too-many-arguments
 def tornado_plot(
     realizations,
     data,
@@ -302,6 +316,10 @@ def tornado_plot(
     reference="rms_seed",
     scale="Percentage",
     cutbyref=True,
+    number_format="",
+    unit="",
+    spaced=True,
+    locked_si_prefix=None,
 ):  # pylint: disable=too-many-locals
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
@@ -408,8 +426,10 @@ def tornado_plot(
         df = cut_by_ref(df, reference)
 
     df = sort_by_max(df)
-    # Return tornado data as Plotly figure
 
+    # If percentage, unit is %
+    unit_x = "%" if scale == "Percentage" else unit
+    # Return tornado data as Plotly figure
     plot_data = [
         dict(
             type="bar",
@@ -419,13 +439,16 @@ def tornado_plot(
             base=df["low_base"],
             customdata=df["low_reals"],
             hovertext=[
-                f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
+                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix)}"
+                f"<br>Case: {label}<br>True Value: "
+                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
+                f"<br>Realizations: "
                 f"{min(reals) if reals else None}-{max(reals) if reals else None}"
-                for label, val, reals in zip(
-                    df["low_label"], df["true_low"], df["low_reals"]
+                for x, label, val, reals in zip(
+                    df["low"], df["low_label"], df["true_low"], df["low_reals"]
                 )
             ],
-            hoverinfo="x+text",
+            hoverinfo="text",
             orientation="h",
         ),
         dict(
@@ -436,13 +459,16 @@ def tornado_plot(
             base=df["high_base"],
             customdata=df["high_reals"],
             hovertext=[
-                f"Case: {label}<br>True Value: {val:.2f}<br>Realizations:"
+                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix)}"
+                f"<br>Case: {label}<br>True Value: "
+                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
+                f"<br>Realizations: "
                 f"{min(reals) if reals else None}-{max(reals) if reals else None}"
-                for label, val, reals in zip(
-                    df["high_label"], df["true_high"], df["high_reals"]
+                for x, label, val, reals in zip(
+                    df["high"], df["high_label"], df["true_high"], df["high_reals"]
                 )
             ],
-            hoverinfo="x+text",
+            hoverinfo="text",
             orientation="h",
         ),
     ]
@@ -475,7 +501,8 @@ def tornado_plot(
                     "y": len(list(df["low"])),
                     "xref": "x",
                     "yref": "y",
-                    "text": f"Reference avg: {ref_avg:.2f}",
+                    "text": f"Reference avg: "
+                    f"{si_prefixed(ref_avg, number_format, unit, spaced, locked_si_prefix)}",
                     "showarrow": True,
                     "align": "center",
                     "arrowhead": 2,

@@ -1,0 +1,17 @@
+{
+    "METRIC": 
+    {
+        "SM3": "Sm³",
+        "M3": "m³",
+        "RM3": "m³",
+        "SM3/DAY": "Sm³/day",
+        "RM3/DAY": "m³/day",
+        "SM3/SM3": "Sm³/Sm³",
+        "RM3/SM3": "m³/Sm³",
+        "BARSA": "bara",
+        "BARS": "barg",
+        "SM3/D/B": "Sm³/day/bar",
+        "SECONDS": "s",
+        "DAYS": "days"
+    } 
+}
