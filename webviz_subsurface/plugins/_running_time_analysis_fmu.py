@@ -1,4 +1,6 @@
+from typing import Union, Optional
 import json
+
 import pandas as pd
 import numpy as np
 import dash_html_components as html
@@ -34,13 +36,24 @@ Default: 10. Can be checked on/off interactively, this only sets the filtering v
 Default: all parameters.
 """
 
+    COLOR_MATRIX_BY_LABELS = [
+        "Same job in ensemble",
+        "Slowest job in realization",
+        "Slowest job in ensemble",
+    ]
+
+    COLOR_PARCOORD_BY_LABELS = [
+        "Successful/failed realization",
+        "Running time of realization",
+    ]
+
     def __init__(
         self,
         app,
-        ensembles,
-        filter_shorter=10,
-        status_file="status.json",
-        visual_parameters=None,
+        ensembles: list,
+        filter_shorter: Union[int, float] = 10,
+        status_file: str = "status.json",
+        visual_parameters: Optional[list] = None,
     ):
         super().__init__()
         self.filter_shorter = filter_shorter
@@ -51,16 +64,6 @@ Default: all parameters.
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.ensembles = ensembles
         self.status_file = status_file
-
-        self.color_matrix_by_labels = [
-            "Same job in ensemble",
-            "Slowest job in realization",
-            "Slowest job in ensemble",
-        ]
-        self.color_parcoord_by_labels = [
-            "Successful/failed realization",
-            "Running time of realization",
-        ]
         self.parameter_df = load_parameters(
             ensemble_paths=self.ens_paths,
             ensemble_set_name="EnsembleSet",
@@ -115,7 +118,9 @@ Default: all parameters.
                     style={"overflowX": "auto", "width": "100%"},
                     children=wcc.Graph(id=self.uuid("fig")),
                 ),
-                # BlanK: Makes sure that scrollbar is not moved by height selection pane.
+                # Blank div: Makes sure that horizontal scrollbar is moved straight under the
+                # figure instead of the figure div getting padded by whitespace down to height of
+                # outer div.
                 html.Div(style={"width": "100%"}),
             ],
         )
@@ -125,142 +130,131 @@ Default: all parameters.
         return html.Div(
             style={"padding-right": 15,},
             children=[
-                html.Div(
-                    style={
-                        "padding-top": 10,
-                        "display": "grid",
-                        # "grid-template-columns": "1fr 1fr 4fr",
-                    },
+                html.Label(
                     children=[
-                        html.Div(
-                            children=[
-                                html.Label("Mode:", style={"font-weight": "bold"}),
-                                dcc.RadioItems(
-                                    id=self.uuid("mode"),
-                                    style={"marginBottom": "20px"},
-                                    options=[
-                                        {
-                                            "label": "Running time matrix",
-                                            "value": "running_time_matrix",
-                                        },
-                                        {
-                                            "label": "Parameter parallel coordinates",
-                                            "value": "parallel_coordinates",
-                                        },
-                                    ],
-                                    value="running_time_matrix",
-                                ),
+                        html.Span("Mode:", style={"font-weight": "bold"}),
+                        dcc.RadioItems(
+                            id=self.uuid("mode"),
+                            style={"padding-bottom": 10,},
+                            options=[
+                                {
+                                    "label": "Running time matrix",
+                                    "value": "running_time_matrix",
+                                },
+                                {
+                                    "label": "Parameter parallel coordinates",
+                                    "value": "parallel_coordinates",
+                                },
                             ],
+                            value="running_time_matrix",
                         ),
+                    ],
+                ),
+                html.Label(
+                    children=[
+                        html.Span("Set ensemble:", style={"font-weight": "bold"}),
                         html.Div(
+                            style={"padding-bottom": 10,},
                             children=[
-                                html.Label(
-                                    "Set ensemble:", style={"font-weight": "bold"}
-                                ),
-                                html.Div(
-                                    style={"padding-bottom": 20, "display": "grid",},
-                                    children=[
-                                        dcc.Dropdown(
-                                            id=self.uuid("ensemble"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ensembles
-                                            ],
-                                            value=self.ensembles[0],
-                                            clearable=False,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("matrix_color"),
-                            style={"display": "block"},
-                            children=[
-                                html.Label(
-                                    "Color jobs relative to running time of:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                html.Div(
-                                    style={"padding-bottom": 20, "display": "grid",},
-                                    children=[
-                                        dcc.Dropdown(
-                                            id=self.uuid("relative_runtime"),
-                                            options=[
-                                                {"label": rel, "value": rel}
-                                                for rel in self.color_matrix_by_labels
-                                            ],
-                                            value=self.color_matrix_by_labels[0],
-                                            clearable=False,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("parcoords_color"),
-                            style={"display": "none"},
-                            children=[
-                                html.Label(
-                                    "Color realizations relative to:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                html.Div(
-                                    style={"padding-bottom": 20, "display": "grid",},
-                                    children=[
-                                        dcc.Dropdown(
-                                            id=self.uuid("relative_real"),
-                                            options=[
-                                                {"label": rel, "value": rel}
-                                                for rel in self.color_parcoord_by_labels
-                                            ],
-                                            value=self.color_parcoord_by_labels[0],
-                                            clearable=False,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("parameter_dropdown"),
-                            style={"display": "none"},
-                            children=[
-                                html.Span(
-                                    "Selected parameters:",
-                                    style={"font-weight": "bold"},
-                                ),
                                 dcc.Dropdown(
-                                    id=self.uuid("parameters"),
+                                    id=self.uuid("ensemble"),
                                     options=[
-                                        {"label": param, "value": param}
-                                        for param in self.parameters
+                                        {"label": ens, "value": ens}
+                                        for ens in self.ensembles
+                                    ],
+                                    value=self.ensembles[0],
+                                    clearable=False,
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                html.Label(
+                    id=self.uuid("matrix_color"),
+                    style={"display": "block"},
+                    children=[
+                        html.Span(
+                            "Color jobs relative to running time of:",
+                            style={"font-weight": "bold"},
+                        ),
+                        html.Div(
+                            style={"padding-bottom": 10,},
+                            children=[
+                                dcc.Dropdown(
+                                    id=self.uuid("relative_runtime"),
+                                    options=[
+                                        {"label": rel, "value": rel}
+                                        for rel in RunningTimeAnalysisFMU.COLOR_MATRIX_BY_LABELS
+                                    ],
+                                    value=RunningTimeAnalysisFMU.COLOR_MATRIX_BY_LABELS[
+                                        0
                                     ],
                                     clearable=False,
-                                    multi=True,
-                                    value=self.visual_parameters,
                                 ),
                             ],
                         ),
+                    ],
+                ),
+                html.Label(
+                    id=self.uuid("parcoords_color"),
+                    style={"display": "none"},
+                    children=[
+                        html.Span(
+                            "Color realizations relative to:",
+                            style={"font-weight": "bold"},
+                        ),
                         html.Div(
-                            id=self.uuid("filter_short_checkbox"),
-                            style={"display": "block"},
+                            style={"padding-bottom": 10,},
                             children=[
-                                html.Span(
-                                    "Filter jobs:", style={"font-weight": "bold"}
-                                ),
-                                dcc.Checklist(
-                                    id=self.uuid("filter_short"),
+                                dcc.Dropdown(
+                                    id=self.uuid("relative_real"),
                                     options=[
-                                        {
-                                            "label": "Slowest in ensemble less than {} s".format(
-                                                self.filter_shorter
-                                            ),
-                                            "value": "filter_short",
-                                        },
+                                        {"label": rel, "value": rel}
+                                        for rel in RunningTimeAnalysisFMU.COLOR_PARCOORD_BY_LABELS
                                     ],
-                                    value=["filter_short"],
+                                    value=RunningTimeAnalysisFMU.COLOR_PARCOORD_BY_LABELS[
+                                        0
+                                    ],
+                                    clearable=False,
                                 ),
                             ],
+                        ),
+                    ],
+                ),
+                html.Label(
+                    id=self.uuid("parameter_dropdown"),
+                    style={"display": "none"},
+                    children=[
+                        html.Span(
+                            "Selected parameters:", style={"font-weight": "bold"},
+                        ),
+                        dcc.Dropdown(
+                            id=self.uuid("parameters"),
+                            options=[
+                                {"label": param, "value": param}
+                                for param in self.parameters
+                            ],
+                            clearable=False,
+                            multi=True,
+                            value=self.visual_parameters,
+                        ),
+                    ],
+                ),
+                html.Label(
+                    id=self.uuid("filter_short_checkbox"),
+                    style={"display": "block"},
+                    children=[
+                        html.Span("Filter jobs:", style={"font-weight": "bold"}),
+                        dcc.Checklist(
+                            id=self.uuid("filter_short"),
+                            options=[
+                                {
+                                    "label": f"Slowest in ensemble less than {self.filter_shorter}"
+                                    "s",
+                                    "value": "filter_short",
+                                },
+                            ],
+                            value=["filter_short"],
                         ),
                     ],
                 ),
@@ -292,7 +286,7 @@ Default: all parameters.
         )
         def _update_fig(ens, mode, rel_runtime, rel_real, params, filter_short):
             """Update main figure
-            Dependent on `mode` it wall call rendering of the chosen form of visualization
+            Dependent on `mode` it will call rendering of the chosen form of visualization
             """
             if mode == "running_time_matrix" and "filter_short" in filter_short:
                 return render_matrix(
@@ -504,7 +498,7 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
 @webvizstore
 # pylint: disable=too-many-locals
 def make_status_df(ens_paths, status_file, parameter_df) -> pd.DataFrame:
-    """Return tuple of two pandas DataFrame of information from status.json files.
+    """Return DataFrame of information from status.json files.
     *Finds status.json filepaths.
     For jobs:
     *Loads data into pandas DataFrames.
