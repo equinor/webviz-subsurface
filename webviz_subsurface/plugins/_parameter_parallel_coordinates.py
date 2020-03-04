@@ -21,7 +21,7 @@ Input:
 If undefined: all parameters visualized.
 """
 
-    def __init__(self, app, ensembles, visual_parameters=None):
+    def __init__(self, app, ensembles: list, visual_parameters=None):
 
         super().__init__()
 

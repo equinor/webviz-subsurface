@@ -21,7 +21,7 @@ Visualizes the quality of the history match.
 * `title`: Optional title for the plugin.
 """
 
-    def __init__(self, app, ensembles, observation_file: Path):
+    def __init__(self, app, ensembles: list, observation_file: Path):
 
         super().__init__()
 

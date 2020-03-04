@@ -52,7 +52,7 @@ and available for instant viewing.
     def __init__(
         self,
         app,
-        ensembles,
+        ensembles: list,
         attributes: list = None,
         attribute_settings: dict = None,
         wellfolder: Path = None,

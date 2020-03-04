@@ -1,6 +1,6 @@
 from pathlib import Path
 import glob
-from typing import Union
+from typing import Union, Optional
 
 import pandas as pd
 from webviz_config.common_cache import CACHE
@@ -13,7 +13,7 @@ except ImportError:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def scratch_ensemble(ensemble_name, ensemble_path):
+def scratch_ensemble(ensemble_name: str, ensemble_path: Path):
     return ScratchEnsemble(ensemble_name, ensemble_path)
 
 
@@ -57,8 +57,8 @@ def load_csv(
 def load_smry(
     ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
-    time_index=str,
-    column_keys=list,
+    time_index: Optional[Union[list, str]] = None,
+    column_keys: Optional[list] = None,
 ) -> pd.DataFrame:
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).get_smry(
@@ -92,7 +92,7 @@ def get_realizations(
     return df.sort_values(by=["ENSEMBLE", "REAL"])
 
 
-def find_sens_type(senscase):
+def find_sens_type(senscase: str):
     """Finds sensitivity type from sensitivty case.
     If sensitivity case is 'p10_p90', sensitivity type is montecarlo,
     else sensitivity type is set to 'scalar'.

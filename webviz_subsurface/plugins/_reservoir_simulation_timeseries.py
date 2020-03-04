@@ -75,7 +75,7 @@ Plot options:
         csvfile: Path = None,
         ensembles: list = None,
         obsfile: Path = None,
-        column_keys=None,
+        column_keys: list = None,
         sampling: str = "monthly",
         options: dict = None,
     ):

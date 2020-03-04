@@ -34,7 +34,7 @@ and scatter plot for any given pair of parameters.
 * `drop_constants`: Drop constant parameters
 """
 
-    def __init__(self, app, ensembles, drop_constants: bool = True):
+    def __init__(self, app, ensembles: list, drop_constants: bool = True):
 
         super().__init__()
 
