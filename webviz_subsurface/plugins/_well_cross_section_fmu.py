@@ -55,7 +55,7 @@ per realization.
     def __init__(
         self,
         app,
-        ensembles,
+        ensembles: list,
         surfacefiles: list,
         surfacenames: list = None,
         surfacefolder: Path = "share/results/maps",

@@ -84,7 +84,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         csvfile_smry: Path = None,
         csvfile_parameters: Path = None,
         ensembles: list = None,
-        column_keys=None,
+        column_keys: list = None,
         initial_vector=None,
         sampling: str = "monthly",
     ):
