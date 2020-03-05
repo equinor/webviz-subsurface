@@ -561,6 +561,33 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 <hr>
 
 
+<h3>Running time analysis of jobs in FMU runs.</h3>
+<p>This plugin can e.g. be used to investigate which jobs that are important for the running time of
+realizations, and if specific parameter combinations increase running time or chance of realization
+failure. The latter could introduce bias to assisted history matching.</p>
+<p>Two main visualizations:
+For individual jobs:
+* Running times of jobs relative to jobs in same ensemble or realization as a color coded heatmap.
+For realizations:
+* Parallel coordinate plot for parameters used in realizations, colored by successful/failed
+realization or realization running time.</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to include in check. Only required input.</li>
+<li><code>filter_shorter</code>: Filters jobs with maximum run time in ensemble less than X seconds.
+Default: 10. Can be checked on/off interactively, this only sets the filtering value.</li>
+<li><code>status_file</code>: Name of json file with job status. Default: <code>status.json</code></li>
+<li>'visual_parameters': List of default visualized parameteres in parallel coordinates plot.
+Default: all parameters.</li>
+</ul>
+<pre><code class="yaml">    - RunningTimeAnalysisFMU:
+        ensembles: some value
+        filter_shorter: 10  # Optional (default value shown here).
+        status_file: status.json  # Optional (default value shown here).
+        visual_parameters: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>SegyViewer</h3>
 <p>Inspired by <a href="https://github.com/equinor/segyviewer">SegyViewer for Python</a> this plugin
 visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
