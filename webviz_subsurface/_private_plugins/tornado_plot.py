@@ -5,6 +5,7 @@ import pandas as pd
 import dash
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 
@@ -39,6 +40,18 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
 * `allow_click`: Registers a callback to store current data on mouse click
 
 """
+
+    TABLE_STATISTICS = [
+        "sensname",
+        "low_label",
+        "high_label",
+        "low",
+        "high",
+        "true_low",
+        "true_high",
+        "low_reals",
+        "high_reals",
+    ]
 
     def __init__(
         self, app, realizations, reference="rms_seed", allow_click=False,
@@ -185,6 +198,13 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             id=self.ids("tornado-graph"),
                             config={"displayModeBar": False},
                         ),
+                        dash_table.DataTable(
+                            id=self.ids("table"),
+                            columns=[
+                                {"name": i, "id": i}
+                                for i in TornadoPlot.TABLE_STATISTICS
+                            ],
+                        ),
                         dcc.Store(id=self.ids("storage")),
                         dcc.Store(id=self.ids("click-store")),
                     ],
@@ -194,7 +214,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("tornado-graph"), "figure"),
+            [
+                Output(self.ids("tornado-graph"), "figure"),
+                Output(self.ids("table"), "data"),
+            ],
             [
                 Input(self.ids("reference"), "value"),
                 Input(self.ids("scale"), "value"),
@@ -409,7 +432,19 @@ def tornado_plot(
 
     df = sort_by_max(df)
     # Return tornado data as Plotly figure
+    plot = render_tornado_plot(
+        df, plotly_theme=plotly_theme, ref_avg=ref_avg, scale=scale
+    )
+    table = render_table(df)
+    return plot, table
 
+
+def render_table(df):
+    df_reverse = df.iloc[::-1]
+    return df_reverse.to_dict(orient="records")
+
+
+def render_tornado_plot(df, plotly_theme, ref_avg, scale="Percentage"):
     plot_data = [
         dict(
             type="bar",
