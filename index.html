@@ -365,29 +365,6 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in 'parameters.txt'.
 <hr>
 
 
-<h3>Intersect</h3>
-<p>This plugin visualizes surfaces intersected along a well path.
-The input are surfaces from a FMU ensemble stored on standardized
-format with standardized naming (share/results/maps/name--category.gri)
-and a folder of well files stored in RMS well format.</p>
-<ul>
-<li><code>ensemble</code>: Which ensemble in <code>shared_settings</code> to visualize.</li>
-<li><code>well_path</code>: File folder with wells in rmswell format</li>
-<li><code>surface_cat</code>: Surface category to look for in the file names</li>
-<li><code>surface_names</code>: List of surface names to look for in the file names</li>
-<li><code>well_suffix</code>:  Optional suffix for well files. Default is .rmswell</li>
-</ul>
-<pre><code class="yaml">    - Intersect:
-        plugin_settings: some value
-        ensemble: some value
-        well_path: some value
-        surface_cat: some value
-        surface_names: some value
-        well_suffix: .rmswell  # Optional (default value shown here).
-</code></pre>
-<hr>
-
-
 <h3>Morris</h3>
 <p>Renders a visualization of the Morris sampling method.
 The Morris method can be used to screen parameters for how they
