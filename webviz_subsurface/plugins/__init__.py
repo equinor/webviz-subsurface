@@ -29,7 +29,6 @@ from ._parameter_response_correlation import ParameterResponseCorrelation
 from ._disk_usage import DiskUsage
 from ._subsurface_map import SubsurfaceMap
 from ._history_match import HistoryMatch
-from ._intersect import Intersect
 from ._morris_plot import MorrisPlot
 from ._inplace_volumes import InplaceVolumes
 from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
@@ -53,7 +52,6 @@ __all__ = [
     "DiskUsage",
     "SubsurfaceMap",
     "HistoryMatch",
-    "Intersect",
     "MorrisPlot",
     "InplaceVolumes",
     "InplaceVolumesOneByOne",

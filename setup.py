@@ -23,7 +23,6 @@ setup(
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
-            "Intersect = webviz_subsurface.plugins:Intersect",
             "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
             "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
