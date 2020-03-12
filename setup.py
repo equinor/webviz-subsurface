@@ -13,7 +13,7 @@ setup(
     url="https://github.com/equinor/webviz-subsurface",
     author="R&T Equinor",
     packages=find_packages(exclude=["tests"]),
-    package_data={"webviz_subsurface": ["_abbreviations/*.json"]},
+    package_data={"webviz_subsurface": ["_abbreviations/abbreviation_data/*.json"]},
     entry_points={
         "webviz_config_plugins": [
             "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",

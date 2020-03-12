@@ -13,7 +13,8 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 
 from .._datainput.inplace_volumes import extract_volumes
-from .._abbreviations import VOLUME_TERMINOLOGY
+from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
 
 
 class InplaceVolumes(WebvizPluginABC):
@@ -58,16 +59,7 @@ but the following responses are given more descriptive names automatically:
 
 """
 
-    TABLE_STATISTICS = [
-        "response",
-        "group",
-        "mean",
-        "stddev",
-        "minimum",
-        "p90",
-        "p10",
-        "maximum",
-    ]
+    TABLE_STATISTICS = [("Response", {}), ("Group", {})] + TABLE_STATISTICS_BASE
 
     def __init__(
         self,
@@ -295,7 +287,7 @@ but the following responses are given more descriptive names automatically:
                             dcc.Dropdown(
                                 id=self.ids("response"),
                                 options=[
-                                    {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                                    {"label": volume_description(i), "value": i,}
                                     for i in self.responses
                                 ],
                                 value=self.initial_response
@@ -356,15 +348,7 @@ but the following responses are given more descriptive names automatically:
                                     style={"height": 400},
                                     children=wcc.Graph(id=self.ids("graph")),
                                 ),
-                                html.Div(
-                                    dash_table.DataTable(
-                                        id=self.ids("table"),
-                                        columns=[
-                                            {"name": i, "id": i}
-                                            for i in InplaceVolumes.TABLE_STATISTICS
-                                        ],
-                                    )
-                                ),
+                                html.Div(dash_table.DataTable(id=self.ids("table"),)),
                             ]
                         ),
                         html.Div(
@@ -383,7 +367,11 @@ but the following responses are given more descriptive names automatically:
 
     def set_callbacks(self, app):
         @app.callback(
-            [Output(self.ids("graph"), "figure"), Output(self.ids("table"), "data")],
+            [
+                Output(self.ids("graph"), "figure"),
+                Output(self.ids("table"), "data"),
+                Output(self.ids("table"), "columns"),
+            ],
             self.vol_callback_inputs,
         )
         def _render_vol_chart(*args):
@@ -420,7 +408,8 @@ but the following responses are given more descriptive names automatically:
                     if trace is not None:
                         plot_traces.append(trace)
                         table.append(plot_table(dframe, response, name))
-
+            # Column specification
+            columns = table_columns(response)
             # Else make a graph object
             return (
                 {
@@ -428,6 +417,7 @@ but the following responses are given more descriptive names automatically:
                     "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
                 },
                 table,
+                columns,
             )
 
         @app.callback(
@@ -489,19 +479,35 @@ def plot_table(dframe, response, name):
     values = dframe[response]
     try:
         output = {
-            "response": VOLUME_TERMINOLOGY.get(response, response),
-            "group": str(name),
-            "minimum": f"{values.min():.2e}",
-            "maximum": f"{values.max():.2e}",
-            "mean": f"{values.mean():.2e}",
-            "stddev": f"{values.std():.2e}",
-            "p10": f"{np.percentile(values, 90):.2e}",
-            "p90": f"{np.percentile(values, 10):.2e}",
+            "Response": volume_description(response),
+            "Group": str(name),
+            "Minimum": values.min(),
+            "Maximum": values.max(),
+            "Mean": values.mean(),
+            "Stddev": values.std(),
+            "P10": np.percentile(values, 90),
+            "P90": np.percentile(values, 10),
         }
     except KeyError:
         output = None
 
     return output
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def table_columns(response):
+    columns = [
+        {**{"name": i[0], "id": i[0]}, **i[1]} for i in InplaceVolumes.TABLE_STATISTICS
+    ]
+    for col in columns:
+        try:
+            col["format"]["locale"]["symbol"] = [
+                "",
+                f"{volume_unit(response)}",
+            ]
+        except KeyError:
+            pass
+    return columns
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -515,17 +521,17 @@ def plot_layout(plot_type, response, theme):
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
+                "xaxis": {"title": volume_description(response)},
                 "yaxis": {"title": "Count"},
             }
         )
     elif plot_type == "Box plot":
-        layout.update({"yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)}})
+        layout.update({"yaxis": {"title": volume_description(response)}})
     else:
         layout.update(
             {
                 "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-                "yaxis": {"title": VOLUME_TERMINOLOGY.get(response, response)},
+                "yaxis": {"title": volume_description(response)},
                 "xaxis": {"title": "Realization"},
             }
         )

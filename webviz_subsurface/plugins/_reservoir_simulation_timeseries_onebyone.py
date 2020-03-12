@@ -17,8 +17,8 @@ from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.fmu_input import load_smry, get_realizations, find_sens_type
-from .._abbreviations import simulation_vector_description
-
+from .._abbreviations.reservoir_simulation import simulation_vector_description
+from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):
@@ -67,16 +67,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         "RUNPATH",
     ]
 
-    TABLE_STAT = [
-        "Sensitivity",
-        "Case",
-        "Mean",
-        "Standard Deviation",
-        "Minimum",
-        "P90",
-        "P10",
-        "Maximum",
-    ]
+    TABLE_STAT = [("Sensitivity", {}), ("Case", {})] + TABLE_STATISTICS_BASE
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -309,16 +301,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     filter_action="native",
                                     page_action="native",
                                     page_size=10,
-                                    columns=[
-                                        {"name": i, "id": i}
-                                        for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
-                                    ],
-                                    style_cell_conditional=[
-                                        {
-                                            "if": {"column_id": "Standard Deviation"},
-                                            "width": "5%",
-                                        }
-                                    ],
                                 ),
                             ]
                         ),
@@ -335,6 +317,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             [
                 # Output(self.ids("date-store"), "children"),
                 Output(self.ids("table"), "data"),
+                Output(self.ids("table"), "columns"),
                 Output(self.tornadoplot.storage_id, "children"),
             ],
             [
@@ -352,14 +335,18 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 raise PreventUpdate
             data = filter_ensemble(self.data, ensemble, vector)
             data = data.loc[data["DATE"].astype(str) == date]
-            table_rows = calculate_table_rows(data, vector)
+            table_rows, table_columns = calculate_table(data, vector)
             return (
                 # json.dumps(f"{date}"),
                 table_rows,
+                table_columns,
                 json.dumps(
                     {
                         "ENSEMBLE": ensemble,
                         "data": data[["REAL", vector]].values.tolist(),
+                        "number_format": "#.4g",
+                        # Unit placeholder. Need data from fmu-ensemble, see work in:
+                        # https://github.com/equinor/fmu-ensemble/pull/89
                     }
                 ),
             )
@@ -450,7 +437,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_table_rows(df, vector):
+def calculate_table(df, vector):
     table = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
         values = dframe[vector]
@@ -459,17 +446,27 @@ def calculate_table_rows(df, vector):
                 {
                     "Sensitivity": str(sensname),
                     "Case": str(senscase),
-                    "Minimum": f"{values.min():.2e}",
-                    "Maximum": f"{values.max():.2e}",
-                    "Mean": f"{values.mean():.2e}",
-                    "Standard Deviation": f"{values.std():.2e}",
-                    "P10": f"{np.percentile(values, 90):.2e}",
-                    "P90": f"{np.percentile(values, 10):.2e}",
+                    "Minimum": values.min(),
+                    "Maximum": values.max(),
+                    "Mean": values.mean(),
+                    "Stddev": values.std(),
+                    "P10": np.percentile(values, 90),
+                    "P90": np.percentile(values, 10),
                 }
             )
         except KeyError:
             pass
-    return table
+    unit = ""  # awaiting fmu-ensemble https://github.com/equinor/fmu-ensemble/pull/89
+    columns = [
+        {**{"name": i[0], "id": i[0]}, **i[1]}
+        for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
+    ]
+    for col in columns:
+        try:
+            col["format"]["locale"]["symbol"] = ["", f"{unit}"]
+        except KeyError:
+            pass
+    return table, columns
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

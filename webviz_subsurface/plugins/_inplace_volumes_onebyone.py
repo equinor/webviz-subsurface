@@ -16,7 +16,8 @@ from webviz_config.webviz_store import webvizstore
 from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations, find_sens_type
-from .._abbreviations import VOLUME_TERMINOLOGY
+from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
 
 
 class InplaceVolumesOneByOne(WebvizPluginABC):
@@ -72,16 +73,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
     FILTERS = ["ZONE", "REGION", "FACIES", "LICENSE"]
 
-    TABLE_STATISTICS = [
-        "Sens Name",
-        "Sens Case",
-        "Mean",
-        "Stddev",
-        "Minimum",
-        "P90",
-        "P10",
-        "Maximum",
-    ]
+    TABLE_STATISTICS = [("Sens Name", {}), ("Sens Case", {})] + TABLE_STATISTICS_BASE
 
     ENSEMBLE_COLUMNS = [
         "REAL",
@@ -323,7 +315,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     dcc.Dropdown(
                         id=self.ids("response"),
                         options=[
-                            {"label": VOLUME_TERMINOLOGY.get(i, i), "value": i,}
+                            {"label": volume_description(i), "value": i,}
                             for i in self.responses
                         ],
                         clearable=False,
@@ -410,10 +402,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     filter_action="native",
                                     page_action="native",
                                     page_size=10,
-                                    columns=[
-                                        {"name": i, "id": i}
-                                        for i in InplaceVolumesOneByOne.TABLE_STATISTICS
-                                    ],
                                 ),
                             ]
                         ),
@@ -433,6 +421,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 Output(self.ids("graph-wrapper"), "children"),
                 Output(self.tornadoplot.storage_id, "children"),
                 Output(self.ids("table"), "data"),
+                Output(self.ids("table"), "columns"),
             ],
             [
                 Input(i, "value")
@@ -457,7 +446,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             data = data.loc[data["SOURCE"] == source]
 
             # Calculate statistics for table
-            table = calculate_table_rows(data, response)
+            table, columns = calculate_table(data, response)
 
             # Make Plotly figure
             layout = {}
@@ -476,6 +465,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "y": plot_data[response],
                                 "x": plot_data["REAL"],
                                 "marker": {"color": "grey"},
+                                "tickformat": ".4s",
                                 "type": "bar",
                             }
                         ],
@@ -512,10 +502,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     .sum()
                     .reset_index()[["REAL", response]]
                     .values.tolist(),
+                    "number_format": "#.4g",
+                    "unit": volume_unit(response),
                 }
             )
 
-            return figure, tornado, table
+            return figure, tornado, table, columns
 
         @app.callback(
             Output(self.ids("graph"), "figure"),
@@ -540,7 +532,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             return figure
 
 
-def calculate_table_rows(df, response):
+def calculate_table(df, response):
     table = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
         values = dframe.groupby("REAL").sum().reset_index()[response]
@@ -549,17 +541,29 @@ def calculate_table_rows(df, response):
                 {
                     "Sens Name": str(sensname),
                     "Sens Case": str(senscase),
-                    "Minimum": f"{values.min():.2e}",
-                    "Maximum": f"{values.max():.2e}",
-                    "Mean": f"{values.mean():.2e}",
-                    "Stddev": f"{values.std():.2e}",
-                    "P10": f"{np.percentile(values, 90):.2e}",
-                    "P90": f"{np.percentile(values, 10):.2e}",
+                    "Minimum": values.min(),
+                    "Maximum": values.max(),
+                    "Mean": values.mean(),
+                    "Stddev": values.std(),
+                    "P10": np.percentile(values, 90),
+                    "P90": np.percentile(values, 10),
                 }
             )
         except KeyError:
             pass
-    return table
+    columns = [
+        {**{"name": i[0], "id": i[0]}, **i[1]}
+        for i in InplaceVolumesOneByOne.TABLE_STATISTICS
+    ]
+    for col in columns:
+        try:
+            col["format"]["locale"]["symbol"] = [
+                "",
+                f"{volume_unit(response)}",
+            ]
+        except KeyError:
+            pass
+    return table, columns
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
