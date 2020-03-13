@@ -412,8 +412,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     page_size=10,
                                     columns=[
                                         {"name": i, "id": i}
-                                        for i in InplaceVolumesOneByOne.TABLE_STATISTICS
+                                        for i in TornadoPlot.TABLE_STATISTICS
                                     ],
+                                    style_table={'overflowX': 'scroll'},
                                 ),
                             ]
                         ),
@@ -432,7 +433,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             [
                 Output(self.ids("graph-wrapper"), "children"),
                 Output(self.tornadoplot.storage_id, "children"),
-                Output(self.ids("table"), "data"),
             ],
             [
                 Input(i, "value")
@@ -515,7 +515,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 }
             )
 
-            return figure, tornado, table
+            return figure, tornado
 
         @app.callback(
             Output(self.ids("graph"), "figure"),
@@ -538,6 +538,16 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     colors.append("grey")
             figure["data"][0]["marker"] = {"color": colors}
             return figure
+
+        @app.callback(
+            Output(self.ids("table"), "data"),
+            [Input(self.tornadoplot.table_id, "data")],
+        )
+        def update_table(data):
+            if not data:
+                raise PreventUpdate
+            print(data)
+            return json.loads(data)
 
 
 def calculate_table_rows(df, response):

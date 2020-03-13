@@ -112,6 +112,11 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         return self.ids("storage")
 
     @property
+    def table_id(self):
+        """The id of the dcc.Store component that holds the tornado table"""
+        return self.ids("table")
+
+    @property
     def click_id(self):
         """The id of the dcc.Store component that holds click data"""
         return self.ids("click-store")
@@ -198,15 +203,9 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             id=self.ids("tornado-graph"),
                             config={"displayModeBar": False},
                         ),
-                        dash_table.DataTable(
-                            id=self.ids("table"),
-                            columns=[
-                                {"name": i, "id": i}
-                                for i in TornadoPlot.TABLE_STATISTICS
-                            ],
-                        ),
                         dcc.Store(id=self.ids("storage")),
                         dcc.Store(id=self.ids("click-store")),
+                        dcc.Store(id=self.ids("table")),
                     ],
                 )
             ]
@@ -228,6 +227,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         def _calc_tornado(reference, scale, cutbyref, data):
             if not data:
                 raise PreventUpdate
+            print(data)
             data = json.loads(data)
             if not isinstance(data, dict):
                 raise PreventUpdate
@@ -236,13 +236,17 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 self.realizations["ENSEMBLE"] == data["ENSEMBLE"]
             ]
             try:
-                return tornado_plot(
+                plot, tabledata = tornado_plot(
                     realizations,
                     values,
                     plotly_theme=self.plotly_theme,
                     reference=reference,
                     scale=scale,
                     cutbyref=cutbyref,
+                )
+                return (
+                    plot,
+                    json.dumps(tabledata),
                 )
             except KeyError:
                 return {}
@@ -414,13 +418,13 @@ def tornado_plot(
                 "low_base": calc_low_base(low["values_ref"], high["values_ref"]),
                 "low_label": low["senscase"],
                 "true_low": low["values"],
-                "low_reals": low["reals"],
+                "low_reals": (",").join(str(real) for real in low["reals"]),
                 "sensname": sensname,
                 "high": calc_high_x(low["values_ref"], high["values_ref"]),
                 "high_base": calc_high_base(low["values_ref"], high["values_ref"]),
                 "high_label": high["senscase"],
                 "true_high": high["values"],
-                "high_reals": high["reals"],
+                "high_reals": (",").join(str(real) for real in high["reals"]),
             }
         )
 

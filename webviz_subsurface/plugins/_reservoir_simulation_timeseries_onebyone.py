@@ -311,13 +311,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     page_size=10,
                                     columns=[
                                         {"name": i, "id": i}
-                                        for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
-                                    ],
-                                    style_cell_conditional=[
-                                        {
-                                            "if": {"column_id": "Standard Deviation"},
-                                            "width": "5%",
-                                        }
+                                        for i in TornadoPlot.TABLE_STATISTICS
                                     ],
                                 ),
                             ]
@@ -332,11 +326,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
     def set_callbacks(self, app):
         @app.callback(
-            [
-                # Output(self.ids("date-store"), "children"),
-                Output(self.ids("table"), "data"),
-                Output(self.tornadoplot.storage_id, "children"),
-            ],
+            Output(self.tornadoplot.storage_id, "children"),
             [
                 Input(self.ids("ensemble"), "value"),
                 Input(self.ids("graph"), "clickData"),
@@ -352,16 +342,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 raise PreventUpdate
             data = filter_ensemble(self.data, ensemble, vector)
             data = data.loc[data["DATE"].astype(str) == date]
-            table_rows = calculate_table_rows(data, vector)
-            return (
-                # json.dumps(f"{date}"),
-                table_rows,
-                json.dumps(
-                    {
-                        "ENSEMBLE": ensemble,
-                        "data": data[["REAL", vector]].values.tolist(),
-                    }
-                ),
+            return json.dumps(
+                {"ENSEMBLE": ensemble, "data": data[["REAL", vector]].values.tolist(),}
             )
 
         @app.callback(
@@ -447,6 +429,15 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 )
 
             return figure
+
+        @app.callback(
+            Output(self.ids("table"), "data"),
+            [Input(self.tornadoplot.table_id, "data")],
+        )
+        def update_table(data):
+            if not data:
+                raise PreventUpdate
+            return json.loads(data)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
