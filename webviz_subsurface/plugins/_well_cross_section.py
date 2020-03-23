@@ -223,7 +223,7 @@ class WellCrossSection(WebvizPluginABC):
         )
         def _render_section(well, cube, options, sampling, nextend):
             """Update cross section"""
-            well = load_well(str(get_path(well)))
+            well = load_well(get_path(well))
             xsect = XSectionFigure(
                 well=well,
                 zmin=self.zmin,
@@ -232,7 +232,7 @@ class WellCrossSection(WebvizPluginABC):
                 sampling=int(sampling),
             )
 
-            surfaces = [load_surface(str(get_path(surf))) for surf in self.surfacefiles]
+            surfaces = [load_surface(get_path(surf)) for surf in self.surfacefiles]
 
             xsect.plot_surfaces(
                 surfaces=surfaces,
@@ -241,7 +241,7 @@ class WellCrossSection(WebvizPluginABC):
             )
 
             if "show_seismic" in options:
-                cube = load_cube_data(str(get_path(cube)))
+                cube = load_cube_data(get_path(cube))
                 xsect.plot_cube(cube)
 
             xsect.plot_well(
@@ -279,8 +279,8 @@ class WellCrossSection(WebvizPluginABC):
             """Update map"""
             wellname = Path(wellfile).stem
             wellfile = get_path(wellfile)
-            surface = load_surface(str(get_path(self.surfacefiles[0])))
-            well = load_well(str(wellfile))
+            surface = load_surface(get_path(self.surfacefiles[0]))
+            well = load_well(wellfile)
             s_layer = make_surface_layer(
                 surface, name=self.surfacenames[0], hillshading=True,
             )

@@ -320,7 +320,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(str(get_path(state["cubepath"])))
+            cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
                     "type": "line",
@@ -370,7 +370,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(str(get_path(state["cubepath"])))
+            cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
                     "type": "line",
@@ -416,7 +416,7 @@ The plots are linked and updates are done by clicking in the plots.
             if not state:
                 raise PreventUpdate
             state = json.loads(state)
-            cube = load_cube_data(str(get_path(state["cubepath"])))
+            cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
                     "type": "line",
