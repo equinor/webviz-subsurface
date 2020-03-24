@@ -14,12 +14,12 @@ from webviz_config import WebvizPluginABC
 
 
 class Rft(WebvizPluginABC):
+    
     def __init__(self, app, formations: Path, simulations: Path, observations: Path):
         super().__init__()
         self.formations = formations
         self.simulations = simulations
         self.observations = observations
-
         self.formationdf = pd.read_csv(self.formations, comment="#")
         self.simdf = pd.read_csv(self.simulations)
         self.obsdf = pd.read_csv(self.observations)
@@ -53,10 +53,10 @@ class Rft(WebvizPluginABC):
             "type": "scatter",
             "mode": "markers",
             "name": "observed",
-            "marker": {"color": "black", "size": 3},
+            "marker": {"color": "black", "size": 30},
         }
 
-    def simulated_plot(self, well, date, ensemble):
+    def simulated_plot(self, well, date, ensemble, color):
         """Plot simulated pressure per realization as lines"""
         df = self.simdf.loc[self.simdf["WELL"] == well]
         df = df.loc[df["DATE"] == date]
@@ -69,6 +69,7 @@ class Rft(WebvizPluginABC):
                     "y": realdf["DEPTH"],
                     "type": "scatter",
                     "mode": "line",
+                    "line":{'color':color},
                     "name": "simulated",
                     "showlegend": False,
                     # "line": {"color": p_colors[real], "width": 3},
@@ -103,10 +104,11 @@ class Rft(WebvizPluginABC):
                     "showlegend": False,
                     "type": "scatter",
                     "y": [(row["BTM_TVD"] + row["TOP_TVD"]) / 2],
-                    # "xref": "paper",
-                    # "x": [1],
+                    "xref": "x",
+                    "x": [750],
                     "text": row["FM"],
                     "mode": "text",
+                    "line_width":0
                 }
             )
         traces.pop()
@@ -114,7 +116,6 @@ class Rft(WebvizPluginABC):
 
     @property
     def layout(self):
-
         return html.Div(
             children=[
                 dcc.Dropdown(
@@ -126,11 +127,19 @@ class Rft(WebvizPluginABC):
                 ),
                 dcc.Dropdown(
                     id=self.uuid("date"),
-                    options=[{"label": date, "value": date} for date in self.dates(self.well_names[0])],
+                    options=[
+                        {"label": date, "value": date}
+                        for date in self.dates(self.well_names[0])
+                    ],
                     value=self.dates(self.well_names[0])[0],
                 ),
                 dcc.Dropdown(
                     id=self.uuid("ensemble"),
+                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                    value=self.ensembles[0],
+                ),
+                dcc.Dropdown(
+                    id=self.uuid("ensemble2"),
                     options=[{"label": ens, "value": ens} for ens in self.ensembles],
                     value=self.ensembles[0],
                 ),
@@ -145,11 +154,13 @@ class Rft(WebvizPluginABC):
                 Input(self.uuid("well"), "value"),
                 Input(self.uuid("date"), "value"),
                 Input(self.uuid("ensemble"), "value"),
+                Input(self.uuid("ensemble2"), "value"),
             ],
         )
-        def update_well(well, date, ensemble):
+        def update_well(well, date, ensemble, ensemble2):
             obsplot = [self.observed_plot(well, date)]
-            simplot = self.simulated_plot(well, date, ensemble)
+            simplot = self.simulated_plot(well, date, ensemble, 'blue')
+            simplot2 = self.simulated_plot(well, date, ensemble2, 'red')
             zon_shapes, zon_names = self.formation_plot(well)
             plot_layout = {
                 "yaxis": {"autorange": "reversed", "title": "Depth"},
@@ -159,7 +170,7 @@ class Rft(WebvizPluginABC):
                 "shapes": zon_shapes,
             }
             return {
-                "data": simplot + obsplot,
+                "data": simplot + simplot2 + obsplot + zon_names,
                 "layout": plot_layout,
             }
 
@@ -170,7 +181,6 @@ class Rft(WebvizPluginABC):
         )
         def update_date(well, current_date):
             dates = self.dates(well)
-            available_dates = [{'label':date, 'value':date} for date in dates]
+            available_dates = [{"label": date, "value": date} for date in dates]
             date = current_date if current_date in dates else dates[0]
             return available_dates, date
-            

@@ -65,5 +65,5 @@ __all__ = [
     "WellCrossSection",
     "ParameterParallelCoordinates",
     "RunningTimeAnalysisFMU",
-    "Rft"
+    "Rft",
 ]
