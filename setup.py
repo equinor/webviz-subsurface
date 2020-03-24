@@ -41,6 +41,7 @@ setup(
             "ParameterParallelCoordinates = "
             + "webviz_subsurface.plugins:ParameterParallelCoordinates",
             "RunningTimeAnalysisFMU =  webviz_subsurface.plugins:RunningTimeAnalysisFMU",
+            "Rft =  webviz_subsurface.plugins:Rft",
         ]
     },
     install_requires=[
