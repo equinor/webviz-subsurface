@@ -48,12 +48,12 @@ but the following responses are given more descriptive names automatically:
 - **NET_OIL**: Net Volume (Oil)
 - **PORE_OIL**: Pore Volume (Oil)
 - **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
-- **STOIIP_OIL**: Stock Tank Oil Initially In Place
+- **STOIIP_OIL**: Stock Tank Oil In Place
 - **BULK_GAS**: Bulk Volume (Gas)
 - **NET_GAS**: Net Volume (Gas)
 - **PORV_GAS**: Pore Volume (Gas)
 - **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
-- **GIIP_GAS**: Gas Initially In Place
+- **GIIP_GAS**: Gas In Place
 - **RECOVERABLE_OIL**: Recoverable Volume (Oil)
 - **RECOVERABLE_GAS**: Recoverable Volume (Gas)
 
@@ -119,7 +119,8 @@ but the following responses are given more descriptive names automatically:
                 "Incorrent arguments. Either provide a 'csvfile' or 'ensembles' and 'volfiles'"
                 " and/or 'fipfile'"
             )
-
+        if not "DATE" in self.volumes.columns:
+            self.volumes["DATE"] = "N/A"
         self.initial_response = response
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
