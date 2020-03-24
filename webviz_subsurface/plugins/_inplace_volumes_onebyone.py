@@ -14,7 +14,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
-from .._datainput.inplace_volumes import extract_volumes
+from .._datainput.inplace_volumes import extract_volumes_csv
 from .._datainput.fmu_input import get_realizations, find_sens_type
 from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
@@ -121,7 +121,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             self.volfiles = volfiles
             self.volfolder = volfolder
             # Extract volumetric dataframe
-            volumes = extract_volumes(self.ens_paths, self.volfolder, self.volfiles)
+            volumes = extract_volumes_csv(self.ens_paths, self.volfolder, self.volfiles)
             # Extract realizations and sensitivity information
             parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
@@ -163,7 +163,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             if self.csvfile_vol and self.csvfile_parameters
             else [
                 (
-                    extract_volumes,
+                    extract_volumes_csv,
                     [
                         {
                             "ensemble_paths": self.ens_paths,

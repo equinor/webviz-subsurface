@@ -71,3 +71,42 @@ def simulation_vector_description(vector: str):
         )
 
     return description
+
+
+def simulation_region_vector_breakdown(vector):
+    [vector_base_name, node, fip] = _vector_breakdown(vector)
+    if fip is not None and len(fip) == 3:
+        fiparray = f"FIP{fip}"
+    else:
+        fiparray = fip
+    return vector_base_name, fiparray, node
+
+
+def _vector_breakdown(vector):
+    [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
+    if len(vector_name) == 8:
+        # Region vectors for other FIP regions than FIPNUM are written on a special form:
+        # 8 signs, with the last 3 defining the region.
+        # E.g.: For an array "FIPREG": ROIP is ROIP_REG, RPR is RPR__REG and ROIPL is ROIPLREG
+        # Underscores _ are always used to fill
+        [vector_base_name, fip] = [vector_name[0:5].rstrip("_"), vector_name[5:]]
+        try:
+            if SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region":
+                vector_name = vector_base_name
+            else:
+                fip = None
+        except KeyError:
+            fip = None
+    else:
+        try:
+            fip = (
+                "NUM"
+                if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "region"
+                else "FIELD"
+                if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "field"
+                else None
+            )
+
+        except KeyError:
+            fip = None
+    return vector_name, node, fip

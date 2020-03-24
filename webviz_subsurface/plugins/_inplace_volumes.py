@@ -1,19 +1,25 @@
 from uuid import uuid4
 from pathlib import Path
+import copy
 
 import numpy as np
 import pandas as pd
 import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 
 from .._datainput.inplace_volumes import extract_volumes
-from .._abbreviations.volume_terminology import volume_description, volume_unit
+
+from .._abbreviations.volume_terminology import (
+    volume_description,
+    volume_unit,
+    volume_recoverable,
+)
 from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
 
 
@@ -60,7 +66,10 @@ but the following responses are given more descriptive names automatically:
 """
 
     TABLE_STATISTICS = [("Response", {}), ("Group", {})] + TABLE_STATISTICS_BASE
-
+    COLUMN_WIDTHS = [
+        {"if": {"column_id": i}, "width": "10%"} for i, _ in TABLE_STATISTICS_BASE
+    ]
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,
@@ -69,6 +78,9 @@ but the following responses are given more descriptive names automatically:
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
+        fipfile: Path = None,
+        fip_column_keys: list = None,
+        time_index: str = "monthly",
     ):
 
         super().__init__()
@@ -81,20 +93,31 @@ but the following responses are given more descriptive names automatically:
         if csvfile:
             self.volumes = read_csv(csvfile)
 
-        elif ensembles and volfiles:
+        elif ensembles and (volfiles or fipfile):
+            volumes = []
             self.ens_paths = {
                 ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            self.volfiles = volfiles
+
             self.volfolder = volfolder
+            self.volfiles = volfiles
+            self.fipfile = fipfile
+            self.fip_column_keys = fip_column_keys
+            self.time_index = time_index
             self.volumes = extract_volumes(
-                self.ens_paths, self.volfolder, self.volfiles
+                self.ens_paths,
+                self.volfolder,
+                self.volfiles,
+                self.fipfile,
+                self.fip_column_keys,
+                self.time_index,
             )
 
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
+                "Incorrent arguments. Either provide a 'csvfile' or 'ensembles' and 'volfiles'"
+                " and/or 'fipfile'"
             )
 
         self.initial_response = response
@@ -146,6 +169,17 @@ but the following responses are given more descriptive names automatically:
                 "content": ("Allows grouping of results on a given category."),
             },
             {
+                "id": self.ids("date"),
+                "content": (
+                    "Select date, `Initial` can be used to compare initial inplace between grids"
+                    " and simulation."
+                ),
+            },
+            {
+                "id": self.ids("mode"),
+                "content": ("Select mode, `Volume` or `Recovery factor`."),
+            },
+            {
                 "id": self.ids("filters"),
                 "content": (
                     "Filter on different combinations of e.g. zones, facies and regions "
@@ -157,7 +191,7 @@ but the following responses are given more descriptive names automatically:
 
     def add_webvizstore(self):
         return (
-            [(read_csv, [{"csv_file": self.csvfile}])]
+            [((read_csv, [{"csv_file": self.csvfile}]))]
             if self.csvfile
             else [
                 (
@@ -167,6 +201,9 @@ but the following responses are given more descriptive names automatically:
                             "ensemble_paths": self.ens_paths,
                             "volfolder": self.volfolder,
                             "volfiles": self.volfiles,
+                            "fipfile": self.fipfile,
+                            "column_keys": self.fip_column_keys,
+                            "time_index": self.time_index,
                         }
                     ],
                 )
@@ -196,7 +233,20 @@ but the following responses are given more descriptive names automatically:
     @property
     def responses(self):
         """List of available volume responses in dframe"""
-        return [x for x in self.vol_columns if x not in self.selectors and x != "REAL"]
+        return [
+            x
+            for x in self.vol_columns
+            if x not in self.selectors and x not in ["REAL", "DATE"]
+        ]
+
+    @property
+    def dates(self):
+        return list(self.volumes["DATE"].unique())
+
+    @property
+    def modes(self):
+        """List of available modes"""
+        return ["Volume", "Recovery factor"]
 
     @property
     def vol_callback_inputs(self):
@@ -208,6 +258,8 @@ but the following responses are given more descriptive names automatically:
         inputs.append(Input(self.ids("response"), "value"))
         inputs.append(Input(self.ids("plot-type"), "value"))
         inputs.append(Input(self.ids("group"), "value"))
+        inputs.append(Input(self.ids("date"), "value"))
+        inputs.append(Input(self.ids("mode"), "value"))
         for selector in self.selectors:
             inputs.append(Input(self.selectors_id[selector], "value"))
         return inputs
@@ -261,7 +313,7 @@ but the following responses are given more descriptive names automatically:
             "display": "grid",
             "align-content": "space-around",
             "justify-content": "space-between",
-            "grid-template-columns": "2fr 1fr 1fr 1fr",
+            "grid-template-columns": "4fr 2fr 2fr 2fr 2fr 1fr",
         }
 
     @property
@@ -329,6 +381,35 @@ but the following responses are given more descriptive names automatically:
                         ]
                     )
                 ),
+                html.Div(
+                    children=html.Label(
+                        children=[
+                            html.Span("Date:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("date"),
+                                options=[{"label": i, "value": i} for i in self.dates],
+                                value=self.dates[0],
+                                clearable=False,
+                            ),
+                        ]
+                    )
+                ),
+                html.Div(
+                    children=html.Label(
+                        children=[
+                            html.Span("Mode:", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id=self.ids("mode"),
+                                options=[
+                                    {"label": i, "value": i, "disabled": False}
+                                    for i in self.modes
+                                ],
+                                value=self.modes[0],
+                                clearable=False,
+                            ),
+                        ]
+                    )
+                ),
             ],
         )
 
@@ -348,11 +429,18 @@ but the following responses are given more descriptive names automatically:
                                     style={"height": 400},
                                     children=wcc.Graph(id=self.ids("graph")),
                                 ),
-                                html.Div(dash_table.DataTable(id=self.ids("table"),)),
+                                html.Div(
+                                    dash_table.DataTable(
+                                        id=self.ids("table"),
+                                        style_cell_conditional=InplaceVolumes.COLUMN_WIDTHS,
+                                    )
+                                ),
                             ]
                         ),
                         html.Div(
                             children=[
+                                dcc.Store(id=self.ids("stored_ensemble"), data={}),
+                                dcc.Store(id=self.ids("stored_source"), data={}),
                                 html.P("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),
@@ -365,6 +453,7 @@ but the following responses are given more descriptive names automatically:
             ],
         )
 
+    # pylint: disable=too-many-locals
     def set_callbacks(self, app):
         @app.callback(
             [
@@ -382,6 +471,7 @@ but the following responses are given more descriptive names automatically:
                 response: The volumetrics response to plot
                 plot_type: The type of graph/table to plot
                 group: The selector to group the data by
+                date: The date to plot data from
                 selections: Active values from the selector columns
             Return:
                 Plotly Graph/dash_table.DataTable
@@ -389,13 +479,30 @@ but the following responses are given more descriptive names automatically:
             response = args[0]
             plot_type = args[1]
             group = args[2]
-            selections = args[3:]
-            data = self.volumes
-            data = filter_dataframe(data, self.selectors, selections)
+            date = args[3]
+            mode = args[4]
+            selections = args[5:]
+            data = filter_dataframe(self.volumes, self.selectors, selections, date)
+            if mode == "Recovery factor":
+                data_init = filter_dataframe(
+                    self.volumes, self.selectors, selections, "Initial"
+                )
+                if group:
+                    data_init_grouped = data_init.groupby(group)
 
             # If not grouped make one trace
             if not group:
-                dframe = data.groupby("REAL").sum().reset_index()
+                dframe = (
+                    data.groupby("REAL").sum(min_count=1).reset_index().to_dict("list")
+                )
+                if mode == "Recovery factor":
+                    dframe[response] = calc_recovery(
+                        data_init.groupby("REAL")
+                        .sum(min_count=1)
+                        .reset_index()
+                        .to_dict("list")[response],
+                        dframe[response],
+                    )
                 plot_traces = [plot_data(plot_type, dframe, response, "Total")]
                 table = [plot_table(dframe, response, "Total")]
             # Else make one trace for each group member
@@ -403,18 +510,37 @@ but the following responses are given more descriptive names automatically:
                 plot_traces = []
                 table = []
                 for name, vol_group_df in data.groupby(group):
-                    dframe = vol_group_df.groupby("REAL").sum().reset_index()
+                    dframe = (
+                        vol_group_df.groupby("REAL")
+                        .sum(min_count=1)
+                        .reset_index()
+                        .to_dict("list")
+                    )
+                    if mode == "Recovery factor":
+                        try:
+                            dframe[response] = calc_recovery(
+                                data_init_grouped.get_group(name)
+                                .groupby("REAL")
+                                .sum(min_count=1)
+                                .reset_index()
+                                .to_dict("list")[response],
+                                dframe[response],
+                            )
+                        except KeyError:
+                            dframe[response] = []
                     trace = plot_data(plot_type, dframe, response, name)
                     if trace is not None:
                         plot_traces.append(trace)
                         table.append(plot_table(dframe, response, name))
             # Column specification
-            columns = table_columns(response)
+            columns = table_columns(response, mode)
             # Else make a graph object
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
+                    "layout": plot_layout(
+                        plot_type, response, mode, theme=self.plotly_theme
+                    ),
                 },
                 table,
                 columns,
@@ -426,15 +552,35 @@ but the following responses are given more descriptive names automatically:
                 Output(self.selectors_id["ENSEMBLE"], "value"),
             ],
             [Input(self.ids("group"), "value")],
+            [State(self.ids("stored_ensemble"), "data")],
         )
-        def _set_iteration_selector(group_by):
+        def _set_iteration_selector(group_by, stored_ensemble):
             """If iteration is selected as group by set the iteration
-            selector to allow multiple selections, else use single selection
+            selector to allow multiple selections, else use stored_ensemble
             """
+
             if group_by == "ENSEMBLE":
                 return True, list(self.volumes["ENSEMBLE"].unique())
 
-            return False, list(self.volumes["ENSEMBLE"].unique())[0]
+            return (
+                False,
+                stored_ensemble.get(
+                    "ENSEMBLE", list(self.volumes["ENSEMBLE"].unique())[0]
+                ),
+            )
+
+        @app.callback(
+            Output(self.ids("stored_ensemble"), "data"),
+            [Input(self.selectors_id["ENSEMBLE"], "value"),],
+            [
+                State(self.selectors_id["ENSEMBLE"], "multi"),
+                State(self.ids("stored_ensemble"), "data"),
+            ],
+        )
+        def _set_stored_ensemble(ens_value, ens_multi, stored_ensemble):
+            if not ens_multi:
+                stored_ensemble.update({"ENSEMBLE": ens_value})
+            return stored_ensemble
 
         if "SOURCE" in self.selectors:
 
@@ -444,30 +590,70 @@ but the following responses are given more descriptive names automatically:
                     Output(self.selectors_id["SOURCE"], "value"),
                 ],
                 [Input(self.ids("group"), "value")],
+                [State(self.ids("stored_source"), "data")],
             )
-            def _set_source_selector(group_by):
+            def _set_source_selector(group_by, stored_source):
                 """If iteration is selected as group by set the iteration
                 selector to allow multiple selections, else use single selection
                 """
-
-                if group_by == "SOURCE" and "SOURCE" in self.selectors:
+                if group_by == "SOURCE":
                     return True, list(self.volumes["SOURCE"].unique())
 
-                return False, list(self.volumes["SOURCE"].unique())[0]
+                return (
+                    False,
+                    stored_source.get(
+                        "SOURCE", list(self.volumes["SOURCE"].unique())[0]
+                    ),
+                )
+
+            @app.callback(
+                Output(self.ids("stored_source"), "data"),
+                [Input(self.selectors_id["SOURCE"], "value")],
+                [
+                    State(self.selectors_id["SOURCE"], "multi"),
+                    State(self.ids("stored_source"), "data"),
+                ],
+            )
+            def _set_stored_source(source_value, source_multi, stored_source):
+                if not source_multi:
+                    stored_source.update({"SOURCE": source_value})
+                return stored_source
+
+        @app.callback(
+            [Output(self.ids("mode"), "options"), Output(self.ids("mode"), "value")],
+            [Input(self.ids("response"), "value")],
+            [State(self.ids("mode"), "value")],
+        )
+        def _set_mode(response, mode):
+            """If the response is not listed as recoverable, reset mode to volume and disable
+            recovery option. Note that this is only done for responses, not if the source is lacking
+            data."""
+            if volume_recoverable(response):
+                return (
+                    [{"label": i, "value": i, "disabled": False} for i in self.modes],
+                    mode,
+                )
+            return (
+                [
+                    {"label": i, "value": i, "disabled": i == "Recovery factor"}
+                    for i in self.modes
+                ],
+                mode if mode != "Recovery factor" else "Volume",
+            )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_data(plot_type, dframe, response, name):
-    values = dframe[response]
+def plot_data(plot_type, ddict, response, name):
+    values = ddict[response]
 
     if plot_type == "Histogram":
-        if values.nunique() == 1:
+        if len(set(values)) == 1:
             values = values[0]
         output = {"x": values, "type": "histogram", "name": name}
     elif plot_type == "Box plot":
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
-        output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
+        output = {"y": values, "x": ddict["REAL"], "name": name, "type": "bar"}
     else:
         output = None
 
@@ -475,45 +661,77 @@ def plot_data(plot_type, dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_table(dframe, response, name):
-    values = dframe[response]
+def calc_recovery(initial_values: list, current_values: list):
+    try:
+        with np.errstate(
+            divide="ignore", invalid="ignore"
+        ):  # To avoid warnings when inplace = 0
+            return np.divide(
+                np.array(initial_values) - np.array(current_values),
+                np.array(initial_values),
+            )
+    except ValueError:
+        return []  # If a list is empty (missing data)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def plot_table(ddict, response, name):
+    values = ddict[response]
     try:
         output = {
             "Response": volume_description(response),
             "Group": str(name),
-            "Minimum": values.min(),
-            "Maximum": values.max(),
-            "Mean": values.mean(),
-            "Stddev": values.std(),
+            "Minimum": min(values),
+            "Maximum": max(values),
+            "Mean": np.mean(values),
+            "Stddev": np.std(values),
             "P10": np.percentile(values, 90),
             "P90": np.percentile(values, 10),
         }
-    except KeyError:
-        output = None
+    except ValueError:
+        output = {
+            "Response": volume_description(response),
+            "Group": str(name),
+            "Minimum": None,
+            "Maximum": None,
+            "Mean": None,
+            "Stddev": None,
+            "P10": None,
+            "P90": None,
+        }
 
     return output
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def table_columns(response):
+def table_columns(response, mode):
     columns = [
-        {**{"name": i[0], "id": i[0]}, **i[1]} for i in InplaceVolumes.TABLE_STATISTICS
+        {**{"name": i[0], "id": i[0]}, **i[1]}
+        for i in copy.deepcopy(InplaceVolumes.TABLE_STATISTICS)
     ]
-    for col in columns:
-        try:
-            col["format"]["locale"]["symbol"] = [
-                "",
-                f"{volume_unit(response)}",
-            ]
-        except KeyError:
-            pass
+    if mode == "Recovery factor":
+        for col in columns:
+            try:
+                col["format"]["specifier"] = ".2%"
+            except KeyError:
+                pass
+    else:
+        for col in columns:
+            try:
+                col["format"]["locale"]["symbol"] = [
+                    "",
+                    f"{volume_unit(response)}",
+                ]
+            except KeyError:
+                pass
     return columns
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, theme):
+def plot_layout(plot_type, response, mode, theme):
     layout = {}
     layout.update(theme["layout"])
+    layout.update({"showlegend": True})
     layout["height"] = 400
     if plot_type == "Histogram":
         layout.update(
@@ -525,24 +743,31 @@ def plot_layout(plot_type, response, theme):
                 "yaxis": {"title": "Count"},
             }
         )
+        if mode == "Recovery factor":
+            layout["xaxis"]["tickformat"] = "%"
     elif plot_type == "Box plot":
         layout.update({"yaxis": {"title": volume_description(response)}})
+        if mode == "Recovery factor":
+            layout["yaxis"]["tickformat"] = "%"
     else:
         layout.update(
             {
-                "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
+                "margin": {"l": 60, "r": 40, "b": 30, "t": 10},
                 "yaxis": {"title": volume_description(response)},
                 "xaxis": {"title": "Realization"},
             }
         )
+        if mode == "Recovery factor":
+            layout["yaxis"]["tickformat"] = "%"
 
     # output["colorway"] = colors
     return layout
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_dataframe(dframe, columns, column_values):
-    df = dframe.copy()
+# @CACHE.memoize(timeout=CACHE.TIMEOUT) Temporarily disabled cache due to:
+# https://github.com/equinor/webviz-config/issues/211
+def filter_dataframe(dframe, columns, column_values, date):
+    df = dframe[dframe["DATE"] == date].copy()
     if not isinstance(columns, list):
         columns = [columns]
     for filt, col in zip(column_values, columns):
