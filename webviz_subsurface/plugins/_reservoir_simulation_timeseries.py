@@ -742,8 +742,8 @@ def add_statistic_traces(df, vector, colors):
                 ensemble,
             )
         )
-    if f"{vector}H" in df.columns:
-        traces.append(add_history_trace(df, f"{vector}H"))
+    if _historical_vector(vector) in df.columns:
+        traces.append(add_history_trace(df, _historical_vector(vector)))
     return traces
 
 
