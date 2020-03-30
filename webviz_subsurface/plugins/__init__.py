@@ -44,6 +44,7 @@ from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
+from ._relative_permeability import RelativePermeability
 
 
 __all__ = [
@@ -64,4 +65,5 @@ __all__ = [
     "WellCrossSection",
     "ParameterParallelCoordinates",
     "RunningTimeAnalysisFMU",
+    "RelativePermeability",
 ]

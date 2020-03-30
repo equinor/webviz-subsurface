@@ -10,7 +10,7 @@ on:
   release:
     types:
       - published
-  
+
 jobs:
 
   webviz-subsurface:
@@ -18,6 +18,9 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8']
+
+    env:
+        PYTHONPATH: ${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/site-packages:${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/dist-packages
 
     steps:
 
@@ -36,7 +39,7 @@ jobs:
 
     - name: Install test dependencies
       run: |
-        pip install .[tests] 
+        pip install .[tests]
         pip install dash[testing]
         wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
@@ -52,17 +55,34 @@ jobs:
         bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
 
     - name: Run tests
-      env:  
+      env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
         TESTDATA_REPO_OWNER: equinor
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
         TESTDATA_REPO_BRANCH: master
+
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         pip install git+https://github.com/equinor/fmu-ensemble
+        sudo apt-get update
+        sudo apt-get install libboost-all-dev liblapack-dev
+        pushd ..
+        git clone --recursive https://github.com/OPM/opm-common.git
+        mkdir opm-common/build
+        pushd opm-common/build
+        cmake .. -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install \
+                 -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+                 -DBUILD_TESTING=OFF \
+                 -DBUILD_SHARED_LIBS=ON \
+                 -DOPM_ENABLE_PYTHON=ON \
+                 -DOPM_INSTALL_PYTHON=ON
+        make -j4 install
+        popd
+        popd
+        pip install git+https://github.com/equinor/ecl2df
         pytest ./tests --headless --forked
         git clone https://github.com/equinor/webviz-config.git
         pushd ./webviz-config/docs
@@ -99,18 +119,18 @@ jobs:
       if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
       run: |
         cp -R ./webviz-config/docs/_build ../_build
-    
+
         git config --local user.email "webviz-github-action"
         git config --local user.name "webviz-github-action"
         git fetch origin gh-pages
         git checkout --track origin/gh-pages
         git clean -f -f -d -x
         git rm -r *
-        
+
         cp -R ../_build/* .
-    
+
         git add .
-    
+
         if git diff-index --quiet HEAD; then
           echo "No changes in documentation. Skip documentation deploy."
         else
