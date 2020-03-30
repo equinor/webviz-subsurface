@@ -1,6 +1,7 @@
 [![PyPI version](https://badge.fury.io/py/webviz-subsurface.svg)](https://badge.fury.io/py/webviz-subsurface)
-[![Build Status](https://travis-ci.org/equinor/webviz-subsurface.svg?branch=master)](https://travis-ci.org/equinor/webviz-subsurface)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fd7a8b451754841a1eb6600c08be967)](https://www.codacy.com/manual/webviz/webviz-subsurface?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=equinor/webviz-subsurface&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://github.com/equinor/webviz-subsurface/workflows/webviz-subsurface/badge.svg)](https://github.com/equinor/webviz-subsurface/actions?query=branch%3Amaster)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/equinor/webviz-subsurface.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/equinor/webviz-subsurface/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/equinor/webviz-subsurface.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/equinor/webviz-subsurface/context:python)
 [![Python 3.6 | 3.7 | 3.8](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)](https://www.python.org/)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
