@@ -292,7 +292,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         return html.Div(
             children=[
                 html.Span("Plot type:", style={"font-weight": "bold"}),
-                dcc.RadioItems(
+                dcc.Dropdown(
                     id=self.ids("plot-type"),
                     options=[
                         {"label": i, "value": i}
@@ -302,8 +302,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             "Per sensitivity case",
                         ]
                     ],
-                    labelStyle={"display": "inline-block"},
                     value="Per realization",
+                    clearable=False,
                 ),
             ]
         )
