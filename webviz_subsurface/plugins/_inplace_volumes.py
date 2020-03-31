@@ -101,6 +101,11 @@ but the following responses are given more descriptive names automatically:
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.initial_plot = "Per realization"
+        self.initial_group = None
+        if len(self.volumes["ENSEMBLE"].unique()) > 1:
+            self.initial_plot = "Box plot"
+            self.initial_group = "ENSEMBLE"
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -287,7 +292,7 @@ but the following responses are given more descriptive names automatically:
                             dcc.Dropdown(
                                 id=self.ids("response"),
                                 options=[
-                                    {"label": volume_description(i), "value": i,}
+                                    {"label": volume_description(i), "value": i}
                                     for i in self.responses
                                 ],
                                 value=self.initial_response
@@ -307,7 +312,7 @@ but the following responses are given more descriptive names automatically:
                                 options=[
                                     {"label": i, "value": i} for i in self.plot_types
                                 ],
-                                value="Per realization",
+                                value=self.initial_plot,
                                 clearable=False,
                             ),
                         ]
@@ -323,7 +328,7 @@ but the following responses are given more descriptive names automatically:
                                     {"label": i.lower().capitalize(), "value": i}
                                     for i in self.selectors
                                 ],
-                                value=None,
+                                value=self.initial_group,
                                 placeholder="Not grouped",
                             ),
                         ]
@@ -348,7 +353,7 @@ but the following responses are given more descriptive names automatically:
                                     style={"height": 400},
                                     children=wcc.Graph(id=self.ids("graph")),
                                 ),
-                                html.Div(dash_table.DataTable(id=self.ids("table"),)),
+                                html.Div(dash_table.DataTable(id=self.ids("table"))),
                             ]
                         ),
                         html.Div(
@@ -501,10 +506,7 @@ def table_columns(response):
     ]
     for col in columns:
         try:
-            col["format"]["locale"]["symbol"] = [
-                "",
-                f"{volume_unit(response)}",
-            ]
+            col["format"]["locale"]["symbol"] = ["", f"{volume_unit(response)}"]
         except KeyError:
             pass
     return columns
