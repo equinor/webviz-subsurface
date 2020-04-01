@@ -292,14 +292,18 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         return html.Div(
             children=[
                 html.Span("Plot type:", style={"font-weight": "bold"}),
-                dcc.RadioItems(
+                dcc.Dropdown(
                     id=self.ids("plot-type"),
                     options=[
                         {"label": i, "value": i}
-                        for i in ["Per realization", "Box plot"]
+                        for i in [
+                            "Per realization",
+                            "Per sensitivity name",
+                            "Per sensitivity case",
+                        ]
                     ],
-                    labelStyle={"display": "inline-block"},
                     value="Per realization",
+                    clearable=False,
                 ),
             ]
         )
@@ -315,7 +319,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     dcc.Dropdown(
                         id=self.ids("response"),
                         options=[
-                            {"label": volume_description(i), "value": i,}
+                            {"label": volume_description(i), "value": i}
                             for i in self.responses
                         ],
                         clearable=False,
@@ -451,7 +455,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             # Make Plotly figure
             layout = {}
             layout.update(self.plotly_theme["layout"])
-            layout.update({"margin": {"l": 100}})
+            layout.update({"margin": {"l": 100, "b": 100}})
             if plot_type == "Per realization":
                 # One bar per realization
                 layout.update({"xaxis": {"title": "Realizations"}})
@@ -472,9 +476,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": layout,
                     },
                 )
-            elif plot_type == "Box plot":
+            elif plot_type == "Per sensitivity case":
                 # One box per sensitivity name
-                layout.update({"title": "Distribution for each sensitivity"})
+                layout.update({"title": "Distribution for each sensitivity case"})
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.ids("graph"),
@@ -495,6 +499,27 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "layout": layout,
                     },
                 )
+            elif plot_type == "Per sensitivity name":
+                # One box per sensitivity name
+                layout.update({"title": "Distribution for each sensitivity name"})
+                figure = wcc.Graph(
+                    config={"displayModeBar": False},
+                    id=self.ids("graph"),
+                    figure={
+                        "data": [
+                            {
+                                "y": sensname_df.groupby("REAL")
+                                .sum()
+                                .reset_index()[response],
+                                "name": f"{sensname}",
+                                "type": "box",
+                            }
+                            for sensname, sensname_df in data.groupby(["SENSNAME"])
+                        ],
+                        "layout": layout,
+                    },
+                )
+
             tornado = json.dumps(
                 {
                     "ENSEMBLE": ensemble,
@@ -557,10 +582,7 @@ def calculate_table(df, response):
     ]
     for col in columns:
         try:
-            col["format"]["locale"]["symbol"] = [
-                "",
-                f"{volume_unit(response)}",
-            ]
+            col["format"]["locale"]["symbol"] = ["", f"{volume_unit(response)}"]
         except KeyError:
             pass
     return table, columns
