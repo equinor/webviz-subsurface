@@ -101,11 +101,12 @@ but the following responses are given more descriptive names automatically:
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
-        self.initial_plot = "Per realization"
-        self.initial_group = None
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
             self.initial_plot = "Box plot"
             self.initial_group = "ENSEMBLE"
+        else:
+            self.initial_plot = "Per realization"
+            self.initial_group = None
         self.set_callbacks(app)
 
     def ids(self, element):
