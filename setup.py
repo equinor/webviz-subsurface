@@ -41,6 +41,7 @@ setup(
             "ParameterParallelCoordinates = "
             + "webviz_subsurface.plugins:ParameterParallelCoordinates",
             "RunningTimeAnalysisFMU =  webviz_subsurface.plugins:RunningTimeAnalysisFMU",
+            "RelativePermeability =  webviz_subsurface.plugins:RelativePermeability",
         ]
     },
     install_requires=[
@@ -49,6 +50,7 @@ setup(
         "pandas~=0.24",
         "pillow~=6.1",
         "xtgeo~=2.1",
+        "pyscal~=0.4, >=0.4.1",
         "webviz-config>=0.0.48",
         "webviz-subsurface-components>=0.0.23",
     ],
