@@ -471,6 +471,31 @@ as row filtering before aggregation. (See below for filter types).</p>
 <hr>
 
 
+<h3>RelativePermeability</h3>
+<pre><code>Can be defined in the config yaml file like this:
+</code></pre>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+<li><code>relpermfile</code> (optional): localpath to a csvfile in each realization with dumped relperm data.
+                             Typically share/results/tables/relperm.csv or similar. There has to be
+                             a column named KEYWORD or TYPE with e.g. SWOF and SGOF. The other
+                             columns are saturations (like SW) and curve names (like KRW, KROW,
+                             PCOW). The filepath is optional as the same data can be read directly
+                             from the data deck, but that can be very time consuming.</li>
+<li><code>scalfile</code> (optional): Path to a reference file with SCAL recommendations. Has to be pyscal
+                          compatible. csv or xlsx file. (if xlsx, sheet can be defined with
+                          scal_sheet). Path to a single file, not per realization/ensemble.</li>
+<li><code>sheet_name</code> (optional): Only relevant if <code>scalfile</code> is an xlsx file.</li>
+</ul>
+<pre><code class="yaml">    - RelativePermeability:
+        ensembles: some value
+        relpermfile: None  # Optional (default value shown here).
+        scalfile: None  # Optional (default value shown here).
+        sheet_name: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>ReservoirSimulationTimeSeries</h3>
 <p>Visualizes reservoir simulation time series for FMU ensembles.
 Input can be given either as aggregated csv file or an ensemble defined
