@@ -493,6 +493,7 @@ def tornado_plot(
                 "showline": False,
                 "automargin": True,
                 "title": None,
+                "dtick": 1,
             },
             "showlegend": False,
             "annotations": [
