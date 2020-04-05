@@ -308,6 +308,7 @@ The types of response_filters are:
                         ),
                         html.Div(children=[wcc.Graph(self.ids("distribution-graph"))],),
                         self.filter_layout if self.response_filters else html.Div(),
+                        dcc.Store(id=self.ids("initial-parameter")),
                     ],
                 ),
             ],
@@ -339,6 +340,7 @@ The types of response_filters are:
         """List of Inputs for distribution callback"""
         callbacks = [
             Input(self.ids("correlation-graph"), "clickData"),
+            Input(self.ids("initial-parameter"), "data"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
         ]
@@ -359,7 +361,10 @@ The types of response_filters are:
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("correlation-graph"), "figure"),
+            [
+                Output(self.ids("correlation-graph"), "figure"),
+                Output(self.ids("initial-parameter"), "data"),
+            ],
             self.correlation_input_callbacks,
         )
         def _update_correlation_graph(ensemble, response, *filters):
@@ -389,22 +394,31 @@ The types of response_filters are:
                 corr_response = (
                     corrdf[response].dropna().drop(["REAL", response], axis=0)
                 )
-                return make_correlation_plot(
-                    corr_response, response, self.plotly_theme, self.corr_method
+
+                return (
+                    make_correlation_plot(
+                        corr_response, response, self.plotly_theme, self.corr_method
+                    ),
+                    corr_response.index[-1],
                 )
             except KeyError:
-                return {
-                    "layout": {
-                        "title": "<b>Cannot calculate correlation for given selection</b><br>"
-                        "Select a different response or filter setting."
-                    }
-                }
+                return (
+                    {
+                        "layout": {
+                            "title": "<b>Cannot calculate correlation for given selection</b><br>"
+                            "Select a different response or filter setting."
+                        }
+                    },
+                    None,
+                )
 
         @app.callback(
             Output(self.ids("distribution-graph"), "figure"),
             self.distribution_input_callbacks,
         )
-        def _update_distribution_graph(clickdata, ensemble, response, *filters):
+        def _update_distribution_graph(
+            clickdata, initial_parameter, ensemble, response, *filters
+        ):
             """Callback to update distribution graphs.
 
             1. Filters and aggregates response dataframe per realization
@@ -412,7 +426,11 @@ The types of response_filters are:
             3. Merge parameter and response dataframe
             4. Generate scatterplot and histograms
             """
-            if not clickdata:
+            if clickdata:
+                parameter = clickdata["points"][0]["y"]
+            elif initial_parameter:
+                parameter = initial_parameter
+            else:
                 raise PreventUpdate
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -423,7 +441,6 @@ The types of response_filters are:
                 aggregation=self.aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            parameter = clickdata["points"][0]["y"]
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
                 ["REAL", parameter, response]
             ]
