@@ -14,7 +14,7 @@ on:
 jobs:
 
   webviz-subsurface:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8']
@@ -32,6 +32,16 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    #- name: Change from Azure Ubuntu mirror to official Ubuntu mirror
+    #  run: |
+    #    # As of April 2020, Azure's default official Ubuntu mirrors fail randomly a lot of times with "Service Unavailable"... change to default Ubuntu mirrors.
+    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-security main restricted universe multiverse' /etc/apt/sources.list
+    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-backports main restricted universe multiverse' /etc/apt/sources.list
+    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-updates main restricted universe multiverse' /etc/apt/sources.list
+    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic main restricted universe multiverse' /etc/apt/sources.list
+    #    
+    #    sudo apt-get update
+        
     - name: Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
@@ -67,22 +77,23 @@ jobs:
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         pip install git+https://github.com/equinor/fmu-ensemble
-        sudo apt-get update
-        sudo apt-get install libboost-all-dev liblapack-dev
-        pushd ..
-        git clone --recursive https://github.com/OPM/opm-common.git
-        mkdir opm-common/build
-        pushd opm-common/build
-        cmake .. -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install \
-                 -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
-                 -DBUILD_TESTING=OFF \
-                 -DBUILD_SHARED_LIBS=ON \
-                 -DOPM_ENABLE_PYTHON=ON \
-                 -DOPM_INSTALL_PYTHON=ON
-        make -j4 install
-        popd
-        popd
-        pip install git+https://github.com/equinor/ecl2df
+
+        #sudo apt-get install libboost-all-dev liblapack-dev
+        #pushd ..
+        #git clone --recursive https://github.com/OPM/opm-common.git
+        #mkdir opm-common/build
+        #pushd opm-common/build
+        #cmake .. -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install \
+        #         -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+        #         -DBUILD_TESTING=OFF \
+        #         -DBUILD_SHARED_LIBS=ON \
+        #         -DOPM_ENABLE_PYTHON=ON \
+        #         -DOPM_INSTALL_PYTHON=ON
+        #make -j4 install
+        #popd
+        #popd
+        #pip install git+https://github.com/equinor/ecl2df
+        
         pytest ./tests --headless --forked
         git clone https://github.com/equinor/webviz-config.git
         pushd ./webviz-config/docs
