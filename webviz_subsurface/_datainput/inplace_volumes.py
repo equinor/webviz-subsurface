@@ -1,13 +1,9 @@
 import os
 
 import pandas as pd
+import fmu.ensemble
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
-try:
-    import fmu.ensemble
-except ImportError:  # fmu.ensemble is an optional dependency, e.g.
-    pass  # for a portable webviz instance, it is never used.
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

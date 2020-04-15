@@ -3,13 +3,9 @@ import glob
 from typing import Union, Optional
 
 import pandas as pd
+from fmu.ensemble import ScratchEnsemble, EnsembleSet
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
-try:
-    from fmu.ensemble import ScratchEnsemble, EnsembleSet
-except ImportError:
-    pass
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
-TESTS_REQUIRE = ["selenium~=3.141", "pylint", "mock", "black", "bandit", "pytest-xdist"]
+TESTS_REQUIRE = ["selenium>=3.141", "pylint", "mock", "black", "bandit", "pytest-xdist"]
 
 setup(
     name="webviz-subsurface",
@@ -40,19 +40,20 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "ParameterParallelCoordinates = "
             + "webviz_subsurface.plugins:ParameterParallelCoordinates",
-            "RunningTimeAnalysisFMU =  webviz_subsurface.plugins:RunningTimeAnalysisFMU",
-            "RelativePermeability =  webviz_subsurface.plugins:RelativePermeability",
+            "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
+            "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
         ]
     },
     install_requires=[
-        "scipy~=1.2",
-        "matplotlib~=3.0",
-        "pandas~=0.24",
-        "pillow~=6.1",
-        "xtgeo~=2.1",
-        "pyscal~=0.4, >=0.4.1",
+        "fmu-ensemble>=1.2.2",
+        "matplotlib>=3.0",
+        "pandas>=0.24",
+        "pillow>=6.1",
+        "pyscal>=0.4.1",
+        "scipy>=1.2",
         "webviz-config>=0.0.48",
         "webviz-subsurface-components>=0.0.23",
+        "xtgeo>=2.1",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
