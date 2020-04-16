@@ -372,8 +372,7 @@ The types of response_filters are:
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"])
-            corrdf = correlate(df, method=self.corr_method)
-            corrdf = corrdf.reindex(corrdf[response].abs().sort_values().index)
+            corrdf = correlate(df, response=response, method=self.corr_method)
             try:
                 corr_response = (
                     corrdf[response].dropna().drop(["REAL", response], axis=0)
@@ -505,21 +504,23 @@ def _filter_and_sum_responses(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def correlate(inputdf, method="pearson"):
+def correlate(inputdf, response, method="pearson"):
     """Cached wrapper for _correlate"""
-    return _correlate(inputdf=inputdf, method=method)
+    return _correlate(inputdf=inputdf, response=response, method=method)
 
 
-def _correlate(inputdf, method="pearson"):
+def _correlate(inputdf, response, method="pearson"):
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
-        return inputdf.corr(method=method)
-    if method == "spearman":
-        return inputdf.rank().corr(method="pearson")
-    raise ValueError(
-        f"Correlation method {method} is invalid. "
-        "Available methods are 'pearson' and 'spearman'"
-    )
+        corrdf = inputdf.corr(method=method)
+    elif method == "spearman":
+        corrdf = inputdf.rank().corr(method="pearson")
+    else:
+        raise ValueError(
+            f"Correlation method {method} is invalid. "
+            "Available methods are 'pearson' and 'spearman'"
+        )
+    return corrdf.reindex(corrdf[response].abs().sort_values().index)
 
 
 def make_correlation_plot(series, response, theme, corr_method):

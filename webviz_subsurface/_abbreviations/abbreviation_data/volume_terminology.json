@@ -24,3 +24,4 @@
   "RECOVERABLE_GAS": {"label": "Recoverable volume (gas zone)", "unit": "Sm³"},
   "RECOVERABLE_TOTAL": {"label": "Recoverable volume (total)", "unit": "Sm³"}
 }
+

@@ -16,9 +16,21 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
-from .._datainput.fmu_input import load_smry, get_realizations, find_sens_type
-from .._abbreviations.reservoir_simulation import simulation_vector_description
-from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
+from .._datainput.fmu_input import (
+    load_smry,
+    get_realizations,
+    find_sens_type,
+    load_smry_meta,
+)
+from .._abbreviations.reservoir_simulation import (
+    simulation_vector_description,
+    simulation_unit_reformat,
+)
+from .._abbreviations.number_formatting import table_statistics_base
+from .._utils.simulation_timeseries import (
+    set_simulation_line_shape_fallback,
+    get_simulation_line_shape,
+)
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):
@@ -55,6 +67,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 * `initial_vector`: Initial vector to display
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
+* `line_shape_fallback`: Fallback interpolation method between points. Vectors identified as rates
+                or phase ratios are always backfilled, vectors identified as cumulative (totals)
+                are always linearly interpolated. The rest use the fallback.
+                Supported: `linear` (default), `backfilled` + regular Plotly options: `hv`, `vh`,
+                `hvh`, `vhv` and `spline`.
 """
 
     ENSEMBLE_COLUMNS = [
@@ -67,7 +84,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         "RUNPATH",
     ]
 
-    TABLE_STAT = [("Sensitivity", {}), ("Case", {})] + TABLE_STATISTICS_BASE
+    TABLE_STAT = [("Sensitivity", {}), ("Case", {})] + table_statistics_base()
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -79,6 +96,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         column_keys: list = None,
         initial_vector=None,
         sampling: str = "monthly",
+        line_shape_fallback: str = "linear",
     ):
 
         super().__init__()
@@ -99,6 +117,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             parameters["SENSTYPE"] = parameters.apply(
                 lambda row: find_sens_type(row.SENSCASE), axis=1
             )
+            self.smry_meta = None
 
         elif ensembles:
             self.ens_paths = {
@@ -115,6 +134,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ensemble_paths=self.ens_paths,
                 ensemble_set_name="EnsembleSet",
                 time_index=self.time_index,
+                column_keys=self.column_keys,
+            )
+            self.smry_meta = load_smry_meta(
+                ensemble_paths=self.ens_paths,
+                ensemble_set_name="EnsembleSet",
                 column_keys=self.column_keys,
             )
         else:
@@ -134,9 +158,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             if initial_vector and initial_vector in self.smry_cols
             else self.smry_cols[0]
         )
+        self.line_shape_fallback = set_simulation_line_shape_fallback(
+            line_shape_fallback
+        )
         self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
         self.uid = uuid4()
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -247,6 +274,16 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     ],
                 ),
                 (
+                    load_smry_meta,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                            "column_keys": self.column_keys,
+                        }
+                    ],
+                ),
+                (
                     get_realizations,
                     [
                         {
@@ -275,8 +312,8 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                         dcc.Store(id=self.ids("date-store")),
                                     ],
                                 ),
-                                html.Div(
-                                    [
+                                wcc.FlexBox(
+                                    children=[
                                         html.Div(
                                             id=self.ids("graph-wrapper"),
                                             style={"height": "450px"},
@@ -289,6 +326,22 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                         ),
                                     ]
                                 ),
+                                html.Div(
+                                    children=[
+                                        html.Div(
+                                            id=self.ids("table_title"),
+                                            style={"textAlign": "center"},
+                                            children="",
+                                        ),
+                                        DataTable(
+                                            id=self.ids("table"),
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            page_size=10,
+                                        ),
+                                    ],
+                                ),
                             ],
                         ),
                         html.Div(
@@ -298,22 +351,17 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         ),
                     ],
                 ),
-                DataTable(
-                    id=self.ids("table"),
-                    sort_action="native",
-                    filter_action="native",
-                    page_action="native",
-                    page_size=10,
-                ),
             ]
         )
 
+    # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
             [
                 # Output(self.ids("date-store"), "children"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
+                Output(self.ids("table_title"), "children"),
                 Output(self.tornadoplot.storage_id, "data"),
             ],
             [
@@ -336,13 +384,24 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 # json.dumps(f"{date}"),
                 table_rows,
                 table_columns,
+                (
+                    f"{simulation_vector_description(vector)} ({vector})"
+                    + (
+                        ""
+                        if get_unit(self.smry_meta, vector) is None
+                        else f" [{get_unit(self.smry_meta, vector)}]"
+                    )
+                ),
                 json.dumps(
                     {
                         "ENSEMBLE": ensemble,
                         "data": data[["REAL", vector]].values.tolist(),
                         "number_format": "#.4g",
-                        # Unit placeholder. Need data from fmu-ensemble, see work in:
-                        # https://github.com/equinor/fmu-ensemble/pull/89
+                        "unit": (
+                            ""
+                            if get_unit(self.smry_meta, vector) is None
+                            else get_unit(self.smry_meta, vector)
+                        ),
                     }
                 ),
             )
@@ -357,7 +416,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 Input(self.ids("graph"), "clickData"),
             ],
             [State(self.ids("graph"), "figure")],
-        )
+        )  # pylint: disable=too-many-branches
         def _render_tornado(tornado_click, ensemble, vector, date_click, figure):
             """Update graph with line coloring, vertical line and title"""
             if dash.callback_context.triggered is None:
@@ -366,8 +425,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
             # Draw initial figure and redraw if ensemble/vector changes
             if ctx in ["", self.ids("ensemble"), self.ids("vector")]:
-                layout = {}
-                layout.update(self.plotly_theme["layout"])
                 data = filter_ensemble(self.data, ensemble, vector)
                 traces = [
                     {
@@ -377,12 +434,21 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         "x": df["DATE"],
                         "y": df[vector],
                         "customdata": r,
+                        "line": {
+                            "shape": get_simulation_line_shape(
+                                line_shape_fallback=self.line_shape_fallback,
+                                vector=vector,
+                                smry_meta=self.smry_meta,
+                            )
+                        },
                     }
                     for r, df in data.groupby(["REAL"])
                 ]
                 traces[0]["hoverinfo"] = "x"
-                layout.update({"showlegend": False, "margin": {"t": 50}})
-                figure = {"data": traces, "layout": layout}
+                figure = {
+                    "data": traces,
+                    "layout": {"showlegend": False, "margin": {"t": 50}},
+                }
 
             # Update line colors if a sensitivity is selected in tornado
             if tornado_click:
@@ -395,12 +461,16 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     for trace in figure["data"]:
                         if trace["customdata"] in tornado_click["real_low"]:
                             trace["marker"] = {
-                                "color": self.plotly_theme["layout"]["colorway"][0]
+                                "color": self.theme.plotly_theme["layout"]["colorway"][
+                                    0
+                                ]
                             }
                             trace["opacity"] = 1
                         elif trace["customdata"] in tornado_click["real_high"]:
                             trace["marker"] = {
-                                "color": self.plotly_theme["layout"]["colorway"][1]
+                                "color": self.theme.plotly_theme["layout"]["colorway"][
+                                    1
+                                ]
                             }
                             trace["opacity"] = 1
                         else:
@@ -415,7 +485,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     and figure["layout"].get("shapes")
                 ):
                     figure["layout"]["shapes"] = []
-                    figure["layout"]["title"] = None
+                    figure["layout"]["title"] = (
+                        None
+                        if get_unit(self.smry_meta, vector) is None
+                        else f"[{get_unit(self.smry_meta, vector)}]"
+                    )
                     return figure
 
                 date = date_click["points"][0]["x"]
@@ -426,9 +500,17 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ]
                 figure["layout"]["title"] = (
                     f"Date: {date}, "
-                    f"sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
+                    f"Sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
                 )
-
+            figure["layout"]["yaxis"] = {
+                "title": f"{simulation_vector_description(vector)} ({vector})"
+                + (
+                    ""
+                    if get_unit(self.smry_meta, vector) is None
+                    else f" [{get_unit(self.smry_meta, vector)}]"
+                )
+            }
+            figure["layout"] = self.theme.create_themed_layout(figure["layout"])
             return figure
 
 
@@ -452,16 +534,10 @@ def calculate_table(df, vector):
             )
         except KeyError:
             pass
-    unit = ""  # awaiting fmu-ensemble https://github.com/equinor/fmu-ensemble/pull/89
     columns = [
         {**{"name": i[0], "id": i[0]}, **i[1]}
         for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
     ]
-    for col in columns:
-        try:
-            col["format"]["locale"]["symbol"] = ["", f"{unit}"]
-        except KeyError:
-            pass
     return table, columns
 
 
@@ -476,3 +552,8 @@ def filter_ensemble(data, ensemble, vector):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_unit(smry_meta, vec):
+    return None if smry_meta is None else simulation_unit_reformat(smry_meta.unit[vec])
