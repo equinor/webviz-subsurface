@@ -162,6 +162,9 @@ If undefined: all parameters visualized.
                 self.ensembles,
             )
 
+    def add_webvizstore(self):
+        return [(load_parameters, [{"ensemble_paths": self.ens_paths}])]
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_parcoord(plot_df, theme, colormap, color_col, ens):
