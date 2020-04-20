@@ -10,6 +10,9 @@ on:
   release:
     types:
       - published
+  schedule:
+    # Run CI daily and check that tests are working with latest dependencies
+    - cron:  '0 0 * * *'
 
 jobs:
 
@@ -18,6 +21,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8']
+        pandas-version: ['0.24.2', '1.*']  # Necessary as long as RHEL6 is used internally
 
     env:
         PYTHONPATH: ${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/site-packages:${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/dist-packages
@@ -45,6 +49,7 @@ jobs:
     - name: Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
+        pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
 
     - name: Install test dependencies
@@ -76,7 +81,6 @@ jobs:
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-        pip install git+https://github.com/equinor/fmu-ensemble
 
         #sudo apt-get install libboost-all-dev liblapack-dev
         #pushd ..
@@ -112,13 +116,13 @@ jobs:
         popd
 
     - name: Update Docker Hub example image
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       run: |
         echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
         docker push webviz/example_subsurface_image:equinor-theme
 
     - name: Build and deploy Python package
-      if: github.event_name == 'release' && matrix.python-version == '3.6'
+      if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
@@ -128,7 +132,7 @@ jobs:
         twine upload dist/*
 
     - name: Update GitHub pages
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       run: |
         cp -R ./webviz-config/docs/_build ../_build
 
