@@ -14,32 +14,37 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 
-from plotly.subplots import make_subplots
-
+from webviz_subsurface._datainput.fmu_input import load_csv
 from ._formation_figure import FormationFigure
 from ._map_figure import MapFigure
+from ._misfit_figure import update_misfit_plot
 
 
 class RftPlotter(WebvizPluginABC):
     def __init__(
         self,
         app,
+        ensembles,
         formations: Path,
-        simulations: Path,
         observations: Path,
         ertdata: Path = None,
         faultlines: Path = None,
     ):
         super().__init__()
         self.formationdf = pd.read_csv(formations)
-        self.simdf = pd.read_csv(simulations)
+        self.ens_paths = {
+            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            for ens in ensembles
+        }
+        self.simdf = load_csv(self.ens_paths, "share/results/tables/rft.csv")
+        # self.simdf = pd.read_csv(simulations)
         self.obsdf = pd.read_csv(observations)
 
         if ertdata is not None:
             self.ertdatadf = pd.read_csv(ertdata)
-            self.ertdatadf["DATE"] = self.ertdatadf["DATE"].apply(
-                lambda x: pd.to_datetime(str(x), format="%Y%m%d")
-            )
+            #           self.ertdatadf["DATE"] = self.ertdatadf["DATE"].apply(
+            #               lambda x: pd.to_datetime(str(x), format="%Y%m%d")
+            #           )
             self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
                 ["WELL", "DATE", "ENSEMBLE"]
             )["SIMULATED"].transform("std")
@@ -123,6 +128,59 @@ class RftPlotter(WebvizPluginABC):
         ]
 
     @property
+    def map_plot_selectors(self):
+        return (
+            html.Div(
+                [
+                    html.Label(style={"font-weight": "bold"}, children="Ensemble",),
+                    dcc.Dropdown(
+                        id=self.uuid("map_ensemble"),
+                        options=[
+                            {"label": ens, "value": ens}
+                            for ens in list(self.ertdatadf["ENSEMBLE"].unique())
+                        ],
+                        value=list(self.ertdatadf["ENSEMBLE"].unique())[0],
+                    ),
+                    html.Label(style={"font-weight": "bold"}, children="Size by",),
+                    dcc.Dropdown(
+                        id=self.uuid("map_size"),
+                        options=[
+                            {"label": "Standard Deviation", "value": "STDDEV",},
+                            {"label": "Misfit", "value": "DIFF",},
+                        ],
+                        value="DIFF",
+                    ),
+                    html.Label(style={"font-weight": "bold"}, children="Color by",),
+                    dcc.Dropdown(
+                        id=self.uuid("map_color"),
+                        options=[
+                            {"label": "Misfit", "value": "DIFF",},
+                            {"label": "Standard Deviation", "value": "STDDEV",},
+                            {"label": "Year", "value": "YEAR",},
+                        ],
+                        value="STDDEV",
+                    ),
+                    html.Label(style={"font-weight": "bold"}, children="Date range",),
+                    html.Div(
+                        style={"width": "100%"},
+                        children=[
+                            dcc.RangeSlider(
+                                id=self.uuid("map_date"),
+                                min=self.ertdatadf["DATE"].min(),
+                                max=self.ertdatadf["DATE"].max(),
+                                value=[
+                                    self.ertdatadf["DATE"].min(),
+                                    self.ertdatadf["DATE"].max(),
+                                ],
+                                tooltip={"always_visible": True},
+                            )
+                        ],
+                    ),
+                ]
+            ),
+        )
+
+    @property
     def layout(self):
 
         tabs_styles = {"height": "44px", "width": "50%"}
@@ -154,102 +212,7 @@ class RftPlotter(WebvizPluginABC):
                                     children=[
                                         html.Div(
                                             style={"width": "50%"},
-                                            children=html.Div(
-                                                [
-                                                    html.Label(
-                                                        style={"font-weight": "bold"},
-                                                        children="Ensemble",
-                                                    ),
-                                                    dcc.Dropdown(
-                                                        id=self.uuid("map_ensemble"),
-                                                        options=[
-                                                            {"label": ens, "value": ens}
-                                                            for ens in list(
-                                                                self.ertdatadf[
-                                                                    "ENSEMBLE"
-                                                                ].unique()
-                                                            )
-                                                        ],
-                                                        value=list(
-                                                            self.ertdatadf[
-                                                                "ENSEMBLE"
-                                                            ].unique()
-                                                        )[0],
-                                                    ),
-                                                    html.Label(
-                                                        style={"font-weight": "bold"},
-                                                        children="Size by",
-                                                    ),
-                                                    dcc.Dropdown(
-                                                        id=self.uuid("map_size"),
-                                                        options=[
-                                                            {
-                                                                "label": "Standard Deviation",
-                                                                "value": "STDDEV",
-                                                            },
-                                                            {
-                                                                "label": "Misfit",
-                                                                "value": "DIFF",
-                                                            },
-                                                        ],
-                                                        value="DIFF",
-                                                    ),
-                                                    html.Label(
-                                                        style={"font-weight": "bold"},
-                                                        children="Color by",
-                                                    ),
-                                                    dcc.Dropdown(
-                                                        id=self.uuid("map_color"),
-                                                        options=[
-                                                            {
-                                                                "label": "Misfit",
-                                                                "value": "DIFF",
-                                                            },
-                                                            {
-                                                                "label": "Standard Deviation",
-                                                                "value": "STDDEV",
-                                                            },
-                                                            {
-                                                                "label": "Year",
-                                                                "value": "YEAR",
-                                                            },
-                                                            
-                                                        ],
-                                                        value="STDDEV",
-                                                    ),
-                                                    html.Label(
-                                                        style={"font-weight": "bold"},
-                                                        children="Date range",
-                                                    ),
-                                                    html.Div(
-                                                        style={"width": "50%"},
-                                                        children=[
-                                                            dcc.RangeSlider(
-                                                                id=self.uuid(
-                                                                    "map_date"
-                                                                ),
-                                                                min=self.ertdatadf[
-                                                                    "YEAR"
-                                                                ].min(),
-                                                                max=self.ertdatadf[
-                                                                    "YEAR"
-                                                                ].max(),
-                                                                value=[
-                                                                    self.ertdatadf[
-                                                                        "YEAR"
-                                                                    ].min(),
-                                                                    self.ertdatadf[
-                                                                        "YEAR"
-                                                                    ].max(),
-                                                                ],
-                                                                tooltip={
-                                                                    "always_visible": True
-                                                                },
-                                                            )
-                                                        ],
-                                                    ),
-                                                ]
-                                            ),
+                                            children=self.map_plot_selectors,
                                         ),
                                         html.Div(
                                             style={"width": "50%"},
@@ -303,14 +266,6 @@ class RftPlotter(WebvizPluginABC):
                                 ),
                             ]
                         ),
-                        dcc.Dropdown(
-                            id=self.uuid("ensemble-misfit"),
-                            options=[
-                                {"label": ens, "value": ens}
-                                for ens in list(self.ertdatadf["ENSEMBLE"].unique())
-                            ],
-                            value=list(self.ertdatadf["ENSEMBLE"].unique())[0],
-                        ),
                         wcc.Graph(id=self.uuid("misfit-graph")),
                     ],
                 ),
@@ -342,9 +297,10 @@ class RftPlotter(WebvizPluginABC):
         )
         def update_map(ensemble, sizeby, colorby, dates):
             figure = MapFigure(self.ertdatadf, ensemble)
-            figure.add_misfit_plot(sizeby, colorby, dates)
             if self.faultlinesdf is not None:
                 figure.add_fault_lines(self.faultlinesdf)
+            figure.add_misfit_plot(sizeby, colorby, dates)
+
             return {"data": figure.traces, "layout": figure.layout}
 
         @app.callback(
@@ -400,104 +356,6 @@ class RftPlotter(WebvizPluginABC):
             Output(self.uuid("misfit-graph"), "figure"),
             [Input(self.uuid("well-misfit"), "value"),],
         )
-        def update_misfit(wells):
-            wells = wells if isinstance(wells, list) else [wells]
+        def misfit_plot(wells):
 
-            df = self.ertdatadf[self.ertdatadf["WELL"].isin(wells)]
-            fig = make_subplots(
-                rows=len(list(df["ENSEMBLE"].unique())), cols=1, vertical_spacing=0.05,
-            )
-            max_diff = 0
-            mean_diff_ens = []
-            for i, (ens, ensdf) in enumerate(df.groupby("ENSEMBLE")):
-
-                realdf = ensdf.groupby("REAL").sum().reset_index()
-                max_diff = (
-                    max_diff
-                    if max_diff > realdf["DIFF"].max()
-                    else realdf["DIFF"].max()
-                )
-                mean_diff_ens.append(realdf["DIFF"].mean())
-                realdf = realdf.sort_values(by=["DIFF"])
-                trace = {
-                    "x": realdf["REAL"],
-                    "y": realdf["DIFF"],
-                    "type": "bar",
-                }
-
-                fig.add_trace(trace, i + 1, 1)
-
-            # Add mean line
-
-            layout = fig["layout"]
-            layout.update({"height": 800})
-            shapes = []
-
-            for i, mean_diff in enumerate(mean_diff_ens):
-                if i == 0:
-                    layout.update(
-                        {
-                            "xaxis": {"type": "category"},
-                            "yaxis": {"range": [0, max_diff]},
-                        }
-                    )
-                    for j, mean_diff2 in enumerate(mean_diff_ens):
-                        if j == 0:
-                            shapes.append(
-                                dict(
-                                    type="line",
-                                    yref="y",
-                                    y0=mean_diff,
-                                    y1=mean_diff,
-                                    xref="paper",
-                                    x0=0,
-                                    x1=1,
-                                )
-                            )
-                        else:
-                            shapes.append(
-                                dict(
-                                    type="line",
-                                    yref=f"y{j+1}",
-                                    y0=mean_diff,
-                                    y1=mean_diff,
-                                    xref="paper",
-                                    x0=0,
-                                    x1=1,
-                                )
-                            )
-                else:
-                    layout.update(
-                        {
-                            f"xaxis{i+1}": {"type": "category"},
-                            f"yaxis{i+1}": {"range": [0, max_diff]},
-                        }
-                    )
-                    for j, mean_diff2 in enumerate(mean_diff_ens):
-                        if j == 0:
-                            shapes.append(
-                                dict(
-                                    type="line",
-                                    yref="y",
-                                    y0=mean_diff,
-                                    y1=mean_diff,
-                                    xref="paper",
-                                    x0=0,
-                                    x1=1,
-                                )
-                            )
-                        else:
-                            shapes.append(
-                                dict(
-                                    type="line",
-                                    yref=f"y{j+1}",
-                                    y0=mean_diff,
-                                    y1=mean_diff,
-                                    xref="paper",
-                                    x0=0,
-                                    x1=1,
-                                )
-                            )
-            layout["shapes"] = shapes
-            data = fig["data"]
-            return {"data": data, "layout": layout}
+            return update_misfit_plot(self.ertdatadf, wells)

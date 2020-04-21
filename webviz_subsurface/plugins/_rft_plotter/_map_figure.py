@@ -17,7 +17,7 @@ class MapFigure:
         # TODO: Figure out hovertext ==> Therese ==> Roger
 
         df = self.ertdf.loc[
-            (self.ertdf["YEAR"] >= dates[0]) & (self.ertdf["YEAR"] <= dates[1])
+            (self.ertdf["DATE"] >= dates[0]) & (self.ertdf["DATE"] <= dates[1])
         ]
 
         self.traces.append(
@@ -45,11 +45,11 @@ class MapFigure:
                     "sizemode": "area",
                     "sizemin": 6,
                     "color": df[colorby],
-                    "cmin" : self.ertdf[colorby].min(),
-                    "cmax" : self.ertdf[colorby].quantile(0.9),
-                    "colorscale":[[0, 'rgb(0,0,255)'], [1, 'rgb(255,0,0)']],
+                    "cmin": self.ertdf[colorby].min(),
+                    "cmax": self.ertdf[colorby].quantile(0.9),
+                    "colorscale": [[0, "rgb(0,0,255)"], [1, "rgb(255,0,0)"]],
                     "showscale": True,
-                    "colorbar":{"x":0}
+                    "colorbar": {"x": 0},
                 },
             }
         )
@@ -75,7 +75,7 @@ class MapFigure:
             "hovermode": "closest",
             "legend": {"itemsizing": "constant", "orientation": "h"},
             "height": 800,
-            "colorway":["red", "blue"],
+            "colorway": ["red", "blue"],
             "margin": {"t": 50, "l": 0, "r": 0},
             "xaxis": {"constrain": "domain", "showgrid": False},
             "yaxis": {"scaleanchor": "x", "showgrid": False},
