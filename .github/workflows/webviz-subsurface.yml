@@ -28,6 +28,15 @@ jobs:
 
     steps:
 
+    - name: Remove unused pre-installed software
+      run: |
+        # https://github.com/actions/virtual-environments/issues/751
+        # https://github.com/actions/virtual-environments/issues/709
+        sudo apt-get purge p7zip* yarn ruby-full zulu-*-azure-jdk* ghc* php7*
+        sudo apt-get autoremove
+        sudo apt-get clean
+        df -h
+
     - name: Checkout commit locally
       uses: actions/checkout@v2
 
@@ -45,7 +54,7 @@ jobs:
     #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic main restricted universe multiverse' /etc/apt/sources.list
     #    
     #    sudo apt-get update
-        
+
     - name: Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
