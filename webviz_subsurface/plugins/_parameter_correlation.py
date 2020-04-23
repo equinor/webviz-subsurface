@@ -76,17 +76,6 @@ and scatter plot for any given pair of parameters.
                 style={"padding": "5px"},
                 children=[
                     html.Label(
-                        "Set ensemble in all plots:", style={"font-weight": "bold"},
-                    ),
-                    Widgets.dropdown_from_dict(
-                        self.ids("ensemble-all"), self.ensembles
-                    ),
-                ],
-            ),
-            html.Div(
-                style={"padding": "5px"},
-                children=[
-                    html.Label(
                         "Parameter horizontal axis:", style={"font-weight": "bold"},
                     ),
                     dcc.Dropdown(
@@ -132,11 +121,35 @@ and scatter plot for any given pair of parameters.
 
     @property
     def layout(self):
-        return html.Div(
+        return wcc.FlexBox(
             children=[
-                wcc.FlexBox(self.control_div),
-                wcc.FlexBox(
-                    children=[self.matrix_plot, wcc.Graph(id=self.ids("scatter"))]
+                html.Div(
+                    style={"flex": 1},
+                    children=[
+                        self.matrix_plot,
+                        html.Div(
+                            style={"padding": "5px"},
+                            children=[
+                                html.Label(
+                                    "Set ensemble in all plots:",
+                                    style={"font-weight": "bold"},
+                                ),
+                                Widgets.dropdown_from_dict(
+                                    self.ids("ensemble-all"), self.ensembles
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                html.Div(
+                    style={"flex": 1},
+                    children=[
+                        html.Div(
+                            style={"height": "400px"},
+                            children=[wcc.Graph(id=self.ids("scatter"))],
+                        )
+                    ]
+                    + self.control_div,
                 ),
             ]
         )
@@ -293,7 +306,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density, theme):
     layout = theme_layout(
         theme,
         {
-            "margin": {"t": 20, "b": 50, "l": 200, "r": 200},
+            "margin": {"t": 20, "b": 100, "l": 100, "r": 10},
             "bargap": 0.05,
             "xaxis": {
                 "title": x_col,

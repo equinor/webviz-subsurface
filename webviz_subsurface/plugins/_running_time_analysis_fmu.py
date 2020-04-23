@@ -228,15 +228,16 @@ Default: all parameters.
                         html.Span(
                             "Selected parameters:", style={"font-weight": "bold"},
                         ),
-                        dcc.Dropdown(
+                        wcc.Select(
                             id=self.uuid("parameters"),
+                            style={"overflowX": "auto", "fontSize": "0.97rem"},
                             options=[
                                 {"label": param, "value": param}
                                 for param in self.parameters
                             ],
-                            clearable=False,
                             multi=True,
                             value=self.visual_parameters,
+                            size=min(50, len(self.visual_parameters)),
                         ),
                     ],
                 ),
@@ -267,7 +268,7 @@ Default: all parameters.
             style={"padding-top": 10,},
             children=[
                 html.Div(style={"flex": "1"}, children=self.control_div),
-                html.Div(style={"flex": "4"}, children=self.plot_fig),
+                html.Div(style={"flex": "3"}, children=self.plot_fig),
             ],
         )
 

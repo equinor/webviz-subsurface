@@ -222,35 +222,28 @@ The types of response_filters are:
         children = []
         for col_name, col_type in self.response_filters.items():
             domid = self.ids(f"filter-{col_name}")
-            if col_type in ("multi", "single"):
-                values = list(self.responsedf[col_name].unique())
-                children.append(
-                    html.Div(
-                        children=[
-                            html.Label(col_name),
-                            dcc.Dropdown(
-                                id=domid,
-                                options=[
-                                    {"label": val, "value": val} for val in values
-                                ],
-                                value=values if col_type == "multi" else values[0],
-                                multi=col_type == "multi",
-                                clearable=False,
-                            ),
-                        ]
-                    )
+            values = list(self.responsedf[col_name].unique())
+            if col_type == "multi":
+                selector = wcc.Select(
+                    id=domid,
+                    options=[{"label": val, "value": val} for val in values],
+                    value=values,
+                    multi=True,
+                    size=min(20, len(values)),
+                )
+            elif col_type == "single":
+                selector = dcc.Dropdown(
+                    id=domid,
+                    options=[{"label": val, "value": val} for val in values],
+                    value=values[0],
+                    multi=False,
+                    clearable=False,
                 )
             elif col_type == "range":
-                children.append(
-                    html.Div(
-                        children=[
-                            html.Label(col_name),
-                            make_range_slider(
-                                domid, self.responsedf[col_name], col_name
-                            ),
-                        ]
-                    )
-                )
+                selector = make_range_slider(domid, self.responsedf[col_name], col_name)
+            else:
+                return children
+            children.append(html.Div(children=[html.Label(col_name), selector,]))
 
         return children
 
@@ -289,21 +282,26 @@ The types of response_filters are:
     @property
     def layout(self):
         """Main layout"""
-        return html.Div(
+        return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                wcc.FlexBox(
+                html.Div(
+                    style={"flex": 3},
+                    children=[
+                        wcc.Graph(self.ids("correlation-graph")),
+                        dcc.Store(id=self.ids("initial-parameter")),
+                    ],
+                ),
+                html.Div(
+                    style={"flex": 3},
+                    children=wcc.Graph(self.ids("distribution-graph")),
+                ),
+                html.Div(
+                    style={"flex": 1},
                     children=self.control_layout + self.filter_layout
                     if self.response_filters
                     else [],
                 ),
-                wcc.FlexBox(
-                    children=[
-                        wcc.Graph(self.ids("correlation-graph")),
-                        wcc.Graph(self.ids("distribution-graph")),
-                    ]
-                ),
-                dcc.Store(id=self.ids("initial-parameter")),
             ],
         )
 

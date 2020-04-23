@@ -51,7 +51,7 @@ setup(
         "pillow>=6.1",
         "pyscal>=0.4.1",
         "scipy>=1.2",
-        "webviz-config>=0.0.48",
+        "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.0.23",
         "xtgeo>=2.8",
     ],

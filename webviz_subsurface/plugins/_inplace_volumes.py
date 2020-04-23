@@ -230,13 +230,10 @@ but the following responses are given more descriptive names automatically:
         dropdowns = []
         for selector in self.selectors:
             elements = list(self.volumes[selector].unique())
-            multi = True
-
             if selector in ["ENSEMBLE", "SOURCE"]:
                 value = elements[0]
             else:
                 value = elements
-
             dropdowns.append(
                 html.Div(
                     children=[
@@ -244,14 +241,14 @@ but the following responses are given more descriptive names automatically:
                             open=True,
                             children=[
                                 html.Summary(selector.lower().capitalize()),
-                                dcc.Dropdown(
+                                wcc.Select(
                                     id=self.selectors_id[selector],
                                     options=[
                                         {"label": i, "value": i} for i in elements
                                     ],
                                     value=value,
-                                    multi=multi,
-                                    clearable=False,
+                                    multi=True,
+                                    size=min(20, len(elements)),
                                 ),
                             ],
                         )
@@ -343,23 +340,23 @@ but the following responses are given more descriptive names automatically:
                                     style={"height": 400},
                                     children=wcc.Graph(id=self.ids("graph")),
                                 ),
+                                html.Div(
+                                    children=[
+                                        html.Div(
+                                            id=self.ids("table_title"),
+                                            style={"textAlign": "center"},
+                                            children="",
+                                        ),
+                                        DataTable(
+                                            id=self.ids("table"),
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            page_size=10,
+                                        ),
+                                    ],
+                                ),
                             ],
-                        ),
-                    ],
-                ),
-                html.Div(
-                    children=[
-                        html.Div(
-                            id=self.ids("table_title"),
-                            style={"textAlign": "center"},
-                            children="",
-                        ),
-                        DataTable(
-                            id=self.ids("table"),
-                            sort_action="native",
-                            filter_action="native",
-                            page_action="native",
-                            page_size=10,
                         ),
                     ],
                 ),
@@ -430,6 +427,7 @@ but the following responses are given more descriptive names automatically:
             [
                 Output(self.selectors_id["ENSEMBLE"], "multi"),
                 Output(self.selectors_id["ENSEMBLE"], "value"),
+                Output(self.selectors_id["ENSEMBLE"], "size"),
             ],
             [Input(self.ids("group"), "value")],
         )
@@ -437,10 +435,11 @@ but the following responses are given more descriptive names automatically:
             """If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             """
+            selectors = list(self.volumes["ENSEMBLE"].unique())
             if group_by == "ENSEMBLE":
-                return True, list(self.volumes["ENSEMBLE"].unique())
+                return True, selectors, len(selectors)
 
-            return False, list(self.volumes["ENSEMBLE"].unique())[0]
+            return False, selectors[0], 1
 
         if "SOURCE" in self.selectors:
 
@@ -448,6 +447,7 @@ but the following responses are given more descriptive names automatically:
                 [
                     Output(self.selectors_id["SOURCE"], "multi"),
                     Output(self.selectors_id["SOURCE"], "value"),
+                    Output(self.selectors_id["SOURCE"], "size"),
                 ],
                 [Input(self.ids("group"), "value")],
             )
@@ -455,11 +455,11 @@ but the following responses are given more descriptive names automatically:
                 """If iteration is selected as group by set the iteration
                 selector to allow multiple selections, else use single selection
                 """
-
+                selectors = list(self.volumes["SOURCE"].unique())
                 if group_by == "SOURCE" and "SOURCE" in self.selectors:
-                    return True, list(self.volumes["SOURCE"].unique())
+                    return True, selectors, len(selectors)
 
-                return False, list(self.volumes["SOURCE"].unique())[0]
+                return False, selectors[0], 1
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
