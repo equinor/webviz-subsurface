@@ -334,7 +334,7 @@ The performance is currently slow for large grids.
             surfacepath, surface_type, gridparameter, color_values, colorscale
         ):
 
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
+            surface = xtgeo.RegularSurface(get_path(surfacepath))
             hillshading = True
             min_val = None
             max_val = None
@@ -345,8 +345,8 @@ The performance is currently slow for large grids.
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
                 color = ListedColormap(colorscale) if colorscale else "viridis"
-                grid = load_grid(str(get_path(self.gridfile)))
-                gridparameter = load_grid_parameter(grid, str(get_path(gridparameter)))
+                grid = load_grid(get_path(self.gridfile))
+                gridparameter = load_grid_parameter(grid, get_path(gridparameter))
                 surface.slice_grid3d(grid, gridparameter)
                 surface.values = surface.values.filled(0)
                 if min_val is not None:
@@ -377,14 +377,14 @@ The performance is currently slow for large grids.
         def _render_fence(coords, gridparameter, surfacepath, color_values, colorscale):
             if not coords:
                 raise PreventUpdate
-            grid = load_grid(str(get_path(self.gridfile)))
-            gridparameter = load_grid_parameter(grid, str(get_path(gridparameter)))
+            grid = load_grid(get_path(self.gridfile))
+            gridparameter = load_grid_parameter(grid, get_path(gridparameter))
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = grid.get_randomline(
                 fence, gridparameter, zincrement=0.5
             )
 
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
+            surface = xtgeo.RegularSurface(get_path(surfacepath))
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,
@@ -413,8 +413,8 @@ The performance is currently slow for large grids.
             [State(self.ids("gridparameter"), "value")],
         )
         def _update_color_slider(_clicks, gridparameter):
-            grid = load_grid(str(get_path(self.gridfile)))
-            gridparameter = load_grid_parameter(grid, str(get_path(gridparameter)))
+            grid = load_grid(get_path(self.gridfile))
+            gridparameter = load_grid_parameter(grid, get_path(gridparameter))
 
             minv = float(f"{gridparameter.values.min():2f}")
             maxv = float(f"{gridparameter.values.max():2f}")

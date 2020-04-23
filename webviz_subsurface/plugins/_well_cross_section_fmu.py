@@ -1,8 +1,9 @@
+import io
+import os
+import json
 from uuid import uuid4
 from pathlib import Path
 from typing import List
-import io
-import json
 
 import numpy as np
 import xtgeo
@@ -422,7 +423,7 @@ per realization.
                 self.surfacefiles[self.surfacenames.index(name)]
                 for name in surfacenames
             ]
-            well = load_well(str(get_path(well)))
+            well = load_well(get_path(well))
             xsect = XSectionFigure(
                 well=well,
                 zmin=self.zmin,
@@ -444,7 +445,7 @@ per realization.
                 )
 
             if "show_seismic" in options:
-                cube = load_cube_data(str(get_path(cube)))
+                cube = load_cube_data(get_path(cube))
                 xsect.plot_cube(cube)
 
             xsect.plot_well(
@@ -550,10 +551,9 @@ per realization.
 def calculate_surface_statistics(
     realdf, ensemble, surfacefile, surfacefolder
 ) -> io.BytesIO:
-    real_paths = list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
     fns = [
-        str(Path(Path(real_path) / Path(surfacefolder) / Path(surfacefile)))
-        for real_path in real_paths
+        os.path.join(real_path, surfacefolder, surfacefile)
+        for real_path in list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
     ]
     surfaces = get_surfaces(fns)
     return io.BytesIO(

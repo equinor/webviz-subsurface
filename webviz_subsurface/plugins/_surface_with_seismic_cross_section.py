@@ -322,7 +322,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfacepath, surface_type, cubepath, color_values, colorscale
         ):
 
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
+            surface = xtgeo.RegularSurface(get_path(surfacepath))
             hillshading = True
             min_val = None
             max_val = None
@@ -366,7 +366,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
 
-            surface = xtgeo.RegularSurface(str(get_path(surfacepath)))
+            surface = xtgeo.RegularSurface(get_path(surfacepath))
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,

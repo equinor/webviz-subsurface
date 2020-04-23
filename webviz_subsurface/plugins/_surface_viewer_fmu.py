@@ -371,9 +371,7 @@ and available for instant viewing.
             ]["RUNPATH"].unique()[0]
         )
 
-        return str(
-            get_path(str(runpath / "share" / "results" / "maps" / f"{data}.gri"))
-        )
+        return get_path(runpath / "share" / "results" / "maps" / f"{data}.gri")
 
     def get_ens_runpath(self, data, ensemble):
         data = make_fmu_filename(data)
@@ -381,7 +379,7 @@ and available for instant viewing.
             "RUNPATH"
         ].unique()
         return [
-            str((Path(runpath) / "share" / "results" / "maps" / f"{data}.gri"))
+            Path(runpath) / "share" / "results" / "maps" / f"{data}.gri"
             for runpath in runpaths
         ]
 
@@ -552,14 +550,14 @@ and available for instant viewing.
             for filename in filenames:
                 path = Path(runpath) / "share" / "results" / "maps" / filename
                 if path.exists():
-                    store_functions.append((get_path, [{"path": str(path)}]))
+                    store_functions.append((get_path, [{"path": path}]))
 
         # Calculate and store statistics
         for _, ens_df in self.ens_df.groupby("ENSEMBLE"):
             runpaths = list(ens_df["RUNPATH"].unique())
             for filename in filenames:
                 paths = [
-                    str(Path(runpath) / "share" / "results" / "maps" / filename)
+                    Path(runpath) / "share" / "results" / "maps" / filename
                     for runpath in runpaths
                 ]
                 for statistic in ["Mean", "StdDev", "Min", "Max"]:
