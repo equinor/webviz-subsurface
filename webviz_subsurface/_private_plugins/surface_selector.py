@@ -276,7 +276,7 @@ another_property:
             return options, value, {}
 
         @app.callback(
-            Output(self.storage_id, "children"),
+            Output(self.storage_id, "data"),
             [
                 Input(self.attr_id, "value"),
                 Input(self.name_id, "value"),

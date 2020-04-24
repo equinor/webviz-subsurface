@@ -318,7 +318,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 # Output(self.ids("date-store"), "children"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
-                Output(self.tornadoplot.storage_id, "children"),
+                Output(self.tornadoplot.storage_id, "data"),
             ],
             [
                 Input(self.ids("ensemble"), "value"),
@@ -354,7 +354,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         @app.callback(
             Output(self.ids("graph"), "figure"),
             [
-                Input(self.tornadoplot.click_id, "children"),
+                Input(self.tornadoplot.click_id, "data"),
                 # Input(self.ids("date-store"), "children"),
                 Input(self.ids("ensemble"), "value"),
                 Input(self.ids("vector"), "value"),
