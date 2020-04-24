@@ -45,7 +45,7 @@ setup(
         ]
     },
     install_requires=[
-        "dash==1.10",  # https://github.com/equinor/webviz-subsurface/issues/317
+        "dash<=1.10",  # https://github.com/equinor/webviz-subsurface/issues/317
         "fmu-ensemble>=1.2.2",
         "matplotlib>=3.0",
         "pandas>=0.24",
