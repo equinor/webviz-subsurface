@@ -60,6 +60,7 @@ jobs:
         pip install --upgrade pip
         pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
+        pip install dash==1.7.0
 
     - name: Install test dependencies
       run: |
