@@ -263,13 +263,12 @@ Default: all parameters.
 
     @property
     def layout(self):
-        return html.Div(
-            style={
-                "padding-top": 10,
-                "display": "grid",
-                "grid-template-columns": "1fr 4fr",
-            },
-            children=[self.control_div, self.plot_fig,],
+        return wcc.FlexBox(
+            style={"padding-top": 10,},
+            children=[
+                html.Div(style={"flex": "1"}, children=self.control_div),
+                html.Div(style={"flex": "4"}, children=self.plot_fig),
+            ],
         )
 
     def set_callbacks(self, app):
