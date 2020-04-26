@@ -43,4 +43,4 @@ def test_basic_example(dash_duo, tmp_path):
             not in log["message"]
         ]
         if logs != []:
-            raise AssertionError(logs)
+            raise AssertionError(page, logs)
