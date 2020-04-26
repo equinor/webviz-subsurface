@@ -159,13 +159,15 @@ or as an ensemble name defined in `shared_settings`.
         def _set_parameter_from_btn(_prev_click, _next_click, column):
 
             ctx = dash.callback_context.triggered
-            if not ctx:
+            if ctx is None:
                 raise PreventUpdate
             callback = ctx[0]["prop_id"]
             if callback == f"{self.ids('prev-btn')}.n_clicks":
                 column = prev_value(column, self.parameter_columns)
             elif callback == f"{self.ids('next-btn')}.n_clicks":
                 column = next_value(column, self.parameter_columns)
+            else:
+                column = self.parameter_columns[0]
             return column
 
         @app.callback(
