@@ -247,7 +247,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 ],
             )
             def _save_click_data(data, nclicks):
-                if not dash.callback_context.triggered:
+                if dash.callback_context.triggered is None:
                     raise PreventUpdate
 
                 ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
