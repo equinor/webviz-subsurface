@@ -201,7 +201,7 @@ another_property:
         )
         def _update_attr(_n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
-            if not ctx or not current_value:
+            if ctx is None or not current_value:
                 raise PreventUpdate
             if not ctx[0]["value"]:
                 return current_value
@@ -226,7 +226,7 @@ another_property:
         )
         def _update_name(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
-            if not ctx:
+            if ctx is None:
                 raise PreventUpdate
             names = self._names_in_attr(attr)
             if not names:
@@ -258,7 +258,7 @@ another_property:
         def _update_date(attr, _n_prev, _n_next, current_value):
             ctx = dash.callback_context.triggered
 
-            if not ctx:
+            if ctx is None:
                 raise PreventUpdate
             dates = self._dates_in_attr(attr)
 
