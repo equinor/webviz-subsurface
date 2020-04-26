@@ -364,12 +364,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         )
         def _render_tornado(tornado_click, ensemble, vector, date_click, figure):
             """Update graph with line coloring, vertical line and title"""
-            if not dash.callback_context.triggered:
+            if dash.callback_context.triggered is None:
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
-            # Redraw figure if ensemble/vector hanges
-            if ctx == self.ids("ensemble") or ctx == self.ids("vector"):
+            # Draw initial figure and redraw if ensemble/vector changes
+            if ctx == self.ids("ensemble") or ctx == self.ids("vector") or ctx == "":
                 layout = {}
                 layout.update(self.plotly_theme["layout"])
                 data = filter_ensemble(self.data, ensemble, vector)
