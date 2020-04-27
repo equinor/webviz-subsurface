@@ -478,11 +478,11 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
                     "len": 0.3,
                 },
             },
-        ),
+        )
     else:
         data["line"].update(  # pylint: disable=expression-not-assigned
             {"colorbar": {"title": "Running time", "xanchor": "right", "x": -0.02,},},
-        ),
+        )
 
     layout = {}
     layout.update(theme["layout"])
