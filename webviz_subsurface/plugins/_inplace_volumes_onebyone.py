@@ -312,7 +312,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def response_selector(self):
         """Dropdown to select volumetric response"""
         return html.Div(
-            style={"paddingLeft": "30px"},
             children=html.Label(
                 children=[
                     html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
@@ -358,64 +357,46 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             for selector in self.selectors
         ]
 
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
-
     @property
     def layout(self):
         """Main layout"""
         return html.Div(
             id=self.ids("layout"),
             children=[
-                html.Div(
-                    style=self.set_grid_layout("1fr 3fr 4fr"),
+                wcc.FlexBox(
                     children=[
                         html.Div(
+                            style={"flex": 1},
                             children=[
                                 self.selector("Ensemble", "ensemble", "ENSEMBLE"),
                                 self.selector("Grid source", "source", "SOURCE"),
+                                self.response_selector,
+                                self.plot_selector,
                                 html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),
                                     children=self.filter_selectors,
                                 ),
-                            ]
+                            ],
                         ),
                         html.Div(
-                            children=[
-                                html.Div(
-                                    style=self.set_grid_layout("2fr 1fr"),
-                                    children=[
-                                        self.response_selector,
-                                        self.plot_selector,
-                                    ],
-                                ),
-                                html.Div(
-                                    id=self.ids("graph-wrapper"),
-                                    style={"height": "450px"},
-                                ),
-                                DataTable(
-                                    id=self.ids("table"),
-                                    sort_action="native",
-                                    filter_action="native",
-                                    page_action="native",
-                                    page_size=10,
-                                ),
-                            ]
+                            id=self.ids("graph-wrapper"),
+                            style={"flex": 3, "height": "600px"},
                         ),
                         html.Div(
                             id=self.ids("tornado-wrapper"),
-                            style={"visibility": "visible"},
+                            style={"visibility": "visible", "flex": 2},
                             children=[self.tornadoplot.layout],
                         ),
                     ],
-                )
+                ),
+                DataTable(
+                    id=self.ids("table"),
+                    sort_action="native",
+                    filter_action="native",
+                    page_action="native",
+                    page_size=10,
+                ),
             ],
         )
 

@@ -258,58 +258,54 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             ]
         )
 
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
-
     @property
     def layout(self):
         return html.Div(
-            id=self.ids("layout"),
-            style=self.set_grid_layout("3fr 3fr"),
             children=[
-                html.Div(
-                    [
+                wcc.FlexBox(
+                    id=self.ids("layout"),
+                    children=[
                         html.Div(
-                            style=self.set_grid_layout("1fr 2fr"),
+                            style={"flex": 2},
                             children=[
-                                self.ensemble_selector,
-                                self.smry_selector,
-                                dcc.Store(id=self.ids("date-store")),
+                                wcc.FlexBox(
+                                    children=[
+                                        self.ensemble_selector,
+                                        self.smry_selector,
+                                        dcc.Store(id=self.ids("date-store")),
+                                    ],
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            id=self.ids("graph-wrapper"),
+                                            style={"height": "450px"},
+                                            children=wcc.Graph(
+                                                id=self.ids("graph"),
+                                                clickData={
+                                                    "points": [{"x": self.initial_date}]
+                                                },
+                                            ),
+                                        ),
+                                    ]
+                                ),
                             ],
                         ),
                         html.Div(
-                            [
-                                html.Div(
-                                    id=self.ids("graph-wrapper"),
-                                    style={"height": "450px"},
-                                    children=wcc.Graph(
-                                        id=self.ids("graph"),
-                                        clickData={
-                                            "points": [{"x": self.initial_date}]
-                                        },
-                                    ),
-                                ),
-                                DataTable(
-                                    id=self.ids("table"),
-                                    sort_action="native",
-                                    filter_action="native",
-                                    page_action="native",
-                                    page_size=10,
-                                ),
-                            ]
+                            style={"flex": 1},
+                            id=self.ids("tornado-wrapper"),
+                            children=self.tornadoplot.layout,
                         ),
-                    ]
+                    ],
                 ),
-                html.Div(
-                    id=self.ids("tornado-wrapper"), children=self.tornadoplot.layout
+                DataTable(
+                    id=self.ids("table"),
+                    sort_action="native",
+                    filter_action="native",
+                    page_action="native",
+                    page_size=10,
                 ),
-            ],
+            ]
         )
 
     def set_callbacks(self, app):

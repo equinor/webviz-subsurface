@@ -165,15 +165,7 @@ The types of response_filters are:
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
         ]
-        if self.response_filters:
-            steps.append(
-                {
-                    "id": self.ids("filter-wrapper"),
-                    "content": (
-                        "Filter the response data before calculating correlations."
-                    ),
-                },
-            )
+
         return steps
 
     @property
@@ -227,65 +219,72 @@ The types of response_filters are:
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
-        if not self.response_filters:
-            return html.Div(id=self.ids("filter-wrapper"))
-        children = [html.Label("Filters")]
+        children = []
         for col_name, col_type in self.response_filters.items():
             domid = self.ids(f"filter-{col_name}")
             if col_type in ("multi", "single"):
                 values = list(self.responsedf[col_name].unique())
-                children.append(html.Label(col_name))
                 children.append(
-                    dcc.Dropdown(
-                        id=domid,
-                        options=[{"label": val, "value": val} for val in values],
-                        value=values if col_type == "multi" else values[0],
-                        multi=col_type == "multi",
-                        clearable=False,
+                    html.Div(
+                        children=[
+                            html.Label(col_name),
+                            dcc.Dropdown(
+                                id=domid,
+                                options=[
+                                    {"label": val, "value": val} for val in values
+                                ],
+                                value=values if col_type == "multi" else values[0],
+                                multi=col_type == "multi",
+                                clearable=False,
+                            ),
+                        ]
                     )
                 )
             elif col_type == "range":
-                values = self.responsedf[col_name]
-                children.append(html.Label(col_name))
-                children.append(make_range_slider(domid, values, col_name))
-        return html.Div(
-            id=self.ids("filter-wrapper"), style={"zIndex": 1000}, children=children
-        )
+                children.append(
+                    html.Div(
+                        children=[
+                            html.Label(col_name),
+                            make_range_slider(
+                                domid, self.responsedf[col_name], col_name
+                            ),
+                        ]
+                    )
+                )
+
+        return children
 
     @property
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
-        return html.Div(
-            style=self.set_grid_layout("1fr 1fr 1fr 1fr"),
-            children=[
-                html.Div(
-                    [
-                        html.Label("Ensemble"),
-                        dcc.Dropdown(
-                            id=self.ids("ensemble"),
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            clearable=False,
-                            value=self.ensembles[0],
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        html.Label("Response"),
-                        dcc.Dropdown(
-                            id=self.ids("responses"),
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.responses
-                            ],
-                            clearable=False,
-                            value=self.responses[0],
-                        ),
-                    ]
-                ),
-            ],
-        )
+        return [
+            html.Div(
+                [
+                    html.Label("Ensemble"),
+                    dcc.Dropdown(
+                        id=self.ids("ensemble"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.ensembles
+                        ],
+                        clearable=False,
+                        value=self.ensembles[0],
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Response"),
+                    dcc.Dropdown(
+                        id=self.ids("responses"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.responses
+                        ],
+                        clearable=False,
+                        value=self.responses[0],
+                    ),
+                ]
+            ),
+        ]
 
     @property
     def layout(self):
@@ -293,35 +292,20 @@ The types of response_filters are:
         return html.Div(
             id=self.ids("layout"),
             children=[
-                self.control_layout,
-                html.Div(
-                    style=self.set_grid_layout("2fr 2fr 1fr")
+                wcc.FlexBox(
+                    children=self.control_layout + self.filter_layout
                     if self.response_filters
-                    else self.set_grid_layout("2fr 2fr"),
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Div(
-                                    children=wcc.Graph(self.ids("correlation-graph")),
-                                ),
-                            ],
-                        ),
-                        html.Div(children=[wcc.Graph(self.ids("distribution-graph"))],),
-                        self.filter_layout if self.response_filters else html.Div(),
-                        dcc.Store(id=self.ids("initial-parameter")),
-                    ],
+                    else [],
                 ),
+                wcc.FlexBox(
+                    children=[
+                        wcc.Graph(self.ids("correlation-graph")),
+                        wcc.Graph(self.ids("distribution-graph")),
+                    ]
+                ),
+                dcc.Store(id=self.ids("initial-parameter")),
             ],
         )
-
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
 
     @property
     def correlation_input_callbacks(self):
