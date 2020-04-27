@@ -173,6 +173,7 @@ class XSectionFigure:
 
         # ax.plot(hvals_copy, zvals_copy, linewidth=6, c="black")
 
+    # pylint: disable-too-many-locals
     def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zomin=-999):
         """Plot the zone log as colored segments."""
 
@@ -271,7 +272,7 @@ class XSectionFigure:
                 1,
             )
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, unused-argument
     def plot_cube(
         self,
         cube=None,
@@ -337,7 +338,7 @@ class XSectionFigure:
             1,
         )
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, unused-argument
     def plot_grid3d(self, vmin=None, vmax=None, alpha=0.7):
         """Plot a sampled grid with gridproperty backdrop.
 
