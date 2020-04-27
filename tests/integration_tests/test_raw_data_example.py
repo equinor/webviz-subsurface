@@ -41,4 +41,4 @@ def test_full_example(dash_duo, tmp_path):
         ]
 
         if logs != []:
-            raise AssertionError(logs)
+            raise AssertionError(page, logs)

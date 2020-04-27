@@ -337,8 +337,6 @@ Default: all parameters.
             [
                 Output(self.uuid("matrix_color"), "style"),
                 Output(self.uuid("parcoords_color"), "style"),
-                Output(self.uuid("matrix_heatmap"), "style"),
-                Output(self.uuid("parcoords"), "style"),
                 Output(self.uuid("parameter_dropdown"), "style"),
                 Output(self.uuid("filter_short_checkbox"), "style"),
             ],
@@ -350,15 +348,11 @@ Default: all parameters.
                 style = (
                     {"display": "block"},
                     {"display": "none"},
-                    {"display": "block", "overflowX": "auto"},
-                    {"display": "none"},
                     {"display": "none"},
                     {"display": "block"},
                 )
             else:
                 style = (
-                    {"display": "none"},
-                    {"display": "block"},
                     {"display": "none"},
                     {"display": "block"},
                     {"display": "block"},

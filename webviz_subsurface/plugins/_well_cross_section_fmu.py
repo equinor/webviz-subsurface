@@ -226,7 +226,9 @@ per realization.
                     ]
                 ),
             )
-        return html.Div(id=self.ids("cube"))
+        return html.Div(
+            style={"visibility": "hidden"}, children=dcc.Dropdown(id=self.ids("cube"))
+        )
 
     @property
     def marginal_log_layout(self):
@@ -247,7 +249,10 @@ per realization.
                     ]
                 ),
             )
-        return html.Div(id=self.ids("marginal-log"))
+        return html.Div(
+            style={"visibility": "hidden"},
+            children=dcc.Dropdown(id=self.ids("marginal-log")),
+        )
 
     @property
     def intersection_option(self):
