@@ -17,7 +17,7 @@ from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations, find_sens_type
 from .._abbreviations.volume_terminology import volume_description, volume_unit
-from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
+from .._abbreviations.number_formatting import table_statistics_base
 
 
 class InplaceVolumesOneByOne(WebvizPluginABC):
@@ -73,7 +73,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
     FILTERS = ["ZONE", "REGION", "FACIES", "LICENSE"]
 
-    TABLE_STATISTICS = [("Sens Name", {}), ("Sens Case", {})] + TABLE_STATISTICS_BASE
+    TABLE_STATISTICS = [("Sens Name", {}), ("Sens Case", {})] + table_statistics_base()
 
     ENSEMBLE_COLUMNS = [
         "REAL",
@@ -142,7 +142,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
         self.uid = uuid4()
         self.selectors_id = {x: self.ids(x) for x in self.selectors}
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -361,27 +361,58 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def layout(self):
         """Main layout"""
         return html.Div(
-            id=self.ids("layout"),
             children=[
                 wcc.FlexBox(
+                    id=self.ids("layout"),
                     children=[
                         html.Div(
-                            style={"flex": 1},
                             children=[
-                                self.selector("Ensemble", "ensemble", "ENSEMBLE"),
-                                self.selector("Grid source", "source", "SOURCE"),
-                                self.response_selector,
-                                self.plot_selector,
-                                html.Span("Filters:", style={"font-weight": "bold"}),
+                                wcc.FlexBox(
+                                    children=[
+                                        html.Div(
+                                            style={"flex": 1},
+                                            children=[
+                                                self.selector(
+                                                    "Ensemble", "ensemble", "ENSEMBLE"
+                                                ),
+                                                self.selector(
+                                                    "Grid source", "source", "SOURCE"
+                                                ),
+                                                self.response_selector,
+                                                self.plot_selector,
+                                                html.Span(
+                                                    "Filters:",
+                                                    style={"font-weight": "bold"},
+                                                ),
+                                                html.Div(
+                                                    id=self.ids("filters"),
+                                                    children=self.filter_selectors,
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            style={"flex": 3, "height": "600px"},
+                                            id=self.ids("graph-wrapper"),
+                                        ),
+                                    ],
+                                ),
                                 html.Div(
-                                    id=self.ids("filters"),
-                                    children=self.filter_selectors,
+                                    children=[
+                                        html.Div(
+                                            id=self.ids("volume_title"),
+                                            style={"textAlign": "center"},
+                                            children="",
+                                        ),
+                                        DataTable(
+                                            id=self.ids("table"),
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            page_size=10,
+                                        ),
+                                    ],
                                 ),
                             ],
-                        ),
-                        html.Div(
-                            id=self.ids("graph-wrapper"),
-                            style={"flex": 3, "height": "600px"},
                         ),
                         html.Div(
                             id=self.ids("tornado-wrapper"),
@@ -390,14 +421,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         ),
                     ],
                 ),
-                DataTable(
-                    id=self.ids("table"),
-                    sort_action="native",
-                    filter_action="native",
-                    page_action="native",
-                    page_size=10,
-                ),
-            ],
+            ]
         )
 
     def set_callbacks(self, app):
@@ -407,6 +431,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 Output(self.tornadoplot.storage_id, "data"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
+                Output(self.ids("volume_title"), "children"),
             ],
             [
                 Input(i, "value")
@@ -433,13 +458,20 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             # Calculate statistics for table
             table, columns = calculate_table(data, response)
 
+            # volume title:
+            volume_title = f"{volume_description(response)} [{volume_unit(response)}]"
+
             # Make Plotly figure
             layout = {}
-            layout.update(self.plotly_theme["layout"])
             layout.update({"margin": {"l": 100, "b": 100}})
             if plot_type == "Per realization":
                 # One bar per realization
-                layout.update({"xaxis": {"title": "Realizations"}})
+                layout.update(
+                    {
+                        "xaxis": {"title": "Realizations"},
+                        "yaxis": {"title": volume_title},
+                    }
+                )
                 plot_data = data.groupby("REAL").sum().reset_index()
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
@@ -454,12 +486,17 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 "type": "bar",
                             }
                         ],
-                        "layout": layout,
+                        "layout": self.theme.create_themed_layout(layout),
                     },
                 )
             elif plot_type == "Per sensitivity case":
                 # One box per sensitivity name
-                layout.update({"title": "Distribution for each sensitivity case"})
+                layout.update(
+                    {
+                        "title": "Distribution for each sensitivity case",
+                        "yaxis": {"title": volume_title},
+                    }
+                )
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.ids("graph"),
@@ -482,7 +519,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 )
             elif plot_type == "Per sensitivity name":
                 # One box per sensitivity name
-                layout.update({"title": "Distribution for each sensitivity name"})
+                layout.update(
+                    {
+                        "title": "Distribution for each sensitivity name",
+                        "yaxis": {"title": volume_title},
+                    }
+                )
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
                     id=self.ids("graph"),
@@ -513,7 +555,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 }
             )
 
-            return figure, tornado, table, columns
+            return figure, tornado, table, columns, volume_title
 
         @app.callback(
             Output(self.ids("graph"), "figure"),
@@ -561,11 +603,6 @@ def calculate_table(df, response):
         {**{"name": i[0], "id": i[0]}, **i[1]}
         for i in InplaceVolumesOneByOne.TABLE_STATISTICS
     ]
-    for col in columns:
-        try:
-            col["format"]["locale"]["symbol"] = ["", f"{volume_unit(response)}"]
-        except KeyError:
-            pass
     return table, columns
 
 

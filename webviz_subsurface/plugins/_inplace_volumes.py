@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import dash_table
+from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
@@ -14,7 +14,7 @@ from webviz_config import WebvizPluginABC
 
 from .._datainput.inplace_volumes import extract_volumes
 from .._abbreviations.volume_terminology import volume_description, volume_unit
-from .._abbreviations.number_formatting import TABLE_STATISTICS_BASE
+from .._abbreviations.number_formatting import table_statistics_base
 
 
 class InplaceVolumes(WebvizPluginABC):
@@ -59,7 +59,7 @@ but the following responses are given more descriptive names automatically:
 
 """
 
-    TABLE_STATISTICS = [("Response", {}), ("Group", {})] + TABLE_STATISTICS_BASE
+    TABLE_STATISTICS = [("Group", {})] + table_statistics_base()
 
     def __init__(
         self,
@@ -326,8 +326,9 @@ but the following responses are given more descriptive names automatically:
                     id=self.ids("layout"),
                     children=[
                         html.Div(
+                            style={"flex": 1},
                             children=[
-                                html.P("Filters:", style={"font-weight": "bold"}),
+                                html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
                                     id=self.ids("filters"),
                                     children=self.selector_dropdowns,
@@ -335,6 +336,7 @@ but the following responses are given more descriptive names automatically:
                             ],
                         ),
                         html.Div(
+                            style={"flex": 5},
                             children=[
                                 self.plot_options_layout,
                                 html.Div(
@@ -345,10 +347,20 @@ but the following responses are given more descriptive names automatically:
                         ),
                     ],
                 ),
-                dash_table.DataTable(
-                    id=self.ids("table"),
-                    columns=[
-                        {"name": i, "id": i} for i in InplaceVolumes.TABLE_STATISTICS
+                html.Div(
+                    children=[
+                        html.Div(
+                            id=self.ids("table_title"),
+                            style={"textAlign": "center"},
+                            children="",
+                        ),
+                        DataTable(
+                            id=self.ids("table"),
+                            sort_action="native",
+                            filter_action="native",
+                            page_action="native",
+                            page_size=10,
+                        ),
                     ],
                 ),
             ]
@@ -360,6 +372,7 @@ but the following responses are given more descriptive names automatically:
                 Output(self.ids("graph"), "figure"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
+                Output(self.ids("table_title"), "children"),
             ],
             self.vol_callback_inputs,
         )
@@ -398,8 +411,11 @@ but the following responses are given more descriptive names automatically:
                         plot_traces.append(trace)
                         table.append(plot_table(dframe, response, name))
             # Column specification
-            columns = table_columns(response)
-            # Else make a graph object
+            columns = [
+                {**{"name": i[0], "id": i[0]}, **i[1]}
+                for i in InplaceVolumes.TABLE_STATISTICS
+            ]
+            # Make a graph object and return
             return (
                 {
                     "data": plot_traces,
@@ -407,6 +423,7 @@ but the following responses are given more descriptive names automatically:
                 },
                 table,
                 columns,
+                f"{volume_description(response)} [{volume_unit(response)}]",
             )
 
         @app.callback(
@@ -468,7 +485,6 @@ def plot_table(dframe, response, name):
     values = dframe[response]
     try:
         output = {
-            "Response": volume_description(response),
             "Group": str(name),
             "Minimum": values.min(),
             "Maximum": values.max(),
@@ -484,19 +500,6 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def table_columns(response):
-    columns = [
-        {**{"name": i[0], "id": i[0]}, **i[1]} for i in InplaceVolumes.TABLE_STATISTICS
-    ]
-    for col in columns:
-        try:
-            col["format"]["locale"]["symbol"] = ["", f"{volume_unit(response)}"]
-        except KeyError:
-            pass
-    return columns
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(plot_type, response, theme):
     layout = {}
     layout.update(theme["layout"])
@@ -507,17 +510,27 @@ def plot_layout(plot_type, response, theme):
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {"title": volume_description(response)},
+                "xaxis": {
+                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
+                },
                 "yaxis": {"title": "Count"},
             }
         )
     elif plot_type == "Box plot":
-        layout.update({"yaxis": {"title": volume_description(response)}})
+        layout.update(
+            {
+                "yaxis": {
+                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
+                }
+            }
+        )
     else:
         layout.update(
             {
-                "margin": {"l": 40, "r": 40, "b": 30, "t": 10},
-                "yaxis": {"title": volume_description(response)},
+                "margin": {"l": 60, "r": 40, "b": 30, "t": 10},
+                "yaxis": {
+                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
+                },
                 "xaxis": {"title": "Realization"},
             }
         )

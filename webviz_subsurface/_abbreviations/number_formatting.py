@@ -2,23 +2,33 @@ import math
 import json
 import pathlib
 import warnings
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 
 SI_PREFIXES = json.loads((_DATA_PATH / "si_prefixes.json").read_text())
 
-TABLE_STATISTICS_BASE = [
-    (
-        i,
-        {
-            "type": "numeric",
-            "format": {"locale": {"symbol": ["", "unit_insert"]}, "specifier": "$.4s",},
-        },
-    )
-    for i in ["Mean", "Stddev", "Minimum", "P90", "P10", "Maximum"]
-]
+
+def table_statistics_base() -> List[tuple]:
+    return [
+        (
+            i,
+            {
+                "type": "numeric",
+                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s",},
+            },
+        )
+        if i != "Stddev"
+        else (
+            i,
+            {
+                "type": "numeric",
+                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.3s",},
+            },
+        )
+        for i in ["Mean", "Stddev", "Minimum", "P90", "P10", "Maximum"]
+    ]
 
 
 def si_prefixed(

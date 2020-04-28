@@ -1,8 +1,7 @@
-from uuid import uuid4
 from pathlib import Path
 import json
-import yaml
 
+import yaml
 import pandas as pd
 from plotly.subplots import make_subplots
 from dash.exceptions import PreventUpdate
@@ -14,33 +13,16 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
-from .._datainput.fmu_input import load_smry
-from .._abbreviations.reservoir_simulation import simulation_vector_description
-
-
-def _historical_vector(vector, return_historical=True):
-    """This is a unnecessary complex function, trying to make a best guess
-    on converting between historical and non-historical vector names, while
-    waiting for a robust/correct solution, e.g. something like
-    https://github.com/equinor/fmu-ensemble/issues/87
-
-    If return_historical is `True`, the corresponding guessed historical vector name
-    is returned. If `False` the corresponding non-historical vector name is returned,
-    but in this case if the input vector is not believed to be a historical vector,
-    None is returned.
-    """
-
-    parts = vector.split(":", 1)
-
-    if return_historical:
-        parts[0] += "H"
-        return ":".join(parts)
-
-    if not parts[0].endswith("H"):
-        return None
-
-    parts[0] = parts[0][:-1]
-    return ":".join(parts)
+from .._datainput.fmu_input import load_smry, load_smry_meta
+from .._abbreviations.reservoir_simulation import (
+    simulation_vector_description,
+    simulation_unit_reformat,
+    historical_vector,
+)
+from .._utils.simulation_timeseries import (
+    set_simulation_line_shape_fallback,
+    get_simulation_line_shape,
+)
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -58,6 +40,11 @@ in plugin settings.
 * `sampling`: Time separation between extracted values. Can be e.g. `monthly`
               or `yearly`.
 * `options`: Options to initialize plots with. See below
+* `line_shape_fallback`: Fallback interpolation method between points. Vectors identified as rates
+                or phase ratios are always backfilled, vectors identified as cumulative (totals)
+                are always linearly interpolated. The rest use the fallback.
+                Supported: `linear` (default), `backfilled` + regular Plotly options: `hv`, `vh`,
+                `hvh`, `vhv` and `spline`.
 
 Plot options:
     * `vector1` : First vector to display
@@ -78,6 +65,7 @@ Plot options:
         column_keys: list = None,
         sampling: str = "monthly",
         options: dict = None,
+        line_shape_fallback: str = "linear",
     ):
 
         super().__init__()
@@ -98,6 +86,7 @@ Plot options:
                 )
         if csvfile:
             self.smry = read_csv(csvfile)
+            self.smry_meta = None
         elif ensembles:
             self.ens_paths = {
                 ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
@@ -111,6 +100,11 @@ Plot options:
                 time_index=self.time_index,
                 column_keys=self.column_keys,
             )
+            self.smry_meta = load_smry_meta(
+                ensemble_paths=self.ens_paths,
+                ensemble_set_name="EnsembleSet",
+                column_keys=self.column_keys,
+            )
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
@@ -120,7 +114,7 @@ Plot options:
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
-            and not _historical_vector(c, False) in self.smry.columns
+            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
         ]
 
         self.dropdown_options = [
@@ -129,12 +123,15 @@ Plot options:
         ]
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.theme = app.webviz_settings["theme"]
         self.plot_options = options if options else {}
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
             else None
+        )
+        self.line_shape_fallback = set_simulation_line_shape_fallback(
+            line_shape_fallback
         )
         # Check if initially plotted vectors exist in data, raise ValueError if not.
         missing_vectors = [
@@ -150,19 +147,14 @@ Plot options:
                 "file."
             )
         self.allow_delta = len(self.ensembles) > 1
-        self.uid = uuid4()
         self.set_callbacks(app)
-
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
 
     @property
     def ens_colors(self):
         try:
-            colors = self.plotly_theme["layout"]["colorway"]
+            colors = self.theme.plotly_theme["layout"]["colorway"]
         except KeyError:
-            colors = self.plotly_theme.get(
+            colors = self.theme.plotly_theme.get(
                 "colorway",
                 [
                     "#243746",
@@ -191,32 +183,32 @@ Plot options:
     def tour_steps(self):
         return [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": "Dashboard displaying reservoir simulation time series.",
             },
             {
-                "id": self.ids("graph"),
+                "id": self.uuid("graph"),
                 "content": (
                     "Visualization of selected time series. "
                     "Different options can be set in the menu to the left."
                 ),
             },
             {
-                "id": self.ids("ensemble"),
+                "id": self.uuid("ensemble"),
                 "content": (
                     "Display time series from one or several ensembles. "
                     "Different ensembles will be overlain in the same plot."
                 ),
             },
             {
-                "id": self.ids("vectors"),
+                "id": self.uuid("vectors"),
                 "content": (
                     "Display up to three different time series. "
                     "Each time series will be visualized in a separate plot."
                 ),
             },
             {
-                "id": self.ids("visualization"),
+                "id": self.uuid("visualization"),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
                     "individual lines per realization. 2. Show statistical fanchart per "
@@ -247,7 +239,7 @@ Plot options:
                         children=[
                             html.Span("Mode:", style={"font-weight": "bold"}),
                             dcc.RadioItems(
-                                id=self.ids("mode"),
+                                id=self.uuid("mode"),
                                 style={"marginBottom": "25px"},
                                 options=[
                                     {
@@ -265,14 +257,14 @@ Plot options:
                     ),
                 ),
                 html.Div(
-                    id=self.ids("show_ensembles"),
+                    id=self.uuid("show_ensembles"),
                     children=html.Label(
                         children=[
                             html.Span(
                                 "Selected ensembles:", style={"font-weight": "bold"}
                             ),
                             dcc.Dropdown(
-                                id=self.ids("ensemble"),
+                                id=self.uuid("ensemble"),
                                 clearable=False,
                                 multi=True,
                                 options=[
@@ -284,7 +276,7 @@ Plot options:
                     ),
                 ),
                 html.Div(
-                    id=self.ids("calc_delta"),
+                    id=self.uuid("calc_delta"),
                     style={"display": "none"},
                     children=[
                         html.Span(
@@ -301,7 +293,7 @@ Plot options:
                                             children="Ensemble A",
                                         ),
                                         dcc.Dropdown(
-                                            id=self.ids("base_ens"),
+                                            id=self.uuid("base_ens"),
                                             clearable=False,
                                             options=[
                                                 {"label": i, "value": i}
@@ -318,7 +310,7 @@ Plot options:
                                             children="Ensemble B",
                                         ),
                                         dcc.Dropdown(
-                                            id=self.ids("delta_ens"),
+                                            id=self.uuid("delta_ens"),
                                             clearable=False,
                                             options=[
                                                 {"label": i, "value": i}
@@ -338,14 +330,14 @@ Plot options:
     @property
     def layout(self):
         return wcc.FlexBox(
-            id=self.ids("layout"),
+            id=self.uuid("layout"),
             children=[
                 html.Div(
                     style={"flex": 1},
                     children=[
                         self.delta_layout,
                         html.Div(
-                            id=self.ids("vectors"),
+                            id=self.uuid("vectors"),
                             style={"marginTop": "25px"},
                             children=[
                                 html.Span(
@@ -358,7 +350,7 @@ Plot options:
                                         "fontSize": ".95em",
                                     },
                                     optionHeight=55,
-                                    id=self.ids("vector1"),
+                                    id=self.uuid("vector1"),
                                     clearable=False,
                                     multi=False,
                                     options=self.dropdown_options,
@@ -369,7 +361,7 @@ Plot options:
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px", "fontSize": ".95em"},
                                     optionHeight=55,
-                                    id=self.ids("vector2"),
+                                    id=self.uuid("vector2"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
@@ -379,7 +371,7 @@ Plot options:
                                 dcc.Dropdown(
                                     style={"fontSize": ".95em"},
                                     optionHeight=55,
-                                    id=self.ids("vector3"),
+                                    id=self.uuid("vector3"),
                                     clearable=True,
                                     multi=False,
                                     placeholder="Add additional series",
@@ -389,14 +381,14 @@ Plot options:
                             ],
                         ),
                         html.Div(
-                            id=self.ids("visualization"),
+                            id=self.uuid("visualization"),
                             style={"marginTop": "25px"},
                             children=[
                                 html.Span(
                                     "Visualization:", style={"font-weight": "bold"}
                                 ),
                                 dcc.RadioItems(
-                                    id=self.ids("statistics"),
+                                    id=self.uuid("statistics"),
                                     options=[
                                         {
                                             "label": "Individual realizations",
@@ -424,10 +416,10 @@ Plot options:
                     children=[
                         html.Div(
                             style={"height": "300px"},
-                            children=wcc.Graph(id=self.ids("graph"),),
+                            children=wcc.Graph(id=self.uuid("graph"),),
                         ),
                         dcc.Store(
-                            id=self.ids("date"),
+                            id=self.uuid("date"),
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ],
@@ -438,17 +430,17 @@ Plot options:
     # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("graph"), "figure"),
+            Output(self.uuid("graph"), "figure"),
             [
-                Input(self.ids("vector1"), "value"),
-                Input(self.ids("vector2"), "value"),
-                Input(self.ids("vector3"), "value"),
-                Input(self.ids("ensemble"), "value"),
-                Input(self.ids("mode"), "value"),
-                Input(self.ids("base_ens"), "value"),
-                Input(self.ids("delta_ens"), "value"),
-                Input(self.ids("statistics"), "value"),
-                Input(self.ids("date"), "data"),
+                Input(self.uuid("vector1"), "value"),
+                Input(self.uuid("vector2"), "value"),
+                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("ensemble"), "value"),
+                Input(self.uuid("mode"), "value"),
+                Input(self.uuid("base_ens"), "value"),
+                Input(self.uuid("delta_ens"), "value"),
+                Input(self.uuid("statistics"), "value"),
+                Input(self.uuid("date"), "data"),
             ],
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
@@ -481,7 +473,13 @@ Plot options:
             # Titles for subplots
             titles = []
             for vect in vectors:
-                titles.append(simulation_vector_description(vect))
+                if self.smry_meta is None:
+                    titles.append(simulation_vector_description(vect))
+                else:
+                    titles.append(
+                        f"{simulation_vector_description(vect)}"
+                        f" [{simulation_unit_reformat(self.smry_meta.unit[vect])}]"
+                    )
                 if visualization == "statistics_hist":
                     titles.append(date)
 
@@ -497,22 +495,45 @@ Plot options:
             # Loop through each vector and calculate relevant plot
             legends = []
             for i, vector in enumerate(vectors):
+                line_shape = get_simulation_line_shape(
+                    line_shape_fallback=self.line_shape_fallback,
+                    vector=vector,
+                    smry_meta=self.smry_meta,
+                )
                 if calc_mode == "ensembles":
-                    data = filter_df(self.smry, ensembles, vector)
+                    data = filter_df(self.smry, ensembles, vector, self.smry_meta)
                 elif calc_mode == "delta_ensembles":
-                    data = filter_df(self.smry, [base_ens, delta_ens], vector)
+                    data = filter_df(
+                        self.smry, [base_ens, delta_ens], vector, self.smry_meta
+                    )
                     data = calculate_delta(data, base_ens, delta_ens)
                 else:
                     raise PreventUpdate
 
                 if visualization == "statistics":
-                    traces = add_statistic_traces(data, vector, colors=self.ens_colors)
+                    traces = add_statistic_traces(
+                        data,
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        smry_meta=self.smry_meta,
+                    )
                 elif visualization == "realizations":
                     traces = add_realization_traces(
-                        data, vector, colors=self.ens_colors
+                        data,
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        smry_meta=self.smry_meta,
                     )
                 elif visualization == "statistics_hist":
-                    traces = add_statistic_traces(data, vector, colors=self.ens_colors)
+                    traces = add_statistic_traces(
+                        data,
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        smry_meta=self.smry_meta,
+                    )
                     histdata = add_histogram_traces(
                         data, vector, date=date, colors=self.ens_colors
                     )
@@ -529,14 +550,12 @@ Plot options:
                         else:
                             legends.append(trace.get("legendgroup"))
                     fig.add_trace(trace, i + 1, 1)
-
                 # Add observations
                 if calc_mode != "delta_ensembles" and self.observations.get(vector):
                     for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
 
-            # Add additional styling to layout
-            fig["layout"].update(self.plotly_theme["layout"])
+            fig = fig.to_dict()
             fig["layout"].update(
                 height=800,
                 margin={"t": 20, "b": 0},
@@ -544,6 +563,7 @@ Plot options:
                 bargap=0.01,
                 bargroupgap=0.2,
             )
+            fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
             if visualization == "statistics_hist":
                 # Remove linked x-axis for histograms
@@ -560,10 +580,10 @@ Plot options:
 
         @app.callback(
             [
-                Output(self.ids("show_ensembles"), "style"),
-                Output(self.ids("calc_delta"), "style"),
+                Output(self.uuid("show_ensembles"), "style"),
+                Output(self.uuid("calc_delta"), "style"),
             ],
-            [Input(self.ids("mode"), "value")],
+            [Input(self.uuid("mode"), "value")],
         )
         def _update_mode(mode):
             """Switch displayed ensemble selector for delta/no-delta"""
@@ -574,9 +594,9 @@ Plot options:
             return style
 
         @app.callback(
-            Output(self.ids("date"), "data"),
-            [Input(self.ids("graph"), "clickData")],
-            [State(self.ids("date"), "data")],
+            Output(self.uuid("date"), "data"),
+            [Input(self.uuid("graph"), "clickData")],
+            [State(self.uuid("date"), "data")],
         )
         def _update_date(clickdata, date):
             """Store clicked date for use in other callback"""
@@ -601,6 +621,18 @@ Plot options:
                     ],
                 )
             )
+            functions.append(
+                (
+                    load_smry_meta,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                            "column_keys": self.column_keys,
+                        }
+                    ],
+                )
+            )
         if self.obsfile:
             functions.append((get_path, [{"path": self.obsfile}]))
         return functions
@@ -614,12 +646,12 @@ def format_observations(obslist):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_df(df, ensembles, vector):
+def filter_df(df, ensembles, vector, smry_meta):
     """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", vector, "DATE"]
-    if _historical_vector(vector) in df.columns:
-        columns.append(_historical_vector(vector))
+    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
+        columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
 
     return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
@@ -684,11 +716,11 @@ def add_observation_trace(obs):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_realization_traces(dframe, vector, colors):
+def add_realization_traces(dframe, vector, colors, line_shape, smry_meta):
     """Renders line trace for each realization, includes history line if present"""
     traces = [
         {
-            # "type": "linegl",
+            "line": {"shape": line_shape},
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector]),
             "hovertext": f"Realization: {real_no}, Ensemble: {ensemble}",
@@ -701,18 +733,25 @@ def add_realization_traces(dframe, vector, colors):
         for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
     ]
 
-    if _historical_vector(vector) in dframe.columns:
-        traces.append(add_history_trace(dframe, _historical_vector(vector)))
+    if historical_vector(vector=vector, smry_meta=smry_meta) in dframe.columns:
+        traces.append(
+            add_history_trace(
+                dframe,
+                historical_vector(vector=vector, smry_meta=smry_meta),
+                line_shape,
+            )
+        )
     return traces
 
 
-def add_history_trace(dframe, vector):
+def add_history_trace(dframe, vector, line_shape):
     """Renders the history line"""
     df = dframe.loc[
         (dframe["REAL"] == dframe["REAL"].unique()[0])
         & (dframe["ENSEMBLE"] == dframe["ENSEMBLE"].unique()[0])
     ]
     return {
+        "line": {"shape": line_shape},
         "x": df["DATE"],
         "y": df[vector],
         "hovertext": "History",
@@ -723,7 +762,8 @@ def add_history_trace(dframe, vector):
     }
 
 
-def add_statistic_traces(df, vector, colors):
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def add_statistic_traces(df, vector, colors, line_shape, smry_meta):
     """Calculate statistics for a given vector for relevant ensembles"""
     quantiles = [10, 90]
     traces = []
@@ -744,14 +784,19 @@ def add_statistic_traces(df, vector, colors):
                 pd.concat(dframes, names=["STATISTIC"], sort=False)[vector],
                 colors.get(ensemble, colors[list(colors.keys())[0]]),
                 ensemble,
+                line_shape,
             )
         )
-    if _historical_vector(vector) in df.columns:
-        traces.append(add_history_trace(df, _historical_vector(vector)))
+    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
+        traces.append(
+            add_history_trace(
+                df, historical_vector(vector=vector, smry_meta=smry_meta), line_shape,
+            )
+        )
     return traces
 
 
-def add_fanchart_traces(vector_stats, color, legend_group: str):
+def add_fanchart_traces(vector_stats, color, legend_group: str, line_shape):
     """Renders a fanchart for an ensemble vector"""
 
     fill_color = hex_to_rgb(color, 0.3)
@@ -763,7 +808,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "x": vector_stats["maximum"].index.tolist(),
             "y": vector_stats["maximum"].values,
             "mode": "lines",
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0, "color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -775,7 +820,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "mode": "lines",
             "fill": "tonexty",
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0, "color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -787,7 +832,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "mode": "lines",
             "fill": "tonexty",
             "fillcolor": fill_color,
-            "line": {"color": line_color},
+            "line": {"color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": True,
         },
@@ -799,7 +844,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "mode": "lines",
             "fill": "tonexty",
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0, "color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
         },
@@ -811,7 +856,7 @@ def add_fanchart_traces(vector_stats, color, legend_group: str):
             "mode": "lines",
             "fill": "tonexty",
             "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
+            "line": {"width": 0, "color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
         },

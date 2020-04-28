@@ -65,6 +65,24 @@ def load_smry(
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
+def load_smry_meta(
+    ensemble_paths: dict,
+    ensemble_set_name: str = "EnsembleSet",
+    column_keys: Optional[list] = None,
+) -> pd.DataFrame:
+    """Finds metadata for the summary vectors in the ensemble set.
+    Note that we assume the same units for all ensembles.
+    (meaning that we update/overwrite when checking the next ensemble)
+    """
+    ensemble_set = load_ensemble_set(ensemble_paths, ensemble_set_name)
+    smry_meta = {}
+    for ensname in ensemble_set.ensemblenames:
+        smry_meta.update(ensemble_set[ensname].get_smry_meta(column_keys=column_keys))
+    return pd.DataFrame(smry_meta).transpose()
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
 def get_realizations(
     ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
