@@ -509,6 +509,11 @@ in plugin settings.</p>
 <li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
               or <code>yearly</code>.</li>
 <li><code>options</code>: Options to initialize plots with. See below</li>
+<li><code>line_shape_fallback</code>: Fallback interpolation method between points. Vectors identified as rates
+                or phase ratios are always backfilled, vectors identified as cumulative (totals)
+                are always linearly interpolated. The rest use the fallback.
+                Supported: <code>linear</code> (default), <code>backfilled</code> + regular Plotly options: <code>hv</code>, <code>vh</code>,
+                <code>hvh</code>, <code>vhv</code> and <code>spline</code>.</li>
 </ul>
 <p>Plot options:
     * <code>vector1</code> : First vector to display
@@ -523,6 +528,7 @@ in plugin settings.</p>
         column_keys: None  # Optional (default value shown here).
         sampling: monthly  # Optional (default value shown here).
         options: None  # Optional (default value shown here).
+        line_shape_fallback: linear  # Optional (default value shown here).
 </code></pre>
 <hr>
 
@@ -551,6 +557,11 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 <li><code>initial_vector</code>: Initial vector to display</li>
 <li><code>sampling</code>: Time separation between extracted values. Can be e.g. <code>monthly</code>
               or <code>yearly</code>.</li>
+<li><code>line_shape_fallback</code>: Fallback interpolation method between points. Vectors identified as rates
+                or phase ratios are always backfilled, vectors identified as cumulative (totals)
+                are always linearly interpolated. The rest use the fallback.
+                Supported: <code>linear</code> (default), <code>backfilled</code> + regular Plotly options: <code>hv</code>, <code>vh</code>,
+                <code>hvh</code>, <code>vhv</code> and <code>spline</code>.</li>
 </ul>
 <pre><code class="yaml">    - ReservoirSimulationTimeSeriesOneByOne:
         csvfile_smry: None  # Optional (default value shown here).
@@ -559,6 +570,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
         column_keys: None  # Optional (default value shown here).
         initial_vector: None  # Optional (default value shown here).
         sampling: monthly  # Optional (default value shown here).
+        line_shape_fallback: linear  # Optional (default value shown here).
 </code></pre>
 <hr>
 
