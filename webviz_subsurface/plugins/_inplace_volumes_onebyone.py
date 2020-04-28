@@ -404,7 +404,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         @app.callback(
             [
                 Output(self.ids("graph-wrapper"), "children"),
-                Output(self.tornadoplot.storage_id, "children"),
+                Output(self.tornadoplot.storage_id, "data"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
             ],
@@ -517,7 +517,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
         @app.callback(
             Output(self.ids("graph"), "figure"),
-            [Input(self.tornadoplot.click_id, "children")],
+            [Input(self.tornadoplot.click_id, "data")],
             [State(self.ids("plot-type"), "value"), State(self.ids("graph"), "figure")],
         )
         def _color_chart(hoverdata, plot_type, figure):

@@ -314,7 +314,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 # Output(self.ids("date-store"), "children"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
-                Output(self.tornadoplot.storage_id, "children"),
+                Output(self.tornadoplot.storage_id, "data"),
             ],
             [
                 Input(self.ids("ensemble"), "value"),
@@ -350,7 +350,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         @app.callback(
             Output(self.ids("graph"), "figure"),
             [
-                Input(self.tornadoplot.click_id, "children"),
+                Input(self.tornadoplot.click_id, "data"),
                 # Input(self.ids("date-store"), "children"),
                 Input(self.ids("ensemble"), "value"),
                 Input(self.ids("vector"), "value"),
@@ -360,12 +360,12 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         )
         def _render_tornado(tornado_click, ensemble, vector, date_click, figure):
             """Update graph with line coloring, vertical line and title"""
-            if not dash.callback_context.triggered:
+            if dash.callback_context.triggered is None:
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
-            # Redraw figure if ensemble/vector hanges
-            if ctx == self.ids("ensemble") or ctx == self.ids("vector"):
+            # Draw initial figure and redraw if ensemble/vector changes
+            if ctx in ["", self.ids("ensemble"), self.ids("vector")]:
                 layout = {}
                 layout.update(self.plotly_theme["layout"])
                 data = filter_ensemble(self.data, ensemble, vector)

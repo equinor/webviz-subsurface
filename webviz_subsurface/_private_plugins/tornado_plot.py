@@ -208,7 +208,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 Input(self.ids("reference"), "value"),
                 Input(self.ids("scale"), "value"),
                 Input(self.ids("cut-by-ref"), "value"),
-                Input(self.ids("storage"), "children"),
+                Input(self.ids("storage"), "data"),
             ],
         )
         def _calc_tornado(reference, scale, cutbyref, data):
@@ -240,14 +240,14 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         if self.allow_click:
 
             @app.callback(
-                Output(self.ids("click-store"), "children"),
+                Output(self.ids("click-store"), "data"),
                 [
                     Input(self.ids("tornado-graph"), "clickData"),
                     Input(self.ids("reset"), "n_clicks"),
                 ],
             )
             def _save_click_data(data, nclicks):
-                if not dash.callback_context.triggered:
+                if dash.callback_context.triggered is None:
                     raise PreventUpdate
 
                 ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]

@@ -41,7 +41,7 @@ def test_surface_selector(dash_duo):
 
     app.layout = html.Div(children=[s.layout, html.Pre(id="pre", children="ok")])
 
-    @app.callback(Output("pre", "children"), [Input(s.storage_id, "children")])
+    @app.callback(Output("pre", "children"), [Input(s.storage_id, "data")])
     def _test(data):
         return json.dumps(json.loads(data))
 

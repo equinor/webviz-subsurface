@@ -392,10 +392,10 @@ and available for instant viewing.
                 Output(self.uuid("map3-label"), "children"),
             ],
             [
-                Input(self.selector.storage_id, "children"),
+                Input(self.selector.storage_id, "data"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("realization"), "value"),
-                Input(self.selector2.storage_id, "children"),
+                Input(self.selector2.storage_id, "data"),
                 Input(self.uuid("ensemble2"), "value"),
                 Input(self.uuid("realization2"), "value"),
                 Input(self.uuid("calculation"), "value"),
