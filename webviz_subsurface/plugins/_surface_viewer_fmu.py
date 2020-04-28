@@ -9,11 +9,11 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
+from webviz_subsurface_components import LayeredMap
+import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
-import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
 
 from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
 from webviz_subsurface._datainput.surface import make_surface_layer, load_surface
@@ -542,7 +542,7 @@ and available for instant viewing.
                     filename = f"{name}--{attr}"
                     if date is not None:
                         filename += f"--{date}"
-                    filename += f".gri"
+                    filename += ".gri"
                     filenames.append(filename)
 
         # Copy all realization files
