@@ -54,7 +54,7 @@ class RftPlotter(WebvizPluginABC):
 
     @property
     def well_names(self):
-        return list(self.obsdf["WELL"].unique())
+        return sorted(list(self.obsdf["WELL"].unique()))
 
     def dates(self, well):
         df = self.obsdf.loc[self.obsdf["WELL"] == well]
@@ -250,23 +250,27 @@ class RftPlotter(WebvizPluginABC):
                     children=[
                         wcc.FlexBox(
                             [
-                                dcc.Dropdown(
-                                    style={"width": "80%"},
-                                    id=self.uuid("well-misfit"),
-                                    options=[
-                                        {"label": well, "value": well}
-                                        for well in self.well_names
+                                html.Div(
+                                    style={"width": "20%"},
+                                    children=[
+                                        wcc.Select(
+                                            size=40,
+                                            id=self.uuid("well-misfit"),
+                                            options=[
+                                                {"label": well, "value": well}
+                                                for well in self.well_names
+                                            ],
+                                            value=self.well_names,
+                                            multi=True,
+                                        )
                                     ],
-                                    value=self.well_names,
-                                    multi=True,
                                 ),
-                                html.Button(
-                                    id=self.uuid("well-misfit-all"),
-                                    children=["Select all"],
+                                html.Div(
+                                    style={"width": "80%"},
+                                    children=[wcc.Graph(id=self.uuid("misfit-graph"))],
                                 ),
                             ]
-                        ),
-                        wcc.Graph(id=self.uuid("misfit-graph")),
+                        )
                     ],
                 ),
             ],
@@ -344,13 +348,6 @@ class RftPlotter(WebvizPluginABC):
             available_dates = [{"label": date, "value": date} for date in dates]
             date = current_date if current_date in dates else dates[0]
             return available_dates, date
-
-        @app.callback(
-            Output(self.uuid("well-misfit"), "value"),
-            [Input(self.uuid("well-misfit-all"), "n_clicks"),],
-        )
-        def select_all(n_clicks):
-            return self.well_names
 
         @app.callback(
             Output(self.uuid("misfit-graph"), "figure"),
