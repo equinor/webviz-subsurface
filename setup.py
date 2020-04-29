@@ -58,6 +58,7 @@ setup(
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
+    python_requires="~=3.6",
     use_scm_version=True,
     zip_safe=False,
     classifiers=[
