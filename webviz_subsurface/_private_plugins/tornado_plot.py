@@ -443,7 +443,7 @@ def tornado_plot(
                 f"<br>Case: {label}<br>True Value: "
                 f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
                 f"<br>Realizations: "
-                f"{min(reals) if reals else None}-{max(reals) if reals else None}"
+                f"{int(min(reals)) if reals else None}-{int(max(reals)) if reals else None}"
                 for x, label, val, reals in zip(
                     df["low"], df["low_label"], df["true_low"], df["low_reals"]
                 )
@@ -463,7 +463,7 @@ def tornado_plot(
                 f"<br>Case: {label}<br>True Value: "
                 f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
                 f"<br>Realizations: "
-                f"{min(reals) if reals else None}-{max(reals) if reals else None}"
+                f"{int(min(reals)) if reals else None}-{int(max(reals)) if reals else None}"
                 for x, label, val, reals in zip(
                     df["high"], df["high_label"], df["true_high"], df["high_reals"]
                 )
