@@ -186,7 +186,6 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
     def selector(self, label, id_name, column):
         return html.Div(
-            style={"paddingBottom": "30px"},
             children=html.Label(
                 children=[
                     html.Span(f"{label}:", style={"font-weight": "bold"}),
@@ -340,7 +339,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         open=True,
                         children=[
                             html.Summary(selector.lower().capitalize()),
-                            dcc.Dropdown(
+                            wcc.Select(
                                 id=self.selectors_id[selector],
                                 options=[
                                     {"label": i, "value": i}
@@ -348,7 +347,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 ],
                                 value=list(self.volumes[selector].unique()),
                                 multi=True,
-                                clearable=False,
+                                size=min(20, len(self.volumes[selector].unique())),
                             ),
                         ],
                     )
@@ -391,28 +390,35 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                             ],
                                         ),
                                         html.Div(
-                                            style={"flex": 3, "height": "600px"},
-                                            id=self.ids("graph-wrapper"),
+                                            style={"flex": 3},
+                                            children=[
+                                                html.Div(
+                                                    style={"height": "600px"},
+                                                    id=self.ids("graph-wrapper"),
+                                                ),
+                                                html.Div(
+                                                    children=[
+                                                        html.Div(
+                                                            id=self.ids("volume_title"),
+                                                            style={
+                                                                "textAlign": "center"
+                                                            },
+                                                            children="",
+                                                        ),
+                                                        DataTable(
+                                                            id=self.ids("table"),
+                                                            sort_action="native",
+                                                            filter_action="native",
+                                                            page_action="native",
+                                                            page_size=10,
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
                                         ),
                                     ],
-                                ),
-                                html.Div(
-                                    children=[
-                                        html.Div(
-                                            id=self.ids("volume_title"),
-                                            style={"textAlign": "center"},
-                                            children="",
-                                        ),
-                                        DataTable(
-                                            id=self.ids("table"),
-                                            sort_action="native",
-                                            filter_action="native",
-                                            page_action="native",
-                                            page_size=10,
-                                        ),
-                                    ],
-                                ),
-                            ],
+                                )
+                            ]
                         ),
                         html.Div(
                             id=self.ids("tornado-wrapper"),
@@ -463,7 +469,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
 
             # Make Plotly figure
             layout = {}
-            layout.update({"margin": {"l": 100, "b": 100}})
+            layout.update({"height": 600, "margin": {"l": 100, "b": 100}})
             if plot_type == "Per realization":
                 # One bar per realization
                 layout.update(

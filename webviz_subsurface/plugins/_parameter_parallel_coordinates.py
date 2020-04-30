@@ -1,7 +1,6 @@
 import pandas as pd
 from dash.dependencies import Input, Output
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
@@ -80,14 +79,14 @@ If undefined: all parameters visualized.
                 html.Div(
                     [
                         html.Span("Selected ensembles:", style={"font-weight": "bold"}),
-                        dcc.Dropdown(
+                        wcc.Select(
                             id=self.uuid("ensembles"),
                             options=[
                                 {"label": ens, "value": ens} for ens in self.ensembles
                             ],
-                            clearable=False,
                             multi=True,
                             value=self.ensembles,
+                            size=len(self.ensembles),
                         ),
                     ]
                 ),
@@ -96,15 +95,16 @@ If undefined: all parameters visualized.
                         html.Span(
                             "Selected parameters:", style={"font-weight": "bold"}
                         ),
-                        dcc.Dropdown(
+                        wcc.Select(
                             id=self.uuid("parameters"),
+                            style={"overflowX": "auto", "fontSize": "0.97rem"},
                             options=[
                                 {"label": param, "value": param}
                                 for param in self.parameters
                             ],
-                            clearable=False,
                             multi=True,
                             value=self.visual_parameters,
+                            size=min(50, len(self.visual_parameters)),
                         ),
                     ]
                 ),
@@ -114,12 +114,13 @@ If undefined: all parameters visualized.
     @property
     def layout(self):
         """Main layout"""
-        return html.Div(
+        return wcc.FlexBox(
             id=self.uuid("layout"),
-            style=self.set_grid_layout("1fr 4fr"),
             children=[
-                self.control_layout,
-                html.Div(wcc.Graph(id=self.uuid("parcoords"),),),
+                html.Div(style={"flex": 1}, children=self.control_layout),
+                html.Div(
+                    style={"flex": 3}, children=wcc.Graph(id=self.uuid("parcoords"),),
+                ),
             ],
         )
 
