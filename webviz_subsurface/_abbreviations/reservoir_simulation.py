@@ -30,7 +30,7 @@ def simulation_vector_base(vector: str) -> str:
     """Returns base name of simulation vector
     E.g. WOPR for WOPR:OP_1 and ROIP for ROIP_REG:1
     """
-    return vector.split(":", 1)[0].split("_", 1)[0]
+    return vector.split(":", 1)[0].split("_")[0]
 
 
 def simulation_vector_description(vector: str) -> str:
@@ -39,31 +39,46 @@ def simulation_vector_description(vector: str) -> str:
     """
     [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
     if len(vector_name) == 8:
-        # Region vectors for other FIP regions than FIPNUM are written on a special form:
-        # 8 signs, with the last 3 defining the region.
-        # E.g.: For an array "FIPREG": ROIP is ROIP_REG, RPR is RPR__REG and ROIPL is ROIPLREG
-        # Underscores _ are always used to fill
-        [vector_base_name, fip] = [vector_name[0:5].rstrip("_"), vector_name[5:]]
-        try:
-            if SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region":
-                vector_name = vector_base_name
-            else:
-                fip = None
-        except KeyError:
-            fip = None
-    else:
-        fip = None
+        if vector_name[0] == "R":
+            # Region vectors for other FIP regions than FIPNUM are written on a special form:
+            # 8 signs, with the last 3 defining the region.
+            # E.g.: For an array "FIPREG": ROIP is ROIP_REG, RPR is RPR__REG and ROIPL is ROIPLREG
+            # Underscores _ are always used to fill
+            [vector_base_name, fip] = [vector_name[0:5].rstrip("_"), vector_name[5:]]
+            if (
+                vector_base_name in SIMULATION_VECTOR_TERMINOLOGY
+                and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region"
+            ):
+                print(1)
+                return (
+                    f"{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
+                    + f", region {fip} {node}"
+                )
+        elif vector_name.startswith("W") and vector_name[4] == "L":
+            # These are completion vectors, e.g. WWCTL:__1:OP_1 and WOPRL_10:OP_1 for
+            # water-cut in OP_1 completion 1 and oil production rate in OP_1 completion 10
+            [vector_base_name, comp] = [vector_name[0:5], vector_name[5:].lstrip("_")]
+
+            if (
+                vector_base_name in SIMULATION_VECTOR_TERMINOLOGY
+                and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"]
+                == "completion"
+            ):
+                return (
+                    f"{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
+                    + f", well {node} completion {comp}"
+                )
+
     if vector_name in SIMULATION_VECTOR_TERMINOLOGY:
         metadata = SIMULATION_VECTOR_TERMINOLOGY[vector_name]
-        description = metadata["description"]
-        if node is not None:
-            description += (
-                f", {metadata['type'].replace('_', ' ')} {fip} {node}"
-                if fip is not None
-                else f", {metadata['type'].replace('_', ' ')} {node}"
-            )
-    else:
-        description = vector_name
+        if node is None:
+            return metadata["description"]
+        return f"{metadata['description']}, {metadata['type'].replace('_', ' ')} {node}"
+
+    if not vector.startswith(("AU", "BU", "CU", "FU", "GU", "RU", "SU", "WU")):
+        # Vectors starting with AU, BU, CU, FU, GU, RU, SU and WU are user defined vectors.
+        # Currently not providing descriptions for these, but migth come later (see:
+        # https://github.com/equinor/webviz-subsurface/issues/321)
         warnings.warn(
             (
                 f"Could not find description for vector {vector_name}. Consider adding"
@@ -71,8 +86,7 @@ def simulation_vector_description(vector: str) -> str:
             ),
             UserWarning,
         )
-
-    return description
+    return vector
 
 
 def historical_vector(
