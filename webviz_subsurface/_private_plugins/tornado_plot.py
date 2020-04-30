@@ -158,37 +158,24 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                                 ),
                             ],
                         ),
-                        html.Div(
-                            style=self.set_grid_layout("1fr 1fr"),
-                            children=[
-                                html.Label(
-                                    style={"marginTop": "10px"},
-                                    children="Cut by reference:",
-                                )
+                        dcc.Checklist(
+                            id=self.ids("cut-by-ref"),
+                            options=[
+                                {
+                                    "label": "Cut by reference",
+                                    "value": "Cut by reference",
+                                },
                             ],
+                            value=[],
                         ),
-                        html.Div(
-                            style=self.set_grid_layout("1fr 1fr"),
-                            children=[
-                                dcc.RadioItems(
-                                    labelStyle={"display": "inline-block"},
-                                    id=self.ids("cut-by-ref"),
-                                    options=[
-                                        {"label": "Off", "value": False},
-                                        {"label": "On", "value": True},
-                                    ],
-                                    value=False,
-                                ),
-                                html.Button(
-                                    style={
-                                        "position": "relative",
-                                        "top": "-50%",
-                                        "fontSize": "10px",
-                                    },
-                                    id=self.ids("reset"),
-                                    children="Clear selected",
-                                ),
-                            ],
+                        html.Button(
+                            style={
+                                "position": "relative",
+                                "top": "-50%",
+                                "fontSize": "10px",
+                            },
+                            id=self.ids("reset"),
+                            children="Clear selected",
                         ),
                         wcc.Graph(
                             id=self.ids("tornado-graph"),
@@ -228,7 +215,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                     plotly_theme=self.plotly_theme,
                     reference=reference,
                     scale=scale,
-                    cutbyref=cutbyref,
+                    cutbyref="Cut by reference" in cutbyref,
                     number_format=data.get("number_format", ""),
                     unit=data.get("unit", ""),
                     spaced=data.get("spaced", True),
