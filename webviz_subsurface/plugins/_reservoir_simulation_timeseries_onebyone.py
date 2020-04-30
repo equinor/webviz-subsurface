@@ -25,6 +25,7 @@ from .._datainput.fmu_input import (
 from .._abbreviations.reservoir_simulation import (
     simulation_vector_description,
     simulation_unit_reformat,
+    historical_vector,
 )
 from .._abbreviations.number_formatting import table_statistics_base
 from .._utils.simulation_timeseries import (
@@ -152,6 +153,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             c
             for c in self.data.columns
             if c not in ReservoirSimulationTimeSeriesOneByOne.ENSEMBLE_COLUMNS
+            and not historical_vector(c, self.smry_meta, False) in self.data.columns
         ]
         self.initial_vector = (
             initial_vector
@@ -206,7 +208,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             style={"paddingBottom": "30px"},
             children=html.Label(
                 children=[
-                    html.Span("Ensemble", style={"font-weight": "bold"}),
+                    html.Span("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("ensemble"),
                         options=[
@@ -377,7 +379,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 date = clickdata["points"][0]["x"]
             except TypeError:
                 raise PreventUpdate
-            data = filter_ensemble(self.data, ensemble, vector)
+            data = filter_ensemble(self.data, ensemble, [vector])
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows, table_columns = calculate_table(data, vector)
             return (
@@ -410,98 +412,171 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             Output(self.ids("graph"), "figure"),
             [
                 Input(self.tornadoplot.click_id, "data"),
-                # Input(self.ids("date-store"), "children"),
-                Input(self.ids("ensemble"), "value"),
-                Input(self.ids("vector"), "value"),
-                Input(self.ids("graph"), "clickData"),
+                Input(self.tornadoplot.high_low_storage_id, "data"),
             ],
-            [State(self.ids("graph"), "figure")],
-        )  # pylint: disable=too-many-branches
-        def _render_tornado(tornado_click, ensemble, vector, date_click, figure):
+            [
+                State(self.ids("ensemble"), "value"),
+                State(self.ids("vector"), "value"),
+                State(self.ids("graph"), "clickData"),
+                State(self.ids("graph"), "figure"),
+            ],
+        )  # pylint: disable=too-many-branches, too-many-locals
+        def _render_tornado(
+            tornado_click, high_low_storage, ensemble, vector, date_click, figure
+        ):
             """Update graph with line coloring, vertical line and title"""
             if dash.callback_context.triggered is None:
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            if tornado_click:
+                tornado_click = json.loads(tornado_click)
+                reset_click = tornado_click["sens_name"] is None
+            else:
+                reset_click = False
 
             # Draw initial figure and redraw if ensemble/vector changes
-            if ctx in ["", self.ids("ensemble"), self.ids("vector")]:
-                data = filter_ensemble(self.data, ensemble, vector)
+            if ctx in ["", self.tornadoplot.high_low_storage_id] or reset_click:
+                if historical_vector(vector, self.smry_meta, True) in self.data.columns:
+                    data = filter_ensemble(
+                        self.data,
+                        ensemble,
+                        [vector, historical_vector(vector, self.smry_meta, True)],
+                    )
+                else:
+                    data = filter_ensemble(self.data, ensemble, [vector])
+                line_shape = get_simulation_line_shape(
+                    line_shape_fallback=self.line_shape_fallback,
+                    vector=vector,
+                    smry_meta=self.smry_meta,
+                )
                 traces = [
                     {
                         "type": "line",
                         "marker": {"color": "grey"},
-                        "hoverinfo": "skip",
+                        "hoverinfo": "x+y+text",
+                        "hovertext": f"Real: {r}",
                         "x": df["DATE"],
                         "y": df[vector],
                         "customdata": r,
-                        "line": {
-                            "shape": get_simulation_line_shape(
-                                line_shape_fallback=self.line_shape_fallback,
-                                vector=vector,
-                                smry_meta=self.smry_meta,
-                            )
+                        "line": {"shape": line_shape},
+                        "meta": {
+                            "SENSCASE": df["SENSCASE"].values[0],
+                            "SENSTYPE": df["SENSTYPE"].values[0],
                         },
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": r == data["REAL"][0],
                     }
                     for r, df in data.groupby(["REAL"])
                 ]
-                traces[0]["hoverinfo"] = "x"
+                if historical_vector(vector, self.smry_meta, True) in data.columns:
+                    hist = data[data["REAL"] == data["REAL"][0]]
+                    traces.append(
+                        {
+                            "type": "line",
+                            "x": hist["DATE"],
+                            "y": hist[historical_vector(vector, self.smry_meta, True)],
+                            "line": {
+                                "shape": line_shape,
+                                "color": "black",
+                                "width": 3,
+                            },
+                            "name": "History",
+                            "legendgroup": "History",
+                            "showlegend": True,
+                        }
+                    )
+                # traces[0]["hoverinfo"] = "x"
                 figure = {
                     "data": traces,
-                    "layout": {"showlegend": False, "margin": {"t": 50}},
+                    "layout": {"margin": {"t": 60}, "hovermode": "closest"},
                 }
 
             # Update line colors if a sensitivity is selected in tornado
-            if tornado_click:
-                tornado_click = json.loads(tornado_click)
-                if not tornado_click.get("real_low"):
+            # pylint: disable=too-many-nested-blocks
+            if tornado_click and tornado_click["sens_name"] in high_low_storage:
+                if ctx == self.tornadoplot.high_low_storage_id:
+                    tornado_click["real_low"] = high_low_storage[
+                        tornado_click["sens_name"]
+                    ].get("real_low")
+                    tornado_click["real_high"] = high_low_storage[
+                        tornado_click["sens_name"]
+                    ].get("real_high")
+                if reset_click:
+                    add_legend = True
                     for trace in figure["data"]:
-                        trace["marker"] = {"color": "grey"}
-                        trace["opacity"] = 1
-                else:
-                    for trace in figure["data"]:
-                        if trace["customdata"] in tornado_click["real_low"]:
-                            trace["marker"] = {
-                                "color": self.theme.plotly_theme["layout"]["colorway"][
-                                    0
-                                ]
-                            }
-                            trace["opacity"] = 1
-                        elif trace["customdata"] in tornado_click["real_high"]:
-                            trace["marker"] = {
-                                "color": self.theme.plotly_theme["layout"]["colorway"][
-                                    1
-                                ]
-                            }
-                            trace["opacity"] = 1
-                        else:
+                        if trace["name"] != "History":
+                            if add_legend:
+                                trace["showlegend"] = True
+                                add_legend = False
+                            else:
+                                trace["showlegend"] = False
                             trace["marker"] = {"color": "grey"}
-                            trace["opacity"] = 0.02
+                            trace["opacity"] = 1
+                            trace["name"] = ensemble
+                            trace["legendgroup"] = ensemble
+                            trace["hoverinfo"] = "all"
+                            trace["hovertext"] = f"Real: {trace['customdata']}"
 
-            # Show date line on click, remove if tornado is resetted
-            if date_click:
-                if (
-                    tornado_click
-                    and not tornado_click.get("real_low")
-                    and figure["layout"].get("shapes")
-                ):
-                    figure["layout"]["shapes"] = []
-                    figure["layout"]["title"] = (
-                        None
-                        if get_unit(self.smry_meta, vector) is None
-                        else f"[{get_unit(self.smry_meta, vector)}]"
-                    )
-                    return figure
+                else:
+                    add_legend_low = True
+                    add_legend_high = True
+                    for trace in figure["data"]:
+                        if trace["name"] != "History":
+                            if trace["customdata"] in tornado_click["real_low"]:
+                                trace["marker"] = {
+                                    "color": self.theme.plotly_theme["layout"][
+                                        "colorway"
+                                    ][0]
+                                }
+                                trace["opacity"] = 1
+                                trace["legendgroup"] = "real_low"
+                                trace["hoverinfo"] = "all"
+                                trace["name"] = (
+                                    "Below ref"
+                                    if trace["meta"]["SENSTYPE"] == "mc"
+                                    else trace["meta"]["SENSCASE"]
+                                )
+                                if add_legend_low:
+                                    add_legend_low = False
+                                    trace["showlegend"] = True
+                                else:
+                                    trace["showlegend"] = False
+                            elif trace["customdata"] in tornado_click["real_high"]:
+                                trace["marker"] = {
+                                    "color": self.theme.plotly_theme["layout"][
+                                        "colorway"
+                                    ][1]
+                                }
+                                trace["opacity"] = 1
+                                trace["legendgroup"] = "real_high"
+                                trace["hoverinfo"] = "all"
+                                trace["name"] = (
+                                    "Above ref"
+                                    if trace["meta"]["SENSTYPE"] == "mc"
+                                    else trace["meta"]["SENSCASE"]
+                                )
+                                if add_legend_high:
+                                    add_legend_high = False
+                                    trace["showlegend"] = True
+                                else:
+                                    trace["showlegend"] = False
+                            else:
+                                trace["marker"] = {"color": "lightgrey"}
+                                trace["opacity"] = 0.02
+                                trace["showlegend"] = False
+                                trace["hoverinfo"] = "skip"
 
-                date = date_click["points"][0]["x"]
-                ymin = min([min(trace["y"]) for trace in figure["data"]])
-                ymax = max([max(trace["y"]) for trace in figure["data"]])
-                figure["layout"]["shapes"] = [
-                    {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
-                ]
-                figure["layout"]["title"] = (
-                    f"Date: {date}, "
-                    f"Sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
-                )
+            date = date_click["points"][0]["x"]
+            ymin = min([min(trace["y"]) for trace in figure["data"]])
+            ymax = max([max(trace["y"]) for trace in figure["data"]])
+            figure["layout"]["shapes"] = [
+                {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+            ]
+            figure["layout"]["title"] = (
+                f"Date: {date}, "
+                f"Sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
+            )
             figure["layout"]["yaxis"] = {
                 "title": f"{simulation_vector_description(vector)} ({vector})"
                 + (
@@ -509,6 +584,13 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     if get_unit(self.smry_meta, vector) is None
                     else f" [{get_unit(self.smry_meta, vector)}]"
                 )
+            }
+            figure["layout"]["legend"] = {
+                "orientation": "h",
+                # "traceorder": "reversed",
+                "y": 1.1,
+                "x": 1,
+                "xanchor": "right",
             }
             figure["layout"] = self.theme.create_themed_layout(figure["layout"])
             return figure
@@ -544,7 +626,7 @@ def calculate_table(df, vector):
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_ensemble(data, ensemble, vector):
     return data.loc[data["ENSEMBLE"] == ensemble][
-        ["DATE", "REAL", vector, "SENSCASE", "SENSNAME"]
+        ["DATE", "REAL", "SENSCASE", "SENSNAME", "SENSTYPE"] + vector
     ]
 
 

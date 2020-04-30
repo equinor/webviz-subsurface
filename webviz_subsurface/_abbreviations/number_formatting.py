@@ -59,7 +59,7 @@ def si_prefixed(
             else f"{number_base:{number_format}}{si_prefix}{unit}"
         )
 
-    if locked_si_prefix:
+    if locked_si_prefix is not None:
         # Make sure locked_si_prefix is a string to avoid == issues
         locked_si_prefix = str(locked_si_prefix)
 

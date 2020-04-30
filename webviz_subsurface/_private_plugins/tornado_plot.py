@@ -113,6 +113,11 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
         """The id of the dcc.Store component that holds click data"""
         return self.ids("click-store")
 
+    @property
+    def high_low_storage_id(self):
+        """The id of the dcc.Store component that holds click data"""
+        return self.ids("high-low-storage")
+
     @staticmethod
     def set_grid_layout(columns):
         return {
@@ -184,6 +189,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                         ),
                         dcc.Store(id=self.ids("storage")),
                         dcc.Store(id=self.ids("click-store")),
+                        dcc.Store(id=self.ids("high-low-storage")),
                     ],
                 )
             ]
@@ -191,7 +197,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("tornado-graph"), "figure"),
+            [
+                Output(self.ids("tornado-graph"), "figure"),
+                Output(self.ids("high-low-storage"), "data"),
+            ],
             [
                 Input(self.ids("reference"), "value"),
                 Input(self.ids("scale"), "value"),
@@ -223,7 +232,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                     locked_si_prefix=data.get("locked_si_prefix", None),
                 )
             except KeyError:
-                return {}
+                return {}, {}
 
         if self.allow_click:
 
@@ -343,7 +352,7 @@ def tornado_plot(
                         "senscase": sens_case,
                         "values": values,
                         "values_ref": scale_to_ref(values, ref_avg, scale),
-                        "reals": list(sens_case_df["REAL"]),
+                        "reals": list(map(int, sens_case_df["REAL"])),
                     }
                 )
         # If `SENSTYPE` is monte carlo get p10, p90
@@ -364,7 +373,7 @@ def tornado_plot(
             arr.append(
                 {
                     "sensname": sens_name,
-                    "senscase": "p90",
+                    "senscase": "P90",
                     "values": p90,
                     "values_ref": scale_to_ref(p90, ref_avg, scale),
                     "reals": low_reals,
@@ -373,7 +382,7 @@ def tornado_plot(
             arr.append(
                 {
                     "sensname": sens_name,
-                    "senscase": "p10",
+                    "senscase": "P10",
                     "values": p10,
                     "values_ref": scale_to_ref(p10, ref_avg, scale),
                     "reals": high_reals,
@@ -414,6 +423,14 @@ def tornado_plot(
         df = cut_by_ref(df, reference)
 
     df = sort_by_max(df)
+
+    store_low_high = {
+        sensname: {
+            "real_low": sens_name_df["low_reals"].tolist()[0],
+            "real_high": sens_name_df["high_reals"].tolist()[0],
+        }
+        for sensname, sens_name_df in df.groupby(["sensname"])
+    }
 
     # If percentage, unit is %
     unit_x = "%" if scale == "Percentage" else unit
@@ -504,7 +521,10 @@ def tornado_plot(
             ],
         }
     )
-    return {"data": plot_data, "layout": layout}
+    return (
+        {"data": plot_data, "layout": layout},
+        store_low_high,
+    )
 
 
 def calc_low_base(low, high):
