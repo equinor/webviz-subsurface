@@ -6,7 +6,9 @@ from matplotlib import cm
 from PIL import Image
 
 
-def array_to_png(tensor, shift=True, colormap=False):
+def array_to_png(
+    tensor, shift=True, colormap=False
+):  # pylint: disable=too-many-branches
     """The layered map dash component takes in pictures as base64 data
     (or as a link to an existing hosted image). I.e. for containers wanting
     to create pictures on-the-fly from numpy arrays, they have to be converted
@@ -28,11 +30,12 @@ def array_to_png(tensor, shift=True, colormap=False):
 
     tensor -= np.nanmin(tensor)
 
-    if shift:
-        tensor *= 254.0 / np.nanmax(tensor)
-        tensor += 1.0
-    else:
-        tensor *= 255.0 / np.nanmax(tensor)
+    if np.nanmax(tensor) != 0:
+        if shift:
+            tensor *= 254.0 / np.nanmax(tensor)
+            tensor += 1.0
+        else:
+            tensor *= 255.0 / np.nanmax(tensor)
 
     tensor[np.isnan(tensor)] = 0
 
