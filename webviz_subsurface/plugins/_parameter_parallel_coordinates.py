@@ -86,6 +86,7 @@ If undefined: all parameters visualized.
                             ],
                             multi=True,
                             value=self.ensembles,
+                            persistence=True,
                             size=len(self.ensembles),
                         ),
                     ]
@@ -104,6 +105,7 @@ If undefined: all parameters visualized.
                             ],
                             multi=True,
                             value=self.visual_parameters,
+                            persistence=True,
                             size=min(50, len(self.visual_parameters)),
                         ),
                     ]

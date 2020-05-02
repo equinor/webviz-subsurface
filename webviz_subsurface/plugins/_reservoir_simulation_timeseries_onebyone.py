@@ -215,6 +215,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         ],
                         clearable=False,
                         value=list(self.data["ENSEMBLE"].unique())[0],
+                        persistence=True,
                     ),
                 ]
             ),
@@ -239,6 +240,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                         ],
                         clearable=False,
                         value=self.initial_vector,
+                        persistence=True,
                     ),
                 ]
             ),

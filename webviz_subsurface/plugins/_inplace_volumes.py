@@ -248,6 +248,7 @@ but the following responses are given more descriptive names automatically:
                                     ],
                                     value=value,
                                     multi=True,
+                                    persistence=True,
                                     size=min(20, len(elements)),
                                 ),
                             ],
@@ -272,6 +273,7 @@ but the following responses are given more descriptive names automatically:
                                     {"label": volume_description(i), "value": i}
                                     for i in self.responses
                                 ],
+                                persistence=True,
                                 value=self.initial_response
                                 if self.initial_response in self.responses
                                 else self.responses[0],
@@ -290,6 +292,7 @@ but the following responses are given more descriptive names automatically:
                                     {"label": i, "value": i} for i in self.plot_types
                                 ],
                                 value=self.initial_plot,
+                                persistence=True,
                                 clearable=False,
                             ),
                         ]
@@ -306,6 +309,7 @@ but the following responses are given more descriptive names automatically:
                                     for i in self.selectors
                                 ],
                                 value=self.initial_group,
+                                persistence=True,
                                 placeholder="Not grouped",
                             ),
                         ]

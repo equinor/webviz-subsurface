@@ -175,6 +175,7 @@ The performance is currently slow for large grids.
                                     ],
                                     value=self.surfacefiles[0],
                                     clearable=False,
+                                    persistence=True,
                                 ),
                             ]
                         ),
@@ -193,6 +194,7 @@ The performance is currently slow for large grids.
                                         },
                                     ],
                                     value="surface",
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -244,6 +246,7 @@ The performance is currently slow for large grids.
                                     ],
                                     value=self.gridparafiles[0],
                                     clearable=False,
+                                    persistence=True,
                                 ),
                             ]
                         ),
@@ -286,6 +289,7 @@ The performance is currently slow for large grids.
                                 dcc.RangeSlider(
                                     id=self.ids("color-values"),
                                     tooltip={"always_visible": True},
+                                    persistence=True,
                                 ),
                             ],
                         ),

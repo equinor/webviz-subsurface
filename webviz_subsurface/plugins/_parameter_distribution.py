@@ -139,6 +139,7 @@ or as an ensemble name defined in `shared_settings`.
                             ],
                             value=self.parameter_columns[0],
                             clearable=False,
+                            persistence=True,
                         ),
                         self.make_buttons(self.ids("prev-btn"), self.ids("next-btn")),
                     ],
