@@ -33,7 +33,7 @@ def test_basic_example(dash_duo, tmp_path):
         "morris_plot",
         "grid_viewer",
         "seg-y_viewer",
-        "last_page",
+        "running_time_analysis_fmu",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
         logs = [
