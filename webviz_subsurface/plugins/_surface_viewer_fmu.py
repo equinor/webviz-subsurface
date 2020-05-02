@@ -159,6 +159,7 @@ and available for instant viewing.
                                     value=self.ensembles[0],
                                     id=ensemble_id,
                                     clearable=False,
+                                    persistence=True,
                                 ),
                                 html.Button(
                                     style={
@@ -196,6 +197,7 @@ and available for instant viewing.
                                     value=self.realizations(self.ensembles[0])[0],
                                     id=real_id,
                                     clearable=False,
+                                    persistence=True,
                                 ),
                                 html.Button(
                                     style={
@@ -279,6 +281,7 @@ and available for instant viewing.
                                                 "Quotient",
                                             ]
                                         ],
+                                        persistence=True,
                                     )
                                 ),
                                 wcc.FlexBox(
@@ -291,6 +294,7 @@ and available for instant viewing.
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-min"),
+                                                    persistence=True,
                                                 ),
                                             ],
                                         ),
@@ -302,6 +306,7 @@ and available for instant viewing.
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-max"),
+                                                    persistence=True,
                                                 ),
                                             ],
                                         ),
@@ -357,6 +362,7 @@ and available for instant viewing.
                         dcc.Store(
                             id=self.uuid("attribute-settings"),
                             data=json.dumps(self.attribute_settings),
+                            storage_type="local",
                         ),
                     ],
                 ),

@@ -228,6 +228,7 @@ The types of response_filters are:
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values,
+                    persistence=True,
                     multi=True,
                     size=min(20, len(values)),
                 )
@@ -236,6 +237,7 @@ The types of response_filters are:
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values[0],
+                    persistence=True,
                     multi=False,
                     clearable=False,
                 )
@@ -260,6 +262,7 @@ The types of response_filters are:
                             {"label": ens, "value": ens} for ens in self.ensembles
                         ],
                         clearable=False,
+                        persistence=True,
                         value=self.ensembles[0],
                     ),
                 ]
@@ -273,6 +276,7 @@ The types of response_filters are:
                             {"label": ens, "value": ens} for ens in self.responses
                         ],
                         clearable=False,
+                        persistence=True,
                         value=self.responses[0],
                     ),
                 ]
@@ -616,6 +620,7 @@ def make_range_slider(domid, values, col_name):
             str(values.min()): {"label": f"{values.min():.2f}"},
             str(values.max()): {"label": f"{values.max():.2f}"},
         },
+        persistence=True,
     )
 
 

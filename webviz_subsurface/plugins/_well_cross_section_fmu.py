@@ -158,6 +158,7 @@ per realization.
                         ],
                         value=self.wellfiles[0],
                         clearable=False,
+                        persistence=True,
                     ),
                 ]
             )
@@ -178,6 +179,7 @@ per realization.
                         value=self.surfacenames,
                         clearable=True,
                         multi=True,
+                        persistence=True,
                     ),
                 ]
             ),
@@ -199,6 +201,7 @@ per realization.
                         value=list(self.ensembles.keys())[0],
                         clearable=False,
                         multi=False,
+                        persistence=True,
                     ),
                 ]
             ),
@@ -222,6 +225,7 @@ per realization.
                             ],
                             value=self.segyfiles[0],
                             clearable=False,
+                            persistence=True,
                         ),
                     ]
                 ),
@@ -245,6 +249,7 @@ per realization.
                             ],
                             placeholder="Display log",
                             clearable=True,
+                            persistence=True,
                         ),
                     ]
                 ),
@@ -277,6 +282,7 @@ per realization.
                     debounce=True,
                     type="number",
                     value=self.sampling,
+                    persistence=True,
                 ),
                 html.Label("Extension"),
                 dcc.Input(
@@ -284,8 +290,14 @@ per realization.
                     debounce=True,
                     type="number",
                     value=self.nextend,
+                    persistence=True,
                 ),
-                dcc.Checklist(id=self.ids("options"), options=options, value=value),
+                dcc.Checklist(
+                    id=self.ids("options"),
+                    options=options,
+                    value=value,
+                    persistence=True,
+                ),
             ],
         )
 
@@ -301,6 +313,7 @@ per realization.
                     value=self.surfacenames[0],
                     clearable=False,
                     multi=False,
+                    persistence=True,
                 ),
                 dcc.Dropdown(
                     id=self.ids("surface-type"),
@@ -318,6 +331,7 @@ per realization.
                     value="stddev",
                     clearable=False,
                     multi=False,
+                    persistence=True,
                 ),
             ],
         )
@@ -363,7 +377,9 @@ per realization.
                             id=self.ids("show_map"),
                             children="Show map",
                         ),
-                        dcc.Store(id=self.ids("fencespec"), data=[]),
+                        dcc.Store(
+                            id=self.ids("fencespec"), data=[], storage_type="local"
+                        ),
                     ],
                 ),
             ],

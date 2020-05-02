@@ -252,6 +252,7 @@ Plot options:
                                     },
                                 ],
                                 value="ensembles",
+                                persistence=True,
                             ),
                         ]
                     ),
@@ -271,6 +272,7 @@ Plot options:
                                     {"label": i, "value": i} for i in self.ensembles
                                 ],
                                 value=self.ensembles[0],
+                                persistence=True,
                             ),
                         ],
                     ),
@@ -300,6 +302,7 @@ Plot options:
                                                 for i in self.ensembles
                                             ],
                                             value=self.ensembles[0],
+                                            persistence=True,
                                         ),
                                     ]
                                 ),
@@ -317,6 +320,7 @@ Plot options:
                                                 for i in self.ensembles
                                             ],
                                             value=self.ensembles[-1],
+                                            persistence=True,
                                         ),
                                     ]
                                 ),
@@ -357,6 +361,7 @@ Plot options:
                                     value=self.plot_options.get(
                                         "vector1", self.smry_cols[0]
                                     ),
+                                    persistence=True,
                                 ),
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px", "fontSize": ".95em"},
@@ -367,6 +372,7 @@ Plot options:
                                     placeholder="Add additional series",
                                     options=self.dropdown_options,
                                     value=self.plot_options.get("vector2", None),
+                                    persistence=True,
                                 ),
                                 dcc.Dropdown(
                                     style={"fontSize": ".95em"},
@@ -377,6 +383,7 @@ Plot options:
                                     placeholder="Add additional series",
                                     options=self.dropdown_options,
                                     value=self.plot_options.get("vector3", None),
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -406,6 +413,7 @@ Plot options:
                                     value=self.plot_options.get(
                                         "visualization", "statistics"
                                     ),
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -420,6 +428,7 @@ Plot options:
                         ),
                         dcc.Store(
                             id=self.uuid("date"),
+                            storage_type="local",
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ],

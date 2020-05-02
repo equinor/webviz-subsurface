@@ -152,6 +152,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                                     ],
                                     value=self.initial_reference,
                                     clearable=False,
+                                    persistence=True,
                                 ),
                                 dcc.Dropdown(
                                     id=self.ids("scale"),
@@ -161,6 +162,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                                     ],
                                     value="Percentage",
                                     clearable=False,
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -173,6 +175,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                                 },
                             ],
                             value=[],
+                            persistence=True,
                         ),
                         html.Button(
                             style={
@@ -187,9 +190,11 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             id=self.ids("tornado-graph"),
                             config={"displayModeBar": False},
                         ),
-                        dcc.Store(id=self.ids("storage")),
-                        dcc.Store(id=self.ids("click-store")),
-                        dcc.Store(id=self.ids("high-low-storage")),
+                        dcc.Store(id=self.ids("storage"), storage_type="local"),
+                        dcc.Store(id=self.ids("click-store"), storage_type="local"),
+                        dcc.Store(
+                            id=self.ids("high-low-storage"), storage_type="local"
+                        ),
                     ],
                 )
             ]

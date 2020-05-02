@@ -194,6 +194,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             {"label": i, "value": i}
                             for i in list(self.volumes[column].unique())
                         ],
+                        persistence=True,
                         clearable=False,
                         value=list(self.volumes[column])[0],
                     ),
@@ -302,6 +303,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     ],
                     value="Per realization",
                     clearable=False,
+                    persistence=True,
                 ),
             ]
         )
@@ -320,6 +322,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             for i in self.responses
                         ],
                         clearable=False,
+                        persistence=True,
                         value=self.initial_response
                         if self.initial_response in self.responses
                         else self.responses[0],
@@ -346,6 +349,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 ],
                                 value=list(self.volumes[selector].unique()),
                                 multi=True,
+                                persistence=True,
                                 size=min(20, len(self.volumes[selector].unique())),
                             ),
                         ],

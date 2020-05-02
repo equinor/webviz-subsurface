@@ -50,6 +50,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
                     options=[
                         {"label": i, "value": i} for i in ["Pie chart", "Bar chart"]
                     ],
+                    persistence=True,
                     value="Pie chart",
                 ),
                 wcc.Graph(id=self.chart_id),

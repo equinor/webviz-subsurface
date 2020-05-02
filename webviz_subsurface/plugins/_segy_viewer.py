@@ -151,6 +151,7 @@ The plots are linked and updates are done by clicking in the plots.
                                 ],
                                 value=self.segyfiles[0],
                                 clearable=False,
+                                persistence=True,
                             ),
                         ]
                     ),
@@ -190,6 +191,7 @@ The plots are linked and updates are done by clicking in the plots.
                                 max_value=self.init_state["max_value"],
                                 steps=100,
                             ),
+                            persistence=True,
                         ),
                     ],
                 ),
@@ -237,7 +239,9 @@ The plots are linked and updates are done by clicking in the plots.
                         ],
                     ),
                     dcc.Store(
-                        id=self.ids("state-storage"), data=json.dumps(self.init_state)
+                        id=self.ids("state-storage"),
+                        data=json.dumps(self.init_state),
+                        storage_type="local",
                     ),
                 ]
             ),

@@ -179,7 +179,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
 
-        self.ertdatadf = filter_frame(self.ertdatadf, {"ACTIVE": 1,})
+        self.ertdatadf = filter_frame(self.ertdatadf, {"ACTIVE": 1})
         self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
         )["SIMULATED"].transform("std")
@@ -265,7 +265,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
         for i, date_index in enumerate(idx_steps):
             marks[str(date_index)] = {
                 "label": f"{date_steps[i]}",
-                "style": {"white-space": "nowrap", "font-weight": "bold",},
+                "style": {"white-space": "nowrap", "font-weight": "bold"},
             }
         return marks
 
@@ -275,8 +275,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
             html.Div(
                 [
                     html.Label(
-                        style={"font-weight": "bold"},
-                        children="Ensembles in well plot",
+                        style={"font-weight": "bold"}, children="Ensembles in well plot"
                     ),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
@@ -286,6 +285,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                         value=self.ensembles[0],
                         multi=True,
                         clearable=False,
+                        persistence=True,
                     ),
                 ]
             ),
@@ -294,7 +294,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                     html.Div(
                         style={"flex": 1},
                         children=[
-                            html.Label(style={"font-weight": "bold"}, children="Well",),
+                            html.Label(style={"font-weight": "bold"}, children="Well"),
                             dcc.Dropdown(
                                 id=self.uuid("well"),
                                 options=[
@@ -303,13 +303,14 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                 ],
                                 value=self.well_names[0],
                                 clearable=False,
+                                persistence=True,
                             ),
                         ],
                     ),
                     html.Div(
                         style={"flex": 1},
                         children=[
-                            html.Label(style={"font-weight": "bold"}, children="Date",),
+                            html.Label(style={"font-weight": "bold"}, children="Date"),
                             dcc.Dropdown(
                                 id=self.uuid("date"),
                                 options=[
@@ -318,6 +319,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                 ],
                                 clearable=False,
                                 value=self.date_in_well(self.well_names[0])[0],
+                                persistence=True,
                             ),
                         ],
                     ),
@@ -332,11 +334,12 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                     dcc.RadioItems(
                         id=self.uuid("linetype"),
                         options=[
-                            {"label": "Realization lines", "value": "realization",},
-                            {"label": "Statistical fanchart", "value": "fanchart",},
+                            {"label": "Realization lines", "value": "realization"},
+                            {"label": "Statistical fanchart", "value": "fanchart"},
                         ],
                         value="realization",
-                        labelStyle={"display": "inline-block", "margin": "5px",},
+                        labelStyle={"display": "inline-block", "margin": "5px"},
+                        persistence=True,
                     ),
                 ]
             ),
@@ -364,6 +367,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                 ],
                                 value=list(self.ertdatadf["ENSEMBLE"].unique())[0],
                                 clearable=False,
+                                persistence=True,
                             ),
                         ],
                     ),
@@ -383,10 +387,11 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                                 "label": "Standard Deviation",
                                                 "value": "STDDEV",
                                             },
-                                            {"label": "Misfit", "value": "ABSDIFF",},
+                                            {"label": "Misfit", "value": "ABSDIFF"},
                                         ],
                                         value="ABSDIFF",
                                         clearable=False,
+                                        persistence=True,
                                     ),
                                 ],
                             ),
@@ -400,21 +405,22 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                     dcc.Dropdown(
                                         id=self.uuid("map_color"),
                                         options=[
-                                            {"label": "Misfit", "value": "ABSDIFF",},
+                                            {"label": "Misfit", "value": "ABSDIFF"},
                                             {
                                                 "label": "Standard Deviation",
                                                 "value": "STDDEV",
                                             },
-                                            {"label": "Year", "value": "YEAR",},
+                                            {"label": "Year", "value": "YEAR"},
                                         ],
                                         value="STDDEV",
                                         clearable=False,
+                                        persistence=True,
                                     ),
                                 ],
                             ),
                         ]
                     ),
-                    html.Label(style={"font-weight": "bold"}, children="Date range",),
+                    html.Label(style={"font-weight": "bold"}, children="Date range"),
                     html.Div(
                         style={"width": "100%", "height": "70px"},
                         children=[
@@ -427,6 +433,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                     self.ertdatadf["DATE_IDX"].max(),
                                 ],
                                 marks=self.date_marks(),
+                                persistence=True,
                             )
                         ],
                     ),
@@ -437,37 +444,41 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
     def filter_layout(self, tab):
         """Layout for shared filters"""
         return [
-            html.Label(style={"font-weight": "bold"}, children=["Ensembles"],),
+            html.Label(style={"font-weight": "bold"}, children=["Ensembles"]),
             wcc.Select(
                 size=min(4, len(self.ensembles)),
                 id=self.uuid(f"ensemble-{tab}"),
                 options=[{"label": name, "value": name} for name in self.ensembles],
                 value=self.ensembles,
                 multi=True,
+                persistence=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Wells"],),
+            html.Label(style={"font-weight": "bold"}, children=["Wells"]),
             wcc.Select(
                 size=min(20, len(self.well_names)),
                 id=self.uuid(f"well-{tab}"),
                 options=[{"label": name, "value": name} for name in self.well_names],
                 value=self.well_names,
                 multi=True,
+                persistence=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Zones"],),
+            html.Label(style={"font-weight": "bold"}, children=["Zones"]),
             wcc.Select(
                 size=min(10, len(self.zone_names)),
                 id=self.uuid(f"zone-{tab}"),
                 options=[{"label": name, "value": name} for name in self.zone_names],
                 value=self.zone_names,
                 multi=True,
+                persistence=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Dates"],),
+            html.Label(style={"font-weight": "bold"}, children=["Dates"]),
             wcc.Select(
                 size=min(10, len(self.dates)),
                 id=self.uuid(f"date-{tab}"),
                 options=[{"label": name, "value": name} for name in self.dates],
                 value=self.dates,
                 multi=True,
+                persistence=True,
             ),
         ]
 
@@ -475,31 +486,33 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
         return [
             html.Div(
                 children=[
-                    html.Label(style={"font-weight": "bold"}, children="Color by",),
+                    html.Label(style={"font-weight": "bold"}, children="Color by"),
                     dcc.Dropdown(
                         id=self.uuid("crossplot_color"),
                         options=[
-                            {"label": "Misfit", "value": "ABSDIFF",},
-                            {"label": "Standard Deviation", "value": "STDDEV",},
+                            {"label": "Misfit", "value": "ABSDIFF"},
+                            {"label": "Standard Deviation", "value": "STDDEV"},
                         ],
                         value="STDDEV",
                         clearable=False,
+                        persistence=True,
                     ),
-                ],
+                ]
             ),
             html.Div(
                 children=[
-                    html.Label(style={"font-weight": "bold"}, children="Size by",),
+                    html.Label(style={"font-weight": "bold"}, children="Size by"),
                     dcc.Dropdown(
                         id=self.uuid("crossplot_size"),
                         options=[
-                            {"label": "Standard Deviation", "value": "STDDEV",},
-                            {"label": "Misfit", "value": "ABSDIFF",},
+                            {"label": "Standard Deviation", "value": "STDDEV"},
+                            {"label": "Misfit", "value": "ABSDIFF"},
                         ],
                         value="ABSDIFF",
                         clearable=False,
+                        persistence=True,
                     ),
-                ],
+                ]
             ),
         ]
 
@@ -546,7 +559,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                 wcc.FlexBox(
                                     children=[
                                         wcc.Graph(
-                                            style={"flex": 1}, id=self.uuid("map"),
+                                            style={"flex": 1}, id=self.uuid("map")
                                         ),
                                         wcc.Graph(
                                             style={"flex": 1},
@@ -602,11 +615,11 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                     children=[
                                         html.Div(
                                             id=self.uuid("crossplot-graph-wrapper")
-                                        ),
+                                        )
                                     ],
                                 ),
-                            ],
-                        ),
+                            ]
+                        )
                     ],
                 ),
                 dcc.Tab(
@@ -624,8 +637,8 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
                                     style={"flex": 4},
                                     children=wcc.Graph(id=self.uuid("errorplot-graph")),
                                 ),
-                            ],
-                        ),
+                            ]
+                        )
                     ],
                 ),
             ],
@@ -633,7 +646,7 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.uuid("well"), "value"), [Input(self.uuid("map"), "clickData"),],
+            Output(self.uuid("well"), "value"), [Input(self.uuid("map"), "clickData")]
         )
         def _get_clicked_well(click_data):
             if not click_data:
@@ -688,14 +701,11 @@ Note: Only TVD values are supported, plan to support MD values in a later realea
             figure.add_observed(date)
             figure.add_ert_observed(date)
 
-            return {
-                "data": figure.traces,
-                "layout": figure.layout,
-            }
+            return {"data": figure.traces, "layout": figure.layout}
 
         @app.callback(
             [Output(self.uuid("date"), "options"), Output(self.uuid("date"), "value")],
-            [Input(self.uuid("well"), "value"),],
+            [Input(self.uuid("well"), "value")],
             [State(self.uuid("date"), "value")],
         )
         def _update_date(well, current_date):

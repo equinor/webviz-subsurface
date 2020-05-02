@@ -90,6 +90,7 @@ class WellCrossSection(WebvizPluginABC):
                         ],
                         value=self.wellfiles[0],
                         clearable=False,
+                        persistence=True,
                     ),
                 ]
             ),
@@ -112,6 +113,7 @@ class WellCrossSection(WebvizPluginABC):
                         else None,
                         value=self.segyfiles[0] if self.segyfiles else None,
                         clearable=False,
+                        persistence=True,
                     ),
                 ]
             ),
@@ -127,7 +129,9 @@ class WellCrossSection(WebvizPluginABC):
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
             value.append("show_zonelog")
 
-        return dcc.Checklist(id=self.ids("options"), options=options, value=value,)
+        return dcc.Checklist(
+            id=self.ids("options"), options=options, value=value, persistence=True,
+        )
 
     @property
     def well_options(self):
@@ -143,6 +147,7 @@ class WellCrossSection(WebvizPluginABC):
                                 debounce=True,
                                 type="number",
                                 value=self.sampling,
+                                persistence=True,
                             ),
                         ]
                     )
@@ -156,6 +161,7 @@ class WellCrossSection(WebvizPluginABC):
                                 debounce=True,
                                 type="number",
                                 value=self.nextend,
+                                persistence=True,
                             ),
                         ]
                     )

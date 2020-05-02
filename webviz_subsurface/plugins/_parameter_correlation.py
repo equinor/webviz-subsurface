@@ -21,6 +21,7 @@ class Widgets:
             options=[{"label": k, "value": v} for k, v in dictionary.items()],
             value=list(dictionary.values())[0],
             clearable=False,
+            persistence=True,
         )
 
 
@@ -83,6 +84,7 @@ and scatter plot for any given pair of parameters.
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
+                        persistence=True,
                     ),
                     Widgets.dropdown_from_dict(self.ids("ensemble-1"), self.ensembles),
                 ],
@@ -98,6 +100,7 @@ and scatter plot for any given pair of parameters.
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
+                        persistence=True,
                     ),
                     Widgets.dropdown_from_dict(self.ids("ensemble-2"), self.ensembles),
                 ],
@@ -109,6 +112,7 @@ and scatter plot for any given pair of parameters.
                     dcc.Dropdown(
                         id=self.ids("scatter-color"),
                         options=[{"label": p, "value": p} for p in self.p_cols],
+                        persistence=True,
                     ),
                 ],
             ),
@@ -116,6 +120,7 @@ and scatter plot for any given pair of parameters.
                 id=self.ids("density"),
                 style={"padding": "5px"},
                 options=[{"label": "Show scatterplot density", "value": "density",}],
+                persistence=True,
             ),
         ]
 

@@ -165,6 +165,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                     value=self.surfacefiles[0],
                                     clearable=False,
+                                    persistence=True,
                                 ),
                             ]
                         ),
@@ -183,6 +184,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                         },
                                     ],
                                     value="surface",
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -232,6 +234,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                     value=self.segyfiles[0],
                                     clearable=False,
+                                    persistence=True,
                                 ),
                             ]
                         ),
@@ -274,6 +277,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 dcc.RangeSlider(
                                     id=self.ids("color-values"),
                                     tooltip={"always_visible": True},
+                                    persistence=True,
                                 ),
                             ],
                         ),

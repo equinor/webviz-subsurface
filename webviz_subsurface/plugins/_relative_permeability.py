@@ -278,6 +278,7 @@ class RelativePermeability(WebvizPluginABC):
                                         for i in self.sat_axes
                                     ],
                                     value=self.sat_axes[0],
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -293,13 +294,18 @@ class RelativePermeability(WebvizPluginABC):
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
+                                    persistence=True,
                                 ),
                             ],
                         ),
                         html.Label(
                             id=self.uuid("ensemble_selector"),
                             children=[
-                                dcc.Store(id=self.uuid("stored_ensemble"), data={}),
+                                dcc.Store(
+                                    id=self.uuid("stored_ensemble"),
+                                    data={},
+                                    storage_type="local",
+                                ),
                                 html.Span("Ensembles:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
@@ -309,6 +315,7 @@ class RelativePermeability(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles[0],
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -317,11 +324,16 @@ class RelativePermeability(WebvizPluginABC):
                             children=[
                                 html.Span("Curves:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
-                                    id=self.uuid("curve"), clearable=False, multi=True,
+                                    id=self.uuid("curve"),
+                                    clearable=False,
+                                    multi=True,
+                                    persistence=True,
                                 ),
                             ],
                         ),
-                        dcc.Store(id=self.uuid("stored_satnum"), data={}),
+                        dcc.Store(
+                            id=self.uuid("stored_satnum"), data={}, storage_type="local"
+                        ),
                         html.Label(
                             id=self.uuid("satnum_selector"),
                             children=[
@@ -334,6 +346,7 @@ class RelativePermeability(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.satnums
                                     ],
                                     value=self.satnums[0],
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -356,6 +369,7 @@ class RelativePermeability(WebvizPluginABC):
                                         },
                                     ],
                                     value="statistics",
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -371,6 +385,7 @@ class RelativePermeability(WebvizPluginABC):
                                     ],
                                     value="linear",
                                     labelStyle={"display": "inline-block"},
+                                    persistence=True,
                                 ),
                             ],
                         ),
@@ -392,6 +407,7 @@ class RelativePermeability(WebvizPluginABC):
                                     value=["show_scal"]
                                     if self.scal is not None
                                     else [],
+                                    persistence=True,
                                 ),
                             ],
                         ),
