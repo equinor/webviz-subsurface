@@ -184,8 +184,8 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             id=self.ids("tornado-graph"),
                             config={"displayModeBar": False},
                         ),
-                        dcc.Store(id=self.ids("storage")),
-                        dcc.Store(id=self.ids("click-store")),
+                        dcc.Store(id=self.ids("storage"), storage_type="local"),
+                        dcc.Store(id=self.ids("click-store"), storage_type="local"),
                     ],
                 )
             ]

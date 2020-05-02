@@ -428,6 +428,7 @@ Plot options:
                         ),
                         dcc.Store(
                             id=self.uuid("date"),
+                            storage_type="local",
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ],

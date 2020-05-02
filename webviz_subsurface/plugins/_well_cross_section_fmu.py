@@ -377,7 +377,9 @@ per realization.
                             id=self.ids("show_map"),
                             children="Show map",
                         ),
-                        dcc.Store(id=self.ids("fencespec"), data=[]),
+                        dcc.Store(
+                            id=self.ids("fencespec"), data=[], storage_type="local"
+                        ),
                     ],
                 ),
             ],

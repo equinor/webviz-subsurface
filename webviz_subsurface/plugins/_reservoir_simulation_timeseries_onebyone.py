@@ -311,7 +311,10 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                     children=[
                                         self.ensemble_selector,
                                         self.smry_selector,
-                                        dcc.Store(id=self.ids("date-store")),
+                                        dcc.Store(
+                                            id=self.ids("date-store"),
+                                            storage_type="local",
+                                        ),
                                     ],
                                 ),
                                 wcc.FlexBox(

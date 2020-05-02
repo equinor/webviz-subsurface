@@ -301,7 +301,11 @@ class RelativePermeability(WebvizPluginABC):
                         html.Label(
                             id=self.uuid("ensemble_selector"),
                             children=[
-                                dcc.Store(id=self.uuid("stored_ensemble"), data={}),
+                                dcc.Store(
+                                    id=self.uuid("stored_ensemble"),
+                                    data={},
+                                    storage_type="local",
+                                ),
                                 html.Span("Ensembles:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
@@ -327,7 +331,9 @@ class RelativePermeability(WebvizPluginABC):
                                 ),
                             ],
                         ),
-                        dcc.Store(id=self.uuid("stored_satnum"), data={}),
+                        dcc.Store(
+                            id=self.uuid("stored_satnum"), data={}, storage_type="local"
+                        ),
                         html.Label(
                             id=self.uuid("satnum_selector"),
                             children=[

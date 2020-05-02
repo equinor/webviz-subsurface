@@ -362,6 +362,7 @@ and available for instant viewing.
                         dcc.Store(
                             id=self.uuid("attribute-settings"),
                             data=json.dumps(self.attribute_settings),
+                            storage_type="local",
                         ),
                     ],
                 ),

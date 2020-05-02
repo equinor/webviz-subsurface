@@ -188,7 +188,7 @@ another_property:
                         ),
                     ]
                 ),
-                dcc.Store(id=self.storage_id),
+                dcc.Store(id=self.storage_id, storage_type="local"),
             ]
         )
 

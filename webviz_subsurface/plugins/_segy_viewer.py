@@ -239,7 +239,9 @@ The plots are linked and updates are done by clicking in the plots.
                         ],
                     ),
                     dcc.Store(
-                        id=self.ids("state-storage"), data=json.dumps(self.init_state)
+                        id=self.ids("state-storage"),
+                        data=json.dumps(self.init_state),
+                        storage_type="local",
                     ),
                 ]
             ),
