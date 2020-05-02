@@ -24,15 +24,15 @@ def test_basic_example(dash_duo, tmp_path):
     # Start and test app
     dash_duo.start_server(app)
     for page in [
-        "inplacevolumesonebyone",
-        "reservoirsimulationtimeseriesonebyone",
+        # "inplacevolumesonebyone",
+        # "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
-        "reservoirsimulationtimeseries",
-        "reservoirsimulationtimeseries_with_options_set",
+        # "reservoirsimulationtimeseries",
+        # "reservoirsimulationtimeseries_with_options_set",
         # "parameterdistribution",
-        "morris_plot",
-        "grid_viewer",
-        "seg-y_viewer",
+        # "morris_plot",
+        # "grid_viewer",
+        # "seg-y_viewer",
         # "running_time_analysis_fmu",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
