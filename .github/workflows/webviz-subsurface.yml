@@ -114,6 +114,24 @@ jobs:
         python build_docs.py
         popd
 
+    - name: Mount extended Azure blob dataset
+      if: matrix.python-version == '3.6'
+      env:
+        # These will later come from GitHub secrets when merged, even
+        # though they strictly DO NOT need to be secret (since the data set is anyway open).
+        # However before merge (and/or after each commit), the key here will be reset to a new one anyhow, in order
+        # to 100% ensure network download traffic usage is only due to master branch pushes.
+        AZURE_STORAGE_ACCOUNT: webvizexampledata
+        AZURE_STORAGE_ACCESS_KEY: YHSOG7fuWeitSiPWULyGUpEFX8MV/ED1D9WRsN8MimhdSkQrkY0tOMtBjhUn98iIv3stUrwhMKlKQkGuxlxr/g==
+      run: |
+        sudo apt-get install blobfuse -y
+        sudo mkdir /mnt/blobfusetmp
+        sudo chmod a+rwx /mnt/blobfusetmp
+
+        df . -h 
+        rm -rf ./webviz-subsurface-testdata/reek_history_match/*
+        blobfuse $PWD/webviz-subsurface-testdata/reek_history_match -o ro --file-cache-timeout-in-seconds=0 --container-name=webvizexampleblob --tmp-path=/mnt/blobfusetmp 
+
     - name: Build Docker example image
       run: |
         pip install webviz-config-equinor
