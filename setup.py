@@ -44,6 +44,7 @@ setup(
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
             "ReservoirSimulationTimeSeriesRegional = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
+            "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
         ]
     },
     install_requires=[
