@@ -17,18 +17,19 @@ on:
 jobs:
 
   webviz-subsurface:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8']
         pandas-version: ['0.24.2', '1.*']  # Necessary as long as RHEL6 is used internally
-
-    env:
-        PYTHONPATH: ${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/site-packages:${{ github.workspace }}/install/lib/python${{ matrix.python-version }}/dist-packages
+        exclude:
+          # Skip Python 3.8 and Pandas 0.24.2 combination due to missing 3.8 wheel for that specific pandas version
+          - python-version: '3.8'
+            pandas-version: '0.24.2'
 
     steps:
 
-    - name: Remove unused pre-installed software
+    - name: 🧹 Remove unused pre-installed software
       run: |
         # https://github.com/actions/virtual-environments/issues/751
         # https://github.com/actions/virtual-environments/issues/709
@@ -37,31 +38,22 @@ jobs:
         sudo apt-get clean
         df -h
 
-    - name: Checkout commit locally
+    - name: 📖 Checkout commit locally
       uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: 🐍 Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
 
-    #- name: Change from Azure Ubuntu mirror to official Ubuntu mirror
-    #  run: |
-    #    # As of April 2020, Azure's default official Ubuntu mirrors fail randomly a lot of times with "Service Unavailable"... change to default Ubuntu mirrors.
-    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-security main restricted universe multiverse' /etc/apt/sources.list
-    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-backports main restricted universe multiverse' /etc/apt/sources.list
-    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic-updates main restricted universe multiverse' /etc/apt/sources.list
-    #    sudo sed -i '1ideb mirror://mirrors.ubuntu.com/mirrors.txt bionic main restricted universe multiverse' /etc/apt/sources.list
-    #    
-    #    sudo apt-get update
-
-    - name: Install webviz-subsurface with dependencies
+    - name: 📦 Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
         pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
+        pip install libecl  # while waiting for it to be included as dependency in fmu-ensemble
 
-    - name: Install test dependencies
+    - name: 📦 Install test dependencies
       run: |
         pip install .[tests]
         pip install dash[testing]
@@ -69,17 +61,17 @@ jobs:
         unzip chromedriver_linux64.zip
         export PATH=$PATH:$PWD
 
-    - name: List all installed packages
+    - name: 🧾 List all installed packages
       run: pip freeze
 
-    - name: Check code style & linting
+    - name: 🕵️ Check code style & linting
       if: matrix.pandas-version == '1.*'
       run: |
         black --check webviz_subsurface tests setup.py
         pylint webviz_subsurface tests setup.py
         bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
 
-    - name: Run tests
+    - name: 🤖 Run tests
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
@@ -87,34 +79,16 @@ jobs:
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
         TESTDATA_REPO_BRANCH: master
-
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-
-        #sudo apt-get install libboost-all-dev liblapack-dev
-        #pushd ..
-        #git clone --recursive https://github.com/OPM/opm-common.git
-        #mkdir opm-common/build
-        #pushd opm-common/build
-        #cmake .. -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install \
-        #         -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
-        #         -DBUILD_TESTING=OFF \
-        #         -DBUILD_SHARED_LIBS=ON \
-        #         -DOPM_ENABLE_PYTHON=ON \
-        #         -DOPM_INSTALL_PYTHON=ON
-        #make -j4 install
-        #popd
-        #popd
-        #pip install git+https://github.com/equinor/ecl2df
-        
         pytest ./tests --headless --forked
         git clone https://github.com/equinor/webviz-config.git
         pushd ./webviz-config/docs
         python build_docs.py
         popd
 
-    - name: Build Docker example image
+    - name: 🐳 Build Docker example image
       run: |
         pip install webviz-config-equinor
         webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
@@ -125,13 +99,13 @@ jobs:
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
-    - name: Update Docker Hub example image
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+    - name: 🐳 Update Docker Hub example image
+      if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       run: |
         echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
         docker push webviz/example_subsurface_image:equinor-theme
 
-    - name: Build and deploy Python package
+    - name: 🚢 Build and deploy Python package
       if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       env:
         TWINE_USERNAME: __token__
@@ -141,8 +115,8 @@ jobs:
         python setup.py sdist bdist_wheel
         twine upload dist/*
 
-    - name: Update GitHub pages
-      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+    - name: 📚 Update GitHub pages
+      if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       run: |
         cp -R ./webviz-config/docs/_build ../_build
 
