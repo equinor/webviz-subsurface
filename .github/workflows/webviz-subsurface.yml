@@ -2,8 +2,6 @@ name: webviz-subsurface
 
 on:
   push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
@@ -15,8 +13,9 @@ on:
     - cron:  '0 0 * * *'
 
 jobs:
-
   webviz-subsurface:
+    # Run on all events defined above, except pushes which are neither to master nor with a substring [deploy test] in commit message
+    if: github.event_name != 'push' || github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy test]')
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -106,6 +105,14 @@ jobs:
       run: |
         echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
         docker push webviz/example_subsurface_image:equinor-theme
+
+    - name: 🐳 Update review/test Docker example image
+      if: github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      run: |
+        docker tag webviz/example_subsurface_image:equinor-theme ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
+
+        echo ${{ secrets.review_docker_registry_token }} | docker login ${{ secrets.review_docker_registry_url }} --username ${{ secrets.review_docker_registry_username }} --password-stdin
+        docker push ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
     - name: 🚢 Build and deploy Python package
       if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
