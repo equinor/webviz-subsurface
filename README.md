@@ -16,7 +16,6 @@ plugins in [webviz-config](https://github.com/equinor/webviz-config).
 
 ### Installation
 
-
 The easiest way of installing this package is to run
 ```bash
 pip install webviz-subsurface
@@ -57,6 +56,22 @@ black --check webviz_subsurface tests # Check code style
 pylint webviz_subsurface tests # Check code quality
 bandit -r -c ./bandit.yml webviz_subsurface tests  # Check Python security best practice
 ```
+
+### Review of contributions
+
+When doing review of contributions, it is usually useful to also see the resulting application live, and
+not only the code changes. In order to facilitate this, this repository is using GitHub actions.
+
+When on a feature branch, and a commit message including the substring `[deploy test]` arrives, the GitHub 
+action workflow will try to build and deploy a test Docker image for you (which you then can link to a web app with
+e.g. automatic reload on new images). All you need to do in your own fork is to add
+GitHub secrets with the following names:
+  - `review_docker_registry_url`: The registry to push to (e.g. `myregistry.azurecr.io`)
+  - `review_docker_registry_username`: Registry login username.
+  - `review_docker_registry_token`: Registry login token (or password).
+  - `review_container_name`: What you want to call the container pushed to the registry.
+
+You are encouraged to rebase and squash/fixup unnecessary commits before pull request is merged to `master`.
 
 ### Disclaimer
 
