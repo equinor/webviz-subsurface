@@ -94,7 +94,7 @@ jobs:
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
         # Related to https://github.com/equinor/webviz-config/issues/150:
-        echo "RUN pip install --user git+https://github.com/equinor/webviz-subsurface" >> Dockerfile
+        echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
         # fmu-ensemble currently miss libecl dependency
         echo "RUN pip install --user libecl" >> Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
