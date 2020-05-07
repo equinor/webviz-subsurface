@@ -1,7 +1,8 @@
 from uuid import uuid4
 import json
-import pandas as pd
+from typing import List, Optional
 
+import pandas as pd
 import dash
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
@@ -355,10 +356,10 @@ def tornado_plot(
             p10 = case_df["VALUE"].quantile(0.90)
 
             # Extract list of realizations with values less then reference avg (low)
-            low_reals = list(case_df.loc[case_df["VALUE"] <= ref_avg]["REAL"])
+            low_reals = list(map(int, case_df.loc[case_df["VALUE"] <= ref_avg]["REAL"]))
 
             # Extract list of realizations with values higher then reference avg (high)
-            high_reals = list(case_df.loc[case_df["VALUE"] > ref_avg]["REAL"])
+            high_reals = list(map(int, case_df.loc[case_df["VALUE"] > ref_avg]["REAL"]))
 
             arr.append(
                 {
@@ -430,7 +431,7 @@ def tornado_plot(
                 f"<br>Case: {label}<br>True Value: "
                 f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
                 f"<br>Realizations: "
-                f"{int(min(reals)) if reals else None}-{int(max(reals)) if reals else None}"
+                f"{printable_int_list(reals)}"
                 for x, label, val, reals in zip(
                     df["low"], df["low_label"], df["true_low"], df["low_reals"]
                 )
@@ -450,7 +451,7 @@ def tornado_plot(
                 f"<br>Case: {label}<br>True Value: "
                 f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
                 f"<br>Realizations: "
-                f"{int(min(reals)) if reals else None}-{int(max(reals)) if reals else None}"
+                f"{printable_int_list(reals)}"
                 for x, label, val, reals in zip(
                     df["high"], df["high_label"], df["true_high"], df["high_reals"]
                 )
@@ -574,3 +575,31 @@ def calc_low_x(low, high):
         base = min(0, high)
         return low - base
     return 0
+
+
+def printable_int_list(integer_list: Optional[List[int]]):
+    """Creates a string out of a list of integers.
+    The string gives a range x-y if all the integers between and
+    including x and y are in the list, otherwise separated by commas.
+    Example: the list [0, 1, 2, 4, 5, 8, 10] becomes '0-2, 4-5, 8, 10'
+    If the input is `None` or the list is empty, the string 'None' is returned.
+    """
+    if not integer_list:
+        return "None"
+
+    sorted_list = sorted(integer_list)
+    prev_number = sorted_list[0]
+    string = str(prev_number)
+
+    for next_number in sorted_list[1:]:
+        if next_number > prev_number + 1:
+            string += (
+                f"{prev_number}" if string.endswith("-") else ""
+            ) + f", {next_number}"
+        elif not string.endswith("-"):
+            string += "-"
+        prev_number = next_number
+
+    if not string.endswith(f", {prev_number}") and string != str(prev_number):
+        string += str(prev_number)
+    return string
