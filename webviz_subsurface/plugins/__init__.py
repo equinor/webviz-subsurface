@@ -45,6 +45,9 @@ from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
 from ._relative_permeability import RelativePermeability
+from ._reservoir_simulation_timeseries_regional import (
+    ReservoirSimulationTimeSeriesRegional,
+)
 
 
 __all__ = [
@@ -66,4 +69,5 @@ __all__ = [
     "ParameterParallelCoordinates",
     "RunningTimeAnalysisFMU",
     "RelativePermeability",
+    "ReservoirSimulationTimeSeriesRegional",
 ]

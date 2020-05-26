@@ -42,10 +42,12 @@ setup(
             + "webviz_subsurface.plugins:ParameterParallelCoordinates",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
+            "ReservoirSimulationTimeSeriesRegional = "
+            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
         ]
     },
     install_requires=[
-        "fmu-ensemble>=1.2.2",
+        "fmu-ensemble>=1.2.3",
         "matplotlib>=3.0",
         "pandas>=0.24",
         "pillow>=6.1",

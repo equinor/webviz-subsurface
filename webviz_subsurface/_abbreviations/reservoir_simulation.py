@@ -27,10 +27,14 @@ def simulation_unit_reformat(ecl_unit: str, unit_set: str = "METRIC") -> str:
 
 
 def simulation_vector_base(vector: str) -> str:
-    """Returns base name of simulation vector
-    E.g. WOPR for WOPR:OP_1 and ROIP for ROIP_REG:1
+    """Returns base name of a simulation vector on Eclipse format.
+     E.g. WOPR for WOPR:OP_1 and ROIP for ROIP_REG:1.
+     Some description: If a vector contains a :, the first up to 5 characters describe the vector
+     base. In that case, if the vector base name is shorter than 5 characters, _ is used to fill
+     up the first five characters. Therefore splitting on first _ and limiting to max five
+     characters to identify the base name.
     """
-    return vector.split(":", 1)[0].split("_")[0]
+    return vector.split(":", 1)[0].split("_", 1)[0][:5] if ":" in vector else vector
 
 
 def simulation_vector_description(vector: str) -> str:
@@ -49,7 +53,6 @@ def simulation_vector_description(vector: str) -> str:
                 vector_base_name in SIMULATION_VECTOR_TERMINOLOGY
                 and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region"
             ):
-                print(1)
                 return (
                     f"{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
                     + f", region {fip} {node}"
@@ -75,7 +78,9 @@ def simulation_vector_description(vector: str) -> str:
             return metadata["description"]
         return f"{metadata['description']}, {metadata['type'].replace('_', ' ')} {node}"
 
-    if not vector.startswith(("AU", "BU", "CU", "FU", "GU", "RU", "SU", "WU")):
+    if not vector.startswith(
+        ("AU", "BU", "CU", "FU", "GU", "RU", "SU", "WU", "Recovery Factor of")
+    ):
         # Vectors starting with AU, BU, CU, FU, GU, RU, SU and WU are user defined vectors.
         # Currently not providing descriptions for these, but migth come later (see:
         # https://github.com/equinor/webviz-subsurface/issues/321)
@@ -131,3 +136,54 @@ def historical_vector(
     except KeyError:
         is_hist = False
     return parts[0][:-1] if is_hist else None
+
+
+def simulation_region_vector_breakdown(vector):
+    [vector_base_name, node, fip] = _vector_breakdown(vector)
+    if fip is not None and len(fip) == 3:
+        fiparray = f"FIP{fip}"
+    else:
+        fiparray = fip
+    return vector_base_name, fiparray, node
+
+
+def simulation_region_vector_recompose(vector_base_name, fiparray, node):
+    return (
+        vector_base_name
+        + (
+            "_" * (5 - len(vector_base_name)) + fiparray[-3:]
+            if fiparray != "FIPNUM"
+            else ""
+        )
+        + f":{node}"
+    )
+
+
+def _vector_breakdown(vector):
+    [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
+    if len(vector_name) == 8:
+        # Region vectors for other FIP regions than FIPNUM are written on a special form:
+        # 8 signs, with the last 3 defining the region.
+        # E.g.: For an array "FIPREG": ROIP is ROIP_REG, RPR is RPR__REG and ROIPL is ROIPLREG
+        # Underscores _ are always used to fill
+        [vector_base_name, fip] = [vector_name[0:5].rstrip("_"), vector_name[5:]]
+        try:
+            if SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region":
+                vector_name = vector_base_name
+            else:
+                fip = None
+        except KeyError:
+            fip = None
+    else:
+        try:
+            fip = (
+                "NUM"
+                if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "region"
+                else "FIELD"
+                if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "field"
+                else None
+            )
+
+        except KeyError:
+            fip = None
+    return vector_name, node, fip
