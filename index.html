@@ -575,6 +575,63 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 <hr>
 
 
+<h3>ReservoirSimulationTimeSeriesRegional</h3>
+<p>Regional time series data that can be aggregated
+This plugins aggregates and visualizes regional time series data from simulation ensembles. That
+is cumulatives, rates and inplace volumes. In addiotion recovery is calculated based on the
+inplace volumes.</p>
+<h4>Mandatory input</h4>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to include in the plugin.</li>
+</ul>
+<h4>Optional input</h4>
+<ul>
+<li><code>fipfile</code>: Path to a yaml-file that defines a match between FIPXXX (e.g. FIPNUM) regions
+ and <em>'human readable'</em> regions, zones and etc. These will be used as filters. <em>Note that this is a
+ single file used for all ensembles</em>. If all region numbers for a filter are missing in the data,
+ this filter value will be silently ignored. E.g. if no vectors matches 5 or 6 in
+ <a href="https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/share/
+regions/fip.yaml">this example file</a>, <code>ZONE</code> == <code>LowerReek</code> would be ignored in the plugin for <code>FIPNUM</code>. This is
+ to allow you to use the same file for e.g. a sector and a full field model.</li>
+<li><code>initial_vector</code>: First vector to plot (default is <code>ROIP</code>)</li>
+<li><code>column_keys</code>: List of vector patterns to include or None, the latter gives all available
+ vectors).<br/>
+Vectors that don't match the following patterns will be ignored, these patterns are also the
+ default:<ul>
+<li><code>R[OGW]IP*</code> (regional in place),</li>
+<li><code>R[OGW][IP][RT]*</code> (regional injection and production rates and cumulatives)</li>
+</ul>
+</li>
+<li><code>sampling</code>: Time series data will be sampled (and interpolated) at this frequency. Options:<ul>
+<li><code>daily</code></li>
+<li><code>monthly</code> (default)</li>
+<li><code>yearly</code></li>
+</ul>
+</li>
+<li><code>line_shape_fallback</code>: Fallback interpolation method between points. Vectors identified as rates
+ always backfilled, vectors identified as cumulative (totals) are always linearly interpolated.
+ The rest use the fallback. Options:<ul>
+<li><code>linear</code> (default)</li>
+<li><code>backfilled</code><br/></li>
+<li><code>hv</code> (regular Plotly option)</li>
+<li><code>vh</code> (regular Plotly option)</li>
+<li><code>hvh</code> (regular Plotly option)</li>
+<li><code>vhv</code> (regular Plotly option)</li>
+<li><code>spline</code> (regular Plotly option)</li>
+</ul>
+</li>
+</ul>
+<pre><code class="yaml">    - ReservoirSimulationTimeSeriesRegional:
+        ensembles: some value
+        fipfile: None  # Optional (default value shown here).
+        initial_vector: ROIP  # Optional (default value shown here).
+        column_keys: ['R[OGW]IP*', 'R[OGW][IP][RT]*']  # Optional (default value shown here).
+        sampling: monthly  # Optional (default value shown here).
+        line_shape_fallback: linear  # Optional (default value shown here).
+</code></pre>
+<hr>
+
+
 <h3>Running time analysis of jobs in FMU runs.</h3>
 <p>This plugin can e.g. be used to investigate which jobs that are important for the running time of
 realizations, and if specific parameter combinations increase running time or chance of realization
