@@ -859,6 +859,84 @@ per realization.</p>
 </code></pre>
 <hr>
 
+</div><div style="margin-left: 40px;">
+
+<h3>RftPlotter</h3>
+<p>This plugin visualizes simulated RFT results from
+FMU ensembles combined with ERT observation data.</p>
+<p>Several visualizations are available:</p>
+<ul>
+<li>
+<p>Map view of RFT observations.</p>
+</li>
+<li>
+<p>Depth vs pressure plot showing simulated RFT data along wells together with observation points.</p>
+</li>
+<li>
+<p>Barchart showing sum of mean misfit for ERT observations per realization. One plot per ensemble.</p>
+</li>
+<li>
+<p>Crossplot of simulated RFT vs observed value per ERT observation. One plot per ensemble.</p>
+</li>
+<li>
+<p>Boxplot showing misfit per ERT observation for each ensemble.</p>
+</li>
+</ul>
+<h4>Input Files</h4>
+<p>Two files are required as plugin input:</p>
+<ul>
+<li>
+<p><code>rft.csv</code>: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files
+using <a href="https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft">ecl2df</a>.</p>
+</li>
+<li>
+<p><code>rft_ert.csv</code>: A csv file containing simulated and observed RFT data for RFT observations
+defined in ERT.</p>
+</li>
+</ul>
+<p>The two input files must either be stored per realization under "share/results/tables/" or
+provided as aggregated files.</p>
+<p>If they are stored per realization specify:</p>
+<ul>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+</ul>
+<p>For aggregated files specify:</p>
+<ul>
+<li><code>csvfile_rft</code> <a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv">(example)</a> and
+csvfile_rft_ert` <a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv">(example)</a></li>
+</ul>
+<p>Optionally files:</p>
+<ul>
+<li>
+<p><code>obsdata</code>: A csv file containing additional RFT observation data not defined in ERT for
+visualization together with simulated RFT.
+Mandatory column names: <em>WELL</em>, <em>DATE</em> (format yyyy-mm-dd), <em>DEPTH</em>, <em>PRESSURE</em></p>
+</li>
+<li>
+<p><code>formations</code>: A csv file containing top and base values for each zone per well.
+Used to visualize zone boundaries together with simulated RFT.
+Mandatory column names: <em>WELL</em>, <em>ZONE</em>, <em>TOP_TVD</em>, <em>BASE_TVD</em>. Note: Well name needs to be
+consistent with Eclipse well name.
+<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/tables/formations.csv">Example</a></p>
+</li>
+<li>
+<p><code>faultlines</code>: A csv file containing faultpolygons to be visualized together with the map view.
+Export format from <a href="https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe">xtgeo.xyz.polygons.dataframe</a>
+<a href="https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/polygons/faultpolygons.csv">Example</a></p>
+</li>
+</ul>
+<p>Note: Only RFT observations marked as active in ERT are used to generate plots</p>
+<p>Note: Only TVD values are supported, plan to support MD values in a later realease.</p>
+<pre><code class="yaml">    - RftPlotter:
+        csvfile_rft: None  # Optional (default value shown here).
+        csvfile_rft_ert: None  # Optional (default value shown here).
+        ensembles: None  # Optional (default value shown here).
+        formations: None  # Optional (default value shown here).
+        obsdata: None  # Optional (default value shown here).
+        faultlines: None  # Optional (default value shown here).
+</code></pre>
+<hr>
+
 </div>
 
 </div>
