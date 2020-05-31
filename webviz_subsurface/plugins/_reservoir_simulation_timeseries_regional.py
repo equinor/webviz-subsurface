@@ -4,6 +4,7 @@ import fnmatch
 import warnings
 import json
 from copy import deepcopy
+from typing import Optional
 
 import yaml
 import numpy as np
@@ -35,11 +36,10 @@ from .._utils.simulation_timeseries import (
     get_simulation_line_shape,
 )
 
-
+# pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
     """### ReservoirSimulationTimeSeriesRegional
 
-Regional time series data that can be aggregated
 This plugins aggregates and visualizes regional time series data from simulation ensembles. That
 is cumulatives, rates and inplace volumes. In addiotion recovery is calculated based on the
 inplace volumes.
@@ -57,10 +57,9 @@ inplace volumes.
 regions/fip.yaml), `ZONE` == `LowerReek` would be ignored in the plugin for `FIPNUM`. This is
  to allow you to use the same file for e.g. a sector and a full field model.
 * `initial_vector`: First vector to plot (default is `ROIP`)
-* `column_keys`: List of vector patterns to include or None, the latter gives all available
- vectors).<br/>
-Vectors that don't match the following patterns will be ignored, these patterns are also the
- default:
+* `column_keys`: List of vector patterns to include or `None`, the latter gives all available
+ vectors, and `None` is also the default.<br/>
+Vectors that don't match the following patterns will be filtered out for this plugin:
     * `R[OGW]IP*` (regional in place),
     * `R[OGW][IP][RT]*` (regional injection and production rates and cumulatives)
 * `sampling`: Time series data will be sampled (and interpolated) at this frequency. Options:
@@ -89,7 +88,7 @@ Vectors that don't match the following patterns will be ignored, these patterns 
         ensembles: list,
         fipfile: Path = None,
         initial_vector: str = "ROIP",
-        column_keys: list = ["R[OGW]IP*", "R[OGW][IP][RT]*"],
+        column_keys: Optional[list] = None,
         sampling: str = "monthly",
         line_shape_fallback: str = "linear",
     ):
@@ -114,9 +113,27 @@ Vectors that don't match the following patterns will be ignored, these patterns 
             column_keys=self.column_keys,
             time_index=self.time_index,
         )
-        self.smry_init_prod = load_smry(
-            ensemble_paths=self.ens_paths, column_keys=["F[OWG]PT"], time_index="first",
+        self.smry_meta = load_smry_meta(
+            ensemble_paths=self.ens_paths, column_keys=self.column_keys
         )
+        self.field_totals = [
+            col for col in self.smry.columns if fnmatch.fnmatch(col, "F[OWG]PT")
+        ]
+        if self.field_totals:
+            self.smry_init_prod = pd.concat(
+                [
+                    df[["ENSEMBLE", "DATE"] + self.field_totals][
+                        df["DATE"] == min(df["DATE"])
+                    ]
+                    for _, df in self.smry.groupby("ENSEMBLE")
+                ]
+            )
+        else:
+            self.smry_init_prod = load_smry(
+                ensemble_paths=self.ens_paths,
+                column_keys=["F[OWG]PT"],
+                time_index="first",
+            )
         self.rec_ensembles = set(self.smry["ENSEMBLE"].unique())
         for col in self.smry_init_prod.columns:
             if col not in ReservoirSimulationTimeSeriesRegional.ENSEMBLE_COLUMNS:
@@ -146,19 +163,12 @@ Vectors that don't match the following patterns will be ignored, these patterns 
                 col, "R[OGW][IP][RT]*"
             ):
                 self.smry_cols.append(col)
-            else:
-                warnings.warn(
-                    f"{col} does not fit the expected pattern for an inplace,"
-                    " rate or cumulative vector, therefore ignored."
-                )
+
         if not self.smry_cols:
             raise ValueError(
                 "No data. Either no data was found, or all ensembles were dropped due to "
                 "non-zero initial production. (FOPT, FGPT and/or FWPT > 0)"
             )
-        self.smry_meta = load_smry_meta(
-            ensemble_paths=self.ens_paths, column_keys=self.smry_cols
-        )
 
         self.initial_vector = (
             initial_vector
@@ -309,20 +319,23 @@ Vectors that don't match the following patterns will be ignored, these patterns 
                 ],
             ),
             (
-                load_smry,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "column_keys": ["F[OWG]PT"],
-                        "time_index": "first",
-                    }
-                ],
-            ),
-            (
                 load_smry_meta,
-                [{"ensemble_paths": self.ens_paths, "column_keys": self.smry_cols,}],
+                [{"ensemble_paths": self.ens_paths, "column_keys": self.column_keys,}],
             ),
         ]
+        if not self.field_totals:
+            functions.append(
+                (
+                    load_smry,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "column_keys": ["F[OWG]PT"],
+                            "time_index": "first",
+                        }
+                    ],
+                )
+            )
         if self.fipfile is not None:
             functions.append(
                 (
