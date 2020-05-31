@@ -576,8 +576,7 @@ as long as <em>SENSCASE</em> and <em>SENSNAME</em> is found in <em>parameters.tx
 
 
 <h3>ReservoirSimulationTimeSeriesRegional</h3>
-<p>Regional time series data that can be aggregated
-This plugins aggregates and visualizes regional time series data from simulation ensembles. That
+<p>This plugins aggregates and visualizes regional time series data from simulation ensembles. That
 is cumulatives, rates and inplace volumes. In addiotion recovery is calculated based on the
 inplace volumes.</p>
 <h4>Mandatory input</h4>
@@ -594,10 +593,9 @@ inplace volumes.</p>
 regions/fip.yaml">this example file</a>, <code>ZONE</code> == <code>LowerReek</code> would be ignored in the plugin for <code>FIPNUM</code>. This is
  to allow you to use the same file for e.g. a sector and a full field model.</li>
 <li><code>initial_vector</code>: First vector to plot (default is <code>ROIP</code>)</li>
-<li><code>column_keys</code>: List of vector patterns to include or None, the latter gives all available
- vectors).<br/>
-Vectors that don't match the following patterns will be ignored, these patterns are also the
- default:<ul>
+<li><code>column_keys</code>: List of vector patterns to include or <code>None</code>, the latter gives all available
+ vectors, and <code>None</code> is also the default.<br/>
+Vectors that don't match the following patterns will be filtered out for this plugin:<ul>
 <li><code>R[OGW]IP*</code> (regional in place),</li>
 <li><code>R[OGW][IP][RT]*</code> (regional injection and production rates and cumulatives)</li>
 </ul>
@@ -625,7 +623,7 @@ Vectors that don't match the following patterns will be ignored, these patterns 
         ensembles: some value
         fipfile: None  # Optional (default value shown here).
         initial_vector: ROIP  # Optional (default value shown here).
-        column_keys: ['R[OGW]IP*', 'R[OGW][IP][RT]*']  # Optional (default value shown here).
+        column_keys: None  # Optional (default value shown here).
         sampling: monthly  # Optional (default value shown here).
         line_shape_fallback: linear  # Optional (default value shown here).
 </code></pre>
