@@ -501,6 +501,7 @@ def tornado_plot(
                 "dtick": 1,
             },
             "showlegend": False,
+            "hovermode": "y",
             "annotations": [
                 {
                     "x": 0,
