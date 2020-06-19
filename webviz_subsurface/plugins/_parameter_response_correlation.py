@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
-from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
@@ -14,7 +13,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 
-from .._datainput.fmu_input import load_parameters, load_csv
+from .._datainput.fmu_input import load_parameters, load_csv, load_smry
 
 
 class ParameterResponseCorrelation(WebvizPluginABC):
@@ -36,14 +35,21 @@ Arguments:
 
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
 * `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
+* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
+               response_file is defined, the definition of ensembles implies that you want to
+               use simulation timeseries data directly from UNSMRY data. This also implies that
+               the date will be used as a response filter of type `single`.
 * `response_file`: Local (per realization) csv file for response parameters.
 * `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
 as row filtering before aggregation. (See below for filter types).
-
 * `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
 * `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
-* `aggreation`: How to aggregate responses per realization. Either `sum` or `mean`.
+* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
+                 defined ensembles using fmu-ensemble (cannot use with response_file,
+                 response_csv or parameters_csv).
+* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
+              (Only relevant if neither response_csv or response_file is defined). Default monthly
+* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
 * `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
 
 The types of response_filters are:
@@ -65,6 +71,8 @@ The types of response_filters are:
         response_filters: dict = None,
         response_ignore: list = None,
         response_include: list = None,
+        column_keys: list = None,
+        sampling: str = "monthly",
         aggregation: str = "sum",
         corr_method: str = "pearson",
     ):
@@ -76,6 +84,8 @@ The types of response_filters are:
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
+        self.column_keys = column_keys
+        self.time_index = sampling
         self.corr_method = corr_method
         self.aggregation = aggregation
         if response_ignore and response_include:
@@ -92,7 +102,7 @@ The types of response_filters are:
             self.parameterdf = read_csv(self.parameter_csv)
             self.responsedf = read_csv(self.response_csv)
 
-        elif ensembles and response_file:
+        elif ensembles:
             self.ens_paths = {
                 ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
@@ -100,11 +110,19 @@ The types of response_filters are:
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
-            self.responsedf = load_csv(
-                ensemble_paths=self.ens_paths,
-                csv_file=response_file,
-                ensemble_set_name="EnsembleSet",
-            )
+            if self.response_file:
+                self.responsedf = load_csv(
+                    ensemble_paths=self.ens_paths,
+                    csv_file=response_file,
+                    ensemble_set_name="EnsembleSet",
+                )
+            else:
+                self.responsedf = load_smry(
+                    ensemble_paths=self.ens_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                )
+                self.response_filters["DATE"] = "single"
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -412,7 +430,7 @@ The types of response_filters are:
             elif initial_parameter:
                 parameter = initial_parameter
             else:
-                raise PreventUpdate
+                return {}
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -452,6 +470,17 @@ The types of response_filters are:
                         "ensemble_set_name": "EnsembleSet",
                     }
                 ],
+            )
+            if self.response_file
+            else (
+                load_smry,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "column_keys": self.column_keys,
+                        "time_index": self.time_index,
+                    }
+                ],
             ),
         ]
 
@@ -485,7 +514,10 @@ def _filter_and_sum_responses(
                 if isinstance(opt["values"], list):
                     df = df.loc[df[opt["name"]].isin(opt["values"])]
                 else:
-                    df = df.loc[df[opt["name"]] == opt["values"]]
+                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
+                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
+                    else:
+                        df = df.loc[df[opt["name"]] == opt["values"]]
 
             elif opt["type"] == "range":
                 df = df.loc[
