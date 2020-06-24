@@ -73,10 +73,28 @@ pages:
    content:
     - TablePlotter:
         csv_file: ./example_data.csv
+        # Everything below are examples of optional settings
         filter_cols:
           - Well
           - Segment
           - Average permeability (D)
+        plot_options:        
+          type: bar
+          facet_col: Well
+          color: Segment
+          barmode: group
+        filter_defaults:
+          Well:
+            - A-1H
+            - A-2H
+            - C-1H
+        column_color_discrete_maps:
+        # Supports css color codes, rgb and hex code.
+        # Note that hex code needs quotes &#39;&#39; to not be read as a comment
+          Segment:
+            A: &#39;#ff0000&#39;
+            B: rgb(0,255,0)
+            C: blue
         contact_person:
           name: Ola Nordmann
           phone: +47 12345678
@@ -209,6 +227,14 @@ If feature is requested, the data could also come from a database.</p>
 <li><code>csv_file</code>: Path to the csv file containing the tabular data. Either absolute
               path or relative to the configuration file.</li>
 <li><code>plot_options</code>: A dictionary of plot options to initialize the plot with</li>
+<li><code>filter_cols</code>: Dataframe columns that can be used to filter data</li>
+<li><code>filter_defaults</code>: A dictionary with column names as keys, and a list of column values that
+                     should be preselected in the filter. If a columm is not defined, all values
+                     are preselected for the column.</li>
+<li><code>column_color_discrete_maps</code>: A dictionary with column names as keys, each key containing a new
+                     dictionary with the columns unique values as keys, and the color they should
+                     be plotted with as value. Hex values needs quotes '' to not be read as comment
+                     in the yaml config file.</li>
 <li><code>lock</code>: If <code>True</code>, only the plot is shown, all dropdowns for changing
           plot options are hidden.</li>
 </ul>
@@ -216,6 +242,8 @@ If feature is requested, the data could also come from a database.</p>
         csv_file: some value
         plot_options: None  # Optional (default value shown here).
         filter_cols: None  # Optional (default value shown here).
+        filter_defaults: None  # Optional (default value shown here).
+        column_color_discrete_maps: None  # Optional (default value shown here).
         lock: False  # Optional (default value shown here).
 </code></pre>
 <hr>
@@ -439,17 +467,21 @@ stored per realizations.</li>
 <ul>
 <li><code>parameter_csv</code>: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.</li>
 <li><code>response_csv</code>: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.</li>
-<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize.</li>
+<li><code>ensembles</code>: Which ensembles in <code>shared_settings</code> to visualize. If neither response_csv or
+               response_file is defined, the definition of ensembles implies that you want to
+               use simulation timeseries data directly from UNSMRY data. This also implies that
+               the date will be used as a response filter of type <code>single</code>.</li>
 <li><code>response_file</code>: Local (per realization) csv file for response parameters.</li>
-<li>
-<p><code>response_filters</code>: Optional dictionary of responses (columns in csv file) that can be used
-as row filtering before aggregation. (See below for filter types).</p>
-</li>
-<li>
-<p><code>response_ignore</code>: Response (columns in csv) to ignore (cannot use with response_include).</p>
-</li>
+<li><code>response_filters</code>: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).</li>
+<li><code>response_ignore</code>: Response (columns in csv) to ignore (cannot use with response_include).</li>
 <li><code>response_include</code>: Response (columns in csv) to include (cannot use with response_ignore).</li>
-<li><code>aggreation</code>: How to aggregate responses per realization. Either <code>sum</code> or <code>mean</code>.</li>
+<li><code>column_keys</code>: Simulation vectors to use as responses read directly from UNSMRY-files in the
+                 defined ensembles using fmu-ensemble (cannot use with response_file,
+                 response_csv or parameters_csv).</li>
+<li><code>sampling</code>: Sampling frequency if using fmu-ensemble to import simulation time series data.
+              (Only relevant if neither response_csv or response_file is defined). Default monthly</li>
+<li><code>aggregation</code>: How to aggregate responses per realization. Either <code>sum</code> or <code>mean</code>.</li>
 <li><code>corr_method</code>: Correlation algorithm. Either <code>pearson</code> or <code>spearman</code>.</li>
 </ul>
 <p>The types of response_filters are:</p>
@@ -465,6 +497,8 @@ as row filtering before aggregation. (See below for filter types).</p>
         response_filters: None  # Optional (default value shown here).
         response_ignore: None  # Optional (default value shown here).
         response_include: None  # Optional (default value shown here).
+        column_keys: None  # Optional (default value shown here).
+        sampling: monthly  # Optional (default value shown here).
         aggregation: sum  # Optional (default value shown here).
         corr_method: pearson  # Optional (default value shown here).
 </code></pre>
