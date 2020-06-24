@@ -8,7 +8,7 @@ import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
 
 
-class DummyPlugin(WebvizPluginABC):
+class HorizonUnsertaintyViewer(WebvizPluginABC):
 
     def __init__(
         self,
