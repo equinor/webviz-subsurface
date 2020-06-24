@@ -330,8 +330,135 @@ def tornado_plot(
         )
     ]["VALUE"].mean()
 
+    df = calc_tornado_df(data, realizations, ref_avg, scale)
+
+    # Drops sensitivities smaller than reference if specified
+    if cutbyref and df["sensname"].str.contains(reference).any():
+        df = cut_by_ref(df, reference)
+
+    df = sort_by_max(df)
+
+    store_low_high = {
+        sensname: {
+            "real_low": sens_name_df["low_reals"].tolist()[0],
+            "real_high": sens_name_df["high_reals"].tolist()[0],
+        }
+        for sensname, sens_name_df in df.groupby(["sensname"])
+    }
+
+    # If percentage, unit is % and we turn off SI-prefix
+    if scale == "Percentage":
+        unit_x = "%"
+        locked_si_prefix_relative = 0
+    else:
+        unit_x = unit
+        locked_si_prefix_relative = locked_si_prefix
+    # Return tornado data as Plotly figure
+    plot_data = [
+        dict(
+            type="bar",
+            y=df["sensname"],
+            x=df["low"],
+            name="low",
+            base=df["low_base"],
+            customdata=df["low_reals"],
+            hovertext=[
+                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix_relative)}"
+                f"<br>Case: {label}<br>True Value: "
+                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
+                f"<br>Realizations: "
+                f"{printable_int_list(reals)}"
+                if reals
+                else None
+                for x, label, val, reals in zip(
+                    df["low_tooltip"], df["low_label"], df["true_low"], df["low_reals"],
+                )
+            ],
+            hoverinfo="text",
+            orientation="h",
+        ),
+        dict(
+            type="bar",
+            y=df["sensname"],
+            x=df["high"],
+            name="high",
+            base=df["high_base"],
+            customdata=df["high_reals"],
+            hovertext=[
+                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix_relative)}"
+                f"<br>Case: {label}<br>True Value: "
+                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
+                f"<br>Realizations: "
+                f"{printable_int_list(reals)}"
+                if reals
+                else None
+                for x, label, val, reals in zip(
+                    df["high_tooltip"],
+                    df["high_label"],
+                    df["true_high"],
+                    df["high_reals"],
+                )
+            ],
+            hoverinfo="text",
+            orientation="h",
+        ),
+    ]
+    layout = {}
+    layout.update(plotly_theme["layout"])
+    layout.update(
+        {
+            "barmode": "relative",
+            "margin": {"l": 0, "r": 0, "b": 20, "t": 50},
+            "xaxis": {
+                "title": scale,
+                "autorange": True,
+                "showgrid": False,
+                "zeroline": False,
+                "showline": True,
+                "automargin": True,
+            },
+            "yaxis": {
+                "autorange": True,
+                "showgrid": False,
+                "zeroline": False,
+                "showline": False,
+                "automargin": True,
+                "title": None,
+                "dtick": 1,
+            },
+            "showlegend": False,
+            "hovermode": "y",
+            "annotations": [
+                {
+                    "x": 0,
+                    "y": len(list(df["low"])),
+                    "xref": "x",
+                    "yref": "y",
+                    "text": f"Reference avg: "
+                    f"{si_prefixed(ref_avg, number_format, unit, spaced, locked_si_prefix)}",
+                    "showarrow": True,
+                    "align": "center",
+                    "arrowhead": 2,
+                    "arrowsize": 1,
+                    "arrowwidth": 1,
+                    "arrowcolor": "#636363",
+                    "ax": 20,
+                    "ay": -25,
+                }
+            ],
+        }
+    )
+    return (
+        {"data": plot_data, "layout": layout},
+        store_low_high,
+    )
+
+
+# pylint: disable=too-many-locals
+def calc_tornado_df(data, realizations, ref_avg, scale):
     # Group by sensitivity name/case and calculate average values for each case
     arr = []
+
     for sens_name, sens_name_df in realizations.groupby(["SENSNAME"]):
         # Excluding the reference case as well as any cases named `ref`
         # `ref` is used as `SENSNAME`, typically for a single realization only,
@@ -397,135 +524,48 @@ def tornado_plot(
     # Group by sensitivity name and calculate low / high values
     arr2 = []
     for sensname, sens_name_df in pd.DataFrame(arr).groupby(["sensname"]):
-        low = sens_name_df.loc[sens_name_df["values_ref"].idxmin()]
-        high = sens_name_df.loc[sens_name_df["values_ref"].idxmax()]
+        low = sens_name_df.copy().loc[sens_name_df["values_ref"].idxmin()]
+        high = sens_name_df.copy().loc[sens_name_df["values_ref"].idxmax()]
+        if sens_name_df["senscase"].nunique() == 1:
+            # Single case sens, implies low == high, but testing just in case:
+            if low["values_ref"] != high["values_ref"]:
+                raise ValueError(
+                    "For a single sensitivity case, low and high cases should be equal. Likely bug"
+                )
+            if low["values_ref"] < 0:
+                # To avoid warnings for changing values of dataframe slices.
+                high = high.copy()
+                high["values_ref"] = 0
+                high["reals"] = []
+                high["senscase"] = None
+                high["values"] = ref_avg
+            else:
+                low = (
+                    low.copy()
+                )  # To avoid warnings for changing values of dataframe slices.
+                low["values_ref"] = 0
+                low["reals"] = []
+                low["senscase"] = None
+                low["values"] = ref_avg
 
         arr2.append(
             {
                 "low": calc_low_x(low["values_ref"], high["values_ref"]),
                 "low_base": calc_low_base(low["values_ref"], high["values_ref"]),
                 "low_label": low["senscase"],
+                "low_tooltip": low["values_ref"],
                 "true_low": low["values"],
                 "low_reals": low["reals"],
                 "sensname": sensname,
                 "high": calc_high_x(low["values_ref"], high["values_ref"]),
                 "high_base": calc_high_base(low["values_ref"], high["values_ref"]),
                 "high_label": high["senscase"],
+                "high_tooltip": high["values_ref"],
                 "true_high": high["values"],
                 "high_reals": high["reals"],
             }
         )
-
-    df = pd.DataFrame(arr2)
-
-    # Drops sensitivities smaller than reference if specified
-    if cutbyref and df["sensname"].str.contains(reference).any():
-        df = cut_by_ref(df, reference)
-
-    df = sort_by_max(df)
-
-    store_low_high = {
-        sensname: {
-            "real_low": sens_name_df["low_reals"].tolist()[0],
-            "real_high": sens_name_df["high_reals"].tolist()[0],
-        }
-        for sensname, sens_name_df in df.groupby(["sensname"])
-    }
-
-    # If percentage, unit is %
-    unit_x = "%" if scale == "Percentage" else unit
-    # Return tornado data as Plotly figure
-    plot_data = [
-        dict(
-            type="bar",
-            y=df["sensname"],
-            x=df["low"],
-            name="low",
-            base=df["low_base"],
-            customdata=df["low_reals"],
-            hovertext=[
-                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix)}"
-                f"<br>Case: {label}<br>True Value: "
-                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
-                f"<br>Realizations: "
-                f"{printable_int_list(reals)}"
-                for x, label, val, reals in zip(
-                    df["low"], df["low_label"], df["true_low"], df["low_reals"]
-                )
-            ],
-            hoverinfo="text",
-            orientation="h",
-        ),
-        dict(
-            type="bar",
-            y=df["sensname"],
-            x=df["high"],
-            name="high",
-            base=df["high_base"],
-            customdata=df["high_reals"],
-            hovertext=[
-                f"{si_prefixed(x, number_format, unit_x, spaced, locked_si_prefix)}"
-                f"<br>Case: {label}<br>True Value: "
-                f"{si_prefixed(val, number_format, unit, spaced, locked_si_prefix)}"
-                f"<br>Realizations: "
-                f"{printable_int_list(reals)}"
-                for x, label, val, reals in zip(
-                    df["high"], df["high_label"], df["true_high"], df["high_reals"]
-                )
-            ],
-            hoverinfo="text",
-            orientation="h",
-        ),
-    ]
-    layout = {}
-    layout.update(plotly_theme["layout"])
-    layout.update(
-        {
-            "barmode": "relative",
-            "margin": {"l": 0, "r": 0, "b": 20, "t": 50},
-            "xaxis": {
-                "title": scale,
-                "autorange": True,
-                "showgrid": False,
-                "zeroline": False,
-                "showline": True,
-                "automargin": True,
-            },
-            "yaxis": {
-                "autorange": True,
-                "showgrid": False,
-                "zeroline": False,
-                "showline": False,
-                "automargin": True,
-                "title": None,
-                "dtick": 1,
-            },
-            "showlegend": False,
-            "hovermode": "y",
-            "annotations": [
-                {
-                    "x": 0,
-                    "y": len(list(df["low"])),
-                    "xref": "x",
-                    "yref": "y",
-                    "text": f"Reference avg: "
-                    f"{si_prefixed(ref_avg, number_format, unit, spaced, locked_si_prefix)}",
-                    "showarrow": True,
-                    "align": "center",
-                    "arrowhead": 2,
-                    "arrowsize": 1,
-                    "arrowwidth": 1,
-                    "arrowcolor": "#636363",
-                    "ax": 20,
-                    "ay": -25,
-                }
-            ],
-        }
-    )
-    return (
-        {"data": plot_data, "layout": layout},
-        store_low_high,
-    )
+    return pd.DataFrame(arr2)
 
 
 def calc_low_base(low, high):
