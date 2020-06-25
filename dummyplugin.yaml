@@ -20,7 +20,7 @@ pages:
             - ..\Datasets\simple_model\input\welldata\OP_6.txt
 
           surfacenames:
-            - BaseLowerReek
+            - TopUpperReek
             - TopMidReek
             - TopLowerReek
             - BaseLowerReek
