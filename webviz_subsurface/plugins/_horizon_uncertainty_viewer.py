@@ -98,6 +98,13 @@ The cross section is defined by a polyline interactively edited in the map view.
                     "draw a random line."
                 ),
             },
+            {
+                "id": self.ids("surface-type"),
+                "content": (
+                    "Display the z-value of the surface (e.g. depth) or "
+                    "the seismic value where the surface intersect the seismic cube."
+                ),
+            },
         ]
 
     ### Layout cross section ###
@@ -197,7 +204,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             print(wellpath)
             well = xtgeo.Well(get_path(wellpath))
             surface = xtgeo.RegularSurface(get_path(surfacepath),fformat='irap_binary')
-            return make_figure(well,surface)
+            return make_figure(
+                well,
+                surface,
+                xaxis_title="Distance along polyline",
+                yaxis_title="Depth (m)",
+            )
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
@@ -210,6 +222,8 @@ def get_path(path) -> Path:
 def make_figure(
     well,
     surface,
+    xaxis_title="Distance along polyline",
+    yaxis_title="Depth (m)",
 ):
     #Generate a polyline along a well path
     well_fence = well.get_fence_polyline(nextend=0, sampling=5)
@@ -221,8 +235,12 @@ def make_figure(
     layout.update(
         {
             "yaxis": {
+                "title": yaxis_title,
                 "autorange": "reversed",
             },
+            "xaxis": {
+                "title": xaxis_title
+            }
         }
     )
     return {
