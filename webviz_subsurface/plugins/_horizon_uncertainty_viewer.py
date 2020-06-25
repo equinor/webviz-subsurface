@@ -25,24 +25,23 @@ from .._datainput.surface import make_surface_layer, get_surface_fence
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-    """### SurfaceWithSeismicCrossSection
+    """
 
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
 
-### This is a test. This is another test.
-* `segyfiles`: List of file paths to SEG-Y files
-* `segynames`: Corresponding list of displayed seismic names
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
+
     ### Initialize ###
     def __init__(
         self,
         app,
         surfacefiles: List[Path],
+        surfacefiles_depth_error: List[Path],
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
@@ -52,6 +51,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         super().__init__()
         self.zunit = zunit
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
+        self.surfacefiles_depth_error = [str(surfacefile_depth_error) for surfacefile_depth_error in surfacefiles_depth_error]
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
                 raise ValueError(
@@ -76,46 +76,16 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     ### Generate unique ID's ###
     def ids(self, element):
-        """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
-    ### Layout widgets ###
+    ### Layout map section ###
     @property
-    def tour_steps(self):
-        return [
-            {
-                "id": self.ids("layout"),
-                "content": (
-                    "Plugin to display surfaces and random lines from a seismic cube. "
-                ),
-            },
-            {"id": self.ids("surface"), "content": ("The visualized surface."),},
-            {"id": self.ids("well"), "content": ("The visualized well."),},
-            {
-                "id": self.ids("map-view"),
-                "content": (
-                    "Map view of the surface. Use the right toolbar to "
-                    "draw a random line."
-                ),
-            },
-            {
-                "id": self.ids("surface-type"),
-                "content": (
-                    "Display the z-value of the surface (e.g. depth) or "
-                    "the seismic value where the surface intersect the seismic cube."
-                ),
-            },
-        ]
+    def map_layout(self):
+        return None
 
     ### Layout cross section ###
     @property
-    def map_layout(self):
-        """Layout for Map Viewer"""
-        return None
-
-    @property
     def cross_section_layout(self):
-        """Layout for surface section"""
         return html.Div(
             children=[
                 wcc.FlexBox(
@@ -175,7 +145,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 "zIndex": -9999,
                             },
                             children=wcc.Graph(
-                                figure={"displayModeBar": True}, id=self.ids("map-view")
+                                figure={"displayModeBar": True}, id=self.ids("cross-section-view")
                             ),
                         )
                     ]
@@ -197,28 +167,28 @@ The cross section is defined by a polyline interactively edited in the map view.
     ### Callbacks cross section ###
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("map-view"), "figure"),
+            Output(self.ids("cross-section-view"), "figure"),
             [
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("well"), "value"),
             ],
         )
         def _render_surface(
-            surfacepath, wellpath
+            surfacepath, wellpath,
         ):
-            print(surfacepath)
-            print(wellpath)
             well = xtgeo.Well(get_path(wellpath))
-            surface = xtgeo.RegularSurface(get_path(surfacepath),fformat='irap_binary')
+            surface = xtgeo.RegularSurface(get_path(surfacepath), fformat='irap_binary')
+            surface_error = xtgeo.RegularSurface(get_path(self.surfacefiles_depth_error[0]), fformat='irap_binary')
             return make_figure(
                 well,
                 surface,
+                surface_error,
                 xaxis_title="Distance along polyline",
                 yaxis_title="Depth (m)",
             )
 
     def add_webvizstore(self):
-        return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
+        return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
 
 
 @webvizstore
@@ -228,6 +198,7 @@ def get_path(path) -> Path:
 def make_figure(
     well,
     surface,
+    surface_error,
     xaxis_title="Distance along polyline",
     yaxis_title="Depth (m)",
 ):
@@ -235,6 +206,9 @@ def make_figure(
     well_fence = well.get_fence_polyline(nextend=0, sampling=5)
     #Get surface values along the polyline
     surf_line = surface.get_randomline(well_fence)
+    print('LINE: ',surf_line)
+    surf_line_error = surface_error.get_randomline(well_fence)
+    print('ERROR: ',surf_line_error)
     well.create_relative_hlen()
     df = well.dataframe
     layout = {}
@@ -256,6 +230,12 @@ def make_figure(
                 "y": surf_line[:,1],
                 "x": surf_line[:,0],
                 "name": "surface",
+                },
+                {
+                "type": "line",
+                "y": surf_line_error[:,1],
+                "x": surf_line_error[:,0],
+                "name": "surface_error",
                 },
                 {
                 "type": "line",
