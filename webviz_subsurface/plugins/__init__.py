@@ -49,7 +49,7 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
-from ._horizon_unsertainty_viewer import HorizonUnsertaintyViewer
+from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 
 
 __all__ = [
@@ -73,5 +73,5 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
-    "HorizonUnsertaintyViewer"
+    "HorizonUncertaintyViewer"
 ]

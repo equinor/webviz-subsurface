@@ -1,18 +1,10 @@
 title: Dummy Plugin
 
 pages:
-
-  - title: Front page
+ 
+  - title: HorizonUncertaintyViewer
     content:
-      - BannerImage:
-          image: ./content/reek_image.jpg
-          title: Dummy Plugin
-      - Markdown:
-          markdown_file: ./content/front_page.md
-  
-  - title: HUV
-    content:
-      - HUV:
+      - HorizonUncertaintyViewer:
           surfacefiles: # 4 files
             - ..\Datasets\simple_model\output\surfaces\d_TopUpperReek.rxb
             - ..\Datasets\simple_model\output\surfaces\d_TopMidReek.rxb
