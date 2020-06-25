@@ -38,7 +38,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
-
+    ### Initialize ###
     def __init__(
         self,
         app,
@@ -74,10 +74,12 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
 
+    ### Generate unique ID's ###
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
+    ### Layout widgets ###
     @property
     def tour_steps(self):
         return [
@@ -98,6 +100,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             },
         ]
 
+    ### Layout cross section ###
     @property
     def surface_layout(self):
         """Layout for surface section"""
@@ -168,7 +171,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ]
         )
 
-
+    ### Flexbox ###
     @property
     def layout(self):
         return wcc.FlexBox(
@@ -178,6 +181,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
 
+    ### Callbacks cross section ###
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "figure"),
@@ -197,7 +201,6 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
-
 
 
 @webvizstore
