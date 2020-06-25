@@ -99,7 +99,12 @@ The cross section is defined by a polyline interactively edited in the map view.
         ]
 
     @property
-    def surface_layout(self):
+    def map_layout(self):
+        """Layout for Map Viewer"""
+        return None
+
+    @property
+    def cross_section_layout(self):
         """Layout for surface section"""
         return html.Div(
             children=[
@@ -174,7 +179,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                html.Div(style={"flex": 1}, children=self.surface_layout),
+                html.Div(style={"flex": 1}, children=self.map_layout),
+                html.Div(style={"flex": 1}, children=self.cross_section_layout),
             ],
         )
 
