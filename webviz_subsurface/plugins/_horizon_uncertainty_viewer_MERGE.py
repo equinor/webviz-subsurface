@@ -17,6 +17,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
+from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence
 
@@ -24,23 +25,24 @@ from .._datainput.surface import make_surface_layer, get_surface_fence
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-    """
+    """### SurfaceWithSeismicCrossSection
 
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
 
+
+* `segyfiles`: List of file paths to SEG-Y files
+* `segynames`: Corresponding list of displayed seismic names
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
 * `colors`: List of colors to use
 """
-
     ### Initialize ###
     def __init__(
         self,
         app,
         surfacefiles: List[Path],
-        surfacefiles_de: List[Path],
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
@@ -50,7 +52,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         super().__init__()
         self.zunit = zunit
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
-        self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
                 raise ValueError(
@@ -75,16 +76,34 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     ### Generate unique ID's ###
     def ids(self, element):
+        """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
-    ### Layout map section ###
+    ### Layout widgets ###
     @property
-    def map_layout(self):
-        return None
+    def tour_steps(self):
+        return [
+            {
+                "id": self.ids("layout"),
+                "content": (
+                    "Plugin to display surfaces and random lines from a seismic cube. "
+                ),
+            },
+            #{"id": self.ids("surface"), "content": ("The visualized surface."),},
+            {"id": self.ids("well"), "content": ("The visualized well."),},
+            {
+                "id": self.ids("map-view"),
+                "content": (
+                    "Map view of the surface. Use the right toolbar to "
+                    "draw a random line."
+                ),
+            },
+        ]
 
     ### Layout cross section ###
     @property
-    def cross_section_layout(self):
+    def surface_layout(self):
+        """Layout for surface section"""
         return html.Div(
             children=[
                 wcc.FlexBox(
@@ -122,7 +141,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 "zIndex": -9999,
                             },
                             children=wcc.Graph(
-                                figure={"displayModeBar": True}, id=self.ids("cross-section-view")
+                                figure={"displayModeBar": True}, id=self.ids("map-view")
                             ),
                         )
                     ]
@@ -136,58 +155,49 @@ The cross section is defined by a polyline interactively edited in the map view.
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                html.Div(style={"flex": 1}, children=self.map_layout),
-                html.Div(style={"flex": 1}, children=self.cross_section_layout),
+                html.Div(style={"flex": 1}, children=self.surface_layout),
             ],
         )
 
     ### Callbacks cross section ###
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("cross-section-view"), "figure"),
+            Output(self.ids("map-view"), "figure"),
             [
                 Input(self.ids("well"), "value"),
             ],
         )
         def _render_surface(wellpath):
+            print(wellpath)
             well = xtgeo.Well(get_path(wellpath))
-            return make_gofig(well,self.surfacefiles, self.surfacefiles_de)
+            #surface = xtgeo.RegularSurface(get_path(surfacepath), fformat='irap_binary')
+            return make_gofig(well,self.surfacefiles)
 
     def add_webvizstore(self):
-        return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
+        return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
+
 
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well, surfacefiles, surfacefiles_de):
+def make_gofig(well, surfacefiles):
     # Generate a polyline along a well path
     well_fence = well.get_fence_polyline(nextend=0, sampling=5)
     # Get surface values along the polyline
     well.create_relative_hlen()
     df = well.dataframe
     surfaces=[]
-    surfaces_de = []
     surf_lines = []
-    surf_lines_de = []
     for path in surfacefiles:
         surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
-    for path in surfacefiles_de:
-        surfaces_de.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
-    for sfc in surfaces_de:
-        surf_lines_de.append(sfc.get_randomline(well_fence))
     for sfc in surfaces:
         surf_lines.append(sfc.get_randomline(well_fence))
-    
     layout = {}
     layout.update(
-        {          
+        {
             "yaxis": {
-                "title": "Depth (m)",
                 "autorange": "reversed",
-            },
-            "xaxis": {
-                "title": "Distance from polyline",
             },
             "plot_bgcolor":'rgb(233,233,233)'
         }
@@ -200,7 +210,6 @@ def make_gofig(well, surfacefiles, surfacefiles_de):
              }
             for surf_line in surf_lines
             ]
-    
     data.append({
                 "type": "line",
                 "y": df["Z_TVDSS"],
@@ -209,3 +218,4 @@ def make_gofig(well, surfacefiles, surfacefiles_de):
                 })
     return {'data':data,
             'layout':layout}
+
