@@ -1,0 +1,44 @@
+title: Dummy Plugin
+
+pages:
+
+  - title: Front page
+    content:
+      - BannerImage:
+          image: ./content/reek_image.jpg
+          title: Dummy Plugin
+      - Markdown:
+          markdown_file: ./content/front_page.md
+  
+  - title: HUV
+    content:
+      - HUV:
+          surfacefiles: # 4 files
+            - ..\Datasets\simple_model\output\surfaces\d_TopUpperReek.rxb
+            - ..\Datasets\simple_model\output\surfaces\d_TopMidReek.rxb
+            - ..\Datasets\simple_model\output\surfaces\d_TopLowerReek.rxb
+            - ..\Datasets\simple_model\output\surfaces\d_BaseLowerReek.rxb
+
+          wellfiles: # 6 files
+            - ..\Datasets\simple_model\input\welldata\OP_1.txt
+            - ..\Datasets\simple_model\input\welldata\OP_2.txt
+            - ..\Datasets\simple_model\input\welldata\OP_3.txt
+            - ..\Datasets\simple_model\input\welldata\OP_4.txt
+            - ..\Datasets\simple_model\input\welldata\OP_5.txt
+            - ..\Datasets\simple_model\input\welldata\OP_6.txt
+
+          surfacenames:
+            - BaseLowerReek
+            - TopMidReek
+            - TopLowerReek
+            - BaseLowerReek
+          
+          wellnames:
+            - OP_1
+            - OP_2
+            - OP_3
+            - OP_4
+            - OP_5
+            - OP_6
+  
+
