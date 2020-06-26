@@ -99,7 +99,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     children="Select well",
                                 ),
                                 dcc.Dropdown(
-                                    id=self.ids("well"),
+                                    id=self.ids("well-dropdown"),
                                     options=[
                                         {"label": name, "value": path}
                                         for name, path in zip(
@@ -110,7 +110,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     clearable=False,
                                 ),
                                 dcc.Dropdown(
-                                    id=self.ids("surface"),
+                                    id=self.ids("surface-dropdown"),
                                     options=[
                                         {"label": name, "value": path}
                                         for name, path in zip(
@@ -134,19 +134,24 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 html.Label(
                                     style={
                                         "font-weight": "bold",
-                                        "textAlign": "center",
+                                        "textAlign": "Left",
                                     },
-                                    children="Graph Settings",
+                                    children="Select Surfaces",
                                 ),
                                 dcc.Checklist(
                                     id=self.ids('all-surfaces-checkbox'),
-                                    options=[{'label': 'all', 'value': 'all'}],
-                                    value=['all'],
+                                    options=[{'label': 'all', 'value': 'True'}],
+                                    value=['True'],
                                 ),
                                 dcc.Checklist(
                                     id=self.ids('surfaces-checklist'),
-                                    options=[{'label': k, 'value': k} for k in self.surfacenames],
-                                    value=self.surfacenames,
+                                    options=[
+                                        {"label": name, "value": path}
+                                        for name, path in zip(
+                                            self.surfacenames, self.surfacefiles
+                                        )
+                                    ],
+                                    value=self.surfacefiles,
                                 ),
                             ],
                         ),
@@ -180,19 +185,21 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
 
-    ### Callbacks cross section ###
+    ### Callbacks cross-section-view ###
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
-                Input(self.ids("well"), "value"), #wellpath
-                Input(self.ids("surface"), "value"), #surfacepaths list
+                Input(self.ids("well-dropdown"), "value"), #wellpath
+                #Input(self.ids("surface-dropdown"), "value"), #surfacepaths list
+                Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
             ],
         )
         def _render_surface(wellpath, surfacepaths):
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
             well_fence = well.get_fence_polyline(nextend=0, sampling=5) # Generate a polyline along a well path
+            well.create_relative_hlen() # Get surface values along the polyline
             
             surfaces = []
             surface_lines = []
@@ -201,15 +208,15 @@ The cross section is defined by a polyline interactively edited in the map view.
             for surface in surfaces:
                 surface_lines.append(surface.get_randomline(well_fence))
 
-            return make_gofig(well, well_df, surface_lines)
+            return make_gofig(well_df, surface_lines)
 
-        ### Callback for update of tickboxes in cross-section-view
+        ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
             Output(self.ids("surfaces-checklist"), "value"),
             [Input(self.ids("all-surfaces-checkbox"), "value")],
         )
         def update_surface_tickboxes(all_surfaces_checkbox):
-            return self.surfacenames if all_surfaces_checkbox == ['all'] else []
+            return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
@@ -218,8 +225,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well, well_df, surface_lines):
-    well.create_relative_hlen() # Get surface values along the polyline
+def make_gofig(well_df, surface_lines):
     layout = {}
     layout.update(
         {          
