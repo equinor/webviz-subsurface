@@ -25,10 +25,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
     """
-
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
-
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
@@ -109,20 +107,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     value=self.wellfiles[0],
                                     clearable=False,
                                 ),
-                                dcc.Dropdown(
-                                    id=self.ids("surface"),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles
-                                        )
-                                    ],
-                                    
-                                    value=self.surfacefiles,
-                                    placeholder = "Select surfaces",
-                                    multi = True,
-                                    clearable=False,
-                                ),
                             ]
                         ),
                     ],
@@ -180,29 +164,19 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
 
-    ### Callbacks cross section ###
+
     def set_callbacks(self, app):
+        ### Callbacks for updating cross-section-view ###
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
-                Input(self.ids("well"), "value"), #wellpath
-                Input(self.ids("surface"), "value"), #surfacepaths list
+                Input(self.ids("well"), "value")
             ],
         )
-        def _render_surface(wellpath, surfacepaths):
+        def _render_surface(wellpath):
             well = xtgeo.Well(get_path(wellpath))
-            well_df = well.dataframe
-            well_fence = well.get_fence_polyline(nextend=0, sampling=5) # Generate a polyline along a well path
-            
-            surfaces = []
-            surface_lines = []
-            for path in surfacepaths:
-                surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
-            for surface in surfaces:
-                surface_lines.append(surface.get_randomline(well_fence))
-
-            return make_gofig(well, well_df, surface_lines)
-
+            return make_gofig(well, self.surfacefiles, self.surfacefiles_de)
+        
         ### Callback for update of tickboxes in cross-section-view
         @app.callback(
             Output(self.ids("surfaces-checklist"), "value"),
@@ -218,8 +192,25 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well, well_df, surface_lines):
-    well.create_relative_hlen() # Get surface values along the polyline
+def make_gofig(well, surfacefiles, surfacefiles_de):
+    # Generate a polyline along a well path
+    well_fence = well.get_fence_polyline(nextend=0, sampling=5)
+    # Get surface values along the polyline
+    well.create_relative_hlen()
+    df = well.dataframe
+    surfaces=[]
+    surfaces_de = []
+    surf_lines = []
+    surf_lines_de = []
+    for path in surfacefiles:
+        surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
+    for path in surfacefiles_de:
+        surfaces_de.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
+    for sfc in surfaces_de:
+        surf_lines_de.append(sfc.get_randomline(well_fence))
+    for sfc in surfaces:
+        surf_lines.append(sfc.get_randomline(well_fence))
+    
     layout = {}
     layout.update(
         {          
@@ -228,23 +219,34 @@ def make_gofig(well, well_df, surface_lines):
                 "autorange": "reversed",
             },
             "xaxis": {
-                "title": "Distance from polyline",
+                "title": "Distance along polyline",
             },
             "plot_bgcolor":'rgb(233,233,233)'
         }
     )
+
     data = [{"type": "line",
-                "y": surface_line[:,1],
-                "x": surface_line[:,0],
+                "y": surf_line[:,1],
+                "x": surf_line[:,0],
                 "name": "surface",
                 "fill":"tonexty"
-            } for surface_line in surface_lines
+             }
+            for surf_line in surf_lines
             ]
-            
+
+    data.extend([{"type": "line",
+                "y": surf_line_de[:,1],
+                "x": surf_line_de[:,0],
+                "name": "depth error",
+                "fill":"tonexty"
+             }
+            for surf_line_de in surf_lines_de
+            ])
+    
     data.append({
                 "type": "line",
-                "y": well_df["Z_TVDSS"],
-                "x": well_df["R_HLEN"],
+                "y": df["Z_TVDSS"],
+                "x": df["R_HLEN"],
                 "name": "well"
                 })
     return {'data':data,
