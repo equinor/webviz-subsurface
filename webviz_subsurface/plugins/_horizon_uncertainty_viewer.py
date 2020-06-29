@@ -109,20 +109,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     value=self.wellfiles[0],
                                     clearable=False,
                                 ),
-                                dcc.Dropdown(
-                                    id=self.ids("surface-dropdown"),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles
-                                        )
-                                    ],
-                                    
-                                    value=self.surfacefiles,
-                                    placeholder = "Select surfaces",
-                                    multi = True,
-                                    clearable=False,
-                                ),
                             ]
                         ),
                     ],
