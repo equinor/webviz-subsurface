@@ -184,7 +184,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         def _render_surface(wellpath, surfacepaths):
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
-            well_fence = well.get_fence_polyline(nextend=0, sampling=5) # Generate a polyline along a well path
+            well_fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
             well.create_relative_hlen() # Get surface values along the polyline
             
             surfaces = []
@@ -212,15 +212,24 @@ def get_path(path) -> Path:
     return Path(path)
 
 def make_gofig(well_df, surface_lines):
+    max_depth = max_depth_of_surflines(surface_lines)
+    min_depth = min_depth_of_surflines(surface_lines)
+    x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
+    y_width = np.abs(max_depth-y_well)
+    x_width = np.abs(xmax-x_well)
+    print(y_width, "y_width")
+    print(x_width,"x_width") 
     layout = {}
     layout.update(
         {          
             "yaxis": {
                 "title": "Depth (m)",
-                "autorange": "reversed",
+                "autorange": "off",
+                "range" : [max_depth,y_well-0.15*y_width]
             },
             "xaxis": {
                 "title": "Distance from polyline",
+                "range": [x_well-0.5*x_width,xmax+0.5*x_width],
             },
             "plot_bgcolor":'rgb(233,233,233)'
         }
@@ -232,12 +241,55 @@ def make_gofig(well_df, surface_lines):
                 "fill":"tonexty"
             } for surface_line in surface_lines
             ]
-            
+    data.append({
+                "type": "line",
+                "x": [surface_lines[0][0, 0], surface_lines[0][np.shape(surface_lines[0])[0] - 1, 0]],
+                "y": [max_depth+50, max_depth+50],
+                "fill": "tonexty",
+                "line":{"color":"black"}
+                })
+                        
     data.append({
                 "type": "line",
                 "y": well_df["Z_TVDSS"],
                 "x": well_df["R_HLEN"],
                 "name": "well"
                 })
+    
     return {'data':data,
             'layout':layout}
+
+def max_depth_of_surflines(surface_lines):
+    """
+    Find the maximum depth of layers along a cross section
+    :param surface_lines: surface cross section lines
+    :return: max depth
+    """
+    maxvalues = np.array([
+        np.max(sl[:,1]) for sl in surface_lines
+    ])
+    return np.max(maxvalues)
+
+def min_depth_of_surflines(surface_lines):
+    """
+    Find the miniimum depth of layers along a cross section
+    :param surface_lines: surface cross section lines
+    :return: min depth
+    """
+    minvalues = np.array([
+        np.min(sl[:,1]) for sl in surface_lines
+    ])
+    return np.min(minvalues)
+
+def find_where_it_crosses_well(ymin,ymax,df):
+    y_well = df["Z_TVDSS"]
+    x_well = df["R_HLEN"]
+    x_well_max = np.max(x_well)
+    X_point_y = 0
+    X_point_x = 0
+    for i in range(len(y_well)):
+        if y_well[i] >= ymin:
+            X_point_y = y_well[i]
+            X_point_x = x_well[i]
+            break
+    return X_point_x, X_point_y, x_well_max
