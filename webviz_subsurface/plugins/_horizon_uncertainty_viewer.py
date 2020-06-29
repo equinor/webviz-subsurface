@@ -139,6 +139,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                     value=self.surfacefiles,
                                 ),
+                                dcc.Checklist(
+                                    id=self.ids('depth_error_checkbox'),
+                                    options=[{'label': 'Depth error', 'value': 'True'}],
+                                    value=['True'],
+                                ),
                             ],
                         ),
                     ],
@@ -177,8 +182,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids("cross-section-view"), "figure"),
             [
                 Input(self.ids("well-dropdown"), "value"), #wellpath
-                #Input(self.ids("surface-dropdown"), "value"), #surfacepaths list
                 Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
+                Input(self.ids("surfaces_de_checkbox"), "value"), #surfacepaths_de list
             ],
         )
         def _render_surface(wellpath, surfacepaths):
