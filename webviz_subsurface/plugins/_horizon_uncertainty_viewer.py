@@ -11,6 +11,7 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
@@ -24,6 +25,7 @@ from .._datainput.surface import make_surface_layer, get_surface_fence
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+    #app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     """
 
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
@@ -113,33 +115,48 @@ The cross section is defined by a polyline interactively edited in the map view.
                         ),
                     ],
                 ),
-                wcc.FlexBox(
+                html.Div(
                     children=[
-                        html.Div(
+                        dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings")),
+                        dbc.Modal(
                             children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "Left",
-                                    },
-                                    children="Select Surfaces",
-                                ),
-                                dcc.Checklist(
-                                    id=self.ids('all-surfaces-checkbox'),
-                                    options=[{'label': 'all', 'value': 'True'}],
-                                    value=['True'],
-                                ),
-                                dcc.Checklist(
-                                    id=self.ids('surfaces-checklist'),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles
-                                        )
+                                dbc.ModalHeader("Graph Settings"),
+                                dbc.ModalBody(
+                                    children=[
+                                        html.Label(
+                                            style={
+                                                "font-weight": "bold",
+                                                "textAlign": "Left",
+                                            },
+                                            children="Select Surfaces",
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('all-surfaces-checkbox'),
+                                            options=[{'label': 'all', 'value': 'True'}],
+                                            value=['True'],
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('surfaces-checklist'),
+                                            options=[
+                                                {"label": name, "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles
+                                                )
+                                            ],
+                                            value=self.surfacefiles,
+                                        ),
+                                        (" mm mmmrmrmrerhgwpeiurghwlerigwleirglweirghlwerjgblwekjrgbwlekrjbglwekjrbgwlekrjbgwlekrjbgwlerkjgb")
                                     ],
-                                    value=self.surfacefiles,
+                                ),
+                                dbc.ModalFooter(
+                                    dbc.Button("Close", id=self.ids("button-close-graph-settings"), className="ml-auto")
                                 ),
                             ],
+                            id=self.ids("modal-graph-settings"),
+                            size="sm",
+                            centered=True,
+                            backdrop=False,
+                            fade=False,
                         ),
                     ],
                 ),
@@ -203,6 +220,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
         def update_surface_tickboxes(all_surfaces_checkbox):
             return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
+
+        @app.callback(
+            Output(self.ids("modal-graph-settings"), "is_open"),
+            [Input(self.ids("button-open-graph-settings"), "n_clicks"),
+            Input(self.ids("button-close-graph-settings"), "n_clicks")],
+            [State(self.ids("modal-graph-settings"), "is_open")],
+        )
+        def toggle_modal(n1, n2, is_open):
+            if n1 or n2:
+                return not is_open
+            return is_open
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
