@@ -4,6 +4,7 @@ from typing import List
 import dash
 import pandas as pd
 import numpy as np
+import numpy.ma as ma
 import plotly.graph_objects as go
 from matplotlib.colors import ListedColormap
 import xtgeo
@@ -25,10 +26,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
     """
-
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
-
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
@@ -44,7 +43,9 @@ The cross section is defined by a polyline interactively edited in the map view.
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
+        zonelog: str = None,
         zunit="depth (m)",
+        zonemin: int = 1,
     ):
 
         super().__init__()
@@ -69,6 +70,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.wellnames = wellnames
         else:
             self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
+        self.zonemin = zonemin
+        self.zonelog = zonelog       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -190,7 +193,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfaces = []
             surface_lines = []
             for path in surfacepaths:
-                surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary"))
+                surfaces.append(xtgeo.RegularSurface(path, fformat="irap_binary"))
             for surface in surfaces:
                 surface_lines.append(surface.get_randomline(well_fence))
 
@@ -217,8 +220,9 @@ def make_gofig(well_df, surface_lines):
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
-    print(y_width, "y_width")
-    print(x_width,"x_width") 
+    zvals = well_df["Z_TVDSS"].values.copy()
+    hvals = well_df["R_HLEN"].values.copy()
+    zoneplot = plot_well_zonelog(well_df,zvals,hvals,"Zonelog",-999)
     layout = {}
     layout.update(
         {          
@@ -231,7 +235,8 @@ def make_gofig(well_df, surface_lines):
                 "title": "Distance from polyline",
                 "range": [x_well-0.5*x_width,xmax+0.5*x_width],
             },
-            "plot_bgcolor":'rgb(233,233,233)'
+            "plot_bgcolor":'rgb(233,233,233)',
+            "showlegend":False
         }
     )
     data = [{"type": "line",
@@ -255,8 +260,8 @@ def make_gofig(well_df, surface_lines):
                 "x": well_df["R_HLEN"],
                 "name": "well"
                 })
-    
-    return {'data':data,
+    data1 = zoneplot
+    return {'data':data+data1,
             'layout':layout}
 
 def max_depth_of_surflines(surface_lines):
@@ -293,3 +298,35 @@ def find_where_it_crosses_well(ymin,ymax,df):
             X_point_x = x_well[i]
             break
     return X_point_x, X_point_y, x_well_max
+
+def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
+    if zonelogname not in df.columns:
+        return
+    zonevals = df[zonelogname].values #values of zonelog
+    zomin = (
+        zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
+    ) #zomin=0 in this case
+    zomax = int(df[zonelogname].max()) #zomax = 4 in this case
+    # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
+    zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
+    for transition in zone_transitions:
+        try:
+            zvals = np.insert(zvals, transition, zvals[transition + 1])
+            hvals = np.insert(hvals, transition, hvals[transition + 1])
+            zonevals = np.insert(zonevals, transition, zonevals[transition])
+        except IndexError:
+            pass
+    zoneplot = []
+    color = ["yellow","orange","green","red","grey"]
+    for i, zone in enumerate(range(zomin, zomax + 1)):
+        zvals_copy = ma.masked_where(zonevals != zone, zvals)
+        hvals_copy = ma.masked_where(zonevals != zone, hvals)
+        zoneplot.append({
+            "x": hvals_copy.compressed(),
+            "y": zvals_copy.compressed(),
+            "line": {"width": 5, "color": color[i]},
+            "fillcolor": color[i],
+            "marker": {"opacity": 0.5},
+            "name": f"Zone: {zone}",
+        })
+    return zoneplot
