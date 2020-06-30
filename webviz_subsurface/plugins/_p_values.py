@@ -35,32 +35,32 @@ def make_p_values_plot(self, p_values):
     """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
     p_sorted = dict(sorted(p_values.items(), key=lambda x: x[1]))
     parameters = list(p_sorted.keys())
-    calc_p_values = list(p_sorted.values())
+    values = list(p_sorted.values())
     
-    """ Making an array for the corresponding colors """
-    col_values = [int(i*100) for i in calc_p_values]
-    colors = ['#FF1243']*len(parameters) # Red Equinor color
-    
-    for i, v in enumerate(col_values):
-        if v <= 5:
-            colors[i] = '#5AC864' # Green color
-
     """ Making the bar chart plot """
-    fig = go.Figure([go.Bar(x=parameters, y=calc_p_values, marker_color=colors)])
+    fig = go.Figure([
+        go.Bar(
+            x=parameters,
+            y=values,
+            marker_color=["#FF1243" if val<0.05 else "slategray" for val in values])])
+    
     fig.update_layout(
         yaxis=dict(range=[0,1], title=f'p-values'), 
         xaxis=dict(title='Parameters'),
-        title='This is an example plot with example values, not finished',
+        title='P-values for the key parameter combination',
         autosize=False,
-        width=600,
-        height=500,
-        plot_bgcolor='#FFFFFF'
+        width=800,
+        height=600,
         )
 
     """ Adding a line at p = 0.05 """
     fig.add_shape(
         type='line', 
-        y0=0.05, y1=0.05, x0=-0.5, x1=len(p_values.keys())-0.5, xref='x',
+        y0=0.05, 
+        y1=0.05,
+        x0=-0.5,
+        x1=len(values)-0.5,
+        xref='x',
         line=dict(
             color='#222A2A',
             width=2
