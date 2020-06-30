@@ -19,7 +19,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
 from .._datainput.well import load_well
-from .._datainput.surface import make_surface_layer, get_surface_fence
+from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -82,7 +82,23 @@ The cross section is defined by a polyline interactively edited in the map view.
     ### Layout map section ###
     @property
     def map_layout(self):
-        return None
+        return html.Div(
+                    children=[
+                        html.Div(
+                            style={
+                                "marginTop": "20px",
+                                "height": "800px",
+                                "zIndex": -9999,
+                            },
+                            children=LayeredMap(
+                                id=self.ids("map-view"),
+                                draw_toolbar_polyline=True,
+                                hillShading=True,
+                                layers=_render_map(self.surfacefiles[0]),
+                            ),
+                        )   
+                    ]
+                ),
 
     ### Layout cross section ###
     @property
@@ -145,7 +161,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             ],
                                             value=self.surfacefiles,
                                         ),
-                                        (" mm mmmrmrmrerhgwpeiurghwlerigwleirglweirghlwerjgblwekjrgbwlekrjbglwekjrbgwlekrjbgwlekrjbgwlerkjgb")
                                     ],
                                 ),
                                 dbc.ModalFooter(
@@ -269,3 +284,20 @@ def make_gofig(well_df, surface_lines):
                 })
     return {'data':data,
             'layout':layout}
+
+def _render_map(surfacepath):
+    surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
+    hillshading = True
+    min_val = None
+    max_val = None
+    color = "viridis"
+
+    s_layer = make_surface_layer(
+        surface,
+        name="surface",
+        min_val=min_val,
+        max_val=max_val,
+        color=color,
+        hillshading=hillshading,
+    )
+    return [s_layer]
