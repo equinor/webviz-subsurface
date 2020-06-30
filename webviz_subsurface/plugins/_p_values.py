@@ -53,7 +53,6 @@ def make_p_values_plot(self, p_values):
         height=600,
         )
 
-
     """ Adding a line at p = 0.05 """
     fig.add_shape(
         type='line', 
@@ -68,4 +67,3 @@ def make_p_values_plot(self, p_values):
         )
     )
     return fig
-
