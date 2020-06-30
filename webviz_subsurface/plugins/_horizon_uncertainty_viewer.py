@@ -87,6 +87,32 @@ The cross section is defined by a polyline interactively edited in the map view.
     def map_layout(self):
         return html.Div(
                     children=[
+                        wcc.FlexBox(
+                            children=[
+                                html.Div(
+                                    children=[
+                                        html.Label(
+                                            style={
+                                                "font-weight": "bold",
+                                                "textAlign": "center",
+                                            },
+                                            children="Select surface",
+                                        ),
+                                        dcc.Dropdown(
+                                            id=self.ids("map-dropdown"),
+                                            options=[
+                                                {"label": name, "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles_de
+                                                )
+                                            ],
+                                            value=self.surfacefiles_de[0],
+                                            clearable=False,
+                                        ),
+                                    ]
+                                ),
+                            ],
+                        ),
                         html.Div(
                             style={
                                 "marginTop": "20px",
@@ -97,7 +123,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 id=self.ids("map-view"),
                                 draw_toolbar_polyline=True,
                                 hillShading=True,
-                                layers=render_map(self.surfacefiles[0]),
+                                layers=[],
                             ),
                         )   
                     ]
@@ -209,6 +235,29 @@ The cross section is defined by a polyline interactively edited in the map view.
     ### Callbacks cross-section-view ###
     def set_callbacks(self, app):
         @app.callback(
+            Output(self.ids("map-view"), "layers"),
+            [
+                Input(self.ids("map-dropdown"), "value"),
+            ],
+        )
+        def render_map(surfacepath):
+            surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
+            hillshading = True
+            min_val = None
+            max_val = None
+            color = "viridis"
+
+            s_layer = make_surface_layer(
+                surface,
+                name="surface",
+                min_val=min_val,
+                max_val=max_val,
+                color=color,
+                hillshading=hillshading,
+            )
+            return [s_layer]
+
+        @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
                 Input(self.ids("well-dropdown"), "value"), #wellpath
@@ -307,22 +356,6 @@ def make_gofig(well_df, surface_lines):
     return {'data':data+data1,
             'layout':layout}
 
-def render_map(surfacepath):
-    surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
-    hillshading = True
-    min_val = None
-    max_val = None
-    color = "viridis"
-
-    s_layer = make_surface_layer(
-        surface,
-        name="surface",
-        min_val=min_val,
-        max_val=max_val,
-        color=color,
-        hillshading=hillshading,
-    )
-    return [s_layer]
 def max_depth_of_surflines(surface_lines):
     """
     Find the maximum depth of layers along a cross section
