@@ -45,6 +45,7 @@ setup(
             "ReservoirSimulationTimeSeriesRegional = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
+            "PropertyStatistics =  webviz_subsurface.plugins:PropertyStatistics",
         ]
     },
     install_requires=[
