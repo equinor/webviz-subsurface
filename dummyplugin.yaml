@@ -38,5 +38,6 @@ pages:
             - OP_4
             - OP_5
             - OP_6
+          zonelog: Zonelog
   
 
