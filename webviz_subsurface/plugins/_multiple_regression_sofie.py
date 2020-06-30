@@ -16,8 +16,7 @@ from webviz_config.utils import calculate_slider_step
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
-
-class MultipleRegression(WebvizPluginABC):
+class MultipleRegressionSofie(WebvizPluginABC):
     """ This will become a plugin for multiple regression of parameters and responses"""
     # pylint:disable=too-many-arguments
     def __init__(
