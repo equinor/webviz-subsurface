@@ -4,8 +4,7 @@ from typing import List
 import dash
 import pandas as pd
 import numpy as np
-from operator import add
-from operator import sub
+import numpy.ma as ma
 import plotly.graph_objects as go
 from matplotlib.colors import ListedColormap
 import xtgeo
@@ -13,24 +12,26 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
+from operator import add
+from operator import sub
 
 from .._datainput.well import load_well
-from .._datainput.surface import make_surface_layer, get_surface_fence
+from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+    #app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     """
-
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
-
 * `surfacefiles`: List of file paths to Irap Binary surfaces
 * `surfacenames`: Corresponding list of displayed surface names
 * `zunit`: z-unit for display
@@ -46,7 +47,9 @@ The cross section is defined by a polyline interactively edited in the map view.
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
+        zonelog: str = None,
         zunit="depth (m)",
+        zonemin: int = 1,
     ):
 
         super().__init__()
@@ -71,6 +74,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.wellnames = wellnames
         else:
             self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
+        self.zonemin = zonemin
+        self.zonelog = zonelog       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -82,7 +87,49 @@ The cross section is defined by a polyline interactively edited in the map view.
     ### Layout map section ###
     @property
     def map_layout(self):
-        return None
+        return html.Div(
+                    children=[
+                        wcc.FlexBox(
+                            children=[
+                                html.Div(
+                                    children=[
+                                        html.Label(
+                                            style={
+                                                "font-weight": "bold",
+                                                "textAlign": "center",
+                                            },
+                                            children="Select surface",
+                                        ),
+                                        dcc.Dropdown(
+                                            id=self.ids("map-dropdown"),
+                                            options=[
+                                                {"label": name, "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles_de
+                                                )
+                                            ],
+                                            value=self.surfacefiles_de[0],
+                                            clearable=False,
+                                        ),
+                                    ]
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={
+                                "marginTop": "20px",
+                                "height": "800px",
+                                "zIndex": -9999,
+                            },
+                            children=LayeredMap(
+                                id=self.ids("map-view"),
+                                draw_toolbar_polyline=True,
+                                hillShading=True,
+                                layers=[],
+                            ),
+                        )   
+                    ]
+                ),
 
     ### Layout cross section ###
     @property
@@ -115,43 +162,57 @@ The cross section is defined by a polyline interactively edited in the map view.
                         ),
                     ],
                 ),
-                wcc.FlexBox(
+                html.Div(
                     children=[
-                        html.Div(
+                        dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings")),
+                        dbc.Modal(
                             children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "Left",
-                                    },
-                                    children="Select Surfaces",
-                                ),
-                                dcc.Checklist(
-                                    id=self.ids('all-surfaces-checkbox'),
-                                    options=[{'label': 'all', 'value': 'True'}],
-                                    value=['True'],
-                                ),
-                                dcc.Checklist(
-                                    id=self.ids('surfaces-checklist'),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles
-                                        )
-                                    ],
-                                    value=self.surfacefiles,
-                                ),
-                                dcc.Checklist(
-                                    id=self.ids('surfaces_de_checklist'),
-                                    options=[
-                                        {"label": name+'_error', "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles_de
+                                dbc.ModalHeader("Graph Settings"),
+                                dbc.ModalBody(
+                                    children=[
+                                        html.Label(
+                                            style={
+                                                "font-weight": "bold",
+                                                "textAlign": "Left",
+                                            },
+                                            children="Select Surfaces",
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('all-surfaces-checkbox'),
+                                            options=[{'label': 'all', 'value': 'True'}],
+                                            value=['True'],
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('surfaces-checklist'),
+                                            options=[
+                                                {"label": name, "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles
+                                                )
+                                            ],
+                                            value=self.surfacefiles,
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('surfaces_de_checklist'),
+                                            options=[
+                                                {"label": name+'_error', "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles_de
                                         )
                                     ],
                                     value=self.surfacefiles_de,
                                 ),
+                                    ],
+                                ),
+                                dbc.ModalFooter(
+                                    dbc.Button("Close", id=self.ids("button-close-graph-settings"), className="ml-auto")
+                                ),
                             ],
+                            id=self.ids("modal-graph-settings"),
+                            size="sm",
+                            centered=True,
+                            backdrop=False,
+                            fade=False,
                         ),
                     ],
                 ),
@@ -159,7 +220,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     children=[
                         html.Div(
                             style={
-                                "marginTop": "20px",
+                                "marginTop": "0px",
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
@@ -183,8 +244,31 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
 
-    ### Callbacks cross-section-view ###
+    ### Callbacks map view and cross-section-view ###
     def set_callbacks(self, app):
+        @app.callback(
+            Output(self.ids("map-view"), "layers"),
+            [
+                Input(self.ids("map-dropdown"), "value"),
+            ],
+        )
+        def render_map(surfacepath):
+            surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
+            hillshading = True
+            min_val = None
+            max_val = None
+            color = "viridis"
+
+            s_layer = make_surface_layer(
+                surface,
+                name="surface",
+                min_val=min_val,
+                max_val=max_val,
+                color=color,
+                hillshading=hillshading,
+            )
+            return [s_layer]
+
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
@@ -204,7 +288,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfaces_lines = []
             surfaces_lines_xdata = []
             surfaces_lines_ydata = []
-
+            print(surfacepaths)
             for idx, path in enumerate(surfacepaths): # surface
                 surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
@@ -236,6 +320,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         def update_surface_tickboxes(all_surfaces_checkbox):
             return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
 
+        @app.callback(
+            Output(self.ids("modal-graph-settings"), "is_open"),
+            [Input(self.ids("button-open-graph-settings"), "n_clicks"),
+            Input(self.ids("button-close-graph-settings"), "n_clicks")],
+            [State(self.ids("modal-graph-settings"), "is_open")],
+        )
+        def toggle_modal(n1, n2, is_open):
+            if n1 or n2:
+                return not is_open
+            return is_open
+
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
 
@@ -249,6 +344,9 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
+    zvals = well_df["Z_TVDSS"].values.copy()
+    hvals = well_df["R_HLEN"].values.copy()
+    zoneplot = plot_well_zonelog(well_df,zvals,hvals,"Zonelog",-999)
     layout = {}
     layout.update(
         {          
@@ -259,9 +357,11 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
             },
             "xaxis": {
                 "title": "Distance from polyline",
-                "range": [x_well-x_width,xmax+x_width],
+                "range": [x_well-0.5*x_width,xmax+0.5*x_width],
             },
-            "plot_bgcolor":'rgb(233,233,233)'
+            "plot_bgcolor":'rgb(233,233,233)',
+            "showlegend":False,
+            "height": 830,
         }
     )
     data_surfaces = [{
@@ -301,29 +401,29 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
                 "x": well_df["R_HLEN"],
                 "name": "well"
                 })
-    
-    return {'data':data_surfaces + data_surfaces_de_add + data_surfaces_de_sub,
+    data1 = zoneplot
+    return {'data':data_surfaces + data_surfaces_de_add + data_surfaces_de_sub + data1,
             'layout':layout}
 
-def max_depth_of_surflines(surfaces_lines):
+def max_depth_of_surflines(surface_lines):
     """
     Find the maximum depth of layers along a cross section
-    :param surfaces_lines: surface cross section lines
+    :param surface_lines: surface cross section lines
     :return: max depth
     """
     maxvalues = np.array([
-        np.max(sl[:,1]) for sl in surfaces_lines
+        np.max(sl[:,1]) for sl in surface_lines
     ])
     return np.max(maxvalues)
 
-def min_depth_of_surflines(surfaces_lines):
+def min_depth_of_surflines(surface_lines):
     """
     Find the miniimum depth of layers along a cross section
-    :param surfaces_lines: surface cross section lines
+    :param surface_lines: surface cross section lines
     :return: min depth
     """
     minvalues = np.array([
-        np.min(sl[:,1]) for sl in surfaces_lines
+        np.min(sl[:,1]) for sl in surface_lines
     ])
     return np.min(minvalues)
 
@@ -339,3 +439,35 @@ def find_where_it_crosses_well(ymin,ymax,df):
             X_point_x = x_well[i]
             break
     return X_point_x, X_point_y, x_well_max
+
+def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
+    if zonelogname not in df.columns:
+        return
+    zonevals = df[zonelogname].values #values of zonelog
+    zomin = (
+        zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
+    ) #zomin=0 in this case
+    zomax = int(df[zonelogname].max()) #zomax = 4 in this case
+    # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
+    zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
+    for transition in zone_transitions:
+        try:
+            zvals = np.insert(zvals, transition, zvals[transition + 1])
+            hvals = np.insert(hvals, transition, hvals[transition + 1])
+            zonevals = np.insert(zonevals, transition, zonevals[transition])
+        except IndexError:
+            pass
+    zoneplot = []
+    color = ["yellow","orange","green","red","grey"]
+    for i, zone in enumerate(range(zomin, zomax + 1)):
+        zvals_copy = ma.masked_where(zonevals != zone, zvals)
+        hvals_copy = ma.masked_where(zonevals != zone, hvals)
+        zoneplot.append({
+            "x": hvals_copy.compressed(),
+            "y": zvals_copy.compressed(),
+            "line": {"width": 5, "color": color[i]},
+            "fillcolor": color[i],
+            "marker": {"opacity": 0.5},
+            "name": f"Zone: {zone}",
+        })
+    return zoneplot
