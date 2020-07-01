@@ -288,6 +288,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfaces_lines = []
             surfaces_lines_xdata = []
             surfaces_lines_ydata = []
+            print('surfacepaths')
             for idx, path in enumerate(surfacepaths): # surface
                 surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
