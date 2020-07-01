@@ -4,10 +4,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import dash
+from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output, State
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
@@ -84,6 +86,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         "SENSTYPE",
         "RUNPATH",
     ]
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -141,13 +144,9 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         # Initialize a tornado plot. Data is added in callback
         self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
         self.uid = uuid4()
-        self.selectors_id = {x: self.ids(x) for x in self.selectors}
+        self.selectors_id = {x: self.uuid(x) for x in self.selectors}
         self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
-
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
 
     def add_webvizstore(self):
         return (
@@ -190,7 +189,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 children=[
                     html.Span(f"{label}:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
-                        id=self.ids(id_name),
+                        id=self.uuid(id_name),
                         options=[
                             {"label": i, "value": i}
                             for i in list(self.volumes[column].unique())
@@ -206,14 +205,14 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def tour_steps(self):
         return [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": (
                     "Dashboard displaying in place volumetric results "
                     "from a sensitivity study."
                 ),
             },
             {
-                "id": self.ids("graph"),
+                "id": self.uuid("graph-wrapper"),
                 "content": (
                     "Chart showing results for the current selection. "
                     "Different charts and options can be selected from the menu above. "
@@ -221,7 +220,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ),
             },
             {
-                "id": self.ids("table"),
+                "id": self.uuid("table"),
                 "content": (
                     "The table shows statistics per sensitivity parameter. "
                     "Rows can be filtered by searching, and sorted by "
@@ -229,11 +228,11 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 ),
             },
             {
-                "id": self.ids("response"),
+                "id": self.uuid("response"),
                 "content": "Select the volumetric calculation to display.",
             },
             {
-                "id": self.ids("plot-type"),
+                "id": self.uuid("plot-type"),
                 "content": (
                     "Controls the type of the visualized chart. "
                     "Per realization shows bars per realization, "
@@ -242,21 +241,21 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             },
             *self.tornadoplot.tour_steps,
             {
-                "id": self.ids("ensemble"),
+                "id": self.uuid("ensemble"),
                 "content": (
                     "If several ensembles are available, the active ensemble "
                     "can be selected here."
                 ),
             },
             {
-                "id": self.ids("source"),
+                "id": self.uuid("source"),
                 "content": (
                     "If volumes have been calculated for different grids. "
                     "E.g. geogrid and eclipsegrid, the active grid can be selected here."
                 ),
             },
             {
-                "id": self.ids("filters"),
+                "id": self.uuid("filters"),
                 "content": (
                     "Filter on different combinations of e.g. zones, facies and regions "
                     "(The options will vary dependent on what was included "
@@ -292,7 +291,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
             children=[
                 html.Span("Plot type:", style={"font-weight": "bold"}),
                 dcc.Dropdown(
-                    id=self.ids("plot-type"),
+                    id=self.uuid("plot-type"),
                     options=[
                         {"label": i, "value": i}
                         for i in [
@@ -315,7 +314,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 children=[
                     html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
-                        id=self.ids("response"),
+                        id=self.uuid("response"),
                         options=[
                             {"label": volume_description(i), "value": i}
                             for i in self.responses
@@ -362,7 +361,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
         return html.Div(
             children=[
                 wcc.FlexBox(
-                    id=self.ids("layout"),
+                    id=self.uuid("layout"),
                     children=[
                         html.Div(
                             children=[
@@ -384,7 +383,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                                     style={"font-weight": "bold"},
                                                 ),
                                                 html.Div(
-                                                    id=self.ids("filters"),
+                                                    id=self.uuid("filters"),
                                                     children=self.filter_selectors,
                                                 ),
                                             ],
@@ -394,19 +393,21 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                             children=[
                                                 html.Div(
                                                     style={"height": "600px"},
-                                                    id=self.ids("graph-wrapper"),
+                                                    id=self.uuid("graph-wrapper"),
                                                 ),
                                                 html.Div(
                                                     children=[
                                                         html.Div(
-                                                            id=self.ids("volume_title"),
+                                                            id=self.uuid(
+                                                                "volume_title"
+                                                            ),
                                                             style={
                                                                 "textAlign": "center"
                                                             },
                                                             children="",
                                                         ),
                                                         DataTable(
-                                                            id=self.ids("table"),
+                                                            id=self.uuid("table"),
                                                             sort_action="native",
                                                             filter_action="native",
                                                             page_action="native",
@@ -421,7 +422,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             ]
                         ),
                         html.Div(
-                            id=self.ids("tornado-wrapper"),
+                            id=self.uuid("tornado-wrapper"),
                             style={"visibility": "visible", "flex": 2},
                             children=[self.tornadoplot.layout],
                         ),
@@ -433,38 +434,109 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
     def set_callbacks(self, app):
         @app.callback(
             [
-                Output(self.ids("graph-wrapper"), "children"),
                 Output(self.tornadoplot.storage_id, "data"),
-                Output(self.ids("table"), "data"),
-                Output(self.ids("table"), "columns"),
-                Output(self.ids("volume_title"), "children"),
+                Output(self.uuid("table"), "data"),
+                Output(self.uuid("table"), "columns"),
             ],
             [
                 Input(i, "value")
                 for sublist in [
                     [
-                        self.ids("plot-type"),
-                        self.ids("ensemble"),
-                        self.ids("response"),
-                        self.ids("source"),
+                        self.uuid("ensemble"),
+                        self.uuid("response"),
+                        self.uuid("source"),
                     ],
                     list(self.selectors_id.values()),
                 ]
                 for i in sublist
             ],
         )
-        def _render_vol_chart(plot_type, ensemble, response, source, *filters):
-            """Callback to update graph, tornado and table"""
+        def _render_table_and_tornado(ensemble, response, source, *filters):
+            # Filter data
+            data = filter_dataframe(
+                self.volumes, self.selectors, ensemble, source, filters
+            )
 
-            # Filter dataframe based on dropdown choices
-            data = filter_dataframe(self.volumes, self.selectors, filters)
-            data = data.loc[data["ENSEMBLE"] == ensemble]
-            data = data.loc[data["SOURCE"] == source]
-
-            # Calculate statistics for table
+            # Table data
             table, columns = calculate_table(data, response)
 
-            # volume title:
+            # TornadoPlot input
+            tornado = json.dumps(
+                {
+                    "ENSEMBLE": ensemble,
+                    "data": data.groupby("REAL")
+                    .sum()
+                    .reset_index()[["REAL", response]]
+                    .values.tolist(),
+                    "number_format": "#.4g",
+                    "unit": volume_unit(response),
+                }
+            )
+            return tornado, table, columns
+
+        @app.callback(
+            [
+                Output(self.uuid("graph-wrapper"), "children"),
+                Output(self.uuid("volume_title"), "children"),
+            ],
+            [
+                Input(self.tornadoplot.click_id, "data"),
+                Input(self.tornadoplot.high_low_storage_id, "data"),
+                Input(self.uuid("plot-type"), "value"),
+            ],
+            [
+                State(i, "value")
+                for sublist in [
+                    [
+                        self.uuid("ensemble"),
+                        self.uuid("response"),
+                        self.uuid("source"),
+                    ],
+                    list(self.selectors_id.values()),
+                ]
+                for i in sublist
+            ],
+        )
+        def _render_chart(
+            tornado_click,
+            high_low_storage,
+            plot_type,
+            ensemble,
+            response,
+            source,
+            *filters,
+        ):
+            if dash.callback_context.triggered is None:
+                raise PreventUpdate
+            ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            if tornado_click:
+                tornado_click = json.loads(tornado_click)
+                if (
+                    high_low_storage is not None
+                    and ctx == self.tornadoplot.high_low_storage_id
+                ):
+                    # Tornado plot is updated without a click in the plot, updating reals:
+                    if tornado_click["sens_name"] in high_low_storage:
+                        tornado_click["real_low"] = high_low_storage[
+                            tornado_click["sens_name"]
+                        ].get("real_low")
+                        tornado_click["real_high"] = high_low_storage[
+                            tornado_click["sens_name"]
+                        ].get("real_high")
+                    else:
+                        # fallback in a case where chosen sens_name does not exist in updated
+                        # tornado plot.
+                        # (can this ever occur except when sens_name already is None?)
+                        tornado_click["sens_name"] = None
+                        tornado_click["real_low"] = []
+                        tornado_click["real_high"] = []
+
+            # Filter data
+            data = filter_dataframe(
+                self.volumes, self.selectors, ensemble, source, filters
+            )
+
+            # Volume title:
             volume_title = f"{volume_description(response)} [{volume_unit(response)}]"
 
             # Make Plotly figure
@@ -479,19 +551,68 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                     }
                 )
                 plot_data = data.groupby("REAL").sum().reset_index()
+
+                if tornado_click:
+                    figure_data = [
+                        {
+                            "y": plot_data[
+                                plot_data["REAL"].isin(tornado_click["real_low"])
+                            ][response],
+                            "x": plot_data[
+                                plot_data["REAL"].isin(tornado_click["real_low"])
+                            ]["REAL"],
+                            "tickformat": ".4s",
+                            "type": "bar",
+                            "showlegend": False,
+                            "name": "",
+                        },
+                        {
+                            "y": plot_data[
+                                plot_data["REAL"].isin(tornado_click["real_high"])
+                            ][response],
+                            "x": plot_data[
+                                plot_data["REAL"].isin(tornado_click["real_high"])
+                            ]["REAL"],
+                            "tickformat": ".4s",
+                            "type": "bar",
+                            "showlegend": False,
+                            "name": "",
+                        },
+                        {
+                            "y": plot_data[
+                                ~plot_data["REAL"].isin(
+                                    tornado_click["real_low"]
+                                    + tornado_click["real_high"]
+                                )
+                            ][response],
+                            "x": plot_data[
+                                ~plot_data["REAL"].isin(
+                                    tornado_click["real_low"]
+                                    + tornado_click["real_high"]
+                                )
+                            ]["REAL"],
+                            "tickformat": ".4s",
+                            "type": "bar",
+                            "marker": {"color": "grey"},
+                            "showlegend": False,
+                            "name": "",
+                        },
+                    ]
+                else:
+                    figure_data = [
+                        {
+                            "y": plot_data[response],
+                            "x": plot_data["REAL"],
+                            "tickformat": ".4s",
+                            "type": "bar",
+                            "marker": {"color": "grey"},
+                        },
+                    ]
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
-                    id=self.ids("graph"),
+                    id=self.uuid("graph"),
                     figure={
-                        "data": [
-                            {
-                                "y": plot_data[response],
-                                "x": plot_data["REAL"],
-                                "marker": {"color": "grey"},
-                                "tickformat": ".4s",
-                                "type": "bar",
-                            }
-                        ],
+                        "data": figure_data,
                         "layout": self.theme.create_themed_layout(layout),
                     },
                 )
@@ -505,7 +626,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 )
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
-                    id=self.ids("graph"),
+                    id=self.uuid("graph"),
                     figure={
                         "data": [
                             {
@@ -520,7 +641,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                                 ["SENSCASE"]
                             )
                         ],
-                        "layout": layout,
+                        "layout": self.theme.create_themed_layout(layout),
                     },
                 )
             elif plot_type == "Per sensitivity name":
@@ -533,7 +654,7 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                 )
                 figure = wcc.Graph(
                     config={"displayModeBar": False},
-                    id=self.ids("graph"),
+                    id=self.uuid("graph"),
                     figure={
                         "data": [
                             {
@@ -545,45 +666,14 @@ https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_dat
                             }
                             for sensname, sensname_df in data.groupby(["SENSNAME"])
                         ],
-                        "layout": layout,
+                        "layout": self.theme.create_themed_layout(layout),
                     },
                 )
+            else:
+                # Should not occur unless plot_type options are changed
+                figure = html.Div("Invalid plot type")
 
-            tornado = json.dumps(
-                {
-                    "ENSEMBLE": ensemble,
-                    "data": data.groupby("REAL")
-                    .sum()
-                    .reset_index()[["REAL", response]]
-                    .values.tolist(),
-                    "number_format": "#.4g",
-                    "unit": volume_unit(response),
-                }
-            )
-
-            return figure, tornado, table, columns, volume_title
-
-        @app.callback(
-            Output(self.ids("graph"), "figure"),
-            [Input(self.tornadoplot.click_id, "data")],
-            [State(self.ids("plot-type"), "value"), State(self.ids("graph"), "figure")],
-        )
-        def _color_chart(hoverdata, plot_type, figure):
-            """Callback to update barchart color on tornado plot click"""
-            if not hoverdata or plot_type != "Per realization":
-                return figure
-            hoverdata = json.loads(hoverdata)
-            reals = figure["data"][0]["x"]
-            colors = []
-            for real in reals:
-                if real in hoverdata["real_low"]:
-                    colors.append("rgb(235, 0, 54)")
-                elif real in hoverdata["real_high"]:
-                    colors.append("rgb(36, 55, 70)")
-                else:
-                    colors.append("grey")
-            figure["data"][0]["marker"] = {"color": colors}
-            return figure
+            return figure, volume_title
 
 
 def calculate_table(df, response):
@@ -613,7 +703,7 @@ def calculate_table(df, response):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_dataframe(dframe, columns, column_values):
+def filter_dataframe(dframe, columns, ensemble, source, column_values):
     df = dframe.copy()
     if not isinstance(columns, list):
         columns = [columns]
@@ -622,6 +712,8 @@ def filter_dataframe(dframe, columns, column_values):
             df = df.loc[df[col].isin(filt)]
         else:
             df = df.loc[df[col] == filt]
+    df = df.loc[df["ENSEMBLE"] == ensemble]
+    df = df.loc[df["SOURCE"] == source]
     return df
 
 
