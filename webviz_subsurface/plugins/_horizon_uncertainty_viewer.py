@@ -296,7 +296,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfaces_lines = []
             surfaces_lines_xdata = []
             surfaces_lines_ydata = []
-            print('surfacepaths')
             for idx, path in enumerate(surfacepaths): # surface
                 surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
@@ -350,9 +349,15 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
     max_depth = max_depth_of_surflines(surfaces_lines)
     min_depth = min_depth_of_surflines(surfaces_lines)
     surfacetuples = [(surfacepath,surface_line) for surfacepath, surface_line in zip(surfacepaths, surfaces_lines)]
+    print('refresh')
+    print(surfacetuples[0])
+    print('refresh')
+    
     def depth_sort(elem):
+        print('minimum = ',np.min(elem[1][:,1]))
         return np.min(elem[1][:,1])
     surfacetuples.sort(key=depth_sort, reverse=True)
+
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
