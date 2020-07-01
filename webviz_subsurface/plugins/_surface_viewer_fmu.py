@@ -22,31 +22,61 @@ from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
 class SurfaceViewerFMU(WebvizPluginABC):
-    """### SurfaceViewerFMU
+    """Covisualize surfaces from an ensemble.
 
-A plugin to covisualize surfaces from an ensemble.
 There are 3 separate map views. 2 views can be set independently, while
-the 3rd view displays the resulting map by combining the other maps e.g.
+the 3rd view displays the resulting map by combining the other maps, e.g.
 by taking the difference or summing the values.
 
 There is flexibility in which combinations of surfaces that are displayed
-and calculated, such that surfaces can e.g. be compared across ensembles.
+and calculated, such that surfaces can be compared across ensembles and realizations.
 
-The available maps are gathered from the `share/results/maps/` folder
-for each realization. Statistical calculations across the ensemble(s) are
-done on the fly. If the ensemble or surfaces have a large size it is recommended
-to run webviz in `portable` mode so that the statistical surfaces are pre-calculated
+Statistical calculations across the ensemble(s) are
+done on the fly. If the ensemble(s) or surfaces have a large size, it is recommended
+to run webviz in `portable` mode so that the statistical surfaces are pre-calculated,
 and available for instant viewing.
 
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* `attributes`: List of surface attributes to include, if not given
-                all surface attributes will be included.
-* `attribute_settings`: Dictionary with setting for each attribute.
-                Available settings are 'min' and 'max' to truncate colorscale,
-                'color' to set the colormap (default is viridis) and `unit` as
-                displayed label.
-* `wellfolder`: Folder with RMS wells
-* `wellsuffix`: File suffix for wells in well folder.
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`attributes`:** List of surface attributes to include, if not given
+    all surface attributes will be included.
+* **`attribute_settings`:** Dictionary with setting for each attribute.
+    Available settings are:
+    * `min`: Truncate colorscale (lower limit).
+    * `max`: Truncate colorscale (upper limit).
+    * `color`: Set the colormap (default is viridis).
+    * `unit`: Text to display as unit in label.
+* **`wellfolder`:** Folder with RMS wells.
+* **`wellsuffix`:** File suffix for wells in well folder.
+
+---
+The available maps are gathered from the `share/results/maps/` folder
+for each realization. Subfolders are not supported.
+
+The filenames need to follow a fairly strict convention, as the filenames are used as metadata:
+`horizon_name--attribute--date` (`--date` is optional). The files should be on `irap binary`
+format (typically `.gri` or `.irapbin`) The date is of the form `YYYYMMDD` or
+`YYYYMMDD_YYYYMMDD`, the latter would be for a delta surface between two dates.
+See [this folder]\
+(https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/\
+realization-0/iter-0/share/results/maps) \
+for examples of file naming conventions.
+
+The `attribute_settings` consists of optional settings for the individual attributes that are
+extracted based on the filenames mentioned above. For attributes called `atr_a` and `atr_b`, the
+configuration of `attribute_settings` could e.g. be:
+```yaml
+attribute_settings:
+  atr_a:
+    min: 4
+    max: 10
+    unit: m
+  atr_b:
+    color: rainbow
+```
+Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and `rainbow`.
+
 """
 
     def __init__(

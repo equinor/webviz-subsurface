@@ -25,31 +25,53 @@ from .._datainput.surface import make_surface_layer
 
 # pylint: disable=too-many-instance-attributes
 class WellCrossSectionFMU(WebvizPluginABC):
-    """### WellCrossSectionFMU
-Well cross-section displaying statistical surfaces from a FMU ensemble.
+    """Well cross-section displaying statistical surfaces from a FMU ensemble.
 
 Statistical surfaces are calculated automatically from surfaces stored
 per realization.
 
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* `surfacefiles`: Surface file names (without folder)
-* `surfacenames`: Corresponding list of displayed surface names
-* `surfacefolder`: Realization relative folder containing the surface files
-* `surfacenames`: Surface names for visualization
-* `wellfiles`: List of file paths to RMS wells
-* `wellfolder`: Alternatively provide a folder with RMS wells
-* `wellsuffix`: File suffix for wells in well folder.
-* `segyfiles`: List of file paths to segyfiles
-* `zunit`: z-unit for display
-* `zonelog`: Name of zonelog in wellfiles (displayed along well trajectory)
-* `marginal_logs`: Logs to be displayed in separate horizontal plot
-* `zmin`: Visualized minimum z-value in cross section
-* `zmax`: Visualized maximum z-value in cross section
-* `zonemin`: First zonenumber to draw in log
-* `sampling`: Horizontal sampling interval
-* `nextend`: Horizontal extension beyond well path (0 is no extension)
-* `colors`: List of colors corresponding to surfaces
+---
 
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`surfacefiles`:** Surface file names (without folder).
+* **`surfacenames`:** List corresponding to `surfacefiles` of displayed surface names.
+* **`surfacefolder`:** Realization relative folder containing the `surfacefiles`.
+* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
+* **`wellfolder`:** Alternative to `wellfiles`: provide a folder with RMS wells. \
+(absolute or relative to config file).
+* **`wellsuffix`:** File suffix for wells in `wellfolder`.
+* **`segyfiles`:** List of file paths to `segyfiles` (absolute or relative to config file).
+* **`zunit`:** z-unit for display.
+* **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
+* **`marginal_logs`:** Logs in `wellfiles` to be displayed in separate horizontal plot.
+* **`zmin`:** Visualized minimum z-value in cross section.
+* **`zmax`:** Visualized maximum z-value in cross section.
+* **`zonemin`:** First zonenumber to draw in zone log.
+* **`sampling`:** Horizontal sampling interval.
+* **`nextend`:** Number of samples to extend well fence on each side of well, \
+e.g. `sampling=20` and `nextend=2` results in `extension=20*2`. \
+* **`colors`:** List of hex colors corresponding to surfaces. Note that apostrophies \
+    should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
+
+---
+
+**Example files**
+
+* [Segyfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/\
+observed_data/seismic).
+
+* [One file for surfacefiles](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/\
+maps/topupperreek--ds_extracted_horizons.gri).
+
+* [Wellfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/\
+observed_data/wells).
+
+The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
+
+The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 """
 
     # pylint: disable=too-many-arguments, too-many-locals
