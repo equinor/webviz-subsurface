@@ -49,6 +49,8 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
+from ._test_plug import ExamplePlugin
+from ._test2_plug import ExamplePlugin2
 
 
 __all__ = [
@@ -72,4 +74,6 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
+    "ExamplePlugin",
+    "ExamplePlugin2"
 ]
