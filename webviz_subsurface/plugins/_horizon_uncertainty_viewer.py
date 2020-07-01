@@ -18,6 +18,8 @@ from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
+from operator import add
+from operator import sub
 
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
@@ -190,6 +192,16 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             ],
                                             value=self.surfacefiles,
                                         ),
+                                        dcc.Checklist(
+                                            id=self.ids('surfaces_de_checklist'),
+                                            options=[
+                                                {"label": name+'_error', "value": path}
+                                                for name, path in zip(
+                                                    self.surfacenames, self.surfacefiles_de
+                                        )
+                                    ],
+                                    value=self.surfacefiles_de,
+                                ),
                                     ],
                                 ),
                                 dbc.ModalFooter(
@@ -208,7 +220,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     children=[
                         html.Div(
                             style={
-                                "marginTop": "20px",
+                                "marginTop": "0px",
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
@@ -232,7 +244,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
 
-    ### Callbacks cross-section-view ###
+    ### Callbacks map view and cross-section-view ###
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
@@ -261,24 +273,44 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids("cross-section-view"), "figure"),
             [
                 Input(self.ids("well-dropdown"), "value"), #wellpath
-                #Input(self.ids("surface-dropdown"), "value"), #surfacepaths list
                 Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
+                Input(self.ids("surfaces_de_checklist"), "value"), #surfacepaths_de list
             ],
         )
-        def _render_surface(wellpath, surfacepaths):
+        def _render_surface(wellpath, surfacepaths, surfacepaths_de):
+            list_length = len(surfacepaths)
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
             well_fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
             well.create_relative_hlen() # Get surface values along the polyline
             
             surfaces = []
-            surface_lines = []
-            for path in surfacepaths:
-                surfaces.append(xtgeo.RegularSurface(path, fformat="irap_binary"))
-            for surface in surfaces:
-                surface_lines.append(surface.get_randomline(well_fence))
+            surfaces_lines = []
+            surfaces_lines_xdata = []
+            surfaces_lines_ydata = []
+            print(surfacepaths)
+            for idx, path in enumerate(surfacepaths): # surface
+                surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
+                surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
+                surfaces_lines_xdata.append(surfaces_lines[idx][:,0]) # x coordinates lines from surface
+                surfaces_lines_ydata.append(surfaces_lines[idx][:,1]) # y coordinates lines from surface
 
-            return make_gofig(well_df, surface_lines)
+            surfaces_de = []
+            surfaces_lines_de = []
+            surfaces_lines_de_xdata = []
+            surfaces_lines_de_ydata = []
+            surfaces_lines_de_add_ydata = []
+            surfaces_lines_de_sub_ydata = []
+
+            for idx, path in enumerate(surfacepaths_de): # surface with depth error
+                surfaces_de.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
+                surfaces_lines_de.append(surfaces_de[idx].get_randomline(well_fence)) # cross section x and y coordinates
+                surfaces_lines_de_xdata.append(surfaces_lines_de[idx][:,0]) # x coordinates lines from surface
+                surfaces_lines_de_ydata.append(surfaces_lines_de[idx][:,1]) # y coordinates lines from surface
+                surfaces_lines_de_add_ydata.append(list(map(add, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #add error y data
+                surfaces_lines_de_sub_ydata.append(list(map(sub, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #sub error y data
+
+            return make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata)
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -306,9 +338,9 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well_df, surface_lines):
-    max_depth = max_depth_of_surflines(surface_lines)
-    min_depth = min_depth_of_surflines(surface_lines)
+def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata):
+    max_depth = max_depth_of_surflines(surfaces_lines)
+    min_depth = min_depth_of_surflines(surfaces_lines)
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
@@ -328,32 +360,49 @@ def make_gofig(well_df, surface_lines):
                 "range": [x_well-0.5*x_width,xmax+0.5*x_width],
             },
             "plot_bgcolor":'rgb(233,233,233)',
-            "showlegend":False
+            "showlegend":False,
+            "height": 830,
         }
     )
-    data = [{"type": "line",
+    data_surfaces = [{
+                "type": "line",
                 "y": surface_line[:,1],
                 "x": surface_line[:,0],
                 "name": "surface",
-                "fill":"tonexty"
-            } for surface_line in surface_lines
-            ]
-    data.append({
+                "fill":"tonexty"} 
+            for surface_line in surfaces_lines]
+    
+    data_surfaces_de_add = [{
                 "type": "line",
-                "x": [surface_lines[0][0, 0], surface_lines[0][np.shape(surface_lines[0])[0] - 1, 0]],
+                "y": ydata,
+                "x": surfaces_lines_de_xdata[idx],
+                "name": "error_add",
+                "line":{"color":"black"},
+            } for idx, ydata in enumerate(surfaces_lines_de_add_ydata)
+            ]
+    data_surfaces_de_sub = [{
+                "type": "line",
+                "y": ydata,
+                "x": surfaces_lines_de_xdata[idx],
+                "name": "error_sub",
+                "line":{"color":"gray"},
+            } for idx, ydata in enumerate(surfaces_lines_de_sub_ydata)
+            ]
+    data_surfaces.append({
+                "type": "line",
+                "x": [surfaces_lines[0][0, 0], surfaces_lines[0][np.shape(surfaces_lines[0])[0] - 1, 0]],
                 "y": [max_depth+50, max_depth+50],
                 "fill": "tonexty",
                 "line":{"color":"black"}
-                })
-                        
-    data.append({
+                })     
+    data_surfaces.append({
                 "type": "line",
                 "y": well_df["Z_TVDSS"],
                 "x": well_df["R_HLEN"],
                 "name": "well"
                 })
     data1 = zoneplot
-    return {'data':data+data1,
+    return {'data':data_surfaces + data_surfaces_de_add + data_surfaces_de_sub + data1,
             'layout':layout}
 
 def max_depth_of_surflines(surface_lines):
