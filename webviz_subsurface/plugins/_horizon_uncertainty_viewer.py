@@ -50,6 +50,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         zonelog: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
+        colordict = None,
     ):
 
         super().__init__()
@@ -64,7 +65,14 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
-        
+        if colordict is not None:
+            if len(colordict)!=len(surfacefiles):
+                raise ValueError(
+                    "colordict should be the same length as list of surfacefiles"
+                )
+            self.colordict = colordict
+        else:
+            self.colordict={surfacefile:get_color(i) for i, surfacefile in enumerate(surfacefiles)}
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
@@ -288,7 +296,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             surfaces_lines = []
             surfaces_lines_xdata = []
             surfaces_lines_ydata = []
-            print(surfacepaths)
             for idx, path in enumerate(surfacepaths): # surface
                 surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
@@ -310,7 +317,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 surfaces_lines_de_add_ydata.append(list(map(add, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #add error y data
                 surfaces_lines_de_sub_ydata.append(list(map(sub, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #sub error y data
 
-            return make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata)
+            return make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata, self.colordict, surfacepaths)
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -338,9 +345,13 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata):
+def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata, colordict, surfacepaths):
     max_depth = max_depth_of_surflines(surfaces_lines)
     min_depth = min_depth_of_surflines(surfaces_lines)
+    surfacetuples = [(surfacepath,surface_line) for surfacepath, surface_line in zip(surfacepaths, surfaces_lines)]
+    def depth_sort(elem):
+        return np.min(elem[1][:,1])
+    surfacetuples.sort(key=depth_sort, reverse=True)
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
@@ -364,13 +375,7 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
             "height": 830,
         }
     )
-    data_surfaces = [{
-                "type": "line",
-                "y": surface_line[:,1],
-                "x": surface_line[:,0],
-                "name": "surface",
-                "fill":"tonexty"} 
-            for surface_line in surfaces_lines]
+   
     
     data_surfaces_de_add = [{
                 "type": "line",
@@ -388,13 +393,27 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
                 "line":{"color":"gray"},
             } for idx, ydata in enumerate(surfaces_lines_de_sub_ydata)
             ]
-    data_surfaces.append({
-                "type": "line",
-                "x": [surfaces_lines[0][0, 0], surfaces_lines[0][np.shape(surfaces_lines[0])[0] - 1, 0]],
-                "y": [max_depth+50, max_depth+50],
-                "fill": "tonexty",
-                "line":{"color":"black"}
-                })     
+    data_surfaces = [
+        {
+            "type": "line",
+            "x": [surfaces_lines[0][0, 0], surfaces_lines[0][np.shape(surfaces_lines[0])[0] - 1, 0]],
+            "y": [max_depth + 50, max_depth + 50],
+            "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
+        }
+    ]
+    data_surfaces += [
+        {
+        "type": "line",
+        "y": surface_line[:, 1],
+        "x": surface_line[:, 0],
+        "name": "surface",
+        "fill": "tonexty",
+        "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
+        "fillcolor": colordict[Path(surfacepath)]
+        }
+        for surfacepath, surface_line in surfacetuples
+    ]
+    
     data_surfaces.append({
                 "type": "line",
                 "y": well_df["Z_TVDSS"],
@@ -405,25 +424,25 @@ def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_li
     return {'data':data_surfaces + data_surfaces_de_add + data_surfaces_de_sub + data1,
             'layout':layout}
 
-def max_depth_of_surflines(surface_lines):
+def max_depth_of_surflines(surfaces_lines):
     """
     Find the maximum depth of layers along a cross section
-    :param surface_lines: surface cross section lines
+    :param surfaces_lines: surface cross section lines
     :return: max depth
     """
     maxvalues = np.array([
-        np.max(sl[:,1]) for sl in surface_lines
+        np.max(sl[:,1]) for sl in surfaces_lines
     ])
     return np.max(maxvalues)
 
-def min_depth_of_surflines(surface_lines):
+def min_depth_of_surflines(surfaces_lines):
     """
     Find the miniimum depth of layers along a cross section
-    :param surface_lines: surface cross section lines
+    :param surfaces_lines: surface cross section lines
     :return: min depth
     """
     minvalues = np.array([
-        np.min(sl[:,1]) for sl in surface_lines
+        np.min(sl[:,1]) for sl in surfaces_lines
     ])
     return np.min(minvalues)
 
@@ -471,3 +490,19 @@ def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
             "name": f"Zone: {zone}",
         })
     return zoneplot
+
+def get_color(i):
+    """
+    Generates a list of colors for seismic layers
+    :return: list of colors, lengt of list
+    """
+    colors = [
+        "rgb(255,0,0)",
+        "rgb(255,140,0)",
+        "rgb(0,0,255)",
+        "rgb(128,128,128)",
+        "rgb(255,0,255)",
+        "rgb(255,215,0)"
+    ]
+    n_colors = len(colors)
+    return colors[(i)%(n_colors)]
