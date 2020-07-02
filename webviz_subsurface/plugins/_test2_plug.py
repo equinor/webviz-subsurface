@@ -15,8 +15,6 @@ from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 from sklearn.preprocessing import PolynomialFeatures
-from dash_table import DataTable
-from dash_table.Format import Format
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -360,29 +358,15 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 hollabacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return hollabacks
 
-    @property
-    def table_input_callbacks(self):
-        """List of Inputs for table callback"""
-        callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-        ]
-        if self.response_filters:
-            for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
-        return callbacks
 
     def set_callbacks(self, app):
             @app.callback(
                 [
-                    Output(self.ids("p-values-graph"), "figure"),
-                    Output(self.ids("table"), "data"),
-                    Output(self.ids("table"), "columns"),
-                    Output(self.ids("table_title"), "children"),
+                    Output(self.ids("p-values-graph"), "figure")
                 ],
                 self.model_input_callbacks,
             )
-            def update_model_plot(ensemble, response, interaction, force_out, nvars, *filters):
+            def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -399,68 +383,36 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
-                p_values_plot = make_p_values_plot(model)
-
-                table = model.summary2().tables[1]
-                table.index.name = "Parameter"
-                table.reset_index(inplace=True)
-                columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
-                data = list(table.to_dict("index").values())
-                
-                return (
-                    p_values_plot,
-                    data,
-                    columns,
-                    f"Multiple regression with {response} as response")
+                return make_p_values_plot(model)
 
 
+            
+
+    
     @property
     def layout(self):
         """Main layout"""
-        return html.Div(
+        return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                wcc.FlexBox(
-                    id=self.ids("layout p-values-graph"),
-                    children=[
-                        html.Div(
-                            style={'flex': 2},
-                            children=wcc.Graph(
-                                id=self.ids('p-values-graph'),
-                                figure={
-                                    "data": [{"type": "bar", "x": [1, 2, 3],"y": [1, 3, 2]}],
-                                    "layout": {"title": {"text": "A Figure Specified By Python Dictionary"}}
-                                        }
-                            )
-                        ),
-                        html.Div(
-                            style={"flex": 1},
-                            children=self.control_layout + self.filter_layout
-                            if self.response_filters
-                            else [],
-                            ),
-                        ]
-            ),
-            wcc.FlexBox(
                 html.Div(
-                    id=self.ids("layout-table"),
-                    style={"flex": 3},
-                    children=[
-                        html.Div(
-                            id=self.ids("table_title"),
-                            style={"textAlign": "center"},
-                            children="Ttitle",
-                        ),
-                        DataTable(
-                            id=self.ids("table"),
-                            sort_action="native",
-                            filter_action="native",
-                            page_action="native",
-                            page_size=10,
-                        ),
-                    ],
-                ),)])
-                      
+                    style={'flex': 2},
+                    children=wcc.Graph(
+                        id=self.ids('p-values-graph'),
+                        figure={
+                            "data": [{"type": "bar", "x": [1, 2, 3],"y": [1, 3, 2]}],
+                            "layout": {"title": {"text": "A Figure Specified By Python Dictionary"}}
+                                }
+                    )
+                ),
+                html.Div(
+                    style={"flex": 1},
+                    children=self.control_layout + self.filter_layout
+                    if self.response_filters
+                    else [],
+                ),
+            ],
+        )      
 
 def make_p_values_plot(model):
     """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
