@@ -286,6 +286,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
         def _render_surface(wellpath, surfacepaths, surfacepaths_de):
+            xsec_figure = HuvXsec(self.surface_attributes)
+            xsec_figure.create_surface_lines(fence)
+            xsec_figure.create_errorlines(fence)
+            plotly_surface_data = xsec_figure.plotly_surface_data(surfacepaths)
+            plotly_error_data = xsec_figure.plotly_error_data(errorpaths)
+            plotly_layout = xsec_figure.layout()
             list_length = len(surfacepaths)
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
