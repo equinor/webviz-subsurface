@@ -439,7 +439,7 @@ def max_depth_of_surflines(surfaces_lines):
 
 def min_depth_of_surflines(surfaces_lines):
     """
-    Find the miniimum depth of layers along a cross section
+    Find the minimum depth of layers along a cross section
     :param surfaces_lines: surface cross section lines
     :return: min depth
     """
@@ -495,8 +495,7 @@ def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
 
 def get_color(i):
     """
-    Generates a list of colors for seismic layers
-    :return: list of colors, lengt of list
+    Returns a list of colors for surface layers
     """
     colors = [
         "rgb(255,0,0)",
