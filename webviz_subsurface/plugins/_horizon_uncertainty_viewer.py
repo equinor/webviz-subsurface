@@ -45,14 +45,12 @@ The cross section is defined by a polyline interactively edited in the map view.
         app,
         surfacefiles: List[Path],
         surfacefiles_de: List[Path],
-        #surface_attributes: None,
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
         zonelog: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
-        colordict = None,
     ):
 
         super().__init__()
@@ -72,14 +70,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
-        if colordict is not None:
-            if len(colordict)!=len(surfacefiles):
-                raise ValueError(
-                    "colordict should be the same length as list of surfacefiles"
-                )
-            self.colordict = colordict
-        else:
-            self.colordict={surfacefile:get_color(i) for i, surfacefile in enumerate(surfacefiles)}
+
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
@@ -94,6 +85,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
+        self.xsec = HuvXsection(self.surface_attributes)
+        well = xtgeo.Well(get_path(Path(wellfiles[0])))
+        self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5)  # Generate a polyline along a well path
+
 
     ### Generate unique ID's ###
     def ids(self, element):
@@ -295,20 +290,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
         def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
             ctx = dash.callback_context
-            xsec = HuvXsection(self.surface_attributes)
 
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
                 well = xtgeo.Well(get_path(wellpath))
                 well_df = well.dataframe
-                xsec.fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
+                self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
                 well.create_relative_hlen() # Get surface values along the polyline
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
-                xsec.fence = get_fencespec(coords)
-
-            xsec.create_surface_lines(surfacepaths)
-            data = xsec.get_plotly_sfc_data(surfacepaths)
-            layout = xsec.plotly_layout
-            print(layout)
+                self.xsec.fence = get_fencespec(coords)
+            self.xsec.create_surface_lines(surfacepaths)
+            data = self.xsec.get_plotly_sfc_data(surfacepaths)
+            layout = self.xsec.plotly_layout
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
