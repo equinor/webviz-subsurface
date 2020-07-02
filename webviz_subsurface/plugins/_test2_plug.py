@@ -61,7 +61,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
             self.parameterdf = pd.read_csv(self.parameter_csv)
             self.responsedf = pd.read_csv(self.response_csv)
-            
+
 # her lager vi parameter og response DataFrames
         elif ensembles and response_file:
             self.ens_paths = {
@@ -136,8 +136,9 @@ class MultipleRegressionJostein(WebvizPluginABC):
             .dropna(how="all", axis="columns")
             .columns
         )
+
         parameters =[(param.replace(":","_") if ":" in param else param) for param in parameters]
-        return parameters
+
 
     @property
     def ensembles(self):
@@ -242,6 +243,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                             {"label": "on", "value": True},
                             {"label": "off", "value": False}
                         ],
+
                         value=False
                         )
                 ]
@@ -278,6 +280,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                     )
                 ]
             )
+
         ]
 
     @property
@@ -349,9 +352,11 @@ class MultipleRegressionJostein(WebvizPluginABC):
             # Input(self.ids("initial-parameter"), "data"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"),"value"),
+
             Input(self.ids("interaction"), "value"),
             Input(self.ids("force out"), "value"),
             Input(self.ids("nvars"), "value")
+
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -366,7 +371,9 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 ],
                 self.model_input_callbacks,
             )
+
             def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
+
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -383,6 +390,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
+
                 return make_p_values_plot(model)
 
 
@@ -508,7 +516,6 @@ def gen_model(
         else:
             return forward_selected(df, response, maxvars=max_vars)
 
-
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
@@ -575,7 +582,6 @@ def forward_selected_interaction(data, response, maxvars=9):
                                 ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model
-
 
 def forward_selected(data, response, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 

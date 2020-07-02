@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 import dash_html_components as html
@@ -13,6 +14,8 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -29,6 +32,9 @@ class MultipleRegressionSofie(WebvizPluginABC):
         response_filters: dict = None,
         response_ignore: list = None,
         response_include: list = None,
+        column_keys: list = None,
+        sampling: str = "monthly",
+        aggregation: str = "sum",
     ):
 
         super().__init__()
@@ -38,6 +44,10 @@ class MultipleRegressionSofie(WebvizPluginABC):
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
+        self.column_keys = column_keys
+        self.time_index = sampling
+        self.aggregation = aggregation
+
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -218,9 +228,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                html.Div(
-                    style={"flex": 3},
-                    children=[html.H3("Some graph will show up here")],
+                html.Div([html.H3("Some graph will show up here")]
                 ),
                 html.Div(
                     style={"flex": 1},
@@ -232,8 +240,8 @@ class MultipleRegressionSofie(WebvizPluginABC):
         )
 
     @property
-    def correlation_input_callbacks(self):
-        """List of Inputs for correlation callback"""
+    def regression_input_callbacks(self):
+        """List of Inputs for regression callback"""
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
