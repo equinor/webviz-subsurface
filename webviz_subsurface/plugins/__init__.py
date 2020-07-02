@@ -51,6 +51,7 @@ from ._reservoir_simulation_timeseries_regional import (
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._p_values import PValues
 from ._multiple_regression_sofie import MultipleRegressionSofie
+from ._multiple_regession_vegard import DataTablefromFit
 
 
 __all__ = [
@@ -75,5 +76,6 @@ __all__ = [
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
     "PValues",
-    "MultipleRegressionSofie"
+    "MultipleRegressionSofie",
+    "DataTablefromFit",
 ]

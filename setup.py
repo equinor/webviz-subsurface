@@ -46,10 +46,8 @@ setup(
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "PValues = webviz_subsurface.plugins:PValues",
-            "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie"
-
- 
-            
+            "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
+            "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
         ]
     },
     install_requires=[
