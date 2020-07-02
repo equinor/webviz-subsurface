@@ -48,13 +48,13 @@ class PlotCoefficientsSara(WebvizPluginABC):
 
 def make_arrow_plot(self, coefs):
     """Sorting dictionary in descending order. 
-    Saving parameters and values of coefficients in lists"""
-
+    Saving parameters and values of coefficients in lists.
+    Saving plot-function to variable fig."""
     coefs = dict(sorted(coefs.items(), key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
     sgn = signs(self, vals)
-    colors = color_array(self, vals, params, sgn) ##COLOR THINGY IS HERE RIGHT HERE YUP YUP
+    colors = color_array(self, vals, params, sgn)
 
     fig = arrow_plot(self, coefs, vals, params, sgn, colors)
 
@@ -114,7 +114,7 @@ def arrow_plot(self, coefs, vals, params, sgn, colors): #vals, params lists
         text="coefficient",
         showarrow=False
     )
-    ### y_zero_line
+    """Adding zero-line along y-axis"""
     fig.add_shape(
         # Line Horizontal
             type="line",
@@ -142,6 +142,7 @@ def arrow_plot(self, coefs, vals, params, sgn, colors): #vals, params lists
         line_width=0.75,
     )
 
+    """Adding arrows to figure"""
     for i, s in enumerate(sgn):
         if s == 1:
             fig.add_shape(
@@ -159,6 +160,7 @@ def arrow_plot(self, coefs, vals, params, sgn, colors): #vals, params lists
     return fig
 
 def color_array(self, vals, params, sgn):
+    """Function to scale coefficients to a green-red color range"""
     max_val = vals[0]
     min_val = vals[-1]
     r = 250
