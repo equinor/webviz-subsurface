@@ -19,7 +19,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from .._datainput.fmu_input import load_parameters, load_csv
 
 
-class ExamplePlugin2(WebvizPluginABC):
+class MultipleRegressionJostein(WebvizPluginABC):
 
         # pylint:disable=too-many-arguments
         # plug-in tar in enten en csv fil eller en ensemble og div filter
