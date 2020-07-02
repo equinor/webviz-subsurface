@@ -46,8 +46,9 @@ setup(
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "ExamplePlugin = webviz_subsurface.plugins:ExamplePlugin",
-            "ExamplePlugin2 = webviz_subsurface.plugins:ExamplePlugin2"
-        ]
+            "ExamplePlugin2 = webviz_subsurface.plugins:MultipleRegressionJostein",
+            "PValues = webviz_subsurface.plugins:PValues",
+            "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie"]
     },
     install_requires=[
         "fmu-ensemble>=1.2.3",

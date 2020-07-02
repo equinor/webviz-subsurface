@@ -28,7 +28,7 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
                 df["SOURCE"] = volname
                 df["ENSEMBLE"] = ens_name
                 ens_dfs.append(df)
-            except ValueError:
+            except KeyError:
                 pass
         try:
             dfs.append(pd.concat(ens_dfs))
