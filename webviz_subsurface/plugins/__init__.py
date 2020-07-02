@@ -55,7 +55,7 @@ from ._p_values import PValues
 from ._multiple_regression_sofie import MultipleRegressionSofie
 from ._multiple_regression_sara import PlotCoefficientsSara
 from ._multiple_regession_vegard import DataTablefromFit
-
+from ._multiple_regression_sara import PlotCoefficientsSara
 
 __all__ = [
     "ParameterDistribution",
