@@ -53,7 +53,10 @@ from ._test_plug import ExamplePlugin
 from ._test2_plug import MultipleRegressionJostein
 from ._p_values import PValues
 from ._multiple_regression_sofie import MultipleRegressionSofie
+<<<<<<< HEAD
 from ._multiple_regression_sara import PlotCoefficientsSara
+=======
+>>>>>>> 75c4b928e0c6ba699ef12a2f634b7e06adcf61ae
 
 
 __all__ = [

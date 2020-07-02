@@ -48,6 +48,7 @@ setup(
             "ExamplePlugin = webviz_subsurface.plugins:ExamplePlugin",
             "ExamplePlugin2 = webviz_subsurface.plugins:MultipleRegressionJostein",
             "PValues = webviz_subsurface.plugins:PValues",
+
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
             "PlotCoefficientsSara = webviz_subsurface.plugins:PlotCoefficientsSara"
 
