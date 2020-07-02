@@ -290,9 +290,15 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("well-dropdown"), "value"), #wellpath
                 Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
                 Input(self.ids("surfaces_de_checklist"), "value"), #surfacepaths_de list
+                Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-        def _render_surface(wellpath, surfacepaths, surfacepaths_de):
+        def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
+            ctx = dash.callback_context
+            print(ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value')
+            print(ctx.triggered[0]['prop_id']==self.ids("surfaces-checklist")+'.value')
+            print(ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points')
+
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
             well_fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
@@ -378,3 +384,20 @@ def get_color(i):
     ]
     n_colors = len(colors)
     return colors[(i)%(n_colors)]
+
+def get_fencespec(coords):
+    """Create a XTGeo fence spec from polyline coordinates"""
+    poly = xtgeo.Polygons()
+    poly.dataframe = pd.DataFrame(
+        [
+            {
+                "X_UTME": c[1],
+                "Y_UTMN": c[0],
+                "Z_TVDSS": 0,
+                "POLY_ID": 1,
+                "NAME": "polyline",
+            }
+            for c in coords
+        ]
+    )
+    return poly.get_fence(asnumpy=True)
