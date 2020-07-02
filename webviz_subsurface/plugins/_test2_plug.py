@@ -61,6 +61,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
             self.parameterdf = pd.read_csv(self.parameter_csv)
             self.responsedf = pd.read_csv(self.response_csv)
+
 # her lager vi parameter og response DataFrames
         elif ensembles and response_file:
             self.ens_paths = {
@@ -135,7 +136,9 @@ class MultipleRegressionJostein(WebvizPluginABC):
             .dropna(how="all", axis="columns")
             .columns
         )
-        return parameters
+
+        parameters =[(param.replace(":","_") if ":" in param else param) for param in parameters]
+
 
     @property
     def ensembles(self):
@@ -240,10 +243,44 @@ class MultipleRegressionJostein(WebvizPluginABC):
                             {"label": "on", "value": True},
                             {"label": "off", "value": False}
                         ],
-                        value=True
+
+                        value=False
                         )
                 ]
             ),
+            html.Div(
+                [
+                    html.Label("Force out"),
+                    dcc.Dropdown(
+                        id=self.ids("force out"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=["FWL", "INTERPOLATE_WO"],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("number of variables"),
+                    dcc.Input(
+                        id=self.ids("nvars"),
+                        type="number",
+                        debounce=True,
+                        placeholder="Max variables",
+                        min=1,
+                        max=len(self.parameterdf),
+                        step=1,
+                        value=9,
+                        
+                    )
+                ]
+            )
+
         ]
 
     @property
@@ -315,7 +352,11 @@ class MultipleRegressionJostein(WebvizPluginABC):
             # Input(self.ids("initial-parameter"), "data"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"),"value"),
-            Input(self.ids("interaction"), "value")
+
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("force out"), "value"),
+            Input(self.ids("nvars"), "value")
+
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -330,7 +371,9 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 ],
                 self.model_input_callbacks,
             )
-            def update_pvalue_plot(ensemble, response, interaction, *filters):
+
+            def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
+
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -339,28 +382,15 @@ class MultipleRegressionJostein(WebvizPluginABC):
                     filteroptions=filteroptions,
                     aggregation=self.aggregation,
                 )
-                parameter_filters=[
-                            'RMSGLOBPARAMS:FWL',
-                            'MULTFLT:MULTFLT_F1',
-                            'MULTFLT:MULTFLT_F2',
-                            'MULTFLT:MULTFLT_F3',
-                            'MULTFLT:MULTFLT_F4',
-                            'MULTFLT:MULTFLT_F5',
-                            'MULTZ:MULTZ_MIDREEK',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_WO',
-                            'LOG10_MULTFLT:MULTFLT_F1',
-                            'LOG10_MULTFLT:MULTFLT_F2',
-                            'LOG10_MULTFLT:MULTFLT_F3',
-                            'LOG10_MULTFLT:MULTFLT_F4',
-                            'LOG10_MULTFLT:MULTFLT_F5',
-                            'LOG10_MULTZ:MULTZ_MIDREEK',
-                            "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
-                            "COHIBA_MODEL_MODE"]
-                parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-                param_df = parameterdf.drop(columns=parameter_filters)
-                df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-                model = gen_model(df, response, 9, interaction)
+                paramdf = self.parameterdf
+
+                paramdf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
+                paramdf = paramdf.loc[paramdf["ENSEMBLE"] == ensemble]
+                paramdf.drop(columns=force_out, inplace=True)
+                
+                df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+                model = gen_model(df, response, nvars, interaction)
+
                 return make_p_values_plot(model)
 
 
@@ -503,6 +533,7 @@ def gen_interaction_df(
             df.drop(columns=response),
             inter_only))
     return interaction_df.join(df[response])
+
 
 def forward_selected_interaction(data, response, maxvars=9):
     """Linear model designed by forward selection.
