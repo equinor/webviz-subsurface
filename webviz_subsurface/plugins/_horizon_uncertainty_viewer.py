@@ -44,6 +44,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         app,
         surfacefiles: List[Path],
         surfacefiles_de: List[Path],
+        #surface_attributes: None,
         wellfiles: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
@@ -57,6 +58,11 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zunit = zunit
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
         self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
+        self.surface_attributes = {x: {} for x in surfacefiles}
+        
+        for i, surfacefile in enumerate(surfacefiles):
+            self.surface_attributes[surfacefile] = {"color": get_color(i), "errorpath": surfacefiles_de[i]}
+
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
                 raise ValueError(
@@ -286,26 +292,22 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
         def _render_surface(wellpath, surfacepaths, surfacepaths_de):
-            list_length = len(surfacepaths)
             well = xtgeo.Well(get_path(wellpath))
             well_df = well.dataframe
             well_fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
             well.create_relative_hlen() # Get surface values along the polyline
-            
+
             surfaces = []
             surfaces_lines = []
-            surfaces_lines_xdata = []
             surfaces_lines_ydata = []
+
             for idx, path in enumerate(surfacepaths): # surface
                 surfaces.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines.append(surfaces[idx].get_randomline(well_fence)) # cross section x and y coordinates
-                surfaces_lines_xdata.append(surfaces_lines[idx][:,0]) # x coordinates lines from surface
-                surfaces_lines_ydata.append(surfaces_lines[idx][:,1]) # y coordinates lines from surface
 
             surfaces_de = []
             surfaces_lines_de = []
             surfaces_lines_de_xdata = []
-            surfaces_lines_de_ydata = []
             surfaces_lines_de_add_ydata = []
             surfaces_lines_de_sub_ydata = []
 
@@ -313,11 +315,15 @@ The cross section is defined by a polyline interactively edited in the map view.
                 surfaces_de.append(xtgeo.surface_from_file(path, fformat="irap_binary")) #list of surfaces
                 surfaces_lines_de.append(surfaces_de[idx].get_randomline(well_fence)) # cross section x and y coordinates
                 surfaces_lines_de_xdata.append(surfaces_lines_de[idx][:,0]) # x coordinates lines from surface
-                surfaces_lines_de_ydata.append(surfaces_lines_de[idx][:,1]) # y coordinates lines from surface
-                surfaces_lines_de_add_ydata.append(list(map(add, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #add error y data
-                surfaces_lines_de_sub_ydata.append(list(map(sub, surfaces_lines_ydata[idx], surfaces_lines_de_ydata[idx]))) #sub error y data
+                surfaces_lines_de_add_ydata.append(list(map(add, surfaces_lines[idx][:,1], surfaces_lines_de[idx][:,1]))) #add error y data
+                surfaces_lines_de_sub_ydata.append(list(map(sub, surfaces_lines[idx][:,1], surfaces_lines_de[idx][:,1]))) #sub error y data
 
-            return make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata, self.colordict, surfacepaths)
+            surfacetuples = [(surfacepath,surface_line) for surfacepath, surface_line in zip(surfacepaths, surfaces_lines)]
+            def depth_sort(elem):
+                return np.min(elem[1][:,1])
+            surfacetuples.sort(key=depth_sort, reverse=True)
+
+            return make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_de_xdata, self.colordict, surfacetuples)
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -345,19 +351,9 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_xdata, surfaces_lines_de_xdata, colordict, surfacepaths):
+def make_gofig(well_df, surfaces_lines, surfaces_lines_de_add_ydata, surfaces_lines_de_sub_ydata, surfaces_lines_de_xdata, colordict, surfacetuples):
     max_depth = max_depth_of_surflines(surfaces_lines)
     min_depth = min_depth_of_surflines(surfaces_lines)
-    surfacetuples = [(surfacepath,surface_line) for surfacepath, surface_line in zip(surfacepaths, surfaces_lines)]
-    print('refresh')
-    print(surfacetuples[0])
-    print('refresh')
-    
-    def depth_sort(elem):
-        print('minimum = ',np.min(elem[1][:,1]))
-        return np.min(elem[1][:,1])
-    surfacetuples.sort(key=depth_sort, reverse=True)
-
     x_well,y_well,xmax = find_where_it_crosses_well(min_depth,max_depth,well_df)
     y_width = np.abs(max_depth-y_well)
     x_width = np.abs(xmax-x_well)
