@@ -513,3 +513,20 @@ def get_color(i):
     ]
     n_colors = len(colors)
     return colors[(i)%(n_colors)]
+
+def get_fencespec(coords):
+    """Create a XTGeo fence spec from polyline coordinates"""
+    poly = xtgeo.Polygons()
+    poly.dataframe = pd.DataFrame(
+        [
+            {
+                "X_UTME": c[1],
+                "Y_UTMN": c[0],
+                "Z_TVDSS": 0,
+                "POLY_ID": 1,
+                "NAME": "polyline",
+            }
+            for c in coords
+        ]
+    )
+    return poly.get_fence(asnumpy=True)
