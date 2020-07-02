@@ -48,6 +48,11 @@ setup(
             "PValues = webviz_subsurface.plugins:PValues",
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
             "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
+            "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
+            "PlotCoefficientsSara = webviz_subsurface.plugins:PlotCoefficientsSara",
+
+ 
+            
         ]
     },
     install_requires=[
