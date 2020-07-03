@@ -6,9 +6,11 @@ import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
+from dash_table import DataTable
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
+from dash_table.Format import Format, Scheme
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -16,6 +18,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
+from sklearn.preprocessing import PolynomialFeatures
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -100,6 +103,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
+        self.set_callbacks(app)
 
     def ids(self, element):
         """Generate unique id for dom element"""
@@ -220,6 +224,33 @@ class MultipleRegressionSofie(WebvizPluginABC):
                     ),
                 ]
             ),
+            html.Div(
+                [
+                    html.Label("Interaction"),
+                    dcc.RadioItems(
+                        id=self.ids("interaction"),
+                        options=[
+                            {"label": "On", "value": True},
+                            {"label": "Off", "value": False}
+                        ],
+                        value=True
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Number of variables"),
+                    dcc.Dropdown(
+                        id=self.ids("max_vars"),
+                        options=[
+                            {"label": val, "value": val} for val in range(1,min(10,len(self.parameterdf.columns)))
+                        ],
+                        clearable=False,
+                        value=3,
+                    ),
+                ]
+            ),
+
         ]
 
     @property
@@ -228,7 +259,27 @@ class MultipleRegressionSofie(WebvizPluginABC):
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
-                html.Div([html.H3("Some graph will show up here")]
+                html.Div(
+                    style={"flex": 3},
+                    children=[
+                        html.Div(
+                            id=self.ids("table_title"),
+                            style={"textAlign": "center"},
+                            children="",
+                        ),
+                        DataTable(
+                            id=self.ids("table"),
+                            sort_action="native",
+                            filter_action="native",
+                            page_action="native",
+                            page_size=10,
+                            style_cell={"fontSize":11}
+                        ),
+                        html.Div(
+                            style={'flex': 2},
+                            children=wcc.Graph(id=self.ids('p-values-plot'))
+                ),
+                    ],
                 ),
                 html.Div(
                     style={"flex": 1},
@@ -240,11 +291,27 @@ class MultipleRegressionSofie(WebvizPluginABC):
         )
 
     @property
-    def regression_input_callbacks(self):
-        """List of Inputs for regression callback"""
+    def table_input_callbacks(self):
+        """List of Inputs for multiple regression table callback"""
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max_vars"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+    
+    @property
+    def pvalues_input_callbacks(self):
+        """List of Inputs for p-values callback"""
+        callbacks = [
+            Input(self.ids("ensemble"), "value"),
+            Input(self.ids("responses"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max_vars"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -260,6 +327,116 @@ class MultipleRegressionSofie(WebvizPluginABC):
                     {"name": col_name, "type": col_type, "values": filters[i]}
                 )
         return filteroptions
+    
+    def set_callbacks(self, app):
+        @app.callback(
+            [
+                Output(self.ids("table"), "data"),
+                Output(self.ids("table"), "columns"),
+                Output(self.ids("table_title"), "children"),
+            ],
+            self.table_input_callbacks,
+        )
+
+        def _update_table(ensemble, response, interaction, max_vars, *filters):
+            """Callback to update table
+
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model
+            """
+
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameter_filters=[
+                            'RMSGLOBPARAMS:FWL',
+                            'MULTFLT:MULTFLT_F1',
+                            'MULTFLT:MULTFLT_F2',
+                            'MULTFLT:MULTFLT_F3',
+                            'MULTFLT:MULTFLT_F4',
+                            'MULTFLT:MULTFLT_F5',
+                            'MULTZ:MULTZ_MIDREEK',
+                            'INTERPOLATE_RELPERM:INTERPOLATE_GO',
+                            'INTERPOLATE_RELPERM:INTERPOLATE_WO',
+                            'LOG10_MULTFLT:MULTFLT_F1',
+                            'LOG10_MULTFLT:MULTFLT_F2',
+                            'LOG10_MULTFLT:MULTFLT_F3',
+                            'LOG10_MULTFLT:MULTFLT_F4',
+                            'LOG10_MULTFLT:MULTFLT_F5',
+                            'LOG10_MULTZ:MULTZ_MIDREEK',
+                            "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
+                            "COHIBA_MODEL_MODE"]
+            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            param_df = parameterdf.drop(columns=parameter_filters)
+            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
+            table = model.model.fit().summary2().tables[1]
+            table.index.name = "Parameter"
+            table.reset_index(inplace=True)
+            columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
+            data = table.to_dict("rows")
+            return(
+                data,
+                columns,
+                f"Multiple regression with {response} as response",
+            )
+
+        @app.callback(
+            [
+                Output(self.ids("p-values-plot"), "figure")
+            ],
+            self.pvalues_input_callbacks
+        )
+
+        def update_pvalue_plot(ensemble, response, interaction, max_vars, *filters):
+            """Callback to update correlation graph
+
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model
+            """
+
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameter_filters=[
+                            'RMSGLOBPARAMS:FWL',
+                            'MULTFLT:MULTFLT_F1',
+                            'MULTFLT:MULTFLT_F2',
+                            'MULTFLT:MULTFLT_F3',
+                            'MULTFLT:MULTFLT_F4',
+                            'MULTFLT:MULTFLT_F5',
+                            'MULTZ:MULTZ_MIDREEK',
+                            'INTERPOLATE_RELPERM:INTERPOLATE_GO',
+                            'INTERPOLATE_RELPERM:INTERPOLATE_WO',
+                            'LOG10_MULTFLT:MULTFLT_F1',
+                            'LOG10_MULTFLT:MULTFLT_F2',
+                            'LOG10_MULTFLT:MULTFLT_F3',
+                            'LOG10_MULTFLT:MULTFLT_F4',
+                            'LOG10_MULTFLT:MULTFLT_F5',
+                            'LOG10_MULTZ:MULTZ_MIDREEK',
+                            "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
+                            "COHIBA_MODEL_MODE"]
+            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            param_df = parameterdf.drop(columns=parameter_filters)
+            
+            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
+            
+            return make_p_values_plot(model)
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -289,7 +466,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ),
         ]
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_and_sum_responses(
     dframe, ensemble, response, filteroptions=None, aggregation="sum"
@@ -302,7 +478,6 @@ def filter_and_sum_responses(
         filteroptions=filteroptions,
         aggregation=aggregation,
     )
-
 
 def _filter_and_sum_responses(
     dframe, ensemble, response, filteroptions=None, aggregation="sum",
@@ -332,6 +507,189 @@ def _filter_and_sum_responses(
         return df.groupby("REAL").mean().reset_index()[["REAL", response]]
     raise ValueError(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
+    )
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def gen_model(
+        df: pd.DataFrame,
+        response: str,
+        max_vars: int=9,
+        interaction: bool=False):
+        
+        if interaction:
+            df = gen_interaction_df(df, response)
+            return forward_selected_interaction(df, response, maxvars=max_vars)
+        else:
+            return forward_selected(df, response, maxvars=max_vars)
+
+def gen_interaction_df(
+    df: pd.DataFrame,
+    response: str,
+    degree: int=2,
+    inter_only: bool=False,
+    bias: bool=False):
+
+    x_interaction = PolynomialFeatures(
+        degree=2,
+        interaction_only=inter_only,
+        include_bias=False).fit_transform(df.drop(columns=response))
+    interaction_df = pd.DataFrame(
+        x_interaction,
+        columns=gen_column_names(
+            df.drop(columns=response),
+            inter_only))
+    return interaction_df.join(df[response])
+
+def gen_column_names(df, interaction_only):
+    output = list(df.columns)
+    if interaction_only:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (
+                    (colname1 != colname2) and
+                    (f"{colname1}:{colname2}" not in output) or
+                    (f"{colname2}:{colname1}" not in output)
+                        ):
+                        output.append(f"{colname1}:{colname2}")
+    else:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
+                    output.append(f"{colname1}:{colname2}")
+    return output
+
+def forward_selected(data, response, maxvars=9):
+    # TODO find way to remove non-significant variables form entering model. 
+    """Linear model designed by forward selection.
+
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    """
+    remaining = set(data.columns)
+    remaining.remove(response)
+    selected = []
+
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                        ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    return model
+
+
+def forward_selected_interaction(data, response, maxvars=9):
+    """Linear model designed by forward selection.
+
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    """
+    remaining = set(data.columns)
+    remaining.remove(response)
+    selected = []
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                        ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            candidate_split = best_candidate.split(sep=":")
+            if len(candidate_split) == 2:  
+                if candidate_split[0] not in selected and candidate_split[0] in remaining: 
+                    remaining.remove(candidate_split[0])
+                    selected.append(candidate_split[0])
+                    maxvars += 1
+                if candidate_split[1] not in selected and candidate_split[1] in remaining:
+                    remaining.remove(candidate_split[1])
+                    selected.append(candidate_split[1])
+                    maxvars += 1
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    return model
+
+def make_p_values_plot(model):
+    """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
+    p_sorted = model.pvalues.sort_values()
+    parameters = p_sorted.index
+    values = p_sorted.values
+
+    """ Making an array for the corresponding colors """
+    
+    colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
+    
+    dict_fig = dict(
+        {"data": [
+                {
+                    "type": "bar",
+                    "x": parameters,
+                    "y": values,
+                    "marker": {"color": colors}
+                }], 
+        })
+    return [dict_fig]
+
+def make_range_slider(domid, values, col_name):
+    try:
+        values.apply(pd.to_numeric, errors="raise")
+    except ValueError:
+        raise ValueError(
+            f"Cannot calculate filter range for {col_name}. "
+            "Ensure that it is a numerical column."
+        )
+    return dcc.RangeSlider(
+        id=domid,
+        min=values.min(),
+        max=values.max(),
+        step=calculate_slider_step(
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
+        ),
+        value=[values.min(), values.max()],
+        marks={
+            str(values.min()): {"label": f"{values.min():.2f}"},
+            str(values.max()): {"label": f"{values.max():.2f}"},
+        },
     )
 
 def theme_layout(theme, specific_layout):
