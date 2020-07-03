@@ -18,8 +18,6 @@ from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
-from operator import add
-from operator import sub
 
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
@@ -288,7 +286,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-        def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
+
+        def _render_surface(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
 
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
@@ -298,9 +297,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                 well.create_relative_hlen() # Get surface values along the polyline
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-            self.xsec.create_surface_lines(surfacepaths)
-            data = self.xsec.get_plotly_sfc_data(surfacepaths)
+            self.xsec.set_surface_lines(surfacepaths)
+            self.xsec.set_error_lines(errorpaths)
+            data = self.xsec.get_plotly_sfc_data(surfacepaths, errorpaths)
             layout = self.xsec.plotly_layout
+
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
