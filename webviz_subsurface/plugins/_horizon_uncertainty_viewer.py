@@ -86,7 +86,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes)
-        self.xsec.create_well(wellfiles[0])
 
 
     ### Generate unique ID's ###
@@ -287,20 +286,25 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-        def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
+        def _render_surface(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
             data = []
+            layout = {}
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                self.xsec.create_well(wellpath)
-                self.xsec.create_surface_lines(surfacepaths)
-                data += self.xsec.get_plotly_sfc_data(surfacepaths)
+                self.xsec.create_well(wellpath,surfacepaths)
+                self.xsec.set_surface_lines(surfacepaths)
+                self.xsec.set_error_lines(errorpaths)
+                data += self.xsec.get_plotly_sfc_data(surfacepaths,errorpaths)
                 data += self.xsec.get_plotly_well_data()
+                layout = self.xsec.plotly_layout(surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-                self.xsec.create_surface_lines(surfacepaths)
+                self.xsec.set_surface_lines(surfacepaths,errorpaths)
+                self.xsec.set_error_lines(errorpaths)
                 data += self.xsec.get_plotly_sfc_data(surfacepaths)
+                #Need to make layout for when we make our own crossection
             
-            layout = self.xsec.plotly_layout
+            #ymin,ymax = self.xsec.surfline_max_min_depth(surfacepaths)
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
@@ -329,38 +333,6 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-
-def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
-    if zonelogname not in df.columns:
-        return
-    zonevals = df[zonelogname].values #values of zonelog
-    zomin = (
-        zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
-    ) #zomin=0 in this case
-    zomax = int(df[zonelogname].max()) #zomax = 4 in this case
-    # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
-    zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
-    for transition in zone_transitions:
-        try:
-            zvals = np.insert(zvals, transition, zvals[transition + 1])
-            hvals = np.insert(hvals, transition, hvals[transition + 1])
-            zonevals = np.insert(zonevals, transition, zonevals[transition])
-        except IndexError:
-            pass
-    zoneplot = []
-    color = ["yellow","orange","green","red","grey"]
-    for i, zone in enumerate(range(zomin, zomax + 1)):
-        zvals_copy = ma.masked_where(zonevals != zone, zvals)
-        hvals_copy = ma.masked_where(zonevals != zone, hvals)
-        zoneplot.append({
-            "x": hvals_copy.compressed(),
-            "y": zvals_copy.compressed(),
-            "line": {"width": 5, "color": color[i]},
-            "fillcolor": color[i],
-            "marker": {"opacity": 0.5},
-            "name": f"Zone: {zone}",
-        })
-    return zoneplot
 
 def get_color(i):
     """
