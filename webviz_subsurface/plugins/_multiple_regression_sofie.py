@@ -112,6 +112,29 @@ class MultipleRegressionSofie(WebvizPluginABC):
     @property
     def tour_steps(self):
         steps = [
+            {
+                "id": self.ids("layout"),
+                "content": (
+                    "Dashboard displaying the results of a multiple "
+                    "regression of input parameters and a chosen response."
+                )
+            },
+            {
+                "id": self.ids("table"),
+                "content": (
+                    "A table showing the results for the best combination of "
+                    "parameters for a chosen response."
+                )
+            },
+            {
+                "id": self.ids("p-values-plot"),
+                "content": (
+                    "The p-values for the parameters from the table ranked from most significant "
+                    "to least significant.  Red indicates "
+                    "that the p-value is significant, black indicates that the p-value "
+                    "is not significant."
+                )
+            },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
         ]
@@ -264,8 +287,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
                     children=[
                         html.Div(
                             id=self.ids("table_title"),
-                            style={"textAlign": "center"},
-                            children="",
+                            style={"textAlign": "center"}
                         ),
                         DataTable(
                             id=self.ids("table"),
@@ -276,9 +298,9 @@ class MultipleRegressionSofie(WebvizPluginABC):
                             style_cell={"fontSize":11}
                         ),
                         html.Div(
-                            style={'flex': 2},
+                            style={'flex': 3},
                             children=wcc.Graph(id=self.ids('p-values-plot'))
-                ),
+                        )
                     ],
                 ),
                 html.Div(
@@ -657,16 +679,18 @@ def make_p_values_plot(model):
     
     colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
     
-    dict_fig = dict(
+    fig = dict(
         {"data": [
                 {
                     "type": "bar",
                     "x": parameters,
                     "y": values,
                     "marker": {"color": colors}
-                }], 
-        })
-    return [dict_fig]
+                }]
+        }
+    )
+
+    return [fig]
 
 def make_range_slider(domid, values, col_name):
     try:
