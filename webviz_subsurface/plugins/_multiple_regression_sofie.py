@@ -295,7 +295,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize":11}
+                            style_cell={"fontSize":12}
                         ),
                         html.Div(
                             style={'flex': 3},
@@ -362,6 +362,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 'LOG10_MULTZ:MULTZ_MIDREEK', "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
                 "COHIBA_MODEL_MODE"]
 
+        """Set callbacks for the table and the p-values plot"""
         @app.callback(
             [
                 Output(self.ids("table"), "data"),
@@ -370,7 +371,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ],
             self.table_input_callbacks,
         )
-
         def _update_table(ensemble, response, interaction, max_vars, *filters):
             """Callback to update multiple regression results table """
 
@@ -403,7 +403,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ],
             self.pvalues_input_callbacks
         )
-        def update_pvalue_plot(ensemble, response, interaction, max_vars, *filters):
+        def update_pvalues_plot(ensemble, response, interaction, max_vars, *filters):
             """Callback to update the p-values plot"""
 
             filteroptions = self.make_response_filters(filters)
