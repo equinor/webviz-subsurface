@@ -351,6 +351,17 @@ class MultipleRegressionSofie(WebvizPluginABC):
         return filteroptions
     
     def set_callbacks(self, app):
+        """Temporary way of filtering out stupid parameters"""
+        parameter_filters=[
+                'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
+                'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
+                'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
+                'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
+                'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
+                'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
+                'LOG10_MULTZ:MULTZ_MIDREEK', "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
+                "COHIBA_MODEL_MODE"]
+
         @app.callback(
             [
                 Output(self.ids("table"), "data"),
@@ -361,13 +372,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
         )
 
         def _update_table(ensemble, response, interaction, max_vars, *filters):
-            """Callback to update table
-
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Fit model
-            """
+            """Callback to update multiple regression results table """
 
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -377,24 +382,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameter_filters=[
-                            'RMSGLOBPARAMS:FWL',
-                            'MULTFLT:MULTFLT_F1',
-                            'MULTFLT:MULTFLT_F2',
-                            'MULTFLT:MULTFLT_F3',
-                            'MULTFLT:MULTFLT_F4',
-                            'MULTFLT:MULTFLT_F5',
-                            'MULTZ:MULTZ_MIDREEK',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_WO',
-                            'LOG10_MULTFLT:MULTFLT_F1',
-                            'LOG10_MULTFLT:MULTFLT_F2',
-                            'LOG10_MULTFLT:MULTFLT_F3',
-                            'LOG10_MULTFLT:MULTFLT_F4',
-                            'LOG10_MULTFLT:MULTFLT_F5',
-                            'LOG10_MULTZ:MULTZ_MIDREEK',
-                            "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
-                            "COHIBA_MODEL_MODE"]
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             param_df = parameterdf.drop(columns=parameter_filters)
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
@@ -416,15 +403,8 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ],
             self.pvalues_input_callbacks
         )
-
         def update_pvalue_plot(ensemble, response, interaction, max_vars, *filters):
-            """Callback to update correlation graph
-
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Fit model
-            """
+            """Callback to update the p-values plot"""
 
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -434,24 +414,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameter_filters=[
-                            'RMSGLOBPARAMS:FWL',
-                            'MULTFLT:MULTFLT_F1',
-                            'MULTFLT:MULTFLT_F2',
-                            'MULTFLT:MULTFLT_F3',
-                            'MULTFLT:MULTFLT_F4',
-                            'MULTFLT:MULTFLT_F5',
-                            'MULTZ:MULTZ_MIDREEK',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-                            'INTERPOLATE_RELPERM:INTERPOLATE_WO',
-                            'LOG10_MULTFLT:MULTFLT_F1',
-                            'LOG10_MULTFLT:MULTFLT_F2',
-                            'LOG10_MULTFLT:MULTFLT_F3',
-                            'LOG10_MULTFLT:MULTFLT_F4',
-                            'LOG10_MULTFLT:MULTFLT_F5',
-                            'LOG10_MULTZ:MULTZ_MIDREEK',
-                            "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
-                            "COHIBA_MODEL_MODE"]
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             param_df = parameterdf.drop(columns=parameter_filters)
             
