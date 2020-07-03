@@ -86,8 +86,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes)
-        well = xtgeo.Well(get_path(Path(wellfiles[0])))
-        self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5)  # Generate a polyline along a well path
+        self.xsec.create_well(wellfiles[0])
 
 
     ### Generate unique ID's ###
@@ -290,16 +289,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
         def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
             ctx = dash.callback_context
-
+            data = []
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                well = xtgeo.Well(get_path(wellpath))
-                well_df = well.dataframe
-                self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
-                well.create_relative_hlen() # Get surface values along the polyline
+                self.xsec.create_well(wellpath)
+                self.xsec.create_surface_lines(surfacepaths)
+                data += self.xsec.get_plotly_sfc_data(surfacepaths)
+                data += self.xsec.get_plotly_well_data()
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-            self.xsec.create_surface_lines(surfacepaths)
-            data = self.xsec.get_plotly_sfc_data(surfacepaths)
+                self.xsec.create_surface_lines(surfacepaths)
+                data += self.xsec.get_plotly_sfc_data(surfacepaths)
+            
             layout = self.xsec.plotly_layout
             return {'data':data,'layout':layout}
 

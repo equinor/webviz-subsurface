@@ -7,11 +7,28 @@ class HuvXsection:
     def __init__(
             self,
             surface_attributes: dict = None,
-            fence = None
+            fence = None,
+            well_attributes = None
     ):
         self.fence = fence
         self.surface_attributes = surface_attributes
+        self.well_attributes = well_attributes
+    
+    def create_well(self, wellpath):
+        well = xtgeo.Well(Path(wellpath))
+        well_fence = well.get_fence_polyline(nextend=100, sampling=5)
+        self.fence = well_fence
+        well_df = well.dataframe
+        well.create_relative_hlen()
+        self.well_attributes = {"well_df":well_df}
 
+    def get_plotly_well_data(self):
+        data = [{"type": "line",
+        "y": self.well_attributes["well_df"]["Z_TVDSS"],
+        "x": self.well_attributes["well_df"]["R_HLEN"],
+        "name": "well"}]
+        return data
+                
     def create_surface_lines(self, surfacepaths):
         for sfc_path in surfacepaths:
             sfc = xtgeo.surface_from_file(Path(sfc_path), fformat="irap_binary")
