@@ -49,6 +49,7 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install 'pandas==${{ matrix.pandas-version }}'
+        pip install git+https://github.com/hanskallekleiv/webviz-config.git@worker-blob
         pip install .
         pip install libecl  # while waiting for it to be included as dependency in fmu-ensemble
 
@@ -74,10 +75,10 @@ jobs:
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
+        TESTDATA_REPO_OWNER: hanskallekleiv
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: master
+        TESTDATA_REPO_BRANCH: propstats
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git

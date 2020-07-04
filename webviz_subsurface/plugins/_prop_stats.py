@@ -31,29 +31,34 @@ class PropertyStatistics(WebvizPluginABC):
         regionfile: Path,
         ensembles: list = None,
         propstatfile: Path = "share/results/tables/propstats.csv",
+        agg_propstatfile: Path = None,
+        agg_parameterfile: Path = None,
     ):
 
         super().__init__()
+        self.regionfile = regionfile
+        self.agg_propstatfile = agg_propstatfile
+        self.agg_parameterfile = agg_parameterfile
+        self.propdf = read_parquet(self.agg_propstatfile)
+        self.parameterdf = read_parquet(self.agg_parameterfile)
+        self.geojson = read_json(get_path(self.regionfile))
+        # if ensembles is not None:
+        #    self.ens_paths = {
+        #        ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+        #        for ens in ensembles
+        #    }
+        #    self.propdf = load_ensemble_set(self.ens_paths, filter_file=None).load_csv(
+        #        propstatfile
+        #    )
+        #    self.parameterdf = load_parameters(
+        #        filter_file=None,
+        #        ensemble_paths=self.ens_paths,
+        #        ensemble_set_name="EnsembleSet",
+        #    )
+        #    self.propdf.to_parquet("/scratch/fmu/tnatt/propstats.parquet", index=False)
+        #    self.parameterdf.to_parquet("/scratch/fmu/tnatt/parameters_cleaned.parquet", index=False)
+        # else:
 
-        if ensembles is not None:
-            self.ens_paths = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
-                for ens in ensembles
-            }
-            self.propdf = load_ensemble_set(self.ens_paths, filter_file=None).load_csv(
-                propstatfile
-            )
-            self.parameterdf = load_parameters(
-                filter_file=None,
-                ensemble_paths=self.ens_paths,
-                ensemble_set_name="EnsembleSet",
-            )
-            self.propdf.to_parquet("/tmp/tmp/props.parquet", index=False)
-            self.parameterdf.to_parquet("/tmp/tmp/parameters.parquet", index=False)
-        else:
-            self.propdf = pd.read_parquet("/tmp/tmp/props.parquet")
-            self.parameterdf = pd.read_parquet("/tmp/tmp/parameters.parquet")
-        self.geojson = read_json(regionfile)
         self.center = find_geocenter(self.geojson)
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.pfilter = ParameterFilter(app, self.parameterdf.copy())
@@ -90,7 +95,10 @@ class PropertyStatistics(WebvizPluginABC):
                         for selector in self.selectors
                     ]
                 ),
-                self.pfilter.layout,
+                html.Div(
+                    style={"overflowY": "auto", "height": "600px"},
+                    children=self.pfilter.layout,
+                ),
             ]
         )
 
@@ -112,7 +120,6 @@ class PropertyStatistics(WebvizPluginABC):
         }
         return html.Div(
             [
-                html.H1("Grid property statistics per region"),
                 wcc.FlexBox(
                     children=[
                         html.Div(style={"flex": 1}, children=self.selector_layout),
@@ -122,7 +129,7 @@ class PropertyStatistics(WebvizPluginABC):
                                 style=tabs_styles,
                                 children=[
                                     dcc.Tab(
-                                        label="Histogram per region",
+                                        label="Parameter distribution for each region",
                                         style=tab_style,
                                         selected_style=tab_selected_style,
                                         children=wcc.FlexBox(
@@ -153,10 +160,6 @@ class PropertyStatistics(WebvizPluginABC):
                                                                     "label": "Scatter",
                                                                     "value": "Scatter",
                                                                 },
-                                                                {
-                                                                    "label": "Correlations",
-                                                                    "value": "Correlations",
-                                                                },
                                                             ],
                                                             value="Scatter",
                                                         ),
@@ -169,7 +172,7 @@ class PropertyStatistics(WebvizPluginABC):
                                         ),
                                     ),
                                     dcc.Tab(
-                                        label="Ranked on input parameters",
+                                        label="Correlation against input parameters for each region",
                                         style=tab_style,
                                         selected_style=tab_selected_style,
                                         children=wcc.FlexBox(
@@ -190,6 +193,12 @@ class PropertyStatistics(WebvizPluginABC):
                                                     style={"flex": 3},
                                                     children=wcc.Graph(
                                                         id=self.uuid("corr-graph"),
+                                                        figure={
+                                                            "layout": {
+                                                                "title": "<b>Click on a region to calculate correlations</b><br>"
+                                                            },
+                                                            "data": [],
+                                                        },
                                                     ),
                                                 ),
                                             ]
@@ -212,7 +221,7 @@ class PropertyStatistics(WebvizPluginABC):
             color="Avg",
             color_continuous_scale="Viridis",
             range_color=(0, df["Avg"].max()),
-            mapbox_style="carto-positron",
+            mapbox_style="white-bg",
             zoom=10,
             center=self.center,
             opacity=0.5,
@@ -261,7 +270,7 @@ class PropertyStatistics(WebvizPluginABC):
                 return {"data": []}
             inputs = dash.callback_context.inputs_list[1]
             df = self.propdf.copy()
-            parameterdf = self.parameterdf.copy()
+
             df = df[df["REGION"].isin(regions)]
             for sel_input in inputs:
                 df = df[df[sel_input["id"]["index"]] == sel_input["value"]]
@@ -280,7 +289,7 @@ class PropertyStatistics(WebvizPluginABC):
                     facet_col_wrap=3,
                     height=800,
                 )
-            elif graph_type == "Scatter":
+            else:
                 fig = px.scatter(
                     df2,
                     x="REAL",
@@ -289,46 +298,101 @@ class PropertyStatistics(WebvizPluginABC):
                     facet_col_wrap=3,
                     height=800,
                 )
-            else:
-                response = "Avg"
-                parameterdf = parameterdf.loc[
-                        parameterdf["ENSEMBLE"] == ensemble
-                    ]
-                dframe = pd.merge(df, parameterdf, on=["REAL"])
-                corrdf = correlate(dframe, response=response)
-                try:
-                    corr_response = (
-                        corrdf[response].dropna().drop(["REAL", response], axis=0)
-                    )
 
-                    fig = make_correlation_plot(
-                        corr_response, response, self.plotly_theme["layout"]
-                    )
-                except KeyError:
-                    return {
-                        "layout": {
-                            "title": "<b>Cannot calculate correlation for given selection</b><br>"
-                            "Select a different response or filter setting."
-                        }
-                    }
             fig["layout"].update(self.plotly_theme["layout"])
-            print(fig)
             return fig
 
         @app.callback(
             Output(self.uuid("region-graph2"), "figure"),
-            [Input({"page": self.uuid("selectors"), "index": ALL}, "value")],
+            [
+                Input({"page": self.uuid("selectors"), "index": ALL}, "value"),
+                Input(self.pfilter.storage_id, "data"),
+            ],
+            [State({"page": self.uuid("selectors"), "index": "ENSEMBLE"}, "value"),],
         )
-        def _update_region_graph2(*args):
+        def _update_region_graph2(selectors, p_filter, ensemble):
             inputs = dash.callback_context.inputs_list[0]
             df = self.propdf.copy()
             for sel_input in inputs:
                 df = df[df[sel_input["id"]["index"]] == sel_input["value"]]
+            df = filter_reals(df, ensemble, p_filter)
             df = df.groupby(self.selectors + ["REGION"],).mean().reset_index()
             fig = self.cloropleth(df)
             fig.update_layout(uirevision="keep")
             fig["layout"].update(self.plotly_theme["layout"])
             return fig
+
+        @app.callback(
+            Output(self.uuid("corr-graph"), "figure"),
+            [
+                Input(self.uuid("region-graph2"), "clickData"),
+                Input({"page": self.uuid("selectors"), "index": ALL}, "value"),
+                Input(self.pfilter.storage_id, "data"),
+            ],
+            [State({"page": self.uuid("selectors"), "index": "ENSEMBLE"}, "value"),],
+        )
+        def _update_corr_graph(cd, selectors, p_filter, ensemble):
+            if cd is None:
+                raise PreventUpdate
+            response = "Avg"
+            region = cd["points"][0]["location"]
+            inputs = dash.callback_context.inputs_list[1]
+            df = self.propdf.copy()
+            parameterdf = self.parameterdf.copy()
+            df = df[df["REGION"] == region]
+            for sel_input in inputs:
+                df = df[df[sel_input["id"]["index"]] == sel_input["value"]]
+                if sel_input["id"]["index"] == "ENSEMBLE":
+                    parameterdf = parameterdf.loc[
+                        parameterdf["ENSEMBLE"] == sel_input["value"]
+                    ]
+            df = filter_reals(df, ensemble, p_filter)
+            parameterdf = filter_reals(parameterdf, ensemble, p_filter)
+            dframe = pd.merge(
+                df[["ENSEMBLE", "REAL", response]], parameterdf, on=["REAL"]
+            )
+            corrdf = correlate(dframe, response=response)
+            try:
+                corr_response = (
+                    corrdf[response].dropna().drop(["REAL", response], axis=0)
+                )
+
+                data = [
+                    {
+                        "x": corr_response.values,
+                        "y": corr_response.index,
+                        "orientation": "h",
+                        "type": "bar",
+                    }
+                ]
+                layout = {
+                    "barmode": "relative",
+                    "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
+                    "height": 750,
+                    "xaxis": {"range": [-1, 1]},
+                    # "title": f"Correlations ({corr_method}) between {response} and input parameters",
+                }
+
+                return {"data": data, "layout": layout}
+            except KeyError:
+                return {
+                    "layout": {
+                        "title": "<b>Cannot calculate correlation for given selection</b><br>"
+                        "Select a different response or filter setting."
+                    }
+                }
+
+    def add_webvizstore(self):
+        return [
+            (
+                read_parquet,
+                [
+                    {"parq_file": self.agg_propstatfile},
+                    {"parq_file": self.agg_parameterfile},
+                ],
+            ),
+            (get_path, [{"path": self.regionfile}]),
+        ]
 
 
 def read_json(jsonfile: Path):
@@ -359,12 +423,11 @@ def filter_reals(df, ensemble, p_filter):
 
 
 def correlate(inputdf, response, method="pearson"):
-    df = inputdf.copy()
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
-        corrdf = df.corr(method=method)
+        corrdf = inputdf.corr(method=method)
     elif method == "spearman":
-        corrdf = df.rank().corr(method="pearson")
+        corrdf = inputdf.rank().corr(method="pearson")
     else:
         raise ValueError(
             f"Correlation method {method} is invalid. "
@@ -381,7 +444,7 @@ def make_correlation_plot(series, response, theme, corr_method="pearson"):
             "barmode": "relative",
             "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
             "height": 750,
-            # "xaxis": {"range": [-1, 1]},
+            "xaxis": {"range": [-1, 1]},
             "title": f"Correlations ({corr_method}) between {response} and input parameters",
         },
     )
@@ -393,3 +456,14 @@ def make_correlation_plot(series, response, theme, corr_method="pearson"):
         ],
         "layout": layout,
     }
+
+
+@webvizstore
+def get_path(path) -> Path:
+    return Path(path)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_parquet(parq_file) -> pd.DataFrame:
+    return pd.read_parquet(parq_file)

@@ -139,15 +139,13 @@ class ParameterFilter:
                     df = df[
                         df[col["id"]["index"]].isin(col["value"])
                     ]
-                    print(col["value"])
             storage[ensemble] = df['REAL'].unique().tolist()
-            print(ensemble, storage)
             return json.dumps(storage)
 
 
 def make_rangeslider(name, values, unique_id):
     return html.Div(
-        style={"marginBottom": "25px", "fontSize": "10px"},
+        style={"marginBottom": "10px", "fontSize": "10px"},
         children=[
             html.Label(children=name,),
             dcc.RangeSlider(
