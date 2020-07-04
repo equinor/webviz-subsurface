@@ -83,7 +83,6 @@ jobs:
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         git clone https://github.com/equinor/webviz-config.git
-        popd
 
     - name: 🐳 Build Docker example image
       run: |
