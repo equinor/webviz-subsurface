@@ -262,9 +262,9 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ),
             html.Div(
                 [
-                    html.Label("Number of variables"),
+                    html.Label("Max parameters"),
                     dcc.Dropdown(
-                        id=self.ids("max_vars"),
+                        id=self.ids("max-params"),
                         options=[
                             {"label": val, "value": val} for val in range(1,min(10,len(self.parameterdf.columns)))
                         ],
@@ -319,7 +319,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
             Input(self.ids("interaction"), "value"),
-            Input(self.ids("max_vars"), "value"),
+            Input(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -333,7 +333,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
             Input(self.ids("interaction"), "value"),
-            Input(self.ids("max_vars"), "value"),
+            Input(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -384,6 +384,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             param_df = parameterdf.drop(columns=parameter_filters)
+            param_df.columns = [colname.replace(":","_") if ":" in colname else colname for colname in param_df.columns]
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
             table = model.model.fit().summary2().tables[1]
@@ -416,6 +417,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             param_df = parameterdf.drop(columns=parameter_filters)
+            param_df.columns = [colname.replace(":","_") if ":" in colname else colname for colname in param_df.columns]
             
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
@@ -478,7 +480,10 @@ def _filter_and_sum_responses(
                 if isinstance(opt["values"], list):
                     df = df.loc[df[opt["name"]].isin(opt["values"])]
                 else:
-                    df = df.loc[df[opt["name"]] == opt["values"]]
+                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
+                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
+                    else:
+                        df = df.loc[df[opt["name"]] == opt["values"]]
 
             elif opt["type"] == "range":
                 df = df.loc[
@@ -492,7 +497,6 @@ def _filter_and_sum_responses(
     raise ValueError(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
