@@ -15,8 +15,12 @@ from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 from sklearn.preprocessing import PolynomialFeatures
+<<<<<<< HEAD
 from dash_table import DataTable
 from dash_table.Format import Format
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 from .._datainput.fmu_input import load_parameters, load_csv
 
 
@@ -62,7 +66,11 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
             self.parameterdf = pd.read_csv(self.parameter_csv)
             self.responsedf = pd.read_csv(self.response_csv)
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 # her lager vi parameter og response DataFrames
         elif ensembles and response_file:
             self.ens_paths = {
@@ -137,8 +145,14 @@ class MultipleRegressionJostein(WebvizPluginABC):
             .dropna(how="all", axis="columns")
             .columns
         )
+<<<<<<< HEAD
         parameters =[(param.replace(":","_") if ":" in param else param) for param in parameters]
         return parameters
+=======
+
+        parameters =[(param.replace(":","_") if ":" in param else param) for param in parameters]
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 
     @property
     def ensembles(self):
@@ -243,6 +257,10 @@ class MultipleRegressionJostein(WebvizPluginABC):
                             {"label": "on", "value": True},
                             {"label": "off", "value": False}
                         ],
+<<<<<<< HEAD
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
                         value=False
                         )
                 ]
@@ -279,6 +297,10 @@ class MultipleRegressionJostein(WebvizPluginABC):
                     )
                 ]
             )
+<<<<<<< HEAD
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
         ]
 
     @property
@@ -350,15 +372,24 @@ class MultipleRegressionJostein(WebvizPluginABC):
             # Input(self.ids("initial-parameter"), "data"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"),"value"),
+<<<<<<< HEAD
             Input(self.ids("interaction"), "value"),
             Input(self.ids("force out"), "value"),
             Input(self.ids("nvars"), "value")
+=======
+
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("force out"), "value"),
+            Input(self.ids("nvars"), "value")
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
         ]
         if self.response_filters:
             for col_name in self.response_filters:
                 hollabacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return hollabacks
 
+<<<<<<< HEAD
     def set_callbacks(self, app):
             @app.callback(
                 [
@@ -370,6 +401,19 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 self.model_input_callbacks,
             )
             def update_model_plot(ensemble, response, interaction, force_out, nvars, *filters):
+=======
+
+    def set_callbacks(self, app):
+            @app.callback(
+                [
+                    Output(self.ids("p-values-graph"), "figure")
+                ],
+                self.model_input_callbacks,
+            )
+
+            def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -380,13 +424,18 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
                 paramdf = self.parameterdf
 
+<<<<<<< HEAD
                 paramdf.columns = [
                     colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
+=======
+                paramdf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
                 paramdf = paramdf.loc[paramdf["ENSEMBLE"] == ensemble]
                 paramdf.drop(columns=force_out, inplace=True)
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
+<<<<<<< HEAD
                 
                 table = model.summary2().tables[1]
                 table.index.name = "Parameter"
@@ -458,12 +507,55 @@ def make_p_values_plot(model: smf):
     """
         make a plot of the pvalues from a statsmodel LinearModel.fit object
     """
+=======
+
+                return make_p_values_plot(model)
+
+
+            
+
+    
+    @property
+    def layout(self):
+        """Main layout"""
+        return wcc.FlexBox(
+            id=self.ids("layout"),
+            children=[
+                html.Div(
+                    style={'flex': 2},
+                    children=wcc.Graph(
+                        id=self.ids('p-values-graph'),
+                        figure={
+                            "data": [{"type": "bar", "x": [1, 2, 3],"y": [1, 3, 2]}],
+                            "layout": {"title": {"text": "A Figure Specified By Python Dictionary"}}
+                                }
+                    )
+                ),
+                html.Div(
+                    style={"flex": 1},
+                    children=self.control_layout + self.filter_layout
+                    if self.response_filters
+                    else [],
+                ),
+            ],
+        )      
+
+def make_p_values_plot(model):
+    """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
     p_sorted = model.pvalues.sort_values()
     parameters = p_sorted.index
     values = p_sorted.values
 
+<<<<<<< HEAD
     colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
 
+=======
+    """ Making an array for the corresponding colors """
+    
+    colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
+    
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
     dict_fig = dict(
         {"data": [
                 {
@@ -473,7 +565,11 @@ def make_p_values_plot(model: smf):
                     "marker": {"color": colors}
                 }], 
         })
+<<<<<<< HEAD
     return dict_fig
+=======
+    return [dict_fig]
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 """
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def generate_model(ensemble, response, interaction, *filters):
@@ -535,28 +631,40 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
+<<<<<<< HEAD
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 def gen_model(
         df: pd.DataFrame,
         response: str,
         max_vars: int=9,
         interaction: bool=False):
+<<<<<<< HEAD
         """
 
         """
+=======
+        
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
         if interaction:
             df = gen_interaction_df(df, response)
             return forward_selected_interaction(df, response, maxvars=max_vars)
         else:
             return forward_selected(df, response, maxvars=max_vars)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
     degree: int=2,
     inter_only: bool=False,
     bias: bool=False):
+<<<<<<< HEAD
     """
         helper function for gen model
         generates a new dataframe with all 2nd degree interactions ie a**2, ab, b**2
@@ -565,6 +673,9 @@ def gen_interaction_df(
         currently the no interaction function is broken 
         because of gen_col_names not working in that case
     """
+=======
+
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
@@ -579,7 +690,10 @@ def gen_interaction_df(
 
 def forward_selected_interaction(data, response, maxvars=9):
     """Linear model designed by forward selection.
+<<<<<<< HEAD
     For dataframes with interaction, enforces hierachical principle.
+=======
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 
     Parameters:
     -----------
@@ -626,7 +740,10 @@ def forward_selected_interaction(data, response, maxvars=9):
     model = smf.ols(formula, data).fit()
     return model
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 def forward_selected(data, response, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
@@ -668,6 +785,7 @@ def forward_selected(data, response, maxvars=9):
     return model
 
 def gen_column_names(df, interaction_only):
+<<<<<<< HEAD
     """
     Helper function for gen_interaction_df()
     generates a list of column names indicating products
@@ -675,6 +793,8 @@ def gen_column_names(df, interaction_only):
     currently interaction only mode does not work.
     """
 
+=======
+>>>>>>> 467d311f0320fa3af86200be732af1f35f720161
     output = list(df.columns)
     if interaction_only:
         for colname1 in df.columns:
