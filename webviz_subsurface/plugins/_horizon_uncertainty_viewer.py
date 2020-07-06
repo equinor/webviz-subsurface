@@ -299,7 +299,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 layout = self.xsec.plotly_layout(surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-                self.xsec.set_surface_lines(surfacepaths,errorpaths)
+                self.xsec.set_surface_lines(surfacepaths)
                 self.xsec.set_error_lines(errorpaths)
                 data += self.xsec.get_plotly_sfc_data(surfacepaths)
                 #Need to make layout for when we make our own crossection
