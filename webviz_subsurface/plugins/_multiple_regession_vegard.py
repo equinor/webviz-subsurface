@@ -15,14 +15,9 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
-<<<<<<< HEAD
-import statsmodels.api as sm
-
-=======
 import statsmodels.formula.api as smf
 from dash_table.Format import Format, Scheme
 from sklearn.preprocessing import PolynomialFeatures
->>>>>>> 467d311f0320fa3af86200be732af1f35f720161
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -365,17 +360,8 @@ class DataTablefromFit(WebvizPluginABC):
             table = model.model.fit().summary2().tables[1]
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
-<<<<<<< HEAD
-            columns = [
-                {"name": i,
-                "id": i,
-                "type": 'numeric',
-                "format": Format(precision=4)} for i in table.columns]            
-            data = list(table.to_dict("index").values())
-=======
             columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
             data = table.to_dict("rows")
->>>>>>> 467d311f0320fa3af86200be732af1f35f720161
             return(
                 data,
                 columns,
