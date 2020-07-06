@@ -11,48 +11,57 @@ class HuvXsection:
     def __init__(
             self,
             surface_attributes: dict = None,
+            zonation_data = None,
+            conditional_data = None,
             fence = None,
-            well_attributes = None
+            well_attributes = None,
     ):
         self.fence = fence
         self.surface_attributes = surface_attributes
+        self.zonation_data = zonation_data
+        self.conditional_data = conditional_data
         self.well_attributes = well_attributes
     
     def create_well(self, wellpath,surfacepaths):
-        well = xtgeo.Well(Path(wellpath))
-        well_fence = well.get_fence_polyline(nextend=100, sampling=5)
-        self.fence = well_fence
-        well_df = well.dataframe
-        well.create_relative_hlen()
-        zonation_points = find_zone_RHLEN(well_df,well.wellname)
-        conditional_points = find_conditional_RHLEN(well_df,well.wellname)
-        #zonelog = plot_well_zonelog(well_df)
-        color_list = ["rgb(245,245,245)","rgb(220,20,60)","rgb(255,69,0)","rgb(0,0,128)","rgb(169,169,169)"]
-        zonelog = plot_well_zonelog_2(well_df,color_list)
-        self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
+        if not wellpath==None:
+            well = xtgeo.Well(Path(wellpath))
+            well_fence = well.get_fence_polyline(nextend=100, sampling=5)
+            self.fence = well_fence
+            well_df = well.dataframe
+            well.create_relative_hlen()
+            zonation_points = find_zone_RHLEN(well_df,well.wellname,self.zonation_data)
+            conditional_points = find_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
+            color_list = ["rgb(245,245,245)"]
+            for sfc in self.surface_attributes:
+                color_list.append(self.surface_attributes[Path(sfc)]["color"])
+            zonelog = plot_well_zonelog(well_df,color_list)
+            self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
-        data = [{"type": "line",
-        "y": self.well_attributes["well_df"]["Z_TVDSS"],
-        "x": self.well_attributes["well_df"]["R_HLEN"],
-        "name": "well"}]
-
-        data += self.well_attributes["zonelog"]
-        data += [{"mode": "markers",
-                "y": self.well_attributes["zonation_points"][1],
-                "x": self.well_attributes["zonation_points"][0],
-                "name": "zonation points",
-                "size": 20,
-                "line":{"color":"black"}
-        }]
-        data += [{"mode": "markers",
-                "y": self.well_attributes["conditional_points"][1],
-                "x": self.well_attributes["conditional_points"][0],
-                "name": "conditional points",
-                "size": 20,
-                "line":{"color":"rgb(30,144,255)"}
-        }]
-        return data
+        if self.well_attributes ==None:
+            return []
+        else:
+            data = [{"type": "line",
+            "y": self.well_attributes["well_df"]["Z_TVDSS"],
+            "x": self.well_attributes["well_df"]["R_HLEN"],
+            "name": "well",
+            "line": {"width": 7, "color": "black"},
+            "fillcolor": "black",
+            }]
+            data += self.well_attributes["zonelog"]
+            data += [{"mode": "markers",
+                    "y": self.well_attributes["zonation_points"][1],
+                    "x": self.well_attributes["zonation_points"][0],
+                    "name": "zonation points",
+                    "marker":{"size":5,"color":"black"}
+            }]
+            data += [{"mode": "markers",
+                    "y": self.well_attributes["conditional_points"][1],
+                    "x": self.well_attributes["conditional_points"][0],
+                    "name": "conditional points",
+                    "marker":{"size":5,"color":"rgb(30,144,255)"}
+            }]
+            return data
 
     def set_surface_lines(self, surfacepaths):
         for sfc_path in surfacepaths:
@@ -72,27 +81,41 @@ class HuvXsection:
             self.surface_attributes[Path(sfc_path)]["error_line_add"] = de_line_add
             self.surface_attributes[Path(sfc_path)]["error_line_sub"] = de_line_sub               
 
-    def plotly_layout(self,surfacepaths:list):
+    def get_plotly_layout(self,surfacepaths:list):
         ymin, ymax = self.surfline_max_min_depth(surfacepaths)
-        x_well, y_well, x_well_max, y_width,x_width = find_where_it_crosses_well(self.well_attributes["well_df"],ymin,ymax)
         layout ={}
-        layout.update({
-            "yaxis":{
-                "title":"Depth (m)",
-                "autorange": "off",
-                "range" : [ymax,y_well-0.15*y_width],
-            },
-            "xaxis":{
-                "title": "Distance from polyline",
-                "range": [x_well-0.5*x_width,x_well_max+0.5*x_width],
-            },
-            "plot_bgcolor":'rgb(233,233,233)',
-            "showlegend":False,
-            "height": 830,
-        })
+        if self.well_attributes == None:
+            layout.update({
+                "yaxis":{
+                    "title":"Depth (m)",
+                    "range":[ymax,ymin],
+                },
+                "xaxis": {
+                    "title": "Distance from polyline",
+                },
+                "plot_bgcolor":'rgb(233,233,233)',
+                "showlegend":False,
+                "height": 830,
+            })
+        else:
+            x_well, y_well, x_well_max, y_width,x_width = find_where_it_crosses_well(self.well_attributes["well_df"],ymin,ymax)
+            layout.update({
+                "yaxis":{
+                    "title":"Depth (m)",
+                    "autorange": "off",
+                    "range" : [ymax,y_well-0.15*y_width],
+                },
+                "xaxis":{
+                    "title": "Distance from polyline",
+                    "range": [x_well-0.5*x_width,x_well_max+0.5*x_width],
+                },
+                "plot_bgcolor":'rgb(233,233,233)',
+                "showlegend":False,
+                "height": 830,
+            })
         return layout
 
-    def get_plotly_sfc_data(self, surface_paths:list, error_paths:list):
+    def get_plotly_data(self, surface_paths:list, error_paths:list):
 
         min, max = self.surfline_max_min_depth(surface_paths)
         first_surf_line = self.surface_attributes[Path(surface_paths[0])]['surface_line']
@@ -150,6 +173,7 @@ class HuvXsection:
             }
             for sfc_path in error_sfc
         ]
+        data+= self.get_plotly_well_data()
 
         return data
 
@@ -169,7 +193,7 @@ class HuvXsection:
 def depth_sort(elem):
     return np.min(elem[1][:, 1])
 
-def plot_well_zonelog_2(well_df,color,zonelogname="Zonelog",zomin=-999):
+def plot_well_zonelog(well_df,color,zonelogname="Zonelog",zomin=-999):
     zvals = well_df["Z_TVDSS"].values.copy()
     hvals = well_df["R_HLEN"].values.copy()
     if zonelogname not in well_df.columns:
@@ -195,7 +219,7 @@ def plot_well_zonelog_2(well_df,color,zonelogname="Zonelog",zomin=-999):
         zoneplot.append({
             "x": hvals_copy.compressed(),
             "y": zvals_copy.compressed(),
-            "line": {"width": 5, "color": color[i]},
+            "line": {"width": 4, "color": color[i]},
             "fillcolor": color[i],
             "marker": {"opacity": 0.5},
             "name": f"Zone: {zone}",
@@ -203,8 +227,8 @@ def plot_well_zonelog_2(well_df,color,zonelogname="Zonelog",zomin=-999):
     return zoneplot
 
 
-def find_zone_RHLEN(well_df,wellname):
-    zonation_data = pd.read_csv("/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
+def find_zone_RHLEN(well_df,wellname,zone_path):
+    zonation_data = pd.read_csv(zone_path[0])  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
     zone_df = zonation_data[zonation_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
@@ -217,8 +241,8 @@ def find_zone_RHLEN(well_df,wellname):
         zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_RHLEN,zone_df["TVD"]])
 
-def find_conditional_RHLEN(well_df,wellname):
-    conditional_data = pd.read_csv("/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/wellpoints.csv")
+def find_conditional_RHLEN(well_df,wellname,cond_path):
+    conditional_data = pd.read_csv(cond_path[0])   #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/wellpoints.csv")
     cond_df = conditional_data[conditional_data["Well"] == wellname]
     cond_df_xval = cond_df["x"].values.copy()
     cond_df_yval = cond_df["y"].values.copy()

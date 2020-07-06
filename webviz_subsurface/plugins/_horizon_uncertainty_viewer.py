@@ -46,6 +46,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         surfacefiles: List[Path],
         surfacefiles_de: List[Path],
         wellfiles: List[Path],
+        zonation_data: List[Path],
+        conditional_data: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
         zonelog: str = None,
@@ -80,12 +82,15 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.wellnames = wellnames
         else:
             self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
+        self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
+        self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
         self.zonelog = zonelog       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes)
+        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data)
+        self.xsec.create_well(wellfiles[0],self.surfacefiles)
 
 
     ### Generate unique ID's ###
@@ -286,25 +291,18 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-        def _render_surface(wellpath, surfacepaths, errorpaths, coords):
+        def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
             data = []
-            layout = {}
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
                 self.xsec.create_well(wellpath,surfacepaths)
-                self.xsec.set_surface_lines(surfacepaths)
-                self.xsec.set_error_lines(errorpaths)
-                data += self.xsec.get_plotly_sfc_data(surfacepaths,errorpaths)
-                data += self.xsec.get_plotly_well_data()
-                layout = self.xsec.plotly_layout(surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-                self.xsec.set_surface_lines(surfacepaths)
-                self.xsec.set_error_lines(errorpaths)
-                data += self.xsec.get_plotly_sfc_data(surfacepaths)
-                #Need to make layout for when we make our own crossection
-            
-            #ymin,ymax = self.xsec.surfline_max_min_depth(surfacepaths)
+                self.xsec.well_attributes = None
+            self.xsec.set_surface_lines(surfacepaths)
+            self.xsec.set_error_lines(errorpaths)
+            data += self.xsec.get_plotly_data(surfacepaths,errorpaths)
+            layout = self.xsec.get_plotly_layout(surfacepaths)
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
