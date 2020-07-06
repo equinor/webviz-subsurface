@@ -1,0 +1,11 @@
+title: Simple Webviz example
+
+pages:
+ - title: Sara
+   content:
+    - MultipleRegressionSara:
+        parameter_csv: C:\\Users\\saabn\\Equinor\\Data files\\100 realizations, 4 iterations (ensembles)\\parameters100realizations.parquet
+        response_csv: C:\\Users\\saabn\\Equinor\\Data files\\100 realizations, 4 iterations (ensembles)\\response_grid_volumes_100realizations.parquet
+        response_filters:
+          ZONE: single
+          REGION: single
