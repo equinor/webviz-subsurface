@@ -15,19 +15,23 @@ class HuvXsection:
         self.well_attributes = well_attributes
     
     def create_well(self, wellpath):
-        well = xtgeo.Well(Path(wellpath))
-        well_fence = well.get_fence_polyline(nextend=100, sampling=5)
-        self.fence = well_fence
-        well_df = well.dataframe
-        well.create_relative_hlen()
-        self.well_attributes = {"well_df":well_df}
+        if not wellpath==None:
+            well = xtgeo.Well(Path(wellpath))
+            well_fence = well.get_fence_polyline(nextend=100, sampling=5)
+            self.fence = well_fence
+            well_df = well.dataframe
+            well.create_relative_hlen()
+            self.well_attributes = {"well_df":well_df}
 
     def get_plotly_well_data(self):
-        data = [{"type": "line",
-        "y": self.well_attributes["well_df"]["Z_TVDSS"],
-        "x": self.well_attributes["well_df"]["R_HLEN"],
-        "name": "well"}]
-        return data
+        if self.well_attributes ==None:
+            return []
+        else:
+            data = [{"type": "line",
+            "y": self.well_attributes["well_df"]["Z_TVDSS"],
+            "x": self.well_attributes["well_df"]["R_HLEN"],
+            "name": "well"}]
+            return data
                 
     def create_surface_lines(self, surfacepaths):
         for sfc_path in surfacepaths:
@@ -41,24 +45,44 @@ class HuvXsection:
             err_line = err.get_randomline(self.fence)
             self.surface_attributes[Path(sfc_path)]["error_line"] = err_line
 
-    @property
-    def plotly_layout(self):
+    def get_plotly_layout(self,surfac_paths):
         layout ={}
+        y_min, y_max = self.surfline_max_min_depth(surfac_paths)
+        if self.well_attributes == None:
+
+            layout.update({
+                "yaxis":{
+                    "title":"Depth (m)",
+                    "range":[y_max,y_min],
+                },
+                "xaxis": {
+                    "title": "Distance from polyline",
+                },
+                "plot_bgcolor":'rgb(233,233,233)',
+                "showlegend":False,
+                "height": 830,
+            })
+        else:
+                 x_min, y_min, x_max = find_where_it_crosses_well(y_min, y_max, self.well_attributes['well_df'])
+        x_range = np.abs(x_max - x_min)
+        y_range = np.abs(y_max - y_min)
         layout.update({
-            "yaxis":{
-                "title":"Depth (m)",
-                "autorange":"reversed",
+            "yaxis": {
+                "title": "Depth (m)",
+                "range": [y_max + 0.15 * y_range, y_min - 0.15 * y_range],
             },
             "xaxis": {
                 "title": "Distance from polyline",
+                'range': [x_min - 0.15 * x_range, x_max + 0.15 * y_range]
             },
-            "plot_bgcolor":'rgb(233,233,233)',
-            "showlegend":False,
+            "plot_bgcolor": 'rgb(233,233,233)',
+            "showlegend": False,
             "height": 830,
         })
+
         return layout
 
-    def get_plotly_sfc_data(self, surface_paths: list):
+    def get_plotly_data(self, surface_paths:list):
         min, max = self.surfline_max_min_depth(surface_paths)
         first_surf_line = self.surface_attributes[Path(surface_paths[0])]['surface_line']
         surface_tuples =[
@@ -85,6 +109,8 @@ class HuvXsection:
             }
             for sfc_path, _ in surface_tuples
         ]
+
+        data+= self.get_plotly_well_data()
         return data
 
 
@@ -102,3 +128,16 @@ class HuvXsection:
 
 def depth_sort(elem):
     return np.min(elem[1][:, 1])
+
+def find_where_it_crosses_well(ymin,ymax,df):
+    y_well = df["Z_TVDSS"]
+    x_well = df["R_HLEN"]
+    x_well_max = np.max(x_well)
+    X_point_y = 0
+    X_point_x = 0
+    for i in range(len(y_well)):
+        if y_well[i] >= ymin:
+            X_point_y = y_well[i]
+            X_point_x = x_well[i]
+            break
+    return X_point_x, X_point_y, x_well_max

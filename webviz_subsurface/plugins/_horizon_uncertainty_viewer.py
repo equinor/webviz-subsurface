@@ -287,20 +287,17 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-        def _render_surface(wellpath, surfacepaths, surfacepaths_de, coords):
+        def _render_xsection(wellpath, surfacepaths, surfacepaths_de, coords):
             ctx = dash.callback_context
             data = []
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
                 self.xsec.create_well(wellpath)
-                self.xsec.create_surface_lines(surfacepaths)
-                data += self.xsec.get_plotly_sfc_data(surfacepaths)
-                data += self.xsec.get_plotly_well_data()
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
-                self.xsec.create_surface_lines(surfacepaths)
-                data += self.xsec.get_plotly_sfc_data(surfacepaths)
-            
-            layout = self.xsec.plotly_layout
+                self.xsec.well_attributes = None
+            self.xsec.create_surface_lines(surfacepaths)
+            data += self.xsec.get_plotly_data(surfacepaths)
+            layout = self.xsec.get_plotly_layout(surfacepaths)
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
@@ -393,3 +390,4 @@ def get_fencespec(coords):
         ]
     )
     return poly.get_fence(asnumpy=True)
+
