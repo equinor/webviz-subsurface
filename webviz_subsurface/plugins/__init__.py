@@ -79,10 +79,6 @@ __all__ = [
     "RftPlotter",
     "ExamplePlugin",
     "MultipleRegressionJostein",
-<<<<<<< HEAD
-    "PValues",
-=======
->>>>>>> 467d311f0320fa3af86200be732af1f35f720161
     "MultipleRegressionSofie",
     "DataTablefromFit",
     "MultipleRegressionSara",
