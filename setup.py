@@ -49,7 +49,7 @@ setup(
             "MultipleRegressionJostein = webviz_subsurface.plugins:MultipleRegressionJostein",
             "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
-            "PlotCoefficientsSara = webviz_subsurface.plugins:PlotCoefficientsSara",
+            "MultipleRegressionSara = webviz_subsurface.plugins:MultipleRegressionSara",
 
  
             
