@@ -15,7 +15,8 @@ from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 from sklearn.preprocessing import PolynomialFeatures
-
+from dash_table import DataTable
+from dash_table.Format import Format
 from .._datainput.fmu_input import load_parameters, load_csv
 
 
@@ -358,15 +359,17 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 hollabacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return hollabacks
 
-
     def set_callbacks(self, app):
             @app.callback(
                 [
-                    Output(self.ids("p-values-graph"), "figure")
+                    Output(self.ids("p-values-graph"), "figure"),
+                    Output(self.ids("table"), "data"),
+                    Output(self.ids("table"), "columns"),
+                    Output(self.ids("table_title"), "children"),
                 ],
                 self.model_input_callbacks,
             )
-            def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
+            def update_model_plot(ensemble, response, interaction, force_out, nvars, *filters):
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -377,53 +380,90 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
                 paramdf = self.parameterdf
 
-                paramdf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
+                paramdf.columns = [
+                    colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
                 paramdf = paramdf.loc[paramdf["ENSEMBLE"] == ensemble]
                 paramdf.drop(columns=force_out, inplace=True)
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
-                return make_p_values_plot(model)
+                
+                table = model.summary2().tables[1]
+                table.index.name = "Parameter"
+                table.reset_index(inplace=True)
+                columns = [{
+                    "name": i,
+                    "id": i,
+                    "type": "numeric",
+                    "format": Format(precision=4)} for i in table.columns]
+                data = list(table.to_dict("index").values())
+                pval_plot = make_p_values_plot(model)
+                print(pval_plot)
+                return (
+                    pval_plot,
+                    data,
+                    columns,
+                    f"Multiple regression with {response} as response",)
 
 
-            
-
-    
     @property
     def layout(self):
         """Main layout"""
-        return wcc.FlexBox(
+        return html.Div(
             id=self.ids("layout"),
             children=[
-                html.Div(
-                    style={'flex': 2},
-                    children=wcc.Graph(
-                        id=self.ids('p-values-graph'),
-                        figure={
-                            "data": [{"type": "bar", "x": [1, 2, 3],"y": [1, 3, 2]}],
-                            "layout": {"title": {"text": "A Figure Specified By Python Dictionary"}}
+                wcc.FlexBox(
+                    id=self.ids("bar-graph-and-control"),
+                    children=[
+                        html.Div(
+                            style={'flex': 2},
+                            children=wcc.Graph(
+                                id=self.ids('p-values-graph'),
+                                figure={
+                                    "data": [{"type": "bar", "x": [1, 2, 3],"y": [1, 3, 2]}],
+                                    "layout": {"title": {"text": "A Figure Specified By Python Dictionary"}}
                                 }
-                    )
+                            )
+                        ),
+                        html.Div(
+                            style={"flex": 1},
+                            children=self.control_layout + self.filter_layout
+                            if self.response_filters
+                            else [],
+                        ),
+                    ],
                 ),
-                html.Div(
-                    style={"flex": 1},
-                    children=self.control_layout + self.filter_layout
-                    if self.response_filters
-                    else [],
-                ),
-            ],
-        )      
+                wcc.FlexBox(
+                    id=self.ids("data-table"),
+                    children=[
+                       html.Div(
+                            id=self.ids("table_title"),
+                            style={"textAlign": "center"},
+                            children="Ttitle",
+                        ),
+                        DataTable(
+                            id=self.ids("table"),
+                            sort_action="native",
+                            filter_action="native",
+                            page_action="native",
+                            page_size=10,
+                        ), 
+                    ]
+                )
+            ]
+        )
 
-def make_p_values_plot(model):
-    """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
+
+def make_p_values_plot(model: smf):
+    """
+        make a plot of the pvalues from a statsmodel LinearModel.fit object
+    """
     p_sorted = model.pvalues.sort_values()
     parameters = p_sorted.index
     values = p_sorted.values
 
-    """ Making an array for the corresponding colors """
-    
     colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
-    
+
     dict_fig = dict(
         {"data": [
                 {
@@ -433,7 +473,7 @@ def make_p_values_plot(model):
                     "marker": {"color": colors}
                 }], 
         })
-    return [dict_fig]
+    return dict_fig
 """
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def generate_model(ensemble, response, interaction, *filters):
@@ -495,13 +535,15 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
         max_vars: int=9,
         interaction: bool=False):
-        
+        """
+
+        """
         if interaction:
             df = gen_interaction_df(df, response)
             return forward_selected_interaction(df, response, maxvars=max_vars)
@@ -515,7 +557,14 @@ def gen_interaction_df(
     degree: int=2,
     inter_only: bool=False,
     bias: bool=False):
+    """
+        helper function for gen model
+        generates a new dataframe with all 2nd degree interactions ie a**2, ab, b**2
+        
 
+        currently the no interaction function is broken 
+        because of gen_col_names not working in that case
+    """
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
@@ -530,6 +579,7 @@ def gen_interaction_df(
 
 def forward_selected_interaction(data, response, maxvars=9):
     """Linear model designed by forward selection.
+    For dataframes with interaction, enforces hierachical principle.
 
     Parameters:
     -----------
@@ -618,6 +668,13 @@ def forward_selected(data, response, maxvars=9):
     return model
 
 def gen_column_names(df, interaction_only):
+    """
+    Helper function for gen_interaction_df()
+    generates a list of column names indicating products
+
+    currently interaction only mode does not work.
+    """
+
     output = list(df.columns)
     if interaction_only:
         for colname1 in df.columns:

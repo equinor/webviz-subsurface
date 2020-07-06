@@ -6,6 +6,7 @@ import pandas as pd
 from plotly.subplots import make_subplots
 from dash.exceptions import PreventUpdate
 from dash_table import DataTable
+from dash_table.Format import Format
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
@@ -15,7 +16,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.api as sm
-from dash_table.Format import Format
+
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -312,7 +313,11 @@ class DataTablefromFit(WebvizPluginABC):
             table = model.fit().summary2().tables[1]
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
-            columns = [{"name": i, "id": i, "format": Format(precision=0)} for i in table.columns]
+            columns = [
+                {"name": i,
+                "id": i,
+                "type": 'numeric',
+                "format": Format(precision=4)} for i in table.columns]            
             data = list(table.to_dict("index").values())
             return(
                 data,
