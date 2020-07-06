@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from dash_table import DataTable
+from dash_table.Format import Format
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc

@@ -51,13 +51,9 @@ from ._reservoir_simulation_timeseries_regional import (
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._test_plug import ExamplePlugin
 from ._test2_plug import MultipleRegressionJostein
-from ._p_values import PValues
 from ._multiple_regression_sofie import MultipleRegressionSofie
-from ._multiple_regression_sara import PlotCoefficientsSara
 from ._multiple_regession_vegard import DataTablefromFit
-from ._multiple_regression_sara import PlotCoefficientsSara
-
-
+from ._multiple_regression_sara import MultipleRegressionSara
 
 __all__ = [
     "ParameterDistribution",
@@ -82,8 +78,7 @@ __all__ = [
     "RftPlotter",
     "ExamplePlugin",
     "MultipleRegressionJostein",
-    "PValues",
     "MultipleRegressionSofie",
     "DataTablefromFit",
-    "PlotCoefficientsSara",
+    "MultipleRegressionSara",
 ]

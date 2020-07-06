@@ -47,10 +47,9 @@ setup(
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "ExamplePlugin = webviz_subsurface.plugins:ExamplePlugin",
             "MultipleRegressionJostein = webviz_subsurface.plugins:MultipleRegressionJostein",
-            "PValues = webviz_subsurface.plugins:PValues",
             "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
-            "PlotCoefficientsSara = webviz_subsurface.plugins:PlotCoefficientsSara",
+            "MultipleRegressionSara = webviz_subsurface.plugins:MultipleRegressionSara",
 
  
             
