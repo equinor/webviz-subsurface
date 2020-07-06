@@ -44,6 +44,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         surfacefiles: List[Path],
         surfacefiles_de: List[Path],
         wellfiles: List[Path],
+        zonation_data: List[Path],
+        conditional_data: List[Path],
         surfacenames: list = None,
         wellnames: list = None,
         zonelog: str = None,
@@ -78,14 +80,15 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.wellnames = wellnames
         else:
             self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
+        self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
+        self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
         self.zonelog = zonelog       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes)
-        well = xtgeo.Well(get_path(Path(wellfiles[0])))
-        self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5)  # Generate a polyline along a well path
+        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data)
+        self.xsec.create_well(wellfiles[0],self.surfacefiles)
 
 
     ### Generate unique ID's ###
@@ -286,22 +289,18 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-view"), "polyline_points"),
             ],
         )
-
-        def _render_surface(wellpath, surfacepaths, errorpaths, coords):
+        def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
-
+            data = []
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                well = xtgeo.Well(get_path(wellpath))
-                well_df = well.dataframe
-                self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
-                well.create_relative_hlen() # Get surface values along the polyline
+                self.xsec.create_well(wellpath,surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
+                self.xsec.well_attributes = None
             self.xsec.set_surface_lines(surfacepaths)
             self.xsec.set_error_lines(errorpaths)
-            data = self.xsec.get_plotly_sfc_data(surfacepaths, errorpaths)
-            layout = self.xsec.plotly_layout
-
+            data += self.xsec.get_plotly_data(surfacepaths,errorpaths)
+            layout = self.xsec.get_plotly_layout(surfacepaths)
             return {'data':data,'layout':layout}
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
@@ -330,38 +329,6 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-
-def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
-    if zonelogname not in df.columns:
-        return
-    zonevals = df[zonelogname].values #values of zonelog
-    zomin = (
-        zomin if zomin >= int(df[zonelogname].min()) else int(df[zonelogname].min())
-    ) #zomin=0 in this case
-    zomax = int(df[zonelogname].max()) #zomax = 4 in this case
-    # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
-    zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
-    for transition in zone_transitions:
-        try:
-            zvals = np.insert(zvals, transition, zvals[transition + 1])
-            hvals = np.insert(hvals, transition, hvals[transition + 1])
-            zonevals = np.insert(zonevals, transition, zonevals[transition])
-        except IndexError:
-            pass
-    zoneplot = []
-    color = ["yellow","orange","green","red","grey"]
-    for i, zone in enumerate(range(zomin, zomax + 1)):
-        zvals_copy = ma.masked_where(zonevals != zone, zvals)
-        hvals_copy = ma.masked_where(zonevals != zone, hvals)
-        zoneplot.append({
-            "x": hvals_copy.compressed(),
-            "y": zvals_copy.compressed(),
-            "line": {"width": 5, "color": color[i]},
-            "fillcolor": color[i],
-            "marker": {"opacity": 0.5},
-            "name": f"Zone: {zone}",
-        })
-    return zoneplot
 
 def get_color(i):
     """

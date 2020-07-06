@@ -39,5 +39,9 @@ pages:
             - OP_5
             - OP_6
           zonelog: Zonelog
+          zonation_data:
+            - ..\Datasets\simple_model\output\log_files\zonation_status.csv
+          conditional_data:
+            - ..\Datasets\simple_model\output\log_files\wellpoints.csv
   
 
