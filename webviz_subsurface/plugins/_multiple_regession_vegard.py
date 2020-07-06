@@ -6,6 +6,7 @@ import pandas as pd
 from plotly.subplots import make_subplots
 from dash.exceptions import PreventUpdate
 from dash_table import DataTable
+from dash_table.Format import Format
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
