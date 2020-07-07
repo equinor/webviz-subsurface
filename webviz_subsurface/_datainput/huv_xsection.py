@@ -13,6 +13,7 @@ class HuvXsection:
             surface_attributes: dict = None,
             zonation_data = None,
             conditional_data = None,
+            zonelogname = None,
             fence = None,
             well_attributes = None,
     ):
@@ -20,6 +21,7 @@ class HuvXsection:
         self.surface_attributes = surface_attributes
         self.zonation_data = zonation_data
         self.conditional_data = conditional_data
+        self.zonelogname = zonelogname
         self.well_attributes = well_attributes
     
     def create_well(self, wellpath,surfacepaths):
@@ -34,7 +36,7 @@ class HuvXsection:
             color_list = ["rgb(245,245,245)"]
             for sfc in self.surface_attributes:
                 color_list.append(self.surface_attributes[Path(sfc)]["color"])
-            zonelog = plot_well_zonelog(well_df,color_list)
+            zonelog = self.get_zonelog_data(well_df,color_list,self.zonelogname)
             self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
@@ -189,43 +191,38 @@ class HuvXsection:
         ])
         return np.min(minvalues), np.max(maxvalues)
 
+    def get_zonelog_data(self,well_df,color_list,zonelogname="Zonelog",zomin=-999):
+        well_TVD = well_df["Z_TVDSS"].values.copy()
+        well_RHLEN = well_df["R_HLEN"].values.copy()
+        zonevals = well_df[zonelogname].values
+        zoneplot = []
+        start = 0
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
+        for transition in zone_transitions:
+            try:
+                well_TVD = np.insert(well_TVD, transition, well_TVD[transition + 1])
+                well_RHLEN = np.insert(well_RHLEN, transition, well_RHLEN[transition + 1])
+                zonevals = np.insert(zonevals, transition, zonevals[transition])
+            except IndexError:
+                pass
+        for i in range(1,len(zonevals)):
+            if zonevals[i] != zonevals[i-1]:
+                end = i-1
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color_list[int(zonevals[i-1])]},
+                    "fillcolor": color_list[int(zonevals[i-1])],
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+
+        return zoneplot
+
 
 def depth_sort(elem):
     return np.min(elem[1][:, 1])
-
-def plot_well_zonelog(well_df,color,zonelogname="Zonelog",zomin=-999):
-    zvals = well_df["Z_TVDSS"].values.copy()
-    hvals = well_df["R_HLEN"].values.copy()
-    if zonelogname not in well_df.columns:
-        return
-    zonevals = well_df[zonelogname].values #values of zonelog
-    zomin = (
-        zomin if zomin >= int(well_df[zonelogname].min()) else int(well_df[zonelogname].min())
-    ) #zomin=0 in this case
-    zomax = int(well_df[zonelogname].max()) #zomax = 4 in this case
-    # To prevent gaps in the zonelog it is necessary to duplicate each zone transition
-    zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
-    for transition in zone_transitions:
-        try:
-            zvals = np.insert(zvals, transition, zvals[transition + 1])
-            hvals = np.insert(hvals, transition, hvals[transition + 1])
-            zonevals = np.insert(zonevals, transition, zonevals[transition])
-        except IndexError:
-            pass
-    zoneplot = []
-    for i, zone in enumerate(range(zomin, zomax + 1)):
-        zvals_copy = ma.masked_where(zonevals != zone, zvals)
-        hvals_copy = ma.masked_where(zonevals != zone, hvals)
-        zoneplot.append({
-            "x": hvals_copy.compressed(),
-            "y": zvals_copy.compressed(),
-            "line": {"width": 4, "color": color[i]},
-            "fillcolor": color[i],
-            "marker": {"opacity": 0.5},
-            "name": f"Zone: {zone}",
-        })
-    return zoneplot
-
 
 def find_zone_RHLEN(well_df,wellname,zone_path):
     zonation_data = pd.read_csv(zone_path[0])  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
