@@ -643,30 +643,38 @@ def forward_selected_interaction(data, response, maxvars=9):
     return model
 
 def make_p_values_plot(p_sorted, theme):
-
-    """Make Plotly trace for correlation plot"""
-    layout = theme_layout(
-        theme,
-        {
-            "barmode": "relative",
-            "height": 500,
-            "title": f"P-values for the parameters from the table",
-        },
-    )
-    layout["font"].update({"size": 10})
-
+    """Make Plotly trace for p-values plot"""
     p_values = p_sorted.values
     parameters = p_sorted.index
-    colors = ["crimson" if val<0.05 else "#505050" for val in p_values]
 
-    return {
-        "data": [
-            {"x": parameters, "y": p_values, 
-            "marker": {"color": colors},
-            "orientation": "v", "type": "bar"}
-        ],
-        "layout": layout,
-    }
+    fig = go.Figure()
+    fig.add_trace(
+        {
+            "x": parameters,
+            "y": p_values,
+            "type": "bar",
+            "marker":{"color": ["crimson" if val<0.05 else "#606060" for val in p_values]}
+        }
+    )
+    fig["layout"].update(
+        theme_layout(
+            theme,
+            {
+                "barmode": "relative",
+                "height": 500,
+                "title": f"P-values for the parameters from the table"
+            }
+        )
+    )
+    fig.add_shape(
+        {
+            "type": "line", 
+            "y0": 0.05, "y1": 0.05, "x0": -0.5, "x1": len(p_values)-0.5, "xref": "x",
+            "line": {"color": "#303030", "width": 1.5}
+        }
+    )
+    fig["layout"]["font"].update({"size": 10})
+    return fig
 
 def make_range_slider(domid, values, col_name):
     try:
