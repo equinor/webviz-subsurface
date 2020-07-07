@@ -43,7 +43,7 @@ class HuvXsection:
         if self.well_attributes ==None:
             return []
         else:
-            data = [{"type": "line",
+            data = [{
             "y": self.well_attributes["well_df"]["Z_TVDSS"],
             "x": self.well_attributes["well_df"]["R_HLEN"],
             "name": "well",
@@ -104,7 +104,6 @@ class HuvXsection:
             layout.update({
                 "yaxis":{
                     "title":"Depth (m)",
-                    "autorange": "off",
                     "range" : [ymax,y_well-0.15*y_width],
                 },
                 "xaxis":{
@@ -123,13 +122,11 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
-                    "type": "line",
                     'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
                     'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                  },
                 {
-                    "type": "line",
                     'x': self.surface_attributes[Path(sfc_path)]['surface_line'][:, 0],
                     'y': self.surface_attributes[Path(sfc_path)]['error_line_add'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6,'dash':'dash'},
@@ -151,7 +148,6 @@ class HuvXsection:
 
         data = [ #Create helpline for bottom of plot
             {
-                "type": "line",
                 "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
                 "y": [max + 50, max + 50],
                 "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
