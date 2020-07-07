@@ -92,7 +92,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
-        self.xsec.create_well(wellfiles[0],self.surfacefiles)
+        self.xsec.create_well(wellfiles[0])
 
 
     ### Generate unique ID's ###
@@ -330,7 +330,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ctx = dash.callback_context
             data = []
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                self.xsec.create_well(wellpath,surfacepaths)
+                self.xsec.create_well(wellpath)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
