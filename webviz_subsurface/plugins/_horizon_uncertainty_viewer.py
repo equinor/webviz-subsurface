@@ -249,13 +249,22 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
 
     @property
-    def table_layout(self):
+    def target_points_layout(self):
         df = pd.read_csv(self.target_points[0])
         return dash_table.DataTable(
-            id='table',
+            id=self.ids("target_point_table"),
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records'),
         )
+    @property
+    def well_points_layout(self):
+        df = pd.read_csv(self.well_points[0])
+        return dash_table.DataTable(
+            id=self.ids("well_points_table"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data = df.to_dict('records')
+        )
+        
 
     ### Flexbox ###
     @property
@@ -274,8 +283,12 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ]
             ),
             dcc.Tab(
-                label="Table view",
-                children=[html.Div(children=self.table_layout)]
+                label="Target Points",
+                children=[html.Div(children=self.target_points_layout)]
+            ),
+            dcc.Tab(
+                label='Well Points',
+                children=[html.Div(children = self.well_points_layout)]
             )
         ])
 
