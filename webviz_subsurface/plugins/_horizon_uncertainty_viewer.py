@@ -61,7 +61,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
         self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
         self.surface_attributes = {x: {} for x in surfacefiles}
-        self.target_points = [Path(target_point) for target_point in target_points]
+        self.target_points = target_points
         self.well_points = well_points
         for i, surfacefile in enumerate(surfacefiles):
             self.surface_attributes[surfacefile] = {"color": get_color(i), "error_path": surfacefiles_de[i]}
