@@ -91,7 +91,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data)
         self.xsec.create_well(wellfiles[0],self.surfacefiles)
 
-
     ### Generate unique ID's ###
     def ids(self, element):
         return f"{element}-id-{self.uid}"
@@ -226,6 +225,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                             backdrop=False,
                             fade=False,
                         ),
+                        dbc.Button("Draw well", id=self.ids("button-draw-well")),
                     ],
                 ),
                 html.Div(
@@ -259,7 +259,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                             children=LayeredMap(
                                 id=self.ids("draw-well-view"),
                                 draw_toolbar_polyline=True,
-                                layers=render_drawpad(self.surfacefiles[0]),
+                                layers=[],
                             ),
                         )
                     ]
@@ -335,14 +335,14 @@ The cross section is defined by a polyline interactively edited in the map view.
             return is_open
 
         @app.callback(
-            Output(self.ids("well-dropdown"), "value"),
+            Output(self.ids("draw-well-view"), "layers"),
             [
-                Input(self.ids("draw-well-view"), "polyline_points"),
+                Input(self.ids("button-draw-well"), "n_clicks"),
             ],
         )
-        def _render_custom_well(coords):
-            yo = coords
-            return self.wellfiles[4]
+        def _render_draw_well(n1):
+            #render_drawpad(img_bytes)
+            return []
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
@@ -383,3 +383,26 @@ def get_fencespec(coords):
         ]
     )
     return poly.get_fence(asnumpy=True)
+
+def render_drawpad(surfacepath):
+    hillshading = True
+    min_val = None
+    max_val = None
+    color = "viridis"
+    unit=""
+    s_layer = {
+        "name": 'Drawpad',
+        "checked": True,
+        "base_layer": True,
+        "data": [
+            {
+                "type": "image",
+                "url": surfacepath,
+                "allowHillshading": hillshading,
+                "minvalue": f"{min_val:.2f}" if min_val is not None else None,
+                "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
+                "unit": str(unit),
+            }
+        ],
+    }
+    return []
