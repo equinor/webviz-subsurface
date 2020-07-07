@@ -212,11 +212,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             options=[
                                                 {"label": name+'_error', "value": path}
                                                 for name, path in zip(
-                                                    self.surfacenames, self.surfacefiles_de
-                                        )
-                                    ],
-                                    value=self.surfacefiles_de,
-                                ),
+                                                    self.surfacenames, self.surfacefiles
+                                                )
+                                            ],
+                                            value=self.surfacefiles,
+                                        ),
                                     ],
                                 ),
                                 dbc.ModalFooter(

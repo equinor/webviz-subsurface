@@ -68,16 +68,16 @@ class HuvXsection:
             sfc = xtgeo.surface_from_file(Path(sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
             self.surface_attributes[Path(sfc_path)]['surface_line'] = sfc_line
-            self.surface_attributes[Path(sfc_path)]['surface_line_xdata'] = sfc_line[:,0]
-            self.surface_attributes[Path(sfc_path)]['surface_line_ydata'] = sfc_line[:,1]
+            #self.surface_attributes[Path(sfc_path)]['surface_line_xdata'] = sfc_line[:,0] #Unnecessary data storage?
+            #self.surface_attributes[Path(sfc_path)]['surface_line_ydata'] = sfc_line[:,1] #Unnecessary data storage?
     
     def set_error_lines(self, errorpaths):
-        for sfc_path in self.surface_attributes:
+        for sfc_path in errorpaths:
             de_surface = xtgeo.surface_from_file(self.surface_attributes[Path(sfc_path)]["error_path"], fformat="irap_binary")
             de_line = de_surface.get_randomline(self.fence)
-            sfc_line_ydata = self.surface_attributes[Path(sfc_path)]['surface_line_ydata']
-            de_line_add = list(map(add, sfc_line_ydata, de_line[:,1])) #add error y data
-            de_line_sub = list(map(sub, sfc_line_ydata, de_line[:,1])) #add error y data
+            sfc_line = self.surface_attributes[Path(sfc_path)]['surface_line']
+            de_line_add = sfc_line[:,1] + de_line[:,1] #Top of envelope
+            de_line_sub = sfc_line[:,1] - de_line[:,1] #Bottom of envelope
             self.surface_attributes[Path(sfc_path)]["error_line_add"] = de_line_add
             self.surface_attributes[Path(sfc_path)]["error_line_sub"] = de_line_sub               
 
@@ -114,6 +114,28 @@ class HuvXsection:
                 "height": 830,
             })
         return layout
+    
+    def get_plotly_err_data(self, surface_paths, error_paths):
+        common_paths = [error_path for error_path in error_paths if error_path in surface_paths]
+        data = []
+        for sfc_path in common_paths:
+            data +=[
+                {
+                    "type": "line",
+                    'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
+                    'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
+                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
+                 },
+                {
+                    "type": "line",
+                    'x': self.surface_attributes[Path(sfc_path)]['surface_line'][:, 0],
+                    'y': self.surface_attributes[Path(sfc_path)]['error_line_add'],
+                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6,'dash':'dash'},
+                    'fill': 'tonexty',
+                    'fillcolor': 'rgba(0,0,0,0.2)'
+                }
+            ]
+        return data
 
     def get_plotly_data(self, surface_paths:list, error_paths:list):
 
@@ -125,17 +147,6 @@ class HuvXsection:
         ]
         surface_tuples.sort(key=depth_sort, reverse=True)
 
-        error_paths_iterateable = []
-        error_sfc = []
-        for error_path in error_paths:
-            error_paths_iterateable.append(Path(error_path))
-
-        for sfc_path in surface_paths:
-            if self.surface_attributes[Path(sfc_path)]["error_path"] in error_paths_iterateable:
-                self.surface_attributes[Path(sfc_path)]["error_line_add_plot"] = self.surface_attributes[Path(sfc_path)]["error_line_add"]
-                self.surface_attributes[Path(sfc_path)]["error_line_sub_plot"] = self.surface_attributes[Path(sfc_path)]["error_line_sub"]
-                error_sfc.append(Path(sfc_path))
-        
         data = [ #Create helpline for bottom of plot
             {
                 "type": "line",
@@ -156,24 +167,8 @@ class HuvXsection:
             for sfc_path, _ in surface_tuples
         ]
 
-        data +=[
-            {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]["error_line_add_plot"],
-                'line': {"color": "white", "width": 0.6},
-            }
-            for sfc_path in error_sfc
-        ]
-
-        data +=[
-            {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]['error_line_sub_plot'],
-                'line': {"color": "black", "width": 0.6},
-            }
-            for sfc_path in error_sfc
-        ]
-        data+= self.get_plotly_well_data()
+        data += self.get_plotly_err_data(surface_paths,error_paths)
+        data += self.get_plotly_well_data()
 
         return data
 
