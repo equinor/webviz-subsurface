@@ -35,7 +35,7 @@ class HuvXsection:
             conditional_points = find_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
             color_list = ["rgb(245,245,245)"]
             for sfc in self.surface_attributes:
-                color_list.append(self.surface_attributes[Path(sfc)]["color"])
+                color_list.append(self.surface_attributes[sfc]["color"])
             zonelog = self.get_zonelog_data(well_df,color_list,self.zonelogname)
             self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
@@ -67,21 +67,21 @@ class HuvXsection:
 
     def set_surface_lines(self, surfacepaths):
         for sfc_path in surfacepaths:
-            sfc = xtgeo.surface_from_file(Path(sfc_path), fformat="irap_binary")
+            sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
-            self.surface_attributes[Path(sfc_path)]['surface_line'] = sfc_line
-            #self.surface_attributes[Path(sfc_path)]['surface_line_xdata'] = sfc_line[:,0] #Unnecessary data storage?
-            #self.surface_attributes[Path(sfc_path)]['surface_line_ydata'] = sfc_line[:,1] #Unnecessary data storage?
+            self.surface_attributes[sfc_path]['surface_line'] = sfc_line
+            #self.surface_attributes[sfc_path]['surface_line_xdata'] = sfc_line[:,0] #Unnecessary data storage?
+            #self.surface_attributes[sfc_path]['surface_line_ydata'] = sfc_line[:,1] #Unnecessary data storage?
     
     def set_error_lines(self, errorpaths):
         for sfc_path in errorpaths:
-            de_surface = xtgeo.surface_from_file(self.surface_attributes[Path(sfc_path)]["error_path"], fformat="irap_binary")
+            de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
             de_line = de_surface.get_randomline(self.fence)
-            sfc_line = self.surface_attributes[Path(sfc_path)]['surface_line']
+            sfc_line = self.surface_attributes[sfc_path]['surface_line']
             de_line_add = sfc_line[:,1] + de_line[:,1] #Top of envelope
             de_line_sub = sfc_line[:,1] - de_line[:,1] #Bottom of envelope
-            self.surface_attributes[Path(sfc_path)]["error_line_add"] = de_line_add
-            self.surface_attributes[Path(sfc_path)]["error_line_sub"] = de_line_sub               
+            self.surface_attributes[sfc_path]["error_line_add"] = de_line_add
+            self.surface_attributes[sfc_path]["error_line_sub"] = de_line_sub               
 
     def get_plotly_layout(self,surfacepaths:list):
         ymin, ymax = self.surfline_max_min_depth(surfacepaths)
@@ -122,6 +122,7 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
+<<<<<<< HEAD
                     'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
                     'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
@@ -129,6 +130,17 @@ class HuvXsection:
                 {
                     'x': self.surface_attributes[Path(sfc_path)]['surface_line'][:, 0],
                     'y': self.surface_attributes[Path(sfc_path)]['error_line_add'],
+=======
+                    "type": "line",
+                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
+                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
+                 },
+                {
+                    "type": "line",
+                    'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
+                    'y': self.surface_attributes[sfc_path]['error_line_add'],
+>>>>>>> 2a28f8cdcb0e1a1c1a3de709b1c2e3707e06a3d1
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6,'dash':'dash'},
                     'fill': 'tonexty',
                     'fillcolor': 'rgba(0,0,0,0.2)'
@@ -139,9 +151,9 @@ class HuvXsection:
     def get_plotly_data(self, surface_paths:list, error_paths:list):
 
         min, max = self.surfline_max_min_depth(surface_paths)
-        first_surf_line = self.surface_attributes[Path(surface_paths[0])]['surface_line']
+        first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
         surface_tuples =[
-            (sfc_path ,self.surface_attributes[Path(sfc_path)]['surface_line'])
+            (sfc_path ,self.surface_attributes[sfc_path]['surface_line'])
             for sfc_path in surface_paths
         ]
         surface_tuples.sort(key=depth_sort, reverse=True)
@@ -156,11 +168,11 @@ class HuvXsection:
 
         data +=[
             {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]['surface_line'][:,1],
+                'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
                 'line': {"color": "rgba(0,0,0,1)", "width": 1},
                 "fill": "tonexty",
-                'fillcolor':self.surface_attributes[Path(sfc_path)]["color"]
+                'fillcolor':self.surface_attributes[sfc_path]["color"]
             }
             for sfc_path, _ in surface_tuples
         ]
@@ -173,11 +185,11 @@ class HuvXsection:
 
     def surfline_max_min_depth(self, surfacepaths:list):
         maxvalues = np.array([
-            np.max(self.surface_attributes[Path(sfc_path)]['surface_line'][:,1])
+            np.max(self.surface_attributes[sfc_path]['surface_line'][:,1])
             for sfc_path in surfacepaths
         ])
         minvalues = np.array([
-            np.min(self.surface_attributes[Path(sfc_path)]['surface_line'][:,1])
+            np.min(self.surface_attributes[sfc_path]['surface_line'][:,1])
             for sfc_path in surfacepaths
         ])
         return np.min(minvalues), np.max(maxvalues)
