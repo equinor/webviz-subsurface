@@ -63,22 +63,22 @@ class HuvXsection:
                 "height": 830,
             })
         else:
-                 x_min, y_min, x_max = find_where_it_crosses_well(y_min, y_max, self.well_attributes['well_df'])
-        x_range = np.abs(x_max - x_min)
-        y_range = np.abs(y_max - y_min)
-        layout.update({
-            "yaxis": {
-                "title": "Depth (m)",
-                "range": [y_max + 0.15 * y_range, y_min - 0.15 * y_range],
-            },
-            "xaxis": {
-                "title": "Distance from polyline",
-                'range': [x_min - 0.15 * x_range, x_max + 0.15 * y_range]
-            },
-            "plot_bgcolor": 'rgb(233,233,233)',
-            "showlegend": False,
-            "height": 830,
-        })
+            x_min, y_min, x_max = find_where_it_crosses_well(y_min, y_max, self.well_attributes['well_df'])
+            x_range = np.abs(x_max - x_min)
+            y_range = np.abs(y_max - y_min)
+            layout.update({
+                "yaxis": {
+                    "title": "Depth (m)",
+                    "range": [y_max + 0.15 * y_range, y_min - 0.15 * y_range],
+                },
+                "xaxis": {
+                    "title": "Distance from polyline",
+                    'range': [x_min - 0.15 * x_range, x_max + 0.15 * y_range]
+                },
+                "plot_bgcolor": 'rgb(233,233,233)',
+                "showlegend": False,
+                "height": 830,
+            })
 
         return layout
 
