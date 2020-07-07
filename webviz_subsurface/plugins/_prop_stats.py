@@ -4,6 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -153,19 +154,22 @@ class PropertyStatistics(WebvizPluginABC):
                                                                     "value": "Histogram",
                                                                 },
                                                                 {
-                                                                    "label": "Barchart",
+                                                                    "label": "Bars per realization",
                                                                     "value": "Barchart",
                                                                 },
                                                                 {
                                                                     "label": "Scatter",
                                                                     "value": "Scatter",
                                                                 },
+                                                                {
+                                                                    "label": "Table View",
+                                                                    "value": "table",
+                                                                },
+
                                                             ],
                                                             value="Scatter",
                                                         ),
-                                                        wcc.Graph(
-                                                            id=self.uuid("hist-graph")
-                                                        ),
+                                                        html.Div(id=self.uuid("hist-graph")),
                                                     ],
                                                 ),
                                             ]
@@ -191,9 +195,7 @@ class PropertyStatistics(WebvizPluginABC):
                                                 ),
                                                 html.Div(
                                                     style={"flex": 3},
-                                                    children=wcc.Graph(
-                                                        id=self.uuid("corr-graph"),
-                                                        figure={
+                                                    children=wcc.Graph(id=self.uuid("corr-graph"),figure={
                                                             "layout": {
                                                                 "title": "<b>Click on a region to calculate correlations</b><br>"
                                                             },
@@ -251,7 +253,7 @@ class PropertyStatistics(WebvizPluginABC):
             return fig
 
         @app.callback(
-            Output(self.uuid("hist-graph"), "figure"),
+            Output(self.uuid("hist-graph"), "children"),
             [
                 Input(self.uuid("region-graph"), "selectedData"),
                 Input({"page": self.uuid("selectors"), "index": ALL}, "value"),
@@ -267,7 +269,7 @@ class PropertyStatistics(WebvizPluginABC):
             else:
                 regions = [point["location"] for point in cd["points"]]
             if len(regions) == 0:
-                return {"data": []}
+                return [wcc.Graph(figure={"data": []})]
             inputs = dash.callback_context.inputs_list[1]
             df = self.propdf.copy()
 
@@ -289,7 +291,8 @@ class PropertyStatistics(WebvizPluginABC):
                     facet_col_wrap=3,
                     height=800,
                 )
-            else:
+            elif graph_type == "Scatter":
+                
                 fig = px.scatter(
                     df2,
                     x="REAL",
@@ -298,9 +301,15 @@ class PropertyStatistics(WebvizPluginABC):
                     facet_col_wrap=3,
                     height=800,
                 )
+            else:
+                data = []
+                for reg, regdf in df2.groupby("REGION"):
+                    
+                    data.append({'ZONE':regdf["ZONE"].unique()[0], 'FACIES':regdf["FACIES"].unique()[0], "REGION":reg, 'Avg(Average)':f"{regdf['Avg'].mean():.3f}"})
+                return [dash_table.DataTable(columns=[{'name': name, 'id':name} for name in ["ZONE", "REGION", "FACIES", "Avg(Average)"]], data=data)]
 
             fig["layout"].update(self.plotly_theme["layout"])
-            return fig
+            return [wcc.Graph(figure=fig)]
 
         @app.callback(
             Output(self.uuid("region-graph2"), "figure"),
