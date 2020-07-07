@@ -24,6 +24,10 @@ pages:
             - ..\Datasets\simple_model\input\welldata\OP_4.txt
             - ..\Datasets\simple_model\input\welldata\OP_5.txt
             - ..\Datasets\simple_model\input\welldata\OP_6.txt
+          target_points:
+            - ..\Datasets\simple_model\output\log_files\targetpoints.csv
+          well_points:
+            - ..\Datasets\simple_model\output\log_files\wellpoints.csv
 
           surfacenames:
             - TopUpperReek

@@ -2,6 +2,7 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import dash
+import dash_table
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
@@ -46,6 +47,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         wellfiles: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
+        target_points: List[Path] = None,
+        well_points: List[Path] = None,
         surfacenames: list = None,
         wellnames: list = None,
         zonelogname: str = None,
@@ -58,7 +61,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
         self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
         self.surface_attributes = {x: {} for x in surfacefiles}
-        
+        self.target_points = target_points
+        self.well_points = well_points
         for i, surfacefile in enumerate(surfacefiles):
             self.surface_attributes[surfacefile] = {"color": get_color(i), "error_path": surfacefiles_de[i]}
 
@@ -208,11 +212,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             options=[
                                                 {"label": name+'_error', "value": path}
                                                 for name, path in zip(
-                                                    self.surfacenames, self.surfacefiles_de
-                                        )
-                                    ],
-                                    value=self.surfacefiles_de,
-                                ),
+                                                    self.surfacenames, self.surfacefiles
+                                                )
+                                            ],
+                                            value=self.surfacefiles,
+                                        ),
                                     ],
                                 ),
                                 dbc.ModalFooter(
@@ -244,16 +248,49 @@ The cross section is defined by a polyline interactively edited in the map view.
             ]
         )
 
+    @property
+    def target_points_layout(self):
+        df = pd.read_csv(self.target_points[0])
+        return dash_table.DataTable(
+            id=self.ids("target_point_table"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict('records'),
+        )
+    @property
+    def well_points_layout(self):
+        df = pd.read_csv(self.well_points[0])
+        return dash_table.DataTable(
+            id=self.ids("well_points_table"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data = df.to_dict('records')
+        )
+        
+
     ### Flexbox ###
     @property
     def layout(self):
-        return wcc.FlexBox(
-            id=self.ids("layout"),
-            children=[
-                html.Div(style={"flex": 1}, children=self.map_layout),
-                html.Div(style={"flex": 1}, children=self.cross_section_layout),
-            ],
-        )
+        return dcc.Tabs(children=[
+            dcc.Tab(
+                label="Cross section & map view",
+                children=[
+                    wcc.FlexBox(
+                        id=self.ids("layout"),
+                        children=[
+                            html.Div(style={"flex": 1}, children=self.map_layout),
+                            html.Div(style={"flex": 1}, children=self.cross_section_layout),
+                        ]
+                    )
+                ]
+            ),
+            dcc.Tab(
+                label="Target Points",
+                children=[html.Div(children=self.target_points_layout)]
+            ),
+            dcc.Tab(
+                label='Well Points',
+                children=[html.Div(children = self.well_points_layout)]
+            )
+        ])
 
     ### Callbacks map view and cross-section-view ###
     def set_callbacks(self, app):
@@ -361,3 +398,4 @@ def get_fencespec(coords):
         ]
     )
     return poly.get_fence(asnumpy=True)
+
