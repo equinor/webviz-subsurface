@@ -427,7 +427,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
-            p_sorted = model.pvalues.sort_values()
+            p_sorted = model.pvalues.sort_values().drop("Intercept")
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
 
@@ -673,7 +673,7 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5}
         }
     )
-    fig["layout"]["font"].update({"size": 10})
+    fig["layout"]["font"].update({"size": 12})
     return fig
 
 def make_range_slider(domid, values, col_name):
