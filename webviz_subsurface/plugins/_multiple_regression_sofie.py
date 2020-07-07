@@ -131,7 +131,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 "content": (
                     "The p-values for the parameters from the table ranked from most significant "
                     "to least significant.  Red indicates "
-                    "that the p-value is significant, black indicates that the p-value "
+                    "that the p-value is significant, gray indicates that the p-value "
                     "is not significant."
                 )
             },
@@ -143,13 +143,15 @@ class MultipleRegressionSofie(WebvizPluginABC):
     @property
     def responses(self):
         """Returns valid responses. Filters out non numerical columns,
-        and filterable columns"""
+        and filterable columns. Replaces : and , with _ to make it work with the model"""
         responses = list(
             self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
             .apply(pd.to_numeric, errors="coerce")
             .dropna(how="all", axis="columns")
             .columns
         )
+        responses = [colname.replace(":","_") if ":" in colname else colname for colname in responses]
+        responses = [colname.replace(",","_") if "," in colname else colname for colname in responses]
         return [p for p in responses if p not in self.response_filters.keys()]
 
     @property
@@ -299,7 +301,10 @@ class MultipleRegressionSofie(WebvizPluginABC):
                         ),
                         html.Div(
                             style={'flex': 3},
-                            children=wcc.Graph(id=self.ids('p-values-plot'))
+                            children=[
+                                wcc.Graph(id=self.ids('p-values-plot')),
+                                dcc.Store(id=self.ids("initial-parameter"))
+                            ]
                         )
                     ],
                 ),
@@ -351,7 +356,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
         return filteroptions
     
     def set_callbacks(self, app):
-        """Temporary way of filtering out stupid parameters"""
+        """Temporary way of filtering out non-valid parameters"""
         parameter_filters=[
                 'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
                 'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
@@ -400,7 +405,8 @@ class MultipleRegressionSofie(WebvizPluginABC):
 
         @app.callback(
             [
-                Output(self.ids("p-values-plot"), "figure")
+                Output(self.ids("p-values-plot"), "figure"),
+                Output(self.ids("initial-parameter"), "data"),
             ],
             self.pvalues_input_callbacks
         )
@@ -421,8 +427,9 @@ class MultipleRegressionSofie(WebvizPluginABC):
             
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
+            p_sorted = model.pvalues.sort_values()
             
-            return make_p_values_plot(model)
+            return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -635,28 +642,31 @@ def forward_selected_interaction(data, response, maxvars=9):
     model = smf.ols(formula, data).fit()
     return model
 
-def make_p_values_plot(model):
-    """ Sorting the dictionary in ascending order and making lists for parameters and p-values """
-    p_sorted = model.pvalues.sort_values()
-    parameters = p_sorted.index
-    values = p_sorted.values
+def make_p_values_plot(p_sorted, theme):
 
-    """ Making an array for the corresponding colors """
-    
-    colors = ["#FF1243" if val<0.05 else "slate-gray" for val in values]
-    
-    fig = dict(
-        {"data": [
-                {
-                    "type": "bar",
-                    "x": parameters,
-                    "y": values,
-                    "marker": {"color": colors}
-                }]
-        }
+    """Make Plotly trace for correlation plot"""
+    layout = theme_layout(
+        theme,
+        {
+            "barmode": "relative",
+            "height": 500,
+            "title": f"P-values for the parameters from the table",
+        },
     )
+    layout["font"].update({"size": 10})
 
-    return [fig]
+    p_values = p_sorted.values
+    parameters = p_sorted.index
+    colors = ["crimson" if val<0.05 else "#505050" for val in p_values]
+
+    return {
+        "data": [
+            {"x": parameters, "y": p_values, 
+            "marker": {"color": colors},
+            "orientation": "v", "type": "bar"}
+        ],
+        "layout": layout,
+    }
 
 def make_range_slider(domid, values, col_name):
     try:
