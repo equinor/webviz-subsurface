@@ -42,7 +42,7 @@ pages:
             - OP_4
             - OP_5
             - OP_6
-          zonelog: Zonelog
+          zonelogname: Zonelog
           zonation_data:
             - ..\Datasets\simple_model\output\log_files\zonation_status.csv
           conditional_data:
