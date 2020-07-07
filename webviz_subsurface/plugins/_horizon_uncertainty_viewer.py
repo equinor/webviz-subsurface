@@ -1,6 +1,7 @@
 from uuid import uuid4
 from pathlib import Path
 from typing import List
+import os
 import dash
 import pandas as pd
 import numpy as np
@@ -251,7 +252,18 @@ The cross section is defined by a polyline interactively edited in the map view.
             children=[
                 html.Div(style={"flex": 1}, children=self.map_layout),
                 html.Div(style={"flex": 1}, children=self.cross_section_layout),
-            ],
+                html.Div(style={"flex": 1}, 
+                    children=[
+                        html.Div(
+                            children=LayeredMap(
+                                id=self.ids("draw-well-view"),
+                                draw_toolbar_polyline=True,
+                                layers=render_drawpad(self.surfacefiles[0]),
+                            ),
+                        )
+                    ]
+                ),
+            ],  
         )
 
     ### Callbacks map view and cross-section-view ###
@@ -321,6 +333,16 @@ The cross section is defined by a polyline interactively edited in the map view.
             if n1 or n2:
                 return not is_open
             return is_open
+
+        @app.callback(
+            Output(self.ids("well-dropdown"), "value"),
+            [
+                Input(self.ids("draw-well-view"), "polyline_points"),
+            ],
+        )
+        def _render_custom_well(coords):
+            yo = coords
+            return self.wellfiles[4]
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
