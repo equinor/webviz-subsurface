@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 import os
 import dash
+import dash_table
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
@@ -47,9 +48,11 @@ The cross section is defined by a polyline interactively edited in the map view.
         wellfiles: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
+        target_points: List[Path] = None,
+        well_points: List[Path] = None,
         surfacenames: list = None,
         wellnames: list = None,
-        zonelog: str = None,
+        zonelogname: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
     ):
@@ -59,9 +62,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacefiles = [str(surffile) for surffile in surfacefiles]
         self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
         self.surface_attributes = {x: {} for x in surfacefiles}
-        
+        self.target_points = target_points
+        self.well_points = well_points
         for i, surfacefile in enumerate(surfacefiles):
-            self.surface_attributes[surfacefile] = {"color": get_color(i), "error_path": surfacefiles_de[i]}
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(surfacefiles_de[i])}
 
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
@@ -84,11 +88,11 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
         self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
-        self.zonelog = zonelog       
+        self.zonelogname = zonelogname #name of zonelog in OP txt files       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data)
+        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
         self.xsec.create_well(wellfiles[0],self.surfacefiles)
 
     ### Generate unique ID's ###
@@ -208,11 +212,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             options=[
                                                 {"label": name+'_error', "value": path}
                                                 for name, path in zip(
-                                                    self.surfacenames, self.surfacefiles_de
-                                        )
-                                    ],
-                                    value=self.surfacefiles_de,
-                                ),
+                                                    self.surfacenames, self.surfacefiles
+                                                )
+                                            ],
+                                            value=self.surfacefiles,
+                                        ),
                                     ],
                                 ),
                                 dbc.ModalFooter(
@@ -245,38 +249,71 @@ The cross section is defined by a polyline interactively edited in the map view.
             ]
         )
 
+    @property
+    def target_points_layout(self):
+        df = pd.read_csv(self.target_points[0])
+        return dash_table.DataTable(
+            id=self.ids("target_point_table"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict('records'),
+        )
+    @property
+    def well_points_layout(self):
+        df = pd.read_csv(self.well_points[0])
+        return dash_table.DataTable(
+            id=self.ids("well_points_table"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data = df.to_dict('records')
+        )
+        
+
     ### Flexbox ###
     @property
     def layout(self):
-        return wcc.FlexBox(
-            id=self.ids("layout"),
-            children=[
-                html.Div(style={"flex": 1}, children=self.map_layout),
-                html.Div(style={"flex": 1}, children=self.cross_section_layout),
-                html.Div(style={"flex": 1}, 
-                    children=[
-                        html.Div(
-                            children=LayeredMap(
-                                id=self.ids("draw-well-view"),
-                                draw_toolbar_polyline=True,
-                                layers=[],
+        return dcc.Tabs(children=[
+            dcc.Tab(
+                label="Cross section & map view",
+                children=[
+                    wcc.FlexBox(
+                        id=self.ids("layout"),
+                        children=[
+                            html.Div(style={"flex": 1}, children=self.map_layout),
+                            html.Div(style={"flex": 1}, children=self.cross_section_layout),
+                            html.Div(style={"flex": 1}, 
+                                children=[
+                                    html.Div(
+                                        children=LayeredMap(
+                                            id=self.ids("draw-well-view"),
+                                            draw_toolbar_polyline=True,
+                                            layers=[],
+                                        ),
+                                    )
+                                ]
                             ),
-                        )
-                    ]
-                ),
-            ],  
-        )
+                        ]
+                    )
+                ]
+            ),
+            dcc.Tab(
+                label="Target Points",
+                children=[html.Div(children=self.target_points_layout)]
+            ),
+            dcc.Tab(
+                label='Well Points',
+                children=[html.Div(children = self.well_points_layout)]
+            )
+        ])
 
     ### Callbacks map view and cross-section-view ###
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
             [
-                Input(self.ids("map-dropdown"), "value"),
+                Input(self.ids("map-dropdown"), "value"), #List of errorfiles
             ],
         )
-        def render_map(surfacepath):
-            surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
+        def render_map(errorpath):
+            surface = xtgeo.surface_from_file(errorpath, fformat="irap_binary")
             hillshading = True
             min_val = None
             max_val = None
@@ -295,15 +332,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
-                Input(self.ids("well-dropdown"), "value"), #wellpath
-                Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
-                Input(self.ids("surfaces_de_checklist"), "value"), #surfacepaths_de list
-                Input(self.ids("map-view"), "polyline_points"),
+                Input(self.ids("well-dropdown"), "value"), # wellpath
+                Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
+                Input(self.ids("surfaces_de_checklist"), "value"), # errorpaths list
+                Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
             ],
         )
         def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
             data = []
+            surfacepaths = get_path(surfacepaths)
+            errorpaths = get_path(errorpaths)
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
                 self.xsec.create_well(wellpath,surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
@@ -313,7 +352,9 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.xsec.set_error_lines(errorpaths)
             data += self.xsec.get_plotly_data(surfacepaths,errorpaths)
             layout = self.xsec.get_plotly_layout(surfacepaths)
-            return {'data':data,'layout':layout}
+            fig_dict = dict({'data':data,'layout':layout})
+            fig = go.Figure(fig_dict)
+            return fig
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -345,11 +386,15 @@ The cross section is defined by a polyline interactively edited in the map view.
             return []
 
     def add_webvizstore(self):
+        print('This function doesnt do anything, does it?')
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
 
+
 @webvizstore
-def get_path(path) -> Path:
-    return Path(path)
+def get_path(paths) -> Path:
+    for i, path in enumerate(paths):
+        paths[i] = Path(path)
+    return paths
 
 
 def get_color(i):
