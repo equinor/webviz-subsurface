@@ -92,7 +92,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
-        self.xsec.create_well(wellfiles[0],self.surfacefiles)
+        self.xsec.set_well(wellfiles[0],self.surfacefiles)
 
 
     ### Generate unique ID's ###
@@ -328,17 +328,17 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
         def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
-            data = []
             surfacepaths = get_path(surfacepaths)
             errorpaths = get_path(errorpaths)
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                self.xsec.create_well(wellpath,surfacepaths)
+                self.xsec.set_well(wellpath,surfacepaths)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
             self.xsec.set_surface_lines(surfacepaths)
             self.xsec.set_error_lines(errorpaths)
-            data += self.xsec.get_plotly_data(surfacepaths,errorpaths)
+            data = []
+            data += self.xsec.get_plotly_data(surfacepaths, errorpaths)
             layout = self.xsec.get_plotly_layout(surfacepaths)
             fig_dict = dict({'data':data,'layout':layout})
             fig = go.Figure(fig_dict)
