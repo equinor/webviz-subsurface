@@ -16,21 +16,21 @@ class HuvXsection:
     
     def set_surface_lines(self, surfacepaths):
         for sfc_path in surfacepaths:
-            sfc = xtgeo.surface_from_file(Path(sfc_path), fformat="irap_binary")
+            sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
-            self.surface_attributes[Path(sfc_path)]['surface_line'] = sfc_line
-            self.surface_attributes[Path(sfc_path)]['surface_line_xdata'] = sfc_line[:,0]
-            self.surface_attributes[Path(sfc_path)]['surface_line_ydata'] = sfc_line[:,1]
+            self.surface_attributes[sfc_path]['surface_line'] = sfc_line
+            self.surface_attributes[sfc_path]['surface_line_xdata'] = sfc_line[:,0]
+            self.surface_attributes[sfc_path]['surface_line_ydata'] = sfc_line[:,1]
     
     def set_error_lines(self, errorpaths):
         for sfc_path in self.surface_attributes:
-            de_surface = xtgeo.surface_from_file(self.surface_attributes[Path(sfc_path)]["error_path"], fformat="irap_binary")
+            de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
             de_line = de_surface.get_randomline(self.fence)
-            sfc_line_ydata = self.surface_attributes[Path(sfc_path)]['surface_line_ydata']
+            sfc_line_ydata = self.surface_attributes[sfc_path]['surface_line_ydata']
             de_line_add = list(map(add, sfc_line_ydata, de_line[:,1])) #add error y data
             de_line_sub = list(map(sub, sfc_line_ydata, de_line[:,1])) #add error y data
-            self.surface_attributes[Path(sfc_path)]["error_line_add"] = de_line_add
-            self.surface_attributes[Path(sfc_path)]["error_line_sub"] = de_line_sub
+            self.surface_attributes[sfc_path]["error_line_add"] = de_line_add
+            self.surface_attributes[sfc_path]["error_line_sub"] = de_line_sub
     
     @property
     def plotly_layout(self):
@@ -53,9 +53,9 @@ class HuvXsection:
 
 
         min, max = self.surfline_max_min_depth(surface_paths)
-        first_surf_line = self.surface_attributes[Path(surface_paths[0])]['surface_line']
+        first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
         surface_tuples =[
-            (sfc_path ,self.surface_attributes[Path(sfc_path)]['surface_line'])
+            (sfc_path ,self.surface_attributes[sfc_path]['surface_line'])
             for sfc_path in surface_paths
         ]
         surface_tuples.sort(key=depth_sort, reverse=True)
@@ -63,13 +63,13 @@ class HuvXsection:
         error_paths_iterateable = []
         error_sfc = []
         for error_path in error_paths:
-            error_paths_iterateable.append(Path(error_path))
+            error_paths_iterateable.append(error_path)
 
         for sfc_path in surface_paths:
-            if self.surface_attributes[Path(sfc_path)]["error_path"] in error_paths_iterateable:
-                self.surface_attributes[Path(sfc_path)]["error_line_add_plot"] = self.surface_attributes[Path(sfc_path)]["error_line_add"]
-                self.surface_attributes[Path(sfc_path)]["error_line_sub_plot"] = self.surface_attributes[Path(sfc_path)]["error_line_sub"]
-                error_sfc.append(Path(sfc_path))
+            if self.surface_attributes[sfc_path]["error_path"] in error_paths_iterateable:
+                self.surface_attributes[sfc_path]["error_line_add_plot"] = self.surface_attributes[sfc_path]["error_line_add"]
+                self.surface_attributes[sfc_path]["error_line_sub_plot"] = self.surface_attributes[sfc_path]["error_line_sub"]
+                error_sfc.append(sfc_path)
         
         data = [ #Create helpline for bottom of plot
             {
@@ -82,19 +82,19 @@ class HuvXsection:
 
         data +=[
             {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]['surface_line'][:,1],
+                'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
                 'line': {"color": "rgba(0,0,0,1)", "width": 1},
                 "fill": "tonexty",
-                'fillcolor':self.surface_attributes[Path(sfc_path)]["color"]
+                'fillcolor':self.surface_attributes[sfc_path]["color"]
             }
             for sfc_path, _ in surface_tuples
         ]
 
         data +=[
             {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]["error_line_add_plot"],
+                'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                'y':self.surface_attributes[sfc_path]["error_line_add_plot"],
                 'line': {"color": "white", "width": 0.6},
             }
             for sfc_path in error_sfc
@@ -102,8 +102,8 @@ class HuvXsection:
 
         data +=[
             {
-                'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                'y':self.surface_attributes[Path(sfc_path)]['error_line_sub_plot'],
+                'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                'y':self.surface_attributes[sfc_path]['error_line_sub_plot'],
                 'line': {"color": "black", "width": 0.6},
             }
             for sfc_path in error_sfc
@@ -114,11 +114,11 @@ class HuvXsection:
 
     def surfline_max_min_depth(self, surfacepaths:list):
         maxvalues = np.array([
-            np.max(self.surface_attributes[Path(sfc_path)]['surface_line'][:,1])
+            np.max(self.surface_attributes[sfc_path]['surface_line'][:,1])
             for sfc_path in surfacepaths
         ])
         minvalues = np.array([
-            np.min(self.surface_attributes[Path(sfc_path)]['surface_line'][:,1])
+            np.min(self.surface_attributes[sfc_path]['surface_line'][:,1])
             for sfc_path in surfacepaths
         ])
         return np.min(minvalues), np.max(maxvalues)

@@ -58,7 +58,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surface_attributes = {x: {} for x in surfacefiles}
         
         for i, surfacefile in enumerate(surfacefiles):
-            self.surface_attributes[surfacefile] = {"color": get_color(i), "error_path": surfacefiles_de[i]}
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(surfacefiles_de[i])}
 
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
@@ -84,7 +84,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes)
-        well = xtgeo.Well(get_path(Path(wellfiles[0])))
+        well = xtgeo.Well(Path(wellfiles[0]))
         self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5)  # Generate a polyline along a well path
 
 
@@ -257,11 +257,11 @@ The cross section is defined by a polyline interactively edited in the map view.
         @app.callback(
             Output(self.ids("map-view"), "layers"),
             [
-                Input(self.ids("map-dropdown"), "value"),
+                Input(self.ids("map-dropdown"), "value"), #List of errorfiles
             ],
         )
-        def render_map(surfacepath):
-            surface = xtgeo.surface_from_file(surfacepath, fformat="irap_binary")
+        def render_map(errorpath):
+            surface = xtgeo.surface_from_file(errorpath, fformat="irap_binary")
             hillshading = True
             min_val = None
             max_val = None
@@ -280,18 +280,19 @@ The cross section is defined by a polyline interactively edited in the map view.
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
-                Input(self.ids("well-dropdown"), "value"), #wellpath
-                Input(self.ids("surfaces-checklist"), "value"), #surfacepaths list
-                Input(self.ids("surfaces_de_checklist"), "value"), #surfacepaths_de list
-                Input(self.ids("map-view"), "polyline_points"),
+                Input(self.ids("well-dropdown"), "value"), # wellpath
+                Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
+                Input(self.ids("surfaces_de_checklist"), "value"), # errorpaths list
+                Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
             ],
         )
 
         def _render_surface(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
-
+            surfacepaths = get_path(surfacepaths)
+            errorpaths = get_path(errorpaths)
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                well = xtgeo.Well(get_path(wellpath))
+                well = xtgeo.Well(Path(wellpath))
                 well_df = well.dataframe
                 self.xsec.fence = well.get_fence_polyline(nextend=100, sampling=5) # Generate a polyline along a well path
                 well.create_relative_hlen() # Get surface values along the polyline
@@ -324,11 +325,15 @@ The cross section is defined by a polyline interactively edited in the map view.
             return is_open
 
     def add_webvizstore(self):
+        print('This function doesnt do anything, does it?')
         return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
 
+
 @webvizstore
-def get_path(path) -> Path:
-    return Path(path)
+def get_path(paths) -> Path:
+    for i, path in enumerate(paths):
+        paths[i] = Path(path)
+    return paths
 
 
 def plot_well_zonelog(df,zvals,hvals,zonelogname="Zonelog",zomin=-999):
