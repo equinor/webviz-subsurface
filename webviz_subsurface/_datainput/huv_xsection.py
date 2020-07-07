@@ -114,8 +114,8 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
-                    'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                    'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
+                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                  },
                 {
