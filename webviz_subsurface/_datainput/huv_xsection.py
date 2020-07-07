@@ -122,7 +122,6 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
-<<<<<<< HEAD
                     'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
                     'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
@@ -130,17 +129,6 @@ class HuvXsection:
                 {
                     'x': self.surface_attributes[Path(sfc_path)]['surface_line'][:, 0],
                     'y': self.surface_attributes[Path(sfc_path)]['error_line_add'],
-=======
-                    "type": "line",
-                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
-                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
-                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                 },
-                {
-                    "type": "line",
-                    'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y': self.surface_attributes[sfc_path]['error_line_add'],
->>>>>>> 2a28f8cdcb0e1a1c1a3de709b1c2e3707e06a3d1
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6,'dash':'dash'},
                     'fill': 'tonexty',
                     'fillcolor': 'rgba(0,0,0,0.2)'
