@@ -13,7 +13,9 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
+#Naming?
 import statsmodels.formula.api as smf
+import statsmodels.api as sm
 from dash_table.Format import Format
 from sklearn.preprocessing import PolynomialFeatures
 
@@ -268,6 +270,38 @@ The types of response_filters are:
             ),
             html.Div(
                 [
+                    html.Label("Force out"),
+                    dcc.Dropdown(
+                        id=self.ids("force_out"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Force in"),
+                    dcc.Dropdown(
+                        id=self.ids("force_in"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
                     html.Label("Interaction"),
                     dcc.RadioItems(
                         id=self.ids("interaction"),
@@ -333,6 +367,8 @@ The types of response_filters are:
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force_out"), "value"),
+            Input(self.ids("force_in"), "value"),
             Input(self.ids("interaction"), "value"),
             Input(self.ids("max_vars"), "value"),
         ]
@@ -362,7 +398,7 @@ The types of response_filters are:
             self.table_input_callbacks,
         )
 
-        def _update_table(ensemble, response, interaction, max_vars, *filters):
+        def _update_table(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -380,29 +416,40 @@ The types of response_filters are:
                 aggregation=self.aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
 
-            #For now, remove : form param and response names. Should only do this once though 
-            parameterdf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in parameterdf.columns]
-            responsedf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in responsedf.columns]
-            responsedf.columns = [colname.replace(",","_") if "," in colname else colname for colname in responsedf.columns]
-            response = response.replace(":","_")
-            response = response.replace(",","_")
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             
 
 
             #Get results and genereate datatable 
-            result = gen_model(df, response, max_vars = max_vars, interaction= interaction)
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
             table = result.model.fit().summary2().tables[1]
+
+            #Turn index names (the params) into columms 
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
+            
             columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
             data = table.to_dict("rows")
-            return(
-                data,
-                columns,
-                f"Multiple regression with {response} as response",
-            )
+            if result.model.fit().df_model == 0:
+                return (
+                    [{"e": "Cannot calculate fit for given selection. Select a different response or filter setting"}],
+                    [{"name": "Error", "id": "e"}],
+                    "Error",
+                )
+            else:
+                return(
+                    data,
+                    columns,
+                    f"Multiple regression with {response} as response",
+                )
 
     def add_webvizstore(self):
         if self.parameter_parq and self.response_parq:
@@ -484,15 +531,16 @@ def _filter_and_sum_responses(
 def gen_model(
         df: pd.DataFrame,
         response: str,
+        force_in: [],
         max_vars: int=9,
         interaction: bool=False):
         """Genereates model with best fit"""
         
         if interaction:
             df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, maxvars=max_vars)
+            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
         else:
-            return forward_selected(df, response, maxvars=max_vars)
+            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -533,7 +581,7 @@ def gen_column_names(df, interaction_only):
 
 
 
-def forward_selected(data, response, maxvars=9):
+def forward_selected(data, response, force_in, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
 
@@ -552,7 +600,7 @@ def forward_selected(data, response, maxvars=9):
     """
     remaining = set(data.columns)
     remaining.remove(response)
-    selected = []
+    selected = force_in
 
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -574,7 +622,7 @@ def forward_selected(data, response, maxvars=9):
     return model
 
 
-def forward_selected_interaction(data, response, maxvars=9):
+def forward_selected_interaction(data, response, force_in, maxvars=9):
     """Linear model designed by forward selection.
 
     Parameters:
@@ -592,7 +640,7 @@ def forward_selected_interaction(data, response, maxvars=9):
     """
     remaining = set(data.columns)
     remaining.remove(response)
-    selected = []
+    selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
