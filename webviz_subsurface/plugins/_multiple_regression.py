@@ -517,7 +517,7 @@ The types of response_filters are:
             ],
             self.pvalues_input_callbacks
         )
-        def update_pvalues_plot(ensemble, response, force_in, force_out, interaction, max_vars, *filters):
+        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
             1. Filters and aggregates response dataframe per realization
@@ -547,7 +547,7 @@ The types of response_filters are:
             
             #Get results and generate p-values plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
             p_sorted = result.pvalues.sort_values().drop("Intercept")
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
