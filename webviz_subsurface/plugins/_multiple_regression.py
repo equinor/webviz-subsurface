@@ -74,8 +74,12 @@ class MultipleRegression(WebvizPluginABC):
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = read_csv(self.response_csv)
+            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.responsedf = read_csv(self.response_csv)
+
+            #For parquet files
+            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -437,12 +441,12 @@ class MultipleRegression(WebvizPluginABC):
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
             response = response.replace(":", "_")
             response = response.replace(",", "_")
-
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             
             #Get results and genereate datatable 
             result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
-            table = result.model.fit().summary2().tables[1]
+            table = result.model.fit().summary2().tables[1].drop("Intercept")
+            table.drop(["Std.Err.","t","[0.025","0.975]"],axis=1,inplace=True)
             
             #Turn index names (the params) into columms 
             table.index.name = "Parameter"
