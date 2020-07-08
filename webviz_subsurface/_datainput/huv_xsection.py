@@ -67,13 +67,17 @@ class HuvXsection:
             sfc_line = sfc.get_randomline(self.fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
     
-    def set_error_lines(self, errorpaths):
-        for sfc_path in errorpaths:
-            de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
+    def set_error_lines(self, de_keys):
+        for de_key in de_keys:
+            sfc = xtgeo.surface_from_file((de_key), fformat="irap_binary") #this will make sure missing path is updated even tho its not used
+            sfc_line = sfc.get_randomline(self.fence)
+            #sfc_line = self.surface_attributes[de_key]['surface_line'] 
+
+            de_surface = xtgeo.surface_from_file(self.surface_attributes[de_key]["error_path"], fformat="irap_binary")
             de_line = de_surface.get_randomline(self.fence)
-            sfc_line = self.surface_attributes[sfc_path]['surface_line']
-            self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:,1] + de_line[:,1] #Top of envelope
-            self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:,1] - de_line[:,1] #Bottom of envelope             
+            
+            self.surface_attributes[de_key]["error_line_add"] = sfc_line[:,1] + de_line[:,1] #Top of envelope
+            self.surface_attributes[de_key]["error_line_sub"] = sfc_line[:,1] - de_line[:,1] #Bottom of envelope             
 
     def get_plotly_layout(self, surfacepaths):
         ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
@@ -114,8 +118,8 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
-                    'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                    'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
+                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                  },
                 {
