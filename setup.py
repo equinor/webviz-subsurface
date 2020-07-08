@@ -50,9 +50,7 @@ setup(
             "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
             "MultipleRegressionSara = webviz_subsurface.plugins:MultipleRegressionSara",
-
- 
-            
+            "MultipleRegression = webviz_subsurface.plugins:MultipleRegression",  
         ]
     },
     install_requires=[

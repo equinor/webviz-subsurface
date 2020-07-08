@@ -54,6 +54,7 @@ from ._test2_plug import MultipleRegressionJostein
 from ._multiple_regression_sofie import MultipleRegressionSofie
 from ._multiple_regession_vegard import DataTablefromFit
 from ._multiple_regression_sara import MultipleRegressionSara
+from ._multiple_regression import MultipleRegression
 
 __all__ = [
     "ParameterDistribution",
@@ -81,4 +82,5 @@ __all__ = [
     "MultipleRegressionSofie",
     "DataTablefromFit",
     "MultipleRegressionSara",
+    "MultipleRegression"
 ]
