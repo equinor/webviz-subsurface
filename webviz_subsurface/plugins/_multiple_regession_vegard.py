@@ -3,9 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from plotly.subplots import make_subplots
-from dash.exceptions import PreventUpdate
 from dash_table import DataTable
+from dash_table.Format import Format
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
@@ -14,57 +13,78 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
+#Naming?
+import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from dash_table.Format import Format
+from sklearn.preprocessing import PolynomialFeatures
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
 
 class DataTablefromFit(WebvizPluginABC):
-    """ ### Plugin to-be
-    Generates datatable from multiple regression fit 
+    """### Best fit using forward stepwise regression
+
+Generates datatable with summary from a multiple regression fit
+where the dep. variable is the selected response.
+
+For now, input must be given as parqet file.
+
+Arguments:
+* `parameter_parq`: Aggregated parquetfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_parq`: Aggregated parquetfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).
+* `response_ignore`: Response (columns in parquet) to ignore (cannot use with response_include).
+* `response_include`: Response (columns in parquet) to include (cannot use with response_ignore).
+* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
+
+The types of response_filters are:
+```
+- `single`: Dropdown with single selection.
+- `multi`: Dropdown with multiple selection.
+- `range`: Slider with range selection.
+```
 """
 
     # pylint:disable=too-many-arguments
     def __init__(
         self,
         app,
-        parameter_csv: Path = None,
-        response_csv: Path = None,
+        parameter_parq: Path = None,
+        response_parq: Path = None,
         ensembles: list = None,
         response_file: str = None,
         response_filters: dict = None,
         response_ignore: list = None,
         response_include: list = None,
+        parameter_ignore: list = None,
         aggregation: str = "sum",
-        corr_method: str = "pearson",
     ):
 
         super().__init__()
 
-        self.parameter_csv = parameter_csv if parameter_csv else None
-        self.response_csv = response_csv if response_csv else None
+        self.parameter_parq = parameter_parq if parameter_parq else None
+        self.response_parq = response_parq if response_parq else None
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
-        self.corr_method = corr_method
         self.aggregation = aggregation
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
                 '"response_ignore" or neither'
             )
-        if parameter_csv and response_csv:
+        if parameter_parq and response_parq:
             if ensembles or response_file:
                 raise ValueError(
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            #Changed this beacues of libecl problems
             #self.parameterdf = read_csv(self.parameter_csv)
             #self.responsedf = read_csv(self.response_csv)
-            self.parameterdf = pd.read_parquet(self.parameter_csv)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_parquet(self.parameter_parq)
+            self.responsedf = pd.read_parquet(self.response_parq)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -85,6 +105,8 @@ class DataTablefromFit(WebvizPluginABC):
             )
         self.check_runs()
         self.check_response_filters()
+        if parameter_ignore:
+            self.parameterdf.drop(parameter_ignore, errors="ignore", axis=1, inplace=True)
         if response_ignore:
             self.responsedf.drop(response_ignore, errors="ignore", axis=1, inplace=True)
         if response_include:
@@ -110,6 +132,32 @@ class DataTablefromFit(WebvizPluginABC):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
+
+    @property
+    def tour_steps(self):
+        steps = [
+            {
+                "id": self.ids("layout"),
+                "content": (
+                    "Dashboard displaying the summary table for a multiple regression "
+                    "fit with the selected response."
+                ),
+            },
+            {
+                "id": self.ids("table"),
+                "content": (
+                    "The table shows the summary for the current active selection. "
+                    "Rows can be filtered by searching, "
+                    "and sorted by clicking on a column header"
+                ),
+            },
+            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
+            {"id": self.ids("responses"), "content": ("Select the active response."),},
+            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
+            {"id": self.ids("max_vars"), "content": ("Select max number of parameters to be included in regression."),},
+        ]
+
+        return steps
 
     @property
     def responses(self):
@@ -220,6 +268,65 @@ class DataTablefromFit(WebvizPluginABC):
                     ),
                 ]
             ),
+            html.Div(
+                [
+                    html.Label("Force out"),
+                    dcc.Dropdown(
+                        id=self.ids("force_out"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Force in"),
+                    dcc.Dropdown(
+                        id=self.ids("force_in"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Interaction"),
+                    dcc.RadioItems(
+                        id=self.ids("interaction"),
+                        options=[
+                            {"label": "on", "value": True},
+                            {"label": "off", "value": False}
+                        ],
+                        value=True
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Max number of parameters"),
+                    dcc.Dropdown(
+                        id=self.ids("max_vars"),
+                        options=[
+                            {"label": val, "value": val} for val in range(1,min(10,len(self.parameterdf.columns)))
+                        ],
+                        clearable=False,
+                        value=3,
+                    ),
+                ]
+            ),
+
         ]
 
     @property
@@ -234,7 +341,7 @@ class DataTablefromFit(WebvizPluginABC):
                         html.Div(
                             id=self.ids("table_title"),
                             style={"textAlign": "center"},
-                            children="Ttitle",
+                            children="",
                         ),
                         DataTable(
                             id=self.ids("table"),
@@ -260,6 +367,10 @@ class DataTablefromFit(WebvizPluginABC):
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force_out"), "value"),
+            Input(self.ids("force_in"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max_vars"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -287,13 +398,13 @@ class DataTablefromFit(WebvizPluginABC):
             self.table_input_callbacks,
         )
 
-        def _update_correlation_graph(ensemble, response, *filters):
-            """Callback to update correlation graph
+        def _update_table(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
             2. Filters parameters dataframe on selected ensemble
             3. Merge parameter and response dataframe
-            4. Fit model
+            4. Fit model using forward stepwise regression, with or without interactions
             """
 
             filteroptions = self.make_response_filters(filters)
@@ -305,26 +416,46 @@ class DataTablefromFit(WebvizPluginABC):
                 aggregation=self.aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"])
-            df = df.drop("ENSEMBLE", axis=1)
-            model = fit_regression_dummy(df, response)
-            pd.options.display.float_format = '${:,.2f}'.format
-            table = model.fit().summary2().tables[1]
+            parameterdf.drop(columns=force_out, inplace=True)
+
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            
+
+
+            #Get results and genereate datatable 
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+            table = result.model.fit().summary2().tables[1]
+
+            #Turn index names (the params) into columms 
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
-            columns = [{"name": i, "id": i, "format": Format(precision=0)} for i in table.columns]
-            data = list(table.to_dict("index").values())
-            return(
-                data,
-                columns,
-                f"Multiple regression with {response} as response",
-            )
+            
+            columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
+            data = table.to_dict("rows")
+            if result.model.fit().df_model == 0:
+                return (
+                    [{"e": "Cannot calculate fit for given selection. Select a different response or filter setting"}],
+                    [{"name": "Error", "id": "e"}],
+                    "Error",
+                )
+            else:
+                return(
+                    data,
+                    columns,
+                    f"Multiple regression with {response} as response",
+                )
 
     def add_webvizstore(self):
-        if self.parameter_csv and self.response_csv:
+        if self.parameter_parq and self.response_parq:
             return [
-                (read_csv, [{"csv_file": self.parameter_csv,}],),
-                (read_csv, [{"csv_file": self.response_csv,}],),
+                (read_csv, [{"csv_file": self.parameter_parq,}],),
+                (read_csv, [{"csv_file": self.response_parq,}],),
             ]
         return [
             (
@@ -378,7 +509,10 @@ def _filter_and_sum_responses(
                 if isinstance(opt["values"], list):
                     df = df.loc[df[opt["name"]].isin(opt["values"])]
                 else:
-                    df = df.loc[df[opt["name"]] == opt["values"]]
+                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
+                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
+                    else:
+                        df = df.loc[df[opt["name"]] == opt["values"]]
 
             elif opt["type"] == "range":
                 df = df.loc[
@@ -393,17 +527,149 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+def gen_model(
+        df: pd.DataFrame,
+        response: str,
+        force_in: [],
+        max_vars: int=9,
+        interaction: bool=False):
+        """Genereates model with best fit"""
+        
+        if interaction:
+            df = gen_interaction_df(df, response)
+            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
+        else:
+            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
+
+def gen_interaction_df(
+    df: pd.DataFrame,
+    response: str,
+    degree: int=2,
+    inter_only: bool=False,
+    bias: bool=False):
+    """Generates dataframe with interaction-terms"""
+    x_interaction = PolynomialFeatures(
+        degree=2,
+        interaction_only=inter_only,
+        include_bias=False).fit_transform(df.drop(columns=response))
+    interaction_df = pd.DataFrame(
+        x_interaction,
+        columns=gen_column_names(
+            df.drop(columns=response),
+            inter_only))
+    return interaction_df.join(df[response])
+
+def gen_column_names(df, interaction_only):
+    """Generate coloumn names. Specifically used to create interaction-term names"""
+    output = list(df.columns)
+    if interaction_only:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (
+                    (colname1 != colname2) and
+                    (f"{colname1}:{colname2}" not in output) or
+                    (f"{colname2}:{colname1}" not in output)
+                        ):
+                        output.append(f"{colname1}:{colname2}")
+    else:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
+                    output.append(f"{colname1}:{colname2}")
+    return output
 
 
 
+def forward_selected(data, response, force_in, maxvars=9):
+    # TODO find way to remove non-significant variables form entering model. 
+    """Linear model designed by forward selection.
 
-def fit_regression_dummy(inputdf,response):
-    X = inputdf.loc[:, ["FWL", "INTERPOLATE_WO", "MULTFLT_F4"]]
-    X = sm.add_constant(X)
-    Y = inputdf[response]
-    return sm.OLS(Y, X)
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    """
+    remaining = set(data.columns)
+    remaining.remove(response)
+    selected = force_in
+
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                        ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    return model
+
+
+def forward_selected_interaction(data, response, force_in, maxvars=9):
+    """Linear model designed by forward selection.
+
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    """
+    remaining = set(data.columns)
+    remaining.remove(response)
+    selected = force_in
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                        ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            candidate_split = best_candidate.split(sep=":")
+            if len(candidate_split) == 2:  
+                if candidate_split[0] not in selected and candidate_split[0] in remaining: 
+                    remaining.remove(candidate_split[0])
+                    selected.append(candidate_split[0])
+                    maxvars += 1
+                if candidate_split[1] not in selected and candidate_split[1] in remaining:
+                    remaining.remove(candidate_split[1])
+                    selected.append(candidate_split[1])
+                    maxvars += 1
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    return model
+
 
 def make_range_slider(domid, values, col_name):
     try:
