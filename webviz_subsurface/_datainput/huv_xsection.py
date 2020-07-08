@@ -25,7 +25,7 @@ class HuvXsection:
         self.well_attributes = well_attributes
     
     def set_well(self, wellpath):
-        if wellpath != None:
+        if not wellpath == None:
             well = xtgeo.Well(Path(wellpath))
             self.fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
@@ -33,7 +33,7 @@ class HuvXsection:
             zonation_points = get_zone_RHLEN(well_df,well.wellname,self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
             zonelog = self.get_zonelog_data(well_df,self.zonelogname)
-            self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
+            self.well_attributes = {"wellpath": wellpath, "well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
         if self.well_attributes ==None:
