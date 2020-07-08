@@ -19,6 +19,7 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+import plotly.express as px
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -54,6 +55,7 @@ class MultipleRegressionSara(WebvizPluginABC):
         self.response_ignore = response_ignore if response_ignore else None
         self.corr_method = corr_method
         self.aggregation = aggregation
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme #imported for theme
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -274,7 +276,7 @@ class MultipleRegressionSara(WebvizPluginABC):
 
     @property
     def coefficientplot_input_callbacks(self):
-        """List of Inputs for coefficient plot callback"""
+        """List of inputs for coefficient plot callback"""
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
@@ -317,7 +319,6 @@ class MultipleRegressionSara(WebvizPluginABC):
         )
         def update_coefficient_plot(ensemble, response, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
-
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -332,7 +333,7 @@ class MultipleRegressionSara(WebvizPluginABC):
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
             
-            return make_arrow_plot(model)
+            return make_arrow_plot(model, self.plotly_theme)
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -544,7 +545,7 @@ def forward_selected_interaction(data, response, maxvars=9):
     return model
 
 
-def make_arrow_plot(model):
+def make_arrow_plot(model, theme):
     """Sorting dictionary in descending order. 
     Saving parameters and values of coefficients in lists.
     Saving plot-function to variable fig."""
@@ -554,18 +555,20 @@ def make_arrow_plot(model):
     sgn = signs(vals)
     colors = color_array(vals, params, sgn)
 
-    fig = arrow_plot(coefs, vals, params, sgn, colors)
+    fig = arrow_plot(coefs, vals, params, sgn, colors, theme)
 
     return [fig]
 
-def signs(vals): #vals a list
+def signs(vals):
     """Saving signs of coefficients to array sgn"""
     sgn = np.zeros(len(vals))
     for i, v in enumerate(vals):
         sgn[i] = np.sign(v)
     return sgn
 
-def arrow_plot(coefs, vals, params, sgn, colors):
+def arrow_plot(coefs, vals, params, sgn, colors, theme):
+    """Making arrow plot to illutrate relative importance 
+    of coefficients to a userdefined response"""
     steps = 2/(len(coefs)-1)
     points = len(coefs)
 
@@ -573,7 +576,8 @@ def arrow_plot(coefs, vals, params, sgn, colors):
     y = np.zeros(len(x))
 
     global fig
-    fig = px.scatter(x,y, opacity=0)
+    #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
     fig.update_xaxes(
         ticktext=[p for p in params],
         tickvals=[steps*i for i in range(points)],
@@ -587,33 +591,21 @@ def arrow_plot(coefs, vals, params, sgn, colors):
         width=725,
         height=500,
         plot_bgcolor='#FFFFFF',
+        coloraxis_colorbar=dict(
+            title="",
+            tickvals=[-0.97, -0.88, 0.88, 0.97],
+            ticktext=["coefficient", "Great negative", "coefficient", "Great positive"],
+            lenmode="pixels", len=300,
+        ),
+        hoverlabel=dict(
+            bgcolor="white", 
+            font_size=12, 
+        )
     )
-    #Annotation, left
-    fig.add_annotation(
-        x=-0.2,
-        y=0.025,
-        text="Great positive",
-        showarrow=False
-    )
-    fig.add_annotation(
-        x=-0.2,
-        y=0.015,
-        text="coefficient",
-        showarrow=False
-    )
-    #Annotation, right
-    fig.add_annotation(
-        x=x[-1]+0.2,
-        y=0.025,
-        text="Great negative",
-        showarrow=False
-    )
-    fig.add_annotation(
-        x=x[-1]+0.2,
-        y=0.015,
-        text="coefficient",
-        showarrow=False
-    )
+
+    """Costumizing the hoverer"""
+    fig.update_traces(hovertemplate='Parameter: %{x}')
+
     """Adding zero-line along y-axis"""
     fig.add_shape(
         # Line Horizontal
@@ -663,22 +655,39 @@ def color_array(vals, params, sgn):
     """Function to scale coefficients to a green-red color range"""
     max_val = vals[0]
     min_val = vals[-1]
-    r = 250
-    g = 250
-    const = 222
-    b = 0
+
+    standard = 250
+
+    """Defining color values to match theme because I'm 
+    lacking knowledge on how to live life with ease"""
+    # Final RGB values
+    rf = 36
+    gf = 55
+    bf = 70
+
+    # Max RGB values
+    r0 = 255
+    g0 = 231
+    b0 = 214
+
+    # Initial RGB value
+    ri = 125
+    gi = 0
+    bi = 35
 
     color_arr = ['rgba(255, 255, 255, 1)']*len(params)
 
     global k
     k=0
+
+    """Adding colors matching scaled values of coefficients to color_arr array"""
     for s, v in zip(sgn, vals):
         if s == 1:
             scaled_val_max = v/max_val
-            color_arr[k] = f'rgba({int(r-r*scaled_val_max)}, {const}, {b}, 1)'
+            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
         else:
             scaled_val_min = v/min_val
-            color_arr[k] = f'rgba({int(const)}, {int(g-g*scaled_val_min)}, {b}, 1)'
+            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
         k += 1
     
     return color_arr
