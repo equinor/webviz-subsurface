@@ -23,7 +23,49 @@ from sklearn.preprocessing import PolynomialFeatures
 from .._datainput.fmu_input import load_parameters, load_csv
 
 class MultipleRegression(WebvizPluginABC):
-    """ This will become a plugin for multiple regression of parameters and responses"""
+    """### Best fit using forward stepwise regression
+
+This plugin shows a multiple regression of numerical input parameters and a chosen response.
+
+Input can be given either as:
+
+- Aggregated csv files for parameters and responses,
+- An ensemble name defined in shared_settings and a local csv file for responses
+stored per realizations.
+
+**Note**: Non-numerical (string-based) input parameters and responses are removed.
+
+**Note**: The response csv file will be aggregated per realization.
+
+Arguments:
+
+* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
+* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
+            response_file is defined, the definition of ensembles implies that you want to
+            use simulation timeseries data directly from UNSMRY data. This also implies that
+            the date will be used as a response filter of type `single`.
+* `response_file`: Local (per realization) csv file for response parameters.
+* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).
+* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
+* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
+* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
+                defined ensembles using fmu-ensemble (cannot use with response_file,
+                response_csv or parameters_csv).
+* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
+            (Only relevant if neither response_csv or response_file is defined). Default monthly
+* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
+* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
+
+The types of response_filters are:
+```
+- `single`: Dropdown with single selection.
+- `multi`: Dropdown with multiple selection.
+- `range`: Slider with range selection.
+```
+"""
+
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -153,6 +195,10 @@ class MultipleRegression(WebvizPluginABC):
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
+            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."),},
+            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
+            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
+            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
         ]
         return steps
 
@@ -475,8 +521,15 @@ class MultipleRegression(WebvizPluginABC):
             ],
             self.pvalues_input_callbacks
         )
-        def update_pvalues_plot(ensemble, response, force_in, force_out, interaction, max_vars, *filters):
-            """Callback to update the p-values plot"""
+        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the p-values plot
+            
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model using forward stepwise regression, with or without interactions
+            5. Get p-values from fitted model and sort them in ascending order
+            """
 
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -498,7 +551,7 @@ class MultipleRegression(WebvizPluginABC):
             
             #Get results and generate p-values plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
             p_sorted = result.pvalues.sort_values().drop("Intercept")
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
