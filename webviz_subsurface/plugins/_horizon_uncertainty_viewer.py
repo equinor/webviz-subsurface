@@ -208,7 +208,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             value=self.surfacefiles,
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('surfaces_de_checklist'),
+                                            id=self.ids('surfaces-de-checklist'),
                                             options=[
                                                 {"label": name+'_error', "value": path}
                                                 for name, path in zip(
@@ -322,7 +322,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             [
                 Input(self.ids("well-dropdown"), "value"), # wellpath
                 Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
-                Input(self.ids("surfaces_de_checklist"), "value"), # errorpaths list
+                Input(self.ids("surfaces-de-checklist"), "value"), # errorpaths list
                 Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
             ],
         )
@@ -362,6 +362,26 @@ The cross section is defined by a polyline interactively edited in the map view.
             if n1 or n2:
                 return not is_open
             return is_open
+        
+        @app.callback(
+            [Output(self.ids('surfaces-de-checklist'), 'options'),
+             Output(self.ids('surfaces-de-checklist'), 'value')],
+            [Input(self.ids('surfaces-checklist'), 'value')]
+        )
+        def disable_error_checkboxes(surface_values):
+            de_options = [
+                {"label": name+'_error', "value": path, 'disabled':False}
+                for name, path in zip(
+                    self.surfacenames, self.surfacefiles
+                )
+            ]
+            de_values = []
+            for opt in de_options:
+                if (surface_values==None) or (opt['value'] not in surface_values):
+                    opt['disabled']=True
+                else:
+                    de_values.append(opt['value'])
+            return de_options, de_values
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
