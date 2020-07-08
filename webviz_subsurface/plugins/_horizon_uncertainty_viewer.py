@@ -314,7 +314,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_layer(well, well.wellname, 0, True, color=well_color)
+                well_layer = make_well_layer(well, well.wellname, color=well_color)
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
