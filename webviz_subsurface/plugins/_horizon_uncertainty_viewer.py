@@ -20,7 +20,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
-from .._datainput.well import load_well
+from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
 
@@ -74,7 +74,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
-
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
@@ -296,6 +295,8 @@ The cross section is defined by a polyline interactively edited in the map view.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
+            #Output(self.ids("well-dropdown"), "value"),
+            #endre dropdown meny value, slik at det plotter samme well_fence
             [
                 Input(self.ids("map-dropdown"), "value"),
             ],
@@ -306,6 +307,11 @@ The cross section is defined by a polyline interactively edited in the map view.
             min_val = None
             max_val = None
             color = "viridis"
+            well_layers = []
+            for wellpath in self.wellfiles:
+                well = xtgeo.Well(Path(wellpath))
+                well_layer = make_well_layer(well,well.wellname,0,True) #lag ny make_well_layer
+                well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
                 surface,
@@ -315,7 +321,9 @@ The cross section is defined by a polyline interactively edited in the map view.
                 color=color,
                 hillshading=hillshading,
             )
-            return [s_layer]
+            s_layer = [s_layer]
+            s_layer.extend(well_layers)
+            return s_layer
 
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
@@ -366,7 +374,6 @@ The cross section is defined by a polyline interactively edited in the map view.
 def get_path(path) -> Path:
     return Path(path)
 
-
 def get_color(i):
     """
     Returns a list of colors for surface layers
@@ -399,3 +406,24 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
+def make_well_layer(well, name="well", zmin=0,base_layer=False):
+    """Make LayeredMap well line"""
+    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
+    positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
+    x = well.dataframe["X_UTME"].values
+    y = well.dataframe["Y_UTMN"].values
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": base_layer,
+        "data": [
+            {
+                "type": "polyline",
+                "color": "black",
+                "positions": positions,
+                #"y": y,
+                #"x": x,
+                "tooltip": name+"test",
+            }
+        ],
+    }

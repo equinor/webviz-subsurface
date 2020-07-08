@@ -28,13 +28,11 @@ pages:
             - ..\Datasets\simple_model\output\log_files\targetpoints.csv
           well_points:
             - ..\Datasets\simple_model\output\log_files\wellpoints.csv
-
           surfacenames:
             - TopUpperReek
             - TopMidReek
             - TopLowerReek
             - BaseLowerReek
-          
           wellnames:
             - OP_1
             - OP_2
