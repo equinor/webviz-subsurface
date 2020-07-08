@@ -306,7 +306,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             hillshading = True
             min_val = None
             max_val = None
-            color = "viridis"
+            color = "magma"
             well_layers = []
             for wellpath in self.wellfiles:
                 well = xtgeo.Well(Path(wellpath))
