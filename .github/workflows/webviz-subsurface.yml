@@ -39,13 +39,11 @@ jobs:
     - name: 📖 Checkout commit locally
       uses: actions/checkout@v2
 
-
     - name: 🕵️ Check last hash of webviz-subsurface-testdata
+      id: last-testdata-hash
       run: |
-        git ls-remote --heads https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata $TESTDATA_REPO_BRANCH
-        export LAST_TESTDATA_HASH=`git ls-remote --heads https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata $TESTDATA_REPO_BRANCH | cut -f1`
-        echo $LAST_TESTDATA_HASH
-        echo "::set-output name=last_testdata_hash::$LAST_TESTDATA_HASH"
+        export HASH=`git ls-remote --heads https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata $TESTDATA_REPO_BRANCH | cut -f1`
+        echo "::set-output name=hash::$HASH"
         
     - name: 🧹 Remove unused pre-installed software
       run: |
@@ -86,6 +84,13 @@ jobs:
         pylint webviz_subsurface tests setup.py
         bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
 
+    - name: 📁 Cache testdata
+      id: cache-testdata
+      uses: actions/cache@v2
+      with:
+        path: ./webviz-subsurface-testdata
+        key: ${{ steps.last-testdata-hash.outputs.hash }}
+
     - name: 🤖 Run tests
       run: |
         webviz certificate
@@ -100,7 +105,7 @@ jobs:
       run: |
         pip install webviz-config-equinor
         webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
-        rm -rf ./webviz-subsurface-testdata
+        #rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
         # Related to https://github.com/equinor/webviz-config/issues/150:
         echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
