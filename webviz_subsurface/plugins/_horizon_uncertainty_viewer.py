@@ -431,7 +431,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
                 #img_bytes = self.xsec.fig.to_image(format="png")
                 #layer = render_draw_well(img_bytes)
-                layer = get_draw_well_layer()
+                my_layer = get_draw_well_layer()
+                
                 return layer
 
     def add_webvizstore(self):
