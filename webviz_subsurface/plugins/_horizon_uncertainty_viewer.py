@@ -2,13 +2,13 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import os
+import base64
 import dash
 import dash_table
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
 import plotly.graph_objects as go
-import base64
 from matplotlib.colors import ListedColormap
 import xtgeo
 from dash.exceptions import PreventUpdate
@@ -402,12 +402,9 @@ The cross section is defined by a polyline interactively edited in the map view.
             return de_options
 
         @app.callback(
-            [
-            Output(self.ids("cross-section-view"), "children"),
+            [Output(self.ids("cross-section-view"), "children"),
             Output(self.ids("well-dropdown"), "disabled"),
-            Output(self.ids("button-open-graph-settings"), "disabled"),
-            Output(self.ids("draw-well-view"), "layers")
-            ],
+            Output(self.ids("button-open-graph-settings"), "disabled")],
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
             ],
@@ -417,14 +414,24 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
-                img_bytes = self.xsec.fig.to_image(format="png")
-                draw_well_layer = render_draw_well(img_bytes)
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
                 graph_settings_button = False
-            return [children, well_dropdown, graph_settings_button, draw_well_layer]
+            return [children, well_dropdown, graph_settings_button]
 
+        @app.callback(
+            Output(self.ids("draw-well-view"), "layers"),
+            [
+                Input(self.ids("cross-section-view"), "children"),
+                Input(self.ids("map-view"), "layers")
+            ],
+        )
+        def _render_draw_well_layer(children, layer):
+            if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
+                #img_bytes = self.xsec.fig.to_image(format="png")
+                #layer = render_draw_well(img_bytes)
+                return get_draw_well_layer()
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -469,8 +476,9 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def render_draw_well(img_bytes):
-    img_base64 = base64.b64encode(img_bytes)
+def get_draw_well_layer():
+    path = "/Users/akselkristoffersen/Projects/Equinor/webviz/venv/lib/python3.8/site-packages/mpl_toolkits/tests/baseline_images/test_axes_grid1/zoomed_axes.png"
+    img_base64 = base64.b64encode(open(path, "rb").read()).decode()
     s_layer = {
         "name": 'Draw well view',
         "checked": True,
@@ -479,7 +487,7 @@ def render_draw_well(img_bytes):
             {
             'type': 'image',
             'url': img_base64,   # either base64 encoding of the picture or a path to hosted image,
-            #'bounds': [[xmin, ymin], [xmax, ymax]]  # The extent of the picture in the rendered map 
+            'bounds': [[500, 500], [1000, 1000]]  # The extent of the picture in the rendered map
             }
         ],
     }
