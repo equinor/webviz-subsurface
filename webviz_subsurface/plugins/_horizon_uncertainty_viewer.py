@@ -189,6 +189,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                     value=self.wellfiles[0],
                                     clearable=False,
+                                    disabled=False,
                                 ),
                             ]
                         ),
@@ -400,17 +401,25 @@ The cross section is defined by a polyline interactively edited in the map view.
             return de_options
 
         @app.callback(
+            [
             Output(self.ids("cross-section-view"), "children"),
+            Output(self.ids("well-dropdown"), "disabled"),
+            Output(self.ids("button-open-graph-settings"), "disabled")
+            ],
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
             ],
         )
-        def _render_draw_well(n_clicks):
+        def _change_xsection_layout(n_clicks):
             if not n_clicks is None and n_clicks % 2 == 1:
                 children = [self.draw_well_layout]
+                well_dropdown = True
+                graph_settings_button = True
             else:
                 children = [self.plotly_layout]
-            return children
+                well_dropdown = False
+                graph_settings_button = False
+            return [children, well_dropdown, graph_settings_button]
 
 
     def add_webvizstore(self):
