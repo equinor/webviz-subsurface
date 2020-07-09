@@ -21,7 +21,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
-from .._datainput.well import load_well
+from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
 
@@ -75,7 +75,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
-
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
@@ -93,7 +92,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
-        self.xsec.create_well(wellfiles[0],self.surfacefiles)
+        self.xsec.set_well(wellfiles[0])
 
     ### Generate unique ID's ###
     def ids(self, element):
@@ -208,7 +207,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                             value=self.surfacefiles,
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('surfaces_de_checklist'),
+                                            id=self.ids('surfaces-de-checklist'),
                                             options=[
                                                 {"label": name+'_error', "value": path}
                                                 for name, path in zip(
@@ -308,8 +307,10 @@ The cross section is defined by a polyline interactively edited in the map view.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
+            #Output(self.ids("well-dropdown"), "value"),
+            #endre dropdown meny value, slik at det plotter samme well_fence
             [
-                Input(self.ids("map-dropdown"), "value"), #List of errorfiles
+                Input(self.ids("map-dropdown"), "value"),
             ],
         )
         def render_map(errorpath):
@@ -317,7 +318,16 @@ The cross section is defined by a polyline interactively edited in the map view.
             hillshading = True
             min_val = None
             max_val = None
-            color = "viridis"
+            color = "magma"
+            well_layers = []
+            for wellpath in self.wellfiles:
+                if str(self.xsec.well_attributes["wellpath"]) == wellpath:
+                    well_color = "green"
+                else:
+                    well_color = "black"
+                well = xtgeo.Well(Path(wellpath))
+                well_layer = make_well_layer(well, well.wellname, color=well_color)
+                well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
                 surface,
@@ -327,34 +337,36 @@ The cross section is defined by a polyline interactively edited in the map view.
                 color=color,
                 hillshading=hillshading,
             )
-            return [s_layer]
+            s_layer = [s_layer]
+            s_layer.extend(well_layers)
+            return s_layer
 
         @app.callback(
             Output(self.ids("cross-section-view"), "figure"),
             [
                 Input(self.ids("well-dropdown"), "value"), # wellpath
                 Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
-                Input(self.ids("surfaces_de_checklist"), "value"), # errorpaths list
+                Input(self.ids("surfaces-de-checklist"), "value"), # errorpaths list
                 Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
             ],
         )
         def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
             ctx = dash.callback_context
-            data = []
             surfacepaths = get_path(surfacepaths)
             errorpaths = get_path(errorpaths)
             if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
-                self.xsec.create_well(wellpath,surfacepaths)
+                self.xsec.set_well(wellpath)
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
             self.xsec.set_surface_lines(surfacepaths)
             self.xsec.set_error_lines(errorpaths)
-            data += self.xsec.get_plotly_data(surfacepaths,errorpaths)
+            data = []
+            data += self.xsec.get_plotly_data(surfacepaths, errorpaths)
             layout = self.xsec.get_plotly_layout(surfacepaths)
             fig_dict = dict({'data':data,'layout':layout})
-            fig = go.Figure(fig_dict)
-            return fig
+            self.xsec.fig = go.Figure(fig_dict)
+            return self.xsec.fig
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -374,6 +386,26 @@ The cross section is defined by a polyline interactively edited in the map view.
             if n1 or n2:
                 return not is_open
             return is_open
+        
+        @app.callback(
+            [Output(self.ids('surfaces-de-checklist'), 'options'),
+             Output(self.ids('surfaces-de-checklist'), 'value')],
+            [Input(self.ids('surfaces-checklist'), 'value')]
+        )
+        def disable_error_checkboxes(surface_values):
+            de_options = [
+                {"label": name+'_error', "value": path, 'disabled':False}
+                for name, path in zip(
+                    self.surfacenames, self.surfacefiles
+                )
+            ]
+            de_values = []
+            for opt in de_options:
+                if (surface_values==None) or (opt['value'] not in surface_values):
+                    opt['disabled']=True
+                else:
+                    de_values.append(opt['value'])
+            return de_options, de_values
 
         @app.callback(
             Output(self.ids("draw-well-view"), "layers"),
@@ -395,7 +427,6 @@ def get_path(paths) -> Path:
     for i, path in enumerate(paths):
         paths[i] = Path(path)
     return paths
-
 
 def get_color(i):
     """
@@ -451,3 +482,20 @@ def render_drawpad(surfacepath):
         ],
     }
     return []
+def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
+    """Make LayeredMap well polyline"""
+    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
+    positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": base_layer,
+        "data": [
+            {
+                "type": "polyline",
+                "color": color,
+                "positions": positions,
+                "tooltip": name,
+            }
+        ],
+    }

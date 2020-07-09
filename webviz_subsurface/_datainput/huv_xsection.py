@@ -2,6 +2,7 @@ import xtgeo
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
+import plotly.graph_objects as go
 from pathlib import Path
 from operator import add
 from operator import sub
@@ -23,21 +24,18 @@ class HuvXsection:
         self.conditional_data = conditional_data
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
+        self.fig = go.Figure()
     
-    def create_well(self, wellpath,surfacepaths):
-        if not wellpath==None:
+    def set_well(self, wellpath):
+        if not wellpath == None:
             well = xtgeo.Well(Path(wellpath))
-            well_fence = well.get_fence_polyline(nextend=100, sampling=5)
-            self.fence = well_fence
+            self.fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
-            zonation_points = find_zone_RHLEN(well_df,well.wellname,self.zonation_data)
-            conditional_points = find_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
-            color_list = ["rgb(245,245,245)"]
-            for sfc in self.surface_attributes:
-                color_list.append(self.surface_attributes[sfc]["color"])
-            zonelog = self.get_zonelog_data(well_df,color_list,self.zonelogname)
-            self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
+            zonation_points = get_zone_RHLEN(well_df,well.wellname,self.zonation_data)
+            conditional_points = get_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
+            zonelog = self.get_zonelog_data(well_df,self.zonelogname)
+            self.well_attributes = {"wellpath": wellpath, "well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
         if self.well_attributes ==None:
@@ -70,27 +68,22 @@ class HuvXsection:
             sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
-            #self.surface_attributes[sfc_path]['surface_line_xdata'] = sfc_line[:,0] #Unnecessary data storage?
-            #self.surface_attributes[sfc_path]['surface_line_ydata'] = sfc_line[:,1] #Unnecessary data storage?
     
     def set_error_lines(self, errorpaths):
         for sfc_path in errorpaths:
             de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
             de_line = de_surface.get_randomline(self.fence)
             sfc_line = self.surface_attributes[sfc_path]['surface_line']
-            de_line_add = sfc_line[:,1] + de_line[:,1] #Top of envelope
-            de_line_sub = sfc_line[:,1] - de_line[:,1] #Bottom of envelope
-            self.surface_attributes[sfc_path]["error_line_add"] = de_line_add
-            self.surface_attributes[sfc_path]["error_line_sub"] = de_line_sub               
+            self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:,1] + de_line[:,1] #Top of envelope
+            self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:,1] - de_line[:,1] #Bottom of envelope             
 
     def get_plotly_layout(self,surfacepaths:list):
-        ymin, ymax = self.surfline_max_min_depth(surfacepaths)
         layout ={}
-        if self.well_attributes == None:
+        if len(surfacepaths) == 0:
             layout.update({
                 "yaxis":{
                     "title":"Depth (m)",
-                    "range":[ymax,ymin],
+                    "autorange":"reversed",
                 },
                 "xaxis": {
                     "title": "Distance from polyline",
@@ -99,22 +92,39 @@ class HuvXsection:
                 "showlegend":False,
                 "height": 830,
             })
+            return layout
+        if self.well_attributes == None:
+            ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
+            layout.update({
+                "yaxis":{
+                    "title":"Depth (m)",
+                    "range":[ymax, ymin],
+                },
+                "xaxis": {
+                    "title": "Distance from polyline (m)",
+                },
+                "plot_bgcolor":'rgb(233,233,233)',
+                "showlegend":False,
+                "height": 830,
+            })
+            return layout
         else:
-            x_well, y_well, x_well_max, y_width,x_width = find_where_it_crosses_well(self.well_attributes["well_df"],ymin,ymax)
+            ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
+            x_well, y_well, x_well_max, y_width,x_width = get_intersection_surface_well(self.well_attributes["well_df"],ymin,ymax)
             layout.update({
                 "yaxis":{
                     "title":"Depth (m)",
                     "range" : [ymax,y_well-0.15*y_width],
                 },
                 "xaxis":{
-                    "title": "Distance from polyline",
+                    "title": "Distance from polyline (m)",
                     "range": [x_well-0.5*x_width,x_well_max+0.5*x_width],
                 },
                 "plot_bgcolor":'rgb(233,233,233)',
                 "showlegend":False,
                 "height": 830,
             })
-        return layout
+            return layout
     
     def get_plotly_err_data(self, surface_paths, error_paths):
         common_paths = [error_path for error_path in error_paths if error_path in surface_paths]
@@ -122,13 +132,13 @@ class HuvXsection:
         for sfc_path in common_paths:
             data +=[
                 {
-                    'x':self.surface_attributes[Path(sfc_path)]['surface_line'][:,0],
-                    'y':self.surface_attributes[Path(sfc_path)]['error_line_sub'],
+                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                  },
                 {
-                    'x': self.surface_attributes[Path(sfc_path)]['surface_line'][:, 0],
-                    'y': self.surface_attributes[Path(sfc_path)]['error_line_add'],
+                    'x': self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y': self.surface_attributes[sfc_path]['error_line_add'],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6,'dash':'dash'},
                     'fill': 'tonexty',
                     'fillcolor': 'rgba(0,0,0,0.2)'
@@ -137,41 +147,43 @@ class HuvXsection:
         return data
 
     def get_plotly_data(self, surface_paths:list, error_paths:list):
+        if len(surface_paths) == 0:
+            data = self.get_plotly_well_data()
+            return data
+        else:
+            min, max = self.sfc_line_max_min_depth(surface_paths)
+            first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
+            surface_tuples =[
+                (sfc_path, self.surface_attributes[sfc_path]['surface_line'])
+                for sfc_path in surface_paths
+            ]
+            surface_tuples.sort(key=depth_sort, reverse=True)
 
-        min, max = self.surfline_max_min_depth(surface_paths)
-        first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
-        surface_tuples =[
-            (sfc_path ,self.surface_attributes[sfc_path]['surface_line'])
-            for sfc_path in surface_paths
-        ]
-        surface_tuples.sort(key=depth_sort, reverse=True)
+            data = [ #Create helpline for bottom of plot
+                {
+                    "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
+                    "y": [max + 50, max + 50],
+                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
+                }
+            ]
 
-        data = [ #Create helpline for bottom of plot
-            {
-                "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
-                "y": [max + 50, max + 50],
-                "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
-            }
-        ]
+            data +=[
+                {
+                    'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
+                    'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
+                    'line': {"color": "rgba(0,0,0,1)", "width": 1},
+                    "fill": "tonexty",
+                    'fillcolor':self.surface_attributes[sfc_path]["color"]
+                }
+                for sfc_path, _ in surface_tuples
+            ]
 
-        data +=[
-            {
-                'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
-                'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
-                'line': {"color": "rgba(0,0,0,1)", "width": 1},
-                "fill": "tonexty",
-                'fillcolor':self.surface_attributes[sfc_path]["color"]
-            }
-            for sfc_path, _ in surface_tuples
-        ]
-
-        data += self.get_plotly_err_data(surface_paths,error_paths)
-        data += self.get_plotly_well_data()
-
-        return data
+            data += self.get_plotly_err_data(surface_paths,error_paths)
+            data += self.get_plotly_well_data()
+            return data
 
 
-    def surfline_max_min_depth(self, surfacepaths:list):
+    def sfc_line_max_min_depth(self, surfacepaths:list):
         maxvalues = np.array([
             np.max(self.surface_attributes[sfc_path]['surface_line'][:,1])
             for sfc_path in surfacepaths
@@ -182,7 +194,10 @@ class HuvXsection:
         ])
         return np.min(minvalues), np.max(maxvalues)
 
-    def get_zonelog_data(self,well_df,color_list,zonelogname="Zonelog",zomin=-999):
+    def get_zonelog_data(self, well_df, zonelogname="Zonelog", zomin=-999):
+        color_list = ["rgb(245,245,245)"]
+        for sfc_path in self.surface_attributes:
+            color_list.append(self.surface_attributes[sfc_path]["color"])
         well_TVD = well_df["Z_TVDSS"].values.copy()
         well_RHLEN = well_df["R_HLEN"].values.copy()
         zonevals = well_df[zonelogname].values
@@ -215,7 +230,7 @@ class HuvXsection:
 def depth_sort(elem):
     return np.min(elem[1][:, 1])
 
-def find_zone_RHLEN(well_df,wellname,zone_path):
+def get_zone_RHLEN(well_df,wellname,zone_path):
     zonation_data = pd.read_csv(zone_path[0])  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
     zone_df = zonation_data[zonation_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
@@ -229,7 +244,7 @@ def find_zone_RHLEN(well_df,wellname,zone_path):
         zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_RHLEN,zone_df["TVD"]])
 
-def find_conditional_RHLEN(well_df,wellname,cond_path):
+def get_conditional_RHLEN(well_df,wellname,cond_path):
     conditional_data = pd.read_csv(cond_path[0])   #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/wellpoints.csv")
     cond_df = conditional_data[conditional_data["Well"] == wellname]
     cond_df_xval = cond_df["x"].values.copy()
@@ -243,7 +258,7 @@ def find_conditional_RHLEN(well_df,wellname,cond_path):
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([cond_RHLEN,cond_df["TVD"]])
 
-def find_where_it_crosses_well(well_df,ymin,ymax):
+def get_intersection_surface_well(well_df, ymin, ymax):
     x_well_max = np.max(well_df["R_HLEN"])
     x_well = 0
     y_well = 0
