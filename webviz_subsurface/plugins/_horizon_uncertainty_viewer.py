@@ -349,12 +349,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 self.xsec.well_attributes = None
             self.xsec.set_surface_lines(surfacepaths)
             self.xsec.set_error_lines(errorpaths)
-            data = []
-            data += self.xsec.get_plotly_data(surfacepaths, errorpaths)
-            layout = self.xsec.get_plotly_layout(surfacepaths)
-            fig_dict = dict({'data':data,'layout':layout})
-            self.xsec.fig = go.Figure(fig_dict)
-            return self.xsec.fig
+            return self.xsec.get_plotly_fig(surfacepaths,errorpaths)
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(

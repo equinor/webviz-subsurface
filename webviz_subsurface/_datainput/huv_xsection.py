@@ -24,7 +24,7 @@ class HuvXsection:
         self.conditional_data = conditional_data
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
-        self.fig = go.Figure()
+        self.fig = None
     
     def set_well(self, wellpath):
         if not wellpath == None:
@@ -225,6 +225,12 @@ class HuvXsection:
                 start = end+1
 
         return zoneplot
+    
+    def get_plotly_fig(self, surfacepaths, error_paths):
+        layout = self.get_plotly_layout(surfacepaths)
+        data = self.get_plotly_data(surfacepaths, error_paths)
+        self.fig = go.Figure(dict({'data':data,'layout':layout}))
+        return self.fig
 
 
 def depth_sort(elem):
