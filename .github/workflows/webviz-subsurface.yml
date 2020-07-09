@@ -43,8 +43,9 @@ jobs:
     - name: 🕵️ Check last hash of webviz-subsurface-testdata
       run: |
         git ls-remote --heads https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata $TESTDATA_REPO_BRANCH
-        export LAST_HASH=`git ls-remote https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata/tree/$TESTDATA_REPO_BRANCH | cut -f1`
-        echo $LAST_HASH
+        export LAST_TESTDATA_HASH=`git ls-remote --heads https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata $TESTDATA_REPO_BRANCH | cut -f1`
+        echo $LAST_TESTDATA_HASH
+        echo "::set-output name=last_testdata_hash::$LAST_TESTDATA_HASH"
         
     - name: 🧹 Remove unused pre-installed software
       run: |
