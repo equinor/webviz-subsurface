@@ -17,6 +17,13 @@ jobs:
     # Run on all events defined above, except pushes which are neither to master nor with a substring [deploy test] in commit message
     if: github.event_name != 'push' || github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy test]')
     runs-on: ubuntu-latest
+    env:
+      # If you want the CI to (temporarily) run against your fork of the testdada,
+      # change the value her from "equinor" to your username.
+      TESTDATA_REPO_OWNER: equinor
+      # If you want the CI to (temporarily) run against another branch than master,
+      # change the value her from "master" to the relevant branch name.
+      TESTDATA_REPO_BRANCH: master
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8']
@@ -77,13 +84,6 @@ jobs:
         bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
 
     - name: 🤖 Run tests
-      env:
-        # If you want the CI to (temporarily) run against your fork of the testdada,
-        # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
-        # If you want the CI to (temporarily) run against another branch than master,
-        # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: master
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
