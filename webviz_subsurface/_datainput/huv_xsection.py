@@ -63,19 +63,18 @@ class HuvXsection:
             }]
             return data
 
-    def set_surface_lines(self, surfacepaths):
-        for sfc_path in surfacepaths:
+
+    def set_error_and_surface_lines(self, surface_paths, error_paths):
+        for sfc_path in surface_paths:
             sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
-    
-    def set_error_lines(self, errorpaths):
-        for sfc_path in errorpaths:
-            de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
-            de_line = de_surface.get_randomline(self.fence)
-            sfc_line = self.surface_attributes[sfc_path]['surface_line']
-            self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:,1] + de_line[:,1] #Top of envelope
-            self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:,1] - de_line[:,1] #Bottom of envelope             
+            if sfc_path in error_paths:
+                de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
+                de_line = de_surface.get_randomline(self.fence)
+                sfc_line = self.surface_attributes[sfc_path]['surface_line']
+                self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:, 1] + de_line[:, 1]  # Top of envelope
+                self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:, 1] - de_line[:, 1]  # Bottom of envelope
 
     def get_plotly_layout(self,surfacepaths:list):
         layout ={}

@@ -347,8 +347,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
-            self.xsec.set_surface_lines(surfacepaths)
-            self.xsec.set_error_lines(errorpaths)
+            self.xsec.set_error_and_surface_lines(surfacepaths,errorpaths)
             return self.xsec.get_plotly_fig(surfacepaths,errorpaths)
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
