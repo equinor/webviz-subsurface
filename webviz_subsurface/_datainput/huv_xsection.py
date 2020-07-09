@@ -2,6 +2,7 @@ import xtgeo
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
+import plotly.graph_objects as go
 from pathlib import Path
 from operator import add
 from operator import sub
@@ -23,6 +24,7 @@ class HuvXsection:
         self.conditional_data = conditional_data
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
+        self.fig = go.Figure()
     
     def set_well(self, wellpath):
         if not wellpath == None:
