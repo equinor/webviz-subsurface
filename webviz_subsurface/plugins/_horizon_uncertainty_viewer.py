@@ -84,21 +84,19 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.wellnames = wellnames
         else:
             self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
-        self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
-        self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
+        self.zonation_data = [Path(zond_data) for zond_data in zonation_data]
+        self.conditional_data = [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
         self.zonelogname = zonelogname #name of zonelog in OP txt files       
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
+        self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelogname)
         self.xsec.set_well(wellfiles[0])
 
-    ### Generate unique ID's ###
     def ids(self, element):
         return f"{element}-id-{self.uid}"
 
-    ### Layout map section ###
     @property
     def map_layout(self):
         return html.Div(
@@ -141,11 +139,31 @@ The cross section is defined by a polyline interactively edited in the map view.
                                 hillShading=True,
                                 layers=[],
                             ),
-                        )   
+                        )
                     ]
                 ),
 
-    ### Layout cross section ###
+    @property
+    def draw_well_layout(self):
+        return html.Div(
+            children=LayeredMap(
+                id=self.ids("draw-well-view"),
+                draw_toolbar_polyline=True,
+                layers=[],
+            ),
+        )
+
+    @property
+    def plotly_layout(self):
+        return html.Div(
+            children=[
+                wcc.Graph(
+                id=self.ids("plotly-view"),
+                figure={"displayModeBar": True},
+                )
+            ]
+        )
+    
     @property
     def cross_section_layout(self):
         return html.Div(
@@ -228,20 +246,19 @@ The cross section is defined by a polyline interactively edited in the map view.
                             backdrop=False,
                             fade=False,
                         ),
-                        dbc.Button("Draw well", id=self.ids("button-draw-well")),
+                        dbc.Button(children=["Draw well"], id=self.ids("button-draw-well")),
                     ],
                 ),
                 html.Div(
                     children=[
                         html.Div(
+                            children=[self.plotly_layout],
+                            id=self.ids("cross-section-view"),
                             style={
                                 "marginTop": "0px",
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
-                            children=wcc.Graph(
-                                figure={"displayModeBar": True}, id=self.ids("cross-section-view")
-                            ),
                         )
                     ]
                 ),
@@ -278,17 +295,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                         children=[
                             html.Div(style={"flex": 1}, children=self.map_layout),
                             html.Div(style={"flex": 1}, children=self.cross_section_layout),
-                            html.Div(style={"flex": 1}, 
-                                children=[
-                                    html.Div(
-                                        children=LayeredMap(
-                                            id=self.ids("draw-well-view"),
-                                            draw_toolbar_polyline=True,
-                                            layers=[],
-                                        ),
-                                    )
-                                ]
-                            ),
                         ]
                     )
                 ]
@@ -303,7 +309,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             )
         ])
 
-    ### Callbacks map view and cross-section-view ###
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
@@ -342,7 +347,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             return s_layer
 
         @app.callback(
-            Output(self.ids("cross-section-view"), "figure"),
+            Output(self.ids("plotly-view"), "figure"),
             [
                 Input(self.ids("well-dropdown"), "value"), # wellpath
                 Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
@@ -363,7 +368,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.xsec.set_plotly_fig(surfacepaths, errorpaths)
             return self.xsec.fig
 
-        ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
             Output(self.ids("surfaces-checklist"), "value"),
             [Input(self.ids("all-surfaces-checkbox"), "value")],
@@ -396,14 +400,18 @@ The cross section is defined by a polyline interactively edited in the map view.
             return de_options
 
         @app.callback(
-            Output(self.ids("draw-well-view"), "layers"),
+            Output(self.ids("cross-section-view"), "children"),
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
             ],
         )
-        def _render_draw_well(n1):
-            #render_drawpad(img_bytes)
-            return []
+        def _render_draw_well(n_clicks):
+            if not n_clicks is None and n_clicks % 2 == 1:
+                children = [self.draw_well_layout]
+            else:
+                children = [self.plotly_layout]
+            return children
+
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
