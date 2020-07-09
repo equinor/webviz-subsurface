@@ -63,9 +63,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surface_attributes = {x: {} for x in surfacefiles}
         self.target_points = target_points
         self.well_points = well_points
-        for i, surfacefile in enumerate(surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(surfacefiles_de[i])}
-
         if surfacenames is not None:
             if len(surfacenames) != len(surfacefiles):
                 raise ValueError(
@@ -74,6 +71,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             self.surfacenames = surfacenames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
+        for i, surfacefile in enumerate(surfacefiles):
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(surfacefiles_de[i]),"name": self.surfacenames[i]}
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
@@ -322,7 +321,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 hillshading=hillshading,
             )
             s_layer = [s_layer]
-            s_layer.extend(well_layers)
+            #s_layer.extend(well_layers)
             return s_layer
 
         @app.callback(

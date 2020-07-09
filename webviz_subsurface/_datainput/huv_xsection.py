@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 from operator import add
 from operator import sub
+import xml.etree.ElementTree as ET
 
 
 class HuvXsection:
@@ -31,7 +32,7 @@ class HuvXsection:
             well.create_relative_hlen()
             zonation_points = get_zone_RHLEN(well_df,well.wellname,self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
-            zonelog = self.get_zonelog_data(well_df,self.zonelogname)
+            zonelog = self.get_zonelog_data2(well,self.zonelogname)
             self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
@@ -195,11 +196,9 @@ class HuvXsection:
         color_list = ["rgb(245,245,245)"]
         for sfc_path in self.surface_attributes:
             color_list.append(self.surface_attributes[sfc_path]["color"])
-        print(len(color_list))
         well_TVD = well_df["Z_TVDSS"].values.copy()
         well_RHLEN = well_df["R_HLEN"].values.copy()
         zonevals = well_df[zonelogname].values
-        #print(zonevals[0:70])
         zoneplot = []
         start = 0
         zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
@@ -214,7 +213,60 @@ class HuvXsection:
             if zonevals[i] != zonevals[i-1]:
                 end = i-1
                 if np.isnan(zonevals[i-1]) == True:
-                    color = "black"
+                    color = "rgb(245,245,245)"
+                else:
+                    color = color_list[int(zonevals[i-1])]
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+
+        return zoneplot
+
+    def get_zonelog_data2(self, well, zonelogname="Zonelog", zomin=-999):
+        tree = ET.parse("/home/elisabeth/GitHub/Datasets/complex_model/model_file.xml")
+        root = tree.getroot()
+        name = []
+        topofzone = []
+        well_df = well.dataframe
+        well.create_relative_hlen()
+        color_list = [None]*len(well.get_logrecord(zonelogname))
+        for surface in root.findall("./surfaces/surface"):
+            name.append(surface.find("name").text)
+            topofzone.append(surface.find("top-of-zone").text)
+        for sfc_path in self.surface_attributes:
+            index_array = np.where(np.array(name) == np.array(self.surface_attributes[sfc_path]["name"]))
+            self.surface_attributes[sfc_path]["topofzone"] = topofzone[int(index_array[0])]
+        for sfc_path in self.surface_attributes:
+            for i in range(len(color_list)):
+                if well.get_logrecord_codename(zonelogname,i) == "dummy":
+                    color_list[i] = "rgb(245,245,245)"
+                if well.get_logrecord_codename(zonelogname,i) == self.surface_attributes[sfc_path]["topofzone"]:
+                    self.surface_attributes[sfc_path]["zone_number"] = i
+                    color_list[i] = self.surface_attributes[sfc_path]["color"]
+        well_TVD = well_df["Z_TVDSS"].values.copy()
+        well_RHLEN = well_df["R_HLEN"].values.copy()
+        zonevals = well_df[zonelogname].values
+        zoneplot = []
+        start = 0
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
+        for transition in zone_transitions:
+            try:
+                well_TVD = np.insert(well_TVD, transition, well_TVD[transition + 1])
+                well_RHLEN = np.insert(well_RHLEN, transition, well_RHLEN[transition + 1])
+                zonevals = np.insert(zonevals, transition, zonevals[transition])
+            except IndexError:
+                pass
+        for i in range(1,len(zonevals)):
+            if zonevals[i] != zonevals[i-1]:
+                end = i-1
+                if np.isnan(zonevals[i-1]) == True:
+                    color = "rgb(245,245,245)"
                 else:
                     color = color_list[int(zonevals[i-1])]
                 zoneplot.append({
