@@ -225,11 +225,10 @@ class HuvXsection:
 
         return zoneplot
     
-    def get_plotly_fig(self, surfacepaths, error_paths):
+    def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
         data = self.get_plotly_data(surfacepaths, error_paths)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
-        return self.fig
 
 
 def depth_sort(elem):
