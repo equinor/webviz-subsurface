@@ -1,0 +1,94 @@
+title: Horizon Uncertainty Viewer
+
+pages:
+ 
+  - title: HorizonUncertaintyViewer
+    content:
+      - HorizonUncertaintyViewer:
+          surfacefiles: # 17 files
+            - ..\Datasets\complex_model\output\surfaces\d_BCU.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare1.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.1.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.2.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.3.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.4.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.5.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.6.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.7.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.8.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.9.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.10.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.11.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopAare2.12.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopIle.rxb
+            - ..\Datasets\complex_model\output\surfaces\d_TopTofte.rxb
+          
+          surfacefiles_de:
+            - ..\Datasets\complex_model\output\surfaces\de_BCU.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare1.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.1.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.2.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.3.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.4.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.5.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.6.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.7.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.8.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.9.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.10.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.11.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopAare2.12.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopIle.rxb
+            - ..\Datasets\complex_model\output\surfaces\de_TopTofte.rxb
+
+          wellfiles: # 9 files
+            #- ..\Datasets\complex_model\input\welldata\6608_10-14_S.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-P-1_AH.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-P-1_H.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-P-2_AH.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-P-2_H.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-P-4_H.txt
+            #- ..\Datasets\complex_model\input\welldata\6608_10-R-1_H.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-R-1_HT2.txt
+            - ..\Datasets\complex_model\input\welldata\6608_10-R-4_H.txt
+          target_points:
+            - ..\Datasets\complex_model\output\log_files\targetpoints.csv
+          well_points:
+            - ..\Datasets\complex_model\output\log_files\wellpoints.csv
+          surfacenames:
+            - BCU
+            - TopAare
+            - TopAare1
+            - TopAare2.1
+            - TopAare2.2
+            - TopAare2.3
+            - TopAare2.4
+            - TopAare2.5
+            - TopAare2.6
+            - TopAare2.7
+            - TopAare2.8
+            - TopAare2.9
+            - TopAare2.10
+            - TopAare2.11
+            - TopAare2.12
+            - TopIle
+            - TopTofte
+
+          wellnames:
+            #- 6608_10-14_S
+            - 6608_10-P-1_AH
+            - 6608_10-P-1_H
+            - 6608_10-P-2_AH
+            - 6608_10-P-2_H
+            - 6608_10-P-4_H
+            #- 6608_10-R-1_H
+            - 6608_10-R-1_HT2
+            - 6608_10-R-4_H
+          zonelogname: ZONELOG
+          zonation_data:
+            - ..\Datasets\complex_model\output\log_files\zonation_status.csv
+          conditional_data:
+            - ..\Datasets\complex_model\output\log_files\wellpoints.csv
+

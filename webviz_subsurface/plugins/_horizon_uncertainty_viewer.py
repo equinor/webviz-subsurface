@@ -359,13 +359,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
-            self.xsec.set_surface_lines(surfacepaths)
-            self.xsec.set_error_lines(errorpaths)
-            data = []
-            data += self.xsec.get_plotly_data(surfacepaths, errorpaths)
-            layout = self.xsec.get_plotly_layout(surfacepaths)
-            fig_dict = dict({'data':data,'layout':layout})
-            self.xsec.fig = go.Figure(fig_dict)
+            self.xsec.set_error_and_surface_lines(surfacepaths, errorpaths)
+            self.xsec.set_plotly_fig(surfacepaths, errorpaths)
             return self.xsec.fig
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
@@ -388,24 +383,17 @@ The cross section is defined by a polyline interactively edited in the map view.
             return is_open
         
         @app.callback(
-            [Output(self.ids('surfaces-de-checklist'), 'options'),
-             Output(self.ids('surfaces-de-checklist'), 'value')],
+            Output(self.ids('surfaces-de-checklist'), 'options'),
             [Input(self.ids('surfaces-checklist'), 'value')]
         )
         def disable_error_checkboxes(surface_values):
-            de_options = [
-                {"label": name+'_error', "value": path, 'disabled':False}
-                for name, path in zip(
-                    self.surfacenames, self.surfacefiles
-                )
-            ]
-            de_values = []
-            for opt in de_options:
-                if (surface_values==None) or (opt['value'] not in surface_values):
-                    opt['disabled']=True
+            de_options = []
+            for name, path in zip(self.surfacenames, self.surfacefiles):
+                if (surface_values is None) or (path not in surface_values):
+                    de_options += [{"label": name + '_error', "value": path, 'disabled':True}]
                 else:
-                    de_values.append(opt['value'])
-            return de_options, de_values
+                    de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
+            return de_options
 
         @app.callback(
             Output(self.ids("draw-well-view"), "layers"),
