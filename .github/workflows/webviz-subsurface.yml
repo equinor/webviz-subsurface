@@ -34,13 +34,7 @@ jobs:
             pandas-version: '0.24.2'
 
     steps:
-
-
-    - name: 🕵️ Check last hash of webviz-subsurface-testdata
-      run: |
-        export LAST_HASH=`git ls-remote https://github.com/$TESTDATA_REPO_OWNER/$TESTDATA_REPO_BRANCH | cut -f1`
-        echo $LAST_HASH
-
+      
     - name: 🧹 Remove unused pre-installed software
       run: |
         # https://github.com/actions/virtual-environments/issues/751
@@ -53,6 +47,12 @@ jobs:
     - name: 📖 Checkout commit locally
       uses: actions/checkout@v2
 
+
+    - name: 🕵️ Check last hash of webviz-subsurface-testdata
+      run: |
+        export LAST_HASH=`git ls-remote https://github.com/$TESTDATA_REPO_OWNER/$TESTDATA_REPO_BRANCH | cut -f1`
+        echo $LAST_HASH
+        
     - name: 🐍 Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
