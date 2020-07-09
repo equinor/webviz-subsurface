@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import numpy.ma as ma
 import plotly.graph_objects as go
+import base64
 from matplotlib.colors import ListedColormap
 import xtgeo
 from dash.exceptions import PreventUpdate
@@ -404,7 +405,8 @@ The cross section is defined by a polyline interactively edited in the map view.
             [
             Output(self.ids("cross-section-view"), "children"),
             Output(self.ids("well-dropdown"), "disabled"),
-            Output(self.ids("button-open-graph-settings"), "disabled")
+            Output(self.ids("button-open-graph-settings"), "disabled"),
+            Output(self.ids("draw-well-view"), "layers")
             ],
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
@@ -415,11 +417,13 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
+                img_bytes = self.xsec.fig.to_image(format="png")
+                draw_well_layer = render_draw_well(img_bytes)
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
                 graph_settings_button = False
-            return [children, well_dropdown, graph_settings_button]
+            return [children, well_dropdown, graph_settings_button, draw_well_layer]
 
 
     def add_webvizstore(self):
@@ -465,28 +469,22 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def render_drawpad(surfacepath):
-    hillshading = True
-    min_val = None
-    max_val = None
-    color = "viridis"
-    unit=""
+def render_draw_well(img_bytes):
+    img_base64 = base64.b64encode(img_bytes)
     s_layer = {
-        "name": 'Drawpad',
+        "name": 'Draw well view',
         "checked": True,
         "base_layer": True,
         "data": [
             {
-                "type": "image",
-                "url": surfacepath,
-                "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val is not None else None,
-                "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
-                "unit": str(unit),
+            'type': 'image',
+            'url': img_base64,   # either base64 encoding of the picture or a path to hosted image,
+            #'bounds': [[xmin, ymin], [xmax, ymax]]  # The extent of the picture in the rendered map 
             }
         ],
     }
-    return []
+    return s_layer
+
 def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
