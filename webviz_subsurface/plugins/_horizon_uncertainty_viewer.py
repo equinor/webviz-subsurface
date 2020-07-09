@@ -310,7 +310,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             well_layers = []
             for wellpath in self.wellfiles:
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_layer(well,well.wellname,0,True) #lag ny make_well_layer
+                well_layer = make_well_layer(well,well.wellname)#,0,True) #lag ny make_well_layer
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(

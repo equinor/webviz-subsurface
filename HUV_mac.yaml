@@ -5,44 +5,90 @@ pages:
   - title: HorizonUncertaintyViewer
     content:
       - HorizonUncertaintyViewer:
-          surfacefiles: # 4 files
-            - ../Datasets/simple_model/output/surfaces/d_TopUpperReek.rxb
-            - ../Datasets/simple_model/output/surfaces/d_TopMidReek.rxb
-            - ../Datasets/simple_model/output/surfaces/d_TopLowerReek.rxb
-            - ../Datasets/simple_model/output/surfaces/d_BaseLowerReek.rxb
+          surfacefiles: # 17 files
+            - ../Datasets/complex_model/output/surfaces/d_BCU.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare1.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.1.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.2.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.3.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.4.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.5.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.6.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.7.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.8.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.9.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.10.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.11.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopAare2.12.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopIle.rxb
+            - ../Datasets/complex_model/output/surfaces/d_TopTofte.rxb
           
           surfacefiles_de:
-            - ../Datasets/simple_model/output/surfaces/de_TopUpperReek.rxb
-            - ../Datasets/simple_model/output/surfaces/de_TopMidReek.rxb
-            - ../Datasets/simple_model/output/surfaces/de_TopLowerReek.rxb
-            - ../Datasets/simple_model/output/surfaces/de_BaseLowerReek.rxb
+            - ../Datasets/complex_model/output/surfaces/de_BCU.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare1.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.1.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.2.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.3.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.4.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.5.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.6.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.7.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.8.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.9.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.10.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.11.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopAare2.12.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopIle.rxb
+            - ../Datasets/complex_model/output/surfaces/de_TopTofte.rxb
 
-          wellfiles: # 6 files
-            - ../Datasets/simple_model/input/welldata/OP_1.txt
-            - ../Datasets/simple_model/input/welldata/OP_2.txt
-            - ../Datasets/simple_model/input/welldata/OP_3.txt
-            - ../Datasets/simple_model/input/welldata/OP_4.txt
-            - ../Datasets/simple_model/input/welldata/OP_5.txt
-            - ../Datasets/simple_model/input/welldata/OP_6.txt
+          wellfiles: # 9 files
+            #- ../Datasets/complex_model/input/welldata/6608_10-14_S.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-P-1_AH.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-P-1_H.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-P-2_AH.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-P-2_H.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-P-4_H.txt
+            #- ../Datasets/complex_model/input/welldata/6608_10-R-1_H.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-R-1_HT2.txt
+            - ../Datasets/complex_model/input/welldata/6608_10-R-4_H.txt
           target_points:
-            - ../Datasets/simple_model/output/log_files/targetpoints.csv
+            - ../Datasets/complex_model/output/log_files/targetpoints.csv
           well_points:
-            - ../Datasets/simple_model/output/log_files/wellpoints.csv
+            - ../Datasets/complex_model/output/log_files/wellpoints.csv
           surfacenames:
-            - TopUpperReek
-            - TopMidReek
-            - TopLowerReek
-            - BaseLowerReek
+            - BCU
+            - TopAare
+            - TopAare1
+            - TopAare2.1
+            - TopAare2.2
+            - TopAare2.3
+            - TopAare2.4
+            - TopAare2.5
+            - TopAare2.6
+            - TopAare2.7
+            - TopAare2.8
+            - TopAare2.9
+            - TopAare2.10
+            - TopAare2.11
+            - TopAare2.12
+            - TopIle
+            - TopTofte
+
           wellnames:
-            - OP_1
-            - OP_2
-            - OP_3
-            - OP_4
-            - OP_5
-            - OP_6
-          zonelogname: Zonelog
+            #- 6608_10-14_S
+            - 6608_10-P-1_AH
+            - 6608_10-P-1_H
+            - 6608_10-P-2_AH
+            - 6608_10-P-2_H
+            - 6608_10-P-4_H
+            #- 6608_10-R-1_H
+            - 6608_10-R-1_HT2
+            - 6608_10-R-4_H
+          zonelogname: ZONELOG
           zonation_data:
-            - ../Datasets/simple_model/output/log_files/zonation_status.csv
+            - ../Datasets/complex_model/output/log_files/zonation_status.csv
           conditional_data:
-            - ../Datasets/simple_model/output/log_files/wellpoints.csv
+            - ../Datasets/complex_model/output/log_files/wellpoints.csv
 

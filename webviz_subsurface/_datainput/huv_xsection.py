@@ -1,7 +1,6 @@
 import xtgeo
 import pandas as pd
 import numpy as np
-import numpy.ma as ma
 from pathlib import Path
 from operator import add
 from operator import sub
@@ -196,9 +195,11 @@ class HuvXsection:
         color_list = ["rgb(245,245,245)"]
         for sfc_path in self.surface_attributes:
             color_list.append(self.surface_attributes[sfc_path]["color"])
+        print(len(color_list))
         well_TVD = well_df["Z_TVDSS"].values.copy()
         well_RHLEN = well_df["R_HLEN"].values.copy()
         zonevals = well_df[zonelogname].values
+        #print(zonevals[0:70])
         zoneplot = []
         start = 0
         zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
@@ -212,11 +213,15 @@ class HuvXsection:
         for i in range(1,len(zonevals)):
             if zonevals[i] != zonevals[i-1]:
                 end = i-1
+                if np.isnan(zonevals[i-1]) == True:
+                    color = "black"
+                else:
+                    color = color_list[int(zonevals[i-1])]
                 zoneplot.append({
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
-                    "line": {"width": 4, "color": color_list[int(zonevals[i-1])]},
-                    "fillcolor": color_list[int(zonevals[i-1])],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
                     "marker": {"opacity": 0.5},
                     "name": f"Zone: {zonevals[i-1]}",
                     })
