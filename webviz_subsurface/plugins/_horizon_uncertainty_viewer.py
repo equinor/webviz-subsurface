@@ -371,24 +371,17 @@ The cross section is defined by a polyline interactively edited in the map view.
             return is_open
         
         @app.callback(
-            [Output(self.ids('surfaces-de-checklist'), 'options'),
-             Output(self.ids('surfaces-de-checklist'), 'value')],
+            Output(self.ids('surfaces-de-checklist'), 'options'),
             [Input(self.ids('surfaces-checklist'), 'value')]
         )
         def disable_error_checkboxes(surface_values):
-            de_options = [
-                {"label": name+'_error', "value": path, 'disabled':False}
-                for name, path in zip(
-                    self.surfacenames, self.surfacefiles
-                )
-            ]
-            de_values = []
-            for opt in de_options:
-                if (surface_values==None) or (opt['value'] not in surface_values):
-                    opt['disabled']=True
+            de_options = []
+            for name, path in zip(self.surfacenames, self.surfacefiles):
+                if (surface_values is None) or (path not in surface_values):
+                    de_options += [{"label": name + '_error', "value": path, 'disabled':True}]
                 else:
-                    de_values.append(opt['value'])
-            return de_options, de_values
+                    de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
+            return de_options
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
