@@ -2,6 +2,7 @@ import xtgeo
 import pandas as pd
 import numpy as np
 import numpy.ma as ma
+import plotly.graph_objects as go
 from pathlib import Path
 from operator import add
 from operator import sub
@@ -23,9 +24,10 @@ class HuvXsection:
         self.conditional_data = conditional_data
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
+        self.fig = None
     
     def set_well(self, wellpath):
-        if wellpath != None:
+        if not wellpath == None:
             well = xtgeo.Well(Path(wellpath))
             self.fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
@@ -33,7 +35,7 @@ class HuvXsection:
             zonation_points = get_zone_RHLEN(well_df,well.wellname,self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
             zonelog = self.get_zonelog_data(well_df,self.zonelogname)
-            self.well_attributes = {"well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
+            self.well_attributes = {"wellpath": wellpath, "well_df":well_df,"zonelog":zonelog,"zonation_points":zonation_points,"conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
         if self.well_attributes ==None:
@@ -61,19 +63,18 @@ class HuvXsection:
             }]
             return data
 
-    def set_surface_lines(self, surfacepaths):
-        for sfc_path in surfacepaths:
+
+    def set_error_and_surface_lines(self, surface_paths, error_paths):
+        for sfc_path in surface_paths:
             sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
             sfc_line = sfc.get_randomline(self.fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
-    
-    def set_error_lines(self, errorpaths):
-        for sfc_path in errorpaths:
-            de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
-            de_line = de_surface.get_randomline(self.fence)
-            sfc_line = self.surface_attributes[sfc_path]['surface_line']
-            self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:,1] + de_line[:,1] #Top of envelope
-            self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:,1] - de_line[:,1] #Bottom of envelope             
+            if sfc_path in error_paths:
+                de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
+                de_line = de_surface.get_randomline(self.fence)
+                sfc_line = self.surface_attributes[sfc_path]['surface_line']
+                self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:, 1] + de_line[:, 1]  # Top of envelope
+                self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:, 1] - de_line[:, 1]  # Bottom of envelope
 
     def get_plotly_layout(self,surfacepaths:list):
         layout ={}
@@ -223,6 +224,11 @@ class HuvXsection:
                 start = end+1
 
         return zoneplot
+    
+    def set_plotly_fig(self, surfacepaths, error_paths):
+        layout = self.get_plotly_layout(surfacepaths)
+        data = self.get_plotly_data(surfacepaths, error_paths)
+        self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
 
 def depth_sort(elem):

@@ -298,7 +298,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             #Output(self.ids("well-dropdown"), "value"),
             #endre dropdown meny value, slik at det plotter samme well_fence
             [
-                Input(self.ids("map-dropdown"), "value"), #List of errorfiles
+                Input(self.ids("map-dropdown"), "value"),
             ],
         )
         def render_map(errorpath):
@@ -309,8 +309,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             color = "magma"
             well_layers = []
             for wellpath in self.wellfiles:
+                if str(self.xsec.well_attributes["wellpath"]) == wellpath:
+                    well_color = "green"
+                else:
+                    well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_layer(well,well.wellname,0,True) #lag ny make_well_layer
+                well_layer = make_well_layer(well, well.wellname, color=well_color)
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
@@ -343,14 +347,9 @@ The cross section is defined by a polyline interactively edited in the map view.
             elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
-            self.xsec.set_surface_lines(surfacepaths)
-            self.xsec.set_error_lines(errorpaths)
-            data = []
-            data += self.xsec.get_plotly_data(surfacepaths, errorpaths)
-            layout = self.xsec.get_plotly_layout(surfacepaths)
-            fig_dict = dict({'data':data,'layout':layout})
-            fig = go.Figure(fig_dict)
-            return fig
+            self.xsec.set_error_and_surface_lines(surfacepaths, errorpaths)
+            self.xsec.set_plotly_fig(surfacepaths, errorpaths)
+            return self.xsec.fig
 
         ### Update of tickboxes when selectin "all" surfaces in cross-section-view
         @app.callback(
@@ -372,24 +371,17 @@ The cross section is defined by a polyline interactively edited in the map view.
             return is_open
         
         @app.callback(
-            [Output(self.ids('surfaces-de-checklist'), 'options'),
-             Output(self.ids('surfaces-de-checklist'), 'value')],
+            Output(self.ids('surfaces-de-checklist'), 'options'),
             [Input(self.ids('surfaces-checklist'), 'value')]
         )
         def disable_error_checkboxes(surface_values):
-            de_options = [
-                {"label": name+'_error', "value": path, 'disabled':False}
-                for name, path in zip(
-                    self.surfacenames, self.surfacefiles
-                )
-            ]
-            de_values = []
-            for opt in de_options:
-                if (surface_values==None) or (opt['value'] not in surface_values):
-                    opt['disabled']=True
+            de_options = []
+            for name, path in zip(self.surfacenames, self.surfacefiles):
+                if (surface_values is None) or (path not in surface_values):
+                    de_options += [{"label": name + '_error', "value": path, 'disabled':True}]
                 else:
-                    de_values.append(opt['value'])
-            return de_options, de_values
+                    de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
+            return de_options
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -434,7 +426,7 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def make_well_layer(well, name="well", zmin=0,base_layer=False):
+def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
     positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
@@ -445,7 +437,7 @@ def make_well_layer(well, name="well", zmin=0,base_layer=False):
         "data": [
             {
                 "type": "polyline",
-                "color": "black",
+                "color": color,
                 "positions": positions,
                 "tooltip": name,
             }
