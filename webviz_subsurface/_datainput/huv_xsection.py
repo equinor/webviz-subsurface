@@ -213,11 +213,14 @@ class HuvXsection:
         for i in range(1,len(zonevals)):
             if zonevals[i] != zonevals[i-1]:
                 end = i-1
+                if np.isnan(zonevals[i-1]):
+                    color = 'black'
+                else:
+                    color = color_list[int(zonevals[i-1])]
                 zoneplot.append({
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
-                    "line": {"width": 4, "color": color_list[int(zonevals[i-1])]},
-                    "fillcolor": color_list[int(zonevals[i-1])],
+                    "line": {"width": 4, "color":color},
                     "marker": {"opacity": 0.5},
                     "name": f"Zone: {zonevals[i-1]}",
                     })
