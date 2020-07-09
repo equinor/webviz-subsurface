@@ -28,6 +28,12 @@ jobs:
 
     steps:
 
+
+    - name: 🕵️ Check last hash of webviz-subsurface-testdata
+      run: |
+        export LAST_HASH=`git ls-remote https://github.com/$TESTDATA_REPO_OWNER/$TESTDATA_REPO_BRANCH | cut -f1`
+        echo $LAST_HASH
+
     - name: 🧹 Remove unused pre-installed software
       run: |
         # https://github.com/actions/virtual-environments/issues/751
