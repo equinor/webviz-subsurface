@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from pathlib import Path
 from operator import add
 from operator import sub
-
+import matplotlib.image as mpimg
 
 class HuvXsection:
     def __init__(
@@ -232,7 +232,12 @@ class HuvXsection:
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
         data = self.get_plotly_data(surfacepaths, error_paths)
-        self.fig = go.Figure(dict({'data':data, 'layout':layout}))
+        self.fig = go.Figure(dict({'data':data,'layout':layout}))
+
+    def get_image(self, figure):
+        figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
+        image_array =mpimg.imread("C:/Users/Ruben/Documents/VSCode/xsec.png")
+        return image_array
 
 def stratigraphic_sort(elem):
     return elem[1]

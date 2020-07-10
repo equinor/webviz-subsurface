@@ -158,7 +158,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             children=[
                 wcc.Graph(
                 id=self.ids("plotly-view"),
-                figure={"displayModeBar": True},
+                #figure={"displayModeBar": True}, Required? Seems no change in graph
                 )
             ]
         )
@@ -252,19 +252,18 @@ The cross section is defined by a polyline interactively edited in the map view.
                 html.Div(
                     children=[
                         html.Div(
-                            children=[self.plotly_layout],
-                            id=self.ids("cross-section-view"),
                             style={
                                 "marginTop": "0px",
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
+                            children=[self.plotly_layout],
+                            id=self.ids("cross-section-view"),
                         )
                     ]
                 ),
             ]
         )
-
     @property
     def target_points_layout(self):
         df = pd.read_csv(self.target_points[0])
@@ -273,6 +272,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records'),
         )
+    
     @property
     def well_points_layout(self):
         df = pd.read_csv(self.well_points[0])
@@ -281,7 +281,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             columns=[{"name": i, "id": i} for i in df.columns],
             data = df.to_dict('records')
         )
-
     @property
     def layout(self):
         return dcc.Tabs(children=[
@@ -310,8 +309,6 @@ The cross section is defined by a polyline interactively edited in the map view.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
-            #Output(self.ids("well-dropdown"), "value"),
-            #endre dropdown meny value, slik at det plotter samme well_fence
             [
                 Input(self.ids("map-dropdown"), "value"),
             ],
@@ -397,7 +394,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
             return de_options
 
-        @app.callback(
+        @app.callback( #Toggle "draw well" button on/off to display leaflet
             [Output(self.ids("cross-section-view"), "children"),
             Output(self.ids("well-dropdown"), "disabled"),
             Output(self.ids("button-open-graph-settings"), "disabled")],
@@ -410,6 +407,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
+                image_array = self.xsec.get_image(self.xsec.fig)
+                print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
