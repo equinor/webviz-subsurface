@@ -5,7 +5,7 @@ from pathlib import Path
 from operator import add
 from operator import sub
 import xml.etree.ElementTree as ET
-
+import math
 
 class HuvXsection:
     def __init__(
@@ -30,6 +30,7 @@ class HuvXsection:
             self.fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
+            print(well.wellname)
             zonation_points = get_zone_RHLEN(well_df,well.wellname,self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df,well.wellname,self.conditional_data)
             zonelog = self.get_zonelog_data2(well,self.zonelogname)
@@ -252,8 +253,10 @@ class HuvXsection:
         well_TVD = well_df["Z_TVDSS"].values.copy()
         well_RHLEN = well_df["R_HLEN"].values.copy()
         zonevals = well_df[zonelogname].values
+        print(well_df.isnull().sum())
         zoneplot = []
         start = 0
+        l = 0
         zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
         for transition in zone_transitions:
             try:
@@ -263,12 +266,12 @@ class HuvXsection:
             except IndexError:
                 pass
         for i in range(1,len(zonevals)):
-            if zonevals[i] != zonevals[i-1]:
+            if math.isnan(zonevals[i-1]):
+                l +=1
+            if (np.isnan(zonevals[i]) == False) and (np.isnan(zonevals[i-1])==True):
                 end = i-1
-                if np.isnan(zonevals[i-1]) == True:
-                    color = "rgb(245,245,245)"
-                else:
-                    color = color_list[int(zonevals[i-1])]
+                print(end,"end1")
+                color = "rgb(211,211,211)"
                 zoneplot.append({
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
@@ -278,7 +281,57 @@ class HuvXsection:
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
-
+            if (np.isnan(zonevals[i]) == True) and (np.isnan(zonevals[i-1])==False):
+                end = i-1
+                print(end,"end2")
+                color = color_list[int(zonevals[i-1])]
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+            if (zonevals[i] != zonevals[i-1]) and (np.isnan(zonevals[i])==False) and (np.isnan(zonevals[i-1])==False):
+                end = i-1
+                print(end,"end3")
+                color = color_list[int(zonevals[i-1])]
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+        if np.isnan(zonevals[-1]) == False:
+            end = len(zonevals)-1
+            print(end,"end4")
+            color = color_list[int(zonevals[-1])]
+            zoneplot.append({
+                "x": well_RHLEN[start:end],
+                "y": well_TVD[start:end],
+                "line": {"width": 4, "color": color},
+                "fillcolor": color,
+                "marker": {"opacity": 0.5},
+                "name": f"Zone: {zonevals[-2]}",
+                })
+        if np.isnan(zonevals[-1]) == True:
+            end = len(zonevals)-1
+            print(end,"end5")
+            color = "rgb(211,211,211)"
+            zoneplot.append({
+                "x": np.array(well_RHLEN[-1]),
+                "y": np.array(well_TVD[-1]),
+                "line": {"width": 4, "color": color},
+                "fillcolor": color,
+                "marker": {"opacity": 0.5},
+                "name": f"Zone: {zonevals[-1]}",
+                })
+        print(l)
         return zoneplot
 
 
