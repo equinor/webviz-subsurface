@@ -8,8 +8,3 @@ pages:
           basedir:
             - ..\Datasets\complex_model
 
-          zonation_data:
-            - ..\Datasets\complex_model\output\log_files\zonation_status.csv
-          conditional_data:
-            - ..\Datasets\complex_model\output\log_files\wellpoints.csv
-

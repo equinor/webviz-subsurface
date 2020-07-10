@@ -44,8 +44,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self,
         app,
         basedir: List[Path],
-        zonation_data: List[Path],
-        conditional_data: List[Path],
         zunit="depth (m)",
         zonemin: int = 1,
     ):
@@ -62,8 +60,8 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
         self.wellfiles = parse_model_file.get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
-        self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
+        self.zonation_data= parse_model_file.get_zonation_data(basedir[0])
+        self.conditional_data= parse_model_file.get_conditional_data(basedir[0])
         self.zonemin = zonemin
         self.zonelog_name = parse_model_file.get_zonelog_name(basedir[0])  # name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme

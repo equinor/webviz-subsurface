@@ -239,7 +239,7 @@ def stratigraphic_sort(elem):
     return elem[1]
 
 def get_zone_RHLEN(well_df,wellname,zone_path):
-    zonation_data = pd.read_csv(zone_path[0])  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
+    zonation_data = pd.read_csv(zone_path)  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
     zone_df = zonation_data[zonation_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
@@ -253,7 +253,7 @@ def get_zone_RHLEN(well_df,wellname,zone_path):
     return np.array([zone_RHLEN,zone_df["TVD"]])
 
 def get_conditional_RHLEN(well_df,wellname,cond_path):
-    conditional_data = pd.read_csv(cond_path[0])   #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/wellpoints.csv")
+    conditional_data = pd.read_csv(cond_path)   #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/wellpoints.csv")
     cond_df = conditional_data[conditional_data["Well"] == wellname]
     cond_df_xval = cond_df["x"].values.copy()
     cond_df_yval = cond_df["y"].values.copy()

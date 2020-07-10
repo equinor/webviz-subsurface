@@ -37,12 +37,10 @@ def get_well_files(basedir):
     return well_files
 
 def get_target_points(basedir):
-    targetpoints = os.path.join(basedir, 'output', 'log_files', 'targetpoints.csv')
-    return targetpoints
+    return os.path.join(basedir, 'output', 'log_files', 'targetpoints.csv')
 
 def get_well_points(basedir):
-    wellpoints = os.path.join(basedir, 'output', 'log_files', 'wellpoints.csv')
-    return wellpoints
+    return os.path.join(basedir, 'output', 'log_files', 'wellpoints.csv')
 
 def get_zonelog_name(basedir):
     model_file = os.path.join(basedir, 'model_file.xml')
@@ -50,6 +48,13 @@ def get_zonelog_name(basedir):
         soup = BeautifulSoup(file, 'xml')
     zonelog_wrapper = soup.find('zone-log-name')
     return zonelog_wrapper.get_text()
+
+def get_zonation_data(basedir):
+    return os.path.join(basedir, 'output', 'log_files', 'zonation_status.csv')
+
+def get_conditional_data(basedir):
+    return get_well_points(basedir)
+
 
 
 if __name__ == '__main__':
