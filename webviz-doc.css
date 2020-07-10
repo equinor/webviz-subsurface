@@ -1,0 +1,26 @@
+.app-name-link > img {
+  width: 120px;
+  margin-bottom: 10px;
+}
+
+button.docsify-copy-code-button {
+  border-radius: 5px;
+}
+
+button {
+  font-family: inherit;
+}
+
+.plugin-doc {
+  background-color: white;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border: 1px solid rgb(240, 240, 240);
+  border-radius: 3px;
+}
+
+.plugin-doc:hover {
+  box-shadow: 5px 5px 10px 3px rgba(230, 230, 230);
+}
