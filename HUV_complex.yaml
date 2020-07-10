@@ -8,9 +8,6 @@ pages:
           basedir:
             - ..\Datasets\complex_model
 
-          well_points:
-            - ..\Datasets\complex_model\output\log_files\wellpoints.csv
-
 
           zonelogname: ZONELOG
           zonation_data:

@@ -40,9 +40,11 @@ def get_target_points(basedir):
     targetpoints = os.path.join(basedir, 'output', 'log_files', 'targetpoints.csv')
     return targetpoints
 
+def get_well_points(basedir):
+    wellpoints = os.path.join(basedir, 'output', 'log_files', 'wellpoints.csv')
+    return wellpoints
 
 
 if __name__ == '__main__':
     basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model")
-    print(get_well_files(basedir))
 

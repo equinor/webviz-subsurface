@@ -46,7 +46,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         basedir: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
-        well_points: List[Path] = None,
         zonelogname: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
@@ -58,7 +57,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacefiles_de = parse_model_file.get_error_files(basedir[0])
         self.surface_attributes = {}
         self.target_points = parse_model_file.get_target_points(basedir[0])
-        self.well_points = well_points
+        self.well_points = parse_model_file.get_well_points(basedir[0])
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
         self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
@@ -238,7 +237,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
     @property
     def well_points_layout(self):
-        df = pd.read_csv(self.well_points[0])
+        df = pd.read_csv(self.well_points)
         return dash_table.DataTable(
             id=self.ids("well_points_table"),
             columns=[{"name": i, "id": i} for i in df.columns],
