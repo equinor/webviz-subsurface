@@ -22,7 +22,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
-from .._datainput.well import load_well#,make_well_layer
+from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
 from .._datainput.parse_model_file import get_error_files, get_surface_files
@@ -41,7 +41,6 @@ The cross section is defined by a polyline interactively edited in the map view.
 * `colors`: List of colors to use
 """
 
-    ### Initialize ###
     def __init__(
         self,
         app,
@@ -87,7 +86,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zonation_data = [Path(zond_data) for zond_data in zonation_data]
         self.conditional_data = [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
-        self.zonelogname = zonelogname #name of zonelog in OP txt files       
+        self.zonelogname = zonelogname #name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -163,7 +162,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 )
             ]
         )
-    
+
     @property
     def cross_section_layout(self):
         return html.Div(
@@ -282,9 +281,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             columns=[{"name": i, "id": i} for i in df.columns],
             data = df.to_dict('records')
         )
-        
 
-    ### Flexbox ###
     @property
     def layout(self):
         return dcc.Tabs(children=[
@@ -306,7 +303,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ),
             dcc.Tab(
                 label='Well Points',
-                children=[html.Div(children = self.well_points_layout)]
+                children=[html.Div(children=self.well_points_layout)]
             )
         ])
 
@@ -319,7 +316,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-dropdown"), "value"),
             ],
         )
-        def render_map(errorpath):
+        def _render_map(errorpath):
             surface = xtgeo.surface_from_file(errorpath, fformat="irap_binary")
             hillshading = True
             min_val = None
@@ -360,9 +357,9 @@ The cross section is defined by a polyline interactively edited in the map view.
             ctx = dash.callback_context
             surfacepaths = get_path(surfacepaths)
             errorpaths = get_path(errorpaths)
-            if ctx.triggered[0]['prop_id']==self.ids("well-dropdown")+'.value':
+            if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown")+'.value':
                 self.xsec.set_well(wellpath)
-            elif ctx.triggered[0]['prop_id']==self.ids("map-view")+'.polyline_points':
+            elif ctx.triggered[0]['prop_id'] == self.ids("map-view")+'.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
             self.xsec.set_error_and_surface_lines(surfacepaths, errorpaths)
@@ -373,7 +370,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids("surfaces-checklist"), "value"),
             [Input(self.ids("all-surfaces-checkbox"), "value")],
         )
-        def update_surface_tickboxes(all_surfaces_checkbox):
+        def _update_surface_tickboxes(all_surfaces_checkbox):
             return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
 
         @app.callback(
@@ -382,7 +379,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             Input(self.ids("button-close-graph-settings"), "n_clicks")],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
-        def toggle_modal(n1, n2, is_open):
+        def _toggle_modal(n1, n2, is_open):
             if n1 or n2:
                 return not is_open
             return is_open
@@ -391,7 +388,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids('surfaces-de-checklist'), 'options'),
             [Input(self.ids('surfaces-checklist'), 'value')]
         )
-        def disable_error_checkboxes(surface_values):
+        def _disable_error_checkboxes(surface_values):
             de_options = []
             for name, path in zip(self.surfacenames, self.surfacefiles):
                 if (surface_values is None) or (path not in surface_values):
