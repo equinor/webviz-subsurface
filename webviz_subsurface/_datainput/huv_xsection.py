@@ -25,7 +25,9 @@ class HuvXsection:
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
         self.fig = None
-    
+
+
+
     def set_well(self, wellpath):
         if not wellpath == None:
             well = xtgeo.Well(Path(wellpath))
@@ -153,10 +155,10 @@ class HuvXsection:
             min, max = self.sfc_line_max_min_depth(surface_paths)
             first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
             surface_tuples =[
-                (sfc_path, self.surface_attributes[sfc_path]['surface_line'])
+                (sfc_path, self.surface_attributes[sfc_path]['order'])
                 for sfc_path in surface_paths
             ]
-            surface_tuples.sort(key=depth_sort, reverse=True)
+            surface_tuples.sort(key=stratigraphic_sort, reverse=True)
 
             data = [ #Create helpline for bottom of plot
                 {
@@ -171,8 +173,8 @@ class HuvXsection:
                     'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
                     'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
                     'line': {"color": "rgba(0,0,0,1)", "width": 1},
-                    #"fill": "tonexty",
-                    #'fillcolor':self.surface_attributes[sfc_path]["color"]
+                    "fill": "tonexty",
+                    'fillcolor':self.surface_attributes[sfc_path]["color"]
                 }
                 for sfc_path, _ in surface_tuples
             ]
@@ -233,9 +235,8 @@ class HuvXsection:
         data = self.get_plotly_data(surfacepaths, error_paths)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
-
-def depth_sort(elem):
-    return np.min(elem[1][:, 1])
+def stratigraphic_sort(elem):
+    return elem[1]
 
 def get_zone_RHLEN(well_df,wellname,zone_path):
     zonation_data = pd.read_csv(zone_path[0])  #"/home/elisabeth/GitHub/Datasets/simple_model/output/log_files/zonation_status.csv")
