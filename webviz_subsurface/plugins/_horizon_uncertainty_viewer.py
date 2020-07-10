@@ -23,7 +23,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
-from .._datainput.parse_model_file import get_error_files, get_surface_files, extract_surface_names
+from .._datainput.parse_model_file import get_error_files, get_surface_files, extract_surface_names, get_well_files
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -44,12 +44,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self,
         app,
         basedir: List[Path],
-        wellfiles: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
         target_points: List[Path] = None,
         well_points: List[Path] = None,
-        wellnames: list = None,
         zonelogname: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
@@ -65,24 +63,18 @@ The cross section is defined by a polyline interactively edited in the map view.
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
         self.surfacenames = extract_surface_names(basedir[0])
-        self.wellfiles = [str(wellfile) for wellfile in wellfiles]
-        if wellnames is not None:
-            if len(wellnames) != len(wellfiles):
-                raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
-                )
-            self.wellnames = wellnames
-        else:
-            self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
+        self.wellfiles = get_well_files(basedir[0])
+        self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
+        print(len(self.wellfiles), len(self.wellnames))
         self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
         self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin
-        self.zonelogname = zonelogname #name of zonelog in OP txt files       
+        self.zonelogname = zonelogname  # name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelogname)
-        self.xsec.set_well(wellfiles[0])
+        self.xsec.set_well(self.wellfiles[0])
 
 
     ### Generate unique ID's ###

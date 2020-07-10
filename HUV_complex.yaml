@@ -8,31 +8,13 @@ pages:
           basedir:
             - ..\Datasets\complex_model
 
-          wellfiles: # 9 files
-            #- ..\Datasets\complex_model\input\welldata\6608_10-14_S.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-P-1_AH.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-P-1_H.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-P-2_AH.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-P-2_H.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-P-4_H.txt
-            #- ..\Datasets\complex_model\input\welldata\6608_10-R-1_H.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-R-1_HT2.txt
-            - ..\Datasets\complex_model\input\welldata\6608_10-R-4_H.txt
+
           target_points:
             - ..\Datasets\complex_model\output\log_files\targetpoints.csv
           well_points:
             - ..\Datasets\complex_model\output\log_files\wellpoints.csv
 
-          wellnames:
-            #- 6608_10-14_S
-            - 6608_10-P-1_AH
-            - 6608_10-P-1_H
-            - 6608_10-P-2_AH
-            - 6608_10-P-2_H
-            - 6608_10-P-4_H
-            #- 6608_10-R-1_H
-            - 6608_10-R-1_HT2
-            - 6608_10-R-4_H
+
           zonelogname: ZONELOG
           zonation_data:
             - ..\Datasets\complex_model\output\log_files\zonation_status.csv
