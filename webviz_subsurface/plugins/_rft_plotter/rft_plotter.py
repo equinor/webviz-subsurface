@@ -22,9 +22,7 @@ from ._errorplot_figure import update_errorplot
 
 
 class RftPlotter(WebvizPluginABC):
-    """### RftPlotter
-
-This plugin visualizes simulated RFT results from
+    """This plugin visualizes simulated RFT results from
 FMU ensembles combined with ERT observation data.
 
 Several visualizations are available:
@@ -39,56 +37,65 @@ Several visualizations are available:
 
 * Boxplot showing misfit per ERT observation for each ensemble.
 
-#### Input Files
+---
+**Using data per realization**
 
-Two files are required as plugin input:
+* **`ensembles`**: Which ensembles in `shared_settings` to visualize.
 
-* `rft.csv`: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files
-using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft).
+In addition, you need to have the following files in your realizations stored at the local path \
+`share/results/tables`:
 
-* `rft_ert.csv`: A csv file containing simulated and observed RFT data for RFT observations
-defined in ERT.
+* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files \
+using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
+[(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/tables/rft.csv).
 
-The two input files must either be stored per realization under "share/results/tables/" or
-provided as aggregated files.
-
-If they are stored per realization specify:
-
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-
-For aggregated files specify:
-
-* `csvfile_rft` [(example)](
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv) and
-csvfile_rft_ert` [(example)](
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv)
+* **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations \
+defined in ERT \
+[(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
 
-Optionally files:
+**Using aggregated data**
 
-* `obsdata`: A csv file containing additional RFT observation data not defined in ERT for
+* **`csvfile_rft`**: Aggregated version of `rft.csv` [(example file)](\
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv).
+* **`csvfile_rft_ert`**: Aggregated version of `rft_ert.csv` [(example file)](\
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv).
+
+
+**Optional input for both input options**
+
+* **`obsdata`**: A csv file containing additional RFT observation data not defined in ERT for
 visualization together with simulated RFT.
-Mandatory column names: *WELL*, *DATE* (format yyyy-mm-dd), *DEPTH*, *PRESSURE*
+Mandatory column names: `WELL`, `DATE` (yyyy-mm-dd), `DEPTH` and `PRESSURE`
 
-* `formations`: A csv file containing top and base values for each zone per well.
+* **`formations`**: A csv file containing top and base values for each zone per well.
 Used to visualize zone boundaries together with simulated RFT.
-Mandatory column names: *WELL*, *ZONE*, *TOP_TVD*, *BASE_TVD*. Note: Well name needs to be
-consistent with Eclipse well name.
-[Example](
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/tables/formations.csv
-)
+Mandatory column names: `WELL`, `ZONE`, `TOP_TVD`, `BASE_TVD` \
+[(example file))](\
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/share/results/tables/formations.csv).
 
-* `faultlines`: A csv file containing faultpolygons to be visualized together with the map view.
+* **`faultlines`**: A csv file containing faultpolygons to be visualized together with the map view.
 Export format from [xtgeo.xyz.polygons.dataframe](
 https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe
-)
-[Example](
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/polygons/faultpolygons.csv)
+) \
+[(example file)](\
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/share/results/polygons/faultpolygons.csv).
 
+---
+?> Well name needs to be consistent with Eclipse well name.
 
-Note: Only RFT observations marked as active in ERT are used to generate plots
+?> Only RFT observations marked as active in ERT are used to generate plots.
 
-Note: Only TVD values are supported, plan to support MD values in a later realease.
+?> Only TVD values are supported, plan to support MD values in a later release.
+
+The `rft_ert.csv` file currently lacks a standardized method of generation. A \
+**temporary** script can be found [here]\
+(https://github.com/equinor/webviz-subsurface-testdata/\
+blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
 
 """
 

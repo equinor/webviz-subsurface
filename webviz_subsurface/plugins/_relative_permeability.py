@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import warnings
 from typing import Optional, Union
 from pathlib import Path
@@ -16,21 +17,50 @@ from .._datainput.fmu_input import load_csv
 
 
 class RelativePermeability(WebvizPluginABC):
-    """### RelativePermeability
+    """Visualizes relative permeability and capillary pressure curves for FMU ensembles.
 
+---
 
-    Can be defined in the config yaml file like this:
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* `relpermfile` (optional): localpath to a csvfile in each realization with dumped relperm data.
-                             Typically share/results/tables/relperm.csv or similar. There has to be
-                             a column named KEYWORD or TYPE with e.g. SWOF and SGOF. The other
-                             columns are saturations (like SW) and curve names (like KRW, KROW,
-                             PCOW). The filepath is optional as the same data can be read directly
-                             from the data deck, but that can be very time consuming.
-* `scalfile` (optional): Path to a reference file with SCAL recommendations. Has to be pyscal
-                          compatible. csv or xlsx file. (if xlsx, sheet can be defined with
-                          scal_sheet). Path to a single file, not per realization/ensemble.
-* `sheet_name` (optional): Only relevant if `scalfile` is an xlsx file.
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`relpermfile`:** Local path to a csvfile in each realization with dumped relperm data.
+* **`scalfile`:** Path to a reference file with SCAL recommendationed data. \
+    Path to a single file, **not** per realization/ensemble. The path can be absolute or \
+    relative to the `Webviz` configuration
+* **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an \
+    `xlsx` file (recommended to use csv files with `Webviz`).
+
+---
+The minimum requirement is to define `ensembles`.
+
+If no `relpermfile` is defined, the relative permeability data will be extracted automatically
+from the simulation decks of individual realizations using `fmu-ensemble`and `ecl2df` behind the
+scenes. Note that this method can be very slow for larger data decks, and is therefore not
+recommended unless you have a very simple model/data deck.
+
+`relpermfile` is a path to a file stored per realization (e.g. in \
+`share/results/tables/relperm.csv`). `relpermfile` columns:
+* One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords (e.g. `SWOF` and `SGOF`).
+* One column named `SATNUM` with integer `SATNUM` regions.
+* One column **per** saturation (e.g. `SG` and `SW`).
+* One column **per** relative permeability curve (e.g. `KRW`, `KROW` and `KRG`)
+* One column **per** capillary pressure curve (e.g. `PCOW`).
+
+The file can e.g. be dumped to disc per realization by a forward model in ERT using
+`ecl2df` or `pyscal`.
+
+`scalfile` is a path to __a single file of SCAL recommendations__ (for all
+realizations/ensembles). The file has to be compatible with
+[pyscal's](https://equinor.github.io/pyscal/pyscal.html#pyscal.\
+factory.PyscalFactory.load_relperm_df) input format. Including this file adds reference cases
+`Pess`, `Base` and `Opt` to the plots.
+
+`sheet_name` defines the sheet to use in the `scalfile`. Only relevant if `scalfile` is an
+`xlsx` file (it is recommended to use `csv` and not `xlsx` for `Webviz`).
+
+* [Example of relpermfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/tables/relperm.csv).
+* [Example of scalfile](https://github.com/equinor/\
+webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.csv).
 """
 
     SATURATIONS = ["SW", "SG", "SL"]

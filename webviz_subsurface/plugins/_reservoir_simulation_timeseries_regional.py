@@ -38,44 +38,75 @@ from .._utils.simulation_timeseries import (
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
-    """### ReservoirSimulationTimeSeriesRegional
+    """Aggregates and visualizes regional time series data from simulation ensembles. That
+is: cumulatives, rates and inplace volumes. Allows human friendly filter names, e.g. regions,
+zones and etc based on user input.
 
-This plugins aggregates and visualizes regional time series data from simulation ensembles. That
-is cumulatives, rates and inplace volumes. In addiotion recovery is calculated based on the
-inplace volumes.
+In addition recovery is calculated based on the changes in aggregated inplace volumes,
+as long as all historical data is present in the data.
 
-#### Mandatory input
-* `ensembles`: Which ensembles in `shared_settings` to include in the plugin.
+Example of aggregation of ROIP over regions in filter:
 
-#### Optional input
-* `fipfile`: Path to a yaml-file that defines a match between FIPXXX (e.g. FIPNUM) regions
- and _'human readable'_ regions, zones and etc. These will be used as filters. _Note that this is a
- single file used for all ensembles_. If all region numbers for a filter are missing in the data,
- this filter value will be silently ignored. E.g. if no vectors matches 5 or 6 in
- [this example file](
- https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/share/
-regions/fip.yaml), `ZONE` == `LowerReek` would be ignored in the plugin for `FIPNUM`. This is
- to allow you to use the same file for e.g. a sector and a full field model.
-* `initial_vector`: First vector to plot (default is `ROIP`)
-* `column_keys`: List of vector patterns to include or `None`, the latter gives all available
- vectors, and `None` is also the default.<br/>
+$$\\sf Agg(\\sf ROIP)_{\\sf date} = \\sum_{N\\in \\sf filter}\\sf ROIP_{N,\\sf date}$$
+
+Example of recovery calculation for ROIP (where ROIP is already aggregated over the filtered
+regions):
+
+$$\\sf Rec(\\sf ROIP)_{\\sf date} = \\frac{\\sf ROIP_{\\sf init} - \
+\\sf ROIP_{\\sf date}}{\\sf ROIP_{\\sf init}}$$
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to include in the plugin.
+* **`fipfile`:** Path to a yaml-file that defines a match between FIPXXX (e.g. FIPNUM) regions
+    and human readable regions, zones and etc to be used as filters. If undefined, the FIPXXX \
+    region numbers will be used for filtering (absolute path or relative to config file).
+* **`initial_vector`:** First vector to plot (default is `ROIP` if it exists, otherwise first \
+    found).
+* **`column_keys`:** List of vectors to extract. If not given, all vectors \
+    from the simulations will be extracted. Wild card asterisk `*` can be used.
 Vectors that don't match the following patterns will be filtered out for this plugin:
     * `R[OGW]IP*` (regional in place),
     * `R[OGW][IP][RT]*` (regional injection and production rates and cumulatives)
-* `sampling`: Time series data will be sampled (and interpolated) at this frequency. Options:
+* **`sampling`:** Time series data will be sampled (and interpolated) at this frequency. Options:
     * `daily`
     * `monthly` (default)
     * `yearly`
-* `line_shape_fallback`: Fallback interpolation method between points. Vectors identified as rates
- always backfilled, vectors identified as cumulative (totals) are always linearly interpolated.
- The rest use the fallback. Options:
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
+    rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are \
+    always linearly interpolated. The rest use the fallback.
+    Supported options:
     * `linear` (default)
-    * `backfilled`<br/>
-    * `hv` (regular Plotly option)
-    * `vh` (regular Plotly option)
-    * `hvh` (regular Plotly option)
-    * `vhv` (regular Plotly option)
-    * `spline` (regular Plotly option)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
+
+---
+Vectors are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+The `fipfile` is an optional user defined yaml-file to use for more human friendly filtering. If
+undefined (either in general, or for the specific FIPXXX), the region numbers of FIPXXX will be
+used as filters. If all region numbers for a filter value in `fipfile` are missing in the data,
+this filter value will be silently ignored. E.g. if no vectors match 5 or 6 in
+[this example file](\
+https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/share/\
+regions/fip.yaml), `ZONE` == `LowerReek` would be ignored in the plugin for `FIPNUM`. This
+is to allow you to use the same file for e.g. a sector and a full field model.
+
+?> To be able to calculate recoveries from inplace volumes, it is needed to ensure that the
+inplace at the first time step actually is the initial inplace. It is therefore performed a check
+at start-up of `FOPT`, `FGPT` and `FWPT` (at least one has to be present), if one of them is > 0
+at the first DATE, a warning is written, and this ensemble will be excluded from recovery
+calculations. For a restart run, an attempt is automatically made to find the history when
+loading data, but this will unfortunately not work if the path to the restart case in the
+simulation run is above 72 signs due to a file format limitation in the simulation metadata files.
+
+?> `csv` input is currently not supported as the metadata aquired when reading from `UNSMRY`
+is actively used to decide which vectors that can be used for recovery factors.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the
+individual realizations. You should therefore not have more than one `UNSMRY` file in this
+folder, to avoid risk of not extracting the right data.
 """
 
     TABLE_STATISTICS = [("Group", {})] + table_statistics_base()

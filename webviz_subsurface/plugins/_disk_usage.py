@@ -1,4 +1,4 @@
-import os
+import pathlib
 from uuid import uuid4
 
 import pandas as pd
@@ -12,18 +12,15 @@ from webviz_config import WebvizPluginABC
 
 
 class DiskUsage(WebvizPluginABC):
-    """### Disk usage
+    """Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user,
+    where the user can choose to plot as a pie chart or as a bar chart.
 
-Adds functionality for standard visualization of disk usage in FMU projects.
-It adds a dashboard element where the user can choose between
-showing disk usage, per user, either as a pie chart or as a bar chart.
+---
 
-* `scratch_dir`: Path to the directory you want to show disk usage for, e.g.
-  `/scratch/fmu`.
-* `title`: Optional title for the plugin.
+* **`scratch_dir`:** Path to the scratch directory to show disk usage for.
 """
 
-    def __init__(self, app, scratch_dir: str):
+    def __init__(self, app, scratch_dir: pathlib.Path):
 
         super().__init__()
 
@@ -104,10 +101,7 @@ showing disk usage, per user, either as a pie chart or as a bar chart.
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_disk_usage(scratch_dir) -> pd.DataFrame:
-    try:
-        df = pd.read_csv(os.path.join(scratch_dir, "disk_usage.csv"))
-    except FileNotFoundError:
-        raise FileNotFoundError(f"No disk usage file found at {scratch_dir}")
+    df = pd.read_csv(scratch_dir / "disk_usage.csv")
 
     last_date = sorted(list(df["date"].unique()))[-1]
     return df.loc[df["date"] == last_date]

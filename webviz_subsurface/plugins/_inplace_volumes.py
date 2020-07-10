@@ -18,44 +18,64 @@ from .._abbreviations.number_formatting import table_statistics_base
 
 
 class InplaceVolumes(WebvizPluginABC):
-    """### InplaceVolumes
-
-This plugin visualizes inplace volumetrics results from
+    """Visualizes inplace volumetric results from
 FMU ensembles.
 
-Input can be given either as aggregated csv files for volumes or or as an ensemble name
-defined in *plugin_settings* and volumetric csv files stored per realizations.
+Input can be given either as aggregated `csv` files or as ensemble name(s)
+defined in `shared_settings` (with volumetric `csv` files stored per realization).
 
-#### Volumetric input
+---
 
-The volumetric csv files must follow FMU standards.
-[Example csv file](
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv)
+**Using aggregated data**
+* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns \
+(absolute path or relative to config file).
 
-The columns: *ZONE*, *REGION*, *FACIES*, *LICENSE* and *SOURCE* will be used as available
-filters if present. (*SOURCE* is relevant if calculations are done for multiple grids).
+**Using data stored per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`volfiles`:**  Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`.
+Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+* **`volfolder`:** Local folder for the `volfiles`.
 
-Remaining columns are seen as volumetric responses. Any names are allowed,
+**Common settings for both input options**
+* **`response`:** Optional volume response to visualize initially.
+
+---
+
+?> The input files must follow FMU standards.
+
+* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/\
+webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/\
+realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+**The following columns will be used as available filters, if present:**
+
+* `ZONE`
+* `REGION`
+* `FACIES`
+* `LICENSE`
+* `SOURCE` (relevant if calculations are done for multiple grids)
+
+
+**Remaining columns are seen as volumetric responses.**
+
+All names are allowed (except those mentioned above, in addition to `REAL` and `ENSEMBLE`), \
 but the following responses are given more descriptive names automatically:
 
-- **BULK_OIL**: Bulk Volume (Oil)
-- **NET_OIL**: Net Volume (Oil)
-- **PORE_OIL**: Pore Volume (Oil)
-- **HCPV_OIL**: Hydro Carbon Pore Volume (Oil)
-- **STOIIP_OIL**: Stock Tank Oil Initially In Place
-- **BULK_GAS**: Bulk Volume (Gas)
-- **NET_GAS**: Net Volume (Gas)
-- **PORV_GAS**: Pore Volume (Gas)
-- **HCPV_GAS**: Hydro Carbon Pore Volume (Gas)
-- **GIIP_GAS**: Gas Initially In Place
-- **RECOVERABLE_OIL**: Recoverable Volume (Oil)
-- **RECOVERABLE_GAS**: Recoverable Volume (Gas)
-
-* `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and 'SOURCE' columns
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* `volfiles`:  Key/value pair of csv files E.g. (geogrid: geogrid--oil.csv)
-* `volfolder`: Optional local folder for csv files
-* `response`: Optional initial visualized volume response
+* `BULK_OIL`: Bulk Volume (Oil)
+* `NET_OIL`: Net Volume (Oil)
+* `PORE_OIL`: Pore Volume (Oil)
+* `HCPV_OIL`: Hydro Carbon Pore Volume (Oil)
+* `STOIIP_OIL`: Stock Tank Oil Initially In Place
+* `BULK_GAS`: Bulk Volume (Gas)
+* `NET_GAS`: Net Volume (Gas)
+* `PORV_GAS`: Pore Volume (Gas)
+* `HCPV_GAS`: Hydro Carbon Pore Volume (Gas)
+* `GIIP_GAS`: Gas Initially In Place
+* `RECOVERABLE_OIL`: Recoverable Volume (Oil)
+* `RECOVERABLE_GAS`: Recoverable Volume (Gas)
 
 """
 

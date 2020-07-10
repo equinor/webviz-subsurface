@@ -20,18 +20,37 @@ from .._datainput.surface import make_surface_layer, get_surface_fence
 
 
 class SurfaceWithSeismicCrossSection(WebvizPluginABC):
-    """### SurfaceWithSeismicCrossSection
-
-This plugin visualizes surfaces in a map view and seismic in a cross section view.
+    """Visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
 
+---
 
-* `segyfiles`: List of file paths to SEG-Y files
-* `segynames`: Corresponding list of displayed seismic names
-* `surfacefiles`: List of file paths to Irap Binary surfaces
-* `surfacenames`: Corresponding list of displayed surface names
-* `zunit`: z-unit for display
-* `colors`: List of colors to use
+* **`segyfiles`:** List of file paths to SEG-Y files (absolute or relative to config file).
+* **`segynames`:** Corresponding list of displayed seismic names.
+* **`surfacefiles`:** List of file paths to Irap Binary surfaces \
+(absolute or relative to config file).
+* **`surfacenames`:** Corresponding list of displayed surface names.
+* **`zunit`:** z-unit for display
+* **`colors`:** List of hex colors to use. \
+Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. \
+`'#000000'` for black.
+
+---
+
+**Example files**
+
+* [Segyfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/\
+observed_data/seismic).
+
+* [One file for surfacefiles](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/\
+maps/topupperreek--ds_extracted_horizons.gri).
+
+The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
+
+The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 """
 
     def __init__(
