@@ -22,24 +22,6 @@ pages:
             - ..\Datasets\complex_model\output\log_files\targetpoints.csv
           well_points:
             - ..\Datasets\complex_model\output\log_files\wellpoints.csv
-          surfacenames:
-            - BCU
-            - TopAare
-            - TopAare1
-            - TopAare2.1
-            - TopAare2.2
-            - TopAare2.3
-            - TopAare2.4
-            - TopAare2.5
-            - TopAare2.6
-            - TopAare2.7
-            - TopAare2.8
-            - TopAare2.9
-            - TopAare2.10
-            - TopAare2.11
-            - TopAare2.12
-            - TopIle
-            - TopTofte
 
           wellnames:
             #- 6608_10-14_S

@@ -23,7 +23,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
-from .._datainput.parse_model_file import get_error_files, get_surface_files
+from .._datainput.parse_model_file import get_error_files, get_surface_files, extract_surface_names
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -49,7 +49,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         conditional_data: List[Path],
         target_points: List[Path] = None,
         well_points: List[Path] = None,
-        surfacenames: list = None,
         wellnames: list = None,
         zonelogname: str = None,
         zunit="depth (m)",
@@ -65,14 +64,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.well_points = well_points
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
-        if surfacenames is not None:
-            if len(surfacenames) != len(self.surfacefiles):
-                raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
-                )
-            self.surfacenames = surfacenames
-        else:
-            self.surfacenames = [Path(surfacefile).stem for surfacefile in self.surfacefiles]
+        self.surfacenames = extract_surface_names(basedir[0])
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
