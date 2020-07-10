@@ -420,15 +420,13 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids("draw-well-view"), "layers"),
             [
                 Input(self.ids("cross-section-view"), "children"),
-                Input(self.ids("map-view"), "layers")
             ],
         )
-        def _render_draw_well_layer(children, layer):
+        def _render_draw_well_layer(children):
             if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
-                # img_bytes = self.xsec.fig.to_image(format="png")
-                # layer = render_draw_well(img_bytes)
-                # my_layer = get_draw_well_layer()
-                return layer
+                img_bytes = self.xsec.fig.to_image(format="png")
+                my_layer = get_draw_well_layer(img_bytes)
+                return [my_layer]
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -473,10 +471,9 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def get_draw_well_layer():
-    path = "/Users/akselkristoffersen/Projects/Equinor/webviz/venv/lib/python3.8/site-packages/mpl_toolkits/tests/baseline_images/test_axes_grid1/zoomed_axes.png"
-    encoded = base64.b64encode(open(path, "rb").read()).decode()
-    img_base64 = "data:image/png;base64,{}".format(encoded)
+def get_draw_well_layer(img_bytes):
+    # encoded = base64.b64encode(open(path, "rb").read()).decode()
+    img_base64 = "data:image/png;base64,{}".format(img_bytes)
     s_layer = {
         "name": "Draw well view",
         "checked": True,
