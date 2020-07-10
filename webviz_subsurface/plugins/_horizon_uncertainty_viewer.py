@@ -25,7 +25,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
-from .._datainput.parse_model_file import get_error_files, get_surface_files
+from .._datainput import parse_model_file
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -45,53 +45,31 @@ The cross section is defined by a polyline interactively edited in the map view.
         self,
         app,
         basedir: List[Path],
-        wellfiles: List[Path],
-        zonation_data: List[Path],
-        conditional_data: List[Path],
-        target_points: List[Path] = None,
-        well_points: List[Path] = None,
-        surfacenames: list = None,
-        wellnames: list = None,
-        zonelogname: str = None,
         zunit="depth (m)",
         zonemin: int = 1,
     ):
 
         super().__init__()
         self.zunit = zunit
-        self.surfacefiles = get_surface_files(basedir[0])
-        self.surfacefiles_de = get_error_files(basedir[0])
+        self.surfacefiles = parse_model_file.get_surface_files(basedir[0])
+        self.surfacefiles_de = parse_model_file.get_error_files(basedir[0])
         self.surface_attributes = {}
-        self.target_points = target_points
-        self.well_points = well_points
+        self.target_points = parse_model_file.get_target_points(basedir[0])
+        self.well_points = parse_model_file.get_well_points(basedir[0])
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
-        if surfacenames is not None:
-            if len(surfacenames) != len(self.surfacefiles):
-                raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
-                )
-            self.surfacenames = surfacenames
-        else:
-            self.surfacenames = [Path(surfacefile).stem for surfacefile in self.surfacefiles]
-        self.wellfiles = [str(wellfile) for wellfile in wellfiles]
-        if wellnames is not None:
-            if len(wellnames) != len(wellfiles):
-                raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
-                )
-            self.wellnames = wellnames
-        else:
-            self.wellnames = [Path(wellfile).stem for wellfile in wellfiles]
-        self.zonation_data = [Path(zond_data) for zond_data in zonation_data]
-        self.conditional_data = [Path(cond_data) for cond_data in conditional_data]
+        self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
+        self.wellfiles = parse_model_file.get_well_files(basedir[0])
+        self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
+        self.zonation_data= parse_model_file.get_zonation_data(basedir[0])
+        self.conditional_data= parse_model_file.get_conditional_data(basedir[0])
         self.zonemin = zonemin
-        self.zonelogname = zonelogname #name of zonelog in OP txt files
+        self.zonelog_name = parse_model_file.get_zonelog_name(basedir[0])  # name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelogname)
-        self.xsec.set_well(wellfiles[0])
+        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelog_name)
+        self.xsec.set_well(self.wellfiles[0])
 
     def ids(self, element):
         return f"{element}-id-{self.uid}"
@@ -266,7 +244,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         )
     @property
     def target_points_layout(self):
-        df = pd.read_csv(self.target_points[0])
+        df = pd.read_csv(self.target_points)
         return dash_table.DataTable(
             id=self.ids("target_point_table"),
             columns=[{"name": i, "id": i} for i in df.columns],
@@ -275,7 +253,7 @@ The cross section is defined by a polyline interactively edited in the map view.
     
     @property
     def well_points_layout(self):
-        df = pd.read_csv(self.well_points[0])
+        df = pd.read_csv(self.well_points)
         return dash_table.DataTable(
             id=self.ids("well_points_table"),
             columns=[{"name": i, "id": i} for i in df.columns],

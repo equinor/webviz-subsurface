@@ -242,8 +242,8 @@ class HuvXsection:
 def stratigraphic_sort(elem):
     return elem[1]
 
-def get_zone_RHLEN(well_df, wellname, zone_path):
-    zonation_data = pd.read_csv(zone_path[0])
+def get_zone_RHLEN(well_df,wellname,zone_path):
+    zonation_data = pd.read_csv(zone_path)
     zone_df = zonation_data[zonation_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
@@ -256,8 +256,8 @@ def get_zone_RHLEN(well_df, wellname, zone_path):
         zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_RHLEN, zone_df["TVD"]])
 
-def get_conditional_RHLEN(well_df, wellname, cond_path):
-    conditional_data = pd.read_csv(cond_path[0])
+def get_conditional_RHLEN(well_df,wellname,cond_path):
+    conditional_data = pd.read_csv(cond_path)
     cond_df = conditional_data[conditional_data["Well"] == wellname]
     cond_df_xval = cond_df["x"].values.copy()
     cond_df_yval = cond_df["y"].values.copy()
