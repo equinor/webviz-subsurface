@@ -65,7 +65,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacenames = extract_surface_names(basedir[0])
         self.wellfiles = get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        print(len(self.wellfiles), len(self.wellnames))
         self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
         self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
         self.zonemin = zonemin

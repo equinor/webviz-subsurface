@@ -32,6 +32,8 @@ def get_well_files(basedir):
     for i, w in enumerate(well_dir_list):
         if Path(w).suffix == '.txt':
             well_files.append(os.path.join(well_dir, w))
+    well_files.pop(0)  # Elisabeth remove this line
+    well_files.pop(6)  # Elisabeth remove this line
     return well_files
 
 
