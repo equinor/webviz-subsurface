@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from numba import njit, jit
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -19,6 +20,7 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+import plotly.express as px
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
@@ -397,6 +399,12 @@ The types of response_filters are:
                                 wcc.Graph(id=self.ids('p-values-plot')),
                                 dcc.Store(id=self.ids("initial-parameter"))
                             ]
+                        ),
+                        html.Div(
+                            style={'flex': 3},
+                            children=[
+                                wcc.Graph(id=self.ids('coefficient-plot-S')),
+                            ]
                         )
                     ],
                 ),
@@ -440,7 +448,23 @@ The types of response_filters are:
             for col_name in self.response_filters:
                 callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
-
+    
+    @property
+    def coefficientplot_input_callbacks(self):
+        """List of inputs for coefficient plot callback"""
+        callbacks = [
+            Input(self.ids("ensemble"), "value"),
+            Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max-params"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+    
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
         filteroptions = []
@@ -453,6 +477,7 @@ The types of response_filters are:
     
     def set_callbacks(self, app):
         """Set callbacks for the table and the p-values plot"""
+        ###@njit()
         @app.callback(
             [
                 Output(self.ids("table"), "data"),
@@ -514,6 +539,7 @@ The types of response_filters are:
                     f"Multiple regression with {response} as response",
                 )
 
+        ###@njit()
         @app.callback(
             [
                 Output(self.ids("p-values-plot"), "figure"),
@@ -555,7 +581,42 @@ The types of response_filters are:
             p_sorted = result.pvalues.sort_values().drop("Intercept")
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
+        
+        ###@njit()
+        @app.callback(
+            [
+                Output(self.ids("coefficient-plot-S"), "figure"),
+            ],
+            self.coefficientplot_input_callbacks
+        )
+        def update_coefficient_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the coefficient plot"""
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
 
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            
+            #Get results and generate coefficient plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
+            #print(gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction))
+            
+            return make_arrow_plot(result, self.plotly_theme)
+    
+    ###@njit()
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -629,6 +690,7 @@ def _filter_and_sum_responses(
     raise ValueError(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -642,6 +704,7 @@ def gen_model(
             df = gen_interaction_df(df, response)
             return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
         else:
+            #print(forward_selected(df, response, force_in = force_in, maxvars=max_vars))
             return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
 
 def gen_interaction_df(
@@ -682,6 +745,7 @@ def gen_column_names(df, interaction_only):
                     output.append(f"{colname1}:{colname2}")
     return output
 
+###@njit()
 def forward_selected(data, response, force_in, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
@@ -712,6 +776,7 @@ def forward_selected(data, response, force_in, maxvars=9):
             score = smf.ols(formula, data).fit().rsquared_adj
             scores_with_candidates.append((score, candidate))
         scores_with_candidates.sort()
+        print("len(scores_with_candidates): ", len(scores_with_candidates))
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             remaining.remove(best_candidate)
@@ -721,7 +786,6 @@ def forward_selected(data, response, force_in, maxvars=9):
                                 ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model
-
 
 def forward_selected_interaction(data, response, force_in, maxvars=9):
     """Linear model designed by forward selection.
@@ -805,6 +869,156 @@ def make_p_values_plot(p_sorted, theme):
     fig["layout"]["font"].update({"size": 12})
     return fig
 
+def make_arrow_plot(model, theme):
+    """Sorting dictionary in descending order. 
+    Saving parameters and values of coefficients in lists.
+    Saving plot-function to variable fig."""
+    coefs = dict(sorted(model.params.sort_values().items(), key=lambda x: x[1], reverse=True))
+    params = list(coefs.keys())
+    vals = list(coefs.values())
+    sgn = signs(vals)
+    colors = color_array(vals, params, sgn)
+
+    fig = arrow_plot(coefs, vals, params, sgn, colors, theme)
+    #fig["layout"]["font"].update({"size": 12})
+
+    return [fig] # Need hard brackets here
+
+###@njit()
+def signs(vals):
+    """Saving signs of coefficients to array sgn"""
+    sgn = np.zeros(len(vals))
+    for i, v in enumerate(vals):
+        sgn[i] = np.sign(v)
+    return sgn
+
+def arrow_plot(coefs, vals, params, sgn, colors, theme):
+    """Making arrow plot to illutrate relative importance 
+    of coefficients to a userdefined response"""
+    steps = 2/(len(coefs)-1)
+    points = len(coefs)
+
+    x = np.linspace(0, 2, points)
+    y = np.zeros(len(x))
+
+    global fig
+    #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    fig.update_xaxes(
+        ticktext=[p for p in params],
+        tickvals=[steps*i for i in range(points)],
+    )
+    fig.update_yaxes(showticklabels=False)
+    fig.update_layout(
+        yaxis=dict(range=[-0.125, 0.125], title=f'', showgrid=False), 
+        xaxis=dict(range=[-0.2, x[-1]+0.2], title='Parameters', showgrid=False, zeroline=False),
+        title='Sign of coefficient of the key parameter combination',
+        autosize=False,
+        width=725,
+        height=500,
+        plot_bgcolor='#FFFFFF',
+        coloraxis_colorbar=dict(
+            title="",
+            tickvals=[-0.97, -0.88, 0.88, 0.97],
+            ticktext=["coefficient", "Great negative", "coefficient", "Great positive"],
+            lenmode="pixels", len=300,
+        ),
+        hoverlabel=dict(
+            bgcolor="white", 
+            font_size=12, 
+        )
+    )
+
+    """Costumizing the hoverer"""
+    fig.update_traces(hovertemplate='Parameter: %{x}')
+
+    """Adding zero-line along y-axis"""
+    fig.add_shape(
+        # Line Horizontal
+            type="line",
+            x0=-0.18,
+            y0=0,
+            x1=x[-1]+0.18,
+            y1=0,
+            line=dict(
+                color='#222A2A',
+                width=0.75,
+            ),
+    )
+    fig.add_shape(
+        # Arrowhead, left
+        type="path",
+        path=" M -0.2 0 L -0.18 -0.005 L -0.18 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+    fig.add_shape(
+        # Arrowhead, right
+        type="path",
+        path=f" M {x[-1]+0.2} 0 L {x[-1]+0.18} -0.005 L {x[-1]+0.18} 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+
+    """Adding arrows to figure"""
+    for i, s in enumerate(sgn):
+        if s == 1:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]} 0 L {x[i]} 0.1 L {x[i]-0.05} 0.075 L {x[i]} 0.1 L {x[i]+0.05} 0.075",
+                line_color=colors[i],     
+            )
+        else:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]} 0 L {x[i]} -0.1 L {x[i]-0.05} -0.075 L {x[i]} -0.1 L {x[i]+0.05} -0.075",
+                line_color=colors[i],
+            )
+
+    return fig # Should not have hard brackets here
+
+def color_array(vals, params, sgn):
+    """Function to scale coefficients to a green-red color range"""
+    max_val = vals[0]
+    min_val = vals[-1]
+
+    standard = 250
+
+    """Defining color values to match theme because I'm 
+    lacking knowledge on how to live life with ease"""
+    # Final RGB values
+    rf = 36
+    gf = 55
+    bf = 70
+
+    # Max RGB values
+    r0 = 255
+    g0 = 231
+    b0 = 214
+
+    # Initial RGB value
+    ri = 125
+    gi = 0
+    bi = 35
+
+    color_arr = ['rgba(255, 255, 255, 1)']*len(params)
+
+    global k
+    k=0
+
+    """Adding colors matching scaled values of coefficients to color_arr array"""
+    for s, v in zip(sgn, vals):
+        if s == 1:
+            scaled_val_max = v/max_val
+            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
+        else:
+            scaled_val_min = v/min_val
+            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
+        k += 1
+    
+    return color_arr
+
+###@njit()
 def make_range_slider(domid, values, col_name):
     try:
         values.apply(pd.to_numeric, errors="raise")
@@ -836,6 +1050,7 @@ def theme_layout(theme, specific_layout):
     return layout
 
 
+###@njit()
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
