@@ -118,12 +118,13 @@ The types of response_filters are:
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            #self.responsedf = read_csv(self.response_csv)
+            #For csv files
+            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
+            self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            #self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -391,7 +392,7 @@ The types of response_filters are:
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize":12}
+                            style_cell={"fontSize":14}
                         ),
                         html.Div(
                             style={'flex': 3},
