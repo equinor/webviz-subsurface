@@ -407,8 +407,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
-                image_array = self.xsec.get_image(self.xsec.fig)
-                print('Picture saved!')
+                #self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
@@ -471,8 +470,8 @@ def get_fencespec(coords):
     return poly.get_fence(asnumpy=True)
 
 def get_draw_well_layer(img_bytes):
-    # encoded = base64.b64encode(open(path, "rb").read()).decode()
-    img_base64 = "data:image/png;base64,{}".format(img_bytes)
+    encoded = base64.b64encode(img_bytes).decode()
+    img_base64 = "data:image/png;base64,{}".format(encoded)
     s_layer = {
         "name": "Draw well view",
         "checked": True,
@@ -481,7 +480,7 @@ def get_draw_well_layer(img_bytes):
             {
                 "type": "image",
                 "url": img_base64,
-                "bounds": [[456562.56076157733, 5927061.5], [467065.1725472679, 5938927.555398437]],
+                "bounds": [[1, 2], [10, 20]],
             }
         ],
     }

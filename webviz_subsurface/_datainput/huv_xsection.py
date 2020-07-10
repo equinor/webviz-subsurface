@@ -234,10 +234,10 @@ class HuvXsection:
         data = self.get_plotly_data(surfacepaths, error_paths)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
-    def get_image(self, figure):
-        figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
-        image_array =mpimg.imread("C:/Users/Ruben/Documents/VSCode/xsec.png")
-        return image_array
+    def set_image(self, figure): #Requires Orca
+        #figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
+        #figure.write_image("./xsec.png")
+        return None 
 
 def stratigraphic_sort(elem):
     return elem[1]
