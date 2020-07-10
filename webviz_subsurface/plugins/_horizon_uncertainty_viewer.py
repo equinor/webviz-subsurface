@@ -23,7 +23,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
-from .._datainput._parse_model_file import get_error_files, get_surface_files
+from .._datainput.parse_model_file import get_error_files, get_surface_files
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -60,8 +60,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zunit = zunit
         self.surfacefiles = get_surface_files(basedir[0])
         self.surfacefiles_de = get_error_files(basedir[0])
-        #self.surfacefiles = [str(surffile) for surffile in surfacefiles]
-        #self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
         self.surface_attributes = {}
         self.target_points = target_points
         self.well_points = well_points

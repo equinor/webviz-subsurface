@@ -13,7 +13,6 @@ def extract_names(basedir):
         surface_names.append(name.get_text())
     return surface_names
 
-
 def get_surface_files(basedir):
     surface_names = extract_names(basedir)
     output_dir = os.path.join(basedir, 'output')

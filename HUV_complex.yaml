@@ -6,7 +6,7 @@ pages:
     content:
       - HorizonUncertaintyViewer:
           basedir:
-            - C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model
+            - ..\Datasets\complex_model
 
           wellfiles: # 9 files
             #- ..\Datasets\complex_model\input\welldata\6608_10-14_S.txt
