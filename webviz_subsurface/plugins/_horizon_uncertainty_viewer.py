@@ -160,7 +160,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             children=[
                 wcc.Graph(
                 id=self.ids("plotly-view"),
-                figure={"displayModeBar": True},
+                #figure={"displayModeBar": True}, Required? Seems no change in graph
                 )
             ]
         )
@@ -254,19 +254,18 @@ The cross section is defined by a polyline interactively edited in the map view.
                 html.Div(
                     children=[
                         html.Div(
-                            children=[self.plotly_layout],
-                            id=self.ids("cross-section-view"),
                             style={
                                 "marginTop": "0px",
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
+                            children=[self.plotly_layout],
+                            id=self.ids("cross-section-view"),
                         )
                     ]
                 ),
             ]
         )
-
     @property
     def target_points_layout(self):
         df = pd.read_csv(self.target_points[0])
@@ -275,6 +274,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records'),
         )
+    
     @property
     def well_points_layout(self):
         df = pd.read_csv(self.well_points[0])
@@ -284,7 +284,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             data = df.to_dict('records')
         )
         
-
     ### Flexbox ###
     @property
     def layout(self):
@@ -314,8 +313,6 @@ The cross section is defined by a polyline interactively edited in the map view.
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("map-view"), "layers"),
-            #Output(self.ids("well-dropdown"), "value"),
-            #endre dropdown meny value, slik at det plotter samme well_fence
             [
                 Input(self.ids("map-dropdown"), "value"),
             ],
@@ -401,7 +398,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
             return de_options
 
-        @app.callback(
+        @app.callback( #Toggle "draw well" button on/off to display leaflet
             [Output(self.ids("cross-section-view"), "children"),
             Output(self.ids("well-dropdown"), "disabled"),
             Output(self.ids("button-open-graph-settings"), "disabled")],
@@ -414,25 +411,13 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
+                image_array = self.xsec.get_image(self.xsec.fig)
+                print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
                 graph_settings_button = False
             return [children, well_dropdown, graph_settings_button]
-
-        @app.callback(
-            Output(self.ids("draw-well-view"), "layers"),
-            [
-                Input(self.ids("cross-section-view"), "children"),
-                Input(self.ids("map-view"), "layers")
-            ],
-        )
-        def _render_draw_well_layer(children, layer):
-            if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
-                # img_bytes = self.xsec.fig.to_image(format="png")
-                # layer = render_draw_well(img_bytes)
-                # my_layer = get_draw_well_layer()
-                return layer
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -476,24 +461,6 @@ def get_fencespec(coords):
         ]
     )
     return poly.get_fence(asnumpy=True)
-
-def get_draw_well_layer():
-    path = "/Users/akselkristoffersen/Projects/Equinor/webviz/venv/lib/python3.8/site-packages/mpl_toolkits/tests/baseline_images/test_axes_grid1/zoomed_axes.png"
-    encoded = base64.b64encode(open(path, "rb").read()).decode()
-    img_base64 = "data:image/png;base64,{}".format(encoded)
-    s_layer = {
-        "name": "Draw well view",
-        "checked": True,
-        "base_layer": True,
-        "data": [
-            {
-                "type": "image",
-                "url": img_base64,
-                "bounds": [[456562.56076157733, 5927061.5], [467065.1725472679, 5938927.555398437]],
-            }
-        ],
-    }
-    return s_layer
 
 def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
