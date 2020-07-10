@@ -2,6 +2,7 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 import os
+import base64
 import dash
 import dash_table
 import pandas as pd
@@ -401,11 +402,9 @@ The cross section is defined by a polyline interactively edited in the map view.
             return de_options
 
         @app.callback(
-            [
-            Output(self.ids("cross-section-view"), "children"),
+            [Output(self.ids("cross-section-view"), "children"),
             Output(self.ids("well-dropdown"), "disabled"),
-            Output(self.ids("button-open-graph-settings"), "disabled")
-            ],
+            Output(self.ids("button-open-graph-settings"), "disabled")],
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
             ],
@@ -421,6 +420,19 @@ The cross section is defined by a polyline interactively edited in the map view.
                 graph_settings_button = False
             return [children, well_dropdown, graph_settings_button]
 
+        @app.callback(
+            Output(self.ids("draw-well-view"), "layers"),
+            [
+                Input(self.ids("cross-section-view"), "children"),
+                Input(self.ids("map-view"), "layers")
+            ],
+        )
+        def _render_draw_well_layer(children, layer):
+            if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
+                # img_bytes = self.xsec.fig.to_image(format="png")
+                # layer = render_draw_well(img_bytes)
+                # my_layer = get_draw_well_layer()
+                return layer
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -465,28 +477,24 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def render_drawpad(surfacepath):
-    hillshading = True
-    min_val = None
-    max_val = None
-    color = "viridis"
-    unit=""
+def get_draw_well_layer():
+    path = "/Users/akselkristoffersen/Projects/Equinor/webviz/venv/lib/python3.8/site-packages/mpl_toolkits/tests/baseline_images/test_axes_grid1/zoomed_axes.png"
+    encoded = base64.b64encode(open(path, "rb").read()).decode()
+    img_base64 = "data:image/png;base64,{}".format(encoded)
     s_layer = {
-        "name": 'Drawpad',
+        "name": "Draw well view",
         "checked": True,
         "base_layer": True,
         "data": [
             {
                 "type": "image",
-                "url": surfacepath,
-                "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val is not None else None,
-                "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
-                "unit": str(unit),
+                "url": img_base64,
+                "bounds": [[456562.56076157733, 5927061.5], [467065.1725472679, 5938927.555398437]],
             }
         ],
     }
-    return []
+    return s_layer
+
 def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
