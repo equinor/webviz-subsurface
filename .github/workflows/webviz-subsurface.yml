@@ -41,13 +41,16 @@ jobs:
       uses: actions/checkout@v2
 
     - name: 🐍 Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: 📦 Install webviz-subsurface with dependencies
       run: |
-        pip install --upgrade pip
+        pip install --upgrade pip        
+        if [[ $(pip freeze) ]]; then
+          pip freeze | grep -vw "pip" | xargs pip uninstall -y
+        fi
         pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
         pip install libecl  # while waiting for it to be included as dependency in fmu-ensemble
