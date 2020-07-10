@@ -36,6 +36,11 @@ def get_well_files(basedir):
     well_files.pop(6)  # Elisabeth remove this line
     return well_files
 
+def get_target_points(basedir):
+    targetpoints = os.path.join(basedir, 'output', 'log_files', 'targetpoints.csv')
+    return targetpoints
+
+
 
 if __name__ == '__main__':
     basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model")

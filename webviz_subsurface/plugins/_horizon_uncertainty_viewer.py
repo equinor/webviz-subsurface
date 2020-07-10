@@ -23,7 +23,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
-from .._datainput.parse_model_file import get_error_files, get_surface_files, extract_surface_names, get_well_files
+from .._datainput import parse_model_file
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -46,7 +46,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         basedir: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
-        target_points: List[Path] = None,
         well_points: List[Path] = None,
         zonelogname: str = None,
         zunit="depth (m)",
@@ -55,15 +54,15 @@ The cross section is defined by a polyline interactively edited in the map view.
 
         super().__init__()
         self.zunit = zunit
-        self.surfacefiles = get_surface_files(basedir[0])
-        self.surfacefiles_de = get_error_files(basedir[0])
+        self.surfacefiles = parse_model_file.get_surface_files(basedir[0])
+        self.surfacefiles_de = parse_model_file.get_error_files(basedir[0])
         self.surface_attributes = {}
-        self.target_points = target_points
+        self.target_points = parse_model_file.get_target_points(basedir[0])
         self.well_points = well_points
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
-        self.surfacenames = extract_surface_names(basedir[0])
-        self.wellfiles = get_well_files(basedir[0])
+        self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
+        self.wellfiles = parse_model_file.get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.zonation_data= [Path(zond_data) for zond_data in zonation_data]
         self.conditional_data= [Path(cond_data) for cond_data in conditional_data]
@@ -231,7 +230,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     @property
     def target_points_layout(self):
-        df = pd.read_csv(self.target_points[0])
+        df = pd.read_csv(self.target_points)
         return dash_table.DataTable(
             id=self.ids("target_point_table"),
             columns=[{"name": i, "id": i} for i in df.columns],
