@@ -95,17 +95,6 @@ The types of response_filters are:
         self.time_index = sampling
         self.aggregation = aggregation
 
-        """Temporary way of filtering out non-valid parameters"""
-        self.parameter_filters = [
-            'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
-            'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
-            'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-            'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
-            'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
-            'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
-            'LOG10_MULTZ:MULTZ_MIDREEK', 'RMSGLOBPARAMS:COHIBA_MODEL_MODE',
-            'COHIBA_MODEL_MODE']
-
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -118,11 +107,11 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
+            self.parameterdf = read_csv(self.parameter_csv)
             self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            #self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.parameterdf = pd.read_parquet(self.parameter_csv)
             #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
@@ -132,7 +121,7 @@ The types of response_filters are:
             }
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            ).drop(columns=self.parameter_filters)
+            )
             self.responsedf = load_csv(
                 ensemble_paths=self.ens_paths,
                 csv_file=response_file,
@@ -379,7 +368,8 @@ The types of response_filters are:
             id=self.ids("layout"),
             children=[
                 html.Div(
-                [
+                [ #The parameters chosen from the dropdown menu are the only ones included in the model
+                  #These parameters are in parameter-list and can be used in callbacks
                     html.Label("Choose which parameters to include in the model"),
                     dcc.Dropdown(
                         id=self.ids("parameter-list"),
@@ -447,6 +437,7 @@ The types of response_filters are:
     def pvalues_input_callbacks(self):
         """List of Inputs for p-values callback"""
         callbacks = [
+            Input(self.ids("parameter-list"), "value"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
             Input(self.ids("force-out"), "value"),
@@ -497,6 +488,8 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
+            #Make a new dataframe for the parameters by adding ensemble, 
+            #real and the chosen parameters from parameter-list callback
             parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
             parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
@@ -541,7 +534,7 @@ The types of response_filters are:
             ],
             self.pvalues_input_callbacks
         )
-        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_pvalues_plot(parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
             1. Filters and aggregates response dataframe per realization
@@ -559,8 +552,12 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            #Make a new dataframe for the parameters by adding ensemble, 
+            #real and the chosen parameters from parameter-list callback
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
+
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
             parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
