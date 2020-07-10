@@ -344,7 +344,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 hillshading=hillshading,
             )
             s_layer = [s_layer]
-            s_layer.extend(well_layers)
+            #s_layer.extend(well_layers)
             return s_layer
 
         @app.callback(
