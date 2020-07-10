@@ -65,21 +65,22 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surface_attributes = {}
         self.target_points = target_points
         self.well_points = well_points
-        for i, surfacefile in enumerate(self.surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
+        self.surfacenames = surfacenames
         if surfacenames is not None:
             if len(surfacenames) != len(self.surfacefiles):
                 raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
+                "List of surface names specified should be same length as list of surfacefiles"
                 )
-            self.surfacenames = surfacenames
+                self.surfacenames=surfacesnames
         else:
             self.surfacenames = [Path(surfacefile).stem for surfacefile in self.surfacefiles]
+        for i, surfacefile in enumerate(self.surfacefiles):
+            self.surface_attributes[Path(surfacefile)] = {"name": self.surfacenames[i], "color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):
                 raise ValueError(
-                    "List of surface names specified should be same length as list of surfacefiles"
+                    "List of well names specified should be same length as list of wellfiles"
                 )
             self.wellnames = wellnames
         else:
