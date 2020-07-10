@@ -5,17 +5,8 @@ pages:
   - title: HorizonUncertaintyViewer
     content:
       - HorizonUncertaintyViewer:
-          surfacefiles: # 4 files
-            - ..\Datasets\simple_model\output\surfaces\d_TopUpperReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\d_TopMidReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\d_TopLowerReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\d_BaseLowerReek.rxb
-          
-          surfacefiles_de:
-            - ..\Datasets\simple_model\output\surfaces\de_TopUpperReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\de_TopMidReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\de_TopLowerReek.rxb
-            - ..\Datasets\simple_model\output\surfaces\de_BaseLowerReek.rxb
+          basedir:
+            - ..\Datasets\simple_model
 
           wellfiles: # 6 files
             - ..\Datasets\simple_model\input\welldata\OP_1.txt
