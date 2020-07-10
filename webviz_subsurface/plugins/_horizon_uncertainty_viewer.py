@@ -23,6 +23,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well#,make_well_layer
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
+from .._datainput._parse_model_file import get_error_files, get_surface_files
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
@@ -42,8 +43,7 @@ The cross section is defined by a polyline interactively edited in the map view.
     def __init__(
         self,
         app,
-        surfacefiles: List[Path],
-        surfacefiles_de: List[Path],
+        basedir: List[Path],
         wellfiles: List[Path],
         zonation_data: List[Path],
         conditional_data: List[Path],
@@ -58,22 +58,24 @@ The cross section is defined by a polyline interactively edited in the map view.
 
         super().__init__()
         self.zunit = zunit
-        self.surfacefiles = [str(surffile) for surffile in surfacefiles]
-        self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
-        self.surface_attributes = {x: {} for x in surfacefiles}
+        self.surfacefiles = get_surface_files(basedir[0])
+        self.surfacefiles_de = get_error_files(basedir[0])
+        #self.surfacefiles = [str(surffile) for surffile in surfacefiles]
+        #self.surfacefiles_de = [str(surfacefile_de) for surfacefile_de in surfacefiles_de]
+        self.surface_attributes = {}
         self.target_points = target_points
         self.well_points = well_points
-        for i, surfacefile in enumerate(surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(surfacefiles_de[i])}
-
+        for i, surfacefile in enumerate(self.surfacefiles):
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), "error_path": Path(self.surfacefiles_de[i])}
+        for s in self.surface_attributes: print(self.surface_attributes[s])
         if surfacenames is not None:
-            if len(surfacenames) != len(surfacefiles):
+            if len(surfacenames) != len(self.surfacefiles):
                 raise ValueError(
                     "List of surface names specified should be same length as list of surfacefiles"
                 )
             self.surfacenames = surfacenames
         else:
-            self.surfacenames = [Path(surfacefile).stem for surfacefile in surfacefiles]
+            self.surfacenames = [Path(surfacefile).stem for surfacefile in self.surfacefiles]
         self.wellfiles = [str(wellfile) for wellfile in wellfiles]
         if wellnames is not None:
             if len(wellnames) != len(wellfiles):

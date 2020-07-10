@@ -171,8 +171,8 @@ class HuvXsection:
                     'x':self.surface_attributes[sfc_path]['surface_line'][:,0],
                     'y':self.surface_attributes[sfc_path]['surface_line'][:,1],
                     'line': {"color": "rgba(0,0,0,1)", "width": 1},
-                    "fill": "tonexty",
-                    'fillcolor':self.surface_attributes[sfc_path]["color"]
+                    #"fill": "tonexty",
+                    #'fillcolor':self.surface_attributes[sfc_path]["color"]
                 }
                 for sfc_path, _ in surface_tuples
             ]
