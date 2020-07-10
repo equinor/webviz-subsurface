@@ -44,6 +44,13 @@ def get_well_points(basedir):
     wellpoints = os.path.join(basedir, 'output', 'log_files', 'wellpoints.csv')
     return wellpoints
 
+def get_zonelog_name(basedir):
+    model_file = os.path.join(basedir, 'model_file.xml')
+    with open(model_file, 'r') as file:
+        soup = BeautifulSoup(file, 'xml')
+    zonelog_wrapper = soup.find('zone-log-name')
+    return zonelog_wrapper.get_text()
+
 
 if __name__ == '__main__':
     basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model")
