@@ -491,7 +491,7 @@ The types of response_filters are:
             #Make a new dataframe for the parameters by adding ensemble, 
             #real and the chosen parameters from parameter-list callback
             parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-            parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 

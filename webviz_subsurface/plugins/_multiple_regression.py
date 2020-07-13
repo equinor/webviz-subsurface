@@ -3,12 +3,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from numba import njit, jit
+###from numba import njit, jit
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from dash_table import DataTable
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_table.Format import Format, Scheme
@@ -120,12 +120,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = read_csv(self.response_csv)
+            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            #self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
-            #self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -191,10 +191,18 @@ The types of response_filters are:
             {
                 "id": self.ids("p-values-plot"),
                 "content": (
-                    "The p-values for the parameters from the table ranked from most significant "
+                    "A plot showing the p-values for the parameters from the table ranked from most significant "
                     "to least significant.  Red indicates "
                     "that the p-value is significant, gray indicates that the p-value "
                     "is not significant."
+                )
+            },
+            {
+                "id": self.ids("coefficient-plot"),
+                "content": (
+                    "A plot showing the coefficient values from ranked from great positive to great negative. "
+                    "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
+                    "downwards respesent negative coefficients."
                 )
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
@@ -203,6 +211,7 @@ The types of response_filters are:
             {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
             {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
             {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
+            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."),},
         ]
         return steps
 
@@ -370,8 +379,25 @@ The types of response_filters are:
                         value=True
                     )
                 ]
-            )
+            ),
 
+        ]
+
+    def make_button(self, id):
+        return [
+            html.Div(
+                style={
+                    "display": "grid",
+                    "gridTemplateRows": "1fr 1fr",
+                },
+                children=[
+                    html.Label("Press 'SUBMIT' to activate changes"),
+                    html.Button(
+                        id=id, 
+                        children="Submit",
+                    ),
+                ],
+            )
         ]
 
     @property
@@ -405,14 +431,14 @@ The types of response_filters are:
                         html.Div(
                             style={'flex': 3},
                             children=[
-                                wcc.Graph(id=self.ids('coefficient-plot-S')),
+                                wcc.Graph(id=self.ids('coefficient-plot')),
                             ]
-                        )
+                        ),
                     ],
                 ),
                 html.Div(
                     style={"flex": 1},
-                    children=self.control_layout + self.filter_layout
+                    children=self.control_layout + self.filter_layout + self.make_button(self.ids("submit-btn"))
                     if self.response_filters
                     else [],
                 ),
@@ -420,51 +446,51 @@ The types of response_filters are:
         )
 
     @property
-    def table_input_callbacks(self):
-        """List of Inputs for multiple regression table callback"""
+    def table_state_callbacks(self):
+        """List of States for multiple regression table callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     @property
-    def pvalues_input_callbacks(self):
-        """List of Inputs for p-values callback"""
+    def pvalues_state_callbacks(self):
+        """List of States for p-values callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     @property
-    def coefficientplot_input_callbacks(self):
-        """List of inputs for coefficient plot callback"""
+    def coefficientplot_state_callbacks(self):
+        """List of states for coefficient plot callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     def make_response_filters(self, filters):
@@ -478,7 +504,7 @@ The types of response_filters are:
         return filteroptions
     
     def set_callbacks(self, app):
-        """Set callbacks for the table and the p-values plot"""
+        """Set callbacks for the table, p-values plot, and arrow plot"""
         ###@njit()
         @app.callback(
             [
@@ -486,9 +512,12 @@ The types of response_filters are:
                 Output(self.ids("table"), "columns"),
                 Output(self.ids("table_title"), "children"),
             ],
-            self.table_input_callbacks,
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.table_state_callbacks,
         )
-        def _update_table(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_table(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -548,9 +577,12 @@ The types of response_filters are:
                 Output(self.ids("p-values-plot"), "figure"),
                 Output(self.ids("initial-parameter"), "data"),
             ],
-            self.pvalues_input_callbacks
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.pvalues_state_callbacks
         )
-        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_pvalues_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
             1. Filters and aggregates response dataframe per realization
@@ -588,11 +620,14 @@ The types of response_filters are:
         ###@njit()
         @app.callback(
             [
-                Output(self.ids("coefficient-plot-S"), "figure"),
+                Output(self.ids("coefficient-plot"), "figure"),
             ],
-            self.coefficientplot_input_callbacks
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.coefficientplot_state_callbacks
         )
-        def update_coefficient_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_coefficient_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
             pass
             filteroptions = self.make_response_filters(filters)
@@ -616,9 +651,9 @@ The types of response_filters are:
             #Get results and generate coefficient plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
-            #print(gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction))
+            model = result.params.sort_values().drop("Intercept").items()
             
-            return make_arrow_plot(result, self.plotly_theme)
+            return make_arrow_plot(model, self.plotly_theme)
     
     ###@njit()
     def add_webvizstore(self):
@@ -713,6 +748,7 @@ def gen_model(
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
         #print("time to gen df: ", te1-ts1)
         
+<<<<<<< HEAD
     else:
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
     te2= time.perf_counter()
@@ -720,6 +756,14 @@ def gen_model(
 
     return model
 
+=======
+        """Genereates model with best fit"""
+        if interaction:
+            df = gen_interaction_df(df, response)
+            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
+        else:
+            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
+>>>>>>> d3b25b42a6ec78335dd6bddbefafd13fd95316a8
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -860,7 +904,7 @@ def make_arrow_plot(model, theme):
     """Sorting dictionary in descending order. 
     Saving parameters and values of coefficients in lists.
     Saving plot-function to variable fig."""
-    coefs = dict(sorted(model.params.sort_values().items(), key=lambda x: x[1], reverse=True))
+    coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
     sgn = signs(vals)
@@ -888,22 +932,12 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
     x = np.linspace(0, 2, points)
     y = np.zeros(len(x))
 
-    global fig
-    #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
     fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
-    fig.update_xaxes(
-        ticktext=[p for p in params],
-        tickvals=[steps*i for i in range(points)],
-    )
-    fig.update_yaxes(showticklabels=False)
+    
     fig.update_layout(
-        yaxis=dict(range=[-0.125, 0.125], title=f'', showgrid=False), 
-        xaxis=dict(range=[-0.2, x[-1]+0.2], title='Parameters', showgrid=False, zeroline=False),
-        title='Sign of coefficient of the key parameter combination',
+        yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
+        xaxis=dict(range=[-0.2, x[-1]+0.2], title='', ticktext=[p for p in params], tickvals=[steps*i for i in range(points)]),
         autosize=False,
-        width=725,
-        height=500,
-        plot_bgcolor='#FFFFFF',
         coloraxis_colorbar=dict(
             title="",
             tickvals=[-0.97, -0.88, 0.88, 0.97],
@@ -912,13 +946,42 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
         ),
         hoverlabel=dict(
             bgcolor="white", 
-            font_size=12, 
         )
     )
+    fig["layout"].update(
+        theme_layout(
+            theme,
+            {
+                "barmode": "relative",
+                "height": 500,
+                "title": f"Sign of coefficients for the parameters from the table"
+            }
+        )
+    )
+    fig["layout"]["font"].update({"size": 12})
 
     """Costumizing the hoverer"""
-    fig.update_traces(hovertemplate='Parameter: %{x}')
+    fig.update_traces(hovertemplate='%{x}')
 
+    """Adding arrows to figure"""
+    for i, s in enumerate(sgn):
+        if s == 1:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
+                line_color="#222A2A",
+                fillcolor=colors[i], 
+                line_width=0.6  
+            )
+        else:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
+                line_color="#222A2A",
+                fillcolor=colors[i], 
+                line_width=0.6
+            )
+    
     """Adding zero-line along y-axis"""
     fig.add_shape(
         # Line Horizontal
@@ -932,35 +995,6 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
                 width=0.75,
             ),
     )
-    fig.add_shape(
-        # Arrowhead, left
-        type="path",
-        path=" M -0.2 0 L -0.18 -0.005 L -0.18 0.005 Z",
-        line_color="#222A2A",
-        line_width=0.75,
-    )
-    fig.add_shape(
-        # Arrowhead, right
-        type="path",
-        path=f" M {x[-1]+0.2} 0 L {x[-1]+0.18} -0.005 L {x[-1]+0.18} 0.005 Z",
-        line_color="#222A2A",
-        line_width=0.75,
-    )
-
-    """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
-        if s == 1:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]} 0 L {x[i]} 0.1 L {x[i]-0.05} 0.075 L {x[i]} 0.1 L {x[i]+0.05} 0.075",
-                line_color=colors[i],     
-            )
-        else:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]} 0 L {x[i]} -0.1 L {x[i]-0.05} -0.075 L {x[i]} -0.1 L {x[i]+0.05} -0.075",
-                line_color=colors[i],
-            )
 
     return fig # Should not have hard brackets here
 
@@ -989,10 +1023,8 @@ def color_array(vals, params, sgn):
     bi = 35
 
     color_arr = ['rgba(255, 255, 255, 1)']*len(params)
-
-    global k
-    k=0
-
+    
+    k = 0
     """Adding colors matching scaled values of coefficients to color_arr array"""
     for s, v in zip(sgn, vals):
         if s == 1:
