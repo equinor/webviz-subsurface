@@ -755,10 +755,8 @@ def gen_model(
         force_in: list=[],
         interaction: bool=False
     ):
-    ts1=ts2=time.perf_counter()
     if interaction:
         df = gen_interaction_df(df,response)
-        te1=time.perf_counter()
         #print(df.head())
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
         #print("time to gen df: ", te1-ts1)
@@ -789,7 +787,6 @@ def gen_interaction_df(
     return interaction_df.join(df[response])
 
 
-<<<<<<< Updated upstream
 def forward_selected(data: pd.DataFrame,
                      response: str, 
                      force_in: list=[], 
@@ -800,27 +797,6 @@ def forward_selected(data: pd.DataFrame,
     y_mean = np.mean(y)
     SST = np.sum((y-y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in+[response]))
-=======
-def forward_selected(data, response, force_in, maxvars=9):
-    # TODO find way to remove non-significant variables form entering model. 
-    """Linear model designed by forward selection.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
->>>>>>> Stashed changes
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -834,17 +810,14 @@ def forward_selected(data, response, force_in, maxvars=9):
             p = X.shape[1]
             #print("divisor: ",n-p-1)
             if n-p-1<1: 
-                print("BROKE OFF!!!")
                 formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
-                print("final selected:",selected)
                 model = smf.ols(formula, data).fit()
                 return model
             X = np.append(X, onevec, axis=1)
             try: 
                 beta = la.inv(X.T @ X) @ X.T @ y 
             except la.LinAlgError:
-                print("hit error with:",candidate)
                 continue
             f_vec = beta @ X.T
             
@@ -858,11 +831,9 @@ def forward_selected(data, response, force_in, maxvars=9):
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
-            print("here",best_candidate)
             if "*" in best_candidate:
                 #print("HWERE", best_candidate)
                 for base_feature in best_candidate.split("*"):
-                    print("base feature:", base_feature)
                     if base_feature in remaining:
                         remaining.remove(base_feature)
                         # print("remaining: ",remaining)
@@ -871,11 +842,9 @@ def forward_selected(data, response, force_in, maxvars=9):
             
             remaining.remove(best_candidate)
             selected.append(best_candidate)
-            print("selected", selected)
             current_score = best_new_score
     formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
-    print("final selected:",selected)
     model = smf.ols(formula, data).fit()
     
     return model
