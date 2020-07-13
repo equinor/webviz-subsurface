@@ -20,12 +20,9 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
-<<<<<<< HEAD
 from itertools import combinations
-=======
 import plotly.express as px
-
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
+import numpy.linalg as la
 from .._datainput.fmu_input import load_parameters, load_csv
 import time
 class MultipleRegression(WebvizPluginABC):
@@ -500,6 +497,7 @@ The types of response_filters are:
             4. Fit model
             4. Fit model using forward stepwise regression, with or without interactions
             """
+            pass
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -552,11 +550,6 @@ The types of response_filters are:
             ],
             self.pvalues_input_callbacks
         )
-<<<<<<< HEAD
-        def update_pvalues_plot(ensemble, response, interaction, max_vars, *filters):
-            """Callback to update the p-values plot"""
-            ts= time.time()
-=======
         def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
@@ -566,8 +559,7 @@ The types of response_filters are:
             4. Fit model using forward stepwise regression, with or without interactions
             5. Get p-values from fitted model and sort them in ascending order
             """
-
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
+            
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -586,19 +578,11 @@ The types of response_filters are:
             response = response.replace(":", "_")
             response = response.replace(",", "_")
             
-<<<<<<< HEAD
-            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
-            p_sorted = model.pvalues.sort_values().drop("Intercept")
-            te= time.time()
-            print(te-ts)
-=======
             #Get results and generate p-values plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
             p_sorted = result.pvalues.sort_values().drop("Intercept")
             
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
         
         ###@njit()
@@ -610,6 +594,7 @@ The types of response_filters are:
         )
         def update_coefficient_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
+            pass
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -710,181 +695,132 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+
+
+#@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
-        force_in: [],
         max_vars: int=9,
-        interaction: bool=False):
+        force_in: list=[],
+        interaction: bool=False
+    ):
+    ts1=ts2=time.perf_counter()
+    if interaction:
+        df = gen_interaction_df(df,response)
+        te1=time.perf_counter()
+        #print(df.head())
+        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
+        #print("time to gen df: ", te1-ts1)
         
-        if interaction:
-<<<<<<< HEAD
-            return forward_selected(df, gen_column_names(df,response), response, maxvars=max_vars)
-        else:
-            return forward_selected(df, df.columns, response, maxvars=max_vars)
-=======
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
-        else:
-            #print(forward_selected(df, response, force_in = force_in, maxvars=max_vars))
-            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
+    else:
+        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
+    te2= time.perf_counter()
+    #print("time to gen and fit: ", te2-ts2)
 
-"""
+    return model
+
+
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
     degree: int=2,
-    inter_only: bool=False,
+    inter_only: bool=True,
     bias: bool=False):
-    
-    "Generates dataframe with interaction-terms"
+
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
         include_bias=False).fit_transform(df.drop(columns=response))
+
     interaction_df = pd.DataFrame(
         x_interaction,
-        columns=gen_column_names(
-            df.drop(columns=response),
-            inter_only))
+        columns=gen_column_names(df=df.drop(columns=response)))
     return interaction_df.join(df[response])
-"""
-def gen_column_names(df: pd.DataFrame, response: str):
-    combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
-    originals = list(df.drop(columns=response).columns)
-    return originals + combine + [response]
 
-<<<<<<< HEAD
-def forward_selected(data, vars, response, maxvars=9):
-=======
-def gen_column_names(df, interaction_only):
-    """Generate coloumn names. Specifically used to create interaction-term names"""
-    output = list(df.columns)
-    if interaction_only:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (
-                    (colname1 != colname2) and
-                    (f"{colname1}:{colname2}" not in output) or
-                    (f"{colname2}:{colname1}" not in output)
-                        ):
-                        output.append(f"{colname1}:{colname2}")
-    else:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
-                    output.append(f"{colname1}:{colname2}")
-    return output
 
-###@njit()
-def forward_selected(data, response, force_in, maxvars=9):
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
-    # TODO find way to remove non-significant variables form entering model. 
-    """Linear model designed by forward selection.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    ts=time.time()
-    remaining = set(vars)
-    remaining.remove(response)
+def forward_selected(data: pd.DataFrame,
+                     response: str, 
+                     force_in: list=[], 
+                     maxvars: int=5):
+    y = data[response].to_numpy(dtype="float32")
+    n = len(y)
+    onevec = np.ones((len(y), 1))
+    y_mean = np.mean(y)
+    SST = np.sum((y-y_mean) ** 2)
+    remaining = set(data.columns).difference(set(force_in+[response]))
     selected = force_in
-
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
         for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            model = smf.ols(formula, data)
+            if "*" in candidate: # fiks at vi ikke legger til candidate split hvis den allerede er med
+                current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
+            else:
+                current_model = selected.copy()+[candidate] 
+            X = data.filter(items=current_model).to_numpy(dtype="float32")
+            p = X.shape[1]
+            print("divisor: ",n-p-1)
+            if n-p-1<1: 
+                print("BROKE OFF!!!")
+                formula = "{} ~ {} + 1".format(response,
+                                   ' + '.join(selected))
+                print("final selected:",selected)
+                model = smf.ols(formula, data).fit()
+                return model
+            X = np.append(X, onevec, axis=1)
+            try: 
+                beta = la.inv(X.T @ X) @ X.T @ y 
+            except la.LinAlgError:
+                print("hit error with:",candidate)
+                continue
+            f_vec = beta @ X.T
             
-            scores_with_candidates.append((model.fit().rsquared_adj, model.exog_names[1:]))
-        scores_with_candidates.sort()
-<<<<<<< HEAD
-        best_new_score, best_set = scores_with_candidates.pop()
-=======
-        print("len(scores_with_candidates): ", len(scores_with_candidates))
-        best_new_score, best_candidate = scores_with_candidates.pop()
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
-        if current_score < best_new_score:
-            remaining.difference(best_set)
-            selected = best_set
-            current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    print("selected: ",selected)
-    print(smf.ols(formula,data).exog_names)
-    te=time.time()
-    print("time forward selection: ", te-ts)
-    return model
-
-<<<<<<< HEAD
-
-
-def forward_selected_interaction(data, response, maxvars=9):
-=======
-def forward_selected_interaction(data, response, force_in, maxvars=9):
->>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
-    """Linear model designed by forward selection.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
-    selected = force_in
-    current_score, best_new_score = 0.0, 0.0
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        scores_with_candidates = []
-        for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
+            
+            SS_RES = np.sum((f_vec-y_mean) ** 2)
+            r2 = 1-SS_RES/SST
+            
+            R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
+            #print("R2adj, candidate, p, sumsquare resid: ", (R_2_adj, candidate),p,r2)
+            scores_with_candidates.append((R_2_adj, candidate))
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
-            candidate_split = best_candidate.split(sep=":")
-            if len(candidate_split) == 2:  
-                if candidate_split[0] not in selected and candidate_split[0] in remaining: 
-                    remaining.remove(candidate_split[0])
-                    selected.append(candidate_split[0])
-                    maxvars += 1
-                if candidate_split[1] not in selected and candidate_split[1] in remaining:
-                    remaining.remove(candidate_split[1])
-                    selected.append(candidate_split[1])
-                    maxvars += 1
+            print("here",best_candidate)
+            if "*" in best_candidate:
+                #print("HWERE", best_candidate)
+                for base_feature in best_candidate.split("*"):
+                    print("base feature:", base_feature)
+                    if base_feature in remaining:
+                        remaining.remove(base_feature)
+                        # print("remaining: ",remaining)
+                    if base_feature not in selected:
+                        selected.append(base_feature)
+            
             remaining.remove(best_candidate)
             selected.append(best_candidate)
+            print("selected", selected)
             current_score = best_new_score
     formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
+                                   ' + '.join(selected))
+    print("final selected:",selected)
     model = smf.ols(formula, data).fit()
+    
     return model
+
+
+
+def gen_column_names(df: pd.DataFrame, response: str=None):
+    if response:
+        combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
+        originals = list(df.drop(columns=response).columns)
+        return originals + combine + [response]
+    else:
+        combine = ["*".join(combination) for combination in combinations(df,2)]
+        originals = list(df.columns)
+    return originals + combine 
+
+
 
 def make_p_values_plot(p_sorted, theme):
     """Make Plotly trace for p-values plot"""
