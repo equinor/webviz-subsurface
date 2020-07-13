@@ -748,7 +748,6 @@ def gen_model(
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
         #print("time to gen df: ", te1-ts1)
         
-<<<<<<< HEAD
     else:
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
     te2= time.perf_counter()
@@ -756,14 +755,6 @@ def gen_model(
 
     return model
 
-=======
-        """Genereates model with best fit"""
-        if interaction:
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
-        else:
-            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
->>>>>>> d3b25b42a6ec78335dd6bddbefafd13fd95316a8
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -804,7 +795,7 @@ def forward_selected(data: pd.DataFrame,
                 current_model = selected.copy()+[candidate] 
             X = data.filter(items=current_model).to_numpy(dtype="float32")
             p = X.shape[1]
-            print("divisor: ",n-p-1)
+            #print("divisor: ",n-p-1)
             if n-p-1<1: 
                 print("BROKE OFF!!!")
                 formula = "{} ~ {} + 1".format(response,
