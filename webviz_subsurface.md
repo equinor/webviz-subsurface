@@ -1,6 +1,6 @@
 # Plugin package webviz_subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.dev1+gd4335b0` of `webviz_subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.dev1+g2636ff0` of `webviz_subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -53,12 +53,29 @@ Visualize disk usage in a FMU project. It adds a dashboard showing disk usage pe
    
 
 * **`scratch_dir`:** Path to the scratch directory to show disk usage for.
+* **`date`:** Date as string of form YYYY-MM-DD to request an explisit date. Default is to
+to use the most recent file avaialable, limited to the last week.
+
 
 
 ```yaml
     - DiskUsage:
         scratch_dir:   # Required. Type str (corresponding to a path).
+        date: None  # Optional. Type Union[_ForwardRef('str'), NoneType].
 ```
+
+   
+
+#### ** Data input **
+
+
+?> The `scratch_dir` directory must have a hidden folder `.disk_usage` containing daily
+csv files called `disk_usage_user_YYYY-MM-DD.csv`, where YYYY-MM-DD is the date.
+The plugin will search backwards from the current date, and throw an error if no file was found
+from the last week.
+
+The csv file must have the columns `userid` and `usageKB` (where KB means kilobytes).
+All other columns are ignored.
 
  
 
