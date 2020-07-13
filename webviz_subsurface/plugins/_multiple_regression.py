@@ -902,7 +902,6 @@ def make_arrow_plot(model, theme):
     colors = color_array(vals, params, sgn)
 
     fig = arrow_plot(coefs, vals, params, sgn, colors, theme)
-    #fig["layout"]["font"].update({"size": 12})
 
     return [fig] # Need hard brackets here
 
@@ -988,7 +987,7 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
     return fig # Should not have hard brackets here
 
 def color_array(vals, params, sgn):
-    """Function to scale coefficients to a green-red color range"""
+    """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
     max_val = vals[0]
     min_val = vals[-1]
 
