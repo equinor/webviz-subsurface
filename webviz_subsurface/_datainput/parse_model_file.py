@@ -58,5 +58,6 @@ def get_conditional_data(basedir):
 
 
 if __name__ == '__main__':
-    basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model")
+    basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\simple_model")
+    print(get_well_files(basedir))
 
