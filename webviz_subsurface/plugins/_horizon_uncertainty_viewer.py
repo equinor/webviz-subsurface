@@ -215,7 +215,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                 ),
                                 dbc.ModalFooter(
-                                    dbc.Button("Close", id=self.ids("button-close-graph-settings"), className="ml-auto")
+                                    children=[
+                                        dbc.Button("Close", id=self.ids("button-close-graph-settings"), className="ml-auto"),
+                                        dbc.Button('Apply changes', id=self.ids('button-apply-checklist'), className='ml-auto')
+                                    ]
                                 ),
                             ],
                             id=self.ids("modal-graph-settings"),
@@ -242,6 +245,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ),
             ]
         )
+
+
     @property
     def target_points_layout(self):
         df = pd.read_csv(self.target_points)
@@ -322,13 +327,16 @@ The cross section is defined by a polyline interactively edited in the map view.
         @app.callback(
             Output(self.ids("plotly-view"), "figure"),
             [
+                Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"), # wellpath
-                Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
-                Input(self.ids("surfaces-de-checklist"), "value"), # errorpaths list
                 Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
             ],
+            [
+                State(self.ids("surfaces-checklist"), "value"),  # surfacepaths list
+                State(self.ids("surfaces-de-checklist"), "value"),  # errorpaths list
+            ],
         )
-        def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
+        def _render_xsection(n_clicks, wellpath, coords, surfacepaths, errorpaths):
             ctx = dash.callback_context
             surfacepaths = get_path(surfacepaths)
             errorpaths = get_path(errorpaths)

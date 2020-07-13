@@ -32,6 +32,8 @@ def get_well_files(basedir):
     for i, w in enumerate(well_dir_list):
         if Path(w).suffix == '.txt':
             well_files.append(os.path.join(well_dir, w))
+    well_files.pop(0)
+    well_files.pop(6)
     return well_files
 
 def get_target_points(basedir):
