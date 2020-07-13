@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from dash_table import DataTable
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_table.Format import Format, Scheme
@@ -19,11 +19,54 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+import plotly.express as px
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
 class MultipleRegressionSofie(WebvizPluginABC):
-    """ This will become a plugin for multiple regression of parameters and responses"""
+    """### Best fit using forward stepwise regression
+
+This plugin shows a multiple regression of numerical input parameters and a chosen response.
+
+Input can be given either as:
+
+- Aggregated csv files for parameters and responses,
+- An ensemble name defined in shared_settings and a local csv file for responses
+stored per realizations.
+
+**Note**: Non-numerical (string-based) input parameters and responses are removed.
+
+**Note**: The response csv file will be aggregated per realization.
+
+Arguments:
+
+* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
+* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
+            response_file is defined, the definition of ensembles implies that you want to
+            use simulation timeseries data directly from UNSMRY data. This also implies that
+            the date will be used as a response filter of type `single`.
+* `response_file`: Local (per realization) csv file for response parameters.
+* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).
+* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
+* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
+* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
+                defined ensembles using fmu-ensemble (cannot use with response_file,
+                response_csv or parameters_csv).
+* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
+            (Only relevant if neither response_csv or response_file is defined). Default monthly
+* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
+* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
+
+The types of response_filters are:
+```
+- `single`: Dropdown with single selection.
+- `multi`: Dropdown with multiple selection.
+- `range`: Slider with range selection.
+```
+"""
+
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -38,6 +81,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
         column_keys: list = None,
         sampling: str = "monthly",
         aggregation: str = "sum",
+        parameter_filters: list = None
     ):
 
         super().__init__()
@@ -62,8 +106,13 @@ class MultipleRegressionSofie(WebvizPluginABC):
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
+            #For csv files
             self.parameterdf = read_csv(self.parameter_csv)
             self.responsedf = read_csv(self.response_csv)
+
+            #For parquet files
+            #self.parameterdf = pd.read_parquet(self.parameter_csv)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -137,6 +186,10 @@ class MultipleRegressionSofie(WebvizPluginABC):
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
+            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."),},
+            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
+            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
+            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
         ]
         return steps
 
@@ -150,8 +203,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
             .dropna(how="all", axis="columns")
             .columns
         )
-        responses = [colname.replace(":","_") if ":" in colname else colname for colname in responses]
-        responses = [colname.replace(",","_") if "," in colname else colname for colname in responses]
         return [p for p in responses if p not in self.response_filters.keys()]
 
     @property
@@ -251,20 +302,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ),
             html.Div(
                 [
-                    html.Label("Interaction"),
-                    dcc.RadioItems(
-                        id=self.ids("interaction"),
-                        options=[
-                            {"label": "On", "value": True},
-                            {"label": "Off", "value": False}
-                        ],
-                        value=True
-                    )
-                ]
-            ),
-            html.Div(
-                [
-                    html.Label("Max parameters"),
+                    html.Label("Max number of parameters"),
                     dcc.Dropdown(
                         id=self.ids("max-params"),
                         options=[
@@ -275,6 +313,51 @@ class MultipleRegressionSofie(WebvizPluginABC):
                     ),
                 ]
             ),
+            html.Div(
+                [
+                    html.Label("Force out"),
+                    dcc.Dropdown(
+                        id=self.ids("force-out"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Force in"),
+                    dcc.Dropdown(
+                        id=self.ids("force-in"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Interaction"),
+                    dcc.RadioItems(
+                        id=self.ids("interaction"),
+                        options=[
+                            {"label": "On", "value": True},
+                            {"label": "Off", "value": False}
+                        ],
+                        value=True
+                    )
+                ]
+            )
 
         ]
 
@@ -285,7 +368,23 @@ class MultipleRegressionSofie(WebvizPluginABC):
             id=self.ids("layout"),
             children=[
                 html.Div(
-                    style={"flex": 3},
+                [ #The parameters chosen from the dropdown menu are the only ones included in the model
+                  #These parameters are in parameter-list and can be used in callbacks
+                    html.Label("Choose which parameters to include in the model"),
+                    dcc.Dropdown(
+                        id=self.ids("parameter-list"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=self.parameters[0:5]
+                        )
+                    ]
+                ),
+                html.Div(
+                    style={"flex": 4},
                     children=[
                         html.Div(
                             id=self.ids("table_title"),
@@ -297,10 +396,10 @@ class MultipleRegressionSofie(WebvizPluginABC):
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize":12}
+                            style_cell={"fontSize":14}
                         ),
                         html.Div(
-                            style={'flex': 3},
+                            style={'flex': 4},
                             children=[
                                 wcc.Graph(id=self.ids('p-values-plot')),
                                 dcc.Store(id=self.ids("initial-parameter"))
@@ -321,8 +420,11 @@ class MultipleRegressionSofie(WebvizPluginABC):
     def table_input_callbacks(self):
         """List of Inputs for multiple regression table callback"""
         callbacks = [
+            Input(self.ids("parameter-list"), "value"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
             Input(self.ids("interaction"), "value"),
             Input(self.ids("max-params"), "value"),
         ]
@@ -335,8 +437,11 @@ class MultipleRegressionSofie(WebvizPluginABC):
     def pvalues_input_callbacks(self):
         """List of Inputs for p-values callback"""
         callbacks = [
+            Input(self.ids("parameter-list"), "value"),
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
             Input(self.ids("interaction"), "value"),
             Input(self.ids("max-params"), "value"),
         ]
@@ -344,7 +449,7 @@ class MultipleRegressionSofie(WebvizPluginABC):
             for col_name in self.response_filters:
                 callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
-
+    
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
         filteroptions = []
@@ -356,16 +461,6 @@ class MultipleRegressionSofie(WebvizPluginABC):
         return filteroptions
     
     def set_callbacks(self, app):
-        """Temporary way of filtering out non-valid parameters"""
-        parameter_filters=[
-                'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
-                'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
-                'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-                'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
-                'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
-                'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
-                'LOG10_MULTZ:MULTZ_MIDREEK', "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
-                "COHIBA_MODEL_MODE"]
 
         """Set callbacks for the table and the p-values plot"""
         @app.callback(
@@ -376,9 +471,15 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ],
             self.table_input_callbacks,
         )
-        def _update_table(ensemble, response, interaction, max_vars, *filters):
-            """Callback to update multiple regression results table """
+        def _update_table(parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update datatable
 
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model
+            4. Fit model using forward stepwise regression, with or without interactions
+            """
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -387,21 +488,44 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            param_df = parameterdf.drop(columns=parameter_filters)
-            param_df.columns = [colname.replace(":","_") if ":" in colname else colname for colname in param_df.columns]
-            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
-            table = model.model.fit().summary2().tables[1]
+            #Make a new dataframe for the parameters by adding ensemble, 
+            #real and the chosen parameters from parameter-list callback
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
+
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            
+            #Get results and genereate datatable 
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+            table = result.model.fit().summary2().tables[1].drop("Intercept")
+            table.drop(["Std.Err.","t","[0.025","0.975]"],axis=1,inplace=True)
+            
+            #Turn index names (the params) into columms 
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
+            
             columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
             data = table.to_dict("rows")
-            return(
-                data,
-                columns,
-                f"Multiple regression with {response} as response",
-            )
+
+            if result.model.fit().df_model == 0:
+                return (
+                    [{"e": "Cannot calculate fit for given selection. Select a different response or filter setting"}],
+                    [{"name": "Error", "id": "e"}],
+                    "Error",
+                )
+            else:
+                return(
+                    data,
+                    columns,
+                    f"Multiple regression with {response} as response",
+                )
 
         @app.callback(
             [
@@ -410,8 +534,15 @@ class MultipleRegressionSofie(WebvizPluginABC):
             ],
             self.pvalues_input_callbacks
         )
-        def update_pvalues_plot(ensemble, response, interaction, max_vars, *filters):
-            """Callback to update the p-values plot"""
+        def update_pvalues_plot(parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the p-values plot
+            
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model using forward stepwise regression, with or without interactions
+            5. Get p-values from fitted model and sort them in ascending order
+            """
 
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -421,16 +552,27 @@ class MultipleRegressionSofie(WebvizPluginABC):
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            param_df = parameterdf.drop(columns=parameter_filters)
-            param_df.columns = [colname.replace(":","_") if ":" in colname else colname for colname in param_df.columns]
+            #Make a new dataframe for the parameters by adding ensemble, 
+            #real and the chosen parameters from parameter-list callback
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
+
+
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
             
-            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
-            p_sorted = model.pvalues.sort_values().drop("Intercept")
+            #Get results and generate p-values plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
+            p_sorted = result.pvalues.sort_values().drop("Intercept")
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
-
+    
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -504,18 +646,22 @@ def _filter_and_sum_responses(
     raise ValueError(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
+        force_in: [],
         max_vars: int=9,
         interaction: bool=False):
         
+        """Genereates model with best fit"""
         if interaction:
             df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, maxvars=max_vars)
+            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
         else:
-            return forward_selected(df, response, maxvars=max_vars)
+            #print(forward_selected(df, response, force_in = force_in, maxvars=max_vars))
+            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -523,7 +669,8 @@ def gen_interaction_df(
     degree: int=2,
     inter_only: bool=False,
     bias: bool=False):
-
+    
+    """Generates dataframe with interaction-terms"""
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
@@ -536,6 +683,7 @@ def gen_interaction_df(
     return interaction_df.join(df[response])
 
 def gen_column_names(df, interaction_only):
+    """Generate coloumn names. Specifically used to create interaction-term names"""
     output = list(df.columns)
     if interaction_only:
         for colname1 in df.columns:
@@ -553,7 +701,7 @@ def gen_column_names(df, interaction_only):
                     output.append(f"{colname1}:{colname2}")
     return output
 
-def forward_selected(data, response, maxvars=9):
+def forward_selected(data, response, force_in, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
 
@@ -572,7 +720,7 @@ def forward_selected(data, response, maxvars=9):
     """
     remaining = set(data.columns)
     remaining.remove(response)
-    selected = []
+    selected = force_in
 
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -583,6 +731,7 @@ def forward_selected(data, response, maxvars=9):
             score = smf.ols(formula, data).fit().rsquared_adj
             scores_with_candidates.append((score, candidate))
         scores_with_candidates.sort()
+        print("len(scores_with_candidates): ", len(scores_with_candidates))
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             remaining.remove(best_candidate)
@@ -593,8 +742,7 @@ def forward_selected(data, response, maxvars=9):
     model = smf.ols(formula, data).fit()
     return model
 
-
-def forward_selected_interaction(data, response, maxvars=9):
+def forward_selected_interaction(data, response, force_in, maxvars=9):
     """Linear model designed by forward selection.
 
     Parameters:
@@ -612,7 +760,7 @@ def forward_selected_interaction(data, response, maxvars=9):
     """
     remaining = set(data.columns)
     remaining.remove(response)
-    selected = []
+    selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
@@ -705,7 +853,6 @@ def theme_layout(theme, specific_layout):
     layout.update(theme["layout"])
     layout.update(specific_layout)
     return layout
-
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
