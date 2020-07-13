@@ -913,10 +913,8 @@ def make_arrow_plot(model, theme):
 
 def signs(vals):
     """Saving signs of coefficients to array sgn"""
-    sgn = np.zeros(len(vals))
-    for i, v in enumerate(vals):
-        sgn[i] = np.sign(v)
-    return sgn
+    
+    return np.sign(vals)
 
 def arrow_plot(coefs, vals, params, sgn, colors, theme):
     """Making arrow plot to illutrate relative importance 
