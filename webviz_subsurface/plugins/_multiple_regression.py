@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-###from numba import njit, jit
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -296,6 +295,20 @@ The types of response_filters are:
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
         return [
+             html.Div(
+                [
+                    html.Label("Parameters to be included"),
+                    dcc.Dropdown(
+                        id=self.ids("parameter-list"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=self.parameters[0:5],
+                    ),
+                ]
+            ),
             html.Div(
                 [
                     html.Label("Ensemble"),
@@ -449,6 +462,7 @@ The types of response_filters are:
     def table_state_callbacks(self):
         """List of States for multiple regression table callback"""
         callbacks = [
+            State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
             State(self.ids("force-out"), "value"),
@@ -465,6 +479,7 @@ The types of response_filters are:
     def pvalues_state_callbacks(self):
         """List of States for p-values callback"""
         callbacks = [
+            State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
             State(self.ids("force-out"), "value"),
@@ -481,6 +496,7 @@ The types of response_filters are:
     def coefficientplot_state_callbacks(self):
         """List of states for coefficient plot callback"""
         callbacks = [
+            State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
             State(self.ids("force-out"), "value"),
@@ -505,7 +521,6 @@ The types of response_filters are:
     
     def set_callbacks(self, app):
         """Set callbacks for the table, p-values plot, and arrow plot"""
-        ###@njit()
         @app.callback(
             [
                 Output(self.ids("table"), "data"),
@@ -517,7 +532,7 @@ The types of response_filters are:
             ],
             self.table_state_callbacks,
         )
-        def _update_table(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_table(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -535,7 +550,8 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
@@ -557,7 +573,7 @@ The types of response_filters are:
             
             columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
             data = table.to_dict("rows")
-
+            
             if result.model.fit().df_model == 0:
                 return (
                     [{"e": "Cannot calculate fit for given selection. Select a different response or filter setting"}],
@@ -571,7 +587,6 @@ The types of response_filters are:
                     f"Multiple regression with {response} as response",
                 )
 
-        ###@njit()
         @app.callback(
             [
                 Output(self.ids("p-values-plot"), "figure"),
@@ -582,7 +597,7 @@ The types of response_filters are:
             ],
             self.pvalues_state_callbacks
         )
-        def update_pvalues_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_pvalues_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
             1. Filters and aggregates response dataframe per realization
@@ -600,7 +615,8 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
@@ -617,7 +633,6 @@ The types of response_filters are:
             
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
         
-        ###@njit()
         @app.callback(
             [
                 Output(self.ids("coefficient-plot"), "figure"),
@@ -627,7 +642,7 @@ The types of response_filters are:
             ],
             self.coefficientplot_state_callbacks
         )
-        def update_coefficient_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_coefficient_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
             pass
             filteroptions = self.make_response_filters(filters)
@@ -638,7 +653,8 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
@@ -655,7 +671,6 @@ The types of response_filters are:
             
             return make_arrow_plot(model, self.plotly_theme)
     
-    ###@njit()
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -774,6 +789,7 @@ def gen_interaction_df(
     return interaction_df.join(df[response])
 
 
+<<<<<<< Updated upstream
 def forward_selected(data: pd.DataFrame,
                      response: str, 
                      force_in: list=[], 
@@ -784,6 +800,27 @@ def forward_selected(data: pd.DataFrame,
     y_mean = np.mean(y)
     SST = np.sum((y-y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in+[response]))
+=======
+def forward_selected(data, response, force_in, maxvars=9):
+    # TODO find way to remove non-significant variables form entering model. 
+    """Linear model designed by forward selection.
+
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    """
+    remaining = set(data.columns)
+    remaining.remove(response)
+>>>>>>> Stashed changes
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -905,7 +942,6 @@ def make_arrow_plot(model, theme):
 
     return [fig] # Need hard brackets here
 
-###@njit()
 def signs(vals):
     """Saving signs of coefficients to array sgn"""
     sgn = np.zeros(len(vals))
@@ -1027,7 +1063,6 @@ def color_array(vals, params, sgn):
     
     return color_arr
 
-###@njit()
 def make_range_slider(domid, values, col_name):
     try:
         values.apply(pd.to_numeric, errors="raise")
@@ -1059,7 +1094,6 @@ def theme_layout(theme, specific_layout):
     return layout
 
 
-###@njit()
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
