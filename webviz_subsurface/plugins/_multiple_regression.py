@@ -944,7 +944,6 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
             bgcolor="white", 
         )
     )
-
     fig["layout"].update(
         theme_layout(
             theme,
@@ -966,17 +965,17 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color="grey",
                 fillcolor=colors[i], 
-                line_width=0.75   
+                line_width=0.5  
             )
         else:
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color="grey",
                 fillcolor=colors[i], 
-                line_width=0.75
+                line_width=0.5
             )
     
     """Adding zero-line along y-axis"""
@@ -1020,10 +1019,8 @@ def color_array(vals, params, sgn):
     bi = 35
 
     color_arr = ['rgba(255, 255, 255, 1)']*len(params)
-
-    global k
-    k=0
-
+    
+    k = 0
     """Adding colors matching scaled values of coefficients to color_arr array"""
     for s, v in zip(sgn, vals):
         if s == 1:
