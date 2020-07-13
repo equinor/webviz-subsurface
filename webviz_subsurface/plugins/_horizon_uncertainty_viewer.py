@@ -205,7 +205,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                         dcc.Checklist(
                                             id=self.ids('surfaces-de-checklist'),
                                             options=[
-                                                {"label": name+'_error', "value": path}
+                                                {"label": name+'_error', "value": path, 'disabled': False}
                                                 for name, path in zip(
                                                     self.surfacenames, self.surfacefiles
                                                 )
@@ -369,15 +369,15 @@ The cross section is defined by a polyline interactively edited in the map view.
         
         @app.callback(
             Output(self.ids('surfaces-de-checklist'), 'options'),
-            [Input(self.ids('surfaces-checklist'), 'value')]
+            [Input(self.ids('surfaces-checklist'), 'value')],
+            [State(self.ids('surfaces-de-checklist'), 'options')],
         )
-        def _disable_error_checkboxes(surface_values):
-            de_options = []
-            for name, path in zip(self.surfacenames, self.surfacefiles):
-                if (surface_values is None) or (path not in surface_values):
-                    de_options += [{"label": name + '_error', "value": path, 'disabled':True}]
+        def _disable_error_checkboxes(surface_values, de_options):
+            for i, opt in enumerate(de_options):
+                if (surface_values is None) or (opt['value'] not in surface_values):
+                    de_options[i]['disabled'] = True
                 else:
-                    de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
+                    de_options[i]['disabled'] = False
             return de_options
 
         @app.callback( #Toggle "draw well" button on/off to display leaflet
