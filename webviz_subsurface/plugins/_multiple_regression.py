@@ -3,12 +3,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from numba import njit, jit
+###from numba import njit, jit
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from dash_table import DataTable
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_table.Format import Format, Scheme
@@ -119,12 +119,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = read_csv(self.response_csv)
+            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            #self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
-            #self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -369,8 +369,33 @@ The types of response_filters are:
                         value=True
                     )
                 ]
-            )
+            ),
 
+        ]
+
+###Funksjon jeg kanskje må se litt nærmere på
+    def make_button(self, id):
+        return [
+            html.Div(
+                style={
+                    "display": "grid",
+                    "alignContent": "space-around",
+                    "justifyContent": "space-between",
+                    "gridTemplateColumns": "1fr 1fr",
+                },
+                children=[
+                    html.Label("Press 'SUBMIT' to activate changes\n"), #unnecessary?
+                    html.Button(
+                        id=id, 
+                        style={
+                            "fontsize": "2rem",
+                            "paddingLeft": "5px",
+                            "paddingRight": "5px",
+                        },
+                        children="Submit",
+                    ),
+                ],
+            )
         ]
 
     @property
@@ -406,12 +431,12 @@ The types of response_filters are:
                             children=[
                                 wcc.Graph(id=self.ids('coefficient-plot-S')),
                             ]
-                        )
+                        ),
                     ],
                 ),
                 html.Div(
                     style={"flex": 1},
-                    children=self.control_layout + self.filter_layout
+                    children=self.control_layout + self.filter_layout + self.make_button(self.ids("submit-btn"))
                     if self.response_filters
                     else [],
                 ),
@@ -419,51 +444,51 @@ The types of response_filters are:
         )
 
     @property
-    def table_input_callbacks(self):
-        """List of Inputs for multiple regression table callback"""
+    def table_state_callbacks(self):
+        """List of States for multiple regression table callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     @property
-    def pvalues_input_callbacks(self):
-        """List of Inputs for p-values callback"""
+    def pvalues_state_callbacks(self):
+        """List of States for p-values callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     @property
-    def coefficientplot_input_callbacks(self):
-        """List of inputs for coefficient plot callback"""
+    def coefficientplot_state_callbacks(self):
+        """List of states for coefficient plot callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
     
     def make_response_filters(self, filters):
@@ -477,7 +502,7 @@ The types of response_filters are:
         return filteroptions
     
     def set_callbacks(self, app):
-        """Set callbacks for the table and the p-values plot"""
+        """Set callbacks for the table, p-values plot, and arrow plot"""
         ###@njit()
         @app.callback(
             [
@@ -485,9 +510,12 @@ The types of response_filters are:
                 Output(self.ids("table"), "columns"),
                 Output(self.ids("table_title"), "children"),
             ],
-            self.table_input_callbacks,
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.table_state_callbacks,
         )
-        def _update_table(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_table(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -546,9 +574,12 @@ The types of response_filters are:
                 Output(self.ids("p-values-plot"), "figure"),
                 Output(self.ids("initial-parameter"), "data"),
             ],
-            self.pvalues_input_callbacks
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.pvalues_state_callbacks
         )
-        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_pvalues_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
             
             1. Filters and aggregates response dataframe per realization
@@ -588,9 +619,12 @@ The types of response_filters are:
             [
                 Output(self.ids("coefficient-plot-S"), "figure"),
             ],
-            self.coefficientplot_input_callbacks
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.coefficientplot_state_callbacks
         )
-        def update_coefficient_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def update_coefficient_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -705,7 +739,6 @@ def gen_model(
             df = gen_interaction_df(df, response)
             return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
         else:
-            #print(forward_selected(df, response, force_in = force_in, maxvars=max_vars))
             return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
 
 def gen_interaction_df(
@@ -777,7 +810,6 @@ def forward_selected(data, response, force_in, maxvars=9):
             score = smf.ols(formula, data).fit().rsquared_adj
             scores_with_candidates.append((score, candidate))
         scores_with_candidates.sort()
-        print("len(scores_with_candidates): ", len(scores_with_candidates))
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             remaining.remove(best_candidate)
