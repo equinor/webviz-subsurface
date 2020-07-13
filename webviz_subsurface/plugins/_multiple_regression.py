@@ -748,7 +748,6 @@ def gen_model(
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
         #print("time to gen df: ", te1-ts1)
         
-<<<<<<< HEAD
     else:
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
     te2= time.perf_counter()
@@ -756,14 +755,6 @@ def gen_model(
 
     return model
 
-=======
-        """Genereates model with best fit"""
-        if interaction:
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
-        else:
-            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
->>>>>>> d3b25b42a6ec78335dd6bddbefafd13fd95316a8
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -918,10 +909,8 @@ def make_arrow_plot(model, theme):
 ###@njit()
 def signs(vals):
     """Saving signs of coefficients to array sgn"""
-    sgn = np.zeros(len(vals))
-    for i, v in enumerate(vals):
-        sgn[i] = np.sign(v)
-    return sgn
+    
+    return np.sign(vals)
 
 def arrow_plot(coefs, vals, params, sgn, colors, theme):
     """Making arrow plot to illutrate relative importance 
