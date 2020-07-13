@@ -13,6 +13,17 @@ def extract_surface_names(basedir):
         surface_names.append(name.get_text())
     return surface_names
 
+def extract_topofzone_names(basedir):
+    model_file = os.path.join(basedir, 'model_file.xml')
+    with open(model_file, 'r') as file:
+        soup = BeautifulSoup(file, 'xml')
+    surface_wrappers = soup.find_all('surface')
+    topofzone_names = []
+    for s in surface_wrappers:
+        name = s.find('top-of-zone')
+        topofzone_names.append(name.get_text())
+    return topofzone_names
+
 def get_surface_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')

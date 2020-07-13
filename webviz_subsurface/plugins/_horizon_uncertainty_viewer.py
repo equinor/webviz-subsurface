@@ -56,9 +56,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surface_attributes = {}
         self.target_points = parse_model_file.get_target_points(basedir[0])
         self.well_points = parse_model_file.get_well_points(basedir[0])
-        for i, surfacefile in enumerate(self.surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "error_path": Path(self.surfacefiles_de[i])}
         self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
+        self.topofzone = parse_model_file.extract_topofzone_names(basedir[0])
+        for i, surfacefile in enumerate(self.surfacefiles):
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "name": self.surfacenames[i], "topofzone": self.topofzone[i], "error_path": Path(self.surfacefiles_de[i])}
         self.wellfiles = parse_model_file.get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.zonation_data= parse_model_file.get_zonation_data(basedir[0])
