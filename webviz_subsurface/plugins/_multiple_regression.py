@@ -373,25 +373,17 @@ The types of response_filters are:
 
         ]
 
-###Funksjon jeg kanskje må se litt nærmere på
     def make_button(self, id):
         return [
             html.Div(
                 style={
                     "display": "grid",
-                    "alignContent": "space-around",
-                    "justifyContent": "space-between",
-                    "gridTemplateColumns": "1fr 1fr",
+                    "gridTemplateRows": "1fr 1fr",
                 },
                 children=[
-                    html.Label("Press 'SUBMIT' to activate changes\n"), #unnecessary?
+                    html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
                         id=id, 
-                        style={
-                            "fontsize": "2rem",
-                            "paddingLeft": "5px",
-                            "paddingRight": "5px",
-                        },
                         children="Submit",
                     ),
                 ],
@@ -647,9 +639,9 @@ The types of response_filters are:
             #Get results and generate coefficient plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
-            #print(gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction))
+            model = result.params.sort_values().drop("Intercept").items()
             
-            return make_arrow_plot(result, self.plotly_theme)
+            return make_arrow_plot(model, self.plotly_theme)
     
     ###@njit()
     def add_webvizstore(self):
@@ -906,7 +898,7 @@ def make_arrow_plot(model, theme):
     """Sorting dictionary in descending order. 
     Saving parameters and values of coefficients in lists.
     Saving plot-function to variable fig."""
-    coefs = dict(sorted(model.params.sort_values().items(), key=lambda x: x[1], reverse=True))
+    coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
     sgn = signs(vals)
@@ -937,19 +929,11 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
     global fig
     #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
     fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
-    fig.update_xaxes(
-        ticktext=[p for p in params],
-        tickvals=[steps*i for i in range(points)],
-    )
-    fig.update_yaxes(showticklabels=False)
+    
     fig.update_layout(
-        yaxis=dict(range=[-0.125, 0.125], title=f'', showgrid=False), 
-        xaxis=dict(range=[-0.2, x[-1]+0.2], title='Parameters', showgrid=False, zeroline=False),
-        title='Sign of coefficient of the key parameter combination',
+        yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
+        xaxis=dict(range=[-0.2, x[-1]+0.2], title='', ticktext=[p for p in params], tickvals=[steps*i for i in range(points)]),
         autosize=False,
-        width=725,
-        height=500,
-        plot_bgcolor='#FFFFFF',
         coloraxis_colorbar=dict(
             title="",
             tickvals=[-0.97, -0.88, 0.88, 0.97],
@@ -958,13 +942,42 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
         ),
         hoverlabel=dict(
             bgcolor="white", 
-            font_size=12, 
         )
     )
+    fig["layout"].update(
+        theme_layout(
+            theme,
+            {
+                "barmode": "relative",
+                "height": 500,
+                "title": f"Sign of coefficients for the parameters from the table"
+            }
+        )
+    )
+    fig["layout"]["font"].update({"size": 12})
 
     """Costumizing the hoverer"""
-    fig.update_traces(hovertemplate='Parameter: %{x}')
+    fig.update_traces(hovertemplate='%{x}')
 
+    """Adding arrows to figure"""
+    for i, s in enumerate(sgn):
+        if s == 1:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
+                line_color="grey",
+                fillcolor=colors[i], 
+                line_width=0.5  
+            )
+        else:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
+                line_color="grey",
+                fillcolor=colors[i], 
+                line_width=0.5
+            )
+    
     """Adding zero-line along y-axis"""
     fig.add_shape(
         # Line Horizontal
@@ -978,35 +991,6 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
                 width=0.75,
             ),
     )
-    fig.add_shape(
-        # Arrowhead, left
-        type="path",
-        path=" M -0.2 0 L -0.18 -0.005 L -0.18 0.005 Z",
-        line_color="#222A2A",
-        line_width=0.75,
-    )
-    fig.add_shape(
-        # Arrowhead, right
-        type="path",
-        path=f" M {x[-1]+0.2} 0 L {x[-1]+0.18} -0.005 L {x[-1]+0.18} 0.005 Z",
-        line_color="#222A2A",
-        line_width=0.75,
-    )
-
-    """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
-        if s == 1:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]} 0 L {x[i]} 0.1 L {x[i]-0.05} 0.075 L {x[i]} 0.1 L {x[i]+0.05} 0.075",
-                line_color=colors[i],     
-            )
-        else:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]} 0 L {x[i]} -0.1 L {x[i]-0.05} -0.075 L {x[i]} -0.1 L {x[i]+0.05} -0.075",
-                line_color=colors[i],
-            )
 
     return fig # Should not have hard brackets here
 
@@ -1035,10 +1019,8 @@ def color_array(vals, params, sgn):
     bi = 35
 
     color_arr = ['rgba(255, 255, 255, 1)']*len(params)
-
-    global k
-    k=0
-
+    
+    k = 0
     """Adding colors matching scaled values of coefficients to color_arr array"""
     for s, v in zip(sgn, vals):
         if s == 1:
