@@ -14,12 +14,14 @@ from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
+import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
 from dash_table import DataTable
 from dash_table.Format import Format
 from .._datainput.fmu_input import load_parameters, load_csv
-
-
+import numpy.linalg as la
+import time
+from itertools import combinations
 class MultipleRegressionJostein(WebvizPluginABC):
 
         # pylint:disable=too-many-arguments
@@ -274,7 +276,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                         min=1,
                         max=len(self.parameterdf),
                         step=1,
-                        value=9,
+                        value=5,
                         
                     )
                 ]
@@ -304,45 +306,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
         return filteroptions
 
-    def forward_selected(data, response, maxvars=3):
-        # TODO find way to remove non-significant variables form entering model. 
-        """Linear model designed by forward selection.
-
-        Parameters:
-        -----------
-        data : pandas DataFrame with all possible predictors and response
-
-        response: string, name of response column in data
-
-        Returns:
-        --------
-        model: an "optimal" fitted statsmodels linear model
-            with an intercept
-            selected by forward selection
-            evaluated by adjusted R-squared
-        """
-        remaining = set(data.columns)
-        remaining.remove(response)
-        selected = []
-
-        current_score, best_new_score = 0.0, 0.0
-        while remaining and current_score == best_new_score and len(selected) < maxvars:
-            scores_with_candidates = []
-            for candidate in remaining:
-                formula = "{} ~ {} + 1".format(response,
-                                            ' + '.join(selected + [candidate]))
-                score = smf.ols(formula, data).fit().rsquared_adj
-                scores_with_candidates.append((score, candidate))
-            scores_with_candidates.sort()
-            best_new_score, best_candidate = scores_with_candidates.pop()
-            if current_score < best_new_score:
-                remaining.remove(best_candidate)
-                selected.append(best_candidate)
-                current_score = best_new_score
-        formula = "{} ~ {} + 1".format(response,
-                                    ' + '.join(selected))
-        model = smf.ols(formula, data).fit()
-        return model
+    
 
     @property
     def model_input_callbacks(self):
@@ -387,7 +351,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
-                
+                print(sm.stats.anova_lm(model,typ=2))
                 table = model.summary2().tables[1]
                 table.index.name = "Parameter"
                 table.reset_index(inplace=True)
@@ -398,7 +362,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                     "format": Format(precision=4)} for i in table.columns]
                 data = list(table.to_dict("index").values())
                 pval_plot = make_p_values_plot(model)
-                print(pval_plot)
+                
                 return (
                     pval_plot,
                     data,
@@ -540,152 +504,104 @@ def gen_model(
         df: pd.DataFrame,
         response: str,
         max_vars: int=9,
-        interaction: bool=False):
-        """
+        interaction: bool=False
+    ):
+    ts1=ts2=time.perf_counter()
+    if interaction:
+        df= gen_interaction_df(df,response)
+        te1=time.perf_counter()
+        model = forward_selected(df, df.columns, response, maxvars=max_vars)
+        print("time to gen df: ", te1-ts1)
+        
+    else:
+        model = forward_selected(df, df.columns, response, maxvars=max_vars) 
+    te2= time.perf_counter()
+    print("time to gen and fit: ", te2-ts2)
 
-        """
-        if interaction:
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, maxvars=max_vars)
-        else:
-            return forward_selected(df, response, maxvars=max_vars)
+    return model
+
 
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
     degree: int=2,
-    inter_only: bool=False,
+    inter_only: bool=True,
     bias: bool=False):
-    """
-        helper function for gen model
-        generates a new dataframe with all 2nd degree interactions ie a**2, ab, b**2
-        
 
-        currently the no interaction function is broken 
-        because of gen_col_names not working in that case
-    """
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
         include_bias=False).fit_transform(df.drop(columns=response))
+
     interaction_df = pd.DataFrame(
         x_interaction,
-        columns=gen_column_names(
-            df.drop(columns=response),
-            inter_only))
+        columns=gen_column_names(df=df.drop(columns=response)))
     return interaction_df.join(df[response])
 
 
-def forward_selected_interaction(data, response, maxvars=9):
-    """Linear model designed by forward selection.
-    For dataframes with interaction, enforces hierachical principle.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
+def forward_selected(data: pd.DataFrame,
+                     vars: np.ndarray,
+                     response: str, 
+                     force_in: list=[], 
+                     maxvars: int=5):
+    
+    y = data[response].to_numpy(dtype="float32")
+    n = len(y)
+    onevec =  np.ones((len(y), 1))
+    y_mean = np.mean(y)
+    SST = np.sum((y-y_mean) ** 2)
+    remaining = set(vars)
     remaining.remove(response)
-    selected = []
+    selected = force_in
     current_score, best_new_score = 0.0, 0.0
+    if maxvars>=n-1:
+        raise ValueError("cant have more parameters than observations")
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
         for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
+            if "*" in candidate:
+                current_model = selected.copy() + [candidate] + candidate.split("*")
+            else:
+                current_model = selected.copy()+[candidate] 
+            X = data.filter(items=current_model).to_numpy(dtype="float32")
+            X = np.append(X, onevec, axis=1)
+            try: 
+                beta = la.inv(X.T @ X) @ X.T @ y 
+            except Exception:
+                continue
+            f_vec = beta @ X.T
+            p = X.shape[1]-1
+
+            SS_RES = np.sum((f_vec-y_mean) ** 2)
+            R_2_adj = 1-(1 - SS_RES / SST)*((n-1)/(n-p-1))
+
+            scores_with_candidates.append((R_2_adj, candidate))
+        
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
-            candidate_split = best_candidate.split(sep=":")
-            if len(candidate_split) == 2:  
-                if candidate_split[0] not in selected and candidate_split[0] in remaining: 
-                    remaining.remove(candidate_split[0])
-                    selected.append(candidate_split[0])
-                    maxvars += 1
-                if candidate_split[1] not in selected and candidate_split[1] in remaining:
-                    remaining.remove(candidate_split[1])
-                    selected.append(candidate_split[1])
-                    maxvars += 1
+            if "*" in best_candidate:
+                for base_feature in best_candidate.split("*"):
+                    if base_feature in remaining:
+                        remaining.remove(base_feature)
+                    elif base_feature not in selected:
+                        selected.append(base_feature)
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
     formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
+                                   ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model
 
-def forward_selected(data, response, maxvars=9):
-    # TODO find way to remove non-significant variables form entering model. 
-    """Linear model designed by forward selection.
 
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
-    selected = []
-
-    current_score, best_new_score = 0.0, 0.0
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        scores_with_candidates = []
-        for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
-        scores_with_candidates.sort()
-        best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score < best_new_score:
-            remaining.remove(best_candidate)
-            selected.append(best_candidate)
-            current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model
-
-def gen_column_names(df, interaction_only):
-    """
-    Helper function for gen_interaction_df()
-    generates a list of column names indicating products
-
-    currently interaction only mode does not work.
-    """
-
-    output = list(df.columns)
-    if interaction_only:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (
-                    (colname1 != colname2) and
-                    (f"{colname1}:{colname2}" not in output) or
-                    (f"{colname2}:{colname1}" not in output)
-                        ):
-                        output.append(f"{colname1}:{colname2}")
+def gen_column_names(df: pd.DataFrame, response: str=None):
+    if response:
+        combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
+        originals = list(df.drop(columns=response).columns)
+        return originals + combine + [response]
     else:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
-                    output.append(f"{colname1}:{colname2}")
-    return output
+        combine = ["*".join(combination) for combination in combinations(df,2)]
+        originals = list(df.columns)
+    return originals + combine 
+

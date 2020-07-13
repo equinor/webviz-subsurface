@@ -20,10 +20,11 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+from itertools import combinations
 import plotly.express as px
-
+import numpy.linalg as la
 from .._datainput.fmu_input import load_parameters, load_csv
-
+import time
 class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
@@ -190,10 +191,18 @@ The types of response_filters are:
             {
                 "id": self.ids("p-values-plot"),
                 "content": (
-                    "The p-values for the parameters from the table ranked from most significant "
+                    "A plot showing the p-values for the parameters from the table ranked from most significant "
                     "to least significant.  Red indicates "
                     "that the p-value is significant, gray indicates that the p-value "
                     "is not significant."
+                )
+            },
+            {
+                "id": self.ids("coefficient-plot"),
+                "content": (
+                    "A plot showing the coefficient values from ranked from great positive to great negative. "
+                    "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
+                    "downwards respesent negative coefficients."
                 )
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
@@ -202,6 +211,7 @@ The types of response_filters are:
             {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
             {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
             {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
+            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."),},
         ]
         return steps
 
@@ -421,7 +431,7 @@ The types of response_filters are:
                         html.Div(
                             style={'flex': 3},
                             children=[
-                                wcc.Graph(id=self.ids('coefficient-plot-S')),
+                                wcc.Graph(id=self.ids('coefficient-plot')),
                             ]
                         ),
                     ],
@@ -516,6 +526,7 @@ The types of response_filters are:
             4. Fit model
             4. Fit model using forward stepwise regression, with or without interactions
             """
+            pass
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -580,7 +591,7 @@ The types of response_filters are:
             4. Fit model using forward stepwise regression, with or without interactions
             5. Get p-values from fitted model and sort them in ascending order
             """
-
+            
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -609,7 +620,7 @@ The types of response_filters are:
         ###@njit()
         @app.callback(
             [
-                Output(self.ids("coefficient-plot-S"), "figure"),
+                Output(self.ids("coefficient-plot"), "figure"),
             ],
             [
                 Input(self.ids("submit-btn"), "n_clicks")
@@ -618,6 +629,7 @@ The types of response_filters are:
         )
         def update_coefficient_plot(n_clicks, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
+            pass
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -718,147 +730,141 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+
+
+#@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
-        force_in: [],
         max_vars: int=9,
-        interaction: bool=False):
+        force_in: list=[],
+        interaction: bool=False
+    ):
+    ts1=ts2=time.perf_counter()
+    if interaction:
+        df = gen_interaction_df(df,response)
+        te1=time.perf_counter()
+        #print(df.head())
+        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
+        #print("time to gen df: ", te1-ts1)
         
+<<<<<<< HEAD
+    else:
+        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
+    te2= time.perf_counter()
+    #print("time to gen and fit: ", te2-ts2)
+
+    return model
+
+=======
         """Genereates model with best fit"""
         if interaction:
             df = gen_interaction_df(df, response)
             return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
         else:
             return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
+>>>>>>> d3b25b42a6ec78335dd6bddbefafd13fd95316a8
 
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
     degree: int=2,
-    inter_only: bool=False,
+    inter_only: bool=True,
     bias: bool=False):
-    
-    """Generates dataframe with interaction-terms"""
+
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
         include_bias=False).fit_transform(df.drop(columns=response))
+
     interaction_df = pd.DataFrame(
         x_interaction,
-        columns=gen_column_names(
-            df.drop(columns=response),
-            inter_only))
+        columns=gen_column_names(df=df.drop(columns=response)))
     return interaction_df.join(df[response])
 
-def gen_column_names(df, interaction_only):
-    """Generate coloumn names. Specifically used to create interaction-term names"""
-    output = list(df.columns)
-    if interaction_only:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (
-                    (colname1 != colname2) and
-                    (f"{colname1}:{colname2}" not in output) or
-                    (f"{colname2}:{colname1}" not in output)
-                        ):
-                        output.append(f"{colname1}:{colname2}")
+
+def forward_selected(data: pd.DataFrame,
+                     response: str, 
+                     force_in: list=[], 
+                     maxvars: int=5):
+    y = data[response].to_numpy(dtype="float32")
+    n = len(y)
+    onevec = np.ones((len(y), 1))
+    y_mean = np.mean(y)
+    SST = np.sum((y-y_mean) ** 2)
+    remaining = set(data.columns).difference(set(force_in+[response]))
+    selected = force_in
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            if "*" in candidate: # fiks at vi ikke legger til candidate split hvis den allerede er med
+                current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
+            else:
+                current_model = selected.copy()+[candidate] 
+            X = data.filter(items=current_model).to_numpy(dtype="float32")
+            p = X.shape[1]
+            print("divisor: ",n-p-1)
+            if n-p-1<1: 
+                print("BROKE OFF!!!")
+                formula = "{} ~ {} + 1".format(response,
+                                   ' + '.join(selected))
+                print("final selected:",selected)
+                model = smf.ols(formula, data).fit()
+                return model
+            X = np.append(X, onevec, axis=1)
+            try: 
+                beta = la.inv(X.T @ X) @ X.T @ y 
+            except la.LinAlgError:
+                print("hit error with:",candidate)
+                continue
+            f_vec = beta @ X.T
+            
+            
+            SS_RES = np.sum((f_vec-y_mean) ** 2)
+            r2 = 1-SS_RES/SST
+            
+            R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
+            #print("R2adj, candidate, p, sumsquare resid: ", (R_2_adj, candidate),p,r2)
+            scores_with_candidates.append((R_2_adj, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            print("here",best_candidate)
+            if "*" in best_candidate:
+                #print("HWERE", best_candidate)
+                for base_feature in best_candidate.split("*"):
+                    print("base feature:", base_feature)
+                    if base_feature in remaining:
+                        remaining.remove(base_feature)
+                        # print("remaining: ",remaining)
+                    if base_feature not in selected:
+                        selected.append(base_feature)
+            
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            print("selected", selected)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                   ' + '.join(selected))
+    print("final selected:",selected)
+    model = smf.ols(formula, data).fit()
+    
+    return model
+
+
+
+def gen_column_names(df: pd.DataFrame, response: str=None):
+    if response:
+        combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
+        originals = list(df.drop(columns=response).columns)
+        return originals + combine + [response]
     else:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
-                    output.append(f"{colname1}:{colname2}")
-    return output
+        combine = ["*".join(combination) for combination in combinations(df,2)]
+        originals = list(df.columns)
+    return originals + combine 
 
-###@njit()
-def forward_selected(data, response, force_in, maxvars=9):
-    # TODO find way to remove non-significant variables form entering model. 
-    """Linear model designed by forward selection.
 
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
-    selected = force_in
-
-    current_score, best_new_score = 0.0, 0.0
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        scores_with_candidates = []
-        for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
-        scores_with_candidates.sort()
-        best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score < best_new_score:
-            remaining.remove(best_candidate)
-            selected.append(best_candidate)
-            current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model
-
-def forward_selected_interaction(data, response, force_in, maxvars=9):
-    """Linear model designed by forward selection.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
-    selected = force_in
-    current_score, best_new_score = 0.0, 0.0
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        scores_with_candidates = []
-        for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
-        scores_with_candidates.sort()
-        best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score < best_new_score:
-            candidate_split = best_candidate.split(sep=":")
-            if len(candidate_split) == 2:  
-                if candidate_split[0] not in selected and candidate_split[0] in remaining: 
-                    remaining.remove(candidate_split[0])
-                    selected.append(candidate_split[0])
-                    maxvars += 1
-                if candidate_split[1] not in selected and candidate_split[1] in remaining:
-                    remaining.remove(candidate_split[1])
-                    selected.append(candidate_split[1])
-                    maxvars += 1
-            remaining.remove(best_candidate)
-            selected.append(best_candidate)
-            current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model
 
 def make_p_values_plot(p_sorted, theme):
     """Make Plotly trace for p-values plot"""
@@ -925,8 +931,6 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
     x = np.linspace(0, 2, points)
     y = np.zeros(len(x))
 
-    global fig
-    #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
     fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
     
     fig.update_layout(
@@ -966,7 +970,7 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
                 line_color="#222A2A",
                 fillcolor=colors[i], 
-                line_width=0.5  
+                line_width=0.6  
             )
         else:
             fig.add_shape(
@@ -974,7 +978,7 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
                 line_color="#222A2A",
                 fillcolor=colors[i], 
-                line_width=0.5
+                line_width=0.6
             )
     
     """Adding zero-line along y-axis"""
