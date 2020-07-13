@@ -22,7 +22,7 @@ class DiskUsage(WebvizPluginABC):
 ---
 
 ?> The `scratch_dir` directory must have a hidden folder `.disk_usage` containing daily
-csv files called `disk_usage_user_YYYY-MM-DD.csv` (where YYYY-MM-DD is the date).
+csv files called `disk_usage_user_YYYY-MM-DD.csv`, where YYYY-MM-DD is the date.
 The plugin will search backwards from the current date, and throw an error if no file was found
 from the last week.
 
