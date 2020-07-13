@@ -68,6 +68,6 @@ def get_conditional_data(basedir):
 
 
 if __name__ == '__main__':
-    basedir = Path(r"/home/elisabeth/GitHub/Datasets/simple_model")
+    basedir = Path(r"..\..\..\Datasets\simple_model")
     print(get_well_files(basedir))
 
