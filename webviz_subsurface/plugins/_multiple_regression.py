@@ -965,16 +965,18 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
         if s == 1:
             fig.add_shape(
                 type="path",
-                path=f" M {x[i]} 0 L {x[i]} 0.1 L {x[i]-0.05} 0.075 L {x[i]} 0.1 L {x[i]+0.05} 0.075",
-                line_color=colors[i],
-                line_width=2.7,    
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
+                line_color="#222A2A",
+                fillcolor=colors[i], 
+                line_width=0.75   
             )
         else:
             fig.add_shape(
                 type="path",
-                path=f" M {x[i]} 0 L {x[i]} -0.1 L {x[i]-0.05} -0.075 L {x[i]} -0.1 L {x[i]+0.05} -0.075",
-                line_color=colors[i],
-                line_width=2.7,
+                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
+                line_color="#222A2A",
+                fillcolor=colors[i], 
+                line_width=0.75
             )
     
     """Adding zero-line along y-axis"""
