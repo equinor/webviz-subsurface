@@ -13,6 +13,17 @@ def extract_surface_names(basedir):
         surface_names.append(name.get_text())
     return surface_names
 
+def extract_topofzone_names(basedir):
+    model_file = os.path.join(basedir, 'model_file.xml')
+    with open(model_file, 'r') as file:
+        soup = BeautifulSoup(file, 'xml')
+    surface_wrappers = soup.find_all('surface')
+    topofzone_names = []
+    for s in surface_wrappers:
+        name = s.find('top-of-zone')
+        topofzone_names.append(name.get_text())
+    return topofzone_names
+
 def get_surface_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
@@ -32,6 +43,7 @@ def get_well_files(basedir):
     for i, w in enumerate(well_dir_list):
         if Path(w).suffix == '.txt':
             well_files.append(os.path.join(well_dir, w))
+    well_files.sort()
     return well_files
 
 def get_target_points(basedir):
@@ -56,5 +68,6 @@ def get_conditional_data(basedir):
 
 
 if __name__ == '__main__':
-    basedir = Path(r"C:\Users\ivarb\OneDrive\Documents\webViz\Datasets\complex_model")
+    basedir = Path(r"/home/elisabeth/GitHub/Datasets/simple_model")
+    print(get_well_files(basedir))
 

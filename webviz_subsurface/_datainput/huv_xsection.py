@@ -1,12 +1,12 @@
 import xtgeo
 import pandas as pd
 import numpy as np
-import numpy.ma as ma
 import plotly.graph_objects as go
 from pathlib import Path
 from operator import add
 from operator import sub
 import matplotlib.image as mpimg
+import math
 
 class HuvXsection:
     def __init__(
@@ -36,7 +36,7 @@ class HuvXsection:
             well.create_relative_hlen()
             zonation_points = get_zone_RHLEN(well_df, well.wellname, self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df, well.wellname, self.conditional_data)
-            zonelog = self.get_zonelog_data(well_df, self.zonelogname)
+            zonelog = self.get_zonelog_data(well, self.zonelogname)
             self.well_attributes = {"wellpath": wellpath, "well_df":well_df, "zonelog":zonelog, "zonation_points":zonation_points, "conditional_points":conditional_points}
 
     def get_plotly_well_data(self):
@@ -111,11 +111,11 @@ class HuvXsection:
             return layout
         else:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
-            x_well, y_well, x_well_max, y_width, x_width = get_intersection_surface_well(self.well_attributes["well_df"], ymin, ymax)
+            x_well, y_well, x_well_max, y_width, x_width = get_intersection_surface_well(self.well_attributes["well_df"],ymin,ymax)
             layout.update({
                 "yaxis":{
                     "title":"Depth (m)",
-                    "range" : [ymax, y_well-0.15*y_width],
+                    "range" : [ymax+0.15*y_width,y_well-0.15*y_width],
                 },
                 "xaxis":{
                     "title": "Distance from polyline (m)",
@@ -163,7 +163,7 @@ class HuvXsection:
             data = [ #Create helpline for bottom of plot
                 {
                     "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
-                    "y": [_max + 50, _max + 50],
+                    "y": [_max + 200, _max + 200],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
                 }
             ]
@@ -193,41 +193,6 @@ class HuvXsection:
             for sfc_path in surfacepaths
         ])
         return np.min(minvalues), np.max(maxvalues)
-
-    def get_zonelog_data(self, well_df, zonelogname="Zonelog", zomin=-999):
-        color_list = ["rgb(245,245,245)"]
-        for sfc_path in self.surface_attributes:
-            color_list.append(self.surface_attributes[sfc_path]["color"])
-        well_TVD = well_df["Z_TVDSS"].values.copy()
-        well_RHLEN = well_df["R_HLEN"].values.copy()
-        zonevals = well_df[zonelogname].values
-        zoneplot = []
-        start = 0
-        zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
-        for transition in zone_transitions:
-            try:
-                well_TVD = np.insert(well_TVD, transition, well_TVD[transition + 1])
-                well_RHLEN = np.insert(well_RHLEN, transition, well_RHLEN[transition + 1])
-                zonevals = np.insert(zonevals, transition, zonevals[transition])
-            except IndexError:
-                pass
-        for i in range(1, len(zonevals)):
-            if zonevals[i] != zonevals[i-1]:
-                end = i-1
-                if np.isnan(zonevals[i-1]):
-                    color = 'black'
-                else:
-                    color = color_list[int(zonevals[i-1])]
-                zoneplot.append({
-                    "x": well_RHLEN[start:end],
-                    "y": well_TVD[start:end],
-                    "line": {"width": 4, "color":color},
-                    "marker": {"opacity": 0.5},
-                    "name": f"Zone: {zonevals[i-1]}",
-                    })
-                start = end+1
-
-        return zoneplot
     
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
@@ -237,7 +202,94 @@ class HuvXsection:
     def set_image(self, figure): #Requires Orca
         #figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
         #figure.write_image("./xsec.png")
-        return None 
+        return None
+
+    def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
+        well_df = well.dataframe
+        well.create_relative_hlen()
+        color_list = [None]*len(well.get_logrecord(zonelogname))
+        for sfc_path in self.surface_attributes:
+            for i in range(len(color_list)):
+                if well.get_logrecord_codename(zonelogname,i) == "dummy":
+                    color_list[i] = "rgb(245,245,245)"
+                if well.get_logrecord_codename(zonelogname,i) == self.surface_attributes[sfc_path]["topofzone"]:
+                    self.surface_attributes[sfc_path]["zone_number"] = i
+                    color_list[i] = self.surface_attributes[sfc_path]["color"]
+        well_TVD = well_df["Z_TVDSS"].values.copy()
+        well_RHLEN = well_df["R_HLEN"].values.copy()
+        zonevals = well_df[zonelogname].values
+        zoneplot = []
+        start = 0
+        l = 0
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:]) #index of zone transitions?
+        for transition in zone_transitions:
+            try:
+                well_TVD = np.insert(well_TVD, transition, well_TVD[transition + 1])
+                well_RHLEN = np.insert(well_RHLEN, transition, well_RHLEN[transition + 1])
+                zonevals = np.insert(zonevals, transition, zonevals[transition])
+            except IndexError:
+                pass
+        for i in range(1,len(zonevals)):
+            if (np.isnan(zonevals[i]) == False) and (np.isnan(zonevals[i-1])==True):
+                end = i-1
+                color = "rgb(211,211,211)"
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+            if (np.isnan(zonevals[i]) == True) and (np.isnan(zonevals[i-1])==False):
+                end = i-1
+                color = color_list[int(zonevals[i-1])]
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+            if (zonevals[i] != zonevals[i-1]) and (np.isnan(zonevals[i])==False) and (np.isnan(zonevals[i-1])==False):
+                end = i-1
+                color = color_list[int(zonevals[i-1])]
+                zoneplot.append({
+                    "x": well_RHLEN[start:end],
+                    "y": well_TVD[start:end],
+                    "line": {"width": 4, "color": color},
+                    "fillcolor": color,
+                    "marker": {"opacity": 0.5},
+                    "name": f"Zone: {zonevals[i-1]}",
+                    })
+                start = end+1
+        if np.isnan(zonevals[-1]) == False:
+            end = len(zonevals)-1
+            color = color_list[int(zonevals[-1])]
+            zoneplot.append({
+                "x": well_RHLEN[start:end],
+                "y": well_TVD[start:end],
+                "line": {"width": 4, "color": color},
+                "fillcolor": color,
+                "marker": {"opacity": 0.5},
+                "name": f"Zone: {zonevals[-2]}",
+                })
+        if np.isnan(zonevals[-1]) == True:
+            end = len(zonevals)-1
+            color = "rgb(211,211,211)"
+            zoneplot.append({
+                "x": np.array(well_RHLEN[-1]),
+                "y": np.array(well_TVD[-1]),
+                "line": {"width": 4, "color": color},
+                "fillcolor": color,
+                "marker": {"opacity": 0.5},
+                "name": f"Zone: {zonevals[-1]}",
+                })
+        return zoneplot
+
 
 def stratigraphic_sort(elem):
     return elem[1]
