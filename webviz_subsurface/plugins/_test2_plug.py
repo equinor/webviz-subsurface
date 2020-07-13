@@ -18,7 +18,8 @@ from sklearn.preprocessing import PolynomialFeatures
 from dash_table import DataTable
 from dash_table.Format import Format
 from .._datainput.fmu_input import load_parameters, load_csv
-
+import time
+from itertools import combinations
 
 class MultipleRegressionJostein(WebvizPluginABC):
 
@@ -304,45 +305,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
         return filteroptions
 
-    def forward_selected(data, response, maxvars=3):
-        # TODO find way to remove non-significant variables form entering model. 
-        """Linear model designed by forward selection.
-
-        Parameters:
-        -----------
-        data : pandas DataFrame with all possible predictors and response
-
-        response: string, name of response column in data
-
-        Returns:
-        --------
-        model: an "optimal" fitted statsmodels linear model
-            with an intercept
-            selected by forward selection
-            evaluated by adjusted R-squared
-        """
-        remaining = set(data.columns)
-        remaining.remove(response)
-        selected = []
-
-        current_score, best_new_score = 0.0, 0.0
-        while remaining and current_score == best_new_score and len(selected) < maxvars:
-            scores_with_candidates = []
-            for candidate in remaining:
-                formula = "{} ~ {} + 1".format(response,
-                                            ' + '.join(selected + [candidate]))
-                score = smf.ols(formula, data).fit().rsquared_adj
-                scores_with_candidates.append((score, candidate))
-            scores_with_candidates.sort()
-            best_new_score, best_candidate = scores_with_candidates.pop()
-            if current_score < best_new_score:
-                remaining.remove(best_candidate)
-                selected.append(best_candidate)
-                current_score = best_new_score
-        formula = "{} ~ {} + 1".format(response,
-                                    ' + '.join(selected))
-        model = smf.ols(formula, data).fit()
-        return model
+    
 
     @property
     def model_input_callbacks(self):
@@ -369,11 +332,7 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 ],
                 self.model_input_callbacks,
             )
-<<<<<<< HEAD
-            def update_pvalue_plot(ensemble, response, interaction, force_out, nvars, *filters):
-=======
             def update_model_plot(ensemble, response, interaction, force_out, nvars, *filters):
->>>>>>> 5fa138263156fd77e9eb2e9e1899e63f3c66b678
                 filteroptions = self.make_response_filters(filters)
                 responsedf = filter_and_sum_responses(
                     self.responsedf,
@@ -384,20 +343,13 @@ class MultipleRegressionJostein(WebvizPluginABC):
                 )
                 paramdf = self.parameterdf
 
-<<<<<<< HEAD
-                paramdf.columns = [colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
-=======
                 paramdf.columns = [
                     colname.replace(":","_") if ":" in colname else colname for colname in paramdf.columns]
->>>>>>> 5fa138263156fd77e9eb2e9e1899e63f3c66b678
                 paramdf = paramdf.loc[paramdf["ENSEMBLE"] == ensemble]
                 paramdf.drop(columns=force_out, inplace=True)
                 
                 df = pd.merge(responsedf, paramdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
                 model = gen_model(df, response, nvars, interaction)
-<<<<<<< HEAD
-                return make_p_values_plot(model)
-=======
                 
                 table = model.summary2().tables[1]
                 table.index.name = "Parameter"
@@ -409,13 +361,12 @@ class MultipleRegressionJostein(WebvizPluginABC):
                     "format": Format(precision=4)} for i in table.columns]
                 data = list(table.to_dict("index").values())
                 pval_plot = make_p_values_plot(model)
-                print(pval_plot)
+                #print(pval_plot)
                 return (
                     pval_plot,
                     data,
                     columns,
                     f"Multiple regression with {response} as response",)
->>>>>>> 5fa138263156fd77e9eb2e9e1899e63f3c66b678
 
 
     @property
@@ -553,45 +504,18 @@ def gen_model(
         response: str,
         max_vars: int=9,
         interaction: bool=False):
-        """
-
-        """
-        if interaction:
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, maxvars=max_vars)
-        else:
-            return forward_selected(df, response, maxvars=max_vars)
-
-
-def gen_interaction_df(
-    df: pd.DataFrame,
-    response: str,
-    degree: int=2,
-    inter_only: bool=False,
-    bias: bool=False):
-    """
-        helper function for gen model
-        generates a new dataframe with all 2nd degree interactions ie a**2, ab, b**2
         
-
-        currently the no interaction function is broken 
-        because of gen_col_names not working in that case
-    """
-    x_interaction = PolynomialFeatures(
-        degree=2,
-        interaction_only=inter_only,
-        include_bias=False).fit_transform(df.drop(columns=response))
-    interaction_df = pd.DataFrame(
-        x_interaction,
-        columns=gen_column_names(
-            df.drop(columns=response),
-            inter_only))
-    return interaction_df.join(df[response])
+        if interaction:
+            return forward_selected(df,gen_column_names(df,response), response, maxvars=max_vars)
+        else:
+            return forward_selected(df,df.columns, response, maxvars=max_vars)
 
 
-def forward_selected_interaction(data, response, maxvars=9):
+
+
+def forward_selected(data, vars, response, maxvars=9):
+    # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
-    For dataframes with interaction, enforces hierachical principle.
 
     Parameters:
     -----------
@@ -606,6 +530,84 @@ def forward_selected_interaction(data, response, maxvars=9):
         selected by forward selection
         evaluated by adjusted R-squared
     """
+    ts=time.time()
+    remaining = set(vars)
+    remaining.remove(response)
+    selected = []
+
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                        ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+    formula = "{} ~ {} + 1".format(response,
+                                ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    te=time.time()
+    print(te-ts)
+    return model
+
+
+def gen_column_names(df: pd.DataFrame, response: str):
+    combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
+    originals = list(df.drop(columns=response).columns)
+    return originals + combine + [response]
+
+
+"""def gen_interaction_df(
+    df: pd.DataFrame,
+    response: str,
+    degree: int=2,
+    inter_only: bool=False,
+    bias: bool=False):
+    "
+        helper function for gen model
+        generates a new dataframe with all 2nd degree interactions ie a**2, ab, b**2
+        
+
+        currently the no interaction function is broken 
+        because of gen_col_names not working in that case
+    "
+    x_interaction = PolynomialFeatures(
+        degree=2,
+        interaction_only=inter_only,
+        include_bias=False).fit_transform(df.drop(columns=response))
+    interaction_df = pd.DataFrame(
+        x_interaction,
+        columns=gen_column_names(
+            df.drop(columns=response),
+            inter_only))
+    return interaction_df.join(df[response])
+"""
+
+
+"""def forward_selected_interaction(data, response, maxvars=9):
+    "
+    Linear model designed by forward selection.
+    For dataframes with interaction, enforces hierachical principle.
+
+    Parameters:
+    -----------
+    data : pandas DataFrame with all possible predictors and response
+
+    response: string, name of response column in data
+
+    Returns:
+    --------
+    model: an "optimal" fitted statsmodels linear model
+        with an intercept
+        selected by forward selection
+        evaluated by adjusted R-squared
+    "
     remaining = set(data.columns)
     remaining.remove(response)
     selected = []
@@ -637,69 +639,4 @@ def forward_selected_interaction(data, response, maxvars=9):
                                 ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model
-
-
-def forward_selected(data, response, maxvars=9):
-    # TODO find way to remove non-significant variables form entering model. 
-    """Linear model designed by forward selection.
-
-    Parameters:
-    -----------
-    data : pandas DataFrame with all possible predictors and response
-
-    response: string, name of response column in data
-
-    Returns:
-    --------
-    model: an "optimal" fitted statsmodels linear model
-        with an intercept
-        selected by forward selection
-        evaluated by adjusted R-squared
-    """
-    remaining = set(data.columns)
-    remaining.remove(response)
-    selected = []
-
-    current_score, best_new_score = 0.0, 0.0
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        scores_with_candidates = []
-        for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                        ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
-        scores_with_candidates.sort()
-        best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score < best_new_score:
-            remaining.remove(best_candidate)
-            selected.append(best_candidate)
-            current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model
-
-def gen_column_names(df, interaction_only):
-    """
-    Helper function for gen_interaction_df()
-    generates a list of column names indicating products
-
-    currently interaction only mode does not work.
-    """
-
-    output = list(df.columns)
-    if interaction_only:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (
-                    (colname1 != colname2) and
-                    (f"{colname1}:{colname2}" not in output) or
-                    (f"{colname2}:{colname1}" not in output)
-                        ):
-                        output.append(f"{colname1}:{colname2}")
-    else:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
-                    output.append(f"{colname1}:{colname2}")
-    return output
+"""

@@ -19,9 +19,9 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
-
+from itertools import combinations
 from .._datainput.fmu_input import load_parameters, load_csv
-
+import time
 class MultipleRegression(WebvizPluginABC):
     """ This will become a plugin for multiple regression of parameters and responses"""
     # pylint:disable=too-many-arguments
@@ -437,7 +437,7 @@ class MultipleRegression(WebvizPluginABC):
         )
         def update_pvalues_plot(ensemble, response, interaction, max_vars, *filters):
             """Callback to update the p-values plot"""
-
+            ts= time.time()
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -459,7 +459,8 @@ class MultipleRegression(WebvizPluginABC):
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
             p_sorted = model.pvalues.sort_values().drop("Intercept")
-            
+            te= time.time()
+            print(te-ts)
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
 
     def add_webvizstore(self):
@@ -536,19 +537,19 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
         max_vars: int=9,
         interaction: bool=False):
         
-        """Genereates model with best fit"""
         if interaction:
-            df = gen_interaction_df(df, response)
-            return forward_selected_interaction(df, response, maxvars=max_vars)
+            return forward_selected(df, gen_column_names(df,response), response, maxvars=max_vars)
         else:
-            return forward_selected(df, response, maxvars=max_vars)
+            return forward_selected(df, df.columns, response, maxvars=max_vars)
 
+"""
 def gen_interaction_df(
     df: pd.DataFrame,
     response: str,
@@ -556,7 +557,7 @@ def gen_interaction_df(
     inter_only: bool=False,
     bias: bool=False):
     
-    """Generates dataframe with interaction-terms"""
+    "Generates dataframe with interaction-terms"
     x_interaction = PolynomialFeatures(
         degree=2,
         interaction_only=inter_only,
@@ -567,27 +568,13 @@ def gen_interaction_df(
             df.drop(columns=response),
             inter_only))
     return interaction_df.join(df[response])
+"""
+def gen_column_names(df: pd.DataFrame, response: str):
+    combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
+    originals = list(df.drop(columns=response).columns)
+    return originals + combine + [response]
 
-def gen_column_names(df, interaction_only):
-    """Generate coloumn names. Specifically used to create interaction-term names"""
-    output = list(df.columns)
-    if interaction_only:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (
-                    (colname1 != colname2) and
-                    (f"{colname1}:{colname2}" not in output) or
-                    (f"{colname2}:{colname1}" not in output)
-                        ):
-                        output.append(f"{colname1}:{colname2}")
-    else:
-        for colname1 in df.columns:
-            for colname2 in df.columns:
-                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
-                    output.append(f"{colname1}:{colname2}")
-    return output
-
-def forward_selected(data, response, maxvars=9):
+def forward_selected(data, vars, response, maxvars=9):
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
 
@@ -604,7 +591,8 @@ def forward_selected(data, response, maxvars=9):
         selected by forward selection
         evaluated by adjusted R-squared
     """
-    remaining = set(data.columns)
+    ts=time.time()
+    remaining = set(vars)
     remaining.remove(response)
     selected = []
 
@@ -614,18 +602,24 @@ def forward_selected(data, response, maxvars=9):
         for candidate in remaining:
             formula = "{} ~ {} + 1".format(response,
                                         ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
+            model = smf.ols(formula, data)
+            
+            scores_with_candidates.append((model.fit().rsquared_adj, model.exog_names[1:]))
         scores_with_candidates.sort()
-        best_new_score, best_candidate = scores_with_candidates.pop()
+        best_new_score, best_set = scores_with_candidates.pop()
         if current_score < best_new_score:
-            remaining.remove(best_candidate)
-            selected.append(best_candidate)
+            remaining.difference(best_set)
+            selected = best_set
             current_score = best_new_score
     formula = "{} ~ {} + 1".format(response,
                                 ' + '.join(selected))
     model = smf.ols(formula, data).fit()
+    print("selected: ",selected)
+    print(smf.ols(formula,data).exog_names)
+    te=time.time()
+    print("time forward selection: ", te-ts)
     return model
+
 
 
 def forward_selected_interaction(data, response, maxvars=9):
