@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from numba import njit, jit
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -19,11 +20,58 @@ from webviz_config.utils import calculate_slider_step
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+<<<<<<< HEAD
 from itertools import combinations
+=======
+import plotly.express as px
+
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
 from .._datainput.fmu_input import load_parameters, load_csv
 import time
 class MultipleRegression(WebvizPluginABC):
-    """ This will become a plugin for multiple regression of parameters and responses"""
+    """### Best fit using forward stepwise regression
+
+This plugin shows a multiple regression of numerical input parameters and a chosen response.
+
+Input can be given either as:
+
+- Aggregated csv files for parameters and responses,
+- An ensemble name defined in shared_settings and a local csv file for responses
+stored per realizations.
+
+**Note**: Non-numerical (string-based) input parameters and responses are removed.
+
+**Note**: The response csv file will be aggregated per realization.
+
+Arguments:
+
+* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
+* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
+            response_file is defined, the definition of ensembles implies that you want to
+            use simulation timeseries data directly from UNSMRY data. This also implies that
+            the date will be used as a response filter of type `single`.
+* `response_file`: Local (per realization) csv file for response parameters.
+* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
+as row filtering before aggregation. (See below for filter types).
+* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
+* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
+* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
+                defined ensembles using fmu-ensemble (cannot use with response_file,
+                response_csv or parameters_csv).
+* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
+            (Only relevant if neither response_csv or response_file is defined). Default monthly
+* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
+* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
+
+The types of response_filters are:
+```
+- `single`: Dropdown with single selection.
+- `multi`: Dropdown with multiple selection.
+- `range`: Slider with range selection.
+```
+"""
+
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -38,6 +86,7 @@ class MultipleRegression(WebvizPluginABC):
         column_keys: list = None,
         sampling: str = "monthly",
         aggregation: str = "sum",
+        parameter_filters: list = None
     ):
 
         super().__init__()
@@ -51,6 +100,17 @@ class MultipleRegression(WebvizPluginABC):
         self.time_index = sampling
         self.aggregation = aggregation
 
+        """Temporary way of filtering out non-valid parameters"""
+        self.parameter_filters = [
+            'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
+            'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
+            'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
+            'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
+            'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
+            'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
+            'LOG10_MULTZ:MULTZ_MIDREEK', 'RMSGLOBPARAMS:COHIBA_MODEL_MODE',
+            'COHIBA_MODEL_MODE']
+
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -62,8 +122,13 @@ class MultipleRegression(WebvizPluginABC):
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = read_csv(self.parameter_csv)
+            #For csv files
+            self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
             self.responsedf = read_csv(self.response_csv)
+
+            #For parquet files
+            #self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -72,7 +137,7 @@ class MultipleRegression(WebvizPluginABC):
             }
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            )
+            ).drop(columns=self.parameter_filters)
             self.responsedf = load_csv(
                 ensemble_paths=self.ens_paths,
                 csv_file=response_file,
@@ -137,6 +202,10 @@ class MultipleRegression(WebvizPluginABC):
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
+            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."),},
+            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
+            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
+            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
         ]
         return steps
 
@@ -249,20 +318,7 @@ class MultipleRegression(WebvizPluginABC):
             ),
             html.Div(
                 [
-                    html.Label("Interaction"),
-                    dcc.RadioItems(
-                        id=self.ids("interaction"),
-                        options=[
-                            {"label": "On", "value": True},
-                            {"label": "Off", "value": False}
-                        ],
-                        value=True
-                    )
-                ]
-            ),
-            html.Div(
-                [
-                    html.Label("Max parameters"),
+                    html.Label("Max number of parameters"),
                     dcc.Dropdown(
                         id=self.ids("max-params"),
                         options=[
@@ -273,6 +329,51 @@ class MultipleRegression(WebvizPluginABC):
                     ),
                 ]
             ),
+            html.Div(
+                [
+                    html.Label("Force out"),
+                    dcc.Dropdown(
+                        id=self.ids("force-out"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Force in"),
+                    dcc.Dropdown(
+                        id=self.ids("force-in"),
+                        options=[
+                            {"label": param,
+                             "value": param} for param in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        value=[],
+                        
+                    )
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Interaction"),
+                    dcc.RadioItems(
+                        id=self.ids("interaction"),
+                        options=[
+                            {"label": "On", "value": True},
+                            {"label": "Off", "value": False}
+                        ],
+                        value=True
+                    )
+                ]
+            )
 
         ]
 
@@ -295,13 +396,19 @@ class MultipleRegression(WebvizPluginABC):
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize":12}
+                            style_cell={"fontSize":14}
                         ),
                         html.Div(
                             style={'flex': 3},
                             children=[
                                 wcc.Graph(id=self.ids('p-values-plot')),
                                 dcc.Store(id=self.ids("initial-parameter"))
+                            ]
+                        ),
+                        html.Div(
+                            style={'flex': 3},
+                            children=[
+                                wcc.Graph(id=self.ids('coefficient-plot-S')),
                             ]
                         )
                     ],
@@ -321,6 +428,8 @@ class MultipleRegression(WebvizPluginABC):
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
             Input(self.ids("interaction"), "value"),
             Input(self.ids("max-params"), "value"),
         ]
@@ -335,6 +444,8 @@ class MultipleRegression(WebvizPluginABC):
         callbacks = [
             Input(self.ids("ensemble"), "value"),
             Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
             Input(self.ids("interaction"), "value"),
             Input(self.ids("max-params"), "value"),
         ]
@@ -342,7 +453,23 @@ class MultipleRegression(WebvizPluginABC):
             for col_name in self.response_filters:
                 callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
-
+    
+    @property
+    def coefficientplot_input_callbacks(self):
+        """List of inputs for coefficient plot callback"""
+        callbacks = [
+            Input(self.ids("ensemble"), "value"),
+            Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max-params"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+    
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
         filteroptions = []
@@ -354,18 +481,8 @@ class MultipleRegression(WebvizPluginABC):
         return filteroptions
     
     def set_callbacks(self, app):
-        """Temporary way of filtering out non-valid parameters"""
-        parameter_filters=[
-                'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
-                'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
-                'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-                'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
-                'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
-                'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
-                'LOG10_MULTZ:MULTZ_MIDREEK', "RMSGLOBPARAMS:COHIBA_MODEL_MODE",
-                "COHIBA_MODEL_MODE"]
-
         """Set callbacks for the table and the p-values plot"""
+        ###@njit()
         @app.callback(
             [
                 Output(self.ids("table"), "data"),
@@ -374,7 +491,7 @@ class MultipleRegression(WebvizPluginABC):
             ],
             self.table_input_callbacks,
         )
-        def _update_table(ensemble, response, interaction, max_vars, *filters):
+        def _update_table(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -392,21 +509,20 @@ class MultipleRegression(WebvizPluginABC):
                 aggregation=self.aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            param_df = parameterdf.drop(columns=parameter_filters)
+            parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
-            param_df.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in param_df.columns]
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
             responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
             response = response.replace(":", "_")
             response = response.replace(",", "_")
-
-            param_df = parameterdf.drop(columns=parameter_filters)
-            df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             
             #Get results and genereate datatable 
-            result = gen_model(df, response, max_vars = max_vars, interaction= interaction)
-            table = result.model.fit().summary2().tables[1]
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+            table = result.model.fit().summary2().tables[1].drop("Intercept")
+            table.drop(["Std.Err.","t","[0.025","0.975]"],axis=1,inplace=True)
             
             #Turn index names (the params) into columms 
             table.index.name = "Parameter"
@@ -428,6 +544,7 @@ class MultipleRegression(WebvizPluginABC):
                     f"Multiple regression with {response} as response",
                 )
 
+        ###@njit()
         @app.callback(
             [
                 Output(self.ids("p-values-plot"), "figure"),
@@ -435,9 +552,22 @@ class MultipleRegression(WebvizPluginABC):
             ],
             self.pvalues_input_callbacks
         )
+<<<<<<< HEAD
         def update_pvalues_plot(ensemble, response, interaction, max_vars, *filters):
             """Callback to update the p-values plot"""
             ts= time.time()
+=======
+        def update_pvalues_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the p-values plot
+            
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model using forward stepwise regression, with or without interactions
+            5. Get p-values from fitted model and sort them in ascending order
+            """
+
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -447,22 +577,65 @@ class MultipleRegression(WebvizPluginABC):
                 aggregation=self.aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            param_df = parameterdf.drop(columns=parameter_filters)
+            parameterdf.drop(columns=force_out, inplace=True)
 
             #For now, remove ':' and ',' form param and response names. Should only do this once though 
-            param_df.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in param_df.columns]
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
             responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
             response = response.replace(":", "_")
             response = response.replace(",", "_")
             
+<<<<<<< HEAD
             df = pd.merge(responsedf, param_df, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             model = gen_model(df, response, max_vars = max_vars, interaction= interaction)
             p_sorted = model.pvalues.sort_values().drop("Intercept")
             te= time.time()
             print(te-ts)
+=======
+            #Get results and generate p-values plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
+            p_sorted = result.pvalues.sort_values().drop("Intercept")
+            
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
             return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
+        
+        ###@njit()
+        @app.callback(
+            [
+                Output(self.ids("coefficient-plot-S"), "figure"),
+            ],
+            self.coefficientplot_input_callbacks
+        )
+        def update_coefficient_plot(ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the coefficient plot"""
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
 
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            
+            #Get results and generate coefficient plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
+            #print(gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction))
+            
+            return make_arrow_plot(result, self.plotly_theme)
+    
+    ###@njit()
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -536,18 +709,28 @@ def _filter_and_sum_responses(
     raise ValueError(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
+        force_in: [],
         max_vars: int=9,
         interaction: bool=False):
         
         if interaction:
+<<<<<<< HEAD
             return forward_selected(df, gen_column_names(df,response), response, maxvars=max_vars)
         else:
             return forward_selected(df, df.columns, response, maxvars=max_vars)
+=======
+            df = gen_interaction_df(df, response)
+            return forward_selected_interaction(df, response, force_in = force_in, maxvars=max_vars)
+        else:
+            #print(forward_selected(df, response, force_in = force_in, maxvars=max_vars))
+            return forward_selected(df, response, force_in = force_in, maxvars=max_vars)
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
 
 """
 def gen_interaction_df(
@@ -574,7 +757,31 @@ def gen_column_names(df: pd.DataFrame, response: str):
     originals = list(df.drop(columns=response).columns)
     return originals + combine + [response]
 
+<<<<<<< HEAD
 def forward_selected(data, vars, response, maxvars=9):
+=======
+def gen_column_names(df, interaction_only):
+    """Generate coloumn names. Specifically used to create interaction-term names"""
+    output = list(df.columns)
+    if interaction_only:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (
+                    (colname1 != colname2) and
+                    (f"{colname1}:{colname2}" not in output) or
+                    (f"{colname2}:{colname1}" not in output)
+                        ):
+                        output.append(f"{colname1}:{colname2}")
+    else:
+        for colname1 in df.columns:
+            for colname2 in df.columns:
+                if (f"{colname1}:{colname2}" not in output) and (f"{colname2}:{colname1}" not in output):
+                    output.append(f"{colname1}:{colname2}")
+    return output
+
+###@njit()
+def forward_selected(data, response, force_in, maxvars=9):
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
     # TODO find way to remove non-significant variables form entering model. 
     """Linear model designed by forward selection.
 
@@ -594,7 +801,7 @@ def forward_selected(data, vars, response, maxvars=9):
     ts=time.time()
     remaining = set(vars)
     remaining.remove(response)
-    selected = []
+    selected = force_in
 
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -606,7 +813,12 @@ def forward_selected(data, vars, response, maxvars=9):
             
             scores_with_candidates.append((model.fit().rsquared_adj, model.exog_names[1:]))
         scores_with_candidates.sort()
+<<<<<<< HEAD
         best_new_score, best_set = scores_with_candidates.pop()
+=======
+        print("len(scores_with_candidates): ", len(scores_with_candidates))
+        best_new_score, best_candidate = scores_with_candidates.pop()
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
         if current_score < best_new_score:
             remaining.difference(best_set)
             selected = best_set
@@ -620,9 +832,13 @@ def forward_selected(data, vars, response, maxvars=9):
     print("time forward selection: ", te-ts)
     return model
 
+<<<<<<< HEAD
 
 
 def forward_selected_interaction(data, response, maxvars=9):
+=======
+def forward_selected_interaction(data, response, force_in, maxvars=9):
+>>>>>>> dac1f485025eaac72c0c68a04b8a4b6e08e4e12d
     """Linear model designed by forward selection.
 
     Parameters:
@@ -640,7 +856,7 @@ def forward_selected_interaction(data, response, maxvars=9):
     """
     remaining = set(data.columns)
     remaining.remove(response)
-    selected = []
+    selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
@@ -704,6 +920,156 @@ def make_p_values_plot(p_sorted, theme):
     fig["layout"]["font"].update({"size": 12})
     return fig
 
+def make_arrow_plot(model, theme):
+    """Sorting dictionary in descending order. 
+    Saving parameters and values of coefficients in lists.
+    Saving plot-function to variable fig."""
+    coefs = dict(sorted(model.params.sort_values().items(), key=lambda x: x[1], reverse=True))
+    params = list(coefs.keys())
+    vals = list(coefs.values())
+    sgn = signs(vals)
+    colors = color_array(vals, params, sgn)
+
+    fig = arrow_plot(coefs, vals, params, sgn, colors, theme)
+    #fig["layout"]["font"].update({"size": 12})
+
+    return [fig] # Need hard brackets here
+
+###@njit()
+def signs(vals):
+    """Saving signs of coefficients to array sgn"""
+    sgn = np.zeros(len(vals))
+    for i, v in enumerate(vals):
+        sgn[i] = np.sign(v)
+    return sgn
+
+def arrow_plot(coefs, vals, params, sgn, colors, theme):
+    """Making arrow plot to illutrate relative importance 
+    of coefficients to a userdefined response"""
+    steps = 2/(len(coefs)-1)
+    points = len(coefs)
+
+    x = np.linspace(0, 2, points)
+    y = np.zeros(len(x))
+
+    global fig
+    #fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[theme["layout"]["colorscale"]["sequential"][:][:]], range_color=[-1, 1]) # Rejected because of hard brackets. Modified in the line below. Error: Received value: [[[0.0, 'rgb(36, 55, 70)'], [0.125, 'rgb(102, 115, 125)'], [0.25, 'rgb(145, 155, 162)'], [0.375, 'rgb(189, 195, 199)'], [0.5, 'rgb(255, 231, 214)'], [0.625, 'rgb(216, 178, 189)'], [0.75, 'rgb(190, 128, 145)'], [0.875, 'rgb(164, 76, 101)'], [1.0, 'rgb(125, 0, 35)']]]
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    fig.update_xaxes(
+        ticktext=[p for p in params],
+        tickvals=[steps*i for i in range(points)],
+    )
+    fig.update_yaxes(showticklabels=False)
+    fig.update_layout(
+        yaxis=dict(range=[-0.125, 0.125], title=f'', showgrid=False), 
+        xaxis=dict(range=[-0.2, x[-1]+0.2], title='Parameters', showgrid=False, zeroline=False),
+        title='Sign of coefficient of the key parameter combination',
+        autosize=False,
+        width=725,
+        height=500,
+        plot_bgcolor='#FFFFFF',
+        coloraxis_colorbar=dict(
+            title="",
+            tickvals=[-0.97, -0.88, 0.88, 0.97],
+            ticktext=["coefficient", "Great negative", "coefficient", "Great positive"],
+            lenmode="pixels", len=300,
+        ),
+        hoverlabel=dict(
+            bgcolor="white", 
+            font_size=12, 
+        )
+    )
+
+    """Costumizing the hoverer"""
+    fig.update_traces(hovertemplate='Parameter: %{x}')
+
+    """Adding zero-line along y-axis"""
+    fig.add_shape(
+        # Line Horizontal
+            type="line",
+            x0=-0.18,
+            y0=0,
+            x1=x[-1]+0.18,
+            y1=0,
+            line=dict(
+                color='#222A2A',
+                width=0.75,
+            ),
+    )
+    fig.add_shape(
+        # Arrowhead, left
+        type="path",
+        path=" M -0.2 0 L -0.18 -0.005 L -0.18 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+    fig.add_shape(
+        # Arrowhead, right
+        type="path",
+        path=f" M {x[-1]+0.2} 0 L {x[-1]+0.18} -0.005 L {x[-1]+0.18} 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+
+    """Adding arrows to figure"""
+    for i, s in enumerate(sgn):
+        if s == 1:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]} 0 L {x[i]} 0.1 L {x[i]-0.05} 0.075 L {x[i]} 0.1 L {x[i]+0.05} 0.075",
+                line_color=colors[i],     
+            )
+        else:
+            fig.add_shape(
+                type="path",
+                path=f" M {x[i]} 0 L {x[i]} -0.1 L {x[i]-0.05} -0.075 L {x[i]} -0.1 L {x[i]+0.05} -0.075",
+                line_color=colors[i],
+            )
+
+    return fig # Should not have hard brackets here
+
+def color_array(vals, params, sgn):
+    """Function to scale coefficients to a green-red color range"""
+    max_val = vals[0]
+    min_val = vals[-1]
+
+    standard = 250
+
+    """Defining color values to match theme because I'm 
+    lacking knowledge on how to live life with ease"""
+    # Final RGB values
+    rf = 36
+    gf = 55
+    bf = 70
+
+    # Max RGB values
+    r0 = 255
+    g0 = 231
+    b0 = 214
+
+    # Initial RGB value
+    ri = 125
+    gi = 0
+    bi = 35
+
+    color_arr = ['rgba(255, 255, 255, 1)']*len(params)
+
+    global k
+    k=0
+
+    """Adding colors matching scaled values of coefficients to color_arr array"""
+    for s, v in zip(sgn, vals):
+        if s == 1:
+            scaled_val_max = v/max_val
+            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
+        else:
+            scaled_val_min = v/min_val
+            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
+        k += 1
+    
+    return color_arr
+
+###@njit()
 def make_range_slider(domid, values, col_name):
     try:
         values.apply(pd.to_numeric, errors="raise")
@@ -735,6 +1101,7 @@ def theme_layout(theme, specific_layout):
     return layout
 
 
+###@njit()
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
