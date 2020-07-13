@@ -436,7 +436,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
-        return [(get_path, [{"path": fn}]) for fn in self.surfacefiles]
+        return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
 
 
 @webvizstore
