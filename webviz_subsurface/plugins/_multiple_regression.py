@@ -190,10 +190,18 @@ The types of response_filters are:
             {
                 "id": self.ids("p-values-plot"),
                 "content": (
-                    "The p-values for the parameters from the table ranked from most significant "
+                    "A plot showing the p-values for the parameters from the table ranked from most significant "
                     "to least significant.  Red indicates "
                     "that the p-value is significant, gray indicates that the p-value "
                     "is not significant."
+                )
+            },
+            {
+                "id": self.ids("coefficient-plot"),
+                "content": (
+                    "A plot showing the coefficient values from ranked from great positive to great negative. "
+                    "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
+                    "downwards respesent negative coefficients."
                 )
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
@@ -202,6 +210,7 @@ The types of response_filters are:
             {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
             {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
             {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
+            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."),},
         ]
         return steps
 
@@ -421,7 +430,7 @@ The types of response_filters are:
                         html.Div(
                             style={'flex': 3},
                             children=[
-                                wcc.Graph(id=self.ids('coefficient-plot-S')),
+                                wcc.Graph(id=self.ids('coefficient-plot')),
                             ]
                         ),
                     ],
@@ -609,7 +618,7 @@ The types of response_filters are:
         ###@njit()
         @app.callback(
             [
-                Output(self.ids("coefficient-plot-S"), "figure"),
+                Output(self.ids("coefficient-plot"), "figure"),
             ],
             [
                 Input(self.ids("submit-btn"), "n_clicks")
