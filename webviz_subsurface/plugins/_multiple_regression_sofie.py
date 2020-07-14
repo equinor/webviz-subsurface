@@ -406,7 +406,7 @@ The types of response_filters are:
                 children=[
                     html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
-                        id=id, 
+                        id=id,
                         children="Submit",
                     ),
                 ],
