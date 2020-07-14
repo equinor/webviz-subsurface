@@ -526,7 +526,6 @@ The types of response_filters are:
             4. Fit model using forward stepwise regression, with or without interactions
             5. Generate table
             """
-            pass #?
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -557,7 +556,8 @@ The types of response_filters are:
             else:
                 #Get results and genereate datatable. Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
-                    warnings.filterwarnings('error')
+                    warnings.filterwarnings('error', category=RuntimeWarning) #bad? dangerous?
+                    warnings.filterwarnings('ignore', category=UserWarning) #bad? dangerous?
                     try:
                         result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
                         table = result.model.fit().summary2().tables[1].drop("Intercept")
@@ -572,7 +572,7 @@ The types of response_filters are:
                             columns,
                             f"Multiple regression with {response} as response",
                         )
-                    except (Exception, Warning) as e:
+                    except (Exception, RuntimeWarning) as e:
                         #print("error: ", e)
                         return(
                             [{"e": ""}],
@@ -635,12 +635,12 @@ The types of response_filters are:
             else:
                 #Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
-                    warnings.filterwarnings('error')
+                    warnings.filterwarnings('error', category=RuntimeWarning) #bad? dangerous?
                     try:
                         result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
                         p_sorted = result.pvalues.sort_values().drop("Intercept")
                         return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
-                    except (Exception, Warning) as e:
+                    except (Exception, RuntimeWarning) as e:
                         #print("error: ", e)
                         return(
                         {
@@ -666,7 +666,6 @@ The types of response_filters are:
         )
         def update_coefficient_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
-            pass
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -699,14 +698,14 @@ The types of response_filters are:
                     },
                 )
             else:                
-                #Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
+                #Get results and arrow-plot. Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
-                    warnings.filterwarnings('error')
+                    warnings.filterwarnings('error', category=RuntimeWarning) #bad? dangerous?
                     try:
                         result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
                         model = result.params.sort_values().drop("Intercept").items()
                         return make_arrow_plot(model, self.plotly_theme)
-                    except (Exception, Warning) as e:
+                    except (Exception, RuntimeWarning) as e:
                         #print("error: ", e)
                         return(
                             {
@@ -804,15 +803,10 @@ def gen_model(
     ):
     if interaction:
         df = gen_interaction_df(df,response)
-        #print(df.head())
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
-        #print("time to gen df: ", te1-ts1)
         
     else:
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
-    te2= time.perf_counter()
-    #print("time to gen and fit: ", te2-ts2)
-
     return model
 
 
@@ -855,7 +849,6 @@ def forward_selected(data: pd.DataFrame,
                 current_model = selected.copy()+[candidate] 
             X = data.filter(items=current_model).to_numpy(dtype="float32")
             p = X.shape[1]
-            #print("divisor: ",n-p-1)
             if n-p-1<1: 
                 formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
@@ -873,17 +866,14 @@ def forward_selected(data: pd.DataFrame,
             r2 = 1-SS_RES/SST
             
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
-            #print("R2adj, candidate, p, sumsquare resid: ", (R_2_adj, candidate),p,r2)
             scores_with_candidates.append((R_2_adj, candidate))
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             if "*" in best_candidate:
-                #print("HWERE", best_candidate)
                 for base_feature in best_candidate.split("*"):
                     if base_feature in remaining:
                         remaining.remove(base_feature)
-                        # print("remaining: ",remaining)
                     if base_feature not in selected:
                         selected.append(base_feature)
             
