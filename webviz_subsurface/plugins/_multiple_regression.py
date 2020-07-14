@@ -354,10 +354,6 @@ The types of response_filters are:
                     html.Label("Force out"),
                     dcc.Dropdown(
                         id=self.ids("force-out"),
-                        options=[
-                            {"label": param,
-                             "value": param} for param in self.parameters
-                        ],
                         clearable=True,
                         multi=True,
                         value=[],
@@ -370,10 +366,6 @@ The types of response_filters are:
                     html.Label("Force in"),
                     dcc.Dropdown(
                         id=self.ids("force-in"),
-                        options=[
-                            {"label": param,
-                             "value": param} for param in self.parameters
-                        ],
                         clearable=True,
                         multi=True,
                         value=[],
@@ -487,6 +479,31 @@ The types of response_filters are:
         return filteroptions
     
     def set_callbacks(self, app):
+        """Set callbacks to update dropdown menues"""
+        @app.callback(
+                Output(self.ids("force-out"), "options"),
+            [
+                Input(self.ids("parameter-list"), "value"),
+                Input(self.ids("force-in"), "value")
+            ]
+        )
+        def update_force_out(parameter_list, force_in=[], *filters): ##*filters ?????
+            """Returns a dictionary with options for force out"""
+            fo_lst = list(self.parameterdf[parameter_list].drop(columns=force_in))
+            return [{"label": fo, "value": fo} for fo in fo_lst]
+
+        @app.callback(
+                Output(self.ids("force-in"), "options"),
+            [
+                Input(self.ids("parameter-list"), "value"),
+                Input(self.ids("force-out"), "value")
+            ]
+        )
+        def update_force_out(parameter_list, force_out=[], *filters): ##*filters ?????
+            """Returns a dictionary with options for force in"""
+            fi_lst = list(self.parameterdf[parameter_list].drop(columns=force_out))
+            return [{"label": fi, "value": fi} for fi in fi_lst]
+
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
             [
