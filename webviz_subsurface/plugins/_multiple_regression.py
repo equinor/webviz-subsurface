@@ -1,6 +1,7 @@
 from uuid import uuid4
 from pathlib import Path
 
+import warnings
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
@@ -305,7 +306,7 @@ The types of response_filters are:
                         ],
                         clearable=True,
                         multi=True,
-                        value=self.parameters[0:5],
+                        value=[],
                     ),
                 ]
             ),
@@ -341,7 +342,7 @@ The types of response_filters are:
                     dcc.Dropdown(
                         id=self.ids("max-params"),
                         options=[
-                            {"label": val, "value": val} for val in range(1,min(10,len(self.parameterdf.columns)))
+                            {"label": val, "value": val} for val in range(1,min(20,len(self.parameterdf.columns)))
                         ],
                         clearable=False,
                         value=3,
@@ -504,10 +505,10 @@ The types of response_filters are:
             1. Filters and aggregates response dataframe per realization
             2. Filters parameters dataframe on selected ensemble
             3. Merge parameter and response dataframe
-            4. Fit model
             4. Fit model using forward stepwise regression, with or without interactions
+            5. Generate table
             """
-            pass
+            pass #?
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -528,30 +529,38 @@ The types of response_filters are:
             response = response.replace(",", "_")
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             
-            #Get results and genereate datatable 
-            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
-            table = result.model.fit().summary2().tables[1].drop("Intercept")
-            table.drop(["Std.Err.","t","[0.025","0.975]"],axis=1,inplace=True)
-            
-            #Turn index names (the params) into columms 
-            table.index.name = "Parameter"
-            table.reset_index(inplace=True)
-            
-            columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
-            data = table.to_dict("rows")
-            
-            if result.model.fit().df_model == 0:
-                return (
-                    [{"e": "Cannot calculate fit for given selection. Select a different response or filter setting"}],
-                    [{"name": "Error", "id": "e"}],
-                    "Error",
+            #If no selected parameters
+            if not parameter_list:
+                return(
+                        [{"e": ""}],
+                        [{"name": "", "id": "e"}],
+                        "Please selecet parameters to be included in the model",
                 )
             else:
-                return(
-                    data,
-                    columns,
-                    f"Multiple regression with {response} as response",
-                )
+                #Get results and genereate datatable. Gives warning if e.g. divide by zero. Catch this
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error')
+                    try:
+                        result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
+                        table = result.model.fit().summary2().tables[1].drop("Intercept")
+                        table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
+                        table.index.name = "Parameter"
+                        table.reset_index(inplace=True)
+                
+                        columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
+                        data = table.to_dict("rows")
+                        return(
+                            data,
+                            columns,
+                            f"Multiple regression with {response} as response",
+                        )
+                    except (Exception, Warning) as e:
+                        #print("error: ", e)
+                        return(
+                            [{"e": ""}],
+                            [{"name": "", "id": "e"}],
+                            "Cannot calculate fit for given selection. Select a different response or filter setting",
+                        )
 
         @app.callback(
             [
@@ -594,10 +603,39 @@ The types of response_filters are:
             
             #Get results and generate p-values plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
-            p_sorted = result.pvalues.sort_values().drop("Intercept")
             
-            return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
+             #If no selected parameters
+            if not parameter_list:
+                return(
+                    {
+                        "layout": {
+                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        }
+                    },
+                    None,
+                )
+            else:
+                #Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error')
+                    try:
+                        result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
+                        p_sorted = result.pvalues.sort_values().drop("Intercept")
+                        return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
+                    except (Exception, Warning) as e:
+                        #print("error: ", e)
+                        return(
+                        {
+                            "layout": {
+                                "title": "<b>Cannot calculate fit for given selection</b><br>"
+                                "Select a different response or filter setting."
+                            }
+                        },
+                        None,
+                        )
+
+
+            
         
         @app.callback(
             [
@@ -632,10 +670,35 @@ The types of response_filters are:
             
             #Get results and generate coefficient plot
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
-            model = result.params.sort_values().drop("Intercept").items()
             
-            return make_arrow_plot(model, self.plotly_theme)
+             #If no selected parameters
+            if not parameter_list:
+                return(
+                    {
+                        "layout": {
+                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        }
+                    },
+                )
+            else:                
+                #Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error')
+                    try:
+                        result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
+                        model = result.params.sort_values().drop("Intercept").items()
+                        return make_arrow_plot(model, self.plotly_theme)
+                    except (Exception, Warning) as e:
+                        #print("error: ", e)
+                        return(
+                            {
+                                "layout": {
+                                    "title": "<b>Cannot calculate fit for given selection</b><br>"
+                                    "Select a different response or filter setting."
+                                }
+                            },
+                        )                   
+            
     
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -885,13 +948,26 @@ def signs(vals):
 def arrow_plot(coefs, vals, params, sgn, colors, theme):
     """Making arrow plot to illutrate relative importance 
     of coefficients to a userdefined response"""
+    if len(coefs) < 2:
+        raise ValueError("Number of coefficients must be greater than 1")
     steps = 2/(len(coefs)-1)
     points = len(coefs)
 
     x = np.linspace(0, 2, points)
     y = np.zeros(len(x))
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'), (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'), (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'), (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'), (1.0, 'rgb(125, 0, 35)')], range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    color_scale=[(0.0, 'rgb(36, 55, 70)'),
+                (0.125, 'rgb(102, 115, 125)'),
+                (0.25, 'rgb(145, 155, 162)'),
+                (0.375, 'rgb(189, 195, 199)'),
+                (0.5, 'rgb(255, 231, 214)'),
+                (0.625, 'rgb(216, 178, 189)'),
+                (0.75, 'rgb(190, 128, 145)'),
+                (0.875, 'rgb(164, 76, 101)'),
+                (1.0, 'rgb(125, 0, 35)')
+                ]
+
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
     
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
