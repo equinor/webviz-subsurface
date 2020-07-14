@@ -205,6 +205,7 @@ The types of response_filters are:
                     "downwards respesent negative coefficients."
                 )
             },
+            {"id": self.ids("parameter-list"), "content": ("Choose parameters to consider in the regression."),},
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.ids("responses"), "content": ("Select the active response."),},
             {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."),},
@@ -499,7 +500,7 @@ The types of response_filters are:
                 Input(self.ids("force-out"), "value")
             ]
         )
-        def update_force_out(parameter_list, force_out=[], *filters): ##*filters ?????
+        def update_force_in(parameter_list, force_out=[], *filters): ##*filters ?????
             """Returns a dictionary with options for force in"""
             fi_lst = list(self.parameterdf[parameter_list].drop(columns=force_out))
             return [{"label": fi, "value": fi} for fi in fi_lst]
@@ -984,16 +985,23 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
                 (1.0, 'rgb(125, 0, 35)')
                 ]
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, 
+                     color_continuous_scale=color_scale,  # Theme, replaced [] with () as hard brackets were rejected:(
+                     range_color=[-1, 1])
     
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
-        xaxis=dict(range=[-0.2, x[-1]+0.2], title='', ticktext=[p for p in params], tickvals=[steps*i for i in range(points)]),
+        yaxis=dict(range=[-0.15, 0.15], title='', 
+                   showticklabels=False), 
+        xaxis=dict(range=[-0.2, x[-1]+0.2], 
+                   title='', 
+                   ticktext=[p for p in params], 
+                   tickvals=[steps*i for i in range(points)]),
         autosize=False,
         coloraxis_colorbar=dict(
             title="",
             tickvals=[-0.97, -0.88, 0.88, 0.97],
-            ticktext=["coefficient", "Great negative", "coefficient", "Great positive"],
+            ticktext=["coefficient", "Great negative", 
+                      "coefficient", "Great positive"],
             lenmode="pixels", len=300,
         ),
         hoverlabel=dict(
@@ -1006,7 +1014,8 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"Sign of coefficients for the parameters from the table"
+                "title": "Sign of coefficients for \
+                          the parameters from the table"
             }
         )
     )
@@ -1020,7 +1029,13 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
         if s == 1:
             fig.add_shape(
                 type="path",
-                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
+                path=f" M {x[i]-0.025} 0 \
+                        L {x[i]-0.025} 0.06 \
+                        L {x[i]-0.07} 0.06 \
+                        L {x[i]} 0.08 \
+                        L {x[i]+0.07} 0.06 \
+                        L {x[i]+0.025} 0.06 \
+                        L {x[i]+0.025} 0 ",
                 line_color="#222A2A",
                 fillcolor=colors[i], 
                 line_width=0.6  
@@ -1028,7 +1043,13 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
         else:
             fig.add_shape(
                 type="path",
-                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
+                path=f" M {x[i]-0.025} 0 \
+                        L {x[i]-0.025} -0.06 \
+                        L {x[i]-0.07} -0.06 \
+                        L {x[i]} -0.08 \
+                        L {x[i]+0.07} -0.06 \
+                        L {x[i]+0.025} -0.06 \
+                        L {x[i]+0.025} 0 ",
                 line_color="#222A2A",
                 fillcolor=colors[i], 
                 line_width=0.6
@@ -1051,7 +1072,8 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
     return fig # Should not have hard brackets here
 
 def color_array(vals, params, sgn):
-    """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
+    """Function to scale coefficients to a dark 
+    magenta - beige - dusy navy color range"""
     max_val = vals[0]
     min_val = vals[-1]
 
@@ -1081,10 +1103,14 @@ def color_array(vals, params, sgn):
     for s, v in zip(sgn, vals):
         if s == 1:
             scaled_val_max = v/max_val
-            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
+            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, \
+                                  {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, \
+                                  {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
         else:
             scaled_val_min = v/min_val
-            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
+            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, \
+                                  {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, \
+                                  {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
         k += 1
     
     return color_arr
