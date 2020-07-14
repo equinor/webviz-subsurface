@@ -3,10 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from pathlib import Path
-from operator import add
-from operator import sub
-import matplotlib.image as mpimg
-import math
+from webviz_config.common_cache import CACHE
 
 class HuvXsection:
     def __init__(
@@ -25,9 +22,14 @@ class HuvXsection:
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
         self.fig = None
+        for sfc_path in self.surface_attributes:
+            self.surface_attributes[sfc_path]['surface'] =\
+                xtgeo.surface_from_file(sfc_path, fformat='irap_binary')
+            self.surface_attributes[sfc_path]['error_surface'] =\
+                xtgeo.surface_from_file(self.surface_attributes[sfc_path]['error_path'], fformat='irap_binary')
 
 
-
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def set_well(self, wellpath):
         if not wellpath is None:
             well = xtgeo.Well(Path(wellpath))
@@ -37,7 +39,12 @@ class HuvXsection:
             zonation_points = get_zone_RHLEN(well_df, well.wellname, self.zonation_data)
             conditional_points = get_conditional_RHLEN(well_df, well.wellname, self.conditional_data)
             zonelog = self.get_zonelog_data(well, self.zonelogname)
-            self.well_attributes = {"wellpath": wellpath, "well_df":well_df, "zonelog":zonelog, "zonation_points":zonation_points, "conditional_points":conditional_points}
+            self.well_attributes = {
+                "wellpath": wellpath,
+                "well_df": well_df, "zonelog":zonelog,
+                "zonation_points": zonation_points,
+                "conditional_points": conditional_points
+            }
 
     def get_plotly_well_data(self):
         if self.well_attributes is None:
@@ -65,20 +72,18 @@ class HuvXsection:
             }]
             return data
 
-
     def set_error_and_surface_lines(self, surface_paths, error_paths):
         for sfc_path in surface_paths:
-            sfc = xtgeo.surface_from_file((sfc_path), fformat="irap_binary")
-            sfc_line = sfc.get_randomline(self.fence)
+            sfc_line = self.surface_attributes[sfc_path]['surface'].get_randomline(self.fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
             if sfc_path in error_paths:
-                de_surface = xtgeo.surface_from_file(self.surface_attributes[sfc_path]["error_path"], fformat="irap_binary")
-                de_line = de_surface.get_randomline(self.fence)
+                de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(self.fence)
                 sfc_line = self.surface_attributes[sfc_path]['surface_line']
                 self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:, 1] + de_line[:, 1]
                 self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:, 1] - de_line[:, 1]
 
-    def get_plotly_layout(self, surfacepaths : list):
+
+    def get_plotly_layout(self, surfacepaths):
         layout = {}
         if len(surfacepaths) == 0:
             layout.update({
@@ -127,6 +132,7 @@ class HuvXsection:
             })
             return layout
 
+
     def get_plotly_err_data(self, surface_paths, error_paths):
         common_paths = [error_path for error_path in error_paths if error_path in surface_paths]
         data = []
@@ -147,7 +153,7 @@ class HuvXsection:
             ]
         return data
 
-    def get_plotly_data(self, surface_paths : list, error_paths : list):
+    def get_plotly_data(self, surface_paths, error_paths):
         if len(surface_paths) == 0:
             data = self.get_plotly_well_data()
             return data
@@ -183,7 +189,7 @@ class HuvXsection:
             data += self.get_plotly_well_data()
             return data
 
-    def sfc_line_max_min_depth(self, surfacepaths : list):
+    def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
             np.max(self.surface_attributes[sfc_path]['surface_line'][:, 1])
             for sfc_path in surfacepaths
@@ -193,7 +199,7 @@ class HuvXsection:
             for sfc_path in surfacepaths
         ])
         return np.min(minvalues), np.max(maxvalues)
-    
+
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
         data = self.get_plotly_data(surfacepaths, error_paths)
@@ -204,6 +210,7 @@ class HuvXsection:
         #figure.write_image("./xsec.png")
         return None
 
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
         well_df = well.dataframe
         well.create_relative_hlen()
@@ -266,7 +273,7 @@ class HuvXsection:
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
-        if np.isnan(zonevals[-1]) == False:
+        if not np.isnan(zonevals[-1]):
             end = len(zonevals)-1
             color = color_list[int(zonevals[-1])]
             zoneplot.append({
@@ -277,8 +284,7 @@ class HuvXsection:
                 "marker": {"opacity": 0.5},
                 "name": f"Zone: {zonevals[-2]}",
                 })
-        if np.isnan(zonevals[-1]) == True:
-            end = len(zonevals)-1
+        if np.isnan(zonevals[-1]):
             color = "rgb(211,211,211)"
             zoneplot.append({
                 "x": np.array(well_RHLEN[-1]),
@@ -294,6 +300,8 @@ class HuvXsection:
 def stratigraphic_sort(elem):
     return elem[1]
 
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_zone_RHLEN(well_df,wellname,zone_path):
     zonation_data = pd.read_csv(zone_path)
     zone_df = zonation_data[zonation_data["Well"] == wellname]
@@ -308,7 +316,9 @@ def get_zone_RHLEN(well_df,wellname,zone_path):
         zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_RHLEN, zone_df["TVD"]])
 
-def get_conditional_RHLEN(well_df,wellname,cond_path):
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_conditional_RHLEN(well_df, wellname, cond_path):
     conditional_data = pd.read_csv(cond_path)
     cond_df = conditional_data[conditional_data["Well"] == wellname]
     cond_df_xval = cond_df["x"].values.copy()
@@ -322,6 +332,8 @@ def get_conditional_RHLEN(well_df,wellname,cond_path):
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([cond_RHLEN, cond_df["TVD"]])
 
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_intersection_surface_well(well_df, ymin, ymax):
     x_well_max = np.max(well_df["R_HLEN"])
     x_well = 0
