@@ -459,8 +459,42 @@ The types of response_filters are:
         )
 
     @property
-    def model_input_callbacks(self):
+    def table_state_callbacks(self):
         """List of States for multiple regression table callback"""
+        callbacks = [
+            State(self.ids("parameter-list"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+    
+    @property
+    def pvalues_state_callbacks(self):
+        """List of States for p-values callback"""
+        callbacks = [
+            State(self.ids("parameter-list"), "value"),
+            State(self.ids("ensemble"), "value"),
+            State(self.ids("responses"), "value"),
+            State(self.ids("force-out"), "value"),
+            State(self.ids("force-in"), "value"),
+            State(self.ids("interaction"), "value"),
+            State(self.ids("max-params"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+    
+    @property
+    def coefficientplot_state_callbacks(self):
+        """List of states for coefficient plot callback"""
         callbacks = [
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
@@ -492,16 +526,13 @@ The types of response_filters are:
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
                 Output(self.ids("table_title"), "children"),
-                Output(self.ids("p-values-plot"), "figure"),
-                Output(self.ids("initial-parameter"), "data"),
-                Output(self.ids("coefficient-plot"), "figure")
             ],
             [
                 Input(self.ids("submit-btn"), "n_clicks")
             ],
-            self.model_input_callbacks,
+            self.table_state_callbacks,
         )
-        def _update_visualizations(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_table(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
 
             1. Filters and aggregates response dataframe per realization
@@ -523,7 +554,7 @@ The types of response_filters are:
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
-            #For now, remove ':' and ',' form param and response names
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
             parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
             responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
@@ -531,23 +562,17 @@ The types of response_filters are:
             response = response.replace(",", "_")
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             
-            #Get results
+            #Get results and genereate datatable 
             result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction= interaction)
-            
-            #Generate datatable
             table = result.model.fit().summary2().tables[1].drop("Intercept")
             table.drop(["Std.Err.","t","[0.025","0.975]"],axis=1,inplace=True)
+            
+            #Turn index names (the params) into columms 
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
             
             columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
             data = table.to_dict("rows")
-
-            #Generate array of the p-values sorted
-            p_sorted = result.pvalues.sort_values().drop("Intercept")
-
-            #Generate model for coefficient plot
-            model = result.params.sort_values().drop("Intercept").items()
             
             if result.model.fit().df_model == 0:
                 return (
@@ -560,9 +585,91 @@ The types of response_filters are:
                     data,
                     columns,
                     f"Multiple regression with {response} as response",
-                    make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
-                    make_arrow_plot(model, self.plotly_theme)
                 )
+
+        @app.callback(
+            [
+                Output(self.ids("p-values-plot"), "figure"),
+                Output(self.ids("initial-parameter"), "data"),
+            ],
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.pvalues_state_callbacks
+        )
+        def update_pvalues_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the p-values plot
+            
+            1. Filters and aggregates response dataframe per realization
+            2. Filters parameters dataframe on selected ensemble
+            3. Merge parameter and response dataframe
+            4. Fit model using forward stepwise regression, with or without interactions
+            5. Get p-values from fitted model and sort them in ascending order
+            """
+            
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
+
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            
+            #Get results and generate p-values plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in = force_in, max_vars = max_vars, interaction = interaction)
+            p_sorted = result.pvalues.sort_values().drop("Intercept")
+            
+            return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
+        
+        @app.callback(
+            [
+                Output(self.ids("coefficient-plot"), "figure"),
+            ],
+            [
+                Input(self.ids("submit-btn"), "n_clicks")
+            ],
+            self.coefficientplot_state_callbacks
+        )
+        def update_coefficient_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+            """Callback to update the coefficient plot"""
+            pass
+            filteroptions = self.make_response_filters(filters)
+            responsedf = filter_and_sum_responses(
+                self.responsedf,
+                ensemble,
+                response,
+                filteroptions=filteroptions,
+                aggregation=self.aggregation,
+            )
+            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf.drop(columns=force_out, inplace=True)
+
+            #For now, remove ':' and ',' form param and response names. Should only do this once though 
+            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
+            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
+            response = response.replace(":", "_")
+            response = response.replace(",", "_")
+            
+            #Get results and generate coefficient plot
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction=interaction)
+            model = result.params.sort_values().drop("Intercept").items()
+            
+            return make_arrow_plot(model, self.plotly_theme)
     
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
