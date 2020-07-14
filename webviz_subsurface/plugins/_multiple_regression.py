@@ -459,42 +459,8 @@ The types of response_filters are:
         )
 
     @property
-    def table_state_callbacks(self):
-        """List of States for multiple regression table callback"""
-        callbacks = [
-            State(self.ids("parameter-list"), "value"),
-            State(self.ids("ensemble"), "value"),
-            State(self.ids("responses"), "value"),
-            State(self.ids("force-out"), "value"),
-            State(self.ids("force-in"), "value"),
-            State(self.ids("interaction"), "value"),
-            State(self.ids("max-params"), "value"),
-        ]
-        if self.response_filters:
-            for col_name in self.response_filters:
-                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
-        return callbacks
-    
-    @property
-    def pvalues_state_callbacks(self):
-        """List of States for p-values callback"""
-        callbacks = [
-            State(self.ids("parameter-list"), "value"),
-            State(self.ids("ensemble"), "value"),
-            State(self.ids("responses"), "value"),
-            State(self.ids("force-out"), "value"),
-            State(self.ids("force-in"), "value"),
-            State(self.ids("interaction"), "value"),
-            State(self.ids("max-params"), "value"),
-        ]
-        if self.response_filters:
-            for col_name in self.response_filters:
-                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
-        return callbacks
-    
-    @property
-    def coefficientplot_state_callbacks(self):
-        """List of states for coefficient plot callback"""
+    def model_input_callbacks(self):
+        """List of States for multiple regression callback"""
         callbacks = [
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
@@ -530,7 +496,7 @@ The types of response_filters are:
             [
                 Input(self.ids("submit-btn"), "n_clicks")
             ],
-            self.table_state_callbacks,
+            self.model_input_callbacks,
         )
         def _update_table(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update datatable
@@ -595,7 +561,7 @@ The types of response_filters are:
             [
                 Input(self.ids("submit-btn"), "n_clicks")
             ],
-            self.pvalues_state_callbacks
+            self.model_input_callbacks
         )
         def update_pvalues_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the p-values plot
@@ -640,7 +606,7 @@ The types of response_filters are:
             [
                 Input(self.ids("submit-btn"), "n_clicks")
             ],
-            self.coefficientplot_state_callbacks
+            self.model_input_callbacks
         )
         def update_coefficient_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the coefficient plot"""
