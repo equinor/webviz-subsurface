@@ -181,7 +181,10 @@ class HuvXsection:
                     'y':self.surface_attributes[sfc_path]['surface_line'][:, 1],
                     'line': {"color": "rgba(0,0,0,1)", "width": 1},
                     "fill": "tonexty",
-                    'fillcolor':self.surface_attributes[sfc_path]["color"]
+                    'fillcolor':self.surface_attributes[sfc_path]["color"],
+                    'name':self.surface_attributes[sfc_path]['name'],
+                    'text': self.get_hover_text(sfc_path),
+                    'hovertemplate': '<b>Depth:<b> %{y:.2f} <br>' + '<b>Depth error:<b> %{text}'
                 }
                 for sfc_path, _ in surface_tuples
             ]
@@ -200,6 +203,9 @@ class HuvXsection:
             for sfc_path in surfacepaths
         ])
         return np.min(minvalues), np.max(maxvalues)
+
+    def get_hover_text(self, sfc_path):
+        return np.around(self.surface_attributes[sfc_path]['error_line'][:,1], 2)
 
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
