@@ -79,8 +79,7 @@ class HuvXsection:
             if sfc_path in error_paths:
                 de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(self.fence)
                 sfc_line = self.surface_attributes[sfc_path]['surface_line']
-                self.surface_attributes[sfc_path]["error_line_add"] = sfc_line[:, 1] + de_line[:, 1]
-                self.surface_attributes[sfc_path]["error_line_sub"] = sfc_line[:, 1] - de_line[:, 1]
+                self.surface_attributes[sfc_path]["error_line"] = de_line
 
 
     def get_plotly_layout(self, surfacepaths):
@@ -140,15 +139,17 @@ class HuvXsection:
             data += [
                 {
                     'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y':self.surface_attributes[sfc_path]['error_line_sub'],
+                    'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
+                    'hoverinfo':'skip'
                  },
                 {
                     'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y': self.surface_attributes[sfc_path]['error_line_add'],
+                    'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] + self.surface_attributes[sfc_path]['error_line'][:,1],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                     'fill': 'tonexty',
-                    'fillcolor': 'rgba(0,0,0,0.2)'
+                    'fillcolor': 'rgba(0,0,0,0.2)',
+                    'hoverinfo': 'skip'
                 }
             ]
         return data
