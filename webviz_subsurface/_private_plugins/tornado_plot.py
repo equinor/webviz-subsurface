@@ -174,6 +174,21 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             ],
                             value=[],
                         ),
+                        html.Details(
+                            open=False,
+                            children=[
+                                html.Summary("Filter"),
+                                wcc.Select(
+                                    id=self.ids("sens_filter"),
+                                    options=[
+                                        {"label": i, "value": i} for i in self.sensnames
+                                    ],
+                                    value=self.sensnames,
+                                    multi=True,
+                                    size=min(10, len(self.sensnames)),
+                                ),
+                            ],
+                        ),
                         html.Button(
                             style={
                                 "position": "relative",
@@ -206,9 +221,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 Input(self.ids("scale"), "value"),
                 Input(self.ids("cut-by-ref"), "value"),
                 Input(self.ids("storage"), "data"),
+                Input(self.ids("sens_filter"), "value"),
             ],
         )
-        def _calc_tornado(reference, scale, cutbyref, data):
+        def _calc_tornado(reference, scale, cutbyref, data, sens_filter):
             if not data:
                 raise PreventUpdate
             data = json.loads(data)
@@ -222,6 +238,7 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 return tornado_plot(
                     realizations,
                     values,
+                    sens_filter=sens_filter,
                     plotly_theme=self.plotly_theme,
                     reference=reference,
                     scale=scale,
@@ -309,6 +326,7 @@ def cut_by_ref(tornadotable, refname):
 def tornado_plot(
     realizations,
     data,
+    sens_filter,
     plotly_theme,
     reference="rms_seed",
     scale="Percentage",
@@ -336,6 +354,7 @@ def tornado_plot(
     if cutbyref and df["sensname"].str.contains(reference).any():
         df = cut_by_ref(df, reference)
 
+    df = df.loc[df["sensname"].isin(sens_filter)]
     df = sort_by_max(df)
 
     store_low_high = {
