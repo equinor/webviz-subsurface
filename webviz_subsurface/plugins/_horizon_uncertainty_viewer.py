@@ -310,7 +310,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_layer(well, well.wellname, color=well_color)
+                well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
@@ -321,9 +321,9 @@ The cross section is defined by a polyline interactively edited in the map view.
                 color=color,
                 hillshading=hillshading,
             )
-            s_layer = [s_layer]
-            #s_layer.extend(well_layers)
-            return s_layer
+            layers = [s_layer]
+            layers.extend(well_layers)
+            return layers
 
         @app.callback(
             Output(self.ids("plotly-view"), "figure"),
@@ -407,11 +407,11 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("cross-section-view"), "children"),
             ],
         )
-        def _render_draw_well_layer(children):
+        def _render_draw_well(children):
             if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
                 img_bytes = self.xsec.fig.to_image(format="png")
-                my_layer = get_draw_well_layer(img_bytes)
-                return [my_layer]
+                layer = make_png_layer(img_bytes)
+                return [layer]
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -456,12 +456,12 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def get_draw_well_layer(img_bytes):
+def make_png_layer(img_bytes, base_layer=True):
     encoded = base64.b64encode(img_bytes).decode()
     img_base64 = "data:image/png;base64,{}".format(encoded)
-    s_layer = {
+    return {
         "name": "Draw well view",
-        "checked": True,
+        "checked": base_layer,
         "base_layer": True,
         "data": [
             {
@@ -471,9 +471,8 @@ def get_draw_well_layer(img_bytes):
             }
         ],
     }
-    return s_layer
 
-def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
+def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
     positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
@@ -486,6 +485,25 @@ def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
                 "type": "polyline",
                 "color": color,
                 "positions": positions,
+                "tooltip": name,
+            }
+        ],
+    }
+
+def make_well_circle_layer(well, radius=1000, name="well", base_layer=False, color="red"):
+    """Make LayeredMap circle"""
+    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > 0]
+    coord = well.dataframe[["X_UTME", "Y_UTMN"]].values
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": base_layer,
+        "data": [
+            {
+                "type": "circle",
+                "center": coord[0],
+                "color": color,
+                "radius": radius,
                 "tooltip": name,
             }
         ],
