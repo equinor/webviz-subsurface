@@ -1,4 +1,7 @@
 import os
+from pathlib import Path
+from io import BytesIO
+import json
 
 import pandas as pd
 import fmu.ensemble
@@ -40,3 +43,14 @@ def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
             f"Ensure that the files are present in relative folder {volfolder}"
         )
     return pd.concat(dfs)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def get_metadata(metadata: Path) -> BytesIO:
+    """Returns a json formatted dict stored in a BytesIO object"""
+    metadict = json.loads(metadata.read_text())
+    bytesio = BytesIO()
+    bytesio.write(json.dumps(metadict).encode())
+    bytesio.seek(0)
+    return bytesio

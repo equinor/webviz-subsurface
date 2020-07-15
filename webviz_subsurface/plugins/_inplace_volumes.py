@@ -1,5 +1,5 @@
-from uuid import uuid4
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
@@ -12,8 +12,11 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 
-from .._datainput.inplace_volumes import extract_volumes
-from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._datainput.inplace_volumes import extract_volumes, get_metadata
+from .._abbreviations.volume_terminology import (
+    volume_description,
+    column_title,
+)
 from .._abbreviations.number_formatting import table_statistics_base
 
 
@@ -38,7 +41,8 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 **Common settings for both input options**
 * **`response`:** Optional volume response to visualize initially.
-
+* **`metadata`:** Optional path to volume response metadata stored in a json-file.
+Supports descriptions and units.
 ---
 
 ?> The input files must follow FMU standards.
@@ -49,6 +53,8 @@ webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
 * [Example of a file per realization that can be used with `ensembles` and `volfiles`]\
 (https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/\
 realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+* ADD PATH TO METADATAFILE
 
 **The following columns will be used as available filters, if present:**
 
@@ -62,7 +68,8 @@ realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
 **Remaining columns are seen as volumetric responses.**
 
 All names are allowed (except those mentioned above, in addition to `REAL` and `ENSEMBLE`), \
-but the following responses are given more descriptive names automatically:
+but the following responses are given more descriptive names automatically, unless another \
+description is given in `metadata`:
 
 * `BULK_OIL`: Bulk Volume (Oil)
 * `NET_OIL`: Net Volume (Oil)
@@ -89,6 +96,7 @@ but the following responses are given more descriptive names automatically:
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
+        metadata: Path = None,
     ):
 
         super().__init__()
@@ -118,8 +126,13 @@ but the following responses are given more descriptive names automatically:
             )
 
         self.initial_response = response
-        self.uid = uuid4()
-        self.selectors_id = {x: str(uuid4()) for x in self.selectors}
+        self.metadata_path = metadata
+        self.metadata = (
+            self.metadata_path
+            if self.metadata_path is None
+            else json.load(get_metadata(self.metadata_path))
+        )
+        self.selectors_id = {x: self.uuid(x) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
             self.initial_plot = "Box plot"
@@ -129,26 +142,22 @@ but the following responses are given more descriptive names automatically:
             self.initial_group = None
         self.set_callbacks(app)
 
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
-
     @property
     def tour_steps(self):
         return [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": ("Dashboard displaying in place volumetric results. "),
             },
             {
-                "id": self.ids("graph"),
+                "id": self.uuid("graph"),
                 "content": (
                     "Chart showing results for the current selection. "
                     "Different charts and options can be selected from the menu above."
                 ),
             },
             {
-                "id": self.ids("table"),
+                "id": self.uuid("table"),
                 "content": (
                     "The table shows statistics for the current active selection. "
                     "Rows can be filtered by searching, and sorted by "
@@ -156,11 +165,11 @@ but the following responses are given more descriptive names automatically:
                 ),
             },
             {
-                "id": self.ids("response"),
+                "id": self.uuid("response"),
                 "content": "Select the volumetric calculation to display.",
             },
             {
-                "id": self.ids("plot-type"),
+                "id": self.uuid("plot-type"),
                 "content": (
                     "Controls the type of the visualized chart. "
                     "Per realization shows bars per realization, "
@@ -168,11 +177,11 @@ but the following responses are given more descriptive names automatically:
                 ),
             },
             {
-                "id": self.ids("group"),
+                "id": self.uuid("group"),
                 "content": ("Allows grouping of results on a given category."),
             },
             {
-                "id": self.ids("filters"),
+                "id": self.uuid("filters"),
                 "content": (
                     "Filter on different combinations of e.g. zones, facies and regions "
                     "(The options will vary dependent on what was included "
@@ -182,10 +191,11 @@ but the following responses are given more descriptive names automatically:
         ]
 
     def add_webvizstore(self):
-        return (
-            [(read_csv, [{"csv_file": self.csvfile}])]
-            if self.csvfile
-            else [
+        functions = []
+        if self.csvfile:
+            functions.append((read_csv, [{"csv_file": self.csvfile}]))
+        else:
+            functions.append(
                 (
                     extract_volumes,
                     [
@@ -196,8 +206,10 @@ but the following responses are given more descriptive names automatically:
                         }
                     ],
                 )
-            ]
-        )
+            )
+        if self.metadata is not None:
+            functions.append((get_metadata, [{"metadata": self.metadata_path}]))
+        return functions
 
     @property
     def vol_columns(self):
@@ -231,9 +243,9 @@ but the following responses are given more descriptive names automatically:
         selector columns in the volumes dataframe
         """
         inputs = []
-        inputs.append(Input(self.ids("response"), "value"))
-        inputs.append(Input(self.ids("plot-type"), "value"))
-        inputs.append(Input(self.ids("group"), "value"))
+        inputs.append(Input(self.uuid("response"), "value"))
+        inputs.append(Input(self.uuid("plot-type"), "value"))
+        inputs.append(Input(self.uuid("group"), "value"))
         for selector in self.selectors:
             inputs.append(Input(self.selectors_id[selector], "value"))
         return inputs
@@ -287,9 +299,12 @@ but the following responses are given more descriptive names automatically:
                         children=[
                             html.Span("Response:", style={"font-weight": "bold"}),
                             dcc.Dropdown(
-                                id=self.ids("response"),
+                                id=self.uuid("response"),
                                 options=[
-                                    {"label": volume_description(i), "value": i}
+                                    {
+                                        "label": volume_description(i, self.metadata),
+                                        "value": i,
+                                    }
                                     for i in self.responses
                                 ],
                                 value=self.initial_response
@@ -305,7 +320,7 @@ but the following responses are given more descriptive names automatically:
                         children=[
                             html.Span("Plot type:", style={"font-weight": "bold"}),
                             dcc.Dropdown(
-                                id=self.ids("plot-type"),
+                                id=self.uuid("plot-type"),
                                 options=[
                                     {"label": i, "value": i} for i in self.plot_types
                                 ],
@@ -320,7 +335,7 @@ but the following responses are given more descriptive names automatically:
                         children=[
                             html.Span("Group by:", style={"font-weight": "bold"}),
                             dcc.Dropdown(
-                                id=self.ids("group"),
+                                id=self.uuid("group"),
                                 options=[
                                     {"label": i.lower().capitalize(), "value": i}
                                     for i in self.selectors
@@ -340,14 +355,14 @@ but the following responses are given more descriptive names automatically:
         return html.Div(
             children=[
                 wcc.FlexBox(
-                    id=self.ids("layout"),
+                    id=self.uuid("layout"),
                     children=[
                         html.Div(
                             style={"flex": 1},
                             children=[
                                 html.Span("Filters:", style={"font-weight": "bold"}),
                                 html.Div(
-                                    id=self.ids("filters"),
+                                    id=self.uuid("filters"),
                                     children=self.selector_dropdowns,
                                 ),
                             ],
@@ -358,17 +373,17 @@ but the following responses are given more descriptive names automatically:
                                 self.plot_options_layout,
                                 html.Div(
                                     style={"height": 400},
-                                    children=wcc.Graph(id=self.ids("graph")),
+                                    children=wcc.Graph(id=self.uuid("graph")),
                                 ),
                                 html.Div(
                                     children=[
                                         html.Div(
-                                            id=self.ids("table_title"),
+                                            id=self.uuid("table_title"),
                                             style={"textAlign": "center"},
                                             children="",
                                         ),
                                         DataTable(
-                                            id=self.ids("table"),
+                                            id=self.uuid("table"),
                                             sort_action="native",
                                             filter_action="native",
                                             page_action="native",
@@ -386,10 +401,10 @@ but the following responses are given more descriptive names automatically:
     def set_callbacks(self, app):
         @app.callback(
             [
-                Output(self.ids("graph"), "figure"),
-                Output(self.ids("table"), "data"),
-                Output(self.ids("table"), "columns"),
-                Output(self.ids("table_title"), "children"),
+                Output(self.uuid("graph"), "figure"),
+                Output(self.uuid("table"), "data"),
+                Output(self.uuid("table"), "columns"),
+                Output(self.uuid("table_title"), "children"),
             ],
             self.vol_callback_inputs,
         )
@@ -436,11 +451,16 @@ but the following responses are given more descriptive names automatically:
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
+                    "layout": plot_layout(
+                        plot_type,
+                        response,
+                        theme=self.plotly_theme,
+                        metadata=self.metadata,
+                    ),
                 },
                 table,
                 columns,
-                f"{volume_description(response)} [{volume_unit(response)}]",
+                column_title(response, self.metadata),
             )
 
         @app.callback(
@@ -449,7 +469,7 @@ but the following responses are given more descriptive names automatically:
                 Output(self.selectors_id["ENSEMBLE"], "value"),
                 Output(self.selectors_id["ENSEMBLE"], "size"),
             ],
-            [Input(self.ids("group"), "value")],
+            [Input(self.uuid("group"), "value")],
         )
         def _set_iteration_selector(group_by):
             """If iteration is selected as group by set the iteration
@@ -469,7 +489,7 @@ but the following responses are given more descriptive names automatically:
                     Output(self.selectors_id["SOURCE"], "value"),
                     Output(self.selectors_id["SOURCE"], "size"),
                 ],
-                [Input(self.ids("group"), "value")],
+                [Input(self.uuid("group"), "value")],
             )
             def _set_source_selector(group_by):
                 """If iteration is selected as group by set the iteration
@@ -520,7 +540,7 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, theme):
+def plot_layout(plot_type, response, theme, metadata):
     layout = {}
     layout.update(theme["layout"])
     layout["height"] = 400
@@ -530,27 +550,17 @@ def plot_layout(plot_type, response, theme):
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {
-                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                },
+                "xaxis": {"title": column_title(response, metadata)},
                 "yaxis": {"title": "Count"},
             }
         )
     elif plot_type == "Box plot":
-        layout.update(
-            {
-                "yaxis": {
-                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                }
-            }
-        )
+        layout.update({"yaxis": {"title": column_title(response, metadata)}})
     else:
         layout.update(
             {
                 "margin": {"l": 60, "r": 40, "b": 30, "t": 10},
-                "yaxis": {
-                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                },
+                "yaxis": {"title": column_title(response, metadata)},
                 "xaxis": {"title": "Realization"},
             }
         )

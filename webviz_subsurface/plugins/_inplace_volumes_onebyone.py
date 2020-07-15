@@ -1,5 +1,4 @@
 import json
-from uuid import uuid4
 from pathlib import Path
 
 import numpy as np
@@ -16,9 +15,13 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .._private_plugins.tornado_plot import TornadoPlot
-from .._datainput.inplace_volumes import extract_volumes
+from .._datainput.inplace_volumes import extract_volumes, get_metadata
 from .._datainput.fmu_input import get_realizations, find_sens_type
-from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._abbreviations.volume_terminology import (
+    volume_description,
+    volume_unit,
+    column_title,
+)
 from .._abbreviations.number_formatting import table_statistics_base
 
 
@@ -41,6 +44,7 @@ stored per realization.
   E.g. `{geogrid: geogrid--oil.csv}`.
 * **`volfolder`:** Optional local folder for the `volfiles`.
 * **`response`:** Optional volume response to visualize initially.
+* **`metadata`:** Optional volume response metadata. Supports descriptions and units.
 
 ---
 ?> The input files must follow FMU standards.
@@ -55,6 +59,8 @@ webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
 (https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/\
 realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
 
+* ADD PATH TO METADATAFILE
+
 The following columns will be used as available filters, if present:
 
 * `ZONE`
@@ -67,7 +73,8 @@ The following columns will be used as available filters, if present:
 Remaining columns are seen as volumetric responses.
 
 All names are allowed (except those mentioned above, in addition to `REAL` and `ENSEMBLE`), \
-but the following responses are given more descriptive names automatically:
+but the following responses are given more descriptive names automatically, unless another \
+description is given in `metadata`:
 
 * `BULK_OIL`: Bulk Volume (Oil)
 * `NET_OIL`: Net Volume (Oil)
@@ -116,6 +123,7 @@ aggregated_data/parameters.csv)
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
+        metadata: Path = None,
     ):
 
         super().__init__()
@@ -155,6 +163,12 @@ aggregated_data/parameters.csv)
                 '"ensembles" and "volfiles"'
             )
         self.initial_response = response
+        self.metadata_path = metadata
+        self.metadata = (
+            self.metadata_path
+            if self.metadata_path is None
+            else json.load(get_metadata(self.metadata_path))
+        )
 
         # Merge into one dataframe
         # (TODO: Should raise error if not all ensembles have sensitivity data)
@@ -162,13 +176,12 @@ aggregated_data/parameters.csv)
 
         # Initialize a tornado plot. Data is added in callback
         self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
-        self.uid = uuid4()
         self.selectors_id = {x: self.uuid(x) for x in self.selectors}
         self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
     def add_webvizstore(self):
-        return (
+        functions = (
             [
                 (
                     read_csv,
@@ -201,6 +214,9 @@ aggregated_data/parameters.csv)
                 ),
             ]
         )
+        if self.metadata is not None:
+            functions.append((get_metadata, [{"metadata": self.metadata_path}]))
+        return functions
 
     def selector(self, label, id_name, column):
         return html.Div(
@@ -488,7 +504,7 @@ aggregated_data/parameters.csv)
                     .reset_index()[["REAL", response]]
                     .values.tolist(),
                     "number_format": "#.4g",
-                    "unit": volume_unit(response),
+                    "unit": volume_unit(response, self.metadata),
                 }
             )
             return tornado, table, columns
@@ -556,7 +572,7 @@ aggregated_data/parameters.csv)
             )
 
             # Volume title:
-            volume_title = f"{volume_description(response)} [{volume_unit(response)}]"
+            volume_title = column_title(response, self.metadata)
 
             # Make Plotly figure
             layout = {}
