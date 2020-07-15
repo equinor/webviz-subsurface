@@ -46,32 +46,6 @@ class HuvXsection:
                 "conditional_points": conditional_points
             }
 
-    def get_plotly_well_data(self):
-        if self.well_attributes is None:
-            return []
-        else:
-            data = [{
-            "y": self.well_attributes["well_df"]["Z_TVDSS"],
-            "x": self.well_attributes["well_df"]["R_HLEN"],
-            "name": "well",
-            "line": {"width": 7, "color": "black"},
-            "fillcolor": "black",
-            }]
-            data += self.well_attributes["zonelog"]
-            data += [{"mode": "markers",
-                    "y": self.well_attributes["zonation_points"][1],
-                    "x": self.well_attributes["zonation_points"][0],
-                    "name": "zonation points",
-                    "marker":{"size":5, "color":"black"}
-            }]
-            data += [{"mode": "markers",
-                    "y": self.well_attributes["conditional_points"][1],
-                    "x": self.well_attributes["conditional_points"][0],
-                    "name": "conditional points",
-                    "marker":{"size":5, "color":"rgb(30,144,255)"}
-            }]
-            return data
-
     def set_error_and_surface_lines(self, surface_paths, error_paths):
         for sfc_path in surface_paths:
             sfc_line = self.surface_attributes[sfc_path]['surface'].get_randomline(self.fence)
@@ -80,7 +54,6 @@ class HuvXsection:
                 de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(self.fence)
                 sfc_line = self.surface_attributes[sfc_path]['surface_line']
                 self.surface_attributes[sfc_path]["error_line"] = de_line
-
 
     def get_plotly_layout(self, surfacepaths):
         layout = {}
@@ -132,7 +105,6 @@ class HuvXsection:
                 "height": 830,
             })
             return layout
-
 
     def get_plotly_err_data(self, surface_paths, error_paths):
         common_paths = [error_path for error_path in error_paths if error_path in surface_paths]
@@ -194,6 +166,42 @@ class HuvXsection:
             ]
             return data
 
+    def get_plotly_well_data(self):
+        if self.well_attributes is None:
+            return []
+        else:
+            data = [{
+                "y": self.well_attributes["well_df"]["Z_TVDSS"],
+                "x": self.well_attributes["well_df"]["R_HLEN"],
+                "name": "well",
+                "line": {"width": 7, "color": "black"},
+                "fillcolor": "black",
+            }]
+            data += self.well_attributes["zonelog"]
+            data += [{"mode": "markers",
+                      "y": self.well_attributes["zonation_points"][1],
+                      "x": self.well_attributes["zonation_points"][0],
+                      "name": "zonation points",
+                      "marker": {"size": 5, "color": "black"}
+                      }]
+            data += [{"mode": "markers",
+                      "y": self.well_attributes["conditional_points"][1],
+                      "x": self.well_attributes["conditional_points"][0],
+                      "name": "conditional points",
+                      "marker": {"size": 5, "color": "rgb(30,144,255)"}
+                      }]
+            return data
+
+    def get_plotly_freehand_data(self):
+        """Make an empty data template to use when drawing wells"""
+        return [
+            {
+                'x':[],
+                'y':[],
+                'marker': {'size': 10, 'color': "lightblue"},
+                'line': {'width': 7, 'color': 'black'}
+            }
+        ]
 
     def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
@@ -211,7 +219,11 @@ class HuvXsection:
 
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
-        data = self.get_plotly_sfc_data(surfacepaths) + self.get_plotly_err_data(surfacepaths, error_paths) + self.get_plotly_well_data()
+        data = \
+            self.get_plotly_sfc_data(surfacepaths) + \
+            self.get_plotly_err_data(surfacepaths, error_paths) + \
+            self.get_plotly_well_data() + \
+            self.get_plotly_freehand_data()
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -304,7 +316,6 @@ class HuvXsection:
 def stratigraphic_sort(elem):
     return elem[1]
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_zone_RHLEN(well_df,wellname,zone_path):
     zonation_data = pd.read_csv(zone_path)
@@ -320,7 +331,6 @@ def get_zone_RHLEN(well_df,wellname,zone_path):
         zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_RHLEN, zone_df["TVD"]])
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_conditional_RHLEN(well_df, wellname, cond_path):
     conditional_data = pd.read_csv(cond_path)
@@ -335,7 +345,6 @@ def get_conditional_RHLEN(well_df, wellname, cond_path):
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([cond_RHLEN, cond_df["TVD"]])
-
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_range_from_well(well_df, ymin):
