@@ -25,13 +25,14 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
+from .._datainput.huv_table import FilterTable
 from .._datainput import parse_model_file
 
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-    #app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    # app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     """
 This plugin visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
@@ -42,11 +43,11 @@ The cross section is defined by a polyline interactively edited in the map view.
 """
 
     def __init__(
-        self,
-        app,
-        basedir: List[Path],
-        zunit="depth (m)",
-        zonemin: int = 1,
+            self,
+            app,
+            basedir: List[Path],
+            zunit="depth (m)",
+            zonemin: int = 1,
     ):
 
         super().__init__()
@@ -59,17 +60,21 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
         self.topofzone = parse_model_file.extract_topofzone_names(basedir[0])
         for i, surfacefile in enumerate(self.surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i, "name": self.surfacenames[i], "topofzone": self.topofzone[i], "error_path": Path(self.surfacefiles_de[i])}
+            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i,
+                                                          "name": self.surfacenames[i], "topofzone": self.topofzone[i],
+                                                          "error_path": Path(self.surfacefiles_de[i])}
         self.wellfiles = parse_model_file.get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        self.zonation_data= parse_model_file.get_zonation_data(basedir[0])
-        self.conditional_data= parse_model_file.get_conditional_data(basedir[0])
+        self.zonation_data = parse_model_file.get_zonation_data(basedir[0])
+        self.conditional_data = parse_model_file.get_conditional_data(basedir[0])
         self.zonemin = zonemin
         self.zonelog_name = parse_model_file.get_zonelog_name(basedir[0])  # name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes,self.zonation_data,self.conditional_data,self.zonelog_name)
+        self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
+        self.dataf = FilterTable(self.target_points,self.well_points)
+        self.wellpoints_df = self.dataf.get_wellpoints_datatable()
         self.xsec.set_well(self.wellfiles[0])
 
     def ids(self, element):
@@ -78,48 +83,48 @@ The cross section is defined by a polyline interactively edited in the map view.
     @property
     def map_layout(self):
         return html.Div(
+            children=[
+                wcc.FlexBox(
                     children=[
-                        wcc.FlexBox(
-                            children=[
-                                html.Div(
-                                    children=[
-                                        html.Label(
-                                            style={
-                                                "font-weight": "bold",
-                                                "textAlign": "center",
-                                            },
-                                            children="Select surface",
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.ids("map-dropdown"),
-                                            options=[
-                                                {"label": name, "value": path}
-                                                for name, path in zip(
-                                                    self.surfacenames, self.surfacefiles_de
-                                                )
-                                            ],
-                                            value=self.surfacefiles_de[0],
-                                            clearable=False,
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
                         html.Div(
-                            style={
-                                "marginTop": "20px",
-                                "height": "800px",
-                                "zIndex": -9999,
-                            },
-                            children=LayeredMap(
-                                id=self.ids("map-view"),
-                                draw_toolbar_polyline=True,
-                                hillShading=True,
-                                layers=[],
-                            ),
-                        )
-                    ]
+                            children=[
+                                html.Label(
+                                    style={
+                                        "font-weight": "bold",
+                                        "textAlign": "center",
+                                    },
+                                    children="Select surface",
+                                ),
+                                dcc.Dropdown(
+                                    id=self.ids("map-dropdown"),
+                                    options=[
+                                        {"label": name, "value": path}
+                                        for name, path in zip(
+                                            self.surfacenames, self.surfacefiles_de
+                                        )
+                                    ],
+                                    value=self.surfacefiles_de[0],
+                                    clearable=False,
+                                ),
+                            ]
+                        ),
+                    ],
                 ),
+                html.Div(
+                    style={
+                        "marginTop": "20px",
+                        "height": "800px",
+                        "zIndex": -9999,
+                    },
+                    children=LayeredMap(
+                        id=self.ids("map-view"),
+                        draw_toolbar_polyline=True,
+                        hillShading=True,
+                        layers=[],
+                    ),
+                )
+            ]
+        ),
 
     @property
     def draw_well_layout(self):
@@ -136,8 +141,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         return html.Div(
             children=[
                 wcc.Graph(
-                id=self.ids("plotly-view"),
-                #figure={"displayModeBar": True}, Required? Seems no change in graph
+                    id=self.ids("plotly-view"),
                 )
             ]
         )
@@ -206,7 +210,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                                         dcc.Checklist(
                                             id=self.ids('surfaces-de-checklist'),
                                             options=[
-                                                {"label": name+'_error', "value": path}
+                                                {"label": name + '_error', "value": path, 'disabled': False}
                                                 for name, path in zip(
                                                     self.surfacenames, self.surfacefiles
                                                 )
@@ -216,7 +220,12 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     ],
                                 ),
                                 dbc.ModalFooter(
-                                    dbc.Button("Close", id=self.ids("button-close-graph-settings"), className="ml-auto")
+                                    children=[
+                                        dbc.Button("Close", id=self.ids("button-close-graph-settings"),
+                                                   className="ml-auto"),
+                                        dbc.Button('Apply changes', id=self.ids('button-apply-checklist'),
+                                                   className='ml-auto')
+                                    ]
                                 ),
                             ],
                             id=self.ids("modal-graph-settings"),
@@ -243,23 +252,65 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ),
             ]
         )
+
     @property
     def target_points_layout(self):
-        df = pd.read_csv(self.target_points)
+        df = self.dataf.get_targetpoints_datatable()
         return dash_table.DataTable(
-            id=self.ids("target_point_table"),
+            id=self.ids("target-point-table"),
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records'),
+            sort_action="native",
+            filter_action="native",
         )
-    
+
     @property
     def well_points_layout(self):
-        df = pd.read_csv(self.well_points)
-        return dash_table.DataTable(
-            id=self.ids("well_points_table"),
-            columns=[{"name": i, "id": i} for i in df.columns],
-            data = df.to_dict('records')
-        )
+        return html.Div([
+            dbc.Button("Table Settings", id=self.ids("button-open-table-settings")),
+            dbc.Modal(
+                children=[
+                    dbc.ModalHeader("Table Settings"),
+                    dbc.ModalBody(
+                        children=[
+                            html.Label(
+                                style={
+                                    "font-weight": "bold",
+                                    "textAlign": "Left",
+                                },
+                                children="Select Table Columns",
+                            ),
+                            dcc.Checklist(
+                                id=self.ids('columns-checklist'),
+                                options=[
+                                    {"label": name, "value": column_name}
+                                    for name, column_name in zip(
+                                        self.dataf.get_wellpoints_datatable().keys().values, self.dataf.get_wellpoints_datatable().keys().values
+                                    )
+                                ],
+                                value=['Surface', 'Well', 'TVD', 'MD', 'Outlier', 'Deleted', 'Residual']
+                            ),
+                        ],
+                    ),
+                    dbc.ModalFooter(
+                        children=[
+                            dbc.Button("Close", id=self.ids("button-close-table-settings"),
+                                        className="ml-auto"),
+                            dbc.Button('Apply', id=self.ids('button-apply-columnlist'),
+                                        className='ml-auto')
+                        ]
+                    ),
+                ],
+                id=self.ids("modal-table-settings"),
+                size="sm",
+                centered=True,
+                backdrop=False,
+                fade=False,
+            ),
+        html.Div(id=self.ids('content')),
+        html.Div(dash_table.DataTable(columns=[],data=[],sort_action="native",filter_action="native",), style={'display': 'none'}),
+        ])
+
     @property
     def layout(self):
         return dcc.Tabs(children=[
@@ -281,7 +332,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ),
             dcc.Tab(
                 label='Well Points',
-                children=[html.Div(children=self.well_points_layout)]
+                children=[self.well_points_layout]
             )
         ])
 
@@ -292,8 +343,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("map-dropdown"), "value"),
             ],
         )
-        def _render_map(errorpath):
-            surface = xtgeo.surface_from_file(errorpath, fformat="irap_binary")
+        def _render_map(error_path):
+            surface = xtgeo.surface_from_file(error_path, fformat="irap_binary")
             hillshading = True
             min_val = None
             max_val = None
@@ -305,7 +356,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_layer(well, well.wellname, color=well_color)
+                #well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
+                well_layer = make_well_circle_layer(well, radius = 100, name = well.wellname, color = well_color)
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
@@ -316,30 +368,33 @@ The cross section is defined by a polyline interactively edited in the map view.
                 color=color,
                 hillshading=hillshading,
             )
-            s_layer = [s_layer]
-            #s_layer.extend(well_layers)
-            return s_layer
+            layers = [s_layer]
+            layers.extend(well_layers)
+            return layers
 
         @app.callback(
             Output(self.ids("plotly-view"), "figure"),
             [
-                Input(self.ids("well-dropdown"), "value"), # wellpath
-                Input(self.ids("surfaces-checklist"), "value"), # surfacepaths list
-                Input(self.ids("surfaces-de-checklist"), "value"), # errorpaths list
-                Input(self.ids("map-view"), "polyline_points"), # coordinates from map-view
+                Input(self.ids('button-apply-checklist'), 'n_clicks'),
+                Input(self.ids("well-dropdown"), "value"),  # wellpath
+                Input(self.ids("map-view"), "polyline_points"),  # coordinates from map-view
+            ],
+            [
+                State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
+                State(self.ids("surfaces-de-checklist"), "value"),  # error_paths list
             ],
         )
-        def _render_xsection(wellpath, surfacepaths, errorpaths, coords):
+        def _render_xsection(n_clicks, wellpath, coords, surface_paths, error_paths):
             ctx = dash.callback_context
-            surfacepaths = get_path(surfacepaths)
-            errorpaths = get_path(errorpaths)
-            if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown")+'.value':
+            surface_paths = get_path(surface_paths)
+            error_paths = get_path(error_paths)
+            if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown") + '.value':
                 self.xsec.set_well(wellpath)
-            elif ctx.triggered[0]['prop_id'] == self.ids("map-view")+'.polyline_points':
+            elif ctx.triggered[0]['prop_id'] == self.ids("map-view") + '.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
-            self.xsec.set_error_and_surface_lines(surfacepaths, errorpaths)
-            self.xsec.set_plotly_fig(surfacepaths, errorpaths)
+            self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
+            self.xsec.set_plotly_fig(surface_paths, error_paths)
             return self.xsec.fig
 
         @app.callback(
@@ -352,31 +407,31 @@ The cross section is defined by a polyline interactively edited in the map view.
         @app.callback(
             Output(self.ids("modal-graph-settings"), "is_open"),
             [Input(self.ids("button-open-graph-settings"), "n_clicks"),
-            Input(self.ids("button-close-graph-settings"), "n_clicks")],
+             Input(self.ids("button-close-graph-settings"), "n_clicks")],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
         def _toggle_modal(n1, n2, is_open):
             if n1 or n2:
                 return not is_open
             return is_open
-        
+
         @app.callback(
             Output(self.ids('surfaces-de-checklist'), 'options'),
-            [Input(self.ids('surfaces-checklist'), 'value')]
+            [Input(self.ids('surfaces-checklist'), 'value')],
+            [State(self.ids('surfaces-de-checklist'), 'options')],
         )
-        def _disable_error_checkboxes(surface_values):
-            de_options = []
-            for name, path in zip(self.surfacenames, self.surfacefiles):
-                if (surface_values is None) or (path not in surface_values):
-                    de_options += [{"label": name + '_error', "value": path, 'disabled':True}]
+        def _disable_error_checkboxes(surface_values, de_options):
+            for i, opt in enumerate(de_options):
+                if (surface_values is None) or (opt['value'] not in surface_values):
+                    de_options[i]['disabled'] = True
                 else:
-                    de_options += [{"label": name + '_error', "value": path, 'disabled': False}]
+                    de_options[i]['disabled'] = False
             return de_options
 
-        @app.callback( #Toggle "draw well" button on/off to display leaflet
+        @app.callback(  # Toggle "draw well" button on/off to display leaflet
             [Output(self.ids("cross-section-view"), "children"),
-            Output(self.ids("well-dropdown"), "disabled"),
-            Output(self.ids("button-open-graph-settings"), "disabled")],
+             Output(self.ids("well-dropdown"), "disabled"),
+             Output(self.ids("button-open-graph-settings"), "disabled")],
             [
                 Input(self.ids("button-draw-well"), "n_clicks"),
             ],
@@ -386,7 +441,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
-                #self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
+                # self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
@@ -399,11 +454,43 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids("cross-section-view"), "children"),
             ],
         )
-        def _render_draw_well_layer(children):
+        def _render_draw_well(children):
             if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
                 img_bytes = self.xsec.fig.to_image(format="png")
-                my_layer = get_draw_well_layer(img_bytes)
-                return [my_layer]
+                layer = make_png_layer(img_bytes)
+                return [layer]
+
+        @app.callback(
+            Output(self.ids('content'), 'children'),
+            [
+                Input(self.ids('button-apply-columnlist'), 'n_clicks'),
+            ],
+            [
+                State(self.ids("columns-checklist"), "value"),  # columns list
+            ],
+        )
+        def display_output(n_clicks, column_list):
+            wellpoints_df = self.dataf.update_wellpoints_datatable(column_list)
+            return html.Div([
+                dash_table.DataTable(
+                    id=self.ids('well-points-table'),
+                    columns=[{"name": i, "id": i} for i in wellpoints_df.columns],
+                    data=wellpoints_df.to_dict('records'),
+                    sort_action="native",
+                    filter_action="native",
+                ),
+            ])
+
+        @app.callback(
+            Output(self.ids("modal-table-settings"), "is_open"),
+            [Input(self.ids("button-open-table-settings"), "n_clicks"),
+             Input(self.ids("button-close-table-settings"), "n_clicks")],
+            [State(self.ids("modal-table-settings"), "is_open")],
+        )
+        def _toggle_modal2(n1, n2, is_open):
+            if n1 or n2:
+                return not is_open
+            return is_open
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
@@ -415,6 +502,7 @@ def get_path(paths) -> Path:
     for i, path in enumerate(paths):
         paths[i] = Path(path)
     return paths
+
 
 def get_color(i):
     """
@@ -429,7 +517,8 @@ def get_color(i):
         "rgb(255,215,0)"
     ]
     n_colors = len(colors)
-    return colors[(i)%(n_colors)]
+    return colors[(i) % (n_colors)]
+
 
 def get_fencespec(coords):
     """Create a XTGeo fence spec from polyline coordinates"""
@@ -448,12 +537,12 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def get_draw_well_layer(img_bytes):
+def make_png_layer(img_bytes, base_layer=True):
     encoded = base64.b64encode(img_bytes).decode()
     img_base64 = "data:image/png;base64,{}".format(encoded)
-    s_layer = {
+    return {
         "name": "Draw well view",
-        "checked": True,
+        "checked": base_layer,
         "base_layer": True,
         "data": [
             {
@@ -463,9 +552,8 @@ def get_draw_well_layer(img_bytes):
             }
         ],
     }
-    return s_layer
 
-def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
+def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
     positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
@@ -478,6 +566,25 @@ def make_well_layer(well, name="well", zmin=0, base_layer=False, color="black"):
                 "type": "polyline",
                 "color": color,
                 "positions": positions,
+                "tooltip": name,
+            }
+        ],
+    }
+
+def make_well_circle_layer(well, radius=1000, name="well", base_layer=False, color="red"):
+    """Make LayeredMap circle"""
+    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > 0]
+    coord = well.dataframe[["X_UTME", "Y_UTMN"]].values
+    return {
+        "name": name,
+        "checked": True,
+        "base_layer": base_layer,
+        "data": [
+            {
+                "type": "circle",
+                "center": coord[0],
+                "color": color,
+                "radius": radius,
                 "tooltip": name,
             }
         ],
