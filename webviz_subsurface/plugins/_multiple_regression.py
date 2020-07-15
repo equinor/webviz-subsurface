@@ -372,11 +372,7 @@ The types of response_filters are:
                         value=True
                     )
                 ]
-            )
-        ]
-    
-    def make_button(self, id):
-        return [
+            ),
             html.Div(
                 style={
                     "display": "grid",
@@ -385,10 +381,10 @@ The types of response_filters are:
                 children=[
                     html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
-                        id=id, 
+                        id=self.ids("submit-btn"), 
                         children="Submit",
-                    ),
-                ],
+                    )
+                ]
             )
         ]
 
@@ -430,11 +426,11 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 1},
-                    children=self.control_layout + self.filter_layout + self.make_button(self.ids("submit-btn"))
+                    children=self.control_layout + self.filter_layout
                     if self.response_filters
                     else [],
-                ),
-            ],
+                )
+            ]
         )
 
     @property
