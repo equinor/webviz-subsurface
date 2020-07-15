@@ -74,7 +74,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
         self.dataf = FilterTable(self.target_points,self.well_points)
-        self.wellpoints_df = self.dataf.get_wellpoints_datatable()
         self.xsec.set_well(self.wellfiles[0])
 
     def ids(self, element):
