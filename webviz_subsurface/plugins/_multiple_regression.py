@@ -411,11 +411,7 @@ The types of response_filters are:
                 children=[
                     html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
-<<<<<<< HEAD
-                        id=id,
-=======
                         id=self.ids("submit-btn"), 
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                         children="Submit",
                     )
                 ]
@@ -544,10 +540,6 @@ The types of response_filters are:
             4. Fit model using forward stepwise regression, with or without interactions
             5. Generate table and plots
             """
-<<<<<<< HEAD
-
-=======
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
@@ -560,26 +552,16 @@ The types of response_filters are:
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
-<<<<<<< HEAD
             #For now, remove ':' and ',' form param and response names. Should only do this once though
             """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
-=======
-            # For now, remove ':' and ',' form param and response names. Should only do this once though 
-            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
             responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
             response = response.replace(":", "_")
             response = response.replace(",", "_")
-<<<<<<< HEAD
             """
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             #If no selected parameters
-=======
-            
-            # If no selected parameters
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
             if not parameter_list:
                 return(
                     [{"e": ""}],
@@ -597,13 +579,6 @@ The types of response_filters are:
                     },
                 )
             else:
-<<<<<<< HEAD
-                # Get results and genereate datatable. Gives warning if e.g. divide by zero. Catch this
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore")
-                    try:
-                        result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
-=======
                 # Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
                     warnings.filterwarnings('error', category=RuntimeWarning)
@@ -614,15 +589,10 @@ The types of response_filters are:
                         result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction=interaction)
                         
                         # Generate table
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                         table = result.model.fit().summary2().tables[1].drop("Intercept")
                         table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
                         table.index.name = "Parameter"
                         table.reset_index(inplace=True)
-<<<<<<< HEAD
-
-=======
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                         columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
                         data = table.to_dict("rows")
 
@@ -644,153 +614,18 @@ The types of response_filters are:
                             # Generate coefficient plot
                             make_arrow_plot(coeff_sorted, self.plotly_theme)
                         )
-<<<<<<< HEAD
-                    except UserWarning as e:
-                        # print(type(e))
-                        print("WEREWARerror: ", e)
-=======
                     except (Exception, RuntimeWarning) as e:
                         #print("error: ", e)
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                         return(
                             [{"e": ""}],
                             [{"name": "", "id": "e"}],
                             "Cannot calculate fit for given selection. Select a different response or filter setting",
-<<<<<<< HEAD
-                        )
-
-        @app.callback(
-            [
-                Output(self.ids("p-values-plot"), "figure"),
-                Output(self.ids("initial-parameter"), "data"),
-            ],
-            [
-                Input(self.ids("submit-btn"), "n_clicks")
-            ],
-            self.model_input_callbacks
-        )
-        def update_pvalues_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
-            """Callback to update the p-values plot
-
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Fit model using forward stepwise regression, with or without interactions
-            5. Get p-values from fitted model and sort them in ascending order
-            """
-            filteroptions = self.make_response_filters(filters)
-            responsedf = filter_and_sum_responses(
-                self.responsedf,
-                ensemble,
-                response,
-                filteroptions=filteroptions,
-                aggregation=self.aggregation,
-            )
-            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            parameterdf.drop(columns=force_out, inplace=True)
-
-            # For now, remove ':' and ',' form param and response names. Should only do this once though
-            """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
-            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
-            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
-            response = response.replace(":", "_")
-            response = response.replace(",", "_")
-            """
-            # Get results and generate p-values plot
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-
-            # If no selected parameters
-            if not parameter_list:
-                return(
-                    {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
-                        }
-                    },
-                    None,
-                )
-            else:
-                # Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore')
-                    try:
-                        result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
-                        p_sorted = result.pvalues.sort_values().drop("Intercept")
-                        return make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1]
-                    except (Exception, Warning) as e:
-                        #print("error: ", e)
-                        return(
-                        {
-                            "layout": {
-                                "title": "<b>Cannot calculate fit for given selection</b><br>"
-                                "Select a different response or filter setting."
-                            }
-                        },
-                        None,
-                        )
-
-        @app.callback(
-            [
-                Output(self.ids("coefficient-plot"), "figure"),
-            ],
-            [
-                Input(self.ids("submit-btn"), "n_clicks")
-            ],
-            self.model_input_callbacks
-        )
-        def update_coefficient_plot(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
-            """Callback to update the coefficient plot"""
-            filteroptions = self.make_response_filters(filters)
-            responsedf = filter_and_sum_responses(
-                self.responsedf,
-                ensemble,
-                response,
-                filteroptions=filteroptions,
-                aggregation=self.aggregation,
-            )
-            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-            parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            parameterdf.drop(columns=force_out, inplace=True)
-
-            # For now, remove ':' and ',' form param and response names. Should only do this once though 
-            """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
-            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
-            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
-            response = response.replace(":", "_")
-            response = response.replace(",", "_")
-            """
-            # Get results and generate coefficient plot
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            
-             # If no selected parameters
-            if not parameter_list:
-                return(
-                    {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
-                        }
-                    },
-                )
-            else:                
-                # Get results and pvalue-plot. Gives warning if e.g. divide by zero. Catch this
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore')
-                    try:
-                        result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
-                        model = result.params.sort_values().drop("Intercept").items()
-                        return make_arrow_plot(model, self.plotly_theme)
-                    except (Exception, Warning) as e:
-                       
-                        return(
-=======
                             {
                             "layout": {
                                 "title": "<b>Cannot calculate fit for given selection</b><br>"
                                 "Select a different response or filter setting."
                                 }
                             }, None,
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                             {
                                 "layout": {
                                     "title": "<b>Cannot calculate fit for given selection</b><br>"
@@ -872,13 +707,9 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-<<<<<<< HEAD
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-=======
-#@CACHE.memoize(timeout=CACHE.TIMEOUT)
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
 def gen_model(
         df: pd.DataFrame,
         response: str,
@@ -886,7 +717,6 @@ def gen_model(
         force_in: list=[],
         interaction_degree: bool=False
     ):
-<<<<<<< HEAD
     """wrapper for modelselection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df,response,interaction_degree)
@@ -905,17 +735,6 @@ def gen_model(
     return model
 
 def _gen_interaction_df(
-=======
-    if interaction:
-        df = gen_interaction_df(df,response)
-        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
-        
-    else:
-        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
-    return model
-
-def gen_interaction_df(
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
     df: pd.DataFrame,
     response: str,
     degree: int=4):
@@ -953,17 +772,10 @@ def forward_selected(data: pd.DataFrame,
                 current_model = selected.copy()+[candidate]
             X = data.filter(items=current_model).to_numpy(dtype="float32")
             p = X.shape[1]
-<<<<<<< HEAD
             if n - p - 1 < 1:
                 model_df = data.filter(items=selected)
                 model_df["Intercept"] = onevec
                 model = sm.OLS(y, model_df).fit()
-=======
-            if n-p-1<1: 
-                formula = "{} ~ {} + 1".format(response,
-                                   ' + '.join(selected))
-                model = smf.ols(formula, data).fit()
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
                 return model
             X = np.append(X, onevec, axis=1)
             try: 
@@ -971,10 +783,6 @@ def forward_selected(data: pd.DataFrame,
             except la.LinAlgError:
                 continue
             f_vec = beta @ X.T
-<<<<<<< HEAD
-=======
-            
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
             SS_RES = np.sum((f_vec-y_mean) ** 2)
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
@@ -998,7 +806,6 @@ def forward_selected(data: pd.DataFrame,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-<<<<<<< HEAD
     model_df = data.filter(items=selected)
     print(model_df)
     model_df["Intercept"] = onevec
@@ -1006,22 +813,6 @@ def forward_selected(data: pd.DataFrame,
     return model
 
 
-=======
-    formula = "{} ~ {} + 1".format(response,
-                                   ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model
-
-def gen_column_names(df: pd.DataFrame, response: str=None):
-    if response:
-        combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
-        originals = list(df.drop(columns=response).columns)
-        return originals + combine + [response]
-    else:
-        combine = ["*".join(combination) for combination in combinations(df,2)]
-        originals = list(df.columns)
-    return originals + combine 
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
 
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
@@ -1058,14 +849,7 @@ def make_p_values_plot(p_sorted, theme):
     return fig
 
 def make_arrow_plot(model, theme):
-<<<<<<< HEAD
-    """Sorting dictionary in descending order. 
-    Saving parameters and values of coefficients in lists.
-    Saving plot-function to variable fig."""
-
-=======
     """Make arrow plot for the coefficients"""
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
     coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
@@ -1154,19 +938,9 @@ def color_array(vals, params, sgn):
     """Defining color values to match theme because I'm 
     lacking knowledge on how to live life with ease"""
     # Final RGB values
-<<<<<<< HEAD
     rf, gf, bf = 36, 55, 70
     # Max RGB values
     r0, g0, b0 = 255, 231, 214
-=======
-    rf = 36
-    gf = 55
-    bf = 70
-    # Max RGB values
-    r0 = 255
-    g0 = 231
-    b0 = 214
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
     # Initial RGB value
     ri, gi, bi = 125, 0, 35
 
