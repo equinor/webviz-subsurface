@@ -865,7 +865,7 @@ def make_arrow_plot(model, theme):
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color=colors[i],
                 fillcolor=colors[i], 
                 line_width=0.6  
             )
@@ -873,7 +873,7 @@ def make_arrow_plot(model, theme):
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color=colors[i],
                 fillcolor=colors[i], 
                 line_width=0.6
             )    
