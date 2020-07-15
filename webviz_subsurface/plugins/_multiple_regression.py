@@ -82,8 +82,7 @@ The types of response_filters are:
         response_include: list = None,
         column_keys: list = None,
         sampling: str = "monthly",
-        aggregation: str = "sum",
-        parameter_filters: list = None
+        aggregation: str = "sum"
     ):
 
         super().__init__()
@@ -97,17 +96,6 @@ The types of response_filters are:
         self.time_index = sampling
         self.aggregation = aggregation
 
-        """Temporary way of filtering out non-valid parameters"""
-        self.parameter_filters = [
-            'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
-            'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
-            'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-            'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
-            'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
-            'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
-            'LOG10_MULTZ:MULTZ_MIDREEK', 'RMSGLOBPARAMS:COHIBA_MODEL_MODE',
-            'COHIBA_MODEL_MODE']
-
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -120,12 +108,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            #self.responsedf = read_csv(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            #self.parameterdf = pd.read_parquet(self.parameter_csv)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -134,7 +122,7 @@ The types of response_filters are:
             }
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            ).drop(columns=self.parameter_filters)
+            )
             self.responsedf = load_csv(
                 ensemble_paths=self.ens_paths,
                 csv_file=response_file,
@@ -289,7 +277,6 @@ The types of response_filters are:
             else:
                 return children
             children.append(html.Div(children=[html.Label(col_name), selector,]))
-
         return children
 
     @property
@@ -385,8 +372,7 @@ The types of response_filters are:
                         value=True
                     )
                 ]
-            ),
-
+            )
         ]
     
     def make_button(self, id):
@@ -453,7 +439,7 @@ The types of response_filters are:
 
     @property
     def model_input_callbacks(self):
-        """List of States for multiple regression callback"""
+        """List of inputs for multiple regression callback"""
         callbacks = [
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
@@ -550,17 +536,17 @@ The types of response_filters are:
             # If no selected parameters
             if not parameter_list:
                 return(
-                        [{"e": ""}],
-                        [{"name": "", "id": "e"}],
-                        "Please selecet parameters to be included in the model",
-                        {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
-                            }
-                        }, None,
-                        {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                    [{"e": ""}],
+                    [{"name": "", "id": "e"}],
+                    "Please selecet parameters to be included in the model",
+                    {
+                    "layout": {
+                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        }
+                    }, None,
+                    {
+                    "layout": {
+                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
                         }
                     },
                 )
@@ -570,10 +556,8 @@ The types of response_filters are:
                     warnings.filterwarnings('error', category=RuntimeWarning)
                     warnings.filterwarnings('ignore', category=UserWarning)
                     try:
-                        # Make dataframe for the model
+                        # Make dataframe and get results from the model
                         df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-
-                        # Get results from model
                         result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction=interaction)
                         
                         # Generate table
@@ -591,11 +575,15 @@ The types of response_filters are:
                         coeff_sorted = result.params.sort_values().drop("Intercept").items()
 
                         return(
-                            # Generate table, p-values plot and coefficient plot
+                            # Generate table
                             data,
                             columns,
                             f"Multiple regression with {response} as response",
+
+                            # Generate p-values plot
                             make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+
+                            # Generate coefficient plot
                             make_arrow_plot(coeff_sorted, self.plotly_theme)
                         )
                     except (Exception, RuntimeWarning) as e:
@@ -665,7 +653,6 @@ def _filter_and_sum_responses(
     """Filter response dataframe for the given ensemble
     and optional filter columns. Returns dataframe grouped and
     aggregated per realization."""
-
     df = dframe.copy()
     df = df.loc[df["ENSEMBLE"] == ensemble]
     if filteroptions:
@@ -692,8 +679,6 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-
-
 #@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -709,7 +694,6 @@ def gen_model(
     else:
         model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
     return model
-
 
 def gen_interaction_df(
     df: pd.DataFrame,
@@ -727,7 +711,6 @@ def gen_interaction_df(
         x_interaction,
         columns=gen_column_names(df=df.drop(columns=response)))
     return interaction_df.join(df[response])
-
 
 def forward_selected(data: pd.DataFrame,
                      response: str, 
@@ -762,7 +745,6 @@ def forward_selected(data: pd.DataFrame,
                 continue
             f_vec = beta @ X.T
             
-            
             SS_RES = np.sum((f_vec-y_mean) ** 2)
             r2 = 1-SS_RES/SST
             
@@ -784,10 +766,7 @@ def forward_selected(data: pd.DataFrame,
     formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
     model = smf.ols(formula, data).fit()
-    
     return model
-
-
 
 def gen_column_names(df: pd.DataFrame, response: str=None):
     if response:
@@ -799,10 +778,8 @@ def gen_column_names(df: pd.DataFrame, response: str=None):
         originals = list(df.columns)
     return originals + combine 
 
-
-
 def make_p_values_plot(p_sorted, theme):
-    """Make Plotly trace for p-values plot"""
+    """Make p-values plot"""
     p_values = p_sorted.values
     parameters = p_sorted.index
 
@@ -836,35 +813,26 @@ def make_p_values_plot(p_sorted, theme):
     return fig
 
 def make_arrow_plot(model, theme):
-    """Sorting dictionary in descending order. 
-    Saving parameters and values of coefficients in lists.
-    Saving plot-function to variable fig."""
+    """Make arrow plot for the coefficients"""
     coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
-    sgn = signs(vals)
+    sgn = np.sign(vals)
     colors = color_array(vals, params, sgn)
-
-    if len(coefs) < 2:
-        raise ValueError("Number of coefficients must be greater than 1")
     steps = 2/(len(coefs)-1)
     points = len(coefs)
 
     x = np.linspace(0, 2, points)
     y = np.zeros(len(x))
 
-    color_scale=[(0.0, 'rgb(36, 55, 70)'),
-                (0.125, 'rgb(102, 115, 125)'),
-                (0.25, 'rgb(145, 155, 162)'),
-                (0.375, 'rgb(189, 195, 199)'),
-                (0.5, 'rgb(255, 231, 214)'),
-                (0.625, 'rgb(216, 178, 189)'),
-                (0.75, 'rgb(190, 128, 145)'),
-                (0.875, 'rgb(164, 76, 101)'),
+    color_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'),
+                (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'),
+                (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'),
+                (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'),
                 (1.0, 'rgb(125, 0, 35)')
                 ]
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1])
     
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
@@ -892,7 +860,7 @@ def make_arrow_plot(model, theme):
     )
     fig["layout"]["font"].update({"size": 12})
 
-    """Costumizing the hoverer"""
+    """Customizing the hoverer"""
     fig.update_traces(hovertemplate='%{x}')
 
     """Adding arrows to figure"""
@@ -912,34 +880,23 @@ def make_arrow_plot(model, theme):
                 line_color="#222A2A",
                 fillcolor=colors[i], 
                 line_width=0.6
-            )
-    
+            )    
+
     """Adding zero-line along y-axis"""
     fig.add_shape(
-        # Line Horizontal
             type="line",
             x0=-0.18,
             y0=0,
             x1=x[-1]+0.18,
             y1=0,
-            line=dict(
-                color='#222A2A',
-                width=0.75,
-            ),
+            line=dict(color='#222A2A', width=0.75)
     )
-
     return fig
-
-def signs(vals):
-    """Saving signs of coefficients to array sgn"""
-    
-    return np.sign(vals)
 
 def color_array(vals, params, sgn):
     """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
     max_val = vals[0]
     min_val = vals[-1]
-
     standard = 250
 
     """Defining color values to match theme because I'm 
@@ -948,21 +905,19 @@ def color_array(vals, params, sgn):
     rf = 36
     gf = 55
     bf = 70
-
     # Max RGB values
     r0 = 255
     g0 = 231
     b0 = 214
-
     # Initial RGB value
     ri = 125
     gi = 0
     bi = 35
 
-    color_arr = ['rgba(255, 255, 255, 1)']*len(params)
+    color_arr = ['rgba(255, 255, 255, 1)'] * len(params)
     
-    k = 0
     """Adding colors matching scaled values of coefficients to color_arr array"""
+    k = 0
     for s, v in zip(sgn, vals):
         if s == 1:
             scaled_val_max = v/max_val
@@ -971,7 +926,6 @@ def color_array(vals, params, sgn):
             scaled_val_min = v/min_val
             color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
         k += 1
-    
     return color_arr
 
 def make_range_slider(domid, values, col_name):
@@ -995,7 +949,7 @@ def make_range_slider(domid, values, col_name):
         marks={
             str(values.min()): {"label": f"{values.min():.2f}"},
             str(values.max()): {"label": f"{values.max():.2f}"},
-        },
+        }
     )
 
 def theme_layout(theme, specific_layout):
@@ -1003,7 +957,6 @@ def theme_layout(theme, specific_layout):
     layout.update(theme["layout"])
     layout.update(specific_layout)
     return layout
-
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
