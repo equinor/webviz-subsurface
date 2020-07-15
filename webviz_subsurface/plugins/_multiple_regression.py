@@ -98,13 +98,6 @@ The types of response_filters are:
         self.time_index = sampling
         self.aggregation = aggregation
 
-<<<<<<< HEAD
-        """Temporary way of filtering out non-valid parameters"""
-        self.parameter_filters = [
-            ]
-
-=======
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -116,17 +109,6 @@ The types of response_filters are:
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-<<<<<<< HEAD
-            # For csv files
-            # self.parameterdf = read_csv(
-            #   self.parameter_csv).drop(columns=self.parameter_filters)
-            # self.responsedf = read_csv(self.response_csv)
-
-            # For parquet files
-            self.parameterdf = pd.read_parquet(
-                self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = pd.read_parquet(self.response_csv)
-=======
             #For csv files
             self.parameterdf = read_csv(self.parameter_csv)
             self.responsedf = read_csv(self.response_csv)
@@ -134,7 +116,6 @@ The types of response_filters are:
             #For parquet files
             #self.parameterdf = pd.read_parquet(self.parameter_csv)
             #self.responsedf = pd.read_parquet(self.response_csv)
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -300,12 +281,7 @@ The types of response_filters are:
                 )
             else:
                 return children
-<<<<<<< HEAD
-            children.append(html.Div(children=[html.Label(col_name), selector, ]))
-
-=======
             children.append(html.Div(children=[html.Label(col_name), selector,]))
->>>>>>> df6659adbf7480a03ddcc0ae9fa930eef0da548c
         return children
 
     @property
@@ -586,7 +562,7 @@ The types of response_filters are:
                     try:
                         # Make dataframe and get results from the model
                         df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-                        result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction=interaction)
+                        result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
                         
                         # Generate table
                         table = result.model.fit().summary2().tables[1].drop("Intercept")
@@ -615,7 +591,7 @@ The types of response_filters are:
                             make_arrow_plot(coeff_sorted, self.plotly_theme)
                         )
                     except (Exception, RuntimeWarning) as e:
-                        #print("error: ", e)
+                        print("error: ", e)
                         return(
                             [{"e": ""}],
                             [{"name": "", "id": "e"}],
@@ -742,10 +718,8 @@ def _gen_interaction_df(
 
     name_combinations = []
     for i in range(1, degree+1):
-        print(i)
         name_combinations += ["*".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
-        print(name)
         if name.split("*"):
             newdf[name] = newdf.filter(items=name.split("*")).product(axis=1)
     return newdf
@@ -786,16 +760,9 @@ def forward_selected(data: pd.DataFrame,
             SS_RES = np.sum((f_vec-y_mean) ** 2)
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-        #print("HERE",scores_with_candidates[0][0])
         scores_with_candidates.sort(key=lambda x: x[0])
-        #print(scores_with_candidates.sort(key=lambda x: x[0]))
-        #print(scores_with_candidates[-1])
         best_new_score, best_candidate = scores_with_candidates.pop()
-        print("BESTCANDIDNATE:", best_candidate,"BEST SCORE:",best_new_score)
-        print("current_score:",current_score)
         if current_score < best_new_score:
-            print("Here")
-            print(best_candidate)
             if "*" in best_candidate:
                 for base_feature in best_candidate.split("*"):
                     if base_feature in remaining:
