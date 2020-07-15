@@ -617,7 +617,6 @@ The types of response_filters are:
                                 }
                             },
                         )  
-            
     
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -846,18 +845,6 @@ def make_arrow_plot(model, theme):
     sgn = signs(vals)
     colors = color_array(vals, params, sgn)
 
-    fig = arrow_plot(coefs, vals, params, sgn, colors, theme)
-
-    return [fig] # Need hard brackets here
-
-def signs(vals):
-    """Saving signs of coefficients to array sgn"""
-    
-    return np.sign(vals)
-
-def arrow_plot(coefs, vals, params, sgn, colors, theme):
-    """Making arrow plot to illutrate relative importance 
-    of coefficients to a userdefined response"""
     if len(coefs) < 2:
         raise ValueError("Number of coefficients must be greater than 1")
     steps = 2/(len(coefs)-1)
@@ -941,7 +928,12 @@ def arrow_plot(coefs, vals, params, sgn, colors, theme):
             ),
     )
 
-    return fig # Should not have hard brackets here
+    return fig
+
+def signs(vals):
+    """Saving signs of coefficients to array sgn"""
+    
+    return np.sign(vals)
 
 def color_array(vals, params, sgn):
     """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
