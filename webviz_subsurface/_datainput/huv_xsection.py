@@ -98,7 +98,7 @@ class HuvXsection:
                 "height": 830,
             })
             return layout
-        if self.well_attributes is None:
+        elif self.well_attributes is None:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
             layout.update({
                 "yaxis":{
@@ -114,16 +114,18 @@ class HuvXsection:
             })
             return layout
         else:
-            ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
-            x_well, y_well, x_well_max, y_width, x_width = get_intersection_surface_well(self.well_attributes["well_df"],ymin,ymax)
+            y_min, y_max = self.sfc_line_max_min_depth(surfacepaths)
+            x_min, x_max= get_range_from_well(self.well_attributes["well_df"],y_min)
+            y_range = np.abs(y_max-y_min)
+            x_range = np.abs(x_max - x_min)
             layout.update({
                 "yaxis":{
                     "title":"Depth (m)",
-                    "range" : [ymax+0.15*y_width,y_well-0.15*y_width],
+                    "range" : [y_max+0.15*y_range,y_min-0.15*y_range],
                 },
                 "xaxis":{
                     "title": "Distance from polyline (m)",
-                    "range": [x_well-0.5*x_width, x_well_max+0.5*x_width],
+                    "range": [x_min-0.5*x_range, x_max+0.5*x_range],
                 },
                 "plot_bgcolor":'rgb(233,233,233)',
                 "showlegend":False,
@@ -135,31 +137,33 @@ class HuvXsection:
     def get_plotly_err_data(self, surface_paths, error_paths):
         common_paths = [error_path for error_path in error_paths if error_path in surface_paths]
         data = []
-        for sfc_path in common_paths:
-            data += [
-                {
-                    'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
-                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                    'hoverinfo':'skip'
-                 },
-                {
-                    'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] + self.surface_attributes[sfc_path]['error_line'][:,1],
-                    "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                    'fill': 'tonexty',
-                    'fillcolor': 'rgba(0,0,0,0.2)',
-                    'hoverinfo': 'skip'
-                }
-            ]
-        return data
-
-    def get_plotly_data(self, surface_paths, error_paths):
         if len(surface_paths) == 0:
-            data = self.get_plotly_well_data()
-            return data
+            return []
         else:
-            _min, _max = self.sfc_line_max_min_depth(surface_paths)
+            for sfc_path in common_paths:
+                data += [
+                    {
+                        'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
+                        'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
+                        "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
+                        'hoverinfo':'skip'
+                     },
+                    {
+                        'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
+                        'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] + self.surface_attributes[sfc_path]['error_line'][:,1],
+                        "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
+                        'fill': 'tonexty',
+                        'fillcolor': 'rgba(0,0,0,0.2)',
+                        'hoverinfo': 'skip'
+                    }
+                ]
+            return data
+
+    def get_plotly_sfc_data(self, surface_paths):
+        if len(surface_paths) == 0:
+            return []
+        else:
+            _, _max = self.sfc_line_max_min_depth(surface_paths)
             first_surf_line = self.surface_attributes[surface_paths[0]]['surface_line']
             surface_tuples = [
                 (sfc_path, self.surface_attributes[sfc_path]['order'])
@@ -167,7 +171,7 @@ class HuvXsection:
             ]
             surface_tuples.sort(key=stratigraphic_sort, reverse=True)
 
-            data = [ #Create helpline for bottom of plot
+            data = [  # Create helpline for bottom of plot
                 {
                     "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
                     "y": [_max + 200, _max + 200],
@@ -177,21 +181,19 @@ class HuvXsection:
 
             data += [
                 {
-                    'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                    'y':self.surface_attributes[sfc_path]['surface_line'][:, 1],
+                    'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
+                    'y': self.surface_attributes[sfc_path]['surface_line'][:, 1],
                     'line': {"color": "rgba(0,0,0,1)", "width": 1},
                     "fill": "tonexty",
-                    'fillcolor':self.surface_attributes[sfc_path]["color"],
-                    'name':self.surface_attributes[sfc_path]['name'],
+                    'fillcolor': self.surface_attributes[sfc_path]["color"],
+                    'name': self.surface_attributes[sfc_path]['name'],
                     'text': self.get_hover_text(sfc_path),
                     'hovertemplate': '<b>Depth:<b> %{y:.2f} <br>' + '<b>Depth error:<b> %{text}'
                 }
                 for sfc_path, _ in surface_tuples
             ]
-
-            data += self.get_plotly_err_data(surface_paths, error_paths)
-            data += self.get_plotly_well_data()
             return data
+
 
     def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
@@ -209,13 +211,8 @@ class HuvXsection:
 
     def set_plotly_fig(self, surfacepaths, error_paths):
         layout = self.get_plotly_layout(surfacepaths)
-        data = self.get_plotly_data(surfacepaths, error_paths)
+        data = self.get_plotly_sfc_data(surfacepaths) + self.get_plotly_err_data(surfacepaths, error_paths) + self.get_plotly_well_data()
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
-
-    def set_image(self, figure): #Requires Orca
-        #figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
-        #figure.write_image("./xsec.png")
-        return None
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
@@ -341,15 +338,11 @@ def get_conditional_RHLEN(well_df, wellname, cond_path):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_intersection_surface_well(well_df, ymin, ymax):
+def get_range_from_well(well_df, ymin):
     x_well_max = np.max(well_df["R_HLEN"])
-    x_well = 0
-    y_well = 0
+    x_well_min= 0
     for i in range(len(well_df["Z_TVDSS"])):
         if well_df["Z_TVDSS"][i] >= ymin:
-            y_well = well_df["Z_TVDSS"][i]
-            x_well = well_df["R_HLEN"][i]
+            x_well_min= well_df["R_HLEN"][i]
             break
-    y_width = np.abs(ymax-y_well)
-    x_width = np.abs(x_well_max-x_well)
-    return x_well, y_well, x_well_max, y_width, x_width
+    return x_well_min, x_well_max

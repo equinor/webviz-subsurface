@@ -7,7 +7,6 @@ import dash
 import dash_table
 import pandas as pd
 import numpy as np
-import numpy.ma as ma
 import plotly.graph_objects as go
 from matplotlib.colors import ListedColormap
 import xtgeo
