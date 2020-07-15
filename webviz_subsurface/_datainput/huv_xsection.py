@@ -212,11 +212,6 @@ class HuvXsection:
         data = self.get_plotly_data(surfacepaths, error_paths)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
-    def set_image(self, figure): #Requires Orca
-        #figure.write_image("C:/Users/Ruben/Documents/VSCode/xsec.png")
-        #figure.write_image("./xsec.png")
-        return None
-
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
         well_df = well.dataframe

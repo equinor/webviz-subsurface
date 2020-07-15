@@ -7,7 +7,6 @@ import dash
 import dash_table
 import pandas as pd
 import numpy as np
-import numpy.ma as ma
 import plotly.graph_objects as go
 from matplotlib.colors import ListedColormap
 import xtgeo
@@ -25,6 +24,7 @@ from webviz_config.utils import calculate_slider_step
 from .._datainput.well import load_well
 from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
 from .._datainput.huv_xsection import HuvXsection
+from .._datainput.huv_table import FilterTable
 from .._datainput import parse_model_file
 
 
@@ -72,6 +72,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
+        self.dataf = FilterTable(self.target_points,self.well_points)
         self.xsec.set_well(self.wellfiles[0])
 
     def ids(self, element):
@@ -252,21 +253,61 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     @property
     def target_points_layout(self):
-        df = pd.read_csv(self.target_points)
+        df = self.dataf.get_targetpoints_datatable()
         return dash_table.DataTable(
-            id=self.ids("target_point_table"),
+            id=self.ids("target-point-table"),
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records'),
+            sort_action="native",
+            filter_action="native",
         )
 
     @property
     def well_points_layout(self):
-        df = pd.read_csv(self.well_points)
-        return dash_table.DataTable(
-            id=self.ids("well_points_table"),
-            columns=[{"name": i, "id": i} for i in df.columns],
-            data=df.to_dict('records')
-        )
+        return html.Div([
+            dbc.Button("Table Settings", id=self.ids("button-open-table-settings")),
+            dbc.Modal(
+                children=[
+                    dbc.ModalHeader("Table Settings"),
+                    dbc.ModalBody(
+                        children=[
+                            html.Label(
+                                style={
+                                    "font-weight": "bold",
+                                    "textAlign": "Left",
+                                },
+                                children="Select Table Columns",
+                            ),
+                            dcc.Checklist(
+                                id=self.ids('columns-checklist'),
+                                options=[
+                                    {"label": name, "value": column_name}
+                                    for name, column_name in zip(
+                                        self.dataf.get_wellpoints_datatable().keys().values, self.dataf.get_wellpoints_datatable().keys().values
+                                    )
+                                ],
+                                value=['Surface', 'Well', 'TVD', 'MD', 'Outlier', 'Deleted', 'Residual']
+                            ),
+                        ],
+                    ),
+                    dbc.ModalFooter(
+                        children=[
+                            dbc.Button("Close", id=self.ids("button-close-table-settings"),
+                                        className="ml-auto"),
+                            dbc.Button('Apply', id=self.ids('button-apply-columnlist'),
+                                        className='ml-auto')
+                        ]
+                    ),
+                ],
+                id=self.ids("modal-table-settings"),
+                size="sm",
+                centered=True,
+                backdrop=False,
+                fade=False,
+            ),
+        html.Div(id=self.ids('content')),
+        html.Div(dash_table.DataTable(columns=[],data=[],sort_action="native",filter_action="native",), style={'display': 'none'}),
+        ])
 
     @property
     def layout(self):
@@ -289,7 +330,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ),
             dcc.Tab(
                 label='Well Points',
-                children=[html.Div(children=self.well_points_layout)]
+                children=[self.well_points_layout]
             )
         ])
 
@@ -314,6 +355,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
                 well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
+                #well_layer = make_well_circle_layer(well, radius = 100, name = well.wellname, color = well_color)
                 well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
@@ -325,7 +367,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 hillshading=hillshading,
             )
             layers = [s_layer]
-            layers.extend(well_layers)
+            #layers.extend(well_layers)
             return layers
 
         @app.callback(
@@ -397,7 +439,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
-                # self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
@@ -415,6 +456,38 @@ The cross section is defined by a polyline interactively edited in the map view.
                 img_bytes = self.xsec.fig.to_image(format="png")
                 layer = make_png_layer(img_bytes)
                 return [layer]
+
+        @app.callback(
+            Output(self.ids('content'), 'children'),
+            [
+                Input(self.ids('button-apply-columnlist'), 'n_clicks'),
+            ],
+            [
+                State(self.ids("columns-checklist"), "value"),  # columns list
+            ],
+        )
+        def display_output(n_clicks, column_list):
+            wellpoints_df = self.dataf.update_wellpoints_datatable(column_list)
+            return html.Div([
+                dash_table.DataTable(
+                    id=self.ids('well-points-table'),
+                    columns=[{"name": i, "id": i} for i in wellpoints_df.columns],
+                    data=wellpoints_df.to_dict('records'),
+                    sort_action="native",
+                    filter_action="native",
+                ),
+            ])
+
+        @app.callback(
+            Output(self.ids("modal-table-settings"), "is_open"),
+            [Input(self.ids("button-open-table-settings"), "n_clicks"),
+             Input(self.ids("button-close-table-settings"), "n_clicks")],
+            [State(self.ids("modal-table-settings"), "is_open")],
+        )
+        def _toggle_modal2(n1, n2, is_open):
+            if n1 or n2:
+                return not is_open
+            return is_open
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
