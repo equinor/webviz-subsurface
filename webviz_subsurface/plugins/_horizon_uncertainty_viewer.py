@@ -122,6 +122,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ]
         ),
 
+    """
     @property
     def draw_well_layout(self):
         return html.Div(
@@ -131,6 +132,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 layers=[],
             ),
         )
+    """
 
     @property
     def plotly_layout(self):
@@ -175,7 +177,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ),
                 html.Div(
                     children=[
-                        dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings")),
+                        dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings"), color='light', className='mr-1'),
                         dbc.Modal(
                             children=[
                                 dbc.ModalHeader("Graph Settings"),
@@ -230,7 +232,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                             backdrop=False,
                             fade=False,
                         ),
-                        dbc.Button(children=["Draw well"], id=self.ids("button-draw-well")),
+                        dbc.Button(children=["Draw well"], id=self.ids("button-draw-well"), color='light', className='mr-1'),
                     ],
                 ),
                 html.Div(
@@ -359,16 +361,36 @@ The cross section is defined by a polyline interactively edited in the map view.
         def _update_surface_tickboxes(all_surfaces_checkbox):
             return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
 
+
         @app.callback(
             Output(self.ids("modal-graph-settings"), "is_open"),
             [Input(self.ids("button-open-graph-settings"), "n_clicks"),
-             Input(self.ids("button-close-graph-settings"), "n_clicks")],
+             Input(self.ids("button-close-graph-settings"), "n_clicks"),
+             Input(self.ids('button-open-graph-settings'), 'disabled')],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
-        def _toggle_modal(n1, n2, is_open):
-            if n1 or n2:
+        def _toggle_modal(n1, n2, disabled, is_open):
+            if disabled:
+                return False
+            elif n1 or n2:
                 return not is_open
-            return is_open
+            else:
+                return is_open
+
+
+        @app.callback(
+            [Output(self.ids('button-open-graph-settings'), 'disabled'),
+             Output(self.ids('button-open-graph-settings'), 'children')],
+            [Input(self.ids('button-draw-well'), 'n_clicks')],
+            [State(self.ids('button-open-graph-settings'), 'disabled')]
+        )
+        def _draw_well(n_clicks, disabled):
+            if disabled:
+                children = 'Graph settings'
+            else:
+                children = 'Disabled'
+            return not disabled, children
+
 
         @app.callback(
             Output(self.ids('surfaces-de-checklist'), 'options'),
@@ -382,7 +404,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     de_options[i]['disabled'] = False
             return de_options
-
+        """
         @app.callback(  # Toggle "draw well" button on/off to display leaflet
             [Output(self.ids("cross-section-view"), "children"),
              Output(self.ids("well-dropdown"), "disabled"),
@@ -402,7 +424,9 @@ The cross section is defined by a polyline interactively edited in the map view.
                 well_dropdown = False
                 graph_settings_button = False
             return [children, well_dropdown, graph_settings_button]
+        """
 
+        """
         @app.callback(
             Output(self.ids("draw-well-view"), "layers"),
             [
@@ -414,6 +438,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 img_bytes = self.xsec.fig.to_image(format="png")
                 layer = make_png_layer(img_bytes)
                 return [layer]
+        """
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
