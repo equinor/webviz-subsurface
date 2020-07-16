@@ -846,23 +846,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
     coefs = dict(sorted(coeff_sorted.items(), key=lambda x: x[1], reverse=True))
     print("\n\nNEW RUN YUPYUP")
-    #print("\ntype(coeff_sorted): \n", type(coeff_sorted))
-    #print("\ncoeff_sorted: \n", coeff_sorted)
-    #print("\ncoeff_sorted.to_dict(): \n", coeff_sorted.to_dict())
-    #print("\ncoefs: \n", coefs)
-    #print("\nlist(coeff_sorted.index): \n", list(coeff_sorted.index))
-    #print("\ncoefs.keys(): \n", coefs.keys())
-    #print("\ncoeff_sorted.values: \n", coeff_sorted.values)
-    #print("\ncoefs.values(): \n", coefs.values())
-    #paramsOLD = list(coefs.keys())
-    #valsOLD = list(coefs.values())
-    ##params = coeff_sorted.index
     coeff_vals = coeff_sorted.values
     p_params = p_sorted.index
-    #print("\nparamsOLD: ", paramsOLD, sep='\n')
-    #print("\nvalsOLD: ", valsOLD, sep='\n')
-    #print("\nparams: ", params, sep='\n')
-    #print("\nvals: ", vals, sep='\n')
     sgn = np.sign(coeff_vals)
     param_to_color = param_color_dict(coeff_vals, coeff_sorted.index, sgn) #dictionary with parameters to colors
 
