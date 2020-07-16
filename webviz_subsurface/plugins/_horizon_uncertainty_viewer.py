@@ -178,6 +178,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                 html.Div(
                     children=[
                         dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings"), color='light', className='mr-1'),
+                        dbc.Button('Draw well', id=self.ids('button-draw-well'), color='light', className='mr-1'),
+                        dbc.Button('Done', id=self.ids('button-done-draw-well'), className='mr-1', color='light'),
                         dbc.Modal(
                             children=[
                                 dbc.ModalHeader("Graph Settings"),
@@ -232,7 +234,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                             backdrop=False,
                             fade=False,
                         ),
-                        dbc.Button(children=["Draw well"], id=self.ids("button-draw-well"), color='light', className='mr-1'),
+
                     ],
                 ),
                 html.Div(
@@ -335,13 +337,14 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
                 Input(self.ids("map-view"), "polyline_points"),  # coordinates from map-view
+                Input(self.ids('plotly-view'), 'clickData'),
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
                 State(self.ids("surfaces-de-checklist"), "value"),  # error_paths list
             ],
         )
-        def _render_xsection(n_clicks, wellpath, coords, surface_paths, error_paths):
+        def _render_xsection(n_clicks, wellpath, coords, click_data, surface_paths, error_paths):
             ctx = dash.callback_context
             surface_paths = get_path(surface_paths)
             error_paths = get_path(error_paths)
@@ -350,8 +353,11 @@ The cross section is defined by a polyline interactively edited in the map view.
             elif ctx.triggered[0]['prop_id'] == self.ids("map-view") + '.polyline_points':
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
-            self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
-            self.xsec.set_plotly_fig(surface_paths, error_paths)
+            if ctx.triggered[0]['prop_id'] == self.ids('plotly-view') + '.clickData':
+                self.xsec.add_freehand_point(click_data)
+            else:
+                self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
+                self.xsec.set_plotly_fig(surface_paths, error_paths)
             return self.xsec.fig
 
         @app.callback(
@@ -380,16 +386,18 @@ The cross section is defined by a polyline interactively edited in the map view.
 
         @app.callback(
             [Output(self.ids('button-open-graph-settings'), 'disabled'),
+             Output(self.ids('button-done-draw-well'), 'disabled'),
              Output(self.ids('button-open-graph-settings'), 'children')],
             [Input(self.ids('button-draw-well'), 'n_clicks')],
             [State(self.ids('button-open-graph-settings'), 'disabled')]
         )
-        def _draw_well(n_clicks, disabled):
-            if disabled:
+        def _draw_well(n_clicks, disabled_graph_settings):
+            if disabled_graph_settings:
                 children = 'Graph settings'
             else:
                 children = 'Disabled'
-            return not disabled, children
+            disabled_done = disabled_graph_settings
+            return not disabled_graph_settings, disabled_done, children
 
 
         @app.callback(
