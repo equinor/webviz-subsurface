@@ -246,8 +246,6 @@ class HuvXsection:
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
                     "line": {"width": 4, "color": color},
-                    "fillcolor": color,
-                    "marker": {"opacity": 0.5},
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
@@ -258,8 +256,6 @@ class HuvXsection:
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
                     "line": {"width": 4, "color": color},
-                    "fillcolor": color,
-                    "marker": {"opacity": 0.5},
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
@@ -270,8 +266,6 @@ class HuvXsection:
                     "x": well_RHLEN[start:end],
                     "y": well_TVD[start:end],
                     "line": {"width": 4, "color": color},
-                    "fillcolor": color,
-                    "marker": {"opacity": 0.5},
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
@@ -282,18 +276,15 @@ class HuvXsection:
                 "x": well_RHLEN[start:end],
                 "y": well_TVD[start:end],
                 "line": {"width": 4, "color": color},
-                "fillcolor": color,
-                "marker": {"opacity": 0.5},
                 "name": f"Zone: {zonevals[-2]}",
                 })
         if np.isnan(zonevals[-1]):
             color = "rgb(211,211,211)"
             zoneplot.append({
-                "x": np.array(well_RHLEN[-1]),
-                "y": np.array(well_TVD[-1]),
-                "line": {"width": 4, "color": color},
-                "fillcolor": color,
-                "marker": {"opacity": 0.5},
+                "mode": "markers",
+                "x": np.array([well_RHLEN[-2],well_RHLEN[-1]]),
+                "y": np.array([well_TVD[-2],well_TVD[-1]]),
+                "marker": {"size": 3, "color": color},
                 "name": f"Zone: {zonevals[-1]}",
                 })
         return zoneplot
