@@ -718,6 +718,7 @@ def _filter_and_sum_responses(
 def standardize_parameters(parameterdf: pd.DataFrame):
     parameters = parameterdf.drop(columns=["ENSEMBLE", "REAL"]).columns
     parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
+    parameterdf.dropna(axis=1, inplace=True)
     print(parameterdf)
     return parameterdf
 
