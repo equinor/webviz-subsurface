@@ -903,7 +903,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_traces(hovertemplate='%{x}') #x is ticktext
 
     """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
+    for i, s in enumerate(np.sign(list(map(coefs.get, p_params)))):
         fig.add_shape(
             type="path",
             path=f" M {x[i]-0.025} 0 " \
