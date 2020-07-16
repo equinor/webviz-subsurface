@@ -203,7 +203,6 @@ The types of response_filters are:
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.ids("responses"), "content": ("Select the active response."), },
             {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."), },
-            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."), },
             {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."), },
             {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."), },
             {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."), },
@@ -292,7 +291,7 @@ The types of response_filters are:
         """Layout to select e.g. iteration and response"""
         return [
             html.Div(
-               [
+                [
                    dcc.RadioItems(
                        id=self.ids("exclude_include"),
                        options=[
@@ -358,18 +357,6 @@ The types of response_filters are:
                         clearable=False,
                         value=3,
                     ),
-                ]
-            ),
-            html.Div(
-                [
-                    html.Label("Force out"),
-                    dcc.Dropdown(
-                        id=self.ids("force-out"),
-                        clearable=True,
-                        multi=True,
-                        value=[],
-
-                    )
                 ]
             ),
             html.Div(
@@ -466,7 +453,6 @@ The types of response_filters are:
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
-            State(self.ids("force-out"), "value"),
             State(self.ids("force-in"), "value"),
             State(self.ids("interaction"), "value"),
             State(self.ids("max-params"), "value"),
@@ -489,27 +475,22 @@ The types of response_filters are:
     def set_callbacks(self, app):
         """Set callbacks to update dropdown menues"""
         @app.callback(
-                Output(self.ids("force-out"), "options"),
-            [
-                Input(self.ids("parameter-list"), "value"),
-                Input(self.ids("force-in"), "value")
-            ]
-        )
-        def update_force_out(parameter_list, force_in=[]):
-            """Returns a dictionary with options for force out"""
-            fo_lst = list(self.parameterdf[parameter_list].drop(columns=force_in))
-            return [{"label": fo, "value": fo} for fo in fo_lst]
-
-        @app.callback(
                 Output(self.ids("force-in"), "options"),
             [
                 Input(self.ids("parameter-list"), "value"),
-                Input(self.ids("force-out"), "value")
+                Input(self.ids("exclude_include"), "value")
             ]
         )
-        def update_force_in(parameter_list, force_out=[]):
+        def update_force_in(parameter_list, exc_inc):
             """Returns a dictionary with options for force in"""
-            fi_lst = list(self.parameterdf[parameter_list].drop(columns=force_out))
+            #If exclusive and parameter_list empty -> all param avail. for force-in
+            #If inclusive and parameter_list empty -> no param avail.
+            if exc_inc == "exc":
+                df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
+            elif exc_inc == "inc":
+                df = self.parameterdf[parameter_list] if parameter_list else []
+
+            fi_lst = list(df)
             return [{"label": fi, "value": fi} for fi in fi_lst]
 
         """Set callbacks for the table, p-values plot, and arrow plot"""
@@ -527,7 +508,7 @@ The types of response_filters are:
             ],
             self.model_input_callbacks,
         )
-        def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_in, interaction, max_vars, *filters):
             """Callback to update the model for multiple regression
 
             1. Filters and aggregates response dataframe per realization
@@ -545,27 +526,18 @@ The types of response_filters are:
                 aggregation=self.aggregation,
             )
             if exc_inc == "exc":
-                if parameter_list:
-                    parameterdf = self.parameterdf.drop(parameter_list, axis=1)
-                else:
-                    parameterdf = self.parameterdf
+                parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            parameterdf.drop(columns=force_out, inplace=True)
 
-            #For now, remove ':' and ',' form param and response names. Should only do this once though
-            """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
-            responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
-            responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
-            response = response.replace(":", "_")
-            response = response.replace(",", "_")
-            """
+            parameterdf = standardize_parameters(parameterdf)
+
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             #If no selected parameters
-            if exc_inc=="inc" and not parameter_list:
+            if exc_inc == "inc" and not parameter_list:
                 return(
                     [{"e": ""}],
                     [{"name": "", "id": "e"}],
@@ -588,8 +560,7 @@ The types of response_filters are:
                     warnings.filterwarnings('error', category=RuntimeWarning)
                     warnings.filterwarnings('ignore', category=UserWarning)
                     try:
-                        # Make dataframe and get results from the model
-                        df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+                        # Get results from the model
                         result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
                         
                         # Generate table
@@ -723,7 +694,8 @@ def gen_model(
     ):
     """wrapper for modelselection algorithm."""
     if interaction_degree:
-        df = _gen_interaction_df(df,response,interaction_degree)
+        df = _gen_interaction_df(df, response, interaction_degree)
+        #df = standardize_parameters(df, response=response, interaction=True)
         model = forward_selected(
             data=df,
             response=response,
@@ -731,13 +703,29 @@ def gen_model(
             maxvars=max_vars
             )
     else:
-        model = forward_selected(data=df,
-        response=response,
-        force_in=force_in,
-        maxvars=max_vars
+        model = forward_selected(
+            data=df,
+            response=response,
+            force_in=force_in,
+            maxvars=max_vars
         ) 
     return model
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def standardize_parameters(parameterdf: pd.DataFrame, response="", interaction=False):
+    #If standerdize with interaction need to remove response column
+    if interaction:
+        parameters = parameterdf.drop(columns=[response]).columns
+        parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
+        parameterdf.dropna(axis=1, inplace=True)
+        return parameterdf
+    else:
+        parameters = parameterdf.drop(columns=["ENSEMBLE", "REAL"]).columns
+        parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
+        parameterdf.dropna(axis=1, inplace=True)
+        return parameterdf
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def _gen_interaction_df(
     df: pd.DataFrame,
     response: str,
@@ -845,7 +833,6 @@ def make_p_values_plot(p_sorted, theme):
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
     coefs = dict(sorted(coeff_sorted.items(), key=lambda x: x[1], reverse=True))
-    print("\n\nNEW RUN YUPYUP")
     coeff_vals = coeff_sorted.values
     p_params = p_sorted.index
     sgn = np.sign(coeff_vals)
