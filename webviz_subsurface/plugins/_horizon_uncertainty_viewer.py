@@ -233,6 +233,49 @@ The cross section is defined by a polyline interactively edited in the map view.
                             fade=False,
                         ),
                         dbc.Button(children=["Draw well"], id=self.ids("button-draw-well")),
+                        dbc.Button("Well Settings", id=self.ids("button-open-well-settings")),
+                        dbc.Modal(
+                            children=[
+                                dbc.ModalHeader("Well Settings"),
+                                dbc.ModalBody(
+                                    children=[
+                                        html.Label(
+                                            style={
+                                                "font-weight": "bold",
+                                                "textAlign": "Left",
+                                            },
+                                            children="Select Well Attributes",
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('all-well-settings-checkbox'),
+                                            options=[{'label': 'all', 'value': 'True'}],
+                                            value=['True'],
+                                        ),
+                                        dcc.Checklist(
+                                            id=self.ids('well-settings-checklist'),
+                                            options=[{"label": "Zonelog", "value": "zonelog"}, 
+                                            {"label": "Zonation points", "value": "zonation_points"}, 
+                                            {"label": "Conditional points", "value": "conditional_points"}
+                                            ],
+                                            value=["zonelog", "zonation_points", "conditional_points"]
+                                        ),
+                                    ],
+                                ),
+                                dbc.ModalFooter(
+                                    children=[
+                                        dbc.Button("Close", id=self.ids("button-close-well-settings"),
+                                                   className="ml-auto"),
+                                        dbc.Button('Apply', id=self.ids('button-apply-well-settings-checklist'),
+                                                   className='ml-auto')
+                                    ]
+                                ),
+                            ],
+                            id=self.ids("modal-well-settings"),
+                            size="sm",
+                            centered=True,
+                            backdrop=False,
+                            fade=False,
+                        ),
                     ],
                 ),
                 html.Div(
@@ -305,8 +348,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 backdrop=False,
                 fade=False,
             ),
-        html.Div(id=self.ids('content')),
-        html.Div(dash_table.DataTable(columns=[],data=[],sort_action="native",filter_action="native",), style={'display': 'none'}),
+        html.Div(id=self.ids('well-points-table-container')),
         ])
 
     @property
@@ -319,7 +361,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                         id=self.ids("layout"),
                         children=[
                             html.Div(style={"flex": 1}, children=self.map_layout),
-                            html.Div(style={"flex": 1}, children=self.cross_section_layout),
+                            html.Div(style={"flex": 1.5}, children=self.cross_section_layout),
                         ]
                     )
                 ]
@@ -374,15 +416,17 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids("plotly-view"), "figure"),
             [
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
+                Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
                 Input(self.ids("map-view"), "polyline_points"),  # coordinates from map-view
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
                 State(self.ids("surfaces-de-checklist"), "value"),  # error_paths list
+                State(self.ids("well-settings-checklist"), "value"),  # well settings checkbox content
             ],
         )
-        def _render_xsection(n_clicks, wellpath, coords, surface_paths, error_paths):
+        def _render_xsection(n_clicks, n_clicks2, wellpath, coords, surface_paths, error_paths, well_settings):
             ctx = dash.callback_context
             surface_paths = get_path(surface_paths)
             error_paths = get_path(error_paths)
@@ -392,7 +436,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
             self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
-            self.xsec.set_plotly_fig(surface_paths, error_paths)
+            self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings)
             return self.xsec.fig
 
         @app.callback(
@@ -426,6 +470,24 @@ The cross section is defined by a polyline interactively edited in the map view.
                     de_options[i]['disabled'] = False
             return de_options
 
+        @app.callback(
+            Output(self.ids("well-settings-checklist"), "value"),
+            [Input(self.ids("all-well-settings-checkbox"), "value")],
+        )
+        def _update_well_settings_tickboxes(all_well_attributes_checkbox):
+            return ["zonelog", "zonation_points", "conditional_points"] if all_well_attributes_checkbox == ['True'] else []
+
+        @app.callback(
+            Output(self.ids("modal-well-settings"), "is_open"),
+            [Input(self.ids("button-open-well-settings"), "n_clicks"),
+             Input(self.ids("button-close-well-settings"), "n_clicks")],
+            [State(self.ids("modal-well-settings"), "is_open")],
+        )
+        def _toggle_modal2(n1, n2, is_open):
+            if n1 or n2:
+                return not is_open
+            return is_open
+
         @app.callback(  # Toggle "draw well" button on/off to display leaflet
             [Output(self.ids("cross-section-view"), "children"),
              Output(self.ids("well-dropdown"), "disabled"),
@@ -458,7 +520,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 return [layer]
 
         @app.callback(
-            Output(self.ids('content'), 'children'),
+            Output(self.ids('well-points-table-container'), 'children'),
             [
                 Input(self.ids('button-apply-columnlist'), 'n_clicks'),
             ],
@@ -484,7 +546,7 @@ The cross section is defined by a polyline interactively edited in the map view.
              Input(self.ids("button-close-table-settings"), "n_clicks")],
             [State(self.ids("modal-table-settings"), "is_open")],
         )
-        def _toggle_modal2(n1, n2, is_open):
+        def _toggle_modal3(n1, n2, is_open):
             if n1 or n2:
                 return not is_open
             return is_open
@@ -506,12 +568,23 @@ def get_color(i):
     Returns a list of colors for surface layers
     """
     colors = [
-        "rgb(255,0,0)",
-        "rgb(255,140,0)",
-        "rgb(0,0,255)",
-        "rgb(128,128,128)",
-        "rgb(255,0,255)",
-        "rgb(255,215,0)"
+        "rgb(70,130,180)", #steel blue
+        "rgb(0,0,255)", #blue
+        "rgb(51,51,0)", #olive green
+        "rgb(0,128,0)", #green
+        "rgb(0,255,0)", #lime
+        "rgb(255,255,0)", #yellow
+        "rgb(255,105,180)", #pink
+        "rgb(221,160,221)", #plum
+        "rgb(75,0,130)", #purple
+        "rgb(160,82,45)", #sienna
+        "rgb(244,164,96)", #tan
+        "rgb(255,140,0)", #orange
+        "rgb(255,69,0)", #blood orange
+        "rgb(255,0,0)", #red
+        "rgb(220,20,60)", #crimson
+        "rgb(128,0,0)", #dark red
+        "rgb(101,67,33)", #dark brown
     ]
     n_colors = len(colors)
     return colors[(i) % (n_colors)]

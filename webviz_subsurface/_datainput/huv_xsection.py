@@ -46,7 +46,7 @@ class HuvXsection:
                 "conditional_points": conditional_points
             }
 
-    def get_plotly_well_data(self):
+    def get_plotly_well_data(self, well_settings):
         if self.well_attributes is None:
             return []
         else:
@@ -57,19 +57,22 @@ class HuvXsection:
             "line": {"width": 7, "color": "black"},
             "fillcolor": "black",
             }]
-            data += self.well_attributes["zonelog"]
-            data += [{"mode": "markers",
-                    "y": self.well_attributes["zonation_points"][1],
-                    "x": self.well_attributes["zonation_points"][0],
-                    "name": "zonation points",
-                    "marker":{"size":5, "color":"black"}
-            }]
-            data += [{"mode": "markers",
-                    "y": self.well_attributes["conditional_points"][1],
-                    "x": self.well_attributes["conditional_points"][0],
-                    "name": "conditional points",
-                    "marker":{"size":5, "color":"rgb(30,144,255)"}
-            }]
+            if 'zonelog' in well_settings:
+                data += self.well_attributes["zonelog"]
+            if 'zonation_points' in well_settings:
+                data += [{"mode": "markers",
+                        "y": self.well_attributes["zonation_points"][1],
+                        "x": self.well_attributes["zonation_points"][0],
+                        "name": "Zonation points",
+                        "marker":{"size":5, "color":"rgb(153,50,204)"}
+                }]
+            if 'conditional_points' in well_settings:
+                data += [{"mode": "markers",
+                        "y": self.well_attributes["conditional_points"][1],
+                        "x": self.well_attributes["conditional_points"][0],
+                        "name": "Conditional points",
+                        "marker":{"size":5, "color":"rgb(0,255,255)"}
+                }]
             return data
 
     def set_error_and_surface_lines(self, surface_paths, error_paths):
@@ -87,30 +90,40 @@ class HuvXsection:
         if len(surfacepaths) == 0:
             layout.update({
                 "yaxis":{
-                    "title":"Depth (m)",
-                    "autorange":"reversed",
+                    "title": "Depth (m)",
+                    "autorange": "reversed",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
                 },
                 "xaxis": {
                     "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
                 },
-                "plot_bgcolor":'rgb(233,233,233)',
-                "showlegend":False,
-                "height": 830,
+                "plot_bgcolor": 'rgb(233,233,233)',
+                "showlegend": False,
+                "height": 810,
+                "margin": {"t": 0, "l": 100},
             })
             return layout
         if self.well_attributes is None:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
             layout.update({
                 "yaxis":{
-                    "title":"Depth (m)",
-                    "range":[ymax, ymin],
+                    "title": "Depth (m)",
+                    "range": [ymax, ymin],
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
                 },
                 "xaxis": {
                     "title": "Distance from polyline (m)",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
                 },
-                "plot_bgcolor":'rgb(233,233,233)',
-                "showlegend":False,
-                "height": 830,
+                "plot_bgcolor": 'rgb(233,233,233)',
+                "showlegend": False,
+                "height": 810,
+                "margin": {"t": 0, "l": 100},
             })
             return layout
         else:
@@ -118,16 +131,21 @@ class HuvXsection:
             x_well, y_well, x_well_max, y_width, x_width = get_intersection_surface_well(self.well_attributes["well_df"],ymin,ymax)
             layout.update({
                 "yaxis":{
-                    "title":"Depth (m)",
-                    "range" : [ymax+0.15*y_width,y_well-0.15*y_width],
+                    "title": "Depth (m)",
+                    "range": [ymax+0.15*y_width,y_well-0.15*y_width],
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
                 },
                 "xaxis":{
                     "title": "Distance from polyline (m)",
                     "range": [x_well-0.5*x_width, x_well_max+0.5*x_width],
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
                 },
-                "plot_bgcolor":'rgb(233,233,233)',
-                "showlegend":False,
-                "height": 830,
+                "plot_bgcolor": 'rgb(233,233,233)',
+                "showlegend": False,
+                "height": 810,
+                "margin": {"t": 0, "l": 100},
             })
             return layout
 
@@ -154,7 +172,7 @@ class HuvXsection:
             ]
         return data
 
-    def get_plotly_data(self, surface_paths, error_paths):
+    def get_plotly_data(self, surface_paths, error_paths, well_settings):
         if len(surface_paths) == 0:
             data = self.get_plotly_well_data()
             return data
@@ -190,7 +208,7 @@ class HuvXsection:
             ]
 
             data += self.get_plotly_err_data(surface_paths, error_paths)
-            data += self.get_plotly_well_data()
+            data += self.get_plotly_well_data(well_settings)
             return data
 
     def sfc_line_max_min_depth(self, surfacepaths):
@@ -207,9 +225,9 @@ class HuvXsection:
     def get_hover_text(self, sfc_path):
         return np.around(self.surface_attributes[sfc_path]['error_line'][:,1], 2)
 
-    def set_plotly_fig(self, surfacepaths, error_paths):
+    def set_plotly_fig(self, surfacepaths, error_paths, well_settings):
         layout = self.get_plotly_layout(surfacepaths)
-        data = self.get_plotly_data(surfacepaths, error_paths)
+        data = self.get_plotly_data(surfacepaths, error_paths, well_settings)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -220,7 +238,7 @@ class HuvXsection:
         for sfc_path in self.surface_attributes:
             for i in range(len(color_list)):
                 if well.get_logrecord_codename(zonelogname,i) == "dummy":
-                    color_list[i] = "rgb(245,245,245)"
+                    color_list[i] = "rgb(211,211,211)"
                 if well.get_logrecord_codename(zonelogname,i) == self.surface_attributes[sfc_path]["topofzone"]:
                     self.surface_attributes[sfc_path]["zone_number"] = i
                     color_list[i] = self.surface_attributes[sfc_path]["color"]
@@ -337,5 +355,5 @@ def get_intersection_surface_well(well_df, ymin, ymax):
             x_well = well_df["R_HLEN"][i]
             break
     y_width = np.abs(ymax-y_well)
-    x_width = np.abs(x_well_max-x_well)
+    x_width = np.abs(x_well_max-x_well) if np.abs(x_well_max-x_well) >= 12 else 12
     return x_well, y_well, x_well_max, y_width, x_width
