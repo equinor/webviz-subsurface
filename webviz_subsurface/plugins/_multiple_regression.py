@@ -194,7 +194,8 @@ The types of response_filters are:
             {
                 "id": self.ids("coefficient-plot"),
                 "content": (
-                    "A plot showing the relative coefficient values from most positive to most negative negative. "
+                    "A plot showing the relative coefficient values sorted from most to least significant. "
+                    "The color scale ranks the coefficients from great positive to great negative. "
                     "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
                     "downwards respesent negative coefficients."
                 )
@@ -494,7 +495,7 @@ The types of response_filters are:
                 Input(self.ids("force-in"), "value")
             ]
         )
-        def update_force_in(parameter_list, force_in=[]):
+        def update_force_out(parameter_list, force_in=[]):
             """Returns a dictionary with options for force out"""
             fo_lst = list(self.parameterdf[parameter_list].drop(columns=force_in))
             return [{"label": fo, "value": fo} for fo in fo_lst]
@@ -506,7 +507,7 @@ The types of response_filters are:
                 Input(self.ids("force-out"), "value")
             ]
         )
-        def update_force_out(parameter_list, force_out=[]):
+        def update_force_in(parameter_list, force_out=[]):
             """Returns a dictionary with options for force in"""
             fi_lst = list(self.parameterdf[parameter_list].drop(columns=force_out))
             return [{"label": fi, "value": fi} for fi in fi_lst]
@@ -603,7 +604,7 @@ The types of response_filters are:
                         p_sorted = result.pvalues.sort_values().drop("Intercept")
 
                         # Get coefficients for plot
-                        coeff_sorted = result.params.sort_values().drop("Intercept").items()
+                        coeff_sorted = result.params.sort_values(ascending=False).drop("Intercept")
 
                         return(
                             # Generate table
@@ -615,7 +616,7 @@ The types of response_filters are:
                             make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
 
                             # Generate coefficient plot
-                            make_arrow_plot(coeff_sorted, self.plotly_theme)
+                            make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme)
                         )
                     except (Exception, RuntimeWarning) as e:
                         print("error: ", e)
@@ -841,17 +842,19 @@ def make_p_values_plot(p_sorted, theme):
     fig["layout"]["font"].update({"size": 12})
     return fig
 
-def make_arrow_plot(model, theme):
+def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
-    coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
-    params = list(coefs.keys())
-    vals = list(coefs.values())
-    sgn = np.sign(vals)
-    colors = color_array(vals, params, sgn)
-    steps = 2/(len(coefs)-1)
-    points = len(coefs)
+    coefs = dict(sorted(coeff_sorted.items(), key=lambda x: x[1], reverse=True))
+    print("\n\nNEW RUN YUPYUP")
+    coeff_vals = coeff_sorted.values
+    p_params = p_sorted.index
+    sgn = np.sign(coeff_vals)
+    param_to_color = param_color_dict(coeff_vals, coeff_sorted.index, sgn) #dictionary with parameters to colors
 
-    x = np.linspace(0, 2, points)
+    domain = 2
+    steps = domain/(len(p_params)-1)
+    points = len(p_params)
+    x = np.linspace(0, domain, points)
     y = np.zeros(len(x))
 
     color_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'),
@@ -861,21 +864,40 @@ def make_arrow_plot(model, theme):
                 (1.0, 'rgb(125, 0, 35)')
                 ]
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1])
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, 
+                     color_continuous_scale=color_scale,
+                     range_color=[-1, 1])
     
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
-        xaxis=dict(range=[-0.2, x[-1]+0.2], title='', ticktext=[p for p in params], tickvals=[steps*i for i in range(points)]),
-        autosize=False,
+        yaxis=dict(range=[-0.15, 0.15], title='', 
+                   showticklabels=False), 
+        xaxis=dict(range=[-0.23, x[-1]+0.23], 
+                   title='', 
+                   ticktext=[p for p in p_params], 
+                   tickvals=[steps*i for i in range(points)]),
         coloraxis_colorbar=dict(
             title="",
-            tickvals=[-0.97, -0.88, 0.88, 0.97],
-            ticktext=["coefficient", "Great negative", "coefficient", "Great positive"],
+            tickvals=[-0.91, 0.91],
+            ticktext=["Great negative<br>coefficient", 
+                      "Great positive<br>coefficient"],
             lenmode="pixels", len=300,
+            x=1.1,
         ),
         hoverlabel=dict(
             bgcolor="white", 
         )
+    )
+    fig.add_annotation(
+        x=-0.23,
+        y=0,
+        text="Small <br>p-value",
+        showarrow=False
+    )
+    fig.add_annotation(
+        x=x[-1]+0.23,
+        y=0,
+        text="Great <br>p-value",
+        showarrow=False
     )
     fig["layout"].update(
         theme_layout(
@@ -883,73 +905,92 @@ def make_arrow_plot(model, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"Sign of coefficients for the parameters from the table"
+                "title": "Sign of coefficients for "
+                         "the parameters from the table"
             }
         )
     )
     fig["layout"]["font"].update({"size": 12})
 
-    """Customizing the hoverer"""
-    fig.update_traces(hovertemplate='%{x}')
+    """Costumizing the hoverer"""
+    fig.update_traces(hovertemplate='%{x}') #x is ticktext
 
     """Adding arrows to figure"""
     for i, s in enumerate(sgn):
-        if s == 1:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
-                line_color=colors[i],
-                fillcolor=colors[i], 
-                line_width=0.6  
-            )
-        else:
-            fig.add_shape(
-                type="path",
-                path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
-                line_color=colors[i],
-                fillcolor=colors[i], 
-                line_width=0.6
-            )    
-
+        fig.add_shape(
+            type="path",
+            path=f" M {x[i]-0.025} 0 " \
+                    f" L {x[i]-0.025} {s*0.06} " \
+                    f" L {x[i]-0.07} {s*0.06} " \
+                    f" L {x[i]} {s*0.08} " \
+                    f" L {x[i]+0.07} {s*0.06} " \
+                    f" L {x[i]+0.025} {s*0.06} " \
+                    f" L {x[i]+0.025} 0 ",
+            line_color="#222A2A",
+            fillcolor=list( map( param_to_color.get, [p_params[i]] ) )[0],
+            line_width=0.6  
+        )
+    
     """Adding zero-line along y-axis"""
     fig.add_shape(
-            type="line",
-            x0=-0.18,
-            y0=0,
-            x1=x[-1]+0.18,
-            y1=0,
-            line=dict(color='#222A2A', width=0.75)
+        type="line",
+        x0=-0.1,
+        y0=0,
+        x1=x[-1]+0.1,
+        y1=0,
+        line=dict(
+            color='#222A2A',
+            width=0.75,
+        ),
     )
     return fig
 
-def color_array(vals, params, sgn):
-    """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
+def param_color_dict(vals, params, sgn):
+    """Function to scale coefficients to a dark 
+    magenta - beige - dusy navy color range"""
     max_val = vals[0]
     min_val = vals[-1]
     standard = 250
 
     """Defining color values to match theme because I'm 
     lacking knowledge on how to live life with ease"""
-    # Final RGB values
-    rf, gf, bf = 36, 55, 70
-    # Max RGB values
-    r0, g0, b0 = 255, 231, 214
     # Initial RGB value
     ri, gi, bi = 125, 0, 35
+    # Max RGB values
+    r0, g0, b0 = 255, 231, 214
+    # Final RGB values
+    rf, gf, bf = 36, 55, 70
 
-    color_arr = ['rgba(255, 255, 255, 1)'] * len(params)
+    color_arr = [''] * len(params) #Type: 'rgba(R, G, B, 1)'
     
     """Adding colors matching scaled values of coefficients to color_arr array"""
     k = 0
     for s, v in zip(sgn, vals):
         if s == 1:
             scaled_val_max = v/max_val
-            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, {int(int(gi*(scaled_val_max)+g0*(1-scaled_val_max)))}, {int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
+            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, ' \
+                                f'{int(gi*(scaled_val_max)+g0*(1-scaled_val_max))}, ' \
+                                f'{int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
         else:
             scaled_val_min = v/min_val
-            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
+            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, ' \
+                                f'{int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, ' \
+                                f'{int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
         k += 1
-    return color_arr
+
+    """ USIKKER PÅ HVILKEN for-løkke SOM ER MEST LESEVENNLIG
+    for s, v in zip(sgn, vals):
+        if s == 1:
+            (r, b, g, scaled_val) = (ri, bi, gi, v/max_val)
+        else:
+            (r, b, g, scaled_val) = (rf, bf, gf, v/min_val)
+        
+        color_arr[k] = f'rgba({int(r*(scaled_val)+r0*(1-scaled_val))}, ' \
+                            f'{int(g*(scaled_val)+g0*(1-scaled_val))}, ' \
+                            f'{int(b*(scaled_val)+b0*(1-scaled_val))}, 1)'
+        k += 1
+    """
+    return dict(zip(params, color_arr))
 
 def make_range_slider(domid, values, col_name):
     try:
