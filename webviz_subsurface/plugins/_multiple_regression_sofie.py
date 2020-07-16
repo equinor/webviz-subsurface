@@ -19,7 +19,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.api as sm
 # import statsmodels.api as sm
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from itertools import combinations
 import plotly.express as px
 import numpy.linalg as la
@@ -555,9 +555,8 @@ The types of response_filters are:
             parameterdf.drop(columns=force_out, inplace=True)
             print(parameterdf)
 
-            # Normalize the parameters
-            parameterdf.iloc[:,2:] = (parameterdf.iloc[:,2:] - parameterdf.iloc[:,2:].mean()) / parameterdf.iloc[:,2:].std()
-            print(parameterdf)
+            # Standardize parameters
+            std_parameterdf = standardize_parameters(parameterdf)
 
             # For now, remove ':' and ',' form param and response names. Should only do this once though
             """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
@@ -566,7 +565,7 @@ The types of response_filters are:
             response = response.replace(":", "_")
             response = response.replace(",", "_")
             """
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            df = pd.merge(responsedf, std_parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             # If no selected parameters
             if exc_inc=="inc" and not parameter_list:
@@ -715,7 +714,12 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def standardize_parameters(parameterdf: pd.DataFrame):
+    parameters = parameterdf.drop(columns=["ENSEMBLE", "REAL"]).columns
+    parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
+    print(parameterdf)
+    return parameterdf
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
