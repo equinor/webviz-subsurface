@@ -110,12 +110,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            self.parameterdf = read_csv(self.parameter_csv)
-            self.responsedf = read_csv(self.response_csv)
+            #self.parameterdf = read_csv(self.parameter_csv)
+            #self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            #self.parameterdf = pd.read_parquet(self.parameter_csv)
-            #self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_parquet(self.parameter_csv)
+            self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -155,6 +155,7 @@ The types of response_filters are:
                 axis=1,
                 inplace=True,
             )
+
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
@@ -256,6 +257,7 @@ The types of response_filters are:
                         f"Filter type {col_type} for {col_name} is not valid."
                     )
 
+
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
@@ -288,9 +290,21 @@ The types of response_filters are:
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
         return [
+            html.Div(
+               [
+                   dcc.RadioItems(
+                       id=self.ids("exclude_include"),
+                       options=[
+                           {"label": "Exclude parameters", "value": "exc"},
+                           {"label": "Only include paramters", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={'display': 'inline-block'}
+                   )
+               ]
+            ),
              html.Div(
                 [
-                    html.Label("Parameters to be included"),
                     dcc.Dropdown(
                         id=self.ids("parameter-list"),
                         options=[
@@ -327,6 +341,10 @@ The types of response_filters are:
                         value=self.responses[0],
                     ),
                 ]
+            ),
+            html.Div(
+                style={"flex": 1},
+                children=self.filter_layout
             ),
             html.Div(
                 [
@@ -432,9 +450,9 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 1},
-                    children=self.control_layout + self.filter_layout
-                    if self.response_filters
-                    else [],
+                    children=self.control_layout
+                    #if self.response_filters
+                    #else [],
                 )
             ]
         )
@@ -443,6 +461,7 @@ The types of response_filters are:
     def model_input_callbacks(self):
         """List of inputs for multiple regression callback"""
         callbacks = [
+            State(self.ids("exclude_include"), "value"),
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
@@ -507,7 +526,7 @@ The types of response_filters are:
             ],
             self.model_input_callbacks,
         )
-        def _update_visualizations(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the model for multiple regression
 
             1. Filters and aggregates response dataframe per realization
@@ -524,7 +543,14 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            if exc_inc == "exc":
+                if parameter_list:
+                    parameterdf = self.parameterdf.drop(parameter_list, axis=1)
+                else:
+                    parameterdf = self.parameterdf
+            elif exc_inc == "inc":
+                parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
 
@@ -538,7 +564,7 @@ The types of response_filters are:
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             #If no selected parameters
-            if not parameter_list:
+            if exc_inc=="inc" and not parameter_list:
                 return(
                     [{"e": ""}],
                     [{"name": "", "id": "e"}],
@@ -554,6 +580,7 @@ The types of response_filters are:
                         }
                     },
                 )
+                
             else:
                 # Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
@@ -609,7 +636,7 @@ The types of response_filters are:
                                 }
                             },
                         )  
-    
+
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -774,7 +801,6 @@ def forward_selected(data: pd.DataFrame,
             selected.append(best_candidate)
             current_score = best_new_score
     model_df = data.filter(items=selected)
-    print(model_df)
     model_df["Intercept"] = onevec
     model = sm.OLS(data[response], model_df).fit()
     return model
