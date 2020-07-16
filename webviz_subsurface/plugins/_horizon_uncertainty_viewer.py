@@ -122,17 +122,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             ]
         ),
 
-    """
-    @property
-    def draw_well_layout(self):
-        return html.Div(
-            children=LayeredMap(
-                id=self.ids("draw-well-view"),
-                draw_toolbar_polyline=True,
-                layers=[],
-            ),
-        )
-    """
 
     @property
     def plotly_layout(self):
@@ -412,41 +401,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     de_options[i]['disabled'] = False
             return de_options
-        """
-        @app.callback(  # Toggle "draw well" button on/off to display leaflet
-            [Output(self.ids("cross-section-view"), "children"),
-             Output(self.ids("well-dropdown"), "disabled"),
-             Output(self.ids("button-open-graph-settings"), "disabled")],
-            [
-                Input(self.ids("button-draw-well"), "n_clicks"),
-            ],
-        )
-        def _change_xsection_layout(n_clicks):
-            if not n_clicks is None and n_clicks % 2 == 1:
-                children = [self.draw_well_layout]
-                well_dropdown = True
-                graph_settings_button = True
-                # self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
-            else:
-                children = [self.plotly_layout]
-                well_dropdown = False
-                graph_settings_button = False
-            return [children, well_dropdown, graph_settings_button]
-        """
-
-        """
-        @app.callback(
-            Output(self.ids("draw-well-view"), "layers"),
-            [
-                Input(self.ids("cross-section-view"), "children"),
-            ],
-        )
-        def _render_draw_well(children):
-            if str(children[0]["props"]["children"]["props"]["id"]) == self.ids("draw-well-view"):
-                img_bytes = self.xsec.fig.to_image(format="png")
-                layer = make_png_layer(img_bytes)
-                return [layer]
-        """
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')
