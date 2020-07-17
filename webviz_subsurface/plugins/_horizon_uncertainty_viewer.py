@@ -267,6 +267,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict('records')
         )
+    
+    @property
+    def depth_error_layout(self):
+        return html.Div([
+            html.Div(id=self.ids('error_table_container')),
+        ])
 
     @property
     def layout(self):
@@ -282,6 +288,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                         ]
                     )
                 ]
+            ),
+            dcc.Tab(
+                label="TVD uncertainty",
+                children=[html.Div(children=self.depth_error_layout)]
             ),
             dcc.Tab(
                 label="Target Points",
@@ -397,7 +407,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children = [self.draw_well_layout]
                 well_dropdown = True
                 graph_settings_button = True
-                # self.xsec.set_image(self.xsec.fig) #print('Picture saved!')
             else:
                 children = [self.plotly_layout]
                 well_dropdown = False
@@ -416,17 +425,32 @@ The cross section is defined by a polyline interactively edited in the map view.
                 layer = make_png_layer(img_bytes)
                 return [layer]
 
-    def add_webvizstore(self):
-        print('This function doesnt do anything, does it?')
-        return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
+        @app.callback(
+            Output(self.ids("error_table_container"), "children"),
+            [
+                Input(self.ids("well-dropdown"), "value"),
+            ],
+        )
+        def _render_depth_error_tab(wellpath):
+            self.xsec.set_well(wellpath)
+            df = self.xsec.get_error_table(wellpath)
+            print(df)
+            return html.Div([
+                dash_table.DataTable(
+                    id = self.ids('error_table'),
+                    columns = [{'name': i, 'id': i} for i in df.columns],
+                    data = df.to_dict('records'),
+                )
+            ])
 
+    def add_webvizstore(self):
+        return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
 
 @webvizstore
 def get_path(paths) -> Path:
     for i, path in enumerate(paths):
         paths[i] = Path(path)
     return paths
-
 
 def get_color(i):
     """
@@ -442,7 +466,6 @@ def get_color(i):
     ]
     n_colors = len(colors)
     return colors[(i) % (n_colors)]
-
 
 def get_fencespec(coords):
     """Create a XTGeo fence spec from polyline coordinates"""
