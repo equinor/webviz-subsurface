@@ -198,10 +198,10 @@ The types of response_filters are:
             {
                 "id": self.ids("coefficient-plot"),
                 "content": (
-                    "A plot showing the relative coefficient values sorted from most to least significant. "
-                    "The color scale ranks the coefficients from great positive to great negative. "
-                    "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
-                    "downwards respesent negative coefficients."
+                    "A plot showing the sign of parameters' coefficient values by arrows pointing up and/or down, "
+                    "illustrating a positive and/or negative coefficient respectively. " #Tung setning?
+                    "An arrow is red if the corresponding p-value is significant, that is, a p-value below 0.05. "
+                    "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."), },
@@ -834,44 +834,27 @@ def make_p_values_plot(p_sorted, theme):
 
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
-    coefs = dict(sorted(coeff_sorted.items(), key=lambda x: x[1], reverse=True))
-    coeff_vals = coeff_sorted.values
-    p_params = p_sorted.index
+    params_to_coefs = dict(coeff_sorted)
+    p_values = p_sorted.values
+    parameters = p_sorted.index
+    coeff_vals = list(map(params_to_coefs.get, parameters))
     sgn = np.sign(coeff_vals)
-    param_to_color = param_color_dict(coeff_vals, coeff_sorted.index, sgn) #dictionary with parameters to colors
-
+    
     domain = 2
-    steps = domain/(len(p_params)-1)
-    points = len(p_params)
-    x = np.linspace(0, domain, points)
+    steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
+    num_arrows = len(parameters)
+    x = np.linspace(0, domain, num_arrows) if num_arrows>1 else np.linspace(0, domain, 3)
     y = np.zeros(len(x))
 
-    color_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'),
-                (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'),
-                (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'),
-                (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'),
-                (1.0, 'rgb(125, 0, 35)')
-                ]
-
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, 
-                     color_continuous_scale=color_scale,
-                     range_color=[-1, 1])
+    fig = px.scatter(x=x, y=y, opacity=0)
     
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', 
                    showticklabels=False), 
         xaxis=dict(range=[-0.23, x[-1]+0.23], 
                    title='', 
-                   ticktext=[p for p in p_params], 
-                   tickvals=[steps*i for i in range(points)]),
-        coloraxis_colorbar=dict(
-            title="",
-            tickvals=[-0.91, 0.91],
-            ticktext=["Great negative<br>coefficient", 
-                      "Great positive<br>coefficient"],
-            lenmode="pixels", len=300,
-            x=1.1,
-        ),
+                   ticktext=[p for p in parameters], 
+                   tickvals=[steps*i for i in range(num_arrows)] if num_arrows>1 else [1]),
         hoverlabel=dict(
             bgcolor="white", 
         )
@@ -894,8 +877,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": "Sign of coefficients for "
-                         "the parameters from the table"
+                "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+                         "or decrese) on response and "
+                         "their significance"
             }
         )
     )
@@ -905,18 +889,19 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_traces(hovertemplate='%{x}') #x is ticktext
 
     """Adding arrows to figure"""
-    for i, s in enumerate(np.sign(list(map(coefs.get, p_params)))):
+    for i, s in enumerate(sgn):
+        xx = x[i] if num_arrows>1 else x[1]
         fig.add_shape(
             type="path",
-            path=f" M {x[i]-0.025} 0 " \
-                    f" L {x[i]-0.025} {s*0.06} " \
-                    f" L {x[i]-0.07} {s*0.06} " \
-                    f" L {x[i]} {s*0.08} " \
-                    f" L {x[i]+0.07} {s*0.06} " \
-                    f" L {x[i]+0.025} {s*0.06} " \
-                    f" L {x[i]+0.025} 0 ",
+            path=f" M {xx-0.025} 0 " \
+                 f" L {xx-0.025} {s*0.06} " \
+                 f" L {xx-0.07} {s*0.06} " \
+                 f" L {xx} {s*0.08} " \
+                 f" L {xx+0.07} {s*0.06} " \
+                 f" L {xx+0.025} {s*0.06} " \
+                 f" L {xx+0.025} 0 ",
             line_color="#222A2A",
-            fillcolor=list( map( param_to_color.get, [p_params[i]] ) )[0],
+            fillcolor="crimson" if p_values[i] < 0.05 else "#606060",
             line_width=0.6  
         )
     
@@ -933,53 +918,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         ),
     )
     return fig
-
-def param_color_dict(vals, params, sgn):
-    """Function to scale coefficients to a dark 
-    magenta - beige - dusy navy color range"""
-    max_val = vals[0]
-    min_val = vals[-1]
-    standard = 250
-
-    """Defining color values to match theme because I'm 
-    lacking knowledge on how to live life with ease"""
-    # Initial RGB value
-    ri, gi, bi = 125, 0, 35
-    # Max RGB values
-    r0, g0, b0 = 255, 231, 214
-    # Final RGB values
-    rf, gf, bf = 36, 55, 70
-
-    color_arr = [''] * len(params) #Type: 'rgba(R, G, B, 1)'
-    
-    """Adding colors matching scaled values of coefficients to color_arr array"""
-    k = 0
-    for s, v in zip(sgn, vals):
-        if s == 1:
-            scaled_val_max = v/max_val
-            color_arr[k] = f'rgba({int(ri*(scaled_val_max)+r0*(1-scaled_val_max))}, ' \
-                                f'{int(gi*(scaled_val_max)+g0*(1-scaled_val_max))}, ' \
-                                f'{int(bi*(scaled_val_max)+b0*(1-scaled_val_max))}, 1)'
-        else:
-            scaled_val_min = v/min_val
-            color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, ' \
-                                f'{int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, ' \
-                                f'{int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
-        k += 1
-
-    """ USIKKER PÅ HVILKEN for-løkke SOM ER MEST LESEVENNLIG
-    for s, v in zip(sgn, vals):
-        if s == 1:
-            (r, b, g, scaled_val) = (ri, bi, gi, v/max_val)
-        else:
-            (r, b, g, scaled_val) = (rf, bf, gf, v/min_val)
-        
-        color_arr[k] = f'rgba({int(r*(scaled_val)+r0*(1-scaled_val))}, ' \
-                            f'{int(g*(scaled_val)+g0*(1-scaled_val))}, ' \
-                            f'{int(b*(scaled_val)+b0*(1-scaled_val))}, 1)'
-        k += 1
-    """
-    return dict(zip(params, color_arr))
 
 def make_range_slider(domid, values, col_name):
     try:
