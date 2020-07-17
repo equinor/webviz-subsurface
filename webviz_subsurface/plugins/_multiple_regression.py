@@ -531,9 +531,6 @@ The types of response_filters are:
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-
-            parameterdf = standardize_parameters(parameterdf)
-
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             #If no selected parameters
@@ -565,7 +562,7 @@ The types of response_filters are:
                         
                         # Generate table
                         table = result.model.fit().summary2().tables[1].drop("Intercept")
-                        table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
+                        table.drop(["Std.Err.","Coef.", "t", "[0.025","0.975]"], axis=1, inplace=True)
                         table.index.name = "Parameter"
                         table.reset_index(inplace=True)
                         columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
@@ -682,8 +679,6 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
-
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -695,7 +690,6 @@ def gen_model(
     """wrapper for modelselection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree)
-        #df = standardize_parameters(df, response=response, interaction=True)
         model = forward_selected(
             data=df,
             response=response,
@@ -710,20 +704,6 @@ def gen_model(
             maxvars=max_vars
         ) 
     return model
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def standardize_parameters(parameterdf: pd.DataFrame, response="", interaction=False):
-    #If standerdize with interaction need to remove response column
-    if interaction:
-        parameters = parameterdf.drop(columns=[response]).columns
-        parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
-        parameterdf.dropna(axis=1, inplace=True)
-        return parameterdf
-    else:
-        parameters = parameterdf.drop(columns=["ENSEMBLE", "REAL"]).columns
-        parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
-        parameterdf.dropna(axis=1, inplace=True)
-        return parameterdf
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def _gen_interaction_df(
