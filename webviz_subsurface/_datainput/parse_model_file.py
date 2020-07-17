@@ -36,6 +36,24 @@ def get_error_files(basedir):
     error_files = [os.path.join(surface_dir, 'de_' + s + '.rxb') for s in surface_names]
     return error_files
 
+def get_surface_dr_files(basedir):
+    surface_names = extract_surface_names(basedir)
+    surface_dir = os.path.join(basedir, 'output', 'surfaces')
+    surface_dr_files = [os.path.join(surface_dir, 'dr_' + s + '.rxb') for s in surface_names]
+    return surface_dr_files
+
+def get_surface_dt_files(basedir):
+    surface_names = extract_surface_names(basedir)
+    surface_dir = os.path.join(basedir, 'output', 'surfaces')
+    surface_dt_files = [os.path.join(surface_dir, 'dt_' + s + '.rxb') for s in surface_names]
+    return surface_dt_files
+
+def get_surface_dte_files(basedir):
+    surface_names = extract_surface_names(basedir)
+    surface_dir = os.path.join(basedir, 'output', 'surfaces')
+    surface_dte_files = [os.path.join(surface_dir, 'dte_' + s + '.rxb') for s in surface_names]
+    return surface_dte_files
+
 def get_well_files(basedir):
     well_dir = os.path.join(basedir, 'input', 'welldata')
     well_dir_list = os.listdir(well_dir)
