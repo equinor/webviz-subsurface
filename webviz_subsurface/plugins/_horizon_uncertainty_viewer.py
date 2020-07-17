@@ -595,21 +595,6 @@ def get_fencespec(coords):
     )
     return poly.get_fence(asnumpy=True)
 
-def make_png_layer(img_bytes, base_layer=True):
-    encoded = base64.b64encode(img_bytes).decode()
-    img_base64 = "data:image/png;base64,{}".format(encoded)
-    return {
-        "name": "Draw well view",
-        "checked": base_layer,
-        "base_layer": True,
-        "data": [
-            {
-                "type": "image",
-                "url": img_base64,
-                "bounds": [[1, 2], [10, 20]],
-            }
-        ],
-    }
 
 def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):
     """Make LayeredMap well polyline"""

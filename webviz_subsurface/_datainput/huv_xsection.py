@@ -239,8 +239,8 @@ class HuvXsection:
             {
                 'x':[],
                 'y':[],
-                'marker': {'size': 10, 'color': "lightblue"},
-                'line': {'width': 7, 'color': 'black'}
+                'marker': {'size': 5, 'color': "lightblue"},
+                'line': {'width': 4, 'color': 'black'}
             }
         ]
 
