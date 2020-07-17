@@ -156,7 +156,6 @@ The types of response_filters are:
                 inplace=True,
             )
 
-
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -374,13 +373,16 @@ The types of response_filters are:
             html.Div(
                 [
                     html.Label("Interaction"),
-                    dcc.RadioItems(
+                    dcc.Slider(
                         id=self.ids("interaction"),
-                        options=[
-                            {"label": "3 levels", "value": 3},
-                            {"label": "2 levels", "value": 2},
-                            {"label": "Off", "value": 0}
-                        ],
+                        min=0,
+                        max=2, 
+                        step=None,
+                        marks={
+                            0: "Off",
+                            1: "2 levels",
+                            2: "3 levels"
+                        },
                         value=0
                     )
                 ]
@@ -713,6 +715,7 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
+    degree += 1 
     for i in range(1, degree+1):
         name_combinations += ["*".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
