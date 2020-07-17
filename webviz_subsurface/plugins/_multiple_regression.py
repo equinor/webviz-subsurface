@@ -842,9 +842,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
     num_arrows = len(parameters)
     x = np.linspace(0, domain, num_arrows) if num_arrows>1 else np.linspace(0, domain, 3)
-    print("x: ", x)
-    print("x[0]: ", x[0])
-    print("x[-1]: ", x[-1])
     y = np.zeros(len(x))
 
     fig = px.scatter(x=x, y=y, opacity=0)
@@ -890,7 +887,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
 
     """Adding arrows to figure"""
     for i, s in enumerate(sgn):
-        print("pre add_shape x: ", x)
         xx = x[i] if num_arrows>1 else x[1]
         fig.add_shape(
             type="path",
