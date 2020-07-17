@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 # from dash.exceptions import PreventUpdate
 from dash_table import DataTable
+import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
@@ -84,7 +85,8 @@ The types of response_filters are:
         response_include: list = None,
         column_keys: list = None,
         sampling: str = "monthly",
-        aggregation: str = "sum"
+        aggregation: str = "sum",
+        parameter_ignore: list = None,
     ):
 
         super().__init__()
@@ -94,6 +96,7 @@ The types of response_filters are:
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
+        self.parameter_ignore = parameter_ignore if parameter_ignore else None
         self.column_keys = column_keys
         self.time_index = sampling
         self.aggregation = aggregation
@@ -155,6 +158,8 @@ The types of response_filters are:
                 axis=1,
                 inplace=True,
             )
+        if parameter_ignore:
+            self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
@@ -290,29 +295,16 @@ The types of response_filters are:
         """Layout to select e.g. iteration and response"""
         return [
             html.Div(
-                [
-                   dcc.RadioItems(
-                       id=self.ids("exclude_include"),
-                       options=[
-                           {"label": "Exclude parameters", "value": "exc"},
-                           {"label": "Only include paramters", "value": "inc"}
-                       ],
-                       value="exc",
-                       labelStyle={'display': 'inline-block'}
-                   )
-               ]
-            ),
-             html.Div(
-                [
-                    dcc.Dropdown(
-                        id=self.ids("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
-                        clearable=True,
-                        multi=True,
-                        value=[],
-                    ),
+                style={
+                    "display": "grid",
+                    "gridTemplateRows": "1fr 1fr",
+                },
+                children=[
+                    html.Label("Press 'SUBMIT' to activate changes"),
+                    html.Button(
+                        id=self.ids("submit-btn"), 
+                        children="Submit",
+                    )
                 ]
             ),
             html.Div(
@@ -347,31 +339,6 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Label("Max number of parameters"),
-                    dcc.Dropdown(
-                        id=self.ids("max-params"),
-                        options=[
-                            {"label": val, "value": val} for val in range(1, min(20, len(self.parameterdf.columns)))
-                        ],
-                        clearable=False,
-                        value=3,
-                    ),
-                ]
-            ),
-            html.Div(
-                [
-                    html.Label("Force in"),
-                    dcc.Dropdown(
-                        id=self.ids("force-in"),
-                        clearable=True,
-                        multi=True,
-                        value=[],
-
-                    )
-                ]
-            ),
-            html.Div(
-                [
                     html.Label("Interaction"),
                     dcc.Slider(
                         id=self.ids("interaction"),
@@ -388,18 +355,59 @@ The types of response_filters are:
                 ]
             ),
             html.Div(
-                style={
-                    "display": "grid",
-                    "gridTemplateRows": "1fr 1fr",
-                },
-                children=[
-                    html.Label("Press 'SUBMIT' to activate changes"),
-                    html.Button(
-                        id=self.ids("submit-btn"), 
-                        children="Submit",
+                [
+                    html.Label("Max number of parameters"),
+                    dcc.Dropdown(
+                        id=self.ids("max-params"),
+                        options=[
+                            {"label": val, "value": val} for val in range(1, min(20, len(self.parameterdf.columns)))
+                        ],
+                        clearable=False,
+                        value=3,
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                   dcc.RadioItems(
+                       id=self.ids("exclude_include"),
+                       options=[
+                           {"label": "Exclude parameters", "value": "exc"},
+                           {"label": "Only include paramters", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={'display': 'inline-block'}
+                   )
+               ]
+            ),
+             html.Div(
+                [
+                    dcc.Dropdown(
+                        id=self.ids("parameter-list"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        placeholder="",
+                        value=[],
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                    html.Label("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="Hello, I am hover-enabled helpful information"),
+                    dcc.Dropdown(
+                        id=self.ids("force-in"),
+                        clearable=True,
+                        multi=True,
+                        placeholder='Describe force-in here',
+                        value=[],
+
                     )
                 ]
-            )
+            ),
         ]
 
     @property
@@ -475,7 +483,18 @@ The types of response_filters are:
         return filteroptions
 
     def set_callbacks(self, app):
-        """Set callbacks to update dropdown menues"""
+        """Set callbacks for placeholder text for exc/inc dropdown"""
+        @app.callback(
+                Output(self.ids("parameter-list"), "placeholder"),
+                [Input(self.ids("exclude_include"), "value")]
+        )
+        def update_placeholder(exc_inc):
+            if exc_inc == 'exc':
+                return "Smart exclude text goes here"
+            elif exc_inc == 'inc':
+                return 'Smart include text goes here'
+
+        """Set callbacks for interaction between exclude/include param and force-in"""
         @app.callback(
                 Output(self.ids("force-in"), "options"),
             [
@@ -799,7 +818,7 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters from the table"
+                "title": f"P-values for the parameters. Value lower than 0.05 is statistically significant"
             }
         )
     )
