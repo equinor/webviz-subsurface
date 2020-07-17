@@ -11,6 +11,7 @@ from dash_table import DataTable
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+#import dash_bootstrap_components as dbc
 from dash_table.Format import Format, Scheme
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
@@ -407,6 +408,7 @@ The types of response_filters are:
                     html.Button(
                         id=self.ids("submit-btn"), 
                         children="Submit",
+                        
                     )
                 ]
             )
@@ -474,6 +476,23 @@ The types of response_filters are:
             for col_name in self.response_filters:
                 callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
+    @property
+    def detect_changes_callbacks(self):
+        callbacks = [
+            Input(self.ids("exclude_include"), "value"),
+            Input(self.ids("parameter-list"), "value"),
+            Input(self.ids("ensemble"), "value"),
+            Input(self.ids("responses"), "value"),
+            Input(self.ids("force-out"), "value"),
+            Input(self.ids("force-in"), "value"),
+            Input(self.ids("interaction"), "value"),
+            Input(self.ids("max-params"), "value"),
+        ]
+        if self.response_filters:
+            for col_name in self.response_filters:
+                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+        return callbacks
+
 
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
@@ -511,6 +530,12 @@ The types of response_filters are:
             fi_lst = list(self.parameterdf[parameter_list].drop(columns=force_out))
             return [{"label": fi, "value": fi} for fi in fi_lst]
 
+        @app.callback(
+            Output(self.ids("submit-btn"),"children"),
+            self.detect_changes_callbacks
+        )
+        def update_submit_on_change(*args):
+            return "Press to update model"
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
             [
@@ -582,60 +607,55 @@ The types of response_filters are:
                 )
                 
             else:
-                # Gives warning if e.g. divide by zero. Catch this
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error', category=RuntimeWarning)
-                    warnings.filterwarnings('ignore', category=UserWarning)
-                    try:
-                        # Make dataframe and get results from the model
-                        df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-                        result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
-                        
-                        # Generate table
-                        table = result.model.fit().summary2().tables[1].drop("Intercept")
-                        table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
-                        table.index.name = "Parameter"
-                        table.reset_index(inplace=True)
-                        columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
-                        data = table.to_dict("rows")
+                # Make dataframe and get results from the model
+                df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+                result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
+                #print(result.summary())
+                if not result:           
+                    return(
+                    [{"e": ""}],
+                    [{"name": "", "id": "e"}],
+                    "Cannot calculate fit for given selection. Select a different response or filter setting",
+                    {
+                    "layout": {
+                        "title": "<b>Cannot calculate fit for given selection</b><br>"
+                        "Select a different response or filter setting."
+                        }
+                    }, None,
+                    {
+                        "layout": {
+                            "title": "<b>Cannot calculate fit for given selection</b><br>"
+                            "Select a different response or filter setting."
+                            }
+                        },
+                    )  
 
-                        # Get p-values for plot
-                        p_sorted = result.pvalues.sort_values().drop("Intercept")
+                # Generate table
+                table = result.model.fit().summary2().tables[1].drop("Intercept")
+                table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
+                table.index.name = "Parameter"
+                table.reset_index(inplace=True)
+                columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
+                data = table.to_dict("rows")
 
-                        # Get coefficients for plot
-                        coeff_sorted = result.params.sort_values().drop("Intercept").items()
+                # Get p-values for plot
+                p_sorted = result.pvalues.sort_values().drop("Intercept")
 
-                        return(
-                            # Generate table
-                            data,
-                            columns,
-                            f"Multiple regression with {response} as response",
+                # Get coefficients for plot
+                coeff_sorted = result.params.sort_values().drop("Intercept").items()
 
-                            # Generate p-values plot
-                            make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+                return(
+                    # Generate table
+                    data,
+                    columns,
+                    f"Multiple regression with {response} as response",
 
-                            # Generate coefficient plot
-                            make_arrow_plot(coeff_sorted, self.plotly_theme)
-                        )
-                    except (Exception, RuntimeWarning) as e:
-                        print("error: ", e)
-                        return(
-                            [{"e": ""}],
-                            [{"name": "", "id": "e"}],
-                            "Cannot calculate fit for given selection. Select a different response or filter setting",
-                            {
-                            "layout": {
-                                "title": "<b>Cannot calculate fit for given selection</b><br>"
-                                "Select a different response or filter setting."
-                                }
-                            }, None,
-                            {
-                                "layout": {
-                                    "title": "<b>Cannot calculate fit for given selection</b><br>"
-                                    "Select a different response or filter setting."
-                                }
-                            },
-                        )  
+                    # Generate p-values plot
+                    make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+
+                    # Generate coefficient plot
+                    make_arrow_plot(coeff_sorted, self.plotly_theme)
+                )
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -665,6 +685,7 @@ The types of response_filters are:
             ),
         ]
 
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_and_sum_responses(
     dframe, ensemble, response, filteroptions=None, aggregation="sum"
@@ -677,6 +698,7 @@ def filter_and_sum_responses(
         filteroptions=filteroptions,
         aggregation=aggregation,
     )
+
 
 def _filter_and_sum_responses(
     dframe, ensemble, response, filteroptions=None, aggregation="sum",
@@ -711,7 +733,6 @@ def _filter_and_sum_responses(
     )
 
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -737,6 +758,7 @@ def gen_model(
         ) 
     return model
 
+
 def _gen_interaction_df(
     df: pd.DataFrame,
     response: str,
@@ -750,6 +772,7 @@ def _gen_interaction_df(
         if name.split("*"):
             newdf[name] = newdf.filter(items=name.split("*")).product(axis=1)
     return newdf
+
 
 def forward_selected(data: pd.DataFrame,
                      response: str, 
@@ -776,7 +799,16 @@ def forward_selected(data: pd.DataFrame,
             if n - p - 1 < 1:
                 model_df = data.filter(items=selected)
                 model_df["Intercept"] = onevec
-                model = sm.OLS(y, model_df).fit()
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error', category=RuntimeWarning)
+                    warnings.filterwarnings('ignore', category=UserWarning)
+                    try:
+                        model = sm.OLS(data[response], model_df).fit()
+                        if np.isnan(model.rsquared_adj):
+                            warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+                    except (Exception, RuntimeWarning) as e:
+                        print("error: ", e)
+                        return None
                 return model
             X = np.append(X, onevec, axis=1)
             try: 
@@ -802,7 +834,16 @@ def forward_selected(data: pd.DataFrame,
             current_score = best_new_score
     model_df = data.filter(items=selected)
     model_df["Intercept"] = onevec
-    model = sm.OLS(data[response], model_df).fit()
+    
+    with warnings.catch_warnings():
+        warnings.filterwarnings('error', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', category=UserWarning)
+        try:
+            model = sm.OLS(data[response], model_df).fit()
+            if np.isnan(model.rsquared_adj):
+                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+        except (Exception, RuntimeWarning) as e:
+            print("error: ", e)
     return model
 
 
