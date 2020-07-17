@@ -23,7 +23,6 @@ import plotly.express as px
 
 from .._datainput.fmu_input import load_parameters, load_csv
 
-import plotly.express as px
 import plotly.figure_factory as ff
 
 import math

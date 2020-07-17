@@ -4,9 +4,9 @@ from pathlib import Path
 import warnings
 import numpy as np
 import pandas as pd
-from plotly.subplots import make_subplots
+# from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from dash.exceptions import PreventUpdate
+# from dash.exceptions import PreventUpdate
 from dash_table import DataTable
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -17,18 +17,20 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
-import statsmodels.formula.api as smf
 import statsmodels.api as sm
-from sklearn.preprocessing import PolynomialFeatures
+# import statsmodels.api as sm
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from itertools import combinations
 import plotly.express as px
 import numpy.linalg as la
 from .._datainput.fmu_input import load_parameters, load_csv
 import time
+
+
 class MultipleRegressionSofie(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
-This plugin shows a multiple regression of numerical input parameters and a chosen response.
+This plugin shows a multiple regression of numerical parameters and a response.
 
 Input can be given either as:
 
@@ -43,7 +45,7 @@ stored per realizations.
 Arguments:
 
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
-* `response_csv`: Aggregated csvfile for response parameters with 'REAL' and 'ENSEMBLE' columns.
+* `response_csv`: Aggregated csvfile for response with 'REAL' and 'ENSEMBLE' columns.
 * `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
             response_file is defined, the definition of ensembles implies that you want to
             use simulation timeseries data directly from UNSMRY data. This also implies that
@@ -82,8 +84,7 @@ The types of response_filters are:
         response_include: list = None,
         column_keys: list = None,
         sampling: str = "monthly",
-        aggregation: str = "sum",
-        parameter_filters: list = None
+        aggregation: str = "sum"
     ):
 
         super().__init__()
@@ -97,17 +98,6 @@ The types of response_filters are:
         self.time_index = sampling
         self.aggregation = aggregation
 
-        """Temporary way of filtering out non-valid parameters"""
-        self.parameter_filters = [
-            'RMSGLOBPARAMS:FWL', 'MULTFLT:MULTFLT_F1', 'MULTFLT:MULTFLT_F2',
-            'MULTFLT:MULTFLT_F3', 'MULTFLT:MULTFLT_F4', 'MULTFLT:MULTFLT_F5', 
-            'MULTZ:MULTZ_MIDREEK', 'INTERPOLATE_RELPERM:INTERPOLATE_GO',
-            'INTERPOLATE_RELPERM:INTERPOLATE_WO', 'LOG10_MULTFLT:MULTFLT_F1', 
-            'LOG10_MULTFLT:MULTFLT_F2', 'LOG10_MULTFLT:MULTFLT_F3',
-            'LOG10_MULTFLT:MULTFLT_F4', 'LOG10_MULTFLT:MULTFLT_F5',
-            'LOG10_MULTZ:MULTZ_MIDREEK', 'RMSGLOBPARAMS:COHIBA_MODEL_MODE',
-            'COHIBA_MODEL_MODE']
-
         if response_ignore and response_include:
             raise ValueError(
                 'Incorrent argument. either provide "response_include", '
@@ -120,12 +110,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            #self.parameterdf = read_csv(self.parameter_csv).drop(columns=self.parameter_filters)
-            #self.responsedf = read_csv(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            self.parameterdf = pd.read_parquet(self.parameter_csv).drop(columns=self.parameter_filters)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            #self.parameterdf = pd.read_parquet(self.parameter_csv)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -134,7 +124,7 @@ The types of response_filters are:
             }
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            ).drop(columns=self.parameter_filters)
+            )
             self.responsedf = load_csv(
                 ensemble_paths=self.ens_paths,
                 csv_file=response_file,
@@ -142,12 +132,15 @@ The types of response_filters are:
             )
         else:
             raise ValueError(
-                'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
+                'Incorrect arguments.\
+                 Either provide "csv files" or "ensembles and response_file".'
             )
         self.check_runs()
         self.check_response_filters()
         if response_ignore:
-            self.responsedf.drop(response_ignore, errors="ignore", axis=1, inplace=True)
+            self.responsedf.drop(
+                response_ignore,
+                errors="ignore", axis=1, inplace=True)
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
@@ -162,6 +155,7 @@ The types of response_filters are:
                 axis=1,
                 inplace=True,
             )
+
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
@@ -200,18 +194,18 @@ The types of response_filters are:
             {
                 "id": self.ids("coefficient-plot"),
                 "content": (
-                    "A plot showing the coefficient values from ranked from great positive to great negative. "
+                    "A plot showing the relative coefficient values from most positive to most negative negative. "
                     "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
                     "downwards respesent negative coefficients."
                 )
             },
-            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
-            {"id": self.ids("responses"), "content": ("Select the active response."),},
-            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."),},
-            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."),},
-            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."),},
-            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."),},
-            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."),},
+            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."), },
+            {"id": self.ids("responses"), "content": ("Select the active response."), },
+            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."), },
+            {"id": self.ids("force-out"), "content": ("Choose parameters to exclude in the regression."), },
+            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."), },
+            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."), },
+            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."), },
         ]
         return steps
 
@@ -263,6 +257,7 @@ The types of response_filters are:
                         f"Filter type {col_type} for {col_name} is not valid."
                     )
 
+
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
@@ -289,16 +284,27 @@ The types of response_filters are:
             else:
                 return children
             children.append(html.Div(children=[html.Label(col_name), selector,]))
-
         return children
 
     @property
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
         return [
+            html.Div(
+               [
+                   dcc.RadioItems(
+                       id=self.ids("exclude_include"),
+                       options=[
+                           {"label": "Exclude parameters", "value": "exc"},
+                           {"label": "Only include paramters", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={'display': 'inline-block'}
+                   )
+               ]
+            ),
              html.Div(
                 [
-                    html.Label("Parameters to be included"),
                     dcc.Dropdown(
                         id=self.ids("parameter-list"),
                         options=[
@@ -337,12 +343,16 @@ The types of response_filters are:
                 ]
             ),
             html.Div(
+                style={"flex": 1},
+                children=self.filter_layout
+            ),
+            html.Div(
                 [
                     html.Label("Max number of parameters"),
                     dcc.Dropdown(
                         id=self.ids("max-params"),
                         options=[
-                            {"label": val, "value": val} for val in range(1,min(20,len(self.parameterdf.columns)))
+                            {"label": val, "value": val} for val in range(1, min(20, len(self.parameterdf.columns)))
                         ],
                         clearable=False,
                         value=3,
@@ -357,7 +367,7 @@ The types of response_filters are:
                         clearable=True,
                         multi=True,
                         value=[],
-                        
+
                     )
                 ]
             ),
@@ -369,7 +379,7 @@ The types of response_filters are:
                         clearable=True,
                         multi=True,
                         value=[],
-                        
+
                     )
                 ]
             ),
@@ -379,18 +389,14 @@ The types of response_filters are:
                     dcc.RadioItems(
                         id=self.ids("interaction"),
                         options=[
-                            {"label": "On", "value": True},
-                            {"label": "Off", "value": False}
+                            {"label": "3 levels", "value": 3},
+                            {"label": "2 levels", "value": 2},
+                            {"label": "Off", "value": 0}
                         ],
-                        value=True
+                        value=0
                     )
                 ]
             ),
-
-        ]
-    
-    def make_button(self, id):
-        return [
             html.Div(
                 style={
                     "display": "grid",
@@ -399,10 +405,10 @@ The types of response_filters are:
                 children=[
                     html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
-                        id=id, 
+                        id=self.ids("submit-btn"), 
                         children="Submit",
-                    ),
-                ],
+                    )
+                ]
             )
         ]
 
@@ -425,7 +431,7 @@ The types of response_filters are:
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize":14}
+                            style_cell={"fontSize": 14}
                         ),
                         html.Div(
                             style={'flex': 3},
@@ -444,17 +450,18 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 1},
-                    children=self.control_layout + self.filter_layout + self.make_button(self.ids("submit-btn"))
-                    if self.response_filters
-                    else [],
-                ),
-            ],
+                    children=self.control_layout
+                    #if self.response_filters
+                    #else [],
+                )
+            ]
         )
 
     @property
     def model_input_callbacks(self):
-        """List of States for multiple regression callback"""
+        """List of inputs for multiple regression callback"""
         callbacks = [
+            State(self.ids("exclude_include"), "value"),
             State(self.ids("parameter-list"), "value"),
             State(self.ids("ensemble"), "value"),
             State(self.ids("responses"), "value"),
@@ -467,7 +474,7 @@ The types of response_filters are:
             for col_name in self.response_filters:
                 callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
         return callbacks
-    
+
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
         filteroptions = []
@@ -477,7 +484,7 @@ The types of response_filters are:
                     {"name": col_name, "type": col_type, "values": filters[i]}
                 )
         return filteroptions
-    
+
     def set_callbacks(self, app):
         """Set callbacks to update dropdown menues"""
         @app.callback(
@@ -519,7 +526,7 @@ The types of response_filters are:
             ],
             self.model_input_callbacks,
         )
-        def _update_visualizations(n_clicks, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
+        def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_out, force_in, interaction, max_vars, *filters):
             """Callback to update the model for multiple regression
 
             1. Filters and aggregates response dataframe per realization
@@ -536,45 +543,57 @@ The types of response_filters are:
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+            if exc_inc == "exc":
+                if parameter_list:
+                    parameterdf = self.parameterdf.drop(parameter_list, axis=1)
+                else:
+                    parameterdf = self.parameterdf
+            elif exc_inc == "inc":
+                parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
+
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             parameterdf.drop(columns=force_out, inplace=True)
+            print(parameterdf)
 
-            # For now, remove ':' and ',' form param and response names. Should only do this once though 
-            parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
+            # Standardize parameters
+            std_parameterdf = standardize_parameters(parameterdf)
+
+            # For now, remove ':' and ',' form param and response names. Should only do this once though
+            """parameterdf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in parameterdf.columns]
             responsedf.columns = [colname.replace(":", "_") if ":" in colname else colname for colname in responsedf.columns]
             responsedf.columns = [colname.replace(",", "_") if "," in colname else colname for colname in responsedf.columns]
             response = response.replace(":", "_")
             response = response.replace(",", "_")
-            
+            """
+            df = pd.merge(responsedf, std_parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+
             # If no selected parameters
-            if not parameter_list:
+            if exc_inc=="inc" and not parameter_list:
                 return(
-                        [{"e": ""}],
-                        [{"name": "", "id": "e"}],
-                        "Please selecet parameters to be included in the model",
-                        {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
-                            }
-                        }, None,
-                        {
-                        "layout": {
-                            "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                    [{"e": ""}],
+                    [{"name": "", "id": "e"}],
+                    "Please selecet parameters to be included in the model",
+                    {
+                    "layout": {
+                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        }
+                    }, None,
+                    {
+                    "layout": {
+                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
                         }
                     },
                 )
+                
             else:
                 # Gives warning if e.g. divide by zero. Catch this
                 with warnings.catch_warnings():
                     warnings.filterwarnings('error', category=RuntimeWarning)
                     warnings.filterwarnings('ignore', category=UserWarning)
                     try:
-                        # Make dataframe for the model
+                        # Make dataframe and get results from the model
                         df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-
-                        # Get results from model
-                        result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction=interaction)
+                        result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
                         
                         # Generate table
                         table = result.model.fit().summary2().tables[1].drop("Intercept")
@@ -591,15 +610,19 @@ The types of response_filters are:
                         coeff_sorted = result.params.sort_values().drop("Intercept").items()
 
                         return(
-                            # Generate table, p-values plot and coefficient plot
+                            # Generate table
                             data,
                             columns,
                             f"Multiple regression with {response} as response",
+
+                            # Generate p-values plot
                             make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+
+                            # Generate coefficient plot
                             make_arrow_plot(coeff_sorted, self.plotly_theme)
                         )
                     except (Exception, RuntimeWarning) as e:
-                        #print("error: ", e)
+                        print("error: ", e)
                         return(
                             [{"e": ""}],
                             [{"name": "", "id": "e"}],
@@ -617,7 +640,7 @@ The types of response_filters are:
                                 }
                             },
                         )  
-    
+
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -665,7 +688,6 @@ def _filter_and_sum_responses(
     """Filter response dataframe for the given ensemble
     and optional filter columns. Returns dataframe grouped and
     aggregated per realization."""
-
     df = dframe.copy()
     df = df.loc[df["ENSEMBLE"] == ensemble]
     if filteroptions:
@@ -692,47 +714,58 @@ def _filter_and_sum_responses(
         f"Aggregation of response file specified as '{aggregation}'' is invalid. "
     )
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def standardize_parameters(parameterdf: pd.DataFrame):
+    parameters = parameterdf.drop(columns=["ENSEMBLE", "REAL"]).columns
+    parameterdf[parameters] = (parameterdf[parameters] - parameterdf[parameters].mean()) / parameterdf[parameters].std()
+    parameterdf.dropna(axis=1, inplace=True)
+    print(parameterdf)
+    return parameterdf
 
-
-#@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
         max_vars: int=9,
         force_in: list=[],
-        interaction: bool=False
+        interaction_degree: bool=False
     ):
-    if interaction:
-        df = gen_interaction_df(df,response)
-        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars)
-        
+    """wrapper for modelselection algorithm."""
+    if interaction_degree:
+        df = _gen_interaction_df(df,response,interaction_degree)
+        model = forward_selected(
+            data=df,
+            response=response,
+            force_in=force_in,
+            maxvars=max_vars
+            )
     else:
-        model = forward_selected(data=df, response=response,force_in=force_in, maxvars=max_vars) 
+        model = forward_selected(data=df,
+        response=response,
+        force_in=force_in,
+        maxvars=max_vars
+        ) 
     return model
 
-
-def gen_interaction_df(
+def _gen_interaction_df(
     df: pd.DataFrame,
     response: str,
-    degree: int=2,
-    inter_only: bool=True,
-    bias: bool=False):
+    degree: int=4):
+    newdf = df.copy()
 
-    x_interaction = PolynomialFeatures(
-        degree=2,
-        interaction_only=inter_only,
-        include_bias=False).fit_transform(df.drop(columns=response))
-
-    interaction_df = pd.DataFrame(
-        x_interaction,
-        columns=gen_column_names(df=df.drop(columns=response)))
-    return interaction_df.join(df[response])
-
+    name_combinations = []
+    for i in range(1, degree+1):
+        name_combinations += ["*".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
+    for name in name_combinations:
+        if name.split("*"):
+            newdf[name] = newdf.filter(items=name.split("*")).product(axis=1)
+    return newdf
 
 def forward_selected(data: pd.DataFrame,
                      response: str, 
                      force_in: list=[], 
                      maxvars: int=5):
+    """ Forward model selection algorithm """
     y = data[response].to_numpy(dtype="float32")
     n = len(y)
     onevec = np.ones((len(y), 1))
@@ -744,31 +777,27 @@ def forward_selected(data: pd.DataFrame,
     while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
         for candidate in remaining:
-            if "*" in candidate: # fiks at vi ikke legger til candidate split hvis den allerede er med
+            if "*" in candidate:
                 current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
             else:
-                current_model = selected.copy()+[candidate] 
+                current_model = selected.copy()+[candidate]
             X = data.filter(items=current_model).to_numpy(dtype="float32")
             p = X.shape[1]
-            if n-p-1<1: 
-                formula = "{} ~ {} + 1".format(response,
-                                   ' + '.join(selected))
-                model = smf.ols(formula, data).fit()
+            if n - p - 1 < 1:
+                model_df = data.filter(items=selected)
+                model_df["Intercept"] = onevec
+                model = sm.OLS(y, model_df).fit()
                 return model
             X = np.append(X, onevec, axis=1)
             try: 
-                beta = la.inv(X.T @ X) @ X.T @ y 
+                beta = la.inv(X.T @ X) @ X.T @ y
             except la.LinAlgError:
                 continue
             f_vec = beta @ X.T
-            
-            
             SS_RES = np.sum((f_vec-y_mean) ** 2)
-            r2 = 1-SS_RES/SST
-            
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-        scores_with_candidates.sort()
+        scores_with_candidates.sort(key=lambda x: x[0])
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             if "*" in best_candidate:
@@ -781,28 +810,15 @@ def forward_selected(data: pd.DataFrame,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-    formula = "{} ~ {} + 1".format(response,
-                                   ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] = onevec
+    model = sm.OLS(data[response], model_df).fit()
     return model
 
 
 
-def gen_column_names(df: pd.DataFrame, response: str=None):
-    if response:
-        combine = ["*".join(combination) for combination in combinations(df.drop(columns=response).columns, 2)]
-        originals = list(df.drop(columns=response).columns)
-        return originals + combine + [response]
-    else:
-        combine = ["*".join(combination) for combination in combinations(df,2)]
-        originals = list(df.columns)
-    return originals + combine 
-
-
-
 def make_p_values_plot(p_sorted, theme):
-    """Make Plotly trace for p-values plot"""
+    """Make p-values plot"""
     p_values = p_sorted.values
     parameters = p_sorted.index
 
@@ -836,35 +852,26 @@ def make_p_values_plot(p_sorted, theme):
     return fig
 
 def make_arrow_plot(model, theme):
-    """Sorting dictionary in descending order. 
-    Saving parameters and values of coefficients in lists.
-    Saving plot-function to variable fig."""
+    """Make arrow plot for the coefficients"""
     coefs = dict(sorted(model, key=lambda x: x[1], reverse=True))
     params = list(coefs.keys())
     vals = list(coefs.values())
-    sgn = signs(vals)
+    sgn = np.sign(vals)
     colors = color_array(vals, params, sgn)
-
-    if len(coefs) < 2:
-        raise ValueError("Number of coefficients must be greater than 1")
     steps = 2/(len(coefs)-1)
     points = len(coefs)
 
     x = np.linspace(0, 2, points)
     y = np.zeros(len(x))
 
-    color_scale=[(0.0, 'rgb(36, 55, 70)'),
-                (0.125, 'rgb(102, 115, 125)'),
-                (0.25, 'rgb(145, 155, 162)'),
-                (0.375, 'rgb(189, 195, 199)'),
-                (0.5, 'rgb(255, 231, 214)'),
-                (0.625, 'rgb(216, 178, 189)'),
-                (0.75, 'rgb(190, 128, 145)'),
-                (0.875, 'rgb(164, 76, 101)'),
+    color_scale=[(0.0, 'rgb(36, 55, 70)'), (0.125, 'rgb(102, 115, 125)'),
+                (0.25, 'rgb(145, 155, 162)'), (0.375, 'rgb(189, 195, 199)'),
+                (0.5, 'rgb(255, 231, 214)'), (0.625, 'rgb(216, 178, 189)'),
+                (0.75, 'rgb(190, 128, 145)'), (0.875, 'rgb(164, 76, 101)'),
                 (1.0, 'rgb(125, 0, 35)')
                 ]
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1]) # Theme, replaced [] with () as hard brackets were rejected:(
+    fig = px.scatter(x=x, y=y, opacity=0, color=sgn, color_continuous_scale=color_scale, range_color=[-1, 1])
     
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', showticklabels=False), 
@@ -892,7 +899,7 @@ def make_arrow_plot(model, theme):
     )
     fig["layout"]["font"].update({"size": 12})
 
-    """Costumizing the hoverer"""
+    """Customizing the hoverer"""
     fig.update_traces(hovertemplate='%{x}')
 
     """Adding arrows to figure"""
@@ -901,7 +908,7 @@ def make_arrow_plot(model, theme):
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} 0.06 L {x[i]-0.07} 0.06 L {x[i]} 0.08 L {x[i]+0.07} 0.06 L {x[i]+0.025} 0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color=colors[i],
                 fillcolor=colors[i], 
                 line_width=0.6  
             )
@@ -909,60 +916,41 @@ def make_arrow_plot(model, theme):
             fig.add_shape(
                 type="path",
                 path=f" M {x[i]-0.025} 0 L {x[i]-0.025} -0.06 L {x[i]-0.07} -0.06 L {x[i]} -0.08 L {x[i]+0.07} -0.06 L {x[i]+0.025} -0.06 L {x[i]+0.025} 0 ",
-                line_color="#222A2A",
+                line_color=colors[i],
                 fillcolor=colors[i], 
                 line_width=0.6
-            )
-    
+            )    
+
     """Adding zero-line along y-axis"""
     fig.add_shape(
-        # Line Horizontal
             type="line",
             x0=-0.18,
             y0=0,
             x1=x[-1]+0.18,
             y1=0,
-            line=dict(
-                color='#222A2A',
-                width=0.75,
-            ),
+            line=dict(color='#222A2A', width=0.75)
     )
-
     return fig
-
-def signs(vals):
-    """Saving signs of coefficients to array sgn"""
-    
-    return np.sign(vals)
 
 def color_array(vals, params, sgn):
     """Function to scale coefficients to a dark magenta - beige - dusy navy color range"""
     max_val = vals[0]
     min_val = vals[-1]
-
     standard = 250
 
     """Defining color values to match theme because I'm 
     lacking knowledge on how to live life with ease"""
     # Final RGB values
-    rf = 36
-    gf = 55
-    bf = 70
-
+    rf, gf, bf = 36, 55, 70
     # Max RGB values
-    r0 = 255
-    g0 = 231
-    b0 = 214
-
+    r0, g0, b0 = 255, 231, 214
     # Initial RGB value
-    ri = 125
-    gi = 0
-    bi = 35
+    ri, gi, bi = 125, 0, 35
 
-    color_arr = ['rgba(255, 255, 255, 1)']*len(params)
+    color_arr = ['rgba(255, 255, 255, 1)'] * len(params)
     
-    k = 0
     """Adding colors matching scaled values of coefficients to color_arr array"""
+    k = 0
     for s, v in zip(sgn, vals):
         if s == 1:
             scaled_val_max = v/max_val
@@ -971,7 +959,6 @@ def color_array(vals, params, sgn):
             scaled_val_min = v/min_val
             color_arr[k] = f'rgba({int(r0*(1-scaled_val_min)+rf*(scaled_val_min))}, {int(g0*(1-scaled_val_min)+gf*(scaled_val_min))}, {int(b0*(1-scaled_val_min)+bf*(scaled_val_min))}, 1)'
         k += 1
-    
     return color_arr
 
 def make_range_slider(domid, values, col_name):
@@ -995,7 +982,7 @@ def make_range_slider(domid, values, col_name):
         marks={
             str(values.min()): {"label": f"{values.min():.2f}"},
             str(values.max()): {"label": f"{values.max():.2f}"},
-        },
+        }
     )
 
 def theme_layout(theme, specific_layout):
@@ -1003,7 +990,6 @@ def theme_layout(theme, specific_layout):
     layout.update(theme["layout"])
     layout.update(specific_layout)
     return layout
-
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
