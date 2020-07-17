@@ -193,10 +193,10 @@ The types of response_filters are:
             {
                 "id": self.ids("coefficient-plot"),
                 "content": (
-                    "A plot showing the relative coefficient values sorted from most to least significant. "
-                    "The color scale ranks the coefficients from great positive to great negative. "
-                    "The arrows pointing upwards respresent positive coefficients and the arrows pointing "
-                    "downwards respesent negative coefficients."
+                    "A plot showing the sign of parameters' coefficient values by arrows pointing up and/or down, "
+                    "illustrating a positive and/or negative coefficient respectively. " #Tung setning?
+                    "An arrow is red if the corresponding p-value is significant, that is, a p-value below 0.05. "
+                    "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
             {"id": self.ids("ensemble"), "content": ("Select the active ensemble."), },
@@ -858,8 +858,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": "Sign of coefficients for "
-                         "the parameters from the table"
+                "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+                         "or decrese) on response and "
+                         "their significance"
             }
         )
     )
