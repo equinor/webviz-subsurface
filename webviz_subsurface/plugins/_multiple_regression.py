@@ -420,17 +420,15 @@ The types of response_filters are:
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize": 14}
+                            style_cell={"fontSize": ".80em"}
                         ),
                         html.Div(
-                            style={'flex': 3},
                             children=[
                                 wcc.Graph(id=self.uuid('p-values-plot')),
                                 dcc.Store(id=self.uuid("initial-parameter"))
                             ]
                         ),
                         html.Div(
-                            style={'flex': 3},
                             children=[
                                 wcc.Graph(id=self.uuid('coefficient-plot')),
                             ]
@@ -445,11 +443,11 @@ The types of response_filters are:
                 )
             ]
         )
-
+        
     @property
-    def model_input_callbacks(self):
-        """List of inputs for multiple regression callback"""
-        callbacks = [
+    def model_callback_states(self):
+        """List of states for multiple regression callback"""
+        states = [
             State(self.uuid("exclude_include"), "value"),
             State(self.uuid("parameter-list"), "value"),
             State(self.uuid("ensemble"), "value"),
@@ -460,24 +458,8 @@ The types of response_filters are:
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(State(self.uuid(f"filter-{col_name}"), "value"))
-        return callbacks
-    @property
-    def detect_changes_callbacks(self):
-        callbacks = [
-            Input(self.uuid("exclude_include"), "value"),
-            Input(self.uuid("parameter-list"), "value"),
-            Input(self.uuid("ensemble"), "value"),
-            Input(self.uuid("responses"), "value"),
-            Input(self.uuid("force-out"), "value"),
-            Input(self.uuid("force-in"), "value"),
-            Input(self.uuid("interaction"), "value"),
-            Input(self.uuid("max-params"), "value"),
-        ]
-        if self.response_filters:
-            for col_name in self.response_filters:
-                callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
-        return callbacks
+                states.append(State(self.uuid(f"filter-{col_name}"), "value"))
+        return states
 
 
     def make_response_filters(self, filters):
@@ -504,13 +486,19 @@ The types of response_filters are:
 
         """Set callbacks for interaction between exclude/include param and force-in"""
         @app.callback(
+            [
                 Output(self.uuid("force-in"), "options"),
+                Output(self.uuid("force-in"), "value")
+            ],
             [
                 Input(self.uuid("parameter-list"), "value"),
-                Input(self.uuid("exclude_include"), "value")
-            ]
+                Input(self.uuid("exclude_include"), "value"),
+            ],
+            [
+                State(self.uuid("force-in"), "value"),
+            ],
         )
-        def update_force_in(parameter_list, exc_inc):
+        def update_force_in(parameter_list, exc_inc, force_in):
             """Returns a dictionary with options for force in"""
             #If exclusive and parameter_list empty -> all param avail. for force-in
             #If inclusive and parameter_list empty -> no param avail.
@@ -520,14 +508,13 @@ The types of response_filters are:
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
             fi_lst = list(df)
-            return [{"label": fi, "value": fi} for fi in fi_lst]
+            options=[{"label": fi, "value": fi} for fi in fi_lst]
+            for param in force_in:
+                if param not in fi_lst:
+                    force_in.remove(param)
 
-        @app.callback(
-            Output(self.uuid("submit-btn"),"children"),
-            self.detect_changes_callbacks
-        )
-        def update_submit_on_change(*args):
-            return "Press to update model"
+            return options, force_in
+        
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
             [
@@ -541,7 +528,7 @@ The types of response_filters are:
             [
                 Input(self.uuid("submit-btn"), "n_clicks")
             ],
-            self.model_input_callbacks,
+            self.model_callback_states,
         )
         def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_in, interaction, max_vars, *filters):
             """Callback to update the model for multiple regression
@@ -573,15 +560,15 @@ The types of response_filters are:
                 return(
                     [{"e": ""}],
                     [{"name": "", "id": "e"}],
-                    "Please selecet parameters to be included in the model",
+                    "Please select parameters to be included in the model",
                     {
                     "layout": {
-                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        "title": "<b>Please select parameters to be included in the model</b><br>"
                         }
                     }, None,
                     {
                     "layout": {
-                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        "title": "<b>Please select parameters to be included in the model</b><br>"
                         }
                     },
                 )
@@ -590,22 +577,22 @@ The types of response_filters are:
                 # Get results from the model
                 result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
                 if not result:
-                        return(
-                    [{"e": ""}],
-                    [{"name": "", "id": "e"}],
-                    "Cannot calculate fit for given selection. Select a different response or filter setting",
-                    {
-                    "layout": {
-                        "title": "<b>Cannot calculate fit for given selection</b><br>"
-                        "Select a different response or filter setting."
-                        }
-                    }, None,
-                    {
+                    return(
+                        [{"e": ""}],
+                        [{"name": "", "id": "e"}],
+                        "Cannot calculate fit for given selection. Select a different response or filter setting",
+                        {
                         "layout": {
                             "title": "<b>Cannot calculate fit for given selection</b><br>"
                             "Select a different response or filter setting."
-                        }
-                    },
+                            }
+                        }, None,
+                        {
+                            "layout": {
+                                "title": "<b>Cannot calculate fit for given selection</b><br>"
+                                "Select a different response or filter setting."
+                            }
+                        },
                     )  
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
