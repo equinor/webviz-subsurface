@@ -602,7 +602,7 @@ The types of response_filters are:
                     )  
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
-                table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
+                table.drop(["Std.Err.", "Coef.", "t", "[0.025","0.975]"], axis=1, inplace=True)
                 table.index.name = "Parameter"
                 table.reset_index(inplace=True)
                 columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
