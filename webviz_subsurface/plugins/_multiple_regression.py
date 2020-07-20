@@ -202,13 +202,13 @@ The types of response_filters are:
             {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
-            {"id": self.uuid("interaction"), "content": ("Select the desired level of interaction in the visualized model."), },
-            {"id": self.uuid("max-params"), "content": ("Select the maximum number of parameters to be included in the visualized model."), },
             {"id": self.uuid("exclude_include"), "content": (
                 "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
                 "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
                 ), 
             },
+            {"id": self.uuid("interaction"), "content": ("Select the desired level of interaction in the visualized model."), },
+            {"id": self.uuid("max-params"), "content": ("Select the maximum number of parameters to be included in the visualized model."), },
             {"id": self.uuid("force-in"), "content": ("Select parameters forced to be included in the visualized model."), },
         ]
         return steps
@@ -298,7 +298,7 @@ The types of response_filters are:
                     html.Button(
                         id=self.uuid("submit-btn"), 
                         children="Press to update model",
-                        style={"marginBottom": "25px"}
+                        style={"marginBottom": "12px"}
                     )
                 ]
             ),
@@ -312,7 +312,7 @@ The types of response_filters are:
                         ],
                         clearable=False,
                         value=self.ensembles[0],
-                        style={"marginBottom": "25px"}
+                        style={"marginBottom": "20px"}
                     ),
                 ]
             ),
@@ -326,7 +326,7 @@ The types of response_filters are:
                         ],
                         clearable=False,
                         value=self.responses[0],
-                        style={"marginBottom": "25px"}
+                        style={"marginBottom": "20px"}
                     ),
                 ]
             ),
@@ -356,7 +356,7 @@ The types of response_filters are:
                         multi=True,
                         placeholder="",
                         value=[],
-                        style={"marginBottom": "25px"}
+                        style={"marginBottom": "20px"}
                     ),
                 ]
             ),
@@ -364,7 +364,7 @@ The types of response_filters are:
             html.Div(children=self.filter_layout),
             html.Div(
                 [
-                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "25px"}),
+                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction"),
                     dcc.Slider(
                         id=self.uuid("interaction"),
