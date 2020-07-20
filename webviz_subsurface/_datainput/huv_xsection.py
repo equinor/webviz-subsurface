@@ -27,7 +27,6 @@ class HuvXsection:
                 xtgeo.surface_from_file(sfc_path, fformat='irap_binary')
             self.surface_attributes[sfc_path]['error_surface'] =\
                 xtgeo.surface_from_file(self.surface_attributes[sfc_path]['error_path'], fformat='irap_binary')
-        self.freehand_trace_indice = None # The previous trace incice of the freehand well
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def set_well(self, wellpath):
@@ -233,16 +232,6 @@ class HuvXsection:
           
             return data
 
-    def get_plotly_freehand_data(self):
-        """Make an empty data template to use when drawing wells"""
-        return [
-            {
-                'x':[],
-                'y':[],
-                'marker': {'size': 5, 'color': "lightblue"},
-                'line': {'width': 4, 'color': 'black'}
-            }
-        ]
 
     def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
@@ -263,25 +252,8 @@ class HuvXsection:
         data = \
             self.get_plotly_sfc_data(surfacepaths) + \
             self.get_plotly_err_data(surfacepaths, error_paths) + \
-            self.get_plotly_well_data(well_settings) + \
-            self.get_plotly_freehand_data()  # The last element in the data list is reserved for the freehand well
+            self.get_plotly_well_data(well_settings)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
-
-    def add_freehand_point(self, click_data):
-        end = len(self.fig['data']) - 1
-        if len(self.fig['data'][end]['x']) == 0:  # New freehand well
-            self.freehand_trace_indice = len(self.surface_attributes)
-        if click_data is not None:
-            trace_indice = click_data['points'][0]['curveNumber']
-            point_index = click_data['points'][0]['pointIndex']
-            skip_between = abs(self.freehand_trace_indice - trace_indice) > 1
-            if not skip_between:  # Assert that the freehand well does not skip surfaces, and always starts at the upper surface
-                self.freehand_trace_indice = trace_indice
-                # Assert that the top surface is chosen first, and no surfaces are skipped
-                x = self.fig['data'][trace_indice]['x'][point_index]
-                y = self.fig['data'][trace_indice]['y'][point_index]
-                self.fig['data'][end]['x'] += (x,)
-                self.fig['data'][end]['y'] += (y,)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
