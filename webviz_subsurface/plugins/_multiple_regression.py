@@ -194,17 +194,22 @@ The types of response_filters are:
                 "id": self.uuid("coefficient-plot"),
                 "content": (
                     "A plot showing the sign of parameters' coefficient values by arrows pointing up and/or down, "
-                    "illustrating a positive and/or negative coefficient respectively. " #Tung setning?
+                    "illustrating a positive and/or negative coefficient respectively. "
                     "An arrow is red if the corresponding p-value is significant, that is, a p-value below 0.05. "
                     "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
+            {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
-            {"id": self.uuid("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."), },
-            {"id": self.uuid("force-in"), "content": ("Choose parameters to include in the regression."), },
-            {"id": self.uuid("interaction"), "content": ("Toggle interaction on/off between the parameters."), },
-            {"id": self.uuid("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."), },
+            {"id": self.uuid("interaction"), "content": ("Select the desired level of interaction in the visualized model."), },
+            {"id": self.uuid("max-params"), "content": ("Select the maximum number of parameters to be included in the visualized model."), },
+            {"id": self.uuid("exclude_include"), "content": (
+                "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
+                "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
+                ), 
+            },
+            {"id": self.uuid("force-in"), "content": ("Select parameters forced to be included in the visualized model."), },
         ]
         return steps
 
@@ -256,7 +261,6 @@ The types of response_filters are:
                         f"Filter type {col_type} for {col_name} is not valid."
                     )
 
-
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
@@ -288,20 +292,19 @@ The types of response_filters are:
         return [
             html.Div(
                 style={
-                    "display": "grid",
-                    "gridTemplateRows": "1fr 1fr"
+                    "display": "grid"
                 },
                 children=[
-                    html.Div("Press 'SUBMIT' to activate changes"),
                     html.Button(
                         id=self.uuid("submit-btn"), 
-                        children="Submit"
+                        children="Press to update model",
+                        style={"marginBottom": "25px"}
                     )
                 ]
             ),
             html.Div(
                 [
-                    html.Div("Ensemble"),
+                    html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
                         options=[
@@ -309,12 +312,13 @@ The types of response_filters are:
                         ],
                         clearable=False,
                         value=self.ensembles[0],
+                        style={"marginBottom": "25px"}
                     ),
                 ]
             ),
             html.Div(
                 [
-                    html.Div("Response"),
+                    html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
                         options=[
@@ -322,14 +326,45 @@ The types of response_filters are:
                         ],
                         clearable=False,
                         value=self.responses[0],
+                        style={"marginBottom": "25px"}
                     ),
                 ]
             ),
             html.Div(
-                children=self.filter_layout
+                [
+                   html.Div("Parameters:", style={"font-weight": "bold"}),
+                   dcc.RadioItems(
+                       id=self.uuid("exclude_include"),
+                       options=[
+                           {"label": "Exclude from full set", "value": "exc"},
+                           {"label": "Make a subset", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={'display': 'inline-block'},
+                       style = {'fontSize': ".80em"},
+                   )
+               ]
             ),
             html.Div(
                 [
+                    dcc.Dropdown(
+                        id=self.uuid("parameter-list"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        placeholder="",
+                        value=[],
+                        style={"marginBottom": "25px"}
+                    ),
+                ]
+            ),
+            html.Div("Filters:", style={"font-weight": "bold"}),
+            html.Div(children=self.filter_layout),
+            html.Div(
+                [
+                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "25px"}),
                     html.Div("Interaction"),
                     dcc.Slider(
                         id=self.uuid("interaction"),
@@ -355,33 +390,6 @@ The types of response_filters are:
                         ],
                         clearable=False,
                         value=3,
-                    ),
-                ]
-            ),
-            html.Div(
-                [
-                   dcc.RadioItems(
-                       id=self.uuid("exclude_include"),
-                       options=[
-                           {"label": "Exclude parameters", "value": "exc"},
-                           {"label": "Only include parameters", "value": "inc"}
-                       ],
-                       value="exc",
-                       labelStyle={'display': 'inline-block'}
-                   )
-               ]
-            ),
-             html.Div(
-                [
-                    dcc.Dropdown(
-                        id=self.uuid("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
-                        clearable=True,
-                        multi=True,
-                        placeholder="",
-                        value=[],
                     ),
                 ]
             ),
@@ -440,8 +448,6 @@ The types of response_filters are:
                 html.Div(
                     style={"flex": 1},
                     children=self.control_layout
-                    #if self.response_filters
-                    #else [],
                 )
             ]
         )
@@ -498,9 +504,9 @@ The types of response_filters are:
         )
         def update_placeholder(exc_inc):
             if exc_inc == 'exc':
-                return "Smart exclude text goes here"
+                return "Choose parameters to exclude..."
             elif exc_inc == 'inc':
-                return 'Smart include text goes here'
+                return "Choose parameters for subset..."
 
         """Set callbacks for interaction between exclude/include param and force-in"""
         @app.callback(
