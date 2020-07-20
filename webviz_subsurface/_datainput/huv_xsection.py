@@ -92,9 +92,6 @@ class HuvXsection:
             Wellpath: Filepath to wellfiles
         Returns:
             Dataframe used for table in depth error tab'''
-        # make it so func only loads when tab is chosen
-        # too many cps in complex model, fixed but improve code below
-        # write get_cp func better for sfc_cp output, fixed with data number 
         data = {'Number': [],
                 'Well': [],
                 'Surface': [],
@@ -274,7 +271,6 @@ class HuvXsection:
           
             return data
 
-
     def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
             np.max(self.surface_attributes[sfc_path]['surface_line'][:, 1])
@@ -373,7 +369,6 @@ class HuvXsection:
                 "name": f"Zone: {zonevals[-1]}",
                 })
         return zoneplot
-
 
 def stratigraphic_sort(elem):
     return elem[1]
