@@ -105,7 +105,7 @@ class HuvXsection:
         for i, sfc_path in enumerate(self.surface_attributes):
             for sfc_name in self.well_attributes['cp_sfc_linked']:
                 path_str = str(sfc_path)
-                if sfc_name == path_str[-len(sfc_name)-4:-4] and data['Number'] != i:
+                if sfc_name == path_str[-len(sfc_name)-4:-4]:
                     for j in range(len(self.well_attributes['cp_sfc_linked'][sfc_name])):
                         cp_x = self.well_attributes['cp_sfc_linked'][sfc_name][j]
                         sfc_line = np.asarray(self.surface_attributes[sfc_path]['surface_line'][:,0])
@@ -365,7 +365,7 @@ def get_zone_RHLEN(well_df,wellname,zone_path):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_conditional_points(well_df, wellname, cond_path):
+def get_conditional_points(well_df, wellname, wellpoints_path):
     ''' Finds conditional points where surface and well intersect.
     Args: 
         well_df: Well dataframe from XTgeo
@@ -375,27 +375,29 @@ def get_conditional_points(well_df, wellname, cond_path):
         Numpy array of relative horizontal length (RHLEN) and vertical (TVD) length
         Dictionary of conditional points linked to surfaces since surfaces might have more than one conditional point
     '''
-    conditional_data = pd.read_csv(cond_path)
-    cond_df = conditional_data[conditional_data["Well"] == wellname]
-    cond_df_xval = cond_df["x"].values.copy()
-    cond_df_yval = cond_df["y"].values.copy()
-    cond_RHLEN = np.zeros(len(cond_df_xval))
-    for i in range(len(cond_df_xval)):
-        well_df["XLEN"] = well_df["X_UTME"]-cond_df_xval[i]
-        well_df["YLEN"] = well_df["Y_UTMN"]-cond_df_yval[i]
+    wellpoint_data = pd.read_csv(wellpoints_path)
+    wellpoint_df = wellpoint_data[wellpoint_data["Well"] == wellname]
+    wellpoint_df_xval = wellpoint_df["x"].values.copy()
+    wellpoint_df_yval = wellpoint_df["y"].values.copy()
+    wellpoint_df_surfaces = wellpoint_df["Surface"].values.copy()
+    cond_RHLEN = np.zeros(len(wellpoint_df_xval))
+    cond_sfc = {}
+    cond_sfc_int = {}
+
+    for i in range(len(wellpoint_df_xval)):
+        well_df["XLEN"] = well_df["X_UTME"]-wellpoint_df_xval[i]
+        well_df["YLEN"] = well_df["Y_UTMN"]-wellpoint_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN**2 + well_df.YLEN**2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
-    
-    cp_sfc_linked = {}
-    for i, sfc_name in enumerate(cond_df["Surface"].values.copy()):
-        if sfc_name not in cp_sfc_linked:
-            cp_sfc_linked[sfc_name] = [round(cond_RHLEN[i], 2)]
-        else:
-            if round(cond_RHLEN[i], 2) not in cp_sfc_linked[sfc_name]:
-                cp_sfc_linked[sfc_name].append(cond_RHLEN[i]) 
-    return np.array([cond_RHLEN, cond_df["TVD"]]), cp_sfc_linked
 
+        key = wellpoint_df_surfaces[i]
+        RHLEN = cond_RHLEN[i]
+        if key not in cond_sfc:
+            cond_sfc[key] = [RHLEN]
+        else:     
+            cond_sfc[key].append(RHLEN) 
+    return np.array([cond_RHLEN, wellpoint_df["TVD"]]), cond_sfc
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_intersection_surface_well(well_df, ymin, ymax):

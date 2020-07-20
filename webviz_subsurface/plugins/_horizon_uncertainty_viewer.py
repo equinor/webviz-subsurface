@@ -434,7 +434,6 @@ The cross section is defined by a polyline interactively edited in the map view.
         def _render_depth_error_tab(wellpath):
             self.xsec.set_well(wellpath)
             df = self.xsec.get_error_table(wellpath)
-            print(df)
             return html.Div([
                 dash_table.DataTable(
                     id = self.ids('error_table'),
