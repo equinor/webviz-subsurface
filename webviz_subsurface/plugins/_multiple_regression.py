@@ -336,7 +336,7 @@ The types of response_filters are:
             html.Div(
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Abbr("\u24D8", title="""This lets your control what parameters to include in your model.
+                   html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This lets your control what parameters to include in your model.
 There are two modes, inclusive and exclusive:
 - Exclusive mode:
     Lets you remove spesific parameters from your model.
@@ -380,7 +380,7 @@ There are two modes, inclusive and exclusive:
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""This slider lets your select how deep your interaction is.
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This slider lets your select how deep your interaction is.
 Off allows only for the parameters in their original state.
 2 levels allows for the product of 2 original parameters.
 3 levels allows for the product of 3 original parameters.
@@ -403,7 +403,7 @@ This feature allows you to investigate possible feedback effects.
             html.Div(
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""Lets you put a cap on the number of parameters to include in your model
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""Lets you put a cap on the number of parameters to include in your model
 If interaction is active cap is the selected value + interaction level.
 This is to make sure the interaction terms have an intuitive interpretation.
 """),
@@ -420,7 +420,7 @@ This is to make sure the interaction terms have an intuitive interpretation.
             html.Div(
                 [
                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""This lets you force parameters into the model, 
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This lets you force parameters into the model, 
 parameters here are guaranteed to appear in the model.
 """),
                     dcc.Dropdown(
