@@ -958,7 +958,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     fig.add_annotation(
         x=domain+0.23, y=0,
-        text="P-value",
+        text="Increasing<br>p-value",
         showarrow=False
     )
     return fig
