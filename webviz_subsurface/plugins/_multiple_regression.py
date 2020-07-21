@@ -336,18 +336,17 @@ The types of response_filters are:
             html.Div(
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Span("\u24D8", id=self.uuid("tooltip-parameters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                   dbc.Tooltip(
-                    """This lets you control what parameters to include in your model.
+                   html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This lets your control what parameters to include in your model.
 There are two modes, inclusive and exclusive:
-    - Exclusive mode:
+- Exclusive mode:
     Lets you remove spesific parameters from your model.
-    
-    - Inclusive mode: Lets you pick a subset of parameters to investigate.
-    Parameters included here are notguaranteed to be included in the output model.""",
-                    target=self.uuid("tooltip-parameters"), placement= "auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
-                   ),
+
+- Inclusive mode:
+    Lets you pick a subset of parameters to investigate.
+    Parameters included here are not
+    guaranteed to be included in the output model.
+"""
+                    ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
@@ -381,15 +380,12 @@ There are two modes, inclusive and exclusive:
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-filters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                    dbc.Tooltip("""This slider lets your select how deep your interaction is:
-    – Off allows only for the parameters in their original state.
-    – 2 levels allows for the product of 2 original parameters.
-    – 3 levels allows for the product of 3 original parameters.
-This feature allows you to investigate possible feedback effects.""",
-                    target=self.uuid("tooltip-filters"), placement= "auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
-                    ),
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This slider lets your select how deep your interaction is.
+Off allows only for the parameters in their original state.
+2 levels allows for the product of 2 original parameters.
+3 levels allows for the product of 3 original parameters.
+This feature allows you to investigate possible feedback effects.
+                    """),
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
@@ -407,14 +403,10 @@ This feature allows you to investigate possible feedback effects.""",
             html.Div(
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                    dbc.Tooltip("""Lets you put a cap on the number of parameters to include in your model.
-If interaction is active, cap is the selected value + interaction level.
-This is to make sure the interaction terms have an intuitive interpretation.""",
-                    target=self.uuid("tooltip-maxparams"), placement= "auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
-                    ),
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""Lets you put a cap on the number of parameters to include in your model
+If interaction is active cap is the selected value + interaction level.
+This is to make sure the interaction terms have an intuitive interpretation.
+"""),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
                         options=[
@@ -427,13 +419,10 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
             ),
             html.Div(
                 [
-                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-fi"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                    dbc.Tooltip("""This lets you force parameters into the model, 
-parameters here are guaranteed to appear in the model.""",
-                    target=self.uuid("tooltip-fi"), placement= "auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
-                    ),
+                   html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", style={'text-decoration': 'None', 'color': 'gray'}, title="""This lets you force parameters into the model, 
+parameters here are guaranteed to appear in the model.
+"""),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
                         clearable=True,
