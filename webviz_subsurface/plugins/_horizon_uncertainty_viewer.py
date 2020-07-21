@@ -135,12 +135,16 @@ The cross section is defined by a polyline interactively edited in the map view.
                         layers=[],
                         syncedMaps=[],
                         minZoom=-5,
-                        drawTools={},
+                        drawTools={"drawMarker": False,
+                            "drawPolygon": False,
+                            "drawPolyline": True,
+                            "position": "topright"},
                         switch = {
                             "value": self.state['switch'],
                             "label": "Hillshading",
                         },
                         colorBar={
+                            "position": "bottomright"
                         },
                     ),
                 ],
@@ -415,11 +419,11 @@ The cross section is defined by a polyline interactively edited in the map view.
             shader_type = 'hillshading' if switch['value'] is True else None #'soft-hillshading' 
             min_val = None
             max_val = None
-            color = "magma"#["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]
+            color = ["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]
             well_layers = []
             for wellpath in self.wellfiles:
                 well = xtgeo.Well(Path(wellpath))
-                well_layer_dict = make_well_circle_layer(well.wellname, self.conditional_data, surface_name, radius = 100, color = "yellow")
+                well_layer_dict = make_well_circle_layer(well.wellname, self.conditional_data, surface_name, radius = 100, color = "rgb(0,255,0)")
                 if len(well_layer_dict["data"]) != 0:
                     well_layer_dict["id"] = surface_name + ' ' + well.wellname + "-id"
                     well_layer_dict["action"] = "add"
