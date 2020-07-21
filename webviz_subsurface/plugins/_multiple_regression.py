@@ -7,7 +7,6 @@ import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -364,7 +363,7 @@ The types of response_filters are:
             html.Div(children=self.filter_layout),
             html.Div(
                 [
-                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "20px"}),
+                    html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction"),
                     dcc.Slider(
                         id=self.uuid("interaction"),
@@ -841,7 +840,7 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
+                "title": f"P-values"
             }
         )
     )
@@ -864,33 +863,28 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     sgn = np.sign(coeff_vals)
 
     steps = 2/(len(parameters)-1) if len(parameters) > 1 else 0
-    num_arrows = len(parameters)
-    x = np.linspace(0, 2, num_arrows) if num_arrows > 1 else np.linspace(0, 2, 3)
+    x = np.linspace(0, 2, len(parameters)) if len(parameters) > 1 else np.linspace(0, 2, 3)
     y = np.zeros(len(x))
 
-    fig = px.scatter(x=x, y=y, opacity=0)
-    
+    fig = go.Figure(go.Scatter(x=x, y=y, opacity=0))
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', 
                    showticklabels=False), 
         xaxis=dict(range=[-0.23, x[-1]+0.23], 
                    title='', 
-                   ticktext=[param.replace("×", "<br>× ") for param in parameters], 
-                   tickvals=[steps*i for i in range(num_arrows)] if num_arrows>1 else [1]),
-        hoverlabel=dict(
-            bgcolor="white", 
-        )
+                   ticktext=[param.replace("×", "<br>× ") for param in parameters],
+                   tickvals=[steps*i for i in range(len(parameters))] if len(parameters)>1 else [1]),
+        hoverlabel=dict(bgcolor="lightgrey")
     )
+    fig.update_traces(hovertemplate="%{x}<extra></extra>")
     fig.add_annotation(
-        x=-0.23,
-        y=0,
-        text="Small <br>p-value",
+        x=-0.23, y=0,
+        text="Low <br>p-value",
         showarrow=False
     )
     fig.add_annotation(
-        x=x[-1]+0.23,
-        y=0,
-        text="Great <br>p-value",
+        x=x[-1]+0.23, y=0,
+        text="High <br>p-value",
         showarrow=False
     )
     fig["layout"].update(
@@ -899,7 +893,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+                "title": "Parameters impact (increase "
                          "or decrese) on response and "
                          "their significance"
             }
@@ -907,12 +901,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     fig["layout"]["font"].update({"size": 12})
 
-    """Customizing the hoverer"""
-    fig.update_traces(hovertemplate='%{x}')
-
     """Adding arrows to figure"""
     for i, s in enumerate(sgn):
-        xx = x[i] if num_arrows > 1 else x[1]
+        xx = x[i] if len(parameters) > 1 else x[1]
         fig.add_shape(
             type="path",
             path=f" M {xx-0.025} 0 " \
@@ -928,10 +919,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
-        x0=-0.1,
-        y0=0,
-        x1=x[-1]+0.1,
-        y1=0,
+        x0=-0.1, y0=0, x1=x[-1]+0.1, y1=0,
         line=dict(
             color='#222A2A',
             width=0.75,
