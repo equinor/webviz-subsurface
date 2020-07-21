@@ -1,29 +1,24 @@
-from uuid import uuid4
-from pathlib import Path
-
 import warnings
+import time
+from pathlib import Path
+from itertools import combinations
 import numpy as np
+import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
-from dash_table import DataTable
-import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
+import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
-from dash_table.Format import Format, Scheme
 import webviz_core_components as wcc
+import statsmodels.api as sm
+from dash_table import DataTable
+from dash.dependencies import Input, Output, State
+from dash_table.Format import Format
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
-from webviz_config.utils import calculate_slider_step
-import statsmodels.api as sm
-from sklearn.preprocessing import PolynomialFeatures
-from itertools import combinations
-import plotly.express as px
-import numpy.linalg as la
 from .._datainput.fmu_input import load_parameters, load_csv
 from .._utils.ensemble_handling import filter_and_sum_responses
-import time
 
 
 class MultipleRegression(WebvizPluginABC):
@@ -164,32 +159,32 @@ The types of response_filters are:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
-        self.uid = uuid4()
+        #self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
         """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
+        return f"{element}-id-{self.uuid}"
 
     @property
     def tour_steps(self):
         steps = [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": (
                     "Dashboard displaying the results of a multiple "
                     "regression of input parameters and a chosen response."
                 )
             },
             {
-                "id": self.ids("table"),
+                "id": self.uuid("table"),
                 "content": (
                     "A table showing the results for the best combination of "
                     "parameters for a chosen response."
                 )
             },
             {
-                "id": self.ids("p-values-plot"),
+                "id": self.uuid("p-values-plot"),
                 "content": (
                     "A plot showing the p-values for the parameters from the table ranked from most significant "
                     "to least significant.  Red indicates "
@@ -198,20 +193,25 @@ The types of response_filters are:
                 )
             },
             {
-                "id": self.ids("coefficient-plot"),
+                "id": self.uuid("coefficient-plot"),
                 "content": (
                     "A plot showing the sign of parameters' coefficient values by arrows pointing up and/or down, "
-                    "illustrating a positive and/or negative coefficient respectively. " #Tung setning?
+                    "illustrating a positive and/or negative coefficient respectively. "
                     "An arrow is red if the corresponding p-value is significant, that is, a p-value below 0.05. "
                     "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
-            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."), },
-            {"id": self.ids("responses"), "content": ("Select the active response."), },
-            {"id": self.ids("max-params"), "content": ("Select the maximum number of parameters to be included in the regression."), },
-            {"id": self.ids("force-in"), "content": ("Choose parameters to include in the regression."), },
-            {"id": self.ids("interaction"), "content": ("Toggle interaction on/off between the parameters."), },
-            {"id": self.ids("submit-btn"), "content": ("Click SUBMIT to update the table and the plots."), },
+            {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
+            {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
+            {"id": self.uuid("responses"), "content": ("Select the active response."), },
+            {"id": self.uuid("exclude_include"), "content": (
+                "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
+                "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
+                ), 
+            },
+            {"id": self.uuid("interaction"), "content": ("Select the desired level of interaction in the visualized model."), },
+            {"id": self.uuid("max-params"), "content": ("Select the maximum number of parameters to be included in the visualized model."), },
+            {"id": self.uuid("force-in"), "content": ("Select parameters forced to be included in the visualized model."), },
         ]
         return steps
 
@@ -263,17 +263,15 @@ The types of response_filters are:
                         f"Filter type {col_type} for {col_name} is not valid."
                     )
 
-
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
-            domid = self.ids(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
                 selector = wcc.Select(
-                    id=domid,
+                    id=self.uuid(f"filter-{col_name}"),
                     options=[{"label": val, "value": val} for val in values],
                     value=values,
                     multi=True,
@@ -281,14 +279,12 @@ The types of response_filters are:
                 )
             elif col_type == "single":
                 selector = dcc.Dropdown(
-                    id=domid,
+                    id=self.uuid(f"filter-{col_name}"),
                     options=[{"label": val, "value": val} for val in values],
                     value=values[0],
                     multi=False,
                     clearable=False,
                 )
-            else:
-                return children
             children.append(html.Div(children=[html.Label(col_name), selector,]))
         return children
 
@@ -298,52 +294,98 @@ The types of response_filters are:
         return [
             html.Div(
                 style={
-                    "display": "grid",
-                    "gridTemplateRows": "1fr 1fr",
+                    "display": "grid"
                 },
                 children=[
-                    html.Label("Press 'SUBMIT' to activate changes"),
                     html.Button(
-                        id=self.ids("submit-btn"), 
-                        children="Submit",
+                        id=self.uuid("submit-btn"), 
+                        children="Press to update model",
+                        style={"marginBottom": "12px"}
                     )
                 ]
             ),
             html.Div(
                 [
-                    html.Label("Ensemble"),
+                    html.Div("Ensemble:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
                     dcc.Dropdown(
-                        id=self.ids("ensemble"),
+                        id=self.uuid("ensemble"),
                         options=[
                             {"label": ens, "value": ens} for ens in self.ensembles
                         ],
                         clearable=False,
                         value=self.ensembles[0],
+                        style={"marginBottom": "20px"}
                     ),
                 ]
             ),
             html.Div(
                 [
-                    html.Label("Response"),
+                    html.Div("Response:", style={"font-weight": "bold",'display': 'inline-block', 'margin-right': '10px'}),
                     dcc.Dropdown(
-                        id=self.ids("responses"),
+                        id=self.uuid("responses"),
                         options=[
                             {"label": ens, "value": ens} for ens in self.responses
                         ],
                         clearable=False,
                         value=self.responses[0],
+                        style={"marginBottom": "20px"}
                     ),
                 ]
             ),
             html.Div(
-                style={"flex": 1},
-                children=self.filter_layout
+                [
+                   html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+                   html.Abbr("\u24D8", title="""This lets your control what parameters to include in your model.
+There are two modes, inclusive and exclusive:
+-Exclusive mode:
+    Lets you remove spesific parameters from your model.
+
+-inclusive mode:
+    lets you pick a subset of parameters to investigate.
+    parameters included here are not
+    guaranteed to be included in the output model.
+"""),
+                   dcc.RadioItems(
+                       id=self.uuid("exclude_include"),
+                       options=[
+                           {"label": "Exclude from full set", "value": "exc"},
+                           {"label": "Make a subset", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={'display': 'inline-block'},
+                       style={'fontSize': ".80em"},
+                   )
+               ]
             ),
             html.Div(
                 [
-                    html.Label("Interaction"),
+                    dcc.Dropdown(
+                        id=self.uuid("parameter-list"),
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
+                        clearable=True,
+                        multi=True,
+                        placeholder="",
+                        value=[],
+                        style={"marginBottom": "20px"}
+                    ),
+                ]
+            ),
+            html.Div("Filters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+            html.Div(children=self.filter_layout),
+            html.Div(
+                [
+                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "20px"}),
+                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""This slider lets your select how deep your interaction is.
+Off allows only for the parameters in their original state.
+2 levels allows for the product of 2 original parameters.
+3 levels allows for the product of 3 original parameters.
+This feature allows you to investigate possible feedback effects.
+                    """),
                     dcc.Slider(
-                        id=self.ids("interaction"),
+                        id=self.uuid("interaction"),
                         min=0,
                         max=2, 
                         step=None,
@@ -358,11 +400,15 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Label("Max number of parameters"),
+                    html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""Lets you put a cap on the number of parameters to include in your model
+If interaction is active cap is the selected value + interaction level.
+This is to make sure the interaction terms have an intuitive interpretation.
+"""),
                     dcc.Dropdown(
-                        id=self.ids("max-params"),
+                        id=self.uuid("max-params"),
                         options=[
-                            {"label": val, "value": val} for val in range(1, min(20, len(self.parameterdf.columns)))
+                            {"label": val, "value": val} for val in range(1, min(10, len(self.parameterdf.columns)))
                         ],
                         clearable=False,
                         value=3,
@@ -371,37 +417,12 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                   dcc.RadioItems(
-                       id=self.ids("exclude_include"),
-                       options=[
-                           {"label": "Exclude parameters", "value": "exc"},
-                           {"label": "Only include paramters", "value": "inc"}
-                       ],
-                       value="exc",
-                       labelStyle={'display': 'inline-block'}
-                   )
-               ]
-            ),
-             html.Div(
-                [
+                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""This lets you force parameters into the model, 
+parameters here are guaranteed to appear in the model.
+"""),
                     dcc.Dropdown(
-                        id=self.ids("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
-                        clearable=True,
-                        multi=True,
-                        placeholder="",
-                        value=[],
-                    ),
-                ]
-            ),
-            html.Div(
-                [
-                    html.Label("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="Hello, I am hover-enabled helpful information"),
-                    dcc.Dropdown(
-                        id=self.ids("force-in"),
+                        id=self.uuid("force-in"),
                         clearable=True,
                         multi=True,
                         placeholder='Describe force-in here',
@@ -416,33 +437,31 @@ The types of response_filters are:
     def layout(self):
         """Main layout"""
         return wcc.FlexBox(
-            id=self.ids("layout"),
+            id=self.uuid("layout"),
             children=[
                 html.Div(
                     style={"flex": 3},
                     children=[
                         html.Div(
-                            id=self.ids("table_title"),
+                            id=self.uuid("table_title"),
                             style={"textAlign": "center"}
                         ),
                         DataTable(
-                            id=self.ids("table"),
+                            id=self.uuid("table"),
                             sort_action="native",
                             filter_action="native",
                             page_action="native",
                             page_size=10,
-                            style_cell={"fontSize": 14}
+                            style_cell={"fontSize": ".80em"}
                         ),
                         html.Div(
-                            style={'flex': 3},
                             children=[
-                                wcc.Graph(id=self.ids('p-values-plot')),
-                            ]
-                        ),
+                                wcc.Graph(id=self.uuid('p-values-plot')),
+
+                            ]),
                         html.Div(
-                            style={'flex': 3},
                             children=[
-                                wcc.Graph(id=self.ids('coefficient-plot')),
+                                wcc.Graph(id=self.uuid('coefficient-plot')),
                             ]
                         ),
                     ],
@@ -450,44 +469,26 @@ The types of response_filters are:
                 html.Div(
                     style={"flex": 1},
                     children=self.control_layout
-                    #if self.response_filters
-                    #else [],
                 )
             ]
         )
-
+        
     @property
-    def model_input_callbacks(self):
-        """List of inputs for multiple regression callback"""
-        callbacks = [
-            State(self.ids("exclude_include"), "value"),
-            State(self.ids("parameter-list"), "value"),
-            State(self.ids("ensemble"), "value"),
-            State(self.ids("responses"), "value"),
-            State(self.ids("force-in"), "value"),
-            State(self.ids("interaction"), "value"),
-            State(self.ids("max-params"), "value"),
+    def model_callback_states(self):
+        """List of states for multiple regression callback"""
+        states = [
+            State(self.uuid("exclude_include"), "value"),
+            State(self.uuid("parameter-list"), "value"),
+            State(self.uuid("ensemble"), "value"),
+            State(self.uuid("responses"), "value"),
+            State(self.uuid("force-in"), "value"),
+            State(self.uuid("interaction"), "value"),
+            State(self.uuid("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(State(self.ids(f"filter-{col_name}"), "value"))
-        return callbacks
-    @property
-    def detect_changes_callbacks(self):
-        callbacks = [
-            Input(self.ids("exclude_include"), "value"),
-            Input(self.ids("parameter-list"), "value"),
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
-            Input(self.ids("force-out"), "value"),
-            Input(self.ids("force-in"), "value"),
-            Input(self.ids("interaction"), "value"),
-            Input(self.ids("max-params"), "value"),
-        ]
-        if self.response_filters:
-            for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
-        return callbacks
+                states.append(State(self.uuid(f"filter-{col_name}"), "value"))
+        return states
 
 
     def make_response_filters(self, filters):
@@ -503,24 +504,30 @@ The types of response_filters are:
     def set_callbacks(self, app):
         """Set callbacks for placeholder text for exc/inc dropdown"""
         @app.callback(
-                Output(self.ids("parameter-list"), "placeholder"),
-                [Input(self.ids("exclude_include"), "value")]
+                Output(self.uuid("parameter-list"), "placeholder"),
+                [Input(self.uuid("exclude_include"), "value")]
         )
         def update_placeholder(exc_inc):
             if exc_inc == 'exc':
-                return "Smart exclude text goes here"
+                return "Choose parameters to exclude..."
             elif exc_inc == 'inc':
-                return 'Smart include text goes here'
+                return "Choose parameters for subset..."
 
         """Set callbacks for interaction between exclude/include param and force-in"""
         @app.callback(
-                Output(self.ids("force-in"), "options"),
             [
-                Input(self.ids("parameter-list"), "value"),
-                Input(self.ids("exclude_include"), "value")
-            ]
+                Output(self.uuid("force-in"), "options"),
+                Output(self.uuid("force-in"), "value")
+            ],
+            [
+                Input(self.uuid("parameter-list"), "value"),
+                Input(self.uuid("exclude_include"), "value"),
+            ],
+            [
+                State(self.uuid("force-in"), "value"),
+            ],
         )
-        def update_force_in(parameter_list, exc_inc):
+        def update_force_in(parameter_list, exc_inc, force_in):
             """Returns a dictionary with options for force in"""
             #If exclusive and parameter_list empty -> all param avail. for force-in
             #If inclusive and parameter_list empty -> no param avail.
@@ -530,27 +537,26 @@ The types of response_filters are:
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
             fi_lst = list(df)
-            return [{"label": fi, "value": fi} for fi in fi_lst]
+            options=[{"label": fi, "value": fi} for fi in fi_lst]
+            for param in force_in:
+                if param not in fi_lst:
+                    force_in.remove(param)
 
-        @app.callback(
-            Output(self.ids("submit-btn"),"children"),
-            self.detect_changes_callbacks
-        )
-        def update_submit_on_change(*args):
-            return "Press to update model"
+            return options, force_in
+        
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
             [
-                Output(self.ids("table"), "data"),
-                Output(self.ids("table"), "columns"),
-                Output(self.ids("table_title"), "children"),
-                Output(self.ids("p-values-plot"), "figure"),
-                Output(self.ids("coefficient-plot"), "figure")
+                Output(self.uuid("table"), "data"),
+                Output(self.uuid("table"), "columns"),
+                Output(self.uuid("table_title"), "children"),
+                Output(self.uuid("p-values-plot"), "figure"),
+                Output(self.uuid("coefficient-plot"), "figure")
             ],
             [
-                Input(self.ids("submit-btn"), "n_clicks")
+                Input(self.uuid("submit-btn"), "n_clicks")
             ],
-            self.model_input_callbacks,
+            self.model_callback_states,
         )
         def _update_visualizations(n_clicks, exc_inc, parameter_list, ensemble, response, force_in, interaction, max_vars, *filters):
             """Callback to update the model for multiple regression
@@ -610,15 +616,15 @@ The types of response_filters are:
                         }
                     },
                     {
-                        "layout": {
-                            "title": "<b>Cannot calculate fit for given selection</b><br>"
-                            "Select a different response or filter setting."
+                    "layout": {
+                        "title": "<b>Cannot calculate fit for given selection</b><br>"
+                        "Select a different response or filter setting."
                         }
-                    },
+                    },   
                     )  
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
-                table.drop(["Std.Err.", "t", "[0.025","0.975]"], axis=1, inplace=True)
+                table.drop(["Std.Err.", "Coef.", "t", "[0.025","0.975]"], axis=1, inplace=True)
                 table.index.name = "Parameter"
                 table.reset_index(inplace=True)
                 columns = [{"name": i, "id": i, 'type': 'numeric', "format": Format(precision=4)} for i in table.columns]
@@ -672,7 +678,6 @@ The types of response_filters are:
         ]
 
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -681,7 +686,7 @@ def gen_model(
         force_in: list=[],
         interaction_degree: bool=False
     ):
-    """wrapper for modelselection algorithm."""
+    """Wrapper for model selection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree + 1)
         model = forward_selected(
@@ -708,12 +713,28 @@ def _gen_interaction_df(
 
     name_combinations = []
     for i in range(1, degree+1):
-        name_combinations += ["*".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
+        name_combinations += [" × ".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
-        if name.split("*"):
-            newdf[name] = newdf.filter(items=name.split("*")).product(axis=1)
+        if name.split(" × "):
+            newdf[name] = newdf.filter(items=name.split(" × ")).product(axis=1)
     return newdf
 
+def forward_catch_warning(data, selected, onevec, response):
+    """ Function to catch warnings and return model.
+        Used twice in 'forward_selected' function. """
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] = onevec
+    with warnings.catch_warnings():
+        warnings.filterwarnings('error', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', category=UserWarning)
+        try:
+            model = sm.OLS(data[response], model_df).fit()
+            if np.isnan(model.rsquared_adj):
+                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+        except (Exception, RuntimeWarning) as e:
+            print("error: ", e)
+            return None
+    return model
 
 
 
@@ -762,7 +783,7 @@ def forward_selected(data: pd.DataFrame,
            
             # for every candidate in the remaining data, if it is an interaction term add the underlying features
             # create a model matrix with all the parameters previously choosen and the candidate with eventual base cases.
-            if "*" in candidate:
+            if " × " in candidate:
                 current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
@@ -799,8 +820,8 @@ def forward_selected(data: pd.DataFrame,
         scores_with_candidates.sort(key=lambda x: x[0])
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
-            if "*" in best_candidate:
-                for base_feature in best_candidate.split("*"):
+            if " × " in best_candidate:
+                for base_feature in best_candidate.split(" × "):
                     if base_feature in remaining:
                         remaining.remove(base_feature)
                     if base_feature not in selected:
@@ -837,10 +858,10 @@ def make_p_values_plot(p_sorted, theme):
     fig = go.Figure()
     fig.add_trace(
         {
-            "x": [param.replace("*", "*<br>") for param in parameters],
+            "x": [param.replace(" × ", "<br>× ") for param in parameters],
             "y": p_values,
             "type": "bar",
-            "marker":{"color": ["crimson" if val<0.05 else "#606060" for val in p_values]}
+            "marker":{"color": ["crimson" if val < 0.05 else "#606060" for val in p_values]}
         }
     )
     fig["layout"].update(
@@ -849,9 +870,13 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters. Value lower than 0.05 is statistically significant"
+                "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = f"P-values for the parameters. Value lower than 0.05 is statistically significant",
+        #plot_bgcolor = "#fff"
     )
     fig.add_shape(
         {
@@ -860,35 +885,48 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5}
         }
     )
-    fig["layout"]["font"].update({"size": 12})
+    fig.add_annotation(
+        x=len(p_values)-0.35,
+        y=0.05,
+        text="P-value<br>of 0.05",
+        showarrow=False
+    )
+    fig["layout"]["font"].update({"size": 12}) #".95em" rather than 12?
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
+###### Code for other theme thingy is tagged out ######
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-    sgn = np.sign(coeff_vals)
     
+    centre = 1
     domain = 2
     steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
     num_arrows = len(parameters)
-    x = np.linspace(0, domain, num_arrows) if num_arrows>1 else np.linspace(0, domain, 3)
+    centre_dist = num_arrows/(domain+1)
+    x = [1] if num_arrows==1 else np.linspace(max(centre-centre_dist, 0), 
+                                              min(centre+centre_dist, domain), 
+                                              num=num_arrows)
     y = np.zeros(len(x))
+    hover_color = p_values < 0.05
 
-    fig = px.scatter(x=x, y=y, opacity=0)
+    fig = px.scatter(x=x, y=y, opacity=0, color=hover_color.astype(np.int),
+                     color_continuous_scale=[(0, "#303030"), (1, "crimson")],
+                     range_color=[0, 1])
     
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title='', 
-                   showticklabels=False), 
-        xaxis=dict(range=[-0.23, x[-1]+0.23], 
-                   title='', 
-                   ticktext=parameters, 
-                   tickvals=[steps*i for i in range(num_arrows)] if num_arrows>1 else [1]),
-        hoverlabel=dict(
-            bgcolor="white", 
-        )
+        yaxis=dict(range=[-0.15, 0.15], title='',
+                   showticklabels=False),
+        xaxis=dict(range=[-0.23, domain+0.23],
+                   title='',
+                   ticktext=[param.replace("×", "<br>× ") 
+                             for param in parameters],
+                   tickvals=[i for i in x]),
+        coloraxis_showscale=False,
     )
     fig.add_annotation(
         x=-0.23,
@@ -897,7 +935,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         showarrow=False
     )
     fig.add_annotation(
-        x=x[-1]+0.23,
+        x=domain+0.23,
         y=0,
         text="Great <br>p-value",
         showarrow=False
@@ -908,40 +946,46 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
+                "width": 830,
                 "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
                          "or decrese) on response and "
                          "their significance"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+        #        "or decrese) on response and "
+        #        "their significance",
+        #plot_bgcolor = "#fff"
     )
     fig["layout"]["font"].update({"size": 12})
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
-    """Costumizing the hoverer"""
-    fig.update_traces(hovertemplate='%{x}') #x is ticktext
+    """Customizing the hoverer"""
+    fig.update_traces(hovertemplate='%{x}')
 
     """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
-        xx = x[i] if num_arrows>1 else x[1]
+    for i, sign in enumerate(np.sign(coeff_vals)):
+        x_coordinate = x[i]
         fig.add_shape(
             type="path",
-            path=f" M {xx-0.025} 0 " \
-                 f" L {xx-0.025} {s*0.06} " \
-                 f" L {xx-0.07} {s*0.06} " \
-                 f" L {xx} {s*0.08} " \
-                 f" L {xx+0.07} {s*0.06} " \
-                 f" L {xx+0.025} {s*0.06} " \
-                 f" L {xx+0.025} 0 ",
-            line_color="#222A2A",
+            path=f" M {x_coordinate-0.025} 0 " \
+                 f" L {x_coordinate-0.025} {sign*0.06} " \
+                 f" L {x_coordinate-0.07} {sign*0.06} " \
+                 f" L {x_coordinate} {sign*0.08} " \
+                 f" L {x_coordinate+0.07} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} 0 ",
             fillcolor="crimson" if p_values[i] < 0.05 else "#606060",
-            line_width=0.6  
+            line_width=0
         )
-    
     """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
         x0=-0.1,
         y0=0,
-        x1=x[-1]+0.1,
+        x1=domain+0.1,
         y1=0,
         line=dict(
             color='#222A2A',
