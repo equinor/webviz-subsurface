@@ -47,6 +47,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             basedir: List[Path],
             zunit="depth (m)",
             zonemin: int = 1,
+            planned_wells_dir = None,
     ):
 
         super().__init__()
@@ -72,9 +73,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.uid = uuid4()
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
-        self.dataf = FilterTable(self.target_points,self.well_points)
+        self.dataf = FilterTable(self.target_points, self.well_points)
         self.xsec.set_well(self.wellfiles[0])
-
+        self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
+        self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
     def ids(self, element):
         return f"{element}-id-{self.uid}"
 
@@ -342,6 +344,80 @@ The cross section is defined by a polyline interactively edited in the map view.
         ])
 
     @property
+    def left_flexbox_layout(self):
+        return html.Div(
+            children=[
+                html.Div(id=self.ids('hidden-div'), style={'display': 'none'}),  # Hidden div to store polyline points when in table view
+                wcc.FlexBox(
+                    children=[
+                        dcc.RadioItems(
+                        options=[
+                            {'label': 'Map view', 'value': 'map-view'},
+                            {'label': 'Table view', 'value': 'table-view'}
+                        ],
+                        id=self.ids('map-table-radioitems'),
+                        value='map-view'
+                        )
+                    ]
+                ),
+                html.Div(
+                    id=self.ids('left-flexbox-content'),
+                    children=[self.map_view_layout]
+                )
+            ]
+        )
+
+    @property
+    def map_view_layout(self):
+        return html.Div(
+            children=[
+                wcc.FlexBox(
+                    children=[
+                        html.Div(
+                            children=[
+                                html.Label(
+                                    style={
+                                        "font-weight": "bold",
+                                        "textAlign": "center",
+                                    },
+                                    children="Select surface",
+                                ),
+                                dcc.Dropdown(
+                                    id=self.ids("map-dropdown"),
+                                    options=[
+                                        {"label": name, "value": path}
+                                        for name, path in zip(
+                                            self.surfacenames, self.surfacefiles_de
+                                        )
+                                    ],
+                                    value=self.surfacefiles_de[0],
+                                    clearable=False,
+                                ),
+                            ]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    style={
+                        "marginTop": "20px",
+                        "height": "800px",
+                        "zIndex": -9999,
+                    },
+                    children=LayeredMap(
+                        id=self.ids("map-view"),
+                        draw_toolbar_polyline=True,
+                        hillShading=True,
+                        layers=[],
+                    )
+                )
+            ]
+        )
+
+    @property
+    def table_view_layout(self):
+        return html.Div('This is table view')
+
+    @property
     def layout(self):
         return dcc.Tabs(children=[
             dcc.Tab(
@@ -350,7 +426,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     wcc.FlexBox(
                         id=self.ids("layout"),
                         children=[
-                            html.Div(style={"flex": 1}, children=self.map_layout),
+                            html.Div(style={"flex": 1}, children=self.left_flexbox_layout),
                             html.Div(style={"flex": 1.5}, children=self.cross_section_layout),
                         ]
                     )
@@ -365,6 +441,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 children=[self.well_points_layout]
             )
         ])
+
 
     def set_callbacks(self, app):
         @app.callback(
@@ -381,7 +458,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             color = "magma"
             well_layers = []
             for wellpath in self.wellfiles:
-                if str(self.xsec.well_attributes["wellpath"]) == wellpath:
+                if (self.xsec.well_attributes is not None) and (self.xsec.well_attributes['wellpath'] == wellpath):
                     well_color = "green"
                 else:
                     well_color = "black"
@@ -408,7 +485,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
-                Input(self.ids("map-view"), "polyline_points"),  # coordinates from map-view
+                Input(self.ids("hidden-div"), "children"),  # coordinates from map-view
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
@@ -422,7 +499,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             error_paths = get_path(error_paths)
             if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown") + '.value':
                 self.xsec.set_well(wellpath)
-            elif ctx.triggered[0]['prop_id'] == self.ids("map-view") + '.polyline_points':
+            elif ctx.triggered[0]['prop_id'] == self.ids('hidden-div') + '.children' and coords is not None:
                 self.xsec.fence = get_fencespec(coords)
                 self.xsec.well_attributes = None
             self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
@@ -494,7 +571,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 State(self.ids("columns-checklist"), "value"),  # columns list
             ],
         )
-        def display_output(n_clicks, column_list):
+        def _display_output(n_clicks, column_list):
             wellpoints_df = self.dataf.update_wellpoints_datatable(column_list)
             return html.Div([
                 dash_table.DataTable(
@@ -516,6 +593,25 @@ The cross section is defined by a polyline interactively edited in the map view.
             if n1 or n2:
                 return not is_open
             return is_open
+
+        @app.callback(
+            Output(self.ids('left-flexbox-content'), 'children'),
+            [Input(self.ids('map-table-radioitems'), 'value')]
+        )
+        def _toggle_left_flexbox_content(value):
+            if value == 'map-view':
+                return self.map_view_layout
+            else:
+                return self.table_view_layout
+
+        @app.callback(
+            Output(self.ids('hidden-div'), 'children'),
+            [Input(self.ids('map-view'), 'polyline_points')]
+        )
+        def _render_hidden_div(coords):
+            return coords
+
+
 
     def add_webvizstore(self):
         print('This function doesnt do anything, does it?')

@@ -7,4 +7,5 @@ pages:
       - HorizonUncertaintyViewer:
           basedir:
             - ..\Datasets\complex_model
+          planned_wells_dir: C:\Users\ivarb\OneDrive\Documents\webViz\Planned_wells
 
