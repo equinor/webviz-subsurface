@@ -370,7 +370,7 @@ The types of response_filters are:
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
-                        max=2, 
+                        max=2,
                         step=None,
                         marks={
                             0: "Off",
@@ -887,16 +887,15 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                              for param in parameters],
                    tickvals=[i for i in x]),
         coloraxis_showscale=False,
+        autosize=True
     )
     fig.add_annotation(
-        x=-0.23,
-        y=0,
+        x=-0.23, y=0,
         text="Small <br>p-value",
         showarrow=False
     )
     fig.add_annotation(
-        x=domain+0.23,
-        y=0,
+        x=domain+0.23, y=0,
         text="Great <br>p-value",
         showarrow=False
     )
@@ -906,7 +905,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "width": 830,
                 "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
                          "or decrese) on response and "
                          "their significance"
@@ -923,7 +921,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
     """Customizing the hoverer"""
-    fig.update_traces(hovertemplate='%{x}')
+    fig.update_traces(
+        hovertemplate=[str(param) + '<br>' + str(format(pval, '.4g')) for param, pval in zip(parameters, p_values)]
+    )
 
     """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
