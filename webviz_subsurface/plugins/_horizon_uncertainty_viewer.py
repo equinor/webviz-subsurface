@@ -73,7 +73,7 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
         self.dataf = FilterTable(self.target_points,self.well_points)
-        self.xsec.set_well(self.wellfiles[0])
+        self.xsec.set_well_attributes(self.wellfiles)
 
     def ids(self, element):
         return f"{element}-id-{self.uid}"
@@ -391,7 +391,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             color = "magma"
             well_layers = []
             for wellpath in self.wellfiles:
-                if str(self.xsec.well_attributes["wellpath"]) == wellpath:
+                if str(self.xsec.well_attributes[wellpath]["wellpath"]) == wellpath:
                     well_color = "green"
                 else:
                     well_color = "black"
@@ -418,7 +418,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
-                Input(self.ids("map-view"), "polyline_points"),  # coordinates from map-view
+                Input(self.ids("map-view"), "polyline_points"),  # polyline from map-view
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
@@ -426,17 +426,14 @@ The cross section is defined by a polyline interactively edited in the map view.
                 State(self.ids("well-settings-checklist"), "value"),  # well settings checkbox content
             ],
         )
-        def _render_xsection(n_clicks, n_clicks2, wellpath, coords, surface_paths, error_paths, well_settings):
+        def _render_xsection(n_clicks, n_clicks2, wellpath, polyline, surface_paths, error_paths, well_settings):
             ctx = dash.callback_context
             surface_paths = get_path(surface_paths)
             error_paths = get_path(error_paths)
-            if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown") + '.value':
-                self.xsec.set_well(wellpath)
-            elif ctx.triggered[0]['prop_id'] == self.ids("map-view") + '.polyline_points':
-                self.xsec.fence = get_fencespec(coords)
-                self.xsec.well_attributes = None
-            self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
-            self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings)
+            if ctx.triggered[0]['prop_id'] == self.ids("map-view") + '.polyline_points':
+                wellpath = None
+            self.xsec.set_error_and_surface_lines(surface_paths, error_paths, wellpath, polyline)
+            self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings, wellpath)
             return self.xsec.fig
 
         @app.callback(
@@ -526,7 +523,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             if n1 or n2:
                 return not is_open
             return is_open
-
+        
         @app.callback(
             Output(self.ids("error_table_container"), "children"),
             [
@@ -534,7 +531,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ],
         )
         def _render_depth_error_tab(wellpath):
-            self.xsec.set_well(wellpath)
+            #self.xsec.set_well(wellpath)
             df = self.xsec.get_error_table(wellpath)
             return html.Div([
                 dash_table.DataTable(
@@ -543,7 +540,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     data = df.to_dict('records'),
                 )
             ])
-
+        
     def add_webvizstore(self):
         return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
 
@@ -579,22 +576,7 @@ def get_color(i):
     n_colors = len(colors)
     return colors[(i) % (n_colors)]
 
-def get_fencespec(coords):
-    """Create a XTGeo fence spec from polyline coordinates"""
-    poly = xtgeo.Polygons()
-    poly.dataframe = pd.DataFrame(
-        [
-            {
-                "X_UTME": c[1],
-                "Y_UTMN": c[0],
-                "Z_TVDSS": 0,
-                "POLY_ID": 1,
-                "NAME": "polyline",
-            }
-            for c in coords
-        ]
-    )
-    return poly.get_fence(asnumpy=True)
+
 
 
 def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):
