@@ -1,5 +1,4 @@
 import warnings
-
 from pathlib import Path
 from itertools import combinations
 
@@ -553,24 +552,7 @@ parameters here are guaranteed to appear in the model.
                 Output(self.uuid("table"), "columns"),
                 Output(self.uuid("table_title"), "children"),
                 Output(self.uuid("p-values-plot"), "figure"),
-                Output(self.uuid("coefficient-plot
-def forward_catch_warning(data, selected, onevec, response):
-    """ Function to catch warnings and return model.
-        Used twice in 'forward_selected' function. """
-    model_df = data.filter(items=selected)
-    model_df["Intercept"] = onevec
-    with warnings.catch_warnings():
-        warnings.filterwarnings('error', category=RuntimeWarning)
-        warnings.filterwarnings('ignore', category=UserWarning)
-        try:
-            model = sm.OLS(data[response], model_df).fit()
-            if np.isnan(model.rsquared_adj):
-                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-        except (Exception, RuntimeWarning) as e:
-            print("error: ", e)
-            return None
-    return model
-"), "figure")
+                Output(self.uuid("coefficient-plot"), "figure")
             ],
             [
                 Input(self.uuid("submit-btn"), "n_clicks")
@@ -749,7 +731,7 @@ def forward_selected(data: pd.DataFrame,
         The selection criterion chosen is adjusted R squared.
         See this link for more info on algorithm: 
         https://en.wikipedia.org/wiki/Stepwise_regression
-     
+
         step by step of the algorithm:
         - initialize values
         - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
@@ -758,7 +740,7 @@ def forward_selected(data: pd.DataFrame,
             2. Create model matrix, fit model and calculate selection criterion, for each remaining parameter.
             3. pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
             4. finally fit a statsmodel regression and return the results. 
-     
+
         Exit conditions:
             - no parameters in remaining.
             - the last model was not the best model
