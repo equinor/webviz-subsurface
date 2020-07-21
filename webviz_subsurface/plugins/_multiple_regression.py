@@ -335,17 +335,18 @@ The types of response_filters are:
             html.Div(
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Abbr("\u24D8", title="""This lets your control what parameters to include in your model.
+                   html.Span("\u24D8", id=self.uuid("tooltip-parameters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                   dbc.Tooltip(
+                    """This lets you control what parameters to include in your model.
 There are two modes, inclusive and exclusive:
-- Exclusive mode:
+    - Exclusive mode:
     Lets you remove spesific parameters from your model.
-
-- Inclusive mode:
-    Lets you pick a subset of parameters to investigate.
-    Parameters included here are not
-    guaranteed to be included in the output model.
-"""
-                    ),
+    
+    - Inclusive mode: Lets you pick a subset of parameters to investigate.
+    Parameters included here are notguaranteed to be included in the output model.""",
+                    target=self.uuid("tooltip-parameters"), placement="auto",
+                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                   ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
@@ -379,16 +380,19 @@ There are two modes, inclusive and exclusive:
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""This slider lets your select how deep your interaction is.
-Off allows only for the parameters in their original state.
-2 levels allows for the product of 2 original parameters.
-3 levels allows for the product of 3 original parameters.
-This feature allows you to investigate possible feedback effects.
-                    """),
+                    html.Span("\u24D8", id=self.uuid("tooltip-filters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                    dbc.Tooltip("""This slider lets your select how deep your interaction is:
+    – Off allows only for the parameters in their original state.
+    – 2 levels allows for the product of 2 original parameters.
+    – 3 levels allows for the product of 3 original parameters.
+This feature allows you to investigate possible feedback effects.""",
+                    target=self.uuid("tooltip-filters"), placement="auto",
+                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    ),
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
-                        max=2, 
+                        max=2,
                         step=None,
                         marks={
                             0: "Off",
@@ -402,10 +406,14 @@ This feature allows you to investigate possible feedback effects.
             html.Div(
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""Lets you put a cap on the number of parameters to include in your model
-If interaction is active cap is the selected value + interaction level.
-This is to make sure the interaction terms have an intuitive interpretation.
-"""),
+                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                    dbc.Tooltip("""Lets you put a cap on the number of parameters to include in your model.
+If interaction is active, cap is the selected value + interaction level.
+This is to make sure the interaction terms have an intuitive interpretation.""",
+                    target=self.uuid("tooltip-maxparams"), placement="auto",
+                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    ),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
                         options=[
@@ -418,10 +426,13 @@ This is to make sure the interaction terms have an intuitive interpretation.
             ),
             html.Div(
                 [
-                   html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""This lets you force parameters into the model, 
-parameters here are guaranteed to appear in the model.
-"""),
+                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Span("\u24D8", id=self.uuid("tooltip-fi"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                    dbc.Tooltip("""This lets you force parameters into the model, 
+parameters here are guaranteed to appear in the model.""",
+                    target=self.uuid("tooltip-fi"), placement="auto",
+                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    ),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
                         clearable=True,
@@ -440,13 +451,13 @@ parameters here are guaranteed to appear in the model.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
+                html.Div( 
+                    id=self.uuid("page-title"),
+                    style={"textAlign": "left", "display": "grid", "fontSize": "1.3em", "flex": "0 0 100%"}
+                ),
                 html.Div(
                     style={"flex": 3},
                     children=[
-                        html.Div(
-                            id=self.uuid("table_title"),
-                            style={"textAlign": "center"}
-                        ),
                         DataTable(
                             id=self.uuid("table"),
                             sort_action="native",
@@ -550,7 +561,7 @@ parameters here are guaranteed to appear in the model.
             [
                 Output(self.uuid("table"), "data"),
                 Output(self.uuid("table"), "columns"),
-                Output(self.uuid("table_title"), "children"),
+                Output(self.uuid("page-title"), "children"),
                 Output(self.uuid("p-values-plot"), "figure"),
                 Output(self.uuid("coefficient-plot"), "figure")
             ],
@@ -840,13 +851,18 @@ def make_p_values_plot(p_sorted, theme):
             "marker":{"color": ["crimson" if val < 0.05 else "#606060" for val in p_values]}
         }
     )
+    fig.update_traces(
+        hovertemplate=["<b>Parameter:</b> " + str(param) + '<br>' + 
+                       "<b>P-value:</b> " + str(format(pval, '.4g')) + 
+                       '<extra></extra>' for param, pval in zip(parameters, p_values)]
+    )
     fig["layout"].update(
         theme_layout(
             theme,
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values"
+                "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
             }
         )
         #barmode = "relative",
@@ -892,22 +908,19 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='',
                    showticklabels=False),
-        xaxis=dict(range=[-0.23, domain+0.23],
+        xaxis=dict(range=[-0.23, domain+0.26],
                    title='',
                    ticktext=[param.replace("*", "*<br>") for param in parameters],
                    tickvals=[i for i in x]),
+        #coloraxis_showscale=False,
+        #autosize=True,
         hoverlabel=dict(bgcolor="lightgrey")
     )
-    fig.update_traces(hovertemplate="%{x}<extra></extra>")
-    fig.add_annotation(
-        x=-0.23, y=0,
-        text="Low <br>p-value",
-        showarrow=False
-    )
-    fig.add_annotation(
-        x=domain+0.23, y=0,
-        text="High <br>p-value",
-        showarrow=False
+    """Customizing the hoverer"""
+    fig.update_traces(
+        hovertemplate=["<b>Parameter:</b> " + str(param) + '<br>' + 
+                       "<b>P-value:</b> " + str(format(pval, '.4g')) + 
+                       '<extra></extra>' for param, pval in zip(parameters, p_values)]
     )
     fig["layout"].update(
         theme_layout(
@@ -953,6 +966,17 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             color='#222A2A',
             width=0.75,
         ),
+    )
+    fig.add_shape(
+        type="path",
+        path=f" M {domain+0.12} 0 L {domain+0.1} -0.005 L {domain+0.1} 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+    fig.add_annotation(
+        x=domain+0.26, y=0,
+        text="Increasing<br>p-value",
+        showarrow=False
     )
     return fig
 
