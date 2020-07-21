@@ -4,15 +4,12 @@ from pathlib import Path
 import warnings
 import numpy as np
 import pandas as pd
-# from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-# from dash.exceptions import PreventUpdate
 from dash_table import DataTable
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
-#import dash_bootstrap_components as dbc
 from dash_table.Format import Format, Scheme
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
@@ -20,12 +17,12 @@ from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 import statsmodels.api as sm
-# import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
 from itertools import combinations
 import plotly.express as px
 import numpy.linalg as la
 from .._datainput.fmu_input import load_parameters, load_csv
+from .._utils.ensemble_handling import filter_and_sum_responses
 import time
 
 
@@ -33,6 +30,8 @@ class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
 This plugin shows a multiple regression of numerical parameters and a response.
+
+The model uses a modified forward selection algorithm to choose the most relevant parameters,
 
 Input can be given either as:
 
@@ -44,6 +43,8 @@ stored per realizations.
 
 **Note**: The response csv file will be aggregated per realization.
 
+**Note**: Regression models break down when there are duplicate or highly correlated parameters,
+            please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
 Arguments:
 
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
@@ -436,7 +437,6 @@ The types of response_filters are:
                             style={'flex': 3},
                             children=[
                                 wcc.Graph(id=self.ids('p-values-plot')),
-                                dcc.Store(id=self.ids("initial-parameter"))
                             ]
                         ),
                         html.Div(
@@ -545,7 +545,6 @@ The types of response_filters are:
                 Output(self.ids("table"), "columns"),
                 Output(self.ids("table_title"), "children"),
                 Output(self.ids("p-values-plot"), "figure"),
-                Output(self.ids("initial-parameter"), "data"),
                 Output(self.ids("coefficient-plot"), "figure")
             ],
             [
@@ -583,15 +582,15 @@ The types of response_filters are:
                 return(
                     [{"e": ""}],
                     [{"name": "", "id": "e"}],
-                    "Please selecet parameters to be included in the model",
+                    "Please select parameters to be included in the model",
                     {
                     "layout": {
-                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        "title": "<b>Please select parameters to be included in the model</b><br>"
                         }
-                    }, None,
+                    },
                     {
                     "layout": {
-                        "title": "<b>Please selecet parameters to be included in the model</b><br>"
+                        "title": "<b>Please select parameters to be included in the model</b><br>"
                         }
                     },
                 )
@@ -609,7 +608,7 @@ The types of response_filters are:
                         "title": "<b>Cannot calculate fit for given selection</b><br>"
                         "Select a different response or filter setting."
                         }
-                    }, None,
+                    },
                     {
                         "layout": {
                             "title": "<b>Cannot calculate fit for given selection</b><br>"
@@ -638,7 +637,7 @@ The types of response_filters are:
                     f"Multiple regression with {response} as response",
 
                     # Generate p-values plot
-                    make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+                    make_p_values_plot(p_sorted, self.plotly_theme),
 
                     # Generate coefficient plot
                     make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme)
@@ -673,51 +672,6 @@ The types of response_filters are:
         ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum"
-):
-    """Cached wrapper for _filter_and_sum_responses"""
-    return _filter_and_sum_responses(
-        dframe=dframe,
-        ensemble=ensemble,
-        response=response,
-        filteroptions=filteroptions,
-        aggregation=aggregation,
-    )
-
-
-def _filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum",
-):
-    """Filter response dataframe for the given ensemble
-    and optional filter columns. Returns dataframe grouped and
-    aggregated per realization."""
-    df = dframe.copy()
-    df = df.loc[df["ENSEMBLE"] == ensemble]
-    if filteroptions:
-        for opt in filteroptions:
-            if opt["type"] == "multi" or opt["type"] == "single":
-                if isinstance(opt["values"], list):
-                    df = df.loc[df[opt["name"]].isin(opt["values"])]
-                else:
-                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
-                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
-                    else:
-                        df = df.loc[df[opt["name"]] == opt["values"]]
-
-            elif opt["type"] == "range":
-                df = df.loc[
-                    (df[opt["name"]] >= np.min(opt["values"]))
-                    & (df[opt["name"]] <= np.max(opt["values"]))
-                ]
-    if aggregation == "sum":
-        return df.groupby("REAL").sum().reset_index()[["REAL", response]]
-    if aggregation == "mean":
-        return df.groupby("REAL").mean().reset_index()[["REAL", response]]
-    raise ValueError(
-        f"Aggregation of response file specified as '{aggregation}'' is invalid. "
-    )
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
@@ -729,7 +683,7 @@ def gen_model(
     ):
     """wrapper for modelselection algorithm."""
     if interaction_degree:
-        df = _gen_interaction_df(df, response, interaction_degree)
+        df = _gen_interaction_df(df, response, interaction_degree + 1)
         model = forward_selected(
             data=df,
             response=response,
@@ -753,7 +707,6 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
-    degree += 1 
     for i in range(1, degree+1):
         name_combinations += ["*".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
@@ -762,60 +715,83 @@ def _gen_interaction_df(
     return newdf
 
 
+
+
 def forward_selected(data: pd.DataFrame,
                      response: str, 
                      force_in: list=[], 
                      maxvars: int=5):
-    """ Forward model selection algorithm """
-    y = data[response].to_numpy(dtype="float32")
+    """ Forward model selection algorithm
+
+        Return statsmodels RegressionResults object
+        the algortihm is a modified standard forward selection algorithm. 
+        The selection criterion chosen is adjusted R squared.
+        See this link for more info on algorithm: 
+        https://en.wikipedia.org/wiki/Stepwise_regression
+     
+        step by step of the algorithm:
+        - initialize values
+        - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
+        - for every parameter not chosen yet.
+            1. if it is an interaction parameter add the base features to the model
+            2. create model matrix
+     """
+
+    # Initialize values for use in algorithm
+    # y is the response SST in the total sum of squares
+    y = data[response].to_numpy(dtype="float64")
     n = len(y)
-    onevec = np.ones((len(y), 1))
     y_mean = np.mean(y)
     SST = np.sum((y-y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in+[response]))
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
+
     while remaining and current_score == best_new_score and len(selected) < maxvars:
+        # The alogrithm works as follows
+        # check if remaining is empty, if the last round was an improvement, and if we reached the variable limit
+         
         scores_with_candidates = []
         for candidate in remaining:
+           
+            # for every candidate in the remaining data, if it is an interaction term add the underlying features
+            # create a model matrix with all the parameters previously choosen and the candidate with eventual base cases.
             if "*" in candidate:
                 current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
-            X = data.filter(items=current_model).to_numpy(dtype="float32")
-            p = X.shape[1]
-            if n - p - 1 < 1:
-                model_df = data.filter(items=selected)
-                model_df["Intercept"] = onevec
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error', category=RuntimeWarning)
-                    warnings.filterwarnings('ignore', category=UserWarning)
-                    try:
-                        model = sm.OLS(data[response], model_df).fit()
-                        if np.isnan(model.rsquared_adj):
-                            warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-                    except (Exception, RuntimeWarning) as e:
-                        print("error: ", e)
-                        return None
-                return model
-            X = np.append(X, onevec, axis=1)
+            X = data.filter(items=current_model).to_numpy(dtype="float64")
+            p = X.shape[1]  
+            X = np.append(X, np.ones((len(y), 1)), axis=1)
+            
+            # Fit model 
             try: 
                 beta = la.inv(X.T @ X) @ X.T @ y
             except la.LinAlgError:
+                # this clause lets us skip singluar and other non-valid model matricies.
                 continue
+
+            if n - p - 1 < 1: 
+                
+                # the exit condition means adding this parameter would add more parameters than observations, 
+                # this causes infinite variance in the model so we return the current best model
+                
+                model_df = data.filter(items=selected)
+                model_df["Intercept"] =  np.ones((len(y), 1))
+                model_df["response"] = y
+                
+                return _model_warnings(model_df)
+
+            # adjusted R squared is our chosen model selection criterion.
             f_vec = beta @ X.T
             SS_RES = np.sum((f_vec-y_mean) ** 2)
+            
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-         #   print("SWC:", scores_with_candidates[-1])
-        #print("HERE")
-        #print(scores_with_candidates)
-        
-        #print("sortedarr", scores_with_candidates.sort(key=lambda x: x[0]))
+
+        # if the best parameter is interactive, add all base features
         scores_with_candidates.sort(key=lambda x: x[0])
-        #print("scores_with_candidates", scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        #print("best_cand",best_candidate, best_new_score)
         if current_score < best_new_score:
             if "*" in best_candidate:
                 for base_feature in best_candidate.split("*"):
@@ -827,20 +803,25 @@ def forward_selected(data: pd.DataFrame,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-    model_df = data.filter(items=selected)
-    model_df["Intercept"] = onevec
     
+    # finally fit a statsmodel from the selected parameters
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] =  np.ones((len(y), 1))
+    model_df["response"]=y
+    return _model_warnings(model_df)
+
+def _model_warnings(design_matrix: pd.DataFrame):
     with warnings.catch_warnings():
+        # handle warnings so the graphics indicate explicity that the model failed for the current input. 
         warnings.filterwarnings('error', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=UserWarning)
         try:
-            model = sm.OLS(data[response], model_df).fit()
-            if np.isnan(model.rsquared_adj):
-                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
+            
         except (Exception, RuntimeWarning) as e:
             print("error: ", e)
+            return None
     return model
-
 
 
 def make_p_values_plot(p_sorted, theme):
@@ -963,29 +944,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     return fig
 
-def make_range_slider(domid, values, col_name):
-    try:
-        values.apply(pd.to_numeric, errors="raise")
-    except ValueError:
-        raise ValueError(
-            f"Cannot calculate filter range for {col_name}. "
-            "Ensure that it is a numerical column."
-        )
-    return dcc.RangeSlider(
-        id=domid,
-        min=values.min(),
-        max=values.max(),
-        step=calculate_slider_step(
-            min_value=values.min(),
-            max_value=values.max(),
-            steps=len(list(values.unique())) - 1,
-        ),
-        value=[values.min(), values.max()],
-        marks={
-            str(values.min()): {"label": f"{values.min():.2f}"},
-            str(values.max()): {"label": f"{values.max():.2f}"},
-        }
-    )
+
+
 
 def theme_layout(theme, specific_layout):
     layout = {}
@@ -997,3 +957,6 @@ def theme_layout(theme, specific_layout):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
+
+
+
