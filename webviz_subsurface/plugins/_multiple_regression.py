@@ -733,12 +733,21 @@ def forward_selected(data: pd.DataFrame,
         - initialize values
         - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
         - for every parameter not chosen yet.
-            1. if it is an interaction parameter add the base features to the model
-            2. create model matrix
+            1. If it is an interaction parameter add the base features to the model.
+            2. Create model matrix, fit model and calculate selection criterion, for each remaining parameter.
+            3. pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
+            4. finally fit a statsmodel regression and return the results. 
+     
+        Exit conditions:
+            - no parameters in remaining.
+            - the last model was not the best model
+            - hit cap on maximum parameters.
+            - we are about to add more parameters than there are observations.
      """
 
+
     # Initialize values for use in algorithm
-    # y is the response SST in the total sum of squares
+    # y is the response, SST in the total sum of squares
     y = data[response].to_numpy(dtype="float64")
     n = len(y)
     y_mean = np.mean(y)
@@ -747,10 +756,7 @@ def forward_selected(data: pd.DataFrame,
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
 
-    while remaining and current_score == best_new_score and len(selected) < maxvars:
-        # The alogrithm works as follows
-        # check if remaining is empty, if the last round was an improvement, and if we reached the variable limit
-         
+    while remaining and current_score == best_new_score and len(selected) < maxvars:         
         scores_with_candidates = []
         for candidate in remaining:
            
