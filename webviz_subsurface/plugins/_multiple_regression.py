@@ -443,7 +443,7 @@ parameters here are guaranteed to appear in the model.
             children=[
                 html.Div( 
                     id=self.uuid("page-title"),
-                    style={"textAlign": "left", "display": "grid", "fontSize": "1.3em", "width": "800px"}
+                    style={"textAlign": "left", "display": "grid", "fontSize": "1.3em", "flex": "0 0 100%"}
                 ),
                 html.Div(
                     style={"flex": 3},
