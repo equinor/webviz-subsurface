@@ -441,9 +441,9 @@ parameters here are guaranteed to appear in the model.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.H1( #GIGANTISK men samme str som "Correlation between input parameters and inplace volumes"
-                    id=self.uuid("page_title"),
-                    style={"textAlign": "left"}
+                html.Div( 
+                    id=self.uuid("page-title"),
+                    style={"textAlign": "left", "display": "grid", "fontSize": "1.3em", "width": "800px"}
                 ),
                 html.Div(
                     style={"flex": 3},
@@ -551,7 +551,7 @@ parameters here are guaranteed to appear in the model.
             [
                 Output(self.uuid("table"), "data"),
                 Output(self.uuid("table"), "columns"),
-                Output(self.uuid("page_title"), "children"),
+                Output(self.uuid("page-title"), "children"),
                 Output(self.uuid("p-values-plot"), "figure"),
                 Output(self.uuid("coefficient-plot"), "figure")
             ],
