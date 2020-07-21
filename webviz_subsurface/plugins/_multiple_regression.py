@@ -2,31 +2,32 @@ import warnings
 
 from pathlib import Path
 from itertools import combinations
+
 import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+import dash_bootstrap_components as dbc
 import statsmodels.api as sm
 from dash_table import DataTable
 from dash.dependencies import Input, Output, State
-from dash_table.Format import Format
+from dash_table.Format import Format, Scheme
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config.utils import calculate_slider_step
+from sklearn.preprocessing import PolynomialFeatures
+
 from .._datainput.fmu_input import load_parameters, load_csv
 from .._utils.ensemble_handling import filter_and_sum_responses
-
 
 class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
 This plugin shows a multiple regression of numerical parameters and a response.
-
-The model uses a modified forward selection algorithm to choose the most relevant parameters,
 
 Input can be given either as:
 
@@ -39,7 +40,8 @@ stored per realizations.
 **Note**: The response csv file will be aggregated per realization.
 
 **Note**: Regression models break down when there are duplicate or highly correlated parameters,
-            please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
+please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
+
 Arguments:
 
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
@@ -159,7 +161,6 @@ The types of response_filters are:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
-        #self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -306,7 +307,7 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Div("Ensemble:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
                         options=[
@@ -320,7 +321,7 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Div("Response:", style={"font-weight": "bold",'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
                         options=[
@@ -337,14 +338,15 @@ The types of response_filters are:
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
                    html.Abbr("\u24D8", title="""This lets your control what parameters to include in your model.
 There are two modes, inclusive and exclusive:
--Exclusive mode:
+- Exclusive mode:
     Lets you remove spesific parameters from your model.
 
--inclusive mode:
-    lets you pick a subset of parameters to investigate.
-    parameters included here are not
+- Inclusive mode:
+    Lets you pick a subset of parameters to investigate.
+    Parameters included here are not
     guaranteed to be included in the output model.
-"""),
+"""
+                    ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
@@ -353,7 +355,7 @@ There are two modes, inclusive and exclusive:
                        ],
                        value="exc",
                        labelStyle={'display': 'inline-block'},
-                       style={'fontSize': ".80em"},
+                       style = {'fontSize': ".80em"},
                    )
                ]
             ),
@@ -372,18 +374,12 @@ There are two modes, inclusive and exclusive:
                     ),
                 ]
             ),
-            html.Div("Filters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+            html.Div("Filters:", style={"font-weight": "bold"}),
             html.Div(children=self.filter_layout),
             html.Div(
                 [
-                    html.Div("Settings:", style={"font-weight": "bold", "marginTop": "20px"}),
-                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="""This slider lets your select how deep your interaction is.
-Off allows only for the parameters in their original state.
-2 levels allows for the product of 2 original parameters.
-3 levels allows for the product of 3 original parameters.
-This feature allows you to investigate possible feedback effects.
-                    """),
+                    html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
+                    html.Div("Interaction"),
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
@@ -417,7 +413,7 @@ This is to make sure the interaction terms have an intuitive interpretation.
             ),
             html.Div(
                 [
-                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                   html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
                     html.Abbr("\u24D8", title="""This lets you force parameters into the model, 
 parameters here are guaranteed to appear in the model.
 """),
@@ -456,9 +452,9 @@ parameters here are guaranteed to appear in the model.
                         ),
                         html.Div(
                             children=[
-                                wcc.Graph(id=self.uuid('p-values-plot')),
-
-                            ]),
+                                wcc.Graph(id=self.uuid('p-values-plot'))
+                            ]
+                        ),
                         html.Div(
                             children=[
                                 wcc.Graph(id=self.uuid('coefficient-plot')),
@@ -622,22 +618,22 @@ def forward_catch_warning(data, selected, onevec, response):
                 # Get results from the model
                 result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
                 if not result:
-                        return(
-                    [{"e": ""}],
-                    [{"name": "", "id": "e"}],
-                    "Cannot calculate fit for given selection. Select a different response or filter setting",
-                    {
-                    "layout": {
-                        "title": "<b>Cannot calculate fit for given selection</b><br>"
-                        "Select a different response or filter setting."
-                        }
-                    },
-                    {
-                    "layout": {
-                        "title": "<b>Cannot calculate fit for given selection</b><br>"
-                        "Select a different response or filter setting."
-                        }
-                    },   
+                    return(
+                        [{"e": ""}],
+                        [{"name": "", "id": "e"}],
+                        "Cannot calculate fit for given selection. Select a different response or filter setting",
+                        {
+                        "layout": {
+                            "title": "<b>Cannot calculate fit for given selection</b><br>"
+                            "Select a different response or filter setting."
+                            }
+                        },
+                        {
+                            "layout": {
+                                "title": "<b>Cannot calculate fit for given selection</b><br>"
+                                "Select a different response or filter setting."
+                            }
+                        },
                     )  
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
@@ -694,7 +690,6 @@ def forward_catch_warning(data, selected, onevec, response):
             ),
         ]
 
-
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
@@ -705,7 +700,7 @@ def gen_model(
     ):
     """Wrapper for model selection algorithm."""
     if interaction_degree:
-        df = _gen_interaction_df(df, response, interaction_degree + 1)
+        df = _gen_interaction_df(df, response, interaction_degree+1)
         model = forward_selected(
             data=df,
             response=response,
@@ -729,6 +724,7 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
+    degree += 1 
     for i in range(1, degree+1):
         name_combinations += [" × ".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
@@ -766,21 +762,17 @@ def forward_selected(data: pd.DataFrame,
 
 
     # Initialize values for use in algorithm
-    # y is the response, SST in the total sum of squares
-    y = data[response].to_numpy(dtype="float64")
+    # y is the response, SST is the total sum of squares
+    y = data[response].to_numpy(dtype="float32")
     n = len(y)
     y_mean = np.mean(y)
     SST = np.sum((y-y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in+[response]))
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
-
-    while remaining and current_score == best_new_score and len(selected) < maxvars:         
+    while remaining and current_score == best_new_score and len(selected) < maxvars:
         scores_with_candidates = []
         for candidate in remaining:
-           
-            # for every candidate in the remaining data, if it is an interaction term add the underlying features
-            # create a model matrix with all the parameters previously choosen and the candidate with eventual base cases.
             if " × " in candidate:
                 current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
             else:
@@ -788,18 +780,18 @@ def forward_selected(data: pd.DataFrame,
             X = data.filter(items=current_model).to_numpy(dtype="float64")
             p = X.shape[1]  
             X = np.append(X, np.ones((len(y), 1)), axis=1)
-            
+
             # Fit model 
             try: 
                 beta = la.inv(X.T @ X) @ X.T @ y
             except la.LinAlgError:
-                # this clause lets us skip singluar and other non-valid model matricies.
+                # This clause lets us skip singluar and other non-valid model matricies.
                 continue
 
             if n - p - 1 < 1: 
                 
-                # the exit condition means adding this parameter would add more parameters than observations, 
-                # this causes infinite variance in the model so we return the current best model
+                # The exit condition means adding this parameter would add more parameters than observations, 
+                # This causes infinite variance in the model so we return the current best model
                 
                 model_df = data.filter(items=selected)
                 model_df["Intercept"] =  np.ones((len(y), 1))
@@ -807,14 +799,13 @@ def forward_selected(data: pd.DataFrame,
                 
                 return _model_warnings(model_df)
 
-            # adjusted R squared is our chosen model selection criterion.
             f_vec = beta @ X.T
             SS_RES = np.sum((f_vec-y_mean) ** 2)
             
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-
-        # if the best parameter is interactive, add all base features
+        
+        # If the best parameter is interactive, add all base features
         scores_with_candidates.sort(key=lambda x: x[0])
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
@@ -829,7 +820,7 @@ def forward_selected(data: pd.DataFrame,
             selected.append(best_candidate)
             current_score = best_new_score
     
-    # finally fit a statsmodel from the selected parameters
+    # Finally fit a statsmodel from the selected parameters
     model_df = data.filter(items=selected)
     model_df["Intercept"] =  np.ones((len(y), 1))
     model_df["response"]=y
@@ -837,20 +828,19 @@ def forward_selected(data: pd.DataFrame,
 
 def _model_warnings(design_matrix: pd.DataFrame):
     with warnings.catch_warnings():
-        # handle warnings so the graphics indicate explicity that the model failed for the current input. 
+        # Handle warnings so the graphics indicate explicity that the model failed for the current input. 
         warnings.filterwarnings('error', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=UserWarning)
         try:
             model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
-            
         except (Exception, RuntimeWarning) as e:
             print("error: ", e)
             return None
     return model
 
-
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
+    ###### Code for other theme thingy is tagged out ######
     p_values = p_sorted.values
     parameters = p_sorted.index
     fig = go.Figure()
@@ -868,7 +858,7 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
+                "title": f"P-values"
             }
         )
         #barmode = "relative",
@@ -886,56 +876,49 @@ def make_p_values_plot(p_sorted, theme):
     fig.add_annotation(
         x=len(p_values)-0.35,
         y=0.05,
-        text="P-value<br>of 0.05",
+        text="P-value<br>= 0.05",
         showarrow=False
     )
-    fig["layout"]["font"].update({"size": 12}) #".95em" rather than 12?
+    fig["layout"]["font"].update({"size": 12})
     #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
-###### Code for other theme thingy is tagged out ######
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
+    ###### Code for other theme thingy is tagged out ######
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-    
+
     centre = 1
     domain = 2
     steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
-    num_arrows = len(parameters)
-    centre_dist = num_arrows/(domain+1)
-    x = [1] if num_arrows==1 else np.linspace(max(centre-centre_dist, 0), 
+    centre_dist = len(parameters)/(domain+1)
+    x = [1] if len(parameters)==1 else np.linspace(max(centre-centre_dist, 0), 
                                               min(centre+centre_dist, domain), 
-                                              num=num_arrows)
+                                              num=len(parameters))
     y = np.zeros(len(x))
-    hover_color = p_values < 0.05
 
-    fig = px.scatter(x=x, y=y, opacity=0, color=hover_color.astype(np.int),
-                     color_continuous_scale=[(0, "#303030"), (1, "crimson")],
-                     range_color=[0, 1])
-    
+    fig = go.Figure(go.Scatter(x=x, y=y, opacity=0))
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='',
                    showticklabels=False),
         xaxis=dict(range=[-0.23, domain+0.23],
                    title='',
-                   ticktext=[param.replace("×", "<br>× ") 
-                             for param in parameters],
+                   ticktext=[param.replace("*", "*<br>") for param in parameters],
                    tickvals=[i for i in x]),
-        coloraxis_showscale=False,
+        hoverlabel=dict(bgcolor="lightgrey")
     )
+    fig.update_traces(hovertemplate="%{x}<extra></extra>")
     fig.add_annotation(
-        x=-0.23,
-        y=0,
-        text="Small <br>p-value",
+        x=-0.23, y=0,
+        text="Low <br>p-value",
         showarrow=False
     )
     fig.add_annotation(
-        x=domain+0.23,
-        y=0,
-        text="Great <br>p-value",
+        x=domain+0.23, y=0,
+        text="High <br>p-value",
         showarrow=False
     )
     fig["layout"].update(
@@ -944,8 +927,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "width": 830,
-                "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+                "title": "Parameters impact (increase "
                          "or decrese) on response and "
                          "their significance"
             }
@@ -959,9 +941,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     fig["layout"]["font"].update({"size": 12})
     #fig["layout"] = theme.create_themed_layout(fig["layout"])
-
-    """Customizing the hoverer"""
-    fig.update_traces(hovertemplate='%{x}')
 
     """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
@@ -981,10 +960,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
-        x0=-0.1,
-        y0=0,
-        x1=domain+0.1,
-        y1=0,
+        x0=-0.1, y0=0, x1=domain+0.1, y1=0,
         line=dict(
             color='#222A2A',
             width=0.75,
@@ -992,8 +968,29 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     return fig
 
-
-
+def make_range_slider(domid, values, col_name):
+    try:
+        values.apply(pd.to_numeric, errors="raise")
+    except ValueError:
+        raise ValueError(
+            f"Cannot calculate filter range for {col_name}. "
+            "Ensure that it is a numerical column."
+        )
+    return dcc.RangeSlider(
+        id=domid,
+        min=values.min(),
+        max=values.max(),
+        step=calculate_slider_step(
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
+        ),
+        value=[values.min(), values.max()],
+        marks={
+            str(values.min()): {"label": f"{values.min():.2f}"},
+            str(values.max()): {"label": f"{values.max():.2f}"},
+        }
+    )
 
 def theme_layout(theme, specific_layout):
     layout = {}
@@ -1005,6 +1002,3 @@ def theme_layout(theme, specific_layout):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
-
-
-
