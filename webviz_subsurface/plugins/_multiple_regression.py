@@ -22,6 +22,7 @@ from webviz_config.utils import calculate_slider_step
 from sklearn.preprocessing import PolynomialFeatures
 
 from .._datainput.fmu_input import load_parameters, load_csv
+from .._utils.ensemble_handling import filter_and_sum_responses
 
 class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
@@ -37,6 +38,9 @@ stored per realizations.
 **Note**: Non-numerical (string-based) input parameters and responses are removed.
 
 **Note**: The response csv file will be aggregated per realization.
+
+**Note**: Regression models break down when there are duplicate or highly correlated parameters,
+please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
 
 Arguments:
 
@@ -331,7 +335,18 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                   html.Div("Parameters:", style={"font-weight": "bold"}),
+                   html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+                   html.Abbr("\u24D8", title="""This lets your control what parameters to include in your model.
+There are two modes, inclusive and exclusive:
+- Exclusive mode:
+    Lets you remove spesific parameters from your model.
+
+- Inclusive mode:
+    Lets you pick a subset of parameters to investigate.
+    Parameters included here are not
+    guaranteed to be included in the output model.
+"""
+                    ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
@@ -381,7 +396,11 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Div("Max number of parameters"),
+                    html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""Lets you put a cap on the number of parameters to include in your model
+If interaction is active cap is the selected value + interaction level.
+This is to make sure the interaction terms have an intuitive interpretation.
+"""),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
                         options=[
@@ -394,8 +413,10 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Abbr("\u24D8", title="Hello, I am hover-enabled helpful information"),
+                   html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""This lets you force parameters into the model, 
+parameters here are guaranteed to appear in the model.
+"""),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
                         clearable=True,
@@ -431,8 +452,7 @@ The types of response_filters are:
                         ),
                         html.Div(
                             children=[
-                                wcc.Graph(id=self.uuid('p-values-plot')),
-                                dcc.Store(id=self.uuid("initial-parameter"))
+                                wcc.Graph(id=self.uuid('p-values-plot'))
                             ]
                         ),
                         html.Div(
@@ -527,7 +547,6 @@ The types of response_filters are:
                 Output(self.uuid("table"), "columns"),
                 Output(self.uuid("table_title"), "children"),
                 Output(self.uuid("p-values-plot"), "figure"),
-                Output(self.uuid("initial-parameter"), "data"),
                 Output(self.uuid("coefficient-plot"), "figure")
             ],
             [
@@ -570,7 +589,7 @@ The types of response_filters are:
                     "layout": {
                         "title": "<b>Please select parameters to be included in the model</b><br>"
                         }
-                    }, None,
+                    },
                     {
                     "layout": {
                         "title": "<b>Please select parameters to be included in the model</b><br>"
@@ -591,7 +610,7 @@ The types of response_filters are:
                             "title": "<b>Cannot calculate fit for given selection</b><br>"
                             "Select a different response or filter setting."
                             }
-                        }, None,
+                        },
                         {
                             "layout": {
                                 "title": "<b>Cannot calculate fit for given selection</b><br>"
@@ -620,7 +639,7 @@ The types of response_filters are:
                     f"Multiple regression with {response} as response",
 
                     # Generate p-values plot
-                    make_p_values_plot(p_sorted, self.plotly_theme), p_sorted.index[-1],
+                    make_p_values_plot(p_sorted, self.plotly_theme),
 
                     # Generate coefficient plot
                     make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme)
@@ -655,51 +674,6 @@ The types of response_filters are:
         ]
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum"
-):
-    """Cached wrapper for _filter_and_sum_responses"""
-    return _filter_and_sum_responses(
-        dframe=dframe,
-        ensemble=ensemble,
-        response=response,
-        filteroptions=filteroptions,
-        aggregation=aggregation,
-    )
-
-def _filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum",
-):
-    """Filter response dataframe for the given ensemble
-    and optional filter columns. Returns dataframe grouped and
-    aggregated per realization."""
-    df = dframe.copy()
-    df = df.loc[df["ENSEMBLE"] == ensemble]
-    if filteroptions:
-        for opt in filteroptions:
-            if opt["type"] == "multi" or opt["type"] == "single":
-                if isinstance(opt["values"], list):
-                    df = df.loc[df[opt["name"]].isin(opt["values"])]
-                else:
-                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
-                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
-                    else:
-                        df = df.loc[df[opt["name"]] == opt["values"]]
-
-            elif opt["type"] == "range":
-                df = df.loc[
-                    (df[opt["name"]] >= np.min(opt["values"]))
-                    & (df[opt["name"]] <= np.max(opt["values"]))
-                ]
-    if aggregation == "sum":
-        return df.groupby("REAL").sum().reset_index()[["REAL", response]]
-    if aggregation == "mean":
-        return df.groupby("REAL").mean().reset_index()[["REAL", response]]
-    raise ValueError(
-        f"Aggregation of response file specified as '{aggregation}'' is invalid. "
-    )
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def gen_model(
         df: pd.DataFrame,
         response: str,
@@ -709,7 +683,7 @@ def gen_model(
     ):
     """Wrapper for model selection algorithm."""
     if interaction_degree:
-        df = _gen_interaction_df(df, response, interaction_degree)
+        df = _gen_interaction_df(df, response, interaction_degree+1)
         model = forward_selected(
             data=df,
             response=response,
@@ -741,15 +715,39 @@ def _gen_interaction_df(
             newdf[name] = newdf.filter(items=name.split(" × ")).product(axis=1)
     return newdf
 
-
 def forward_selected(data: pd.DataFrame,
                      response: str, 
                      force_in: list=[], 
                      maxvars: int=5):
-    """ Forward model selection algorithm """
+    """ Forward model selection algorithm
+
+        Return statsmodels RegressionResults object
+        the algortihm is a modified standard forward selection algorithm. 
+        The selection criterion chosen is adjusted R squared.
+        See this link for more info on algorithm: 
+        https://en.wikipedia.org/wiki/Stepwise_regression
+     
+        step by step of the algorithm:
+        - initialize values
+        - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
+        - for every parameter not chosen yet.
+            1. If it is an interaction parameter add the base features to the model.
+            2. Create model matrix, fit model and calculate selection criterion, for each remaining parameter.
+            3. pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
+            4. finally fit a statsmodel regression and return the results. 
+     
+        Exit conditions:
+            - no parameters in remaining.
+            - the last model was not the best model
+            - hit cap on maximum parameters.
+            - we are about to add more parameters than there are observations.
+     """
+
+
+    # Initialize values for use in algorithm
+    # y is the response, SST is the total sum of squares
     y = data[response].to_numpy(dtype="float32")
     n = len(y)
-    onevec = np.ones((len(y), 1))
     y_mean = np.mean(y)
     SST = np.sum((y-y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in+[response]))
@@ -762,40 +760,37 @@ def forward_selected(data: pd.DataFrame,
                 current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
-            X = data.filter(items=current_model).to_numpy(dtype="float32")
-            p = X.shape[1]
-            if n - p - 1 < 1:
-                model_df = data.filter(items=selected)
-                model_df["Intercept"] = onevec
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error', category=RuntimeWarning)
-                    warnings.filterwarnings('ignore', category=UserWarning)
-                    try:
-                        model = sm.OLS(data[response], model_df).fit()
-                        if np.isnan(model.rsquared_adj):
-                            warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-                    except (Exception, RuntimeWarning) as e:
-                        print("error: ", e)
-                        return None
-                return model
-            X = np.append(X, onevec, axis=1)
+            X = data.filter(items=current_model).to_numpy(dtype="float64")
+            p = X.shape[1]  
+            X = np.append(X, np.ones((len(y), 1)), axis=1)
+
+            # Fit model 
             try: 
                 beta = la.inv(X.T @ X) @ X.T @ y
             except la.LinAlgError:
+                # This clause lets us skip singluar and other non-valid model matricies.
                 continue
+
+            if n - p - 1 < 1: 
+                
+                # The exit condition means adding this parameter would add more parameters than observations, 
+                # This causes infinite variance in the model so we return the current best model
+                
+                model_df = data.filter(items=selected)
+                model_df["Intercept"] =  np.ones((len(y), 1))
+                model_df["response"] = y
+                
+                return _model_warnings(model_df)
+
             f_vec = beta @ X.T
             SS_RES = np.sum((f_vec-y_mean) ** 2)
+            
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-         #   print("SWC:", scores_with_candidates[-1])
-        #print("HERE")
-        #print(scores_with_candidates)
         
-        #print("sortedarr", scores_with_candidates.sort(key=lambda x: x[0]))
+        # If the best parameter is interactive, add all base features
         scores_with_candidates.sort(key=lambda x: x[0])
-        #print("scores_with_candidates", scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        #print("best_cand",best_candidate, best_new_score)
         if current_score < best_new_score:
             if " × " in best_candidate:
                 for base_feature in best_candidate.split(" × "):
@@ -807,22 +802,28 @@ def forward_selected(data: pd.DataFrame,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-    model_df = data.filter(items=selected)
-    model_df["Intercept"] = onevec
     
+    # Finally fit a statsmodel from the selected parameters
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] =  np.ones((len(y), 1))
+    model_df["response"]=y
+    return _model_warnings(model_df)
+
+def _model_warnings(design_matrix: pd.DataFrame):
     with warnings.catch_warnings():
+        # Handle warnings so the graphics indicate explicity that the model failed for the current input. 
         warnings.filterwarnings('error', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=UserWarning)
         try:
-            model = sm.OLS(data[response], model_df).fit()
-            if np.isnan(model.rsquared_adj):
-                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
         except (Exception, RuntimeWarning) as e:
             print("error: ", e)
+            return None
     return model
 
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
+    ###### Code for other theme thingy is tagged out ######
     p_values = p_sorted.values
     parameters = p_sorted.index
     fig = go.Figure()
@@ -843,6 +844,10 @@ def make_p_values_plot(p_sorted, theme):
                 "title": f"P-values"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = f"P-values for the parameters. Value lower than 0.05 is statistically significant",
+        #plot_bgcolor = "#fff"
     )
     fig.add_shape(
         {
@@ -851,29 +856,41 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5}
         }
     )
+    fig.add_annotation(
+        x=len(p_values)-0.35,
+        y=0.05,
+        text="P-value<br>= 0.05",
+        showarrow=False
+    )
     fig["layout"]["font"].update({"size": 12})
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
+    ###### Code for other theme thingy is tagged out ######
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-    sgn = np.sign(coeff_vals)
 
-    steps = 2/(len(parameters)-1) if len(parameters) > 1 else 0
-    x = np.linspace(0, 2, len(parameters)) if len(parameters) > 1 else np.linspace(0, 2, 3)
+    centre = 1
+    domain = 2
+    steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
+    centre_dist = len(parameters)/(domain+1)
+    x = [1] if len(parameters)==1 else np.linspace(max(centre-centre_dist, 0), 
+                                              min(centre+centre_dist, domain), 
+                                              num=len(parameters))
     y = np.zeros(len(x))
 
     fig = go.Figure(go.Scatter(x=x, y=y, opacity=0))
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title='', 
-                   showticklabels=False), 
-        xaxis=dict(range=[-0.23, x[-1]+0.23], 
-                   title='', 
-                   ticktext=[param.replace("×", "<br>× ") for param in parameters],
-                   tickvals=[steps*i for i in range(len(parameters))] if len(parameters)>1 else [1]),
+        yaxis=dict(range=[-0.15, 0.15], title='',
+                   showticklabels=False),
+        xaxis=dict(range=[-0.23, domain+0.23],
+                   title='',
+                   ticktext=[param.replace("*", "*<br>") for param in parameters],
+                   tickvals=[i for i in x]),
         hoverlabel=dict(bgcolor="lightgrey")
     )
     fig.update_traces(hovertemplate="%{x}<extra></extra>")
@@ -883,7 +900,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         showarrow=False
     )
     fig.add_annotation(
-        x=x[-1]+0.23, y=0,
+        x=domain+0.23, y=0,
         text="High <br>p-value",
         showarrow=False
     )
@@ -898,28 +915,35 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                          "their significance"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+        #        "or decrese) on response and "
+        #        "their significance",
+        #plot_bgcolor = "#fff"
     )
     fig["layout"]["font"].update({"size": 12})
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
     """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
-        xx = x[i] if len(parameters) > 1 else x[1]
+    for i, sign in enumerate(np.sign(coeff_vals)):
+        x_coordinate = x[i]
         fig.add_shape(
             type="path",
-            path=f" M {xx-0.025} 0 " \
-                 f" L {xx-0.025} {s*0.06} " \
-                 f" L {xx-0.07} {s*0.06} " \
-                 f" L {xx} {s*0.08} " \
-                 f" L {xx+0.07} {s*0.06} " \
-                 f" L {xx+0.025} {s*0.06} " \
-                 f" L {xx+0.025} 0 ",
+            path=f" M {x_coordinate-0.025} 0 " \
+                 f" L {x_coordinate-0.025} {sign*0.06} " \
+                 f" L {x_coordinate-0.07} {sign*0.06} " \
+                 f" L {x_coordinate} {sign*0.08} " \
+                 f" L {x_coordinate+0.07} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} 0 ",
             fillcolor="crimson" if p_values[i] < 0.05 else "#606060",
             line_width=0
         )
     """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
-        x0=-0.1, y0=0, x1=x[-1]+0.1, y1=0,
+        x0=-0.1, y0=0, x1=domain+0.1, y1=0,
         line=dict(
             color='#222A2A',
             width=0.75,
