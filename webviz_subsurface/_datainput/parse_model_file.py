@@ -28,30 +28,58 @@ def get_surface_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
     surface_files = [os.path.join(surface_dir, 'd_' + s + '.rxb') for s in surface_names]
+    for path in surface_files:
+        if not os.path.isfile(path):
+            raise FileNotFoundError
     return surface_files
 
 def get_error_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
     error_files = [os.path.join(surface_dir, 'de_' + s + '.rxb') for s in surface_names]
+    for path in error_files:
+        if not os.path.isfile(path):
+            return FileNotFoundError
     return error_files
 
 def get_surface_dr_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
     surface_dr_files = [os.path.join(surface_dir, 'dr_' + s + '.rxb') for s in surface_names]
+    for path in surface_dr_files:
+        if not os.path.isfile(path):
+            return None
+    
     return surface_dr_files
+
+def get_surface_dre_files(basedir):
+    surface_names = extract_surface_names(basedir)
+    surface_dir = os.path.join(basedir, 'output', 'surfaces')
+    surface_dre_files = [os.path.join(surface_dir, 'dre_' + s + '.rxb') for s in surface_names]
+    for path in surface_dre_files:
+        if not os.path.isfile(path):
+            return None
+    
+    return surface_dre_files
 
 def get_surface_dt_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
     surface_dt_files = [os.path.join(surface_dir, 'dt_' + s + '.rxb') for s in surface_names]
+    for path in surface_dt_files:
+        if not os.path.isfile(path):
+            return None
+    
     return surface_dt_files
 
 def get_surface_dte_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, 'output', 'surfaces')
     surface_dte_files = [os.path.join(surface_dir, 'dte_' + s + '.rxb') for s in surface_names]
+    for path in surface_dte_files:
+        if not os.path.isfile(path):
+            return None
+    
     return surface_dte_files
 
 def get_well_files(basedir):

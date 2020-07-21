@@ -60,3 +60,52 @@ def make_surface_layer(
             }
         ],
     }
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def new_make_surface_layer(
+    surface,
+    name="surface",
+    min_val=None,
+    max_val=None,
+    color="viridis", #["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"],
+    shader_type="hillshading",
+    unit="",
+):
+    """Make LayeredMap surface image base layer"""
+    zvalues = get_surface_arr(surface)[2]
+    bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
+    min_val = min_val if min_val is not None else np.nanmin(zvalues)
+    max_val = max_val if max_val is not None else np.nanmax(zvalues)
+
+    return {
+        "name": name,
+        "checked": True,
+        "baseLayer": True,
+        "data": [
+            {
+                "type": "image",
+                "url": array_to_png(zvalues.copy()),
+                "colorScale": {
+                    "colors":["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"],
+                    "prefixZeroAlpha": False,
+                    "scaleType": "linear",
+                    "cutPointMin": min_val,
+                    "cutPointMax": max_val, # f"{max_val:.2f}" if max_val is not None else None
+
+                }, # get_colormap(color),
+                "bounds": bounds,
+                "shader": {
+                    "type": shader_type,
+                    "shadows": False,
+                    "shadowIterations": 2,
+                    "elevationScale": 0.6,
+                    "pixelScale": 300,
+                    "setBlackToAlpha": True,
+                },
+                "minvalue": min_val.round(2),
+                "maxvalue": max_val.round(2),
+                "unit": str(unit),
+                "imageScale": 8.0,
+            }
+        ],
+    }
