@@ -841,6 +841,11 @@ def make_p_values_plot(p_sorted, theme):
             "marker":{"color": ["crimson" if val < 0.05 else "#606060" for val in p_values]}
         }
     )
+    fig.update_traces(
+        hovertemplate=["<b>Parameter:</b> " + str(param) + '<br>' + 
+                       "<b>P-value:</b> " + str(format(pval, '.4g')) + 
+                       '<extra></extra>' for param, pval in zip(parameters, p_values)]
+    )
     fig["layout"].update(
         theme_layout(
             theme,
@@ -903,7 +908,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     """Customizing the hoverer"""
     fig.update_traces(
-        hovertemplate=[str(param) + '<br>' + str(format(pval, '.4g')) + '<extra></extra>' for param, pval in zip(parameters, p_values)]
+        hovertemplate=["<b>Parameter:</b> " + str(param) + '<br>' + 
+                       "<b>P-value:</b> " + str(format(pval, '.4g')) + 
+                       '<extra></extra>' for param, pval in zip(parameters, p_values)]
     )
     fig["layout"].update(
         theme_layout(
