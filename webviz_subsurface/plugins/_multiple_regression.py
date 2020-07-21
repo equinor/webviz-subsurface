@@ -1,5 +1,5 @@
 import warnings
-import time
+
 from pathlib import Path
 from itertools import combinations
 import numpy as np
@@ -551,7 +551,24 @@ parameters here are guaranteed to appear in the model.
                 Output(self.uuid("table"), "columns"),
                 Output(self.uuid("table_title"), "children"),
                 Output(self.uuid("p-values-plot"), "figure"),
-                Output(self.uuid("coefficient-plot"), "figure")
+                Output(self.uuid("coefficient-plot
+def forward_catch_warning(data, selected, onevec, response):
+    """ Function to catch warnings and return model.
+        Used twice in 'forward_selected' function. """
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] = onevec
+    with warnings.catch_warnings():
+        warnings.filterwarnings('error', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', category=UserWarning)
+        try:
+            model = sm.OLS(data[response], model_df).fit()
+            if np.isnan(model.rsquared_adj):
+                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+        except (Exception, RuntimeWarning) as e:
+            print("error: ", e)
+            return None
+    return model
+"), "figure")
             ],
             [
                 Input(self.uuid("submit-btn"), "n_clicks")
@@ -603,7 +620,7 @@ parameters here are guaranteed to appear in the model.
                 
             else:
                 # Get results from the model
-                result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
+                result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
                 if not result:
                         return(
                     [{"e": ""}],
@@ -718,25 +735,6 @@ def _gen_interaction_df(
         if name.split(" × "):
             newdf[name] = newdf.filter(items=name.split(" × ")).product(axis=1)
     return newdf
-
-def forward_catch_warning(data, selected, onevec, response):
-    """ Function to catch warnings and return model.
-        Used twice in 'forward_selected' function. """
-    model_df = data.filter(items=selected)
-    model_df["Intercept"] = onevec
-    with warnings.catch_warnings():
-        warnings.filterwarnings('error', category=RuntimeWarning)
-        warnings.filterwarnings('ignore', category=UserWarning)
-        try:
-            model = sm.OLS(data[response], model_df).fit()
-            if np.isnan(model.rsquared_adj):
-                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-        except (Exception, RuntimeWarning) as e:
-            print("error: ", e)
-            return None
-    return model
-
-
 
 def forward_selected(data: pd.DataFrame,
                      response: str, 
