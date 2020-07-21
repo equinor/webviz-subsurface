@@ -295,18 +295,6 @@ The types of response_filters are:
         """Layout to select e.g. iteration and response"""
         return [
             html.Div(
-                style={
-                    "display": "grid"
-                },
-                children=[
-                    html.Button(
-                        id=self.uuid("submit-btn"), 
-                        children="Press to update model",
-                        style={"marginBottom": "12px"}
-                    )
-                ]
-            ),
-            html.Div(
                 [
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
@@ -434,6 +422,18 @@ parameters here are guaranteed to appear in the model.
                     )
                 ]
             ),
+            html.Div(
+                style={
+                    "display": "grid"
+                },
+                children=[
+                    html.Button(
+                        id=self.uuid("submit-btn"), 
+                        children="Press to update model",
+                        style={"marginBottom": "12px"}
+                    )
+                ]
+            ),
         ]
 
     @property
@@ -449,14 +449,6 @@ parameters here are guaranteed to appear in the model.
                 html.Div(
                     style={"flex": 3},
                     children=[
-                        DataTable(
-                            id=self.uuid("table"),
-                            sort_action="native",
-                            filter_action="native",
-                            page_action="native",
-                            page_size=10,
-                            style_cell={"fontSize": ".80em"}
-                        ),
                         html.Div(
                             children=[
                                 wcc.Graph(id=self.uuid('p-values-plot'))
@@ -466,6 +458,14 @@ parameters here are guaranteed to appear in the model.
                             children=[
                                 wcc.Graph(id=self.uuid('coefficient-plot')),
                             ]
+                        ),
+                        DataTable(
+                            id=self.uuid("table"),
+                            sort_action="native",
+                            filter_action="native",
+                            page_action="native",
+                            page_size=10,
+                            style_cell={"fontSize": ".80em"}
                         ),
                     ],
                 ),
@@ -539,6 +539,7 @@ parameters here are guaranteed to appear in the model.
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
+            print("here now")
             fi_lst = list(df)
             options=[{"label": fi, "value": fi} for fi in fi_lst]
             for param in force_in:
