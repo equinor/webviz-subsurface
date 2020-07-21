@@ -336,12 +336,12 @@ The types of response_filters are:
             html.Div(
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Span("\u24D8", id=self.uuid("tooltip-parameters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                   html.Span("\u24D8", id=self.uuid("tooltip-parameters"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
                    dbc.Tooltip(
                     """This lets you control what parameters to include in your model.
 There are two modes, inclusive and exclusive:
     - Exclusive mode:
-    Lets you remove spesific parameters from your model.
+    Lets you remove specific parameters from beeing considered in the model selection.
     
     - Inclusive mode: Lets you pick a subset of parameters to investigate.
     Parameters included here are notguaranteed to be included in the output model.""",
@@ -381,8 +381,8 @@ There are two modes, inclusive and exclusive:
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-filters"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                    dbc.Tooltip("""This slider lets your select how deep your interaction is:
+                    html.Span("\u24D8", id=self.uuid("tooltip-filters"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip("""Lets you select how deep your interaction is:
     – Off allows only for the parameters in their original state.
     – 2 levels allows for the product of 2 original parameters.
     – 3 levels allows for the product of 3 original parameters.
@@ -408,7 +408,7 @@ This feature allows you to investigate possible feedback effects.""",
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
+                    html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
                     dbc.Tooltip("""Lets you put a cap on the number of parameters to include in your model.
 If interaction is active, cap is the selected value + interaction level.
 This is to make sure the interaction terms have an intuitive interpretation.""",
@@ -428,9 +428,8 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
             html.Div(
                 [
                     html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-fi"), style={"cursor": "pointer", "fontSize": ".80em", "color": "grey"}),
-                    dbc.Tooltip("""This lets you force parameters into the model, 
-parameters here are guaranteed to appear in the model.""",
+                    html.Span("\u24D8", id=self.uuid("tooltip-fi"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip("""Lets you force parameters into the model. If interaction is active, the cap is the selected value + the interaction level.""",
                     target=self.uuid("tooltip-fi"), placement="auto",
                     style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
                     ),
@@ -438,7 +437,7 @@ parameters here are guaranteed to appear in the model.""",
                         id=self.uuid("force-in"),
                         clearable=True,
                         multi=True,
-                        placeholder='Describe force-in here',
+                        placeholder='Select parameters to force in',
                         value=[],
 
                     )
