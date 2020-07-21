@@ -893,7 +893,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='',
                    showticklabels=False),
-        xaxis=dict(range=[-0.23, domain+0.23],
+        xaxis=dict(range=[-0.23, domain+0.26],
                    title='',
                    ticktext=[param.replace("*", "*<br>") for param in parameters],
                    tickvals=[i for i in x]),
@@ -957,7 +957,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         line_width=0.75,
     )
     fig.add_annotation(
-        x=domain+0.23, y=0,
+        x=domain+0.26, y=0,
         text="Increasing<br>p-value",
         showarrow=False
     )
