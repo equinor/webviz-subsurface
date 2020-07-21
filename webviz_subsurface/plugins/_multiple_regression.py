@@ -389,7 +389,7 @@ This feature allows you to investigate possible feedback effects.
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
-                        max=2, 
+                        max=2,
                         step=None,
                         marks={
                             0: "Off",
@@ -897,18 +897,13 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                    title='',
                    ticktext=[param.replace("*", "*<br>") for param in parameters],
                    tickvals=[i for i in x]),
+        #coloraxis_showscale=False,
+        #autosize=True,
         hoverlabel=dict(bgcolor="lightgrey")
     )
-    fig.update_traces(hovertemplate="%{x}<extra></extra>")
-    fig.add_annotation(
-        x=-0.23, y=0,
-        text="Low <br>p-value",
-        showarrow=False
-    )
-    fig.add_annotation(
-        x=domain+0.23, y=0,
-        text="High <br>p-value",
-        showarrow=False
+    """Customizing the hoverer"""
+    fig.update_traces(
+        hovertemplate=[str(param) + '<br>' + str(format(pval, '.4g')) + '<extra></extra>' for param, pval in zip(parameters, p_values)]
     )
     fig["layout"].update(
         theme_layout(
@@ -954,6 +949,17 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             color='#222A2A',
             width=0.75,
         ),
+    )
+    fig.add_shape(
+        type="path",
+        path=f" M {domain+0.12} 0 L {domain+0.1} -0.005 L {domain+0.1} 0.005 Z",
+        line_color="#222A2A",
+        line_width=0.75,
+    )
+    fig.add_annotation(
+        x=domain+0.23, y=0,
+        text="Increasing<br>p-value",
+        showarrow=False
     )
     return fig
 
