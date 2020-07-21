@@ -395,7 +395,6 @@ This feature allows you to investigate possible feedback effects.""",
             html.Div(
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
                     html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
                     dbc.Tooltip("""Lets you put a cap on the number of parameters to include in your model.
 If interaction is active, cap is the selected value + interaction level.
@@ -427,6 +426,7 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                         multi=True,
                         placeholder='Select parameters to force in',
                         value=[],
+                        style={"marginBottom": "20px"}
 
                     )
                 ]
@@ -438,8 +438,7 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                 children=[
                     html.Button(
                         id=self.uuid("submit-btn"), 
-                        children="Press to update model",
-                        style={"marginBottom": "12px"}
+                        children="Press to update model"
                     )
                 ]
             ),
@@ -451,13 +450,13 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div( 
-                    id=self.uuid("page-title"),
-                    style={"textAlign": "left", "display": "grid", "fontSize": "1.3em", "flex": "0 0 100%"}
-                ),
                 html.Div(
                     style={"flex": 3},
                     children=[
+                        html.Div( 
+                        id=self.uuid("page-title"),
+                        style={"textAlign": "left", "display": "grid", "fontSize": "1.3em"}
+                ),
                         html.Div(
                             children=[
                                 wcc.Graph(id=self.uuid('p-values-plot'))
@@ -521,9 +520,9 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
         )
         def update_placeholder(exc_inc):
             if exc_inc == 'exc':
-                return "Choose parameters to exclude..."
+                return "Select parameters to exclude..."
             elif exc_inc == 'inc':
-                return "Choose parameters for subset..."
+                return "Select parameters for subset..."
 
         """Set callbacks for interaction between exclude/include param and force-in"""
         @app.callback(
