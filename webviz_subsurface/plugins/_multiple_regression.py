@@ -163,6 +163,7 @@ The types of response_filters are:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        #self.theme = app.webviz_settings["theme"]
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -761,6 +762,22 @@ def _gen_interaction_df(
             newdf[name] = newdf.filter(items=name.split("*")).product(axis=1)
     return newdf
 
+def forward_catch_warning(data, selected, onevec, response):
+    """ Function to catch warnings and return model.
+        Used twice in 'forward_selected' function. """
+    model_df = data.filter(items=selected)
+    model_df["Intercept"] = onevec
+    with warnings.catch_warnings():
+        warnings.filterwarnings('error', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', category=UserWarning)
+        try:
+            model = sm.OLS(data[response], model_df).fit()
+            if np.isnan(model.rsquared_adj):
+                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
+        except (Exception, RuntimeWarning) as e:
+            print("error: ", e)
+            return None
+    return model
 
 def forward_selected(data: pd.DataFrame,
                      response: str, 
@@ -785,19 +802,7 @@ def forward_selected(data: pd.DataFrame,
             X = data.filter(items=current_model).to_numpy(dtype="float32")
             p = X.shape[1]
             if n - p - 1 < 1:
-                model_df = data.filter(items=selected)
-                model_df["Intercept"] = onevec
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error', category=RuntimeWarning)
-                    warnings.filterwarnings('ignore', category=UserWarning)
-                    try:
-                        model = sm.OLS(data[response], model_df).fit()
-                        if np.isnan(model.rsquared_adj):
-                            warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-                    except (Exception, RuntimeWarning) as e:
-                        print("error: ", e)
-                        return None
-                return model
+                return forward_catch_warning(data, selected, onevec, response)
             X = np.append(X, onevec, axis=1)
             try: 
                 beta = la.inv(X.T @ X) @ X.T @ y
@@ -807,15 +812,9 @@ def forward_selected(data: pd.DataFrame,
             SS_RES = np.sum((f_vec-y_mean) ** 2)
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-         #   print("SWC:", scores_with_candidates[-1])
-        #print("HERE")
-        #print(scores_with_candidates)
         
-        #print("sortedarr", scores_with_candidates.sort(key=lambda x: x[0]))
         scores_with_candidates.sort(key=lambda x: x[0])
-        #print("scores_with_candidates", scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        #print("best_cand",best_candidate, best_new_score)
         if current_score < best_new_score:
             if "*" in best_candidate:
                 for base_feature in best_candidate.split("*"):
@@ -827,22 +826,10 @@ def forward_selected(data: pd.DataFrame,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-    model_df = data.filter(items=selected)
-    model_df["Intercept"] = onevec
-    
-    with warnings.catch_warnings():
-        warnings.filterwarnings('error', category=RuntimeWarning)
-        warnings.filterwarnings('ignore', category=UserWarning)
-        try:
-            model = sm.OLS(data[response], model_df).fit()
-            if np.isnan(model.rsquared_adj):
-                warnings.warn("adjusted R_2 is not a number",category=RuntimeWarning)
-        except (Exception, RuntimeWarning) as e:
-            print("error: ", e)
-    return model
+    return forward_catch_warning(data, selected, onevec, response)
 
 
-
+###### Code for other theme thingy is tagged out ######
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
     p_values = p_sorted.values
@@ -865,6 +852,10 @@ def make_p_values_plot(p_sorted, theme):
                 "title": f"P-values for the parameters. Value lower than 0.05 is statistically significant"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = f"P-values for the parameters. Value lower than 0.05 is statistically significant",
+        #plot_bgcolor = "#fff"
     )
     fig.add_shape(
         {
@@ -873,35 +864,48 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5}
         }
     )
-    fig["layout"]["font"].update({"size": 12})
+    fig.add_annotation(
+        x=len(p_values)-0.35,
+        y=0.05,
+        text="P-value<br>of 0.05",
+        showarrow=False
+    )
+    fig["layout"]["font"].update({"size": 12}) #".95em" rather than 12?
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
+###### Code for other theme thingy is tagged out ######
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-    sgn = np.sign(coeff_vals)
     
+    centre = 1
     domain = 2
     steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
     num_arrows = len(parameters)
-    x = np.linspace(0, domain, num_arrows) if num_arrows>1 else np.linspace(0, domain, 3)
+    centre_dist = num_arrows/(domain+1)
+    x = [1] if num_arrows==1 else np.linspace(max(centre-centre_dist, 0), 
+                                              min(centre+centre_dist, domain), 
+                                              num=num_arrows)
     y = np.zeros(len(x))
+    hover_color = p_values < 0.05
 
-    fig = px.scatter(x=x, y=y, opacity=0)
+    fig = px.scatter(x=x, y=y, opacity=0, color=hover_color.astype(np.int),
+                     color_continuous_scale=[(0, "#303030"), (1, "crimson")],
+                     range_color=[0, 1])
     
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title='', 
-                   showticklabels=False), 
-        xaxis=dict(range=[-0.23, x[-1]+0.23], 
-                   title='', 
-                   ticktext=parameters, 
-                   tickvals=[steps*i for i in range(num_arrows)] if num_arrows>1 else [1]),
-        hoverlabel=dict(
-            bgcolor="white", 
-        )
+        yaxis=dict(range=[-0.15, 0.15], title='',
+                   showticklabels=False),
+        xaxis=dict(range=[-0.23, domain+0.23],
+                   title='',
+                   ticktext=[param.replace("*", "*<br>") 
+                             for param in parameters],
+                   tickvals=[i for i in x]),
+        coloraxis_showscale=False,
     )
     fig.add_annotation(
         x=-0.23,
@@ -910,7 +914,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         showarrow=False
     )
     fig.add_annotation(
-        x=x[-1]+0.23,
+        x=domain+0.23,
         y=0,
         text="Great <br>p-value",
         showarrow=False
@@ -921,29 +925,37 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
+                "width": 830,
                 "title": "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
                          "or decrese) on response and "
                          "their significance"
             }
         )
+        #barmode = "relative",
+        #height = 500,
+        #title = "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
+        #        "or decrese) on response and "
+        #        "their significance",
+        #plot_bgcolor = "#fff"
     )
     fig["layout"]["font"].update({"size": 12})
+    #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
     """Costumizing the hoverer"""
     fig.update_traces(hovertemplate='%{x}') #x is ticktext
 
     """Adding arrows to figure"""
-    for i, s in enumerate(sgn):
-        xx = x[i] if num_arrows>1 else x[1]
+    for i, sign in enumerate(np.sign(coeff_vals)):
+        x_coordinate = x[i]
         fig.add_shape(
             type="path",
-            path=f" M {xx-0.025} 0 " \
-                 f" L {xx-0.025} {s*0.06} " \
-                 f" L {xx-0.07} {s*0.06} " \
-                 f" L {xx} {s*0.08} " \
-                 f" L {xx+0.07} {s*0.06} " \
-                 f" L {xx+0.025} {s*0.06} " \
-                 f" L {xx+0.025} 0 ",
+            path=f" M {x_coordinate-0.025} 0 " \
+                 f" L {x_coordinate-0.025} {sign*0.06} " \
+                 f" L {x_coordinate-0.07} {sign*0.06} " \
+                 f" L {x_coordinate} {sign*0.08} " \
+                 f" L {x_coordinate+0.07} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} {sign*0.06} " \
+                 f" L {x_coordinate+0.025} 0 ",
             line_color="#222A2A",
             fillcolor="crimson" if p_values[i] < 0.05 else "#606060",
             line_width=0.6  
@@ -954,7 +966,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         type="line",
         x0=-0.1,
         y0=0,
-        x1=x[-1]+0.1,
+        x1=domain+0.1,
         y1=0,
         line=dict(
             color='#222A2A',
