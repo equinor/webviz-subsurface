@@ -7,7 +7,6 @@ import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -841,7 +840,7 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
+                "title": f"P-values"
             }
         )
     )
@@ -867,25 +866,24 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     x = np.linspace(0, 2, len(parameters)) if len(parameters) > 1 else np.linspace(0, 2, 3)
     y = np.zeros(len(x))
 
-    fig = go.Figure(go.Scatter(x=x, y=y, opacity=0, customdata=p_values, hovertemplate="%{customdata}", showlegend=False))
-    
+    fig = go.Figure(go.Scatter(x=x, y=y, opacity=0))
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='', 
                    showticklabels=False), 
         xaxis=dict(range=[-0.23, x[-1]+0.23], 
                    title='', 
                    ticktext=[param.replace("×", "<br>× ") for param in parameters],
-                   tickvals=[steps*i for i in range(len(parameters))] if len(parameters)>1 else [1])
+                   tickvals=[steps*i for i in range(len(parameters))] if len(parameters)>1 else [1]),
+        hoverlabel=dict(bgcolor="lightgrey")
     )
+    fig.update_traces(hovertemplate="%{x}<extra></extra>")
     fig.add_annotation(
-        x=-0.23,
-        y=0,
+        x=-0.23, y=0,
         text="Low <br>p-value",
         showarrow=False
     )
     fig.add_annotation(
-        x=x[-1]+0.23,
-        y=0,
+        x=x[-1]+0.23, y=0,
         text="High <br>p-value",
         showarrow=False
     )
@@ -921,10 +919,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
-        x0=-0.1,
-        y0=0,
-        x1=x[-1]+0.1,
-        y1=0,
+        x0=-0.1, y0=0, x1=x[-1]+0.1, y1=0,
         line=dict(
             color='#222A2A',
             width=0.75,
