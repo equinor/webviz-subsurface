@@ -379,7 +379,13 @@ There are two modes, inclusive and exclusive:
             html.Div(
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
-                    html.Div("Interaction"),
+                    html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Abbr("\u24D8", title="""This slider lets your select how deep your interaction is.
+Off allows only for the parameters in their original state.
+2 levels allows for the product of 2 original parameters.
+3 levels allows for the product of 3 original parameters.
+This feature allows you to investigate possible feedback effects.
+                    """),
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
