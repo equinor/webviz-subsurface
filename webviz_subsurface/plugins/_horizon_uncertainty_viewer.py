@@ -81,52 +81,6 @@ The cross section is defined by a polyline interactively edited in the map view.
     def ids(self, element):
         return f"{element}-id-{self.uid}"
 
-    @property
-    def map_layout(self):
-        return html.Div(
-            children=[
-                wcc.FlexBox(
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                    children="Select surface",
-                                ),
-                                dcc.Dropdown(
-                                    id=self.ids("map-dropdown"),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.surfacenames, self.surfacefiles_de
-                                        )
-                                    ],
-                                    value=self.surfacefiles_de[0],
-                                    clearable=False,
-                                ),
-                            ]
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={
-                        "marginTop": "20px",
-                        "height": "800px",
-                        "zIndex": -9999,
-                    },
-                    children=LayeredMap(
-                        id=self.ids("map-view"),
-                        draw_toolbar_polyline=True,
-                        hillShading=True,
-                        layers=[],
-                    ),
-                )
-            ]
-        ),
-
 
     @property
     def plotly_layout(self):
@@ -404,12 +358,27 @@ The cross section is defined by a polyline interactively edited in the map view.
                         "height": "800px",
                         "zIndex": -9999,
                     },
-                    children=LayeredMap(
-                        id=self.ids("map-view"),
-                        draw_toolbar_polyline=True,
-                        hillShading=True,
-                        layers=[],
-                    )
+                    children=[
+                        webviz_subsurface_components.NewLayeredMap(
+                            id=self.ids("map-view"),
+                            layers=[],
+                            syncedMaps=[],
+                            minZoom=-5,
+                            drawTools={
+                                "drawMarker": False,
+                                "drawPolygon": False,
+                                "drawPolyline": True,
+                                "position": "topright"
+                            },
+                            switch={
+                                "value": self.state['switch'],
+                                "label": "Hillshading",
+                            },
+                            colorBar={
+                                "position": "bottomright"
+                            },
+                        ),
+                    ],
                 )
             ]
         )
