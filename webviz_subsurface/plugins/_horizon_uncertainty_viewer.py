@@ -415,7 +415,16 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     @property
     def table_view_layout(self):
-        return html.Div('This is table view')
+        df = self.xsec.get_intersection_dataframe(self.planned_wells[0])
+        return html.Div(
+            children=[
+                dash_table.DataTable(
+                    id=self.ids('uncertainty-table'),
+                    columns=[{"name": i, "id": i} for i in df.columns],
+                    data=df.to_dict('records')
+                )
+            ]
+        )
 
     @property
     def layout(self):
@@ -463,9 +472,9 @@ The cross section is defined by a polyline interactively edited in the map view.
                 else:
                     well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
+                #well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
                 #well_layer = make_well_circle_layer(well, radius = 100, name = well.wellname, color = well_color)
-                well_layers.append(well_layer)
+                #well_layers.append(well_layer)
 
             s_layer = make_surface_layer(
                 surface,

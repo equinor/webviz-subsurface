@@ -256,6 +256,25 @@ class HuvXsection:
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    def get_intersection_dataframe(self, well):
+        data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
+        for sfc_path in self.surface_attributes:
+            surface_picks = well.get_surface_picks(self.surface_attributes[sfc_path]['surface'])
+            if surface_picks is not None:
+                df = surface_picks.dataframe
+                depth_uncertainty = self.surface_attributes[sfc_path]['error_surface'].get_value_from_xy(point=(df['X_UTME'], df['Y_UTMN']))
+                data['Surface name'].append(self.surface_attributes[sfc_path]['name'])
+                data['TVD'].append(df['Z_TVDSS'][0])
+                print(type(df['Z_TVDSS']))
+                data['Depth uncertainty'].append(depth_uncertainty)
+                print(type(depth_uncertainty))
+                data['Direction'].append(df['DIRECTION'])
+        df = pd.DataFrame(data=data)
+        return df.round(2)
+
+
+
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
         well_df = well.dataframe
         well.create_relative_hlen()
@@ -331,7 +350,6 @@ class HuvXsection:
                 "name": f"Zone: {zonevals[-1]}",
                 })
         return zoneplot
-
 
 def stratigraphic_sort(elem):
     return elem[1]
