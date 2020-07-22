@@ -83,5 +83,5 @@ __all__ = [
     "DataTablefromFit",
     "MultipleRegressionSara",
     "MultipleRegression",
-    "CorrelationInteractions"
+    "CorrelationInteractions",
 ]

@@ -111,12 +111,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            self.parameterdf = read_csv(self.parameter_csv)
-            self.responsedf = read_csv(self.response_csv)
+            #self.parameterdf = read_csv(self.parameter_csv)
+            #self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            #self.parameterdf = pd.read_parquet(self.parameter_csv)
-            #self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_parquet(self.parameter_csv)
+            self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -863,15 +863,17 @@ def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
     p_values = p_sorted.values
     parameters = p_sorted.index
+    default_color = theme["layout"]["colorway"][0]
     fig = go.Figure()
     fig.add_trace(
         {
             "x": [param.replace(" × ", "<br>× ") for param in parameters],
             "y": p_values,
             "type": "bar",
-            "marker":{"color": ["crimson" if val < 0.05 else "#606060" for val in p_values]}
+            "marker":{"color": [default_color if val < 0.05 else "#606060" for val in p_values]}
         }
     )
+
     fig.update_traces(
         hovertemplate=["<b>Parameter:</b> " + str(param) + '<br>' + 
                        "<b>P-value:</b> " + str(format(pval, '.4g')) + 
@@ -918,16 +920,22 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                                               min(centre+centre_dist, domain), 
                                               num=len(parameters))
     y = np.zeros(len(x))
+    default_color = theme["layout"]["colorway"][0]
 
-    fig = go.Figure(go.Scatter(x=x, y=y, opacity=0))
+    fig = go.Figure(go.Scatter(
+        x=x, y=y, opacity=0, 
+        marker=dict(color=(p_values < 0.05).astype(np.int), 
+                    colorscale=[(0, "#606060"), (1, default_color)], 
+                    cmin=0, cmax=1)
+    ))
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title='',
                    showticklabels=False),
         xaxis=dict(range=[-0.23, domain+0.26],
                    title='',
-                   ticktext=[param.replace("*", "*<br>") for param in parameters],
+                   ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
                    tickvals=[i for i in x]),
-        hoverlabel=dict(bgcolor="lightgrey")
+        #hoverlabel=dict(bgcolor="lightgrey")
     )
     """Customizing the hoverer"""
     fig.update_traces(
@@ -961,7 +969,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                  f" L {x_coordinate+0.07} {sign*0.06} " \
                  f" L {x_coordinate+0.025} {sign*0.06} " \
                  f" L {x_coordinate+0.025} 0 ",
-            fillcolor="crimson" if p_values[i] < 0.05 else "#606060",
+            fillcolor=default_color if p_values[i] < 0.05 else "#606060",
             line_width=0
         )
     """Adding zero-line along y-axis"""
