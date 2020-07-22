@@ -947,8 +947,8 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters. Values lower than 0.05 is "
-                "statistically significant",
+                "title": f"P-values for the parameters. Value lower than 0.05 indicates "
+                "statistical significance",
             },
         )
     )
