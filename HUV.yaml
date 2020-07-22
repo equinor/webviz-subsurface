@@ -5,5 +5,4 @@ pages:
   - title: HorizonUncertaintyViewer
     content:
       - HorizonUncertaintyViewer:
-          basedir:
-            - ..\Datasets\simple_model
+          basedir: ..\Datasets\simple_model

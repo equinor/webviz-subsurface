@@ -111,7 +111,7 @@ class HuvXsection:
             return layout
         else:
             y_min, y_max = self.sfc_line_max_min_depth(surfacepaths)
-            x_min, x_max = get_range_from_well(self.well_attributes[wellpath]["well_df"],y_min)
+            x_min, x_max = get_range_from_well(self.well_attributes[wellpath]["well"].dataframe, y_min)
             y_range = np.abs(y_max - y_min)
             x_range = np.abs(x_max - x_min)
             if y_range/x_range > 1:

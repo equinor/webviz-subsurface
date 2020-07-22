@@ -44,25 +44,25 @@ The cross section is defined by a polyline interactively edited in the map view.
     def __init__(
             self,
             app,
-            basedir: List[Path],
-            zunit="depth (m)",
+            basedir: Path = None,
+            planned_wells_dir: Path = None,
+            zunit = "depth (m)",
             zonemin: int = 1,
-            planned_wells_dir = None,
     ):
 
         super().__init__()
         self.zunit = zunit
-        self.surfacefiles = parse_model_file.get_surface_files(basedir[0])
-        self.surfacefiles_de = parse_model_file.get_error_files(basedir[0])
-        self.surfacefiles_dr = parse_model_file.get_surface_dr_files(basedir[0])
-        self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir[0])
-        self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir[0])
-        self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir[0])
+        self.surfacefiles = parse_model_file.get_surface_files(basedir)
+        self.surfacefiles_de = parse_model_file.get_error_files(basedir)
+        self.surfacefiles_dr = parse_model_file.get_surface_dr_files(basedir)
+        self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
+        self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
+        self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
         self.surface_attributes = {}
-        self.target_points = parse_model_file.get_target_points(basedir[0])
-        self.well_points = parse_model_file.get_well_points(basedir[0])
-        self.surfacenames = parse_model_file.extract_surface_names(basedir[0])
-        self.topofzone = parse_model_file.extract_topofzone_names(basedir[0])
+        self.target_points = parse_model_file.get_target_points(basedir)
+        self.well_points = parse_model_file.get_well_points(basedir)
+        self.surfacenames = parse_model_file.extract_surface_names(basedir)
+        self.topofzone = parse_model_file.extract_topofzone_names(basedir)
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i,
                                                         "name": self.surfacenames[i], "topofzone": self.topofzone[i],
@@ -73,12 +73,12 @@ The cross section is defined by a polyline interactively edited in the map view.
                                                         "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
                                                         "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
                                                         }
-        self.wellfiles = parse_model_file.get_well_files(basedir[0])
+        self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        self.zonation_data = parse_model_file.get_zonation_data(basedir[0])
-        self.conditional_data = parse_model_file.get_conditional_data(basedir[0])
+        self.zonation_data = parse_model_file.get_zonation_data(basedir)
+        self.conditional_data = parse_model_file.get_conditional_data(basedir)
         self.zonemin = zonemin
-        self.zonelog_name = parse_model_file.get_zonelog_name(basedir[0])  # name of zonelog in OP txt files
+        self.zonelog_name = parse_model_file.get_zonelog_name(basedir)  # name of zonelog in OP txt files
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -112,33 +112,6 @@ The cross section is defined by a polyline interactively edited in the map view.
     def cross_section_layout(self):
         return html.Div(
             children=[
-                wcc.FlexBox(
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                    children="Select well",
-                                ),
-                                dcc.Dropdown(
-                                    id=self.ids("well-dropdown"),
-                                    options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.wellnames, self.wellfiles
-                                        )
-                                    ],
-                                    value=self.wellfiles[0],
-                                    clearable=False,
-                                    disabled=False,
-                                ),
-                            ]
-                        ),
-                    ],
-                ),
                 html.Div(
                     children=[
                         dbc.Button("Graph Settings", id=self.ids("button-open-graph-settings"), color='light', className='mr-1'),
@@ -238,6 +211,33 @@ The cross section is defined by a polyline interactively edited in the map view.
                             centered=True,
                             backdrop=False,
                             fade=False,
+                        ),
+                    ],
+                ),
+                wcc.FlexBox(
+                    children=[
+                        html.Div(
+                            children=[
+                                html.Label(
+                                    style={
+                                        "font-weight": "bold",
+                                        "textAlign": "center",
+                                    },
+                                    children="Select well",
+                                ),
+                                dcc.Dropdown(
+                                    id=self.ids("well-dropdown"),
+                                    options=[
+                                        {"label": name, "value": path}
+                                        for name, path in zip(
+                                            self.wellnames, self.wellfiles
+                                        )
+                                    ],
+                                    value=self.wellfiles[0],
+                                    clearable=False,
+                                    disabled=False,
+                                ),
+                            ]
                         ),
                     ],
                 ),
