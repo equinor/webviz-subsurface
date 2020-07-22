@@ -324,9 +324,11 @@ The types of response_filters are:
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
                    html.Span(
-                       "\u003f\u20dd", 
-                       id=self.uuid("tooltip-parameters"), 
-                       style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                        dbc.Badge(
+                            " ? ", 
+                            style={"font-weight": "bold", "fontSize": ".70em", "backgroundColor": "#505050", "color": "white", 
+                                    "borderRadius": "3px", "white-space": "pre-wrap"}), 
+                            id=self.uuid("tooltip-parameters")),
                    dbc.Tooltip(
                         "This lets you control what parameters to include in your model. \n" +
                         "There are two modes, exclusive and subset: \n" +
@@ -373,9 +375,11 @@ The types of response_filters are:
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
                     html.Span(
-                        "\u003f\u20dd", 
-                        id=self.uuid("tooltip-filters"), 
-                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                        dbc.Badge(
+                            " ? ", 
+                            style={"font-weight": "bold", "fontSize": ".70em", "backgroundColor": "#505050", "color": "white", 
+                                    "borderRadius": "3px", "white-space": "pre-wrap"}), 
+                            id=self.uuid("tooltip-filters")),
                     dbc.Tooltip(
                         "Lets you select how deep your interaction is: \n" +
                         "– Off allows only for the parameters in their original state. \n" +
@@ -403,9 +407,11 @@ The types of response_filters are:
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
                     html.Span(
-                        "\u003f\u20dd", 
-                        id=self.uuid("tooltip-maxparams"), 
-                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                        dbc.Badge(
+                            " ? ", 
+                            style={"font-weight": "bold", "fontSize": ".70em", "backgroundColor": "#505050", "color": "white", 
+                                    "borderRadius": "3px", "white-space": "pre-wrap"}), 
+                            id=self.uuid("tooltip-maxparams")),
                     dbc.Tooltip(
                         "Lets you put a cap on the number of parameters to include in your model. \n" +
                         "If interaction is active, cap is the selected value + interaction level. \n" +
@@ -427,9 +433,11 @@ The types of response_filters are:
                 [
                     html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
                     html.Span(
-                        "\u003f\u20dd", 
-                        id=self.uuid("tooltip-fi"), 
-                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                       dbc.Badge(
+                            " ? ", 
+                            style={"font-weight": "bold", "fontSize": ".70em", "backgroundColor": "#505050", "color": "white", 
+                                    "borderRadius": "3px", "white-space": "pre-wrap"}), 
+                            id=self.uuid("tooltip-fi")),
                     dbc.Tooltip(
                         "Lets you force parameters into the model. If interaction is active, \n" +
                         "the cap is the selected value + the interaction level.",
