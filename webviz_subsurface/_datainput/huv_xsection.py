@@ -20,12 +20,7 @@ class HuvXsection:
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
         self.fig = None
-        for sfc_path in self.surface_attributes:
-            self.surface_attributes[sfc_path]['surface'] =\
-                xtgeo.surface_from_file(sfc_path, fformat='irap_binary')
-            self.surface_attributes[sfc_path]['error_surface'] =\
-                xtgeo.surface_from_file(self.surface_attributes[sfc_path]['error_path'], fformat='irap_binary')
-    
+
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def set_well_attributes(self, wellpaths):
         for wellpath in wellpaths:
@@ -221,7 +216,7 @@ class HuvXsection:
             for sfc_path in common_paths:
                 data += [
                     {
-                        'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
+                        'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
                         'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
                         "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                         'hoverinfo':'skip'
@@ -306,7 +301,7 @@ class HuvXsection:
             for i in range(len(color_list)):
                 if well.get_logrecord_codename(zonelogname,i) == "dummy":
                     color_list[i] = "rgb(211,211,211)"
-                if well.get_logrecord_codename(zonelogname,i) == self.surface_attributes[sfc_path]["topofzone"]:
+                elif well.get_logrecord_codename(zonelogname,i) == self.surface_attributes[sfc_path]["topofzone"]:
                     self.surface_attributes[sfc_path]["zone_number"] = i
                     color_list[i] = self.surface_attributes[sfc_path]["color"]
         well_TVD = well_df["Z_TVDSS"].values.copy()
@@ -324,7 +319,7 @@ class HuvXsection:
             except IndexError:
                 pass
         for i in range(1,len(zonevals)):
-            if (np.isnan(zonevals[i]) == False) and (np.isnan(zonevals[i-1])==True):
+            if (not np.isnan(zonevals[i])) and (np.isnan(zonevals[i-1])):
                 end = i-1
                 color = "rgb(211,211,211)"
                 zoneplot.append({
@@ -334,7 +329,7 @@ class HuvXsection:
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
-            if (np.isnan(zonevals[i]) == True) and (np.isnan(zonevals[i-1])==False):
+            elif (np.isnan(zonevals[i])) and (not np.isnan(zonevals[i-1])):
                 end = i-1
                 color = color_list[int(zonevals[i-1])]
                 zoneplot.append({
@@ -344,7 +339,7 @@ class HuvXsection:
                     "name": f"Zone: {zonevals[i-1]}",
                     })
                 start = end+1
-            if (zonevals[i] != zonevals[i-1]) and (np.isnan(zonevals[i])==False) and (np.isnan(zonevals[i-1])==False):
+            elif (zonevals[i] != zonevals[i-1]) and (not np.isnan(zonevals[i])) and (not np.isnan(zonevals[i-1])):
                 end = i-1
                 color = color_list[int(zonevals[i-1])]
                 zoneplot.append({
@@ -363,7 +358,7 @@ class HuvXsection:
                 "line": {"width": 4, "color": color},
                 "name": f"Zone: {zonevals[-2]}",
                 })
-        if np.isnan(zonevals[-1]):
+        else:
             color = "rgb(211,211,211)"
             zoneplot.append({
                 "mode": "markers",

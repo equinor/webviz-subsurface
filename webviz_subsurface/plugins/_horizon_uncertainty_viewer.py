@@ -16,17 +16,17 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
+import webviz_subsurface_components
+#from webviz_subsurface_components import LayeredMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
 from .._datainput.well import load_well
-from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface
+from .._datainput.surface import make_surface_layer, get_surface_fence, load_surface, new_make_surface_layer
 from .._datainput.huv_xsection import HuvXsection
 from .._datainput.huv_table import FilterTable
 from .._datainput import parse_model_file
-
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -53,6 +53,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.zunit = zunit
         self.surfacefiles = parse_model_file.get_surface_files(basedir[0])
         self.surfacefiles_de = parse_model_file.get_error_files(basedir[0])
+        self.surfacefiles_dr = parse_model_file.get_surface_dr_files(basedir[0])
+        self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir[0])
+        self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir[0])
+        self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir[0])
         self.surface_attributes = {}
         self.target_points = parse_model_file.get_target_points(basedir[0])
         self.well_points = parse_model_file.get_well_points(basedir[0])
@@ -60,8 +64,14 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.topofzone = parse_model_file.extract_topofzone_names(basedir[0])
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i,
-                                                          "name": self.surfacenames[i], "topofzone": self.topofzone[i],
-                                                          "error_path": Path(self.surfacefiles_de[i])}
+                                                        "name": self.surfacenames[i], "topofzone": self.topofzone[i],
+                                                        "surface": xtgeo.surface_from_file(Path(surfacefile), fformat='irap_binary'),
+                                                        "error_surface": xtgeo.surface_from_file(Path(self.surfacefiles_de[i]), fformat='irap_binary'),
+                                                        "surface_dt": xtgeo.surface_from_file(Path(self.surfacefiles_dt[i]), fformat="irap_binary") if self.surfacefiles_dt is not None else None,
+                                                        "surface_dr": xtgeo.surface_from_file(Path(self.surfacefiles_dr[i]), fformat="irap_binary") if self.surfacefiles_dr is not None else None,
+                                                        "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
+                                                        "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
+                                                        }
         self.wellfiles = parse_model_file.get_well_files(basedir[0])
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.zonation_data = parse_model_file.get_zonation_data(basedir[0])
@@ -74,6 +84,12 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
         self.dataf = FilterTable(self.target_points,self.well_points)
         self.xsec.set_well_attributes(self.wellfiles)
+
+        # Store current layers
+        self.LAYERS_STATE = []
+        self.state = {
+            'switch': True
+        }
 
     def ids(self, element):
         return f"{element}-id-{self.uid}"
@@ -98,10 +114,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                                     options=[
                                         {"label": name, "value": path}
                                         for name, path in zip(
-                                            self.surfacenames, self.surfacefiles_de
+                                            self.surfacenames, self.surfacefiles
                                         )
                                     ],
-                                    value=self.surfacefiles_de[0],
+                                    value=self.surfacefiles[0],
                                     clearable=False,
                                 ),
                             ]
@@ -114,14 +130,26 @@ The cross section is defined by a polyline interactively edited in the map view.
                         "height": "800px",
                         "zIndex": -9999,
                     },
-                    children=LayeredMap(
+                    children=[webviz_subsurface_components.NewLayeredMap(
                         id=self.ids("map-view"),
-                        draw_toolbar_polyline=True,
-                        hillShading=True,
                         layers=[],
+                        syncedMaps=[],
+                        minZoom=-5,
+                        drawTools={"drawMarker": False,
+                            "drawPolygon": False,
+                            "drawPolyline": True,
+                            "position": "topright"},
+                        switch = {
+                            "value": self.state['switch'],
+                            "label": "Hillshading",
+                        },
+                        colorBar={
+                            "position": "bottomright"
+                        },
                     ),
-                )
-            ]
+                ],
+                ),
+            ],
         ),
 
 
@@ -377,39 +405,74 @@ The cross section is defined by a polyline interactively edited in the map view.
         ])
 
     def set_callbacks(self, app):
+
         @app.callback(
             Output(self.ids("map-view"), "layers"),
             [
                 Input(self.ids("map-dropdown"), "value"),
+                Input(self.ids("map-view"), "switch")
             ],
         )
-        def _render_map(error_path):
-            surface = xtgeo.surface_from_file(error_path, fformat="irap_binary")
-            hillshading = True
+        def _render_map(sfc_path_value, switch):
+            if self.state['switch'] is not switch['value']:
+                new_layers = self.LAYERS_STATE.copy()
+                for layer in new_layers:
+                    if "shader" in layer["data"][0]:
+                        layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None #'soft-hillshading'
+                        layer["action"] = "update"
+                self.state['switch'] = switch['value']
+                return new_layers
+            surface_name = self.surface_attributes[Path(sfc_path_value)]["name"]
+            print(surface_name)
+            shader_type = 'hillshading' if switch['value'] is True else None #'soft-hillshading' 
             min_val = None
             max_val = None
-            color = "magma"
+            color = ["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]
             well_layers = []
             for wellpath in self.wellfiles:
-                if str(self.xsec.well_attributes[wellpath]["wellpath"]) == wellpath:
-                    well_color = "green"
-                else:
-                    well_color = "black"
                 well = xtgeo.Well(Path(wellpath))
-                well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
-                #well_layer = make_well_circle_layer(well, radius = 100, name = well.wellname, color = well_color)
-                well_layers.append(well_layer)
-
-            s_layer = make_surface_layer(
-                surface,
-                name="surface",
-                min_val=min_val,
-                max_val=max_val,
-                color=color,
-                hillshading=hillshading,
-            )
-            layers = [s_layer]
-            #layers.extend(well_layers)
+                well_layer_dict = make_well_circle_layer(well.wellname, self.conditional_data, surface_name, radius = 100, color = "rgb(0,255,0)")
+                if len(well_layer_dict["data"]) != 0:
+                    well_layer_dict["id"] = surface_name + ' ' + well.wellname + "-id"
+                    well_layer_dict["action"] = "add"
+                    well_layers.append(well_layer_dict)
+            surfaces = [self.surface_attributes[Path(sfc_path_value)]["surface_dt"],
+                        self.surface_attributes[Path(sfc_path_value)]["surface_dte"],
+                        self.surface_attributes[Path(sfc_path_value)]["surface_dr"],
+                        self.surface_attributes[Path(sfc_path_value)]["surface_dre"],
+                        self.surface_attributes[Path(sfc_path_value)]["error_surface"],
+                        self.surface_attributes[Path(sfc_path_value)]["surface"]]
+            d_list = ["Depth trend",
+                        "Depth trend uncertainty", 
+                        "Depth residual",
+                        "Depth residual uncertainty",
+                        "Depth uncertainty",
+                        "Depth"]
+            while None in surfaces:
+                idx = surfaces.index(None)
+                surfaces.pop(idx)
+                d_list.pop(idx)
+            layers = []
+            for i in range(len(surfaces)):
+                s_layer = new_make_surface_layer(
+                    surfaces[i],
+                    name= d_list[i],
+                    min_val=min_val,
+                    max_val=max_val,
+                    color=color,
+                    shader_type=shader_type,
+                )
+                s_layer["id"] = surface_name + ' ' + d_list[i] + "-id"
+                s_layer["action"] = "add"
+                layers.append(s_layer)
+            layers.extend(well_layers)
+            # Delete old layers    
+            old_layers = self.LAYERS_STATE
+            self.LAYERS_STATE = layers.copy()
+            if old_layers is not None and len(old_layers) > 0:
+                for layer in old_layers:
+                    layer["action"] = "delete"
+                layers.extend(old_layers)
             return layers
 
         @app.callback(
@@ -579,39 +642,29 @@ def get_color(i):
 
 
 
-def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):
-    """Make LayeredMap well polyline"""
-    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
-    positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": base_layer,
-        "data": [
-            {
-                "type": "polyline",
-                "color": color,
-                "positions": positions,
-                "tooltip": name,
-            }
-        ],
-    }
-
-def make_well_circle_layer(well, radius=1000, name="well", base_layer=False, color="red"):
+def make_well_circle_layer(well_name, cond_path, surface_name, radius=1000, color="red"):
     """Make LayeredMap circle"""
-    well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > 0]
-    coord = well.dataframe[["X_UTME", "Y_UTMN"]].values
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": base_layer,
-        "data": [
-            {
+    conditional_data = pd.read_csv(cond_path)
+    cond_df = conditional_data[conditional_data["Surface"] == surface_name]
+    well_cond_df = cond_df[cond_df["Well"] == well_name]
+    coord = well_cond_df[['x','y']].values
+    if len(coord) == 0:
+        return {
+            "name": well_name, 
+            "checked": True, 
+            "baseLayer": False, 
+            "data": [],
+        }
+    if len(coord) != 0:
+        return {
+            "name": well_name, 
+            "checked": True, 
+            "baseLayer": False, 
+            "data": [{
                 "type": "circle",
                 "center": coord[0],
                 "color": color,
                 "radius": radius,
-                "tooltip": name,
-            }
-        ],
-    }
+                "tooltip": well_name,
+            }],
+        }
