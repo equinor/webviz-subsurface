@@ -56,7 +56,7 @@ from ._multiple_regession_vegard import DataTablefromFit
 from ._multiple_regression_sara import MultipleRegressionSara
 from ._multiple_regression import MultipleRegression
 from ._correlation_interactions import CorrelationInteractions
-
+from ._response_parallel_coordinates import ResponseParallelCoordinates
 __all__ = [
     "ParameterDistribution",
     "ParameterCorrelation",
@@ -84,5 +84,6 @@ __all__ = [
     "DataTablefromFit",
     "MultipleRegressionSara",
     "MultipleRegression",
-    "CorrelationInteractions"
+    "CorrelationInteractions",
+    "ResponseParallelCoordinates"
 ]

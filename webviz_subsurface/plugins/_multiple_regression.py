@@ -70,7 +70,6 @@ The types of response_filters are:
 - `range`: Slider with range selection.
 ```
 """
-
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -112,12 +111,12 @@ The types of response_filters are:
                     '"ensembles and response_file".'
                 )
             #For csv files
-            #self.parameterdf = read_csv(self.parameter_csv)
-            #self.responsedf = read_csv(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
             #For parquet files
-            self.parameterdf = pd.read_parquet(self.parameter_csv)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            #self.parameterdf = pd.read_parquet(self.parameter_csv)
+            #self.responsedf = pd.read_parquet(self.response_csv)
 
         elif ensembles and response_file:
             self.ens_paths = {
@@ -631,7 +630,7 @@ The types of response_filters are:
                 
             else:
                 # Get results from the model
-                result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
+                result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
                 if not result:
                     return(
                         [{"e": ""}],
@@ -739,7 +738,6 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
-    degree += 1 
     for i in range(1, degree+1):
         name_combinations += [" × ".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
@@ -789,7 +787,7 @@ def forward_selected(data: pd.DataFrame,
         scores_with_candidates = []
         for candidate in remaining:
             if " × " in candidate:
-                current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
+                current_model = selected.copy() + [candidate] + list(set(candidate.split(" × ")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
             X = data.filter(items=current_model).to_numpy(dtype="float64")

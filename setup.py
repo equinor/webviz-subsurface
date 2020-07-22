@@ -51,7 +51,8 @@ setup(
             "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
             "MultipleRegressionSara = webviz_subsurface.plugins:MultipleRegressionSara",
             "MultipleRegression = webviz_subsurface.plugins:MultipleRegression",
-            "CorrelationInteractions = webviz_subsurface.plugins:CorrelationInteractions"  
+            "CorrelationInteractions = webviz_subsurface.plugins:CorrelationInteractions",
+            "ResponseParallelCoordinates = webviz_subsurface.plugins:ResponseParallelCoordinates"  
         ]
     },
     install_requires=[
