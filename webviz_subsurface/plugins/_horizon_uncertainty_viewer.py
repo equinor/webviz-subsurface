@@ -74,9 +74,10 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
         self.dataf = FilterTable(self.target_points, self.well_points)
-        self.xsec.set_well(self.wellfiles[0])
         self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
         self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
+        self.xsec.set_well_attributes(self.wellfiles)
+
     def ids(self, element):
         return f"{element}-id-{self.uid}"
 
@@ -342,6 +343,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             ),
         html.Div(id=self.ids('well-points-table-container')),
         ])
+    
+    @property
+    def depth_error_layout(self):
+        return html.Div([
+            html.Div(id=self.ids('error_table_container')),
+        ])
 
     @property
     def left_flexbox_layout(self):
@@ -415,7 +422,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 
     @property
     def table_view_layout(self):
-        df = self.xsec.get_intersection_dataframe(self.planned_wells[0])
+        df = self.xsec.get_intersection_dataframe(self.wellfiles[0])
         return html.Div(
             children=[
                 dash_table.DataTable(
@@ -442,6 +449,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ]
             ),
             dcc.Tab(
+                label="TVD uncertainty",
+                children=[html.Div(children=self.depth_error_layout)]
+            ),
+            dcc.Tab(
                 label="Target Points",
                 children=[html.Div(children=self.target_points_layout)]
             ),
@@ -466,12 +477,12 @@ The cross section is defined by a polyline interactively edited in the map view.
             max_val = None
             color = "magma"
             well_layers = []
-            for wellpath in self.wellfiles:
-                if (self.xsec.well_attributes is not None) and (self.xsec.well_attributes['wellpath'] == wellpath):
-                    well_color = "green"
-                else:
-                    well_color = "black"
-                well = xtgeo.Well(Path(wellpath))
+            #for wellpath in self.wellfiles:
+            #    if str(self.xsec.well_attributes[wellpath]["wellpath"]) == wellpath:
+            #        well_color = "green"
+            #    else:
+            #        well_color = "black"
+            #    well = xtgeo.Well(Path(wellpath))
                 #well_layer = make_well_polyline_layer(well, well.wellname, color=well_color)
                 #well_layer = make_well_circle_layer(well, radius = 100, name = well.wellname, color = well_color)
                 #well_layers.append(well_layer)
@@ -502,17 +513,14 @@ The cross section is defined by a polyline interactively edited in the map view.
                 State(self.ids("well-settings-checklist"), "value"),  # well settings checkbox content
             ],
         )
-        def _render_xsection(n_clicks, n_clicks2, wellpath, coords, surface_paths, error_paths, well_settings):
+        def _render_xsection(n_clicks, n_clicks2, wellpath, polyline, surface_paths, error_paths, well_settings):
             ctx = dash.callback_context
             surface_paths = get_path(surface_paths)
             error_paths = get_path(error_paths)
-            if ctx.triggered[0]['prop_id'] == self.ids("well-dropdown") + '.value':
-                self.xsec.set_well(wellpath)
-            elif ctx.triggered[0]['prop_id'] == self.ids('hidden-div') + '.children' and coords is not None:
-                self.xsec.fence = get_fencespec(coords)
-                self.xsec.well_attributes = None
-            self.xsec.set_error_and_surface_lines(surface_paths, error_paths)
-            self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings)
+            if ctx.triggered[0]['prop_id'] == self.ids('hidden-div') + '.children' and polyline is not None:
+                wellpath = None
+            self.xsec.set_error_and_surface_lines(surface_paths, error_paths, wellpath, polyline)
+            self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings, wellpath)
             return self.xsec.fig
 
         @app.callback(
@@ -530,7 +538,7 @@ The cross section is defined by a polyline interactively edited in the map view.
              Input(self.ids('button-open-graph-settings'), 'disabled')],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
-        def _toggle_modal(n1, n2, disabled, is_open):
+        def _toggle_modal_graph_settings(n1, n2, disabled, is_open):
             if disabled:
                 return False
             elif n1 or n2:
@@ -620,19 +628,39 @@ The cross section is defined by a polyline interactively edited in the map view.
         def _render_hidden_div(coords):
             return coords
 
+        @app.callback(
+            Output(self.ids('uncertainty-table'), 'data'),
+            [Input(self.ids('well-dropdown'), 'value')]
+        )
+        def _render_uncertainty_table(wellpath):
+            df = self.xsec.get_intersection_dataframe(wellpath)
+            return df.to_dict('records')
 
-
+        @app.callback(
+            Output(self.ids("error_table_container"), "children"),
+            [
+                Input(self.ids("well-dropdown"), "value"),
+            ],
+        )
+        def _render_depth_error_tab(wellpath):
+            #self.xsec.set_well(wellpath)
+            df = self.xsec.get_error_table(wellpath)
+            return html.Div([
+                dash_table.DataTable(
+                    id = self.ids('error_table'),
+                    columns = [{'name': i, 'id': i} for i in df.columns],
+                    data = df.to_dict('records'),
+                )
+            ])
+        
     def add_webvizstore(self):
-        print('This function doesnt do anything, does it?')
         return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
-
 
 @webvizstore
 def get_path(paths) -> Path:
     for i, path in enumerate(paths):
         paths[i] = Path(path)
     return paths
-
 
 def get_color(i):
     """
@@ -661,22 +689,6 @@ def get_color(i):
     return colors[(i) % (n_colors)]
 
 
-def get_fencespec(coords):
-    """Create a XTGeo fence spec from polyline coordinates"""
-    poly = xtgeo.Polygons()
-    poly.dataframe = pd.DataFrame(
-        [
-            {
-                "X_UTME": c[1],
-                "Y_UTMN": c[0],
-                "Z_TVDSS": 0,
-                "POLY_ID": 1,
-                "NAME": "polyline",
-            }
-            for c in coords
-        ]
-    )
-    return poly.get_fence(asnumpy=True)
 
 
 def make_well_polyline_layer(well, name="well", zmin=0, base_layer=False, color="black"):

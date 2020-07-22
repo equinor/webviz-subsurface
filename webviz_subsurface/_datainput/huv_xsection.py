@@ -12,10 +12,8 @@ class HuvXsection:
             zonation_data = None,
             conditional_data = None,
             zonelogname = None,
-            fence = None,
-            well_attributes = None,
+            well_attributes = {},
     ):
-        self.fence = fence
         self.surface_attributes = surface_attributes
         self.zonation_data = zonation_data
         self.conditional_data = conditional_data
@@ -27,63 +25,106 @@ class HuvXsection:
                 xtgeo.surface_from_file(sfc_path, fformat='irap_binary')
             self.surface_attributes[sfc_path]['error_surface'] =\
                 xtgeo.surface_from_file(self.surface_attributes[sfc_path]['error_path'], fformat='irap_binary')
-
+    
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def set_well(self, wellpath):
-        if not wellpath is None:
+    def set_well_attributes(self, wellpaths):
+        for wellpath in wellpaths:
             well = xtgeo.Well(Path(wellpath))
-            self.fence = well.get_fence_polyline(nextend=100, sampling=5)
+            fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
             zonation_points = get_zone_RHLEN(well_df, well.wellname, self.zonation_data)
-            conditional_points = get_conditional_RHLEN(well_df, well.wellname, self.conditional_data)
+            conditional_points, cp_sfc_linked = get_conditional_points(well_df, well.wellname, self.conditional_data)
             zonelog = self.get_zonelog_data(well, self.zonelogname)
-            self.well_attributes = {
-                "wellpath": wellpath,
-                "well_df": well_df, "zonelog":zonelog,
+            self.well_attributes[wellpath] = {
+                "well": well,
+                "zonelog": zonelog,
                 "zonation_points": zonation_points,
-                "conditional_points": conditional_points
+                "conditional_points": conditional_points,
+                "fence": fence,
+                "cp_sfc_linked": cp_sfc_linked,
             }
 
-    def get_plotly_well_data(self, well_settings):
-        if self.well_attributes is None:
+    def get_plotly_well_data(self, well_settings, wellpath):
+        if wellpath is None:
             return []
         else:
             data = [{
-            "y": self.well_attributes["well_df"]["Z_TVDSS"],
-            "x": self.well_attributes["well_df"]["R_HLEN"],
+            "y": self.well_attributes[wellpath]['well'].dataframe["Z_TVDSS"],
+            "x": self.well_attributes[wellpath]['well'].dataframe["R_HLEN"],
             "name": "well",
             "line": {"width": 7, "color": "black"},
             "fillcolor": "black",
             }]
             if 'zonelog' in well_settings:
-                data += self.well_attributes["zonelog"]
+                data += self.well_attributes[wellpath]["zonelog"]
             if 'zonation_points' in well_settings:
                 data += [{"mode": "markers",
-                        "y": self.well_attributes["zonation_points"][1],
-                        "x": self.well_attributes["zonation_points"][0],
+                        "y": self.well_attributes[wellpath]["zonation_points"][1],
+                        "x": self.well_attributes[wellpath]["zonation_points"][0],
                         "name": "Zonation points",
                         "marker":{"size":5, "color":"rgb(153,50,204)"}
                 }]
             if 'conditional_points' in well_settings:
                 data += [{"mode": "markers",
-                        "y": self.well_attributes["conditional_points"][1],
-                        "x": self.well_attributes["conditional_points"][0],
+                        "y": self.well_attributes[wellpath]["conditional_points"][1],
+                        "x": self.well_attributes[wellpath]["conditional_points"][0],
                         "name": "Conditional points",
                         "marker":{"size":5, "color":"rgb(0,255,255)"}
                 }]
             return data
 
-    def set_error_and_surface_lines(self, surface_paths, error_paths):
+    def set_error_and_surface_lines(self, surface_paths, error_paths, wellpath, polyline):
+        if wellpath is None:
+            fence = get_fencespec(polyline)
+        else:
+            fence = self.well_attributes[wellpath]['fence']
         for sfc_path in surface_paths:
-            sfc_line = self.surface_attributes[sfc_path]['surface'].get_randomline(self.fence)
+            sfc_line = self.surface_attributes[sfc_path]['surface'].get_randomline(fence)
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
             if sfc_path in error_paths:
-                de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(self.fence)
+                de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(fence)
                 sfc_line = self.surface_attributes[sfc_path]['surface_line']
                 self.surface_attributes[sfc_path]["error_line"] = de_line
 
-    def get_plotly_layout(self, surfacepaths):
+    def get_error_table(self, wellpath):
+        '''Finds depth error where index in surface line and conditional point x value is closest. 
+        Difference in x value dependant on sampling rate of surface lines.
+        Args:
+            Wellpath: Filepath to wellfiles
+        Returns:
+            Dataframe used for table in depth error tab'''
+        data = {'Number': [],
+                'Well': [],
+                'Surface': [],
+                'TVD (m)': [],
+                'TVD uncertainty (m)': [],
+                'Conditional point RHLEN (m)': [],
+                'Surface line RHLEN (m)': [],
+                '|\u0394RHLEN| (m)': [],
+        }
+        for i, sfc_path in enumerate(self.surface_attributes):
+            for sfc_name in self.well_attributes[wellpath]['cp_sfc_linked']:
+                path_str = str(sfc_path)
+                if sfc_name == path_str[-len(sfc_name)-4:-4]:
+                    for j in range(len(self.well_attributes[wellpath]['cp_sfc_linked'][sfc_name])):
+                        cp_x = self.well_attributes[wellpath]['cp_sfc_linked'][sfc_name][j]
+                        sfc_line = np.asarray(self.surface_attributes[sfc_path]['surface_line'][:,0])
+                        idx_diff_min = (np.abs(sfc_line - cp_x)).argmin()
+                        error = self.surface_attributes[sfc_path]["error_line"][:,1][idx_diff_min]
+                        sfc_line_x = self.surface_attributes[sfc_path]['surface_line'][:,0][idx_diff_min]
+                        sfc_line_y = self.surface_attributes[sfc_path]['surface_line'][:,1][idx_diff_min]
+                        data['Number'].append(i+1)
+                        data['Well'].append(self.well_attributes[wellpath]['well'].wellname)
+                        data['Surface'].append(self.surface_attributes[sfc_path]['name'])
+                        data['TVD (m)'].append("%0.2f"%sfc_line_y)
+                        data['TVD uncertainty (m)'].append("%0.2f"%error)
+                        data['Conditional point RHLEN (m)'].append("%0.2f"%cp_x)
+                        data['Surface line RHLEN (m)'].append("%0.2f"%sfc_line_x)
+                        data['|\u0394RHLEN| (m)'].append("%0.2f"%abs(sfc_line_x-cp_x))
+        return pd.DataFrame(data)
+
+    def get_plotly_layout(self, surfacepaths, wellpath):
         layout = {}
         if len(surfacepaths) == 0:
             layout.update({
@@ -104,7 +145,8 @@ class HuvXsection:
                 "margin": {"t": 0, "l": 100},
             })
             return layout
-        elif self.well_attributes is None:
+            
+        elif wellpath is None:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
             layout.update({
                 "yaxis":{
@@ -126,7 +168,7 @@ class HuvXsection:
             return layout
         else:
             y_min, y_max = self.sfc_line_max_min_depth(surfacepaths)
-            x_min, x_max= get_range_from_well(self.well_attributes["well_df"],y_min)
+            x_min, x_max= get_range_from_well(self.well_attributes[wellpath]['well'].dataframe ,y_min)
             y_range = np.abs(y_max-y_min)
             x_range = np.abs(x_max - x_min)
             layout.update({
@@ -232,7 +274,6 @@ class HuvXsection:
           
             return data
 
-
     def sfc_line_max_min_depth(self, surfacepaths):
         maxvalues = np.array([
             np.max(self.surface_attributes[sfc_path]['surface_line'][:, 1])
@@ -247,28 +288,28 @@ class HuvXsection:
     def get_hover_text(self, sfc_path):
         return np.around(self.surface_attributes[sfc_path]['error_line'][:,1], 2)
 
-    def set_plotly_fig(self, surfacepaths, error_paths, well_settings):
-        layout = self.get_plotly_layout(surfacepaths)
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    def set_plotly_fig(self, surfacepaths, error_paths, well_settings, wellpath):
+        layout = self.get_plotly_layout(surfacepaths, wellpath)
         data = \
             self.get_plotly_sfc_data(surfacepaths) + \
             self.get_plotly_err_data(surfacepaths, error_paths) + \
-            self.get_plotly_well_data(well_settings)
+            self.get_plotly_well_data(well_settings, wellpath)
         self.fig = go.Figure(dict({'data':data,'layout':layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_intersection_dataframe(self, well):
+    def get_intersection_dataframe(self, wellpath):
         data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
         for sfc_path in self.surface_attributes:
-            surface_picks = well.get_surface_picks(self.surface_attributes[sfc_path]['surface'])
+            surface_picks = self.well_attributes[wellpath]['well'].get_surface_picks(self.surface_attributes[sfc_path]['surface'])
             if surface_picks is not None:
-                df = surface_picks.dataframe
-                depth_uncertainty = self.surface_attributes[sfc_path]['error_surface'].get_value_from_xy(point=(df['X_UTME'], df['Y_UTMN']))
-                data['Surface name'].append(self.surface_attributes[sfc_path]['name'])
-                data['TVD'].append(df['Z_TVDSS'][0])
-                print(type(df['Z_TVDSS']))
-                data['Depth uncertainty'].append(depth_uncertainty)
-                print(type(depth_uncertainty))
-                data['Direction'].append(df['DIRECTION'])
+                surface_picks_df = surface_picks.dataframe
+                for _, row in surface_picks_df.iterrows():
+                    depth_uncertainty = self.surface_attributes[sfc_path]['error_surface'].get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
+                    data['Surface name'].append(self.surface_attributes[sfc_path]['name'])
+                    data['TVD'].append(row['Z_TVDSS'])
+                    data['Depth uncertainty'].append(depth_uncertainty)
+                    data['Direction'].append(row['DIRECTION'])
         df = pd.DataFrame(data=data)
         return df.round(2)
 
@@ -370,19 +411,39 @@ def get_zone_RHLEN(well_df,wellname,zone_path):
     return np.array([zone_RHLEN, zone_df["TVD"]])
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_conditional_RHLEN(well_df, wellname, cond_path):
-    conditional_data = pd.read_csv(cond_path)
-    cond_df = conditional_data[conditional_data["Well"] == wellname]
-    cond_df_xval = cond_df["x"].values.copy()
-    cond_df_yval = cond_df["y"].values.copy()
-    cond_RHLEN = np.zeros(len(cond_df_xval))
-    for i in range(len(cond_df_xval)):
-        well_df["XLEN"] = well_df["X_UTME"]-cond_df_xval[i]
-        well_df["YLEN"] = well_df["Y_UTMN"]-cond_df_yval[i]
+def get_conditional_points(well_df, wellname, wellpoints_path):
+    ''' Finds conditional points where surface and well intersect.
+    Args: 
+        well_df: Well dataframe from XTgeo
+        wellname: Name of well
+        cond_path: Filepath to wellpoints.csv
+    Returns:
+        Numpy array of relative horizontal length (RHLEN) and vertical (TVD) length
+        Dictionary of conditional points linked to surfaces since surfaces might have more than one conditional point
+    '''
+    wellpoint_data = pd.read_csv(wellpoints_path)
+    wellpoint_df = wellpoint_data[wellpoint_data["Well"] == wellname]
+    wellpoint_df_xval = wellpoint_df["x"].values.copy()
+    wellpoint_df_yval = wellpoint_df["y"].values.copy()
+    wellpoint_df_surfaces = wellpoint_df["Surface"].values.copy()
+    cond_RHLEN = np.zeros(len(wellpoint_df_xval))
+    cond_sfc = {}
+    cond_sfc_int = {}
+
+    for i in range(len(wellpoint_df_xval)):
+        well_df["XLEN"] = well_df["X_UTME"]-wellpoint_df_xval[i]
+        well_df["YLEN"] = well_df["Y_UTMN"]-wellpoint_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN**2 + well_df.YLEN**2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
-    return np.array([cond_RHLEN, cond_df["TVD"]])
+
+        key = wellpoint_df_surfaces[i]
+        RHLEN = cond_RHLEN[i]
+        if key not in cond_sfc:
+            cond_sfc[key] = [RHLEN]
+        else:     
+            cond_sfc[key].append(RHLEN) 
+    return np.array([cond_RHLEN, wellpoint_df["TVD"]]), cond_sfc
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_range_from_well(well_df, ymin):
@@ -393,3 +454,21 @@ def get_range_from_well(well_df, ymin):
             x_well_min= well_df["R_HLEN"][i]
             break
     return x_well_min, x_well_max
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_fencespec(coords):
+    """Create a XTGeo fence spec from polyline coordinates"""
+    poly = xtgeo.Polygons()
+    poly.dataframe = pd.DataFrame(
+        [
+            {
+                "X_UTME": c[1],
+                "Y_UTMN": c[0],
+                "Z_TVDSS": 0,
+                "POLY_ID": 1,
+                "NAME": "polyline",
+            }
+            for c in coords
+        ]
+    )
+    return poly.get_fence(asnumpy=True)
