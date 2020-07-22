@@ -38,7 +38,7 @@ stored per realizations.
 
 **Note**: The response csv file will be aggregated per realization.
 
-**Note**: Regression models break down when there are duplicate or highly correlated 
+**Note**: Regression models break down when there are duplicate or highly correlated
 parameters. Please make sure to properly filter your inputs or the model will give
 answers that are misleading.
 
@@ -548,7 +548,7 @@ The types of response_filters are:
                 html.Div(style={'flex': 1}, children=self.control_layout)
             ]
         )
-        
+
     @property
     def model_callback_states(self):
         """List of states for multiple regression callback"""
@@ -617,7 +617,7 @@ The types of response_filters are:
                     force_in.remove(param)
 
             return options, force_in
-        
+
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
             [
@@ -676,7 +676,7 @@ The types of response_filters are:
                         }
                     },
                 )
-                
+
             else:
                 # Get results from the model
                 result = gen_model(df, response, force_in=force_in, max_vars=max_vars, 
@@ -699,7 +699,7 @@ The types of response_filters are:
                                 'Select a different response or filter setting.'
                             }
                         },
-                    )  
+                    )
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
                 table.drop(['Std.Err.', 'Coef.', 't', '[0.025','0.975]'], axis=1, inplace=True)
@@ -729,7 +729,7 @@ The types of response_filters are:
                     # Generate coefficient plot
                     make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme)
                 )
-            
+
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -762,9 +762,9 @@ The types of response_filters are:
 def gen_model(
         df: pd.DataFrame,
         response: str,
-        max_vars: int=9,
-        force_in: list=[],
-        interaction_degree: bool=False
+        max_vars: int = 9,
+        force_in: list = [],
+        interaction_degree: bool = False
     ):
     """Wrapper for model selection algorithm."""
     if interaction_degree:
@@ -781,14 +781,15 @@ def gen_model(
             response=response,
             force_in=force_in,
             maxvars=max_vars
-        ) 
+        )
     return model
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def _gen_interaction_df(
-    df: pd.DataFrame,
-    response: str,
-    degree: int=4):
+        df: pd.DataFrame,
+        response: str,
+        degree: int = 4
+    ):
     newdf = df.copy()
 
     name_combinations = []
@@ -801,9 +802,9 @@ def _gen_interaction_df(
     return newdf
 
 def forward_selected(data: pd.DataFrame,
-                     response: str, 
-                     force_in: list=[], 
-                     maxvars: int=5):
+                     response: str,
+                     force_in: list = [],
+                     maxvars: int = 5):
     """ Forward model selection algorithm
 
         Returns Statsmodels RegressionResults object.
@@ -811,7 +812,7 @@ def forward_selected(data: pd.DataFrame,
         The selection criterion chosen is adjusted R squared.
         See this link for more information about the algorithm: 
         https://en.wikipedia.org/wiki/Stepwise_regression
-     
+
         Steps of the algorithm:
         - Initialize values
         - While there are parameters left and the last model was the best model yet and the 
@@ -871,10 +872,10 @@ def forward_selected(data: pd.DataFrame,
 
             f_vec = beta @ X.T
             SS_RES = np.sum((f_vec-y_mean) ** 2)
-            
+
             R_2_adj = 1-(1 - (SS_RES / SST))*((n-1)/(n-p-1))
             scores_with_candidates.append((R_2_adj, candidate))
-        
+
         # If the best parameter is interactive, add all base features
         scores_with_candidates.sort(key=lambda x: x[0])
         best_new_score, best_candidate = scores_with_candidates.pop()
@@ -885,11 +886,11 @@ def forward_selected(data: pd.DataFrame,
                         remaining.remove(base_feature)
                     if base_feature not in selected:
                         selected.append(base_feature)
-            
+
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-    
+
     # Finally fit a statsmodel from the selected parameters
     model_df = data.filter(items=selected)
     model_df['Intercept'] =  np.ones((len(y), 1))
@@ -922,7 +923,6 @@ def make_p_values_plot(p_sorted, theme):
             'marker':{'color': [default_color if val < 0.05 else '#606060' for val in p_values]}
         }
     )
-
     fig.update_traces(
         hovertemplate=['<b>Parameter:</b> ' + str(param) + '<br>' + 
                        '<b>P-value:</b> ' + str(format(pval, '.4g')) + 
@@ -966,14 +966,14 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     domain = 2
     steps = domain/(len(parameters)-1) if len(parameters) > 1 else 0
     centre_dist = len(parameters)/(domain+1)
-    x = [1] if len(parameters)==1 else np.linspace(max(centre-centre_dist, 0), 
-                                              min(centre+centre_dist, domain), 
-                                              num=len(parameters))
+    x = [1] if len(parameters) == 1 else np.linspace(max(centre-centre_dist, 0),
+                                                     min(centre+centre_dist, domain),
+                                                     num=len(parameters))
     y = np.zeros(len(x))
     default_color = theme['layout']['colorway'][0]
 
     fig = go.Figure(go.Scatter(
-        x=x, y=y, opacity=0, 
+        x=x, y=y, opacity=0,
         marker=dict(color=(p_values < 0.05).astype(np.int), 
                     colorscale=[(0, '#606060'), (1, default_color)], 
                     cmin=0, cmax=1)
