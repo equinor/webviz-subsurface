@@ -156,7 +156,8 @@ class HuvXsection:
                     'x':self.surface_attributes[sfc_path]['surface_line'][:, 0],
                     'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                    'hoverinfo':'skip'
+                    'hoverinfo':'skip',
+                    'mode': 'lines'
                  },
                 {
                     'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
@@ -164,7 +165,8 @@ class HuvXsection:
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
                     'fill': 'tonexty',
                     'fillcolor': 'rgba(0,0,0,0.2)',
-                    'hoverinfo': 'skip'
+                    'hoverinfo': 'skip',
+                    'mode': 'lines'
                 }
             ]
         return data
@@ -200,6 +202,7 @@ class HuvXsection:
                     'fillcolor': self.surface_attributes[sfc_path]["color"],
                     'name': self.surface_attributes[sfc_path]['name'],
                     'text': self.get_hover_text(sfc_path),
+                    'mode': 'lines',
                     'hovertemplate': '<b>Depth:<b> %{y:.2f} <br>' + '<b>Depth error:<b> %{text}'
                 }
                 for sfc_path, _ in surface_tuples

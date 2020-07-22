@@ -47,7 +47,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             basedir: List[Path],
             zunit="depth (m)",
             zonemin: int = 1,
-            planned_wells_dir = None,
+            planned_wells_dir: Path = None,
     ):
 
         super().__init__()
@@ -84,8 +84,12 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.set_callbacks(app)
         self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
         self.dataf = FilterTable(self.target_points, self.well_points)
-        self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-        self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
+        if planned_wells_dir is not None:
+            self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
+            self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
+        else:
+            self.planned_well_files = None
+            self.planned_wells = None
         self.xsec.set_well_attributes(self.wellfiles)
 
         # Store current layers
@@ -457,7 +461,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 self.state['switch'] = switch['value']
                 return new_layers
             surface_name = self.surface_attributes[Path(sfc_path_value)]["name"]
-            print(surface_name)
             shader_type = 'hillshading' if switch['value'] is True else None #'soft-hillshading' 
             min_val = None
             max_val = None
