@@ -448,23 +448,20 @@ The cross section is defined by a polyline interactively edited in the map view.
                         "Depth residual uncertainty",
                         "Depth uncertainty",
                         "Depth"]
-            while None in surfaces:
-                idx = surfaces.index(None)
-                surfaces.pop(idx)
-                d_list.pop(idx)
             layers = []
-            for i in range(len(surfaces)):
-                s_layer = new_make_surface_layer(
-                    surfaces[i],
-                    name= d_list[i],
-                    min_val=min_val,
-                    max_val=max_val,
-                    color=color,
-                    shader_type=shader_type,
-                )
-                s_layer["id"] = surface_name + ' ' + d_list[i] + "-id"
-                s_layer["action"] = "add"
-                layers.append(s_layer)
+            for i, s in enumerate(surfaces):
+                if s is not None:
+                    s_layer = new_make_surface_layer(
+                        s,
+                        name= d_list[i],
+                        min_val=min_val,
+                        max_val=max_val,
+                        color=color,
+                        shader_type=shader_type,
+                    )
+                    s_layer["id"] = surface_name + ' ' + d_list[i] + "-id"
+                    s_layer["action"] = "add"
+                    layers.append(s_layer)
             layers.extend(well_layers)
             # Delete old layers    
             old_layers = self.LAYERS_STATE

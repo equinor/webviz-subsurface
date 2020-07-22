@@ -208,28 +208,6 @@ class HuvXsection:
             ]
         return data
 
-    def get_plotly_data(self, surface_paths, error_paths, well_settings):
-        if len(surface_paths) == 0:
-            return []
-        else:
-            for sfc_path in common_paths:
-                data += [
-                    {
-                        'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                        'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] - self.surface_attributes[sfc_path]['error_line'][:,1],
-                        "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                        'hoverinfo':'skip'
-                     },
-                    {
-                        'x': self.surface_attributes[sfc_path]['surface_line'][:, 0],
-                        'y': self.surface_attributes[sfc_path]['surface_line'][:, 1] + self.surface_attributes[sfc_path]['error_line'][:,1],
-                        "line": {"color": "rgba(0,0,0,1)", "width": 0.6, 'dash':'dash'},
-                        'fill': 'tonexty',
-                        'fillcolor': 'rgba(0,0,0,0.2)',
-                        'hoverinfo': 'skip'
-                    }
-                ]
-            return data
 
     def get_plotly_sfc_data(self, surface_paths):
         if len(surface_paths) == 0:
@@ -248,6 +226,7 @@ class HuvXsection:
                     "x": [first_surf_line[0, 0], first_surf_line[np.shape(first_surf_line)[0] - 1, 0]],
                     "y": [_max + 200, _max + 200],
                     "line": {"color": "rgba(0,0,0,1)", "width": 0.6},
+                    'mode': 'lines'
                 }
             ]
 
