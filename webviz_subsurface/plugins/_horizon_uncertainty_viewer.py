@@ -343,12 +343,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             ),
         html.Div(id=self.ids('well-points-table-container')),
         ])
-    
-    @property
-    def depth_error_layout(self):
-        return html.Div([
-            html.Div(id=self.ids('error_table_container')),
-        ])
 
     @property
     def left_flexbox_layout(self):
@@ -447,10 +441,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                         ]
                     )
                 ]
-            ),
-            dcc.Tab(
-                label="TVD uncertainty",
-                children=[html.Div(children=self.depth_error_layout)]
             ),
             dcc.Tab(
                 label="Target Points",
@@ -636,22 +626,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             df = self.xsec.get_intersection_dataframe(wellpath)
             return df.to_dict('records')
 
-        @app.callback(
-            Output(self.ids("error_table_container"), "children"),
-            [
-                Input(self.ids("well-dropdown"), "value"),
-            ],
-        )
-        def _render_depth_error_tab(wellpath):
-            #self.xsec.set_well(wellpath)
-            df = self.xsec.get_error_table(wellpath)
-            return html.Div([
-                dash_table.DataTable(
-                    id = self.ids('error_table'),
-                    columns = [{'name': i, 'id': i} for i in df.columns],
-                    data = df.to_dict('records'),
-                )
-            ])
         
     def add_webvizstore(self):
         return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]

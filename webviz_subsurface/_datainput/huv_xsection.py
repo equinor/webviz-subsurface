@@ -42,7 +42,6 @@ class HuvXsection:
                 "zonation_points": zonation_points,
                 "conditional_points": conditional_points,
                 "fence": fence,
-                "cp_sfc_linked": cp_sfc_linked,
             }
 
     def get_plotly_well_data(self, well_settings, wellpath):
@@ -86,43 +85,6 @@ class HuvXsection:
                 de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(fence)
                 sfc_line = self.surface_attributes[sfc_path]['surface_line']
                 self.surface_attributes[sfc_path]["error_line"] = de_line
-
-    def get_error_table(self, wellpath):
-        '''Finds depth error where index in surface line and conditional point x value is closest. 
-        Difference in x value dependant on sampling rate of surface lines.
-        Args:
-            Wellpath: Filepath to wellfiles
-        Returns:
-            Dataframe used for table in depth error tab'''
-        data = {'Number': [],
-                'Well': [],
-                'Surface': [],
-                'TVD (m)': [],
-                'TVD uncertainty (m)': [],
-                'Conditional point RHLEN (m)': [],
-                'Surface line RHLEN (m)': [],
-                '|\u0394RHLEN| (m)': [],
-        }
-        for i, sfc_path in enumerate(self.surface_attributes):
-            for sfc_name in self.well_attributes[wellpath]['cp_sfc_linked']:
-                path_str = str(sfc_path)
-                if sfc_name == path_str[-len(sfc_name)-4:-4]:
-                    for j in range(len(self.well_attributes[wellpath]['cp_sfc_linked'][sfc_name])):
-                        cp_x = self.well_attributes[wellpath]['cp_sfc_linked'][sfc_name][j]
-                        sfc_line = np.asarray(self.surface_attributes[sfc_path]['surface_line'][:,0])
-                        idx_diff_min = (np.abs(sfc_line - cp_x)).argmin()
-                        error = self.surface_attributes[sfc_path]["error_line"][:,1][idx_diff_min]
-                        sfc_line_x = self.surface_attributes[sfc_path]['surface_line'][:,0][idx_diff_min]
-                        sfc_line_y = self.surface_attributes[sfc_path]['surface_line'][:,1][idx_diff_min]
-                        data['Number'].append(i+1)
-                        data['Well'].append(self.well_attributes[wellpath]['well'].wellname)
-                        data['Surface'].append(self.surface_attributes[sfc_path]['name'])
-                        data['TVD (m)'].append("%0.2f"%sfc_line_y)
-                        data['TVD uncertainty (m)'].append("%0.2f"%error)
-                        data['Conditional point RHLEN (m)'].append("%0.2f"%cp_x)
-                        data['Surface line RHLEN (m)'].append("%0.2f"%sfc_line_x)
-                        data['|\u0394RHLEN| (m)'].append("%0.2f"%abs(sfc_line_x-cp_x))
-        return pd.DataFrame(data)
 
     def get_plotly_layout(self, surfacepaths, wellpath):
         layout = {}
