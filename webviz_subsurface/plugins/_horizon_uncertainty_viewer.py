@@ -130,24 +130,27 @@ The cross section is defined by a polyline interactively edited in the map view.
                         "height": "800px",
                         "zIndex": -9999,
                     },
-                    children=[webviz_subsurface_components.NewLayeredMap(
-                        id=self.ids("map-view"),
-                        layers=[],
-                        syncedMaps=[],
-                        minZoom=-5,
-                        drawTools={"drawMarker": False,
-                            "drawPolygon": False,
-                            "drawPolyline": True,
-                            "position": "topright"},
-                        switch = {
-                            "value": self.state['switch'],
-                            "label": "Hillshading",
-                        },
-                        colorBar={
-                            "position": "bottomright"
-                        },
-                    ),
-                ],
+                    children=[
+                        webviz_subsurface_components.NewLayeredMap(
+                            id=self.ids("map-view"),
+                            layers=[],
+                            syncedMaps=[],
+                            minZoom=-5,
+                            drawTools={
+                                "drawMarker": False,
+                                "drawPolygon": False,
+                                "drawPolyline": True,
+                                "position": "topright"
+                            },
+                            switch = {
+                                "value": self.state['switch'],
+                                "label": "Hillshading",
+                            },
+                            colorBar={
+                                "position": "bottomright"
+                            },
+                        ),
+                    ],
                 ),
             ],
         ),
