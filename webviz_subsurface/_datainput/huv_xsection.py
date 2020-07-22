@@ -34,7 +34,7 @@ class HuvXsection:
             well_df = well.dataframe
             well.create_relative_hlen()
             zonation_points = get_zone_RHLEN(well_df, well.wellname, self.zonation_data)
-            conditional_points, cp_sfc_linked = get_conditional_points(well_df, well.wellname, self.conditional_data)
+            conditional_points = get_conditional_points(well_df, well.wellname, self.conditional_data)
             zonelog = self.get_zonelog_data(well, self.zonelogname)
             self.well_attributes[wellpath] = {
                 "well": well,
@@ -389,8 +389,6 @@ def get_conditional_points(well_df, wellname, wellpoints_path):
     wellpoint_df_yval = wellpoint_df["y"].values.copy()
     wellpoint_df_surfaces = wellpoint_df["Surface"].values.copy()
     cond_RHLEN = np.zeros(len(wellpoint_df_xval))
-    cond_sfc = {}
-    cond_sfc_int = {}
 
     for i in range(len(wellpoint_df_xval)):
         well_df["XLEN"] = well_df["X_UTME"]-wellpoint_df_xval[i]
@@ -398,14 +396,7 @@ def get_conditional_points(well_df, wellname, wellpoints_path):
         well_df["SDIFF"] = np.sqrt(well_df.XLEN**2 + well_df.YLEN**2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
-
-        key = wellpoint_df_surfaces[i]
-        RHLEN = cond_RHLEN[i]
-        if key not in cond_sfc:
-            cond_sfc[key] = [RHLEN]
-        else:     
-            cond_sfc[key].append(RHLEN) 
-    return np.array([cond_RHLEN, wellpoint_df["TVD"]]), cond_sfc
+    return np.array([cond_RHLEN, wellpoint_df["TVD"]])
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_range_from_well(well_df, ymin):
