@@ -81,12 +81,8 @@ class HuvXsection:
                 self.surface_attributes[sfc_path]["error_line"] = de_line
 
     def get_plotly_layout(self, surfacepaths, wellpath):
-        layout = {}
-        if len(surfacepaths) == 0:
-            layout.update({
-                "yaxis":{
+        layout = {"yaxis":{
                     "title": "Depth (m)",
-                    "autorange": "reversed",
                     "titlefont": {"size": 20},
                     "tickfont": {"size":16},
                 },
@@ -98,52 +94,35 @@ class HuvXsection:
                 "plot_bgcolor": 'rgb(233,233,233)',
                 "showlegend": False,
                 "height": 810,
-                "margin": {"t": 0, "l": 100},
+                "margin": {"t": 0, "l": 100},}
+        if len(surfacepaths) == 0:
+            layout.update({
+                "yaxis":{
+                    "autorange": "reversed",
+                },
             })
             return layout
-            
         elif wellpath is None:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
             layout.update({
                 "yaxis":{
-                    "title": "Depth (m)",
-                    "range": [ymax, ymin],
-                    "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
-                },
-                "xaxis": {
-                    "title": "Distance from polyline (m)",
-                    "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
-                },
-                "plot_bgcolor": 'rgb(233,233,233)',
-                "showlegend": False,
-                "height": 810,
-                "margin": {"t": 0, "l": 100},
+                    "range": [ymax, ymin]},
             })
             return layout
         else:
             y_min, y_max = self.sfc_line_max_min_depth(surfacepaths)
-            x_min, x_max= get_range_from_well(self.well_attributes[wellpath]['well'].dataframe ,y_min)
-            y_range = np.abs(y_max-y_min)
+            x_min, x_max = get_range_from_well(self.well_attributes[wellpath]["well_df"],y_min)
+            y_range = np.abs(y_max - y_min)
             x_range = np.abs(x_max - x_min)
+            if y_range/x_range > 1:
+                x_range = y_range + 10
             layout.update({
                 "yaxis":{
-                    "title":"Depth (m)",
-                    "range" : [y_max+0.15*y_range,y_min-0.15*y_range],
-                    "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
+                    "range" : [y_max + 0.15*y_range, y_min - 0.15*y_range],
                 },
                 "xaxis":{
-                    "title": "Distance from polyline (m)",
-                    "range": [x_min-0.5*x_range, x_max+0.5*x_range],
-                    "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
+                    "range": [x_min - 0.35*x_range, x_max + 0.35*x_range],
                 },
-                "plot_bgcolor": 'rgb(233,233,233)',
-                "showlegend": False,
-                "height": 810,
-                "margin": {"t": 0, "l": 100},
             })
             return layout
 

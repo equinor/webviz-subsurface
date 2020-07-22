@@ -457,7 +457,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 self.state['switch'] = switch['value']
                 return new_layers
             surface_name = self.surface_attributes[Path(sfc_path_value)]["name"]
-            print(surface_name)
             shader_type = 'hillshading' if switch['value'] is True else None #'soft-hillshading' 
             min_val = None
             max_val = None
@@ -483,10 +482,10 @@ The cross section is defined by a polyline interactively edited in the map view.
                         "Depth uncertainty",
                         "Depth"]
             layers = []
-            for i, s in enumerate(surfaces):
-                if s is not None:
+            for i, sfc in enumerate(surfaces):
+                if sfc is not None:
                     s_layer = new_make_surface_layer(
-                        s,
+                        sfc,
                         name= d_list[i],
                         min_val=min_val,
                         max_val=max_val,
