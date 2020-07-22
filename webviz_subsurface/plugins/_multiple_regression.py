@@ -28,7 +28,6 @@ class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
 This plugin shows a multiple regression of numerical parameters and a response.
-
 Input can be given either as:
 
 - Aggregated csv files for parameters and responses,
@@ -39,8 +38,9 @@ stored per realizations.
 
 **Note**: The response csv file will be aggregated per realization.
 
-**Note**: Regression models break down when there are duplicate or highly correlated parameters,
-please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
+**Note**: Regression models break down when there are duplicate or highly correlated 
+parameters. Please make sure to properly filter your inputs or the model will give
+answers that are misleading.
 
 Arguments:
 
@@ -202,7 +202,7 @@ The types of response_filters are:
                     "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
-            {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
+            {"id": self.uuid("submit-button"), "content": ("Press this button to update the table and the plots based on the options below."), },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
             {"id": self.uuid("exclude_include"), "content": (
@@ -453,7 +453,7 @@ The types of response_filters are:
                 },
                 children=[
                     html.Button(
-                        id=self.uuid("submit-btn"), 
+                        id=self.uuid("submit-button"), 
                         children="Press to update model"
                     )
                 ]
@@ -582,7 +582,7 @@ The types of response_filters are:
                 Output(self.uuid("coefficient-plot"), "figure")
             ],
             [
-                Input(self.uuid("submit-btn"), "n_clicks")
+                Input(self.uuid("submit-button"), "n_clicks")
             ],
             self.model_callback_states,
         )
@@ -753,26 +753,26 @@ def forward_selected(data: pd.DataFrame,
                      maxvars: int=5):
     """ Forward model selection algorithm
 
-        Return statsmodels RegressionResults object
-        the algortihm is a modified standard forward selection algorithm. 
+        Returns Statsmodels RegressionResults object.
+        The algortihm is a modified standard forward selection algorithm. 
         The selection criterion chosen is adjusted R squared.
-        See this link for more info on algorithm: 
+        See this link for more information about the algorithm: 
         https://en.wikipedia.org/wiki/Stepwise_regression
      
-        step by step of the algorithm:
-        - initialize values
-        - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
-        - for every parameter not chosen yet.
+        Steps of the algorithm:
+        - Initialize values
+        - While there are parameters left and the last model was the best model yet and the parameter 
+        limit isnt reached, for every parameter not chosen yet:
             1. If it is an interaction parameter add the base features to the model.
-            2. Create model matrix, fit model and calculate selection criterion, for each remaining parameter.
-            3. pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
-            4. finally fit a statsmodel regression and return the results. 
+            2. Create a model matrix, fit the model and calculate selection criterion for each remaining parameter.
+            3. Pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
+            4. Finally fit a Statsmodels regression and return the results. 
      
         Exit conditions:
-            - no parameters in remaining.
-            - the last model was not the best model
-            - hit cap on maximum parameters.
-            - we are about to add more parameters than there are observations.
+            - No parameters in remaining.
+            - The last model was not the best model.
+            - Hit cap on maximum parameters.
+            - We are about to add more parameters than there are observations.
      """
 
 
@@ -855,7 +855,6 @@ def _model_warnings(design_matrix: pd.DataFrame):
 
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
-    ###### Code for other theme thingy is tagged out ######
     p_values = p_sorted.values
     parameters = p_sorted.index
     fig = go.Figure()
@@ -881,10 +880,6 @@ def make_p_values_plot(p_sorted, theme):
                 "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
             }
         )
-        #barmode = "relative",
-        #height = 500,
-        #title = f"P-values for the parameters. Value lower than 0.05 is statistically significant",
-        #plot_bgcolor = "#fff"
     )
     fig.add_shape(
         {
@@ -900,12 +895,10 @@ def make_p_values_plot(p_sorted, theme):
         showarrow=False
     )
     fig["layout"]["font"].update({"size": 12})
-    #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
-    ###### Code for other theme thingy is tagged out ######
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
@@ -928,8 +921,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                    title='',
                    ticktext=[param.replace("*", "*<br>") for param in parameters],
                    tickvals=[i for i in x]),
-        #coloraxis_showscale=False,
-        #autosize=True,
         hoverlabel=dict(bgcolor="lightgrey")
     )
     """Customizing the hoverer"""
@@ -949,15 +940,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                          "their significance"
             }
         )
-        #barmode = "relative",
-        #height = 500,
-        #title = "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
-        #        "or decrese) on response and "
-        #        "their significance",
-        #plot_bgcolor = "#fff"
     )
     fig["layout"]["font"].update({"size": 12})
-    #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
     """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
@@ -990,7 +974,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         line_width=0.75,
     )
     fig.add_annotation(
-        x=domain+0.26, y=0,
+        x=domain+0.28, y=0,
         text="Increasing<br>p-value",
         showarrow=False
     )
