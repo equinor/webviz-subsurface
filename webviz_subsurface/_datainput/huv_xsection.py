@@ -80,7 +80,6 @@ class HuvXsection:
             self.surface_attributes[sfc_path]['surface_line'] = sfc_line
             if sfc_path in error_paths:
                 de_line = self.surface_attributes[sfc_path]['error_surface'].get_randomline(fence)
-                sfc_line = self.surface_attributes[sfc_path]['surface_line']
                 self.surface_attributes[sfc_path]["error_line"] = de_line
 
     def get_error_table(self, wellpath):
