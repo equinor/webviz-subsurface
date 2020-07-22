@@ -723,7 +723,7 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
-    degree += 1 
+
     for i in range(1, degree+1):
         name_combinations += [" × ".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
@@ -773,7 +773,7 @@ def forward_selected(data: pd.DataFrame,
         scores_with_candidates = []
         for candidate in remaining:
             if " × " in candidate:
-                current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
+                current_model = selected.copy() + [candidate] + list(set(candidate.split(" × ")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
             X = data.filter(items=current_model).to_numpy(dtype="float64")
