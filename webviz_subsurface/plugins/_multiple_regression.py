@@ -28,7 +28,6 @@ class MultipleRegression(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
 This plugin shows a multiple regression of numerical parameters and a response.
-
 Input can be given either as:
 
 - Aggregated csv files for parameters and responses,
@@ -39,8 +38,9 @@ stored per realizations.
 
 **Note**: The response csv file will be aggregated per realization.
 
-**Note**: Regression models break down when there are duplicate or highly correlated parameters,
-please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
+**Note**: Regression models break down when there are duplicate or highly correlated 
+parameters. Please make sure to properly filter your inputs or the model will give
+answers that are misleading.
 
 Arguments:
 
@@ -70,7 +70,6 @@ The types of response_filters are:
 - `range`: Slider with range selection.
 ```
 """
-
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -202,7 +201,7 @@ The types of response_filters are:
                     "Arrows corresponding to p-values above this level of significance, are shown in gray."
                 )
             },
-            {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
+            {"id": self.uuid("submit-button"), "content": ("Press this button to update the table and the plots based on the options below."), },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
             {"id": self.uuid("exclude_include"), "content": (
@@ -324,23 +323,27 @@ The types of response_filters are:
             html.Div(
                 [
                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Span("\u24D8", id=self.uuid("tooltip-parameters"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                   html.Span(
+                       "\u003f\u20dd", 
+                       id=self.uuid("tooltip-parameters"), 
+                       style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
                    dbc.Tooltip(
-                    """This lets you control what parameters to include in your model.
-There are two modes, inclusive and exclusive:
-    - Exclusive mode:
-    Lets you remove specific parameters from beeing considered in the model selection.
+                        "This lets you control what parameters to include in your model. \n" +
+                        "There are two modes, exclusive and subset: \n" +
+                        "- Exclusive mode lets you remove specific parameters from \n" +
+                        "beeing considered in the model selection. \n \n" +
     
-    - Inclusive mode: Lets you pick a subset of parameters to investigate.
-    Parameters included here are notguaranteed to be included in the output model.""",
-                    target=self.uuid("tooltip-parameters"), placement="auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                        "- Subset mode lets you pick a subset of parameters to \n" +
+                        "investigate. Parameters included here are not guaranteed to be \n" +
+                        "included in the output model.",
+                    target=self.uuid("tooltip-parameters"),
+                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
                    ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
-                           {"label": "Exclude from full set", "value": "exc"},
-                           {"label": "Make a subset", "value": "inc"}
+                           {"label": "Exclusive mode", "value": "exc"},
+                           {"label": "Subset mode", "value": "inc"}
                        ],
                        value="exc",
                        labelStyle={'display': 'inline-block'},
@@ -369,14 +372,18 @@ There are two modes, inclusive and exclusive:
                 [
                     html.Div("Model settings:", style={"font-weight": "bold", "marginTop": "20px"}),
                     html.Div("Interaction", style={ 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-filters"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                    dbc.Tooltip("""Lets you select how deep your interaction is:
-    – Off allows only for the parameters in their original state.
-    – 2 levels allows for the product of 2 original parameters.
-    – 3 levels allows for the product of 3 original parameters.
-This feature allows you to investigate possible feedback effects.""",
-                    target=self.uuid("tooltip-filters"), placement="auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    html.Span(
+                        "\u003f\u20dd", 
+                        id=self.uuid("tooltip-filters"), 
+                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip(
+                        "Lets you select how deep your interaction is: \n" +
+                        "– Off allows only for the parameters in their original state. \n" +
+                        "– 2 levels allows for the product of 2 original parameters. \n" +
+                        "– 3 levels allows for the product of 3 original parameters. \n \n" +
+                        "This feature allows you to investigate possible feedback effects.",
+                    target=self.uuid("tooltip-filters"),
+                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
                     ),
                     dcc.Slider(
                         id=self.uuid("interaction"),
@@ -395,12 +402,16 @@ This feature allows you to investigate possible feedback effects.""",
             html.Div(
                 [
                     html.Div("Max number of parameters", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-maxparams"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                    dbc.Tooltip("""Lets you put a cap on the number of parameters to include in your model.
-If interaction is active, cap is the selected value + interaction level.
-This is to make sure the interaction terms have an intuitive interpretation.""",
-                    target=self.uuid("tooltip-maxparams"), placement="auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    html.Span(
+                        "\u003f\u20dd", 
+                        id=self.uuid("tooltip-maxparams"), 
+                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip(
+                        "Lets you put a cap on the number of parameters to include in your model. \n" +
+                        "If interaction is active, cap is the selected value + interaction level. \n" +
+                        "This is to make sure the interaction terms have an intuitive interpretation.",
+                    target=self.uuid("tooltip-maxparams"),
+                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%",  "white-space": "pre-wrap"}
                     ),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
@@ -415,10 +426,15 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
             html.Div(
                 [
                     html.Div("Force in", style={'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span("\u24D8", id=self.uuid("tooltip-fi"), style={"cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                    dbc.Tooltip("""Lets you force parameters into the model. If interaction is active, the cap is the selected value + the interaction level.""",
-                    target=self.uuid("tooltip-fi"), placement="auto",
-                    style={"fontSize": ".80em", "backgroundColor": "lightgrey", "white-space": "pre-wrap"}
+                    html.Span(
+                        "\u003f\u20dd", 
+                        id=self.uuid("tooltip-fi"), 
+                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip(
+                        "Lets you force parameters into the model. If interaction is active, \n" +
+                        "the cap is the selected value + the interaction level.",
+                    target=self.uuid("tooltip-fi"),
+                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
                     ),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
@@ -427,7 +443,6 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                         placeholder='Select parameters to force in',
                         value=[],
                         style={"marginBottom": "20px"}
-
                     )
                 ]
             ),
@@ -437,7 +452,7 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                 },
                 children=[
                     html.Button(
-                        id=self.uuid("submit-btn"), 
+                        id=self.uuid("submit-button"), 
                         children="Press to update model"
                     )
                 ]
@@ -566,7 +581,7 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                 Output(self.uuid("coefficient-plot"), "figure")
             ],
             [
-                Input(self.uuid("submit-btn"), "n_clicks")
+                Input(self.uuid("submit-button"), "n_clicks")
             ],
             self.model_callback_states,
         )
@@ -615,7 +630,7 @@ This is to make sure the interaction terms have an intuitive interpretation.""",
                 
             else:
                 # Get results from the model
-                result = gen_model(df, response, force_in =force_in, max_vars=max_vars, interaction_degree=interaction)
+                result = gen_model(df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction)
                 if not result:
                     return(
                         [{"e": ""}],
@@ -723,7 +738,6 @@ def _gen_interaction_df(
     newdf = df.copy()
 
     name_combinations = []
-    degree += 1 
     for i in range(1, degree+1):
         name_combinations += [" × ".join(combination) for combination in combinations(newdf.drop(columns=response).columns, i)]
     for name in name_combinations:
@@ -737,26 +751,26 @@ def forward_selected(data: pd.DataFrame,
                      maxvars: int=5):
     """ Forward model selection algorithm
 
-        Return statsmodels RegressionResults object
-        the algortihm is a modified standard forward selection algorithm. 
+        Returns Statsmodels RegressionResults object.
+        The algortihm is a modified standard forward selection algorithm. 
         The selection criterion chosen is adjusted R squared.
-        See this link for more info on algorithm: 
+        See this link for more information about the algorithm: 
         https://en.wikipedia.org/wiki/Stepwise_regression
      
-        step by step of the algorithm:
-        - initialize values
-        - while there are parameters left and the last model was the best model yet and the parameter limit isnt reached
-        - for every parameter not chosen yet.
+        Steps of the algorithm:
+        - Initialize values
+        - While there are parameters left and the last model was the best model yet and the parameter 
+        limit isnt reached, for every parameter not chosen yet:
             1. If it is an interaction parameter add the base features to the model.
-            2. Create model matrix, fit model and calculate selection criterion, for each remaining parameter.
-            3. pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
-            4. finally fit a statsmodel regression and return the results. 
+            2. Create a model matrix, fit the model and calculate selection criterion for each remaining parameter.
+            3. Pick the best parameter and repeat with remaining parameters until we satisfy an exit condition.
+            4. Finally fit a Statsmodels regression and return the results. 
      
         Exit conditions:
-            - no parameters in remaining.
-            - the last model was not the best model
-            - hit cap on maximum parameters.
-            - we are about to add more parameters than there are observations.
+            - No parameters in remaining.
+            - The last model was not the best model.
+            - Hit cap on maximum parameters.
+            - We are about to add more parameters than there are observations.
      """
 
 
@@ -773,7 +787,7 @@ def forward_selected(data: pd.DataFrame,
         scores_with_candidates = []
         for candidate in remaining:
             if " × " in candidate:
-                current_model = selected.copy() + [candidate] + list(set(candidate.split("*")).difference(set(selected)))
+                current_model = selected.copy() + [candidate] + list(set(candidate.split(" × ")).difference(set(selected)))
             else:
                 current_model = selected.copy()+[candidate]
             X = data.filter(items=current_model).to_numpy(dtype="float64")
@@ -839,7 +853,6 @@ def _model_warnings(design_matrix: pd.DataFrame):
 
 def make_p_values_plot(p_sorted, theme):
     """Make p-values plot"""
-    ###### Code for other theme thingy is tagged out ######
     p_values = p_sorted.values
     parameters = p_sorted.index
     default_color = theme["layout"]["colorway"][0]
@@ -867,10 +880,6 @@ def make_p_values_plot(p_sorted, theme):
                 "title": f"P-values for the parameters, value lower than 0.05 is statistically significant"
             }
         )
-        #barmode = "relative",
-        #height = 500,
-        #title = f"P-values for the parameters. Value lower than 0.05 is statistically significant",
-        #plot_bgcolor = "#fff"
     )
     fig.add_shape(
         {
@@ -886,12 +895,10 @@ def make_p_values_plot(p_sorted, theme):
         showarrow=False
     )
     fig["layout"]["font"].update({"size": 12})
-    #fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
 def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """Make arrow plot for the coefficients"""
-    ###### Code for other theme thingy is tagged out ######
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
@@ -920,8 +927,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                    title='',
                    ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
                    tickvals=[i for i in x]),
-        #coloraxis_showscale=False,
-        #autosize=True,
         #hoverlabel=dict(bgcolor="lightgrey")
     )
     """Customizing the hoverer"""
@@ -941,15 +946,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                          "their significance"
             }
         )
-        #barmode = "relative",
-        #height = 500,
-        #title = "Parameters impact (increase " #Usikker på tittel (særlig det i parentes)
-        #        "or decrese) on response and "
-        #        "their significance",
-        #plot_bgcolor = "#fff"
     )
     fig["layout"]["font"].update({"size": 12})
-    #fig["layout"] = theme.create_themed_layout(fig["layout"])
 
     """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
@@ -982,7 +980,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         line_width=0.75,
     )
     fig.add_annotation(
-        x=domain+0.26, y=0,
+        x=domain+0.28, y=0,
         text="Increasing<br>p-value",
         showarrow=False
     )
