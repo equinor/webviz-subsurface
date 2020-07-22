@@ -490,13 +490,18 @@ The types of response_filters are:
                                 wcc.Graph(id=self.uuid('coefficient-plot')),
                             ]
                         ),
-                        DataTable(
-                            id=self.uuid("table"),
-                            sort_action="native",
-                            filter_action="native",
-                            page_action="native",
-                            page_size=10,
-                            style_cell={"fontSize": ".80em"}
+                        html.Div(
+                            children=[
+                                html.Label("Table with parameters and their corresponding p-values", style={"fontSize": ".92em"}),
+                                DataTable(
+                                    id=self.uuid("table"),
+                                    sort_action="native",
+                                    filter_action="native",
+                                    page_action="native",
+                                    page_size=10,
+                                    style_cell={"fontSize": ".80em"}
+                                ),
+                            ]
                         ),
                     ],
                 ),
@@ -936,7 +941,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                    title='',
                    ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
                    tickvals=[i for i in x]),
-        #hoverlabel=dict(bgcolor="lightgrey")
     )
     """Customizing the hoverer"""
     fig.update_traces(
