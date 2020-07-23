@@ -5,11 +5,6 @@ pages:
   - title: HorizonUncertaintyViewer
     content:
       - HorizonUncertaintyViewer:
-<<<<<<< HEAD
-          basedir:
-            - ..\Datasets\complex_model
-=======
           basedir: ..\Datasets\complex_model
->>>>>>> 0cf9cc2b9d96c34e905879753cc854750fb1721b
           planned_wells_dir: ..\Planned_wells
 

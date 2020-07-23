@@ -48,10 +48,6 @@ The cross section is defined by a polyline interactively edited in the map view.
             planned_wells_dir: Path = None,
             zunit = "depth (m)",
             zonemin: int = 1,
-<<<<<<< HEAD
-            planned_wells_dir: Path = None,
-=======
->>>>>>> 0cf9cc2b9d96c34e905879753cc854750fb1721b
     ):
 
         super().__init__()
