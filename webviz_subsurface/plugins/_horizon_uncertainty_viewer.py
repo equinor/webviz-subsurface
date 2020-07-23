@@ -64,15 +64,16 @@ The cross section is defined by a polyline interactively edited in the map view.
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
         self.topofzone = parse_model_file.extract_topofzone_names(basedir)
         for i, surfacefile in enumerate(self.surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {"color": get_color(i), 'order': i,
-                                                        "name": self.surfacenames[i], "topofzone": self.topofzone[i],
-                                                        "surface": xtgeo.surface_from_file(Path(surfacefile), fformat='irap_binary'),
-                                                        "error_surface": xtgeo.surface_from_file(Path(self.surfacefiles_de[i]), fformat='irap_binary'),
-                                                        "surface_dt": xtgeo.surface_from_file(Path(self.surfacefiles_dt[i]), fformat="irap_binary") if self.surfacefiles_dt is not None else None,
-                                                        "surface_dr": xtgeo.surface_from_file(Path(self.surfacefiles_dr[i]), fformat="irap_binary") if self.surfacefiles_dr is not None else None,
-                                                        "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
-                                                        "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
-                                                        }
+            self.surface_attributes[Path(surfacefile)] = {
+                "color": get_color(i), 'order': i,
+                "name": self.surfacenames[i], "topofzone": self.topofzone[i],
+                "surface": xtgeo.surface_from_file(Path(surfacefile), fformat='irap_binary'),
+                "error_surface": xtgeo.surface_from_file(Path(self.surfacefiles_de[i]), fformat='irap_binary'),
+                "surface_dt": xtgeo.surface_from_file(Path(self.surfacefiles_dt[i]), fformat="irap_binary") if self.surfacefiles_dt is not None else None,
+                "surface_dr": xtgeo.surface_from_file(Path(self.surfacefiles_dr[i]), fformat="irap_binary") if self.surfacefiles_dr is not None else None,
+                "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
+                "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
+                }
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.zonation_data = parse_model_file.get_zonation_data(basedir)
@@ -642,7 +643,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids('uncertainty-table'), 'data'),
             [Input(self.ids('well-dropdown'), 'value')]
         )
-        def _render_uncertainty_table(wellpath):
+        def _render_uncertainty_table(value, wellpath):
             df = self.xsec.get_intersection_dataframe(wellpath)
             return df.to_dict('records')
 
