@@ -92,9 +92,11 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         if planned_wells_dir is not None:
             self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
             self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
+            self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
         else:
             self.planned_well_files = None
             self.planned_wells = None
+            self.planned_well_names = None
         self.xsec.set_well_attributes(self.wellfiles)
 
         # Store current layers
@@ -376,7 +378,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
     def left_flexbox_layout(self):
         return html.Div(
             children=[
-                html.Div(id=self.ids('hidden-div'), style={'display': 'none'}),  # Hidden div to store polyline points when in table view
+                html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout], style={'display': 'none'}),  # Hidden div to store polyline points when in table view
+                html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout], style={'display': 'none'}),
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
@@ -391,7 +394,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 ),
                 html.Div(
                     id=self.ids('left-flexbox-content'),
-                    children=[self.map_view_layout]
                 )
             ]
         )
@@ -434,7 +436,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     },
                     children=[
                         webviz_subsurface_components.NewLayeredMap(
-                            id=self.ids("map-view"),
+                            id=self.ids("layered-map"),
                             layers=[],
                             syncedMaps=[],
                             minZoom=-5,
@@ -497,10 +499,10 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("map-view"), "layers"),
+            Output(self.ids("layered-map"), "layers"),
             [
                 Input(self.ids("map-dropdown"), "value"),
-                Input(self.ids("map-view"), "switch")
+                Input(self.ids("layered-map"), "switch")
             ],
         )
         def _render_map(surfacefile, switch):
@@ -571,8 +573,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
-                Input(self.ids("well-dropdown"), "value"),  # wellfile
-                Input(self.ids("hidden-div"), "children"),  # Polyline from map-view
+                Input(self.ids("well-dropdown"), "value"),  # wellpath
+                Input(self.ids("layered-map"), "polyline_points"),  # coordinates from layered-map
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # List of surfacefiles
@@ -583,9 +585,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         def _render_xsection(n_clicks, n_clicks2, wellfile, polyline, surfacefiles, de_keys, well_settings):
             ''' Renders cross section view from wellfile or polyline drawn in map view '''
             ctx = dash.callback_context
-            surfacefiles = get_path(surfacefiles)
             de_keys = get_path(de_keys)
-            if ctx.triggered[0]['prop_id'] == self.ids('hidden-div') + '.children' and polyline is not None:
+            surfacefiles = get_path(surfacefiles)
+            if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
                 wellfile = None
             self.xsec.set_de_and_surface_lines(surfacefiles, de_keys, wellfile, polyline)
             self.xsec.set_xsec_fig(surfacefiles, de_keys, well_settings, wellfile)
@@ -687,20 +689,19 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
         @app.callback(
             Output(self.ids('left-flexbox-content'), 'children'),
-            [Input(self.ids('map-table-radioitems'), 'value')]
+            [
+                Input(self.ids('map-table-radioitems'), 'value'),
+                Input(self.ids('hidden-div-map-view'), 'children'),
+                Input(self.ids('hidden-div-table-view'), 'children')
+            ]
         )
-        def _toggle_left_flexbox_content(value):
-            if value == 'map-view':
-                return self.map_view_layout
+        def _toggle_left_flexbox_content(value, map_view_content, table_view_content):
+            if value == 'table-view':
+                return table_view_content
             else:
-                return self.table_view_layout
+                return map_view_content
 
-        @app.callback(
-            Output(self.ids('hidden-div'), 'children'),
-            [Input(self.ids('map-view'), 'polyline_points')]
-        )
-        def _render_hidden_div(coords):
-            return coords
+
 
         @app.callback(
             Output(self.ids('uncertainty-table'), 'data'),
