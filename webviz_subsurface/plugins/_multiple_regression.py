@@ -70,6 +70,9 @@ The types of response_filters are:
 """
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=unused-argument
+    # pylint:disable=unused-variable
+    # pylint:disable=too-many-lines
     def __init__(
         self,
         app,
@@ -548,8 +551,7 @@ The types of response_filters are:
             """Callback to update placeholder text in exlude/subset mode"""
             if exc_inc == "exc":
                 return "Select parameters to exclude..."
-            else:
-                return "Select parameters for subset..."
+            return "Select parameters for subset..."
 
         @app.callback(
             [Output(self.uuid("force-in"), "options"), Output(self.uuid("force-in"), "value"),],
@@ -584,6 +586,7 @@ The types of response_filters are:
             [Input(self.uuid("submit-button"), "n_clicks")],
             self.model_callback_states,
         )
+        # pylint:disable=too-many-locals
         def _update_visualizations(
             n_clicks,
             exc_inc,
@@ -718,7 +721,7 @@ def gen_model(
     """Wrapper for model selection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree + 1)
-    return forward_selected(data=df, response=response, force_in=force_in, maxvars=max_vars)
+    return forward_selected(data=df, resp=response, force_in=force_in, maxvars=max_vars)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -737,7 +740,8 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
     return newdf
 
 
-def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, maxvars: int = 5):
+# pylint:disable=too-many-locals
+def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxvars: int = 5):
     """ Forward model selection algorithm
 
         Returns Statsmodels RegressionResults object.
@@ -764,13 +768,10 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
             - We are about to add more parameters than there are observations.
      """
 
-    # Initialize values for use in algorithm
-    # y is the response, sst is the total sum of squares
-    y = data[response].to_numpy(dtype="float32")
-    n = len(y)
-    y_mean = np.mean(y)
-    sst = np.sum((y - y_mean) ** 2)
-    remaining = set(data.columns).difference(set(force_in + [response]))
+    # Initialize values for use in algorithm (sst is the total sum of squares)
+    response = data[resp].to_numpy(dtype="float32")
+    sst = np.sum((response - np.mean(response)) ** 2)
+    remaining = set(data.columns).difference(set(force_in + [resp]))
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score and len(selected) < maxvars:
@@ -784,32 +785,34 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
                 )
             else:
                 current_model = selected.copy() + [candidate]
-            X = data.filter(items=current_model).to_numpy(dtype="float64")
-            p = X.shape[1]
-            X = np.append(X, np.ones((len(y), 1)), axis=1)
+            parameters = data.filter(items=current_model).to_numpy(dtype="float64")
+            num_parameters = parameters.shape[1]
+            parameters = np.append(parameters, np.ones((len(response), 1)), axis=1)
 
             # Fit model
             try:
-                beta = la.inv(X.T @ X) @ X.T @ y
+                beta = la.inv(parameters.T @ parameters) @ parameters.T @ response
             except la.LinAlgError:
                 # This clause lets us skip singluar and other non-valid model matricies.
                 continue
 
-            if n - p - 1 < 1:
+            if len(resp) - num_parameters - 1 < 1:
                 # The exit condition means adding this parameter would add more parameters than
                 # observations. This causes infinite variance in the model so we return the current
                 # best model
 
                 model_df = data.filter(items=selected)
-                model_df["Intercept"] = np.ones((len(y), 1))
-                model_df["response"] = y
+                model_df["Intercept"] = np.ones((len(response), 1))
+                model_df["response"] = response
 
                 return _model_warnings(model_df)
 
-            f_vec = beta @ X.T
-            ss_res = np.sum((f_vec - y_mean) ** 2)
+            f_vec = beta @ parameters.T
+            ss_res = np.sum((f_vec - np.mean(response)) ** 2)
 
-            r_2_adj = 1 - (1 - (ss_res / sst)) * ((n - 1) / (n - p - 1))
+            r_2_adj = 1 - (1 - (ss_res / sst)) * (
+                (len(resp) - 1) / (len(resp) - num_parameters - 1)
+            )
             scores_with_candidates.append((r_2_adj, candidate))
 
         # If the best parameter is interactive, add all base features
@@ -829,8 +832,8 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
 
     # Finally fit a statsmodel from the selected parameters
     model_df = data.filter(items=selected)
-    model_df["Intercept"] = np.ones((len(y), 1))
-    model_df["response"] = y
+    model_df["Intercept"] = np.ones((len(response), 1))
+    model_df["response"] = response
     return _model_warnings(model_df)
 
 
@@ -933,9 +936,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_layout(
         yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),
         xaxis=dict(
-            title="",
-            ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
-            tickvals=[i for i in x],
+            title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
         ),
     )
     fig.update_traces(
