@@ -471,7 +471,7 @@ The types of response_filters are:
                         "cmax": 3
                     },
                     "dimensions": dims,
-                    "labelangle": -90,
+                    "labelangle": 45,
                     "labelside": "bottom",
                 }],
                 "layout": {"width": len(dims) * 30 + 250, "height": 1200, "margin": {"b": 740, "t": 30}
