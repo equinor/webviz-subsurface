@@ -1,9 +1,10 @@
 import numpy as np
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
-
 from .image_processing import array_to_png, get_colormap
-
+import base64
+from PIL import Image
+import io
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_surface(surface_path):
@@ -76,6 +77,14 @@ def new_make_surface_layer(
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
     min_val = min_val if min_val is not None else np.nanmin(zvalues)
     max_val = max_val if max_val is not None else np.nanmax(zvalues)
+    image = base64.b64decode(array_to_png(zvalues.copy())[22:])
+    img = Image.open(io.BytesIO(image))
+    width, height = img.size
+    if width*height >= 300*300:
+        scale = 1.0
+    else:
+        ratio = (1000**2) / (width*height)
+        scale = np.sqrt(ratio).round(2)
     return {
         "name": name,
         "checked": True,
@@ -104,7 +113,7 @@ def new_make_surface_layer(
                 "minvalue": min_val.round(2),
                 "maxvalue": max_val.round(2),
                 "unit": str(unit),
-                "imageScale": 8.0, #1.0 if simple model
+                "imageScale": scale,
             }
         ],
     }
