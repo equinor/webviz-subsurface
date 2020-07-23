@@ -796,7 +796,7 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
                 # This clause lets us skip singluar and other non-valid model matricies.
                 continue
 
-            if len(resp) - num_parameters - 1 < 1:
+            if len(response) - num_parameters - 1 < 1:
                 # The exit condition means adding this parameter would add more parameters than
                 # observations. This causes infinite variance in the model so we return the current
                 # best model
@@ -811,7 +811,7 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
             ss_res = np.sum((f_vec - np.mean(response)) ** 2)
 
             r_2_adj = 1 - (1 - (ss_res / sst)) * (
-                (len(resp) - 1) / (len(resp) - num_parameters - 1)
+                (len(response) - 1) / (len(response) - num_parameters - 1)
             )
             scores_with_candidates.append((r_2_adj, candidate))
 
