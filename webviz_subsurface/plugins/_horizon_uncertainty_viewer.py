@@ -87,9 +87,11 @@ The cross section is defined by a polyline interactively edited in the map view.
         if planned_wells_dir is not None:
             self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
             self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
+            self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
         else:
             self.planned_well_files = None
             self.planned_wells = None
+            self.planned_well_names = None
         self.xsec.set_well_attributes(self.wellfiles)
 
         # Store current layers
@@ -236,6 +238,9 @@ The cross section is defined by a polyline interactively edited in the map view.
                                         for name, path in zip(
                                             self.wellnames, self.wellfiles
                                         )
+                                    ] + [
+                                        {'label': name, 'value': path}
+                                        for name, path in zip(self.planned_well_names, self.planned_well_files)
                                     ],
                                     value=self.wellfiles[0],
                                     clearable=False,
@@ -322,7 +327,8 @@ The cross section is defined by a polyline interactively edited in the map view.
     def left_flexbox_layout(self):
         return html.Div(
             children=[
-                html.Div(id=self.ids('hidden-div'), style={'display': 'none'}),  # Hidden div to store polyline points when in table view
+                html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout], style={'display': 'none'}),  # Hidden div to store polyline points when in table view
+                html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout], style={'display': 'none'}),
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
@@ -337,7 +343,6 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ),
                 html.Div(
                     id=self.ids('left-flexbox-content'),
-                    children=[self.map_view_layout]
                 )
             ]
         )
@@ -380,7 +385,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                     },
                     children=[
                         webviz_subsurface_components.NewLayeredMap(
-                            id=self.ids("map-view"),
+                            id=self.ids("layered-map"),
                             layers=[],
                             syncedMaps=[],
                             minZoom=-5,
@@ -445,13 +450,15 @@ The cross section is defined by a polyline interactively edited in the map view.
     def set_callbacks(self, app):
 
         @app.callback(
-            Output(self.ids("map-view"), "layers"),
+            Output(self.ids("layered-map"), "layers"),
             [
                 Input(self.ids("map-dropdown"), "value"),
-                Input(self.ids("map-view"), "switch")
+                Input(self.ids("layered-map"), "switch")
             ],
         )
         def _render_map(sfc_path_value, switch):
+            print('Render map was called \n ============')
+            ctx = dash.callback_context
             if self.state['switch'] is not switch['value']:
                 new_layers = self.LAYERS_STATE.copy()
                 for layer in new_layers:
@@ -515,7 +522,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 Input(self.ids('button-apply-checklist'), 'n_clicks'),
                 Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
-                Input(self.ids("hidden-div"), "children"),  # coordinates from map-view
+                Input(self.ids("layered-map"), "polyline_points"),  # coordinates from layered-map
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # surface_paths list
@@ -527,7 +534,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             ctx = dash.callback_context
             surface_paths = get_path(surface_paths)
             error_paths = get_path(error_paths)
-            if ctx.triggered[0]['prop_id'] == self.ids('hidden-div') + '.children' and polyline is not None:
+            if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
                 wellpath = None
             self.xsec.set_error_and_surface_lines(surface_paths, error_paths, wellpath, polyline)
             self.xsec.set_plotly_fig(surface_paths, error_paths, well_settings, wellpath)
@@ -623,20 +630,19 @@ The cross section is defined by a polyline interactively edited in the map view.
 
         @app.callback(
             Output(self.ids('left-flexbox-content'), 'children'),
-            [Input(self.ids('map-table-radioitems'), 'value')]
+            [
+                Input(self.ids('map-table-radioitems'), 'value'),
+                Input(self.ids('hidden-div-map-view'), 'children'),
+                Input(self.ids('hidden-div-table-view'), 'children')
+            ]
         )
-        def _toggle_left_flexbox_content(value):
-            if value == 'map-view':
-                return self.map_view_layout
+        def _toggle_left_flexbox_content(value, map_view_content, table_view_content):
+            if value == 'table-view':
+                return table_view_content
             else:
-                return self.table_view_layout
+                return map_view_content
 
-        @app.callback(
-            Output(self.ids('hidden-div'), 'children'),
-            [Input(self.ids('map-view'), 'polyline_points')]
-        )
-        def _render_hidden_div(coords):
-            return coords
+
 
         @app.callback(
             Output(self.ids('uncertainty-table'), 'data'),

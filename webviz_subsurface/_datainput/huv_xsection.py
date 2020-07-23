@@ -226,7 +226,7 @@ class HuvXsection:
                 surface_picks_df = surface_picks.dataframe
                 for _, row in surface_picks_df.iterrows():
                     surface_name = self.surface_attributes[sfc_path]['name']
-                    depth_uncertainty = sfc.get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
+                    depth_uncertainty = err.get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
                     data['Surface name'].append(surface_name)
                     data['TVD'].append(row['Z_TVDSS'])
                     data['Depth uncertainty'].append(depth_uncertainty)
