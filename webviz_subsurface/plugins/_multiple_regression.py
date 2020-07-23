@@ -109,11 +109,6 @@ The types of response_filters are:
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            # For csv files
-            # self.parameterdf = read_csv(self.parameter_csv)
-            # self.responsedf = read_csv(self.response_csv)
-
-            # For parquet files
             self.parameterdf = pd.read_parquet(self.parameter_csv)
             self.responsedf = pd.read_parquet(self.response_csv)
 
@@ -708,7 +703,7 @@ def gen_model(
     df: pd.DataFrame,
     response: str,
     max_vars: int = 9,
-    force_in: list = [],
+    force_in: list = None,
     interaction_degree: bool = False,
 ):
     """Wrapper for model selection algorithm."""
@@ -733,7 +728,7 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
     return newdf
 
 
-def forward_selected(data: pd.DataFrame, response: str, force_in: list = [], maxvars: int = 5):
+def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, maxvars: int = 5):
     """ Forward model selection algorithm
 
         Returns Statsmodels RegressionResults object.
@@ -746,7 +741,7 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = [], max
         - Initialize values
         - While there are parameters left and the last model was the best model yet and the
         parameter limit isnt reached, for every parameter not chosen yet:
-            1.  If it is an interaction parameter add the base features to the model.
+            1.  If it is an interaction parameter, add the base features to the model.
             2.  Create a model matrix, fit the model and calculate selection criterion for each
                 remaining parameter.
             3.  Pick the best parameter and repeat with remaining parameters until we satisfy an
@@ -901,16 +896,11 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-
-    centre = 1
-    domain = 2
-    centre_dist = len(parameters) / (domain + 1)
+    centre_dist = len(parameters) / 3
     x = (
         [1]
         if len(parameters) == 1
-        else np.linspace(
-            max(centre - centre_dist, 0), min(centre + centre_dist, domain), num=len(parameters),
-        )
+        else np.linspace(max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),)
     )
     y = np.zeros(len(x))
     default_color = theme["layout"]["colorway"][0]
@@ -931,13 +921,12 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     fig.update_layout(
         yaxis=dict(range=[-0.15, 0.15], title="", showticklabels=False),
         xaxis=dict(
-            range=[-0.23, domain + 0.26],
+            range=[-0.23, 2 + 0.26],
             title="",
             ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
             tickvals=[i for i in x],
         ),
     )
-    # Customizing the hoverer
     fig.update_traces(
         hovertemplate=[
             "<b>Parameter:</b> "
@@ -962,7 +951,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     )
     fig["layout"]["font"].update({"size": 12})
 
-    # Adding arrows to figure
     for i, sign in enumerate(np.sign(coeff_vals)):
         x_coordinate = x[i]
         fig.add_shape(
@@ -977,17 +965,16 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             fillcolor=default_color if p_values[i] < 0.05 else "#606060",
             line_width=0,
         )
-    # Adding zero-line along y-axis
     fig.add_shape(
-        type="line", x0=-0.1, y0=0, x1=domain + 0.1, y1=0, line=dict(color="#222A2A", width=0.75,),
+        type="line", x0=-0.1, y0=0, x1=2 + 0.1, y1=0, line=dict(color="#222A2A", width=0.75,),
     )
     fig.add_shape(
         type="path",
-        path=f" M {domain+0.12} 0 L {domain+0.1} -0.005 L {domain+0.1} 0.005 Z",
+        path=f" M {2+0.12} 0 L {2+0.1} -0.005 L {2+0.1} 0.005 Z",
         line_color="#222A2A",
         line_width=0.75,
     )
-    fig.add_annotation(x=domain + 0.26, y=0, text="Increasing<br>p-value", showarrow=False)
+    fig.add_annotation(x=2 + 0.26, y=0, text="Increasing<br>p-value", showarrow=False)
     return fig
 
 
