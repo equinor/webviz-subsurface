@@ -378,8 +378,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
     def left_flexbox_layout(self):
         return html.Div(
             children=[
-                html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout], style={'display': 'none'}),  # Hidden div to store polyline points when in table view
-                html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout], style={'display': 'none'}),
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
@@ -392,9 +390,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         )
                     ]
                 ),
-                html.Div(
-                    id=self.ids('left-flexbox-content'),
-                )
+                html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout]),  # Hidden div to store polyline points when in table view
+                html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout]),
             ]
         )
 
@@ -688,18 +685,19 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             return is_open
 
         @app.callback(
-            Output(self.ids('left-flexbox-content'), 'children'),
             [
-                Input(self.ids('map-table-radioitems'), 'value'),
-                Input(self.ids('hidden-div-map-view'), 'children'),
-                Input(self.ids('hidden-div-table-view'), 'children')
-            ]
+                Output(self.ids('hidden-div-map-view'), 'hidden'),
+                Output(self.ids('hidden-div-table-view'), 'hidden')
+            ],
+            [
+                Input(self.ids('map-table-radioitems'), 'value')
+            ],
         )
-        def _toggle_left_flexbox_content(value, map_view_content, table_view_content):
+        def _toggle_left_flexbox_content(value):
             if value == 'table-view':
-                return table_view_content
+                return True, False
             else:
-                return map_view_content
+                return False, True
 
 
 
