@@ -33,7 +33,7 @@ class HuvXsection:
             fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
-            zonation_points = get_zone_RHLEN(well_df, well.wellname, self.zonation_data)
+            zonation_points = get_zonation_points(well_df, well.wellname, self.zonation_data)
             conditional_points = get_conditional_points(well_df, well.wellname, self.conditional_data)
             zonelog = self.get_zonelog_data(well, self.zonelogname)
             self.well_attributes[wellfile] = {
@@ -286,11 +286,17 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_intersection_dataframe(self, wellfile):
+        ''' Get intersection between surfaces and well with XTGeo
+        Args:
+            wellfile: Filepath to wellfile
+        Returns:
+            df: Dataframe with surfacename, TVD, depth uncertainty and direction
+        '''
         well = self.well_attributes[wellfile]['well']
         data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]['surface']
-            err = self.surface_attributes[sfc_path]['surface_de']  # This variable is not in use?
+            err = self.surface_attributes[sfc_path]['surface_de']
             surface_picks = well.get_surface_picks(sfc)  # This line causes WARNNG: Invalid value encountered in greater
             if surface_picks is not None:
                 surface_picks_df = surface_picks.dataframe
@@ -298,11 +304,10 @@ class HuvXsection:
                     surface_name = self.surface_attributes[sfc_path]['name']
                     depth_uncertainty = err.get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
                     data['Surface name'].append(surface_name)
-                    data['TVD'].append(row['Z_TVDSS'])
-                    data['Depth uncertainty'].append(depth_uncertainty)
+                    data['TVD'].append("%.2f" % row['Z_TVDSS'])
+                    data['Depth uncertainty'].append("%.2f" % depth_uncertainty)
                     data['Direction'].append(row['DIRECTION'])
-        df = pd.DataFrame(data=data)
-        return df.round(2)
+        return pd.DataFrame(data=data)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
@@ -393,7 +398,7 @@ def stratigraphic_sort(elem):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_zone_RHLEN(well_df, wellname, zone_path):
+def get_zonation_points(well_df, wellname, zone_path):
     ''' Finds zonation points along well trajectory
     Args:
         well_df: Dataframe of XTgeo well from filepath to wellfile
