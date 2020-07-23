@@ -539,7 +539,6 @@ The types of response_filters are:
                             page_action="native",
                             page_size=10,
                             style_cell={"fontSize": ".80em"},
-                            #style_table={"width": "92%"}, #"marginLeft": "86px", "width": "82.5%"
                         ),
                     ],
                 ),
