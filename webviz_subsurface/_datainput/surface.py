@@ -104,7 +104,7 @@ def new_make_surface_layer(
                 "minvalue": min_val.round(2),
                 "maxvalue": max_val.round(2),
                 "unit": str(unit),
-                "imageScale": 8.0,
+                "imageScale": 8.0, #1.0 if simple model
             }
         ],
     }
