@@ -352,19 +352,20 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    dcc.Dropdown(
+                    wcc.Select(
                         id=self.uuid("parameter-list"),
                         options=[
                             {"label": ens, "value": ens} for ens in self.parameters
                         ],
-                        clearable=True,
                         multi=True,
-                        placeholder="",
+                        size=20,
                         value=[],
                         style={"marginBottom": "20px"}
                     ),
                 ]
-            ),
+            ),html.Div("threshhold percentage"),
+            html.Div(dcc.Slider(id=self.uuid("percent"),
+            min=50, max=100, step=1, value=70,marks={x: x for x in range(50,101,5)})),
             html.Div("Filters:", style={"font-weight": "bold"}),
             html.Div(children=self.filter_layout),]
 
@@ -400,6 +401,7 @@ The types of response_filters are:
             Input(self.uuid("parameter-list"), "value"),
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
+            Input(self.uuid("percent"), "value")
 
         ]
         if self.response_filters:
@@ -428,7 +430,7 @@ The types of response_filters are:
             Output(self.uuid("p-values-plot"), "figure"),
             self.model_callback_Inputs
         )
-        def _update_visualizations(exc_inc, parameter_list, ensemble, response, *filters):
+        def _update_visualizations(exc_inc, parameter_list, ensemble, response, percent, *filters):
             """Callback to update the model for multiple regression
 
             1. Filters and aggregates response dataframe per realization
@@ -454,7 +456,7 @@ The types of response_filters are:
             df = pd.merge(parameterdf, responsedf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             #print(df.head())
 
-            df = col_percentile(df, response, 70)
+            df = col_percentile(df, response, percent)
             #print(df.head())
             
             dims = [
@@ -464,11 +466,14 @@ The types of response_filters are:
                 "data": [{
                     "type": "parcoords",
                     "line": {
-                        "color": df["BULK_OIL"],
-                        "colorscale": "Electric",
+                        "color": df[response],
+                        "colorscale": "Jet",
                         "showscale": True,
                         "cmin": 1,
-                        "cmax": 3
+                        "cmax": 3,
+                        "colorbar": {
+                            "title": response
+                        },
                     },
                     "dimensions": dims,
                     "labelangle": 45,
