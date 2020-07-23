@@ -456,7 +456,7 @@ The types of response_filters are:
 
             df = col_percentile(df, response, 70)
             #print(df.head())
-
+            
             dims = [
                 {"label": param, "values": df[param]} for param in df
             ]
