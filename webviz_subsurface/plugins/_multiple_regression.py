@@ -516,10 +516,7 @@ The types of response_filters are:
                         html.Div(
                             id=self.uuid("page-title"),
                             style={
-                                "textAlign": "left",
-                                "display": "grid",
-                                "fontSize": "1.3em",
-                                "marginLeft": "-322px",
+                                "textAlign": "left", "display": "grid", "fontSize": "1.3em",
                             },
                         ),
                         html.Div(children=[wcc.Graph(id=self.uuid("p-values-plot"))]),
@@ -530,7 +527,6 @@ The types of response_filters are:
                             "Table of parameters and their corresponding p-values",
                             style={
                                 "fontSize": ".925em",
-                                "marginLeft": "49px",
                                 "marginBottom": "35px",
                                 "marginTop": "35px",
                                 "color": self.plotly_theme["layout"]["colorway"][1],
@@ -543,7 +539,7 @@ The types of response_filters are:
                             page_action="native",
                             page_size=10,
                             style_cell={"fontSize": ".80em"},
-                            style_table={"marginLeft": "86px", "width": "82.5%"},
+                            #style_table={"width": "92%"}, #"marginLeft": "86px", "width": "82.5%"
                         ),
                     ],
                 ),
@@ -1057,7 +1053,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         line_color="#222A2A",
         line_width=0.75,
     )
-    fig.add_annotation(x=2 + 0.26, y=0, text="Increasing<br>p-value", showarrow=False)
+    fig.add_annotation(x=2 + 0.35, y=0, text="Increasing<br>p-value", showarrow=False)
     return fig
 
 
