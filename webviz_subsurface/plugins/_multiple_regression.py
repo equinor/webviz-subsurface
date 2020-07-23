@@ -100,7 +100,7 @@ The types of response_filters are:
 
         if response_ignore and response_include:
             raise ValueError(
-                'Incorrent argument. either provide "response_include", '
+                'Incorrent argument. Either provide "response_include", '
                 '"response_ignore" or neither'
             )
         if parameter_csv and response_csv:
@@ -530,6 +530,7 @@ The types of response_filters are:
                                 "marginBottom": "35px",
                                 "marginTop": "35px",
                                 "color": self.plotly_theme["layout"]["colorway"][1],
+                                "textAlign": "center",
                             },
                         ),
                         DataTable(
@@ -939,8 +940,9 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": "P-values for the parameters. Value lower than 0.05 indicates "
-                         "statistical significance",
+                "title": {"text": "P-values for the parameters. Value lower than 0.05 indicates "
+                                  "statistical significance",
+                          "x": 0.5}
             },
         )
     )
@@ -1017,8 +1019,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": "Parameters impact (increase or decrese) on response and "
-                         "their significance",
+                "title": {"text": "Parameters impact (increase or decrese) on response and "
+                                  "their significance",
+                          "x": 0.5}
             },
         )
     )
