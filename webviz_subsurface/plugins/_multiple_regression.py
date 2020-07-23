@@ -6,6 +6,7 @@ import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
+import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -470,7 +471,11 @@ The types of response_filters are:
             html.Div(
                 style={"display": "grid"},
                 children=[
-                    html.Button(id=self.uuid("submit-button"), children="Press to update model")
+                    html.Button(
+                        id=self.uuid("submit-button"),
+                        children="Press to update model",
+                        style={"color": "red", "background-color": "white"},
+                    )
                 ],
             ),
         ]
@@ -517,22 +522,33 @@ The types of response_filters are:
             ],
         )
 
-    @property
-    def model_callback_states(self):
-        """List of states for multiple regression callback"""
-        states = [
-            State(self.uuid("exclude-include"), "value"),
-            State(self.uuid("parameter-list"), "value"),
-            State(self.uuid("ensemble"), "value"),
-            State(self.uuid("responses"), "value"),
-            State(self.uuid("force-in"), "value"),
-            State(self.uuid("interaction"), "value"),
-            State(self.uuid("max-params"), "value"),
+    def get_callback_list(self, func):
+        """Returns a list with either Inputs or States for multiple regression callback"""
+        components = [
+            func(self.uuid("exclude-include"), "value"),
+            func(self.uuid("parameter-list"), "value"),
+            func(self.uuid("ensemble"), "value"),
+            func(self.uuid("responses"), "value"),
+            func(self.uuid("force-in"), "value"),
+            func(self.uuid("interaction"), "value"),
+            func(self.uuid("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                states.append(State(self.uuid(f"filter-{col_name}"), "value"))
-        return states
+                components.append(func(self.uuid(f"filter-{col_name}"), "value"))
+        return components
+
+    @property
+    def model_callback_states(self):
+        """List of states for multiple regression callback"""
+        return self.get_callback_list(State)
+
+    @property
+    def model_callback_inputs(self):
+        """List of states for multiple regression callback"""
+        inputs = self.get_callback_list(Input)
+        inputs.insert(0, Input(self.uuid("submit-button"), "n_clicks"))
+        return inputs
 
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
@@ -543,6 +559,28 @@ The types of response_filters are:
         return filteroptions
 
     def set_callbacks(self, app):
+        @app.callback(Output(self.uuid("submit-button"), "style"), self.model_callback_inputs)
+        def update_button(
+            n_clicks,
+            exc_inc,
+            parameter_list,
+            ensemble,
+            response,
+            force_in,
+            interaction,
+            max_vars,
+            *filters,
+        ):
+            # Need fix: initial callback from force_in makes the button immediately
+            # change color to inidcate a change has been made
+            # Whole thing is maybe a bit hacky?
+            ctx = dash.callback_context
+            # if the triggered comp is the sumbit-button
+            if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
+                return {"color": "red", "background-color": "white"}
+            else:
+                return {"color": "green", "background-color": "blue"}
+
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
             [Input(self.uuid("exclude-include"), "value")],
@@ -570,7 +608,7 @@ The types of response_filters are:
 
             fi_lst = list(df)
             options = [{"label": fi, "value": fi} for fi in fi_lst]
-            #Add only valid parameters
+            # Add only valid parameters
             force_in_updated = []
             for param in force_in:
                 if param in fi_lst:
