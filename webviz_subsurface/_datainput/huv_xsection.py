@@ -81,24 +81,22 @@ class HuvXsection:
                 self.surface_attributes[sfc_path]["error_line"] = de_line
 
     def get_plotly_layout(self, surfacepaths, wellpath):
-        layout = {"yaxis":{
-                    "title": "Depth (m)",
-                    "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
-                },
-                "xaxis": {
-                    "title": "Distance from polyline",
-                    "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
-                },
-                "plot_bgcolor": 'rgb(233,233,233)',
+        layout = {"plot_bgcolor": 'rgb(233,233,233)',
                 "showlegend": False,
-                "height": 810,
+                "height": 830,
                 "margin": {"t": 0, "l": 100},}
         if len(surfacepaths) == 0:
             layout.update({
                 "yaxis":{
                     "autorange": "reversed",
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
+                },
+                "xaxis":{
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
                 },
             })
             return layout
@@ -106,7 +104,16 @@ class HuvXsection:
             ymin, ymax = self.sfc_line_max_min_depth(surfacepaths)
             layout.update({
                 "yaxis":{
-                    "range": [ymax, ymin]},
+                    "range": [ymax, ymin],
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
+                },
+                "xaxis":{
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
+                },
             })
             return layout
         else:
@@ -119,9 +126,15 @@ class HuvXsection:
             layout.update({
                 "yaxis":{
                     "range" : [y_max + 0.15*y_range, y_min - 0.15*y_range],
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
                 },
                 "xaxis":{
                     "range": [x_min - 0.35*x_range, x_max + 0.35*x_range],
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
                 },
             })
             return layout
@@ -186,9 +199,6 @@ class HuvXsection:
                 }
                 for sfc_path, _ in surface_tuples
             ]
-            return data
-
-          
             return data
 
     def sfc_line_max_min_depth(self, surfacepaths):
