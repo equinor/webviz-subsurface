@@ -216,20 +216,23 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_intersection_dataframe(self, wellpath):
+        well = self.well_attributes[wellpath]['well']
         data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
         for sfc_path in self.surface_attributes:
-            surface_picks = self.well_attributes[wellpath]['well'].get_surface_picks(self.surface_attributes[sfc_path]['surface'])
+            sfc = self.surface_attributes[sfc_path]['surface']
+            err = self.surface_attributes[sfc_path]['error_surface']
+            surface_picks = well.get_surface_picks(sfc)  # This line causes WARNNG: Invalid value encountered in greater
             if surface_picks is not None:
                 surface_picks_df = surface_picks.dataframe
                 for _, row in surface_picks_df.iterrows():
-                    depth_uncertainty = self.surface_attributes[sfc_path]['error_surface'].get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
-                    data['Surface name'].append(self.surface_attributes[sfc_path]['name'])
+                    surface_name = self.surface_attributes[sfc_path]['name']
+                    depth_uncertainty = sfc.get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
+                    data['Surface name'].append(surface_name)
                     data['TVD'].append(row['Z_TVDSS'])
                     data['Depth uncertainty'].append(depth_uncertainty)
                     data['Direction'].append(row['DIRECTION'])
         df = pd.DataFrame(data=data)
         return df.round(2)
-
 
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
