@@ -277,9 +277,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         for name, path in zip(
                                             self.wellnames, self.wellfiles
                                         )
-                                    ] + [
-                                        {'label': name, 'value': path}
-                                        for name, path in zip(self.planned_well_names, self.planned_well_files)
                                     ],
                                     value=self.wellfiles[0],
                                     clearable=False,
@@ -591,7 +588,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             de_keys = get_path(de_keys)
             surfacefiles = get_path(surfacefiles)
             if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
-                wellpath = None
+                wellfile = None
             self.xsec.set_de_and_surface_lines(surfacefiles, de_keys, wellfile, polyline)
             self.xsec.set_xsec_fig(surfacefiles, de_keys, well_settings, wellfile)
             return self.xsec.fig
