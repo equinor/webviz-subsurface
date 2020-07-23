@@ -70,6 +70,8 @@ The types of response_filters are:
 """
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-lines
     def __init__(
         self,
         app,
@@ -584,6 +586,7 @@ The types of response_filters are:
             [Input(self.uuid("submit-button"), "n_clicks")],
             self.model_callback_states,
         )
+        # pylint:disable=too-many-arguments
         def _update_visualizations(
             n_clicks,
             exc_inc,
@@ -736,7 +739,6 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
             newdf[name] = newdf.filter(items=name.split(" × ")).product(axis=1)
     return newdf
 
-
 def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, maxvars: int = 5):
     """ Forward model selection algorithm
 
@@ -766,10 +768,10 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
 
     # Initialize values for use in algorithm
     # y is the response, sst is the total sum of squares
-    y = data[response].to_numpy(dtype="float32")
-    n = len(y)
-    y_mean = np.mean(y)
-    sst = np.sum((y - y_mean) ** 2)
+    _y = data[response].to_numpy(dtype="float32")
+    _n = len(_y)
+    y_mean = np.mean(_y)
+    sst = np.sum((_y - y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in + [response]))
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
@@ -784,32 +786,32 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
                 )
             else:
                 current_model = selected.copy() + [candidate]
-            X = data.filter(items=current_model).to_numpy(dtype="float64")
-            p = X.shape[1]
-            X = np.append(X, np.ones((len(y), 1)), axis=1)
+            X_arr = data.filter(items=current_model).to_numpy(dtype="float64")
+            _p = X_arr.shape[1]
+            X_arr = np.append(X_arr, np.ones((len(_y), 1)), axis=1)
 
             # Fit model
             try:
-                beta = la.inv(X.T @ X) @ X.T @ y
+                beta = la.inv(X_arr.T @ X_arr) @ X_arr.T @ _y
             except la.LinAlgError:
                 # This clause lets us skip singluar and other non-valid model matricies.
                 continue
 
-            if n - p - 1 < 1:
+            if _n - _p - 1 < 1:
                 # The exit condition means adding this parameter would add more parameters than
                 # observations. This causes infinite variance in the model so we return the current
                 # best model
 
                 model_df = data.filter(items=selected)
-                model_df["Intercept"] = np.ones((len(y), 1))
-                model_df["response"] = y
+                model_df["Intercept"] = np.ones((len(_y), 1))
+                model_df["response"] = _y
 
                 return _model_warnings(model_df)
 
-            f_vec = beta @ X.T
+            f_vec = beta @ X_arr.T
             ss_res = np.sum((f_vec - y_mean) ** 2)
 
-            r_2_adj = 1 - (1 - (ss_res / sst)) * ((n - 1) / (n - p - 1))
+            r_2_adj = 1 - (1 - (ss_res / sst)) * ((_n - 1) / (_n - _p - 1))
             scores_with_candidates.append((r_2_adj, candidate))
 
         # If the best parameter is interactive, add all base features
@@ -829,8 +831,8 @@ def forward_selected(data: pd.DataFrame, response: str, force_in: list = None, m
 
     # Finally fit a statsmodel from the selected parameters
     model_df = data.filter(items=selected)
-    model_df["Intercept"] = np.ones((len(y), 1))
-    model_df["response"] = y
+    model_df["Intercept"] = np.ones((len(_y), 1))
+    model_df["response"] = _y
     return _model_warnings(model_df)
 
 
@@ -935,7 +937,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         xaxis=dict(
             title="",
             ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
-            tickvals=[i for i in x],
+            tickvals=x,
         ),
     )
     fig.update_traces(
