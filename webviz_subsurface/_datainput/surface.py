@@ -72,7 +72,7 @@ def new_make_surface_layer(
     shader_type="hillshading",
     unit="",
 ):
-    """Make LayeredMap surface image base layer"""
+    """Make NewLayeredMap surface image base layer"""
     zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
     min_val = min_val if min_val is not None else np.nanmin(zvalues)

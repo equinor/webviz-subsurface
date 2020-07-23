@@ -381,14 +381,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
-                            options=[
-                                {'label': 'Map view', 'value': 'map-view'},
-                                {'label': 'Table view', 'value': 'table-view'}
-                            ],
-                            id=self.ids('map-table-radioitems'),
-                            value='map-view'
+                        labelStyle={'display': 'inline-block'},
+                        options=[
+                            {'label': 'Map view', 'value': 'map-view'},
+                            {'label': 'Table view', 'value': 'table-view'}
+                        ],
+                        id=self.ids('map-table-radioitems'),
+                        value='map-view'
                         )
-                    ]
+                    ],
+                style={"padding": "5px"},
                 ),
                 html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout]),  # Hidden div to store polyline points when in table view
                 html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout]),
@@ -427,7 +429,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 ),
                 html.Div(
                     style={
-                        "marginTop": "20px",
+                        "marginTop": "0px",
                         "height": "800px",
                         "zIndex": -9999,
                     },
@@ -464,9 +466,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 dash_table.DataTable(
                     id=self.ids('uncertainty-table'),
                     columns=[{"name": i, "id": i} for i in df.columns],
-                    data=df.to_dict('records')
-                )
-            ]
+                    data=df.to_dict('records'),
+                    sort_action="native",
+                    filter_action="native",
+                ),
+            ],
+        style = {"marginTop": "25px"},
         )
 
     @property
@@ -508,12 +513,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 new_layers = self.LAYERS_STATE.copy()
                 for layer in new_layers:
                     if "shader" in layer["data"][0]:
-                        layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None  # soft-hillshading
+                        layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None
                         layer["action"] = "update"
                 self.state['switch'] = switch['value']
                 return new_layers
             surface_name = self.surface_attributes[Path(surfacefile)]["name"]
-            shader_type = 'hillshading' if switch['value'] is True else None  # soft-hillshading
+            shader_type = 'hillshading' if switch['value'] is True else None
             min_val = None
             max_val = None
             color = ["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]

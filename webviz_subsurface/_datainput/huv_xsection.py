@@ -110,31 +110,39 @@ class HuvXsection:
         Returns:
             layout: Dictionary with layout data
         '''
-        layout = {
-            "yaxis": {
-                "title": "Depth (m)",
-                "titlefont": {"size": 20},
-                "tickfont": {"size": 16}
-            },
-            "xaxis": {
-                "title": "Distance from polyline",
-                "titlefont": {"size": 18},
-                "tickfont": {"size": 16}
-            },
-            "plot_bgcolor": 'rgb(233,233,233)',
-            "showlegend": False,
-            "height": 810,
-            "margin": {"t": 0, "l": 100},
-        }
+        layout = {"plot_bgcolor": 'rgb(233,233,233)',
+                "showlegend": False,
+                "height": 830,
+                "margin": {"t": 0, "l": 100},}
         if len(surfacefiles) == 0:
             layout.update({
-                "yaxis": {"autorange": "reversed"}
+                "yaxis":{
+                    "autorange": "reversed",
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
+                },
+                "xaxis":{
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
+                },
             })
 
         elif wellfile is None:
             ymin, ymax = self.sfc_lines_min_max_TVD(surfacefiles)
             layout.update({
-                "yaxis": {"range": [ymax, ymin]}
+                "yaxis":{
+                    "range": [ymax, ymin],
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
+                },
+                "xaxis":{
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
+                },
             })
 
         else:
@@ -145,12 +153,18 @@ class HuvXsection:
             if y_range/x_range > 1:
                 x_range = y_range + 10
             layout.update({
-                "yaxis": {
-                    "range": [y_max + 0.15*y_range, y_min - 0.15*y_range],
+                "yaxis":{
+                    "range" : [y_max + 0.15*y_range, y_min - 0.15*y_range],
+                    "title": "Depth (m)",
+                    "titlefont": {"size": 20},
+                    "tickfont": {"size":16},
                 },
                 "xaxis": {
                     "range": [x_min - 0.35*x_range, x_max + 0.35*x_range],
-                }
+                    "title": "Distance from polyline",
+                    "titlefont": {"size": 18},
+                    "tickfont": {"size":16},
+                },
             })
         return layout
 
