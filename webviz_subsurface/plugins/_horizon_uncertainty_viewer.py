@@ -327,6 +327,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
+                        labelStyle={'display': 'inline-block'},
                         options=[
                             {'label': 'Map view', 'value': 'map-view'},
                             {'label': 'Table view', 'value': 'table-view'}
@@ -334,7 +335,8 @@ The cross section is defined by a polyline interactively edited in the map view.
                         id=self.ids('map-table-radioitems'),
                         value='map-view'
                         )
-                    ]
+                    ],
+                style={"padding": "5px"},
                 ),
                 html.Div(
                     id=self.ids('left-flexbox-content'),
@@ -375,7 +377,7 @@ The cross section is defined by a polyline interactively edited in the map view.
                 ),
                 html.Div(
                     style={
-                        "marginTop": "20px",
+                        "marginTop": "0px",
                         "height": "800px",
                         "zIndex": -9999,
                     },
@@ -412,9 +414,12 @@ The cross section is defined by a polyline interactively edited in the map view.
                 dash_table.DataTable(
                     id=self.ids('uncertainty-table'),
                     columns=[{"name": i, "id": i} for i in df.columns],
-                    data=df.to_dict('records')
-                )
-            ]
+                    data=df.to_dict('records'),
+                    sort_action="native",
+                    filter_action="native",
+                ),
+            ],
+        style = {"marginTop": "25px"},
         )
 
     @property
@@ -643,7 +648,7 @@ The cross section is defined by a polyline interactively edited in the map view.
             Output(self.ids('uncertainty-table'), 'data'),
             [Input(self.ids('well-dropdown'), 'value')]
         )
-        def _render_uncertainty_table(value, wellpath):
+        def _render_uncertainty_table(wellpath):
             df = self.xsec.get_intersection_dataframe(wellpath)
             return df.to_dict('records')
 
