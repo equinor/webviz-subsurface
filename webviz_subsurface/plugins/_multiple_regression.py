@@ -143,7 +143,12 @@ The types of response_filters are:
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
+                    [
+                        "REAL",
+                        "ENSEMBLE",
+                        *response_include,
+                        *list(response_filters.keys()),
+                    ]
                 ),
                 errors="ignore",
                 axis=1,
@@ -212,7 +217,9 @@ The types of response_filters are:
             },
             {
                 "id": self.uuid("interaction"),
-                "content": ("Select the desired level of interaction in the visualized model."),
+                "content": (
+                    "Select the desired level of interaction in the visualized model."
+                ),
             },
             {
                 "id": self.uuid("max-params"),
@@ -222,7 +229,9 @@ The types of response_filters are:
             },
             {
                 "id": self.uuid("force-in"),
-                "content": ("Select parameters forced to be included in the visualized model."),
+                "content": (
+                    "Select parameters forced to be included in the visualized model."
+                ),
             },
         ]
         return steps
@@ -271,7 +280,9 @@ The types of response_filters are:
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
+                    raise ValueError(
+                        f"Filter type {col_type} for {col_name} is not valid."
+                    )
 
     @property
     def filter_layout(self):
@@ -307,7 +318,9 @@ The types of response_filters are:
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.ensembles
+                        ],
                         clearable=False,
                         value=self.ensembles[0],
                         style={"marginBottom": "20px"},
@@ -319,7 +332,9 @@ The types of response_filters are:
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[{"label": ens, "value": ens} for ens in self.responses],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.responses
+                        ],
                         clearable=False,
                         value=self.responses[0],
                         style={"marginBottom": "20px"},
@@ -379,7 +394,9 @@ The types of response_filters are:
                     ),
                     dcc.Dropdown(
                         id=self.uuid("parameter-list"),
-                        options=[{"label": ens, "value": ens} for ens in self.parameters],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
                         clearable=True,
                         multi=True,
                         placeholder="",
@@ -393,10 +410,12 @@ The types of response_filters are:
             html.Div(
                 [
                     html.Div(
-                        "Model settings:", style={"font-weight": "bold", "marginTop": "20px"},
+                        "Model settings:",
+                        style={"font-weight": "bold", "marginTop": "20px"},
                     ),
                     html.Div(
-                        "Interaction", style={"display": "inline-block", "margin-right": "10px"},
+                        "Interaction",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
                         dbc.Badge(
@@ -487,7 +506,8 @@ The types of response_filters are:
             html.Div(
                 [
                     html.Div(
-                        "Force in", style={"display": "inline-block", "margin-right": "10px"},
+                        "Force in",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
                         dbc.Badge(
@@ -529,7 +549,9 @@ The types of response_filters are:
             html.Div(
                 style={"display": "grid"},
                 children=[
-                    html.Button(id=self.uuid("submit-button"), children="Press to update model")
+                    html.Button(
+                        id=self.uuid("submit-button"), children="Press to update model"
+                    )
                 ],
             ),
         ]
@@ -541,17 +563,33 @@ The types of response_filters are:
             id=self.uuid("layout"),
             children=[
                 html.Div(
+                    style={"flex": 1, "marginTop": "46px"}, children=self.control_layout
+                ),
+                html.Div(
                     style={"flex": 3},
                     children=[
                         html.Div(
                             id=self.uuid("page-title"),
-                            style={"textAlign": "left", "display": "grid", "fontSize": "1.3em",},
+                            style={
+                                "textAlign": "left",
+                                "display": "grid",
+                                "fontSize": "1.3em",
+                                "marginLeft": "-322px",
+                            },
                         ),
                         html.Div(children=[wcc.Graph(id=self.uuid("p-values-plot"))]),
-                        html.Div(children=[wcc.Graph(id=self.uuid("coefficient-plot"))]),
+                        html.Div(
+                            children=[wcc.Graph(id=self.uuid("coefficient-plot"))]
+                        ),
                         html.Label(
                             "Table with parameters and their corresponding p-values",
-                            style={"fontSize": ".92em"},
+                            style={
+                                "fontSize": ".925em",
+                                "marginLeft": "49px",
+                                "marginBottom": "35px",
+                                "marginTop": "35px",
+                                "color": self.plotly_theme["layout"]["colorway"][1],
+                            },
                         ),
                         DataTable(
                             id=self.uuid("table"),
@@ -560,10 +598,10 @@ The types of response_filters are:
                             page_action="native",
                             page_size=10,
                             style_cell={"fontSize": ".80em"},
+                            style_table={"marginLeft": "86px", "width": "82.5%"},
                         ),
                     ],
                 ),
-                html.Div(style={"flex": 1}, children=self.control_layout),
             ],
         )
 
@@ -589,7 +627,9 @@ The types of response_filters are:
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
+                filteroptions.append(
+                    {"name": col_name, "type": col_type, "values": filters[i]}
+                )
         return filteroptions
 
     def set_callbacks(self, app):
@@ -608,7 +648,10 @@ The types of response_filters are:
         """Set callbacks for interaction between exclude/include param and force-in"""
 
         @app.callback(
-            [Output(self.uuid("force-in"), "options"), Output(self.uuid("force-in"), "value"),],
+            [
+                Output(self.uuid("force-in"), "options"),
+                Output(self.uuid("force-in"), "value"),
+            ],
             [
                 Input(self.uuid("parameter-list"), "value"),
                 Input(self.uuid("exclude-include"), "value"),
@@ -620,7 +663,9 @@ The types of response_filters are:
             # If exclusive and parameter_list empty -> all param avail. for force-in
             # If inclusive and parameter_list empty -> no param avail.
             if exc_inc == "exc":
-                df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
+                df = self.parameterdf.drop(
+                    columns=["ENSEMBLE", "REAL"] + parameter_list
+                )
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
             fi_lst = list(df)
@@ -677,7 +722,9 @@ The types of response_filters are:
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(
+                columns=["REAL", "ENSEMBLE"]
+            )
 
             # If no selected parameters
             if exc_inc == "inc" and not parameter_list:
@@ -727,11 +774,18 @@ The types of response_filters are:
                     )
                 # Generate table
                 table = result.model.fit().summary2().tables[1].drop("Intercept")
-                table.drop(["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True)
+                table.drop(
+                    ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
+                )
                 table.index.name = "Parameter"
                 table.reset_index(inplace=True)
                 columns = [
-                    {"name": i, "id": i, "type": "numeric", "format": Format(precision=4),}
+                    {
+                        "name": i,
+                        "id": i,
+                        "type": "numeric",
+                        "format": Format(precision=4),
+                    }
                     for i in table.columns
                 ]
                 data = table.to_dict("rows")
@@ -740,7 +794,9 @@ The types of response_filters are:
                 p_sorted = result.pvalues.sort_values().drop("Intercept")
 
                 # Get coefficients for plot
-                coeff_sorted = result.params.sort_values(ascending=False).drop("Intercept")
+                coeff_sorted = result.params.sort_values(ascending=False).drop(
+                    "Intercept"
+                )
 
                 return (
                     # Generate table
@@ -762,7 +818,12 @@ The types of response_filters are:
         return [
             (
                 load_parameters,
-                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
             ),
             (
                 load_csv,
@@ -788,9 +849,13 @@ def gen_model(
     """Wrapper for model selection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree + 1)
-        model = forward_selected(data=df, response=response, force_in=force_in, maxvars=max_vars)
+        model = forward_selected(
+            data=df, response=response, force_in=force_in, maxvars=max_vars
+        )
     else:
-        model = forward_selected(data=df, response=response, force_in=force_in, maxvars=max_vars)
+        model = forward_selected(
+            data=df, response=response, force_in=force_in, maxvars=max_vars
+        )
     return model
 
 
@@ -810,7 +875,9 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
     return newdf
 
 
-def forward_selected(data: pd.DataFrame, response: str, force_in: list = [], maxvars: int = 5):
+def forward_selected(
+    data: pd.DataFrame, response: str, force_in: list = [], maxvars: int = 5
+):
     """ Forward model selection algorithm
 
         Returns Statsmodels RegressionResults object.
@@ -913,7 +980,9 @@ def _model_warnings(design_matrix: pd.DataFrame):
         warnings.filterwarnings("error", category=RuntimeWarning)
         warnings.filterwarnings("ignore", category=UserWarning)
         try:
-            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
+            model = sm.OLS(
+                design_matrix["response"], design_matrix.drop(columns="response")
+            ).fit()
         except (Exception, RuntimeWarning) as e:
             print("error: ", e)
             return None
@@ -931,7 +1000,11 @@ def make_p_values_plot(p_sorted, theme):
             "x": [param.replace(" × ", "<br>× ") for param in parameters],
             "y": p_values,
             "type": "bar",
-            "marker": {"color": [default_color if val < 0.05 else "#606060" for val in p_values]},
+            "marker": {
+                "color": [
+                    default_color if val < 0.05 else "#606060" for val in p_values
+                ]
+            },
         }
     )
     fig.update_traces(
@@ -967,7 +1040,9 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5},
         }
     )
-    fig.add_annotation(x=len(p_values) - 0.35, y=0.05, text="P-value<br>= 0.05", showarrow=False)
+    fig.add_annotation(
+        x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False
+    )
     fig["layout"]["font"].update({"size": 12})
     return fig
 
@@ -978,7 +1053,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-
     centre = 1
     domain = 2
     centre_dist = len(parameters) / (domain + 1)
@@ -986,7 +1060,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         [1]
         if len(parameters) == 1
         else np.linspace(
-            max(centre - centre_dist, 0), min(centre + centre_dist, domain), num=len(parameters),
+            max(centre - centre_dist, 0),
+            min(centre + centre_dist, domain),
+            num=len(parameters),
         )
     )
     y = np.zeros(len(x))
@@ -1006,9 +1082,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         )
     )
     fig.update_layout(
-        yaxis=dict(range=[-0.15, 0.15], title="", showticklabels=False),
+        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),
         xaxis=dict(
-            range=[-0.23, domain + 0.26],
             title="",
             ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
             tickvals=[i for i in x],
@@ -1037,7 +1112,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             },
         )
     )
-    fig["layout"]["font"].update({"size": 12})
+    fig["layout"]["font"].update(
+        {"size": 12}
+    )  # QUESTION: Does this really make a difference?
 
     """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
@@ -1056,15 +1133,22 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         )
     """Adding zero-line along y-axis"""
     fig.add_shape(
-        type="line", x0=-0.1, y0=0, x1=domain+0.1, y1=0, line=dict(color="#222A2A", width=0.75,),
+        type="line",
+        x0=-0.1,
+        y0=0,
+        x1=domain + 0.1,
+        y1=0,
+        line=dict(color="#222A2A", width=0.75,),
     )
     fig.add_shape(
         type="path",
-        path=f" M {domain+0.12} 0 L {domain+0.1} -0.005 L {domain+0.1} 0.005 Z",
+        path=f" M {domain+0.12} 0 L {domain+0.1} -0.0035 L {domain+0.1} 0.0035 Z",
         line_color="#222A2A",
         line_width=0.75,
     )
-    fig.add_annotation(x=domain+0.26, y=0, text="Increasing<br>p-value", showarrow=False)
+    fig.add_annotation(
+        x=domain + 0.26, y=0, text="Increasing<br>p-value", showarrow=False
+    )
     return fig
 
 
@@ -1081,7 +1165,9 @@ def make_range_slider(domid, values, col_name):
         min=values.min(),
         max=values.max(),
         step=calculate_slider_step(
-            min_value=values.min(), max_value=values.max(), steps=len(list(values.unique())) - 1,
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
         ),
         value=[values.min(), values.max()],
         marks={
