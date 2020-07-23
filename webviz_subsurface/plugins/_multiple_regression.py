@@ -12,8 +12,8 @@ import webviz_core_components as wcc
 import dash_bootstrap_components as dbc
 import statsmodels.api as sm
 from dash_table import DataTable
-from dash.dependencies import Input, Output, State
 from dash_table.Format import Format
+from dash.dependencies import Input, Output, State
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
@@ -42,7 +42,6 @@ parameters. Please make sure to properly filter your inputs or the model will gi
 answers that are misleading.
 
 Arguments:
-
 * `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
 * `response_csv`: Aggregated csvfile for response with 'REAL' and 'ENSEMBLE' columns.
 * `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
@@ -110,11 +109,6 @@ The types of response_filters are:
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            # For csv files
-            # self.parameterdf = read_csv(self.parameter_csv)
-            # self.responsedf = read_csv(self.response_csv)
-
-            # For parquet files
             self.parameterdf = pd.read_parquet(self.parameter_csv)
             self.responsedf = pd.read_parquet(self.response_csv)
 
@@ -158,6 +152,22 @@ The types of response_filters are:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.badge_style = {
+            "font-weight": "bold",
+            "fontSize": ".70em",
+            "borderRadius": "3px",
+            "backgroundColor": "#505050",
+            "color": "white",
+            "white-space": "pre-wrap",
+        }
+        self.tooltip_style = {
+            "fontSize": ".75em",
+            "backgroundColor": "#505050",
+            "color": "white",
+            "opacity": "85%",
+            "white-space": "pre-wrap",
+            "borderRadius": "5px",
+        }
         self.set_callbacks(app)
 
     def ids(self, element):
@@ -238,8 +248,7 @@ The types of response_filters are:
 
     @property
     def responses(self):
-        """Returns valid responses. Filters out non numerical columns,
-        and filterable columns. Replaces : and , with _ to make it work with the model"""
+        """Returns valid responses. Filters out non numerical and filterable columns."""
         responses = list(
             self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
             .apply(pd.to_numeric, errors="coerce")
@@ -352,17 +361,7 @@ The types of response_filters are:
                         },
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ",
-                            style={
-                                "font-weight": "bold",
-                                "fontSize": ".70em",
-                                "borderRadius": "3px",
-                                "backgroundColor": "#505050",
-                                "color": "white",
-                                "white-space": "pre-wrap",
-                            },
-                        ),
+                        dbc.Badge(" ? ", style=self.badge_style,),
                         id=self.uuid("tooltip-parameters"),
                     ),
                     dbc.Tooltip(
@@ -373,14 +372,7 @@ The types of response_filters are:
                         + " investigate. Parameters included here are not guaranteed to be \n"
                         + " included in the output model. ",
                         target=self.uuid("tooltip-parameters"),
-                        style={
-                            "fontSize": ".75em",
-                            "backgroundColor": "#505050",
-                            "color": "white",
-                            "opacity": "85%",
-                            "white-space": "pre-wrap",
-                            "borderRadius": "5px",
-                        },
+                        style=self.tooltip_style,
                     ),
                     dcc.RadioItems(
                         id=self.uuid("exclude-include"),
@@ -418,34 +410,17 @@ The types of response_filters are:
                         style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ",
-                            style={
-                                "font-weight": "bold",
-                                "fontSize": ".70em",
-                                "borderRadius": "3px",
-                                "backgroundColor": "#505050",
-                                "color": "white",
-                                "white-space": "pre-wrap",
-                            },
-                        ),
+                        dbc.Badge(" ? ", style=self.badge_style,),
                         id=self.uuid("tooltip-filters"),
                     ),
                     dbc.Tooltip(
-                        " Lets you select how deep your interaction is: \n"
+                        " Lets you select how deep the interaction level is: \n \n"
                         + " – Off allows only for the parameters in their original state. \n"
-                        + " – 2 levels allows for the product of 2 original parameters. \n"
-                        + " – 3 levels allows for the product of 3 original parameters. \n \n"
+                        + " – 2 levels allow for the product of 2 original parameters. \n"
+                        + " – 3 levels allow for the product of 3 original parameters. \n \n"
                         + " This feature allows you to investigate possible feedback effects. ",
                         target=self.uuid("tooltip-filters"),
-                        style={
-                            "fontSize": ".75em",
-                            "backgroundColor": "#505050",
-                            "color": "white",
-                            "opacity": "85%",
-                            "white-space": "pre-wrap",
-                            "borderRadius": "5px",
-                        },
+                        style=self.tooltip_style,
                     ),
                     dcc.Slider(
                         id=self.uuid("interaction"),
@@ -466,14 +441,7 @@ The types of response_filters are:
                     html.Span(
                         dbc.Badge(
                             " ? ",
-                            style={
-                                "font-weight": "bold",
-                                "fontSize": ".70em",
-                                "borderRadius": "3px",
-                                "backgroundColor": "#505050",
-                                "color": "white",
-                                "white-space": "pre-wrap",
-                            },
+                            style=self.badge_style,
                             id=self.uuid("tooltip-maxparams"),
                         )
                     ),
@@ -483,14 +451,7 @@ The types of response_filters are:
                         + " interaction level. This is to make sure the interaction terms have \n"
                         + " an intuitive interpretation. ",
                         target=self.uuid("tooltip-maxparams"),
-                        style={
-                            "fontSize": ".75em",
-                            "backgroundColor": "#505050",
-                            "color": "white",
-                            "opacity": "85%",
-                            "white-space": "pre-wrap",
-                            "borderRadius": "5px",
-                        },
+                        style=self.tooltip_style,
                     ),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
@@ -511,30 +472,14 @@ The types of response_filters are:
                     ),
                     html.Span(
                         dbc.Badge(
-                            " ? ",
-                            style={
-                                "font-weight": "bold",
-                                "fontSize": ".70em",
-                                "borderRadius": "3px",
-                                "backgroundColor": "#505050",
-                                "color": "white",
-                                "white-space": "pre-wrap",
-                            },
-                            id=self.uuid("tooltip-fi"),
+                            " ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),
                         )
                     ),
                     dbc.Tooltip(
                         " Lets you force parameters into the model. If interaction is active, \n"
                         + " the cap is the selected value + the interaction level. ",
                         target=self.uuid("tooltip-fi"),
-                        style={
-                            "fontSize": ".75em",
-                            "backgroundColor": "#505050",
-                            "color": "white",
-                            "opacity": "85%",
-                            "white-space": "pre-wrap",
-                            "borderRadius": "5px",
-                        },
+                        style=self.tooltip_style,
                     ),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
@@ -582,7 +527,7 @@ The types of response_filters are:
                             children=[wcc.Graph(id=self.uuid("coefficient-plot"))]
                         ),
                         html.Label(
-                            "Table with parameters and their corresponding p-values",
+                            "Table of parameters and their corresponding p-values",
                             style={
                                 "fontSize": ".925em",
                                 "marginLeft": "49px",
@@ -633,19 +578,16 @@ The types of response_filters are:
         return filteroptions
 
     def set_callbacks(self, app):
-        """Set callbacks for placeholder text for exc/inc dropdown"""
-
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
             [Input(self.uuid("exclude-include"), "value")],
         )
         def update_placeholder(exc_inc):
+            """Callback to update placeholder text in exlude/subset mode"""
             if exc_inc == "exc":
                 return "Select parameters to exclude..."
-            elif exc_inc == "inc":
+            else:
                 return "Select parameters for subset..."
-
-        """Set callbacks for interaction between exclude/include param and force-in"""
 
         @app.callback(
             [
@@ -659,9 +601,7 @@ The types of response_filters are:
             [State(self.uuid("force-in"), "value"),],
         )
         def update_force_in(parameter_list, exc_inc, force_in):
-            """Returns a dictionary with options for force in"""
-            # If exclusive and parameter_list empty -> all param avail. for force-in
-            # If inclusive and parameter_list empty -> no param avail.
+            """Callback to update options for force in"""
             if exc_inc == "exc":
                 df = self.parameterdf.drop(
                     columns=["ENSEMBLE", "REAL"] + parameter_list
@@ -675,8 +615,6 @@ The types of response_filters are:
                     force_in.remove(param)
 
             return options, force_in
-
-        """Set callbacks for the table, p-values plot, and arrow plot"""
 
         @app.callback(
             [
@@ -726,7 +664,6 @@ The types of response_filters are:
                 columns=["REAL", "ENSEMBLE"]
             )
 
-            # If no selected parameters
             if exc_inc == "inc" and not parameter_list:
                 return (
                     [{"e": ""}],
@@ -734,80 +671,68 @@ The types of response_filters are:
                     "Please select parameters to be included in the model",
                     {
                         "layout": {
-                            "title": "<b>Please select parameters to be included in the model</b><br>"
+                            "title": "<b>Please select parameters to include in the model</b><br>"
                         }
                     },
                     {
                         "layout": {
-                            'title": "<b>Please select parameters to be included in the model</b><br>'
+                            "title": "<b>Please select parameters to include in the model</b><br>"
                         }
                     },
                 )
 
-            else:
-                # Get results from the model
-                result = gen_model(
-                    df,
-                    response,
-                    force_in=force_in,
-                    max_vars=max_vars,
-                    interaction_degree=interaction,
-                )
-                if not result:
-                    return (
-                        [{"e": ""}],
-                        [{"name": "", "id": "e"}],
-                        "Cannot calculate fit for given selection. Select a different "
-                        "response or filter setting",
-                        {
-                            "layout": {
-                                "title": "<b>Cannot calculate fit for given selection</b><br>"
-                                "Select a different response or filter setting."
-                            }
-                        },
-                        {
-                            "layout": {
-                                "title": "<b>Cannot calculate fit for given selection</b><br>"
-                                "Select a different response or filter setting."
-                            }
-                        },
-                    )
-                # Generate table
-                table = result.model.fit().summary2().tables[1].drop("Intercept")
-                table.drop(
-                    ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
-                )
-                table.index.name = "Parameter"
-                table.reset_index(inplace=True)
-                columns = [
-                    {
-                        "name": i,
-                        "id": i,
-                        "type": "numeric",
-                        "format": Format(precision=4),
-                    }
-                    for i in table.columns
-                ]
-                data = table.to_dict("rows")
-
-                # Get p-values for plot
-                p_sorted = result.pvalues.sort_values().drop("Intercept")
-
-                # Get coefficients for plot
-                coeff_sorted = result.params.sort_values(ascending=False).drop(
-                    "Intercept"
-                )
-
+            result = gen_model(
+                df,
+                response,
+                force_in=force_in,
+                max_vars=max_vars,
+                interaction_degree=interaction,
+            )
+            if not result:
                 return (
-                    # Generate table
-                    data,
-                    columns,
-                    f"Multiple regression with {response} as response",
-                    # Generate p-values plot
-                    make_p_values_plot(p_sorted, self.plotly_theme),
-                    # Generate coefficient plot
-                    make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme),
+                    [{"e": ""}],
+                    [{"name": "", "id": "e"}],
+                    "Cannot calculate fit for given selection. Select a different "
+                    "response or filter setting",
+                    {
+                        "layout": {
+                            "title": "<b>Cannot calculate fit for given selection</b><br>"
+                            "Select a different response or filter setting."
+                        }
+                    },
+                    {
+                        "layout": {
+                            "title": "<b>Cannot calculate fit for given selection</b><br>"
+                            "Select a different response or filter setting."
+                        }
+                    },
                 )
+            # Generate table
+            table = result.model.fit().summary2().tables[1].drop("Intercept")
+            table.drop(
+                ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
+            )
+            table.index.name = "Parameter"
+            table.reset_index(inplace=True)
+            columns = [
+                {"name": i, "id": i, "type": "numeric", "format": Format(precision=4),}
+                for i in table.columns
+            ]
+            data = table.to_dict("rows")
+
+            # Get p-values for plot
+            p_sorted = result.pvalues.sort_values().drop("Intercept")
+
+            # Get coefficients for plot
+            coeff_sorted = result.params.sort_values(ascending=False).drop("Intercept")
+
+            return (
+                data,
+                columns,
+                f"Multiple regression with {response} as response",
+                make_p_values_plot(p_sorted, self.plotly_theme),
+                make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme),
+            )
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -843,20 +768,15 @@ def gen_model(
     df: pd.DataFrame,
     response: str,
     max_vars: int = 9,
-    force_in: list = [],
+    force_in: list = None,
     interaction_degree: bool = False,
 ):
     """Wrapper for model selection algorithm."""
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree + 1)
-        model = forward_selected(
-            data=df, response=response, force_in=force_in, maxvars=max_vars
-        )
-    else:
-        model = forward_selected(
-            data=df, response=response, force_in=force_in, maxvars=max_vars
-        )
-    return model
+    return forward_selected(
+        data=df, response=response, force_in=force_in, maxvars=max_vars
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -876,7 +796,7 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
 
 
 def forward_selected(
-    data: pd.DataFrame, response: str, force_in: list = [], maxvars: int = 5
+    data: pd.DataFrame, response: str, force_in: list = None, maxvars: int = 5
 ):
     """ Forward model selection algorithm
 
@@ -890,13 +810,13 @@ def forward_selected(
         - Initialize values
         - While there are parameters left and the last model was the best model yet and the
         parameter limit isnt reached, for every parameter not chosen yet:
-            1.  If it is an interaction parameter add the base features to the model.
+            1.  If it is an interaction parameter, add the base features to the model.
             2.  Create a model matrix, fit the model and calculate selection criterion for each
                 remaining parameter.
             3.  Pick the best parameter and repeat with remaining parameters until we satisfy an
                 exit condition.
-            4.  Finally fit a Statsmodels regression and return the results. 
-     
+            4.  Finally fit a Statsmodels regression and return the results.
+
         Exit conditions:
             - No parameters in remaining.
             - The last model was not the best model.
@@ -905,11 +825,11 @@ def forward_selected(
      """
 
     # Initialize values for use in algorithm
-    # y is the response, SST is the total sum of squares
+    # y is the response, sst is the total sum of squares
     y = data[response].to_numpy(dtype="float32")
     n = len(y)
     y_mean = np.mean(y)
-    SST = np.sum((y - y_mean) ** 2)
+    sst = np.sum((y - y_mean) ** 2)
     remaining = set(data.columns).difference(set(force_in + [response]))
     selected = force_in
     current_score, best_new_score = 0.0, 0.0
@@ -947,10 +867,10 @@ def forward_selected(
                 return _model_warnings(model_df)
 
             f_vec = beta @ X.T
-            SS_RES = np.sum((f_vec - y_mean) ** 2)
+            ss_res = np.sum((f_vec - y_mean) ** 2)
 
-            R_2_adj = 1 - (1 - (SS_RES / SST)) * ((n - 1) / (n - p - 1))
-            scores_with_candidates.append((R_2_adj, candidate))
+            r_2_adj = 1 - (1 - (ss_res / sst)) * ((n - 1) / (n - p - 1))
+            scores_with_candidates.append((r_2_adj, candidate))
 
         # If the best parameter is interactive, add all base features
         scores_with_candidates.sort(key=lambda x: x[0])
@@ -983,8 +903,8 @@ def _model_warnings(design_matrix: pd.DataFrame):
             model = sm.OLS(
                 design_matrix["response"], design_matrix.drop(columns="response")
             ).fit()
-        except (Exception, RuntimeWarning) as e:
-            print("error: ", e)
+        except (Exception, RuntimeWarning) as error:
+            print("error: ", error)
             return None
     return model
 
@@ -1024,8 +944,8 @@ def make_p_values_plot(p_sorted, theme):
             {
                 "barmode": "relative",
                 "height": 500,
-                "title": f"P-values for the parameters. Value lower than 0.05 indicates "
-                "statistical significance",
+                "title": "P-values for the parameters. Value lower than 0.05 indicates "
+                         "statistical significance",
             },
         )
     )
@@ -1053,16 +973,12 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
-    centre = 1
-    domain = 2
-    centre_dist = len(parameters) / (domain + 1)
+    centre_dist = len(parameters) / 3
     x = (
         [1]
         if len(parameters) == 1
         else np.linspace(
-            max(centre - centre_dist, 0),
-            min(centre + centre_dist, domain),
-            num=len(parameters),
+            max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),
         )
     )
     y = np.zeros(len(x))
@@ -1089,7 +1005,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             tickvals=[i for i in x],
         ),
     )
-    """Customizing the hoverer"""
     fig.update_traces(
         hovertemplate=[
             "<b>Parameter:</b> "
@@ -1108,15 +1023,12 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                 "barmode": "relative",
                 "height": 500,
                 "title": "Parameters impact (increase or decrese) on response and "
-                "their significance",
+                         "their significance",
             },
         )
     )
-    fig["layout"]["font"].update(
-        {"size": 12}
-    )  # QUESTION: Does this really make a difference?
+    fig["layout"]["font"].update({"size": 12})
 
-    """Adding arrows to figure"""
     for i, sign in enumerate(np.sign(coeff_vals)):
         x_coordinate = x[i]
         fig.add_shape(
@@ -1131,24 +1043,21 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             fillcolor=default_color if p_values[i] < 0.05 else "#606060",
             line_width=0,
         )
-    """Adding zero-line along y-axis"""
     fig.add_shape(
         type="line",
         x0=-0.1,
         y0=0,
-        x1=domain + 0.1,
+        x1=2 + 0.1,
         y1=0,
-        line=dict(color="#222A2A", width=0.75,),
+        line=dict(color="#222A2A", width=0.75),
     )
     fig.add_shape(
         type="path",
-        path=f" M {domain+0.12} 0 L {domain+0.1} -0.0035 L {domain+0.1} 0.0035 Z",
+        path=f" M {2+0.12} 0 L {2+0.1} -0.0035 L {2+0.1} 0.0035 Z",
         line_color="#222A2A",
         line_width=0.75,
     )
-    fig.add_annotation(
-        x=domain + 0.26, y=0, text="Increasing<br>p-value", showarrow=False
-    )
+    fig.add_annotation(x=2 + 0.26, y=0, text="Increasing<br>p-value", showarrow=False)
     return fig
 
 
