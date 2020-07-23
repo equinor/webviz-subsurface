@@ -567,13 +567,15 @@ The types of response_filters are:
                 df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
+
             fi_lst = list(df)
             options = [{"label": fi, "value": fi} for fi in fi_lst]
+            #Add only valid parameters
+            force_in_updated = []
             for param in force_in:
-                if param not in fi_lst:
-                    force_in.remove(param)
-
-            return options, force_in
+                if param in fi_lst:
+                    force_in_updated.append(param)
+            return options, force_in_updated
 
         @app.callback(
             [
@@ -770,6 +772,8 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
 
     # Initialize values for use in algorithm (sst is the total sum of squares)
     response = data[resp].to_numpy(dtype="float32")
+    if (response == 0).all():
+        return None
     sst = np.sum((response - np.mean(response)) ** 2)
     remaining = set(data.columns).difference(set(force_in + [resp]))
     selected = force_in
