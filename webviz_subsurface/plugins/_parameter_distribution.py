@@ -16,16 +16,29 @@ from .._datainput.fmu_input import load_parameters
 
 
 class ParameterDistribution(WebvizPluginABC):
-    """### ParameterDistribution
+    """Visualizes parameter distributions for FMU ensembles.
 
-Shows parameter distributions for FMU ensembles.
-Parameters are visualized per ensemble as a histogram, and as a boxplot showing
-the parameter ranges for each ensemble.
-Input can be given either as an aggregated csv files with parameter information
-or as an ensemble name defined in `shared_settings`.
+Parameters are visualized either as histograms, showing parameter ranges
+and distributions for each ensemble.
 
-* `csvfile`: Aggregated csvfile with 'REAL', 'ENSEMBLE' and parameter columns
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
+Input can be given either as an aggregated `csv` file with parameter information,
+or as ensemble name(s) defined in `shared_settings`.
+
+---
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns. \
+ (absolute path or relative to config file).
+
+**Reading data from ensembles**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+
+---
+Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
+
+When using an aggregated `csvfile`, you need to have the columns `REAL`, `ENSEMBLE`
+and the parameter columns.
 """
 
     def __init__(self, app, csvfile: Path = None, ensembles: list = None):

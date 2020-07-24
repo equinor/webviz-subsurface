@@ -41,13 +41,16 @@ jobs:
       uses: actions/checkout@v2
 
     - name: 🐍 Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: 📦 Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
+        if [[ $(pip freeze) ]]; then
+          pip freeze | grep -vw "pip" | xargs pip uninstall -y
+        fi
         pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
         pip install libecl  # while waiting for it to be included as dependency in fmu-ensemble
@@ -82,10 +85,7 @@ jobs:
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         pytest ./tests --headless --forked
-        git clone https://github.com/equinor/webviz-config.git
-        pushd ./webviz-config/docs
-        python build_docs.py
-        popd
+        webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
       run: |
@@ -125,9 +125,9 @@ jobs:
         twine upload dist/*
 
     - name: 📚 Update GitHub pages
-      if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
       run: |
-        cp -R ./webviz-config/docs/_build ../_build
+        cp -R ./docs_build ../docs_build
 
         git config --local user.email "webviz-github-action"
         git config --local user.name "webviz-github-action"
@@ -136,7 +136,7 @@ jobs:
         git clean -f -f -d -x
         git rm -r *
 
-        cp -R ../_build/* .
+        cp -R ../docs_build/* .
 
         git add .
 
