@@ -358,14 +358,20 @@ The types of response_filters are:
                             {"label": ens, "value": ens} for ens in self.parameters
                         ],
                         multi=True,
-                        size=20,
+                        size=10,
                         value=[],
                         style={"marginBottom": "20px"}
                     ),
                 ]
-            ),html.Div("threshhold percentage"),
-            html.Div(dcc.Slider(id=self.uuid("percent"),
-            min=50, max=100, step=1, value=70,marks={x: x for x in range(50,101,5)})),
+            ),
+            html.Div("threshhold percentage"),
+            html.Div(dcc.Slider(
+                id=self.uuid("percent"),
+                min=50, max=100,
+                step=1, value=70,
+                marks={x: x for x in range(50, 101, 5)}
+                )
+            ),
             html.Div("Filters:", style={"font-weight": "bold"}),
             html.Div(children=self.filter_layout),]
 
@@ -426,24 +432,25 @@ The types of response_filters are:
         
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
-            
             Output(self.uuid("p-values-plot"), "figure"),
             self.model_callback_Inputs
         )
-        def _update_visualizations(exc_inc, parameter_list, ensemble, response, percent, *filters):
+        def _update_visualizations(
+                exc_inc, parameter_list,
+                ensemble, response,
+                percent, *filters):
             """Callback to update the model for multiple regression
 
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Fit model using forward stepwise regression, with or without interactions
-            5. Generate table and plots
+            1. Filters and aggregates response dataframe per realization.
+            2. Filters parameters dataframe on selected ensemble.
+            3. Merge parameter and response dataframe.
+            4. Discretisize response.
+            5. generate paralell parameters plot.
             """
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
-                ensemble,
-                response,
+                ensemble, response,
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
@@ -453,11 +460,9 @@ The types of response_filters are:
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
             
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(parameterdf, responsedf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            #print(df.head())
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             df = col_percentile(df, response, percent)
-            #print(df.head())
             
             dims = [
                 {"label": param, "values": df[param]} for param in df
@@ -472,15 +477,19 @@ The types of response_filters are:
                         "cmin": 1,
                         "cmax": 3,
                         "colorbar": {
-                            "title": response
+                            "title": response,
+                            "xanchor": "left",
+                            "x": -0.08,
+                            "tickvals": [1, 2, 3],
+                            "ticktext": ["low", "medium", "high"]
                         },
                     },
                     "dimensions": dims,
                     "labelangle": 45,
                     "labelside": "bottom",
                 }],
-                "layout": {"width": len(dims) * 30 + 250, "height": 1200, "margin": {"b": 740, "t": 30}
-                }
+                "layout": {"width": len(dims) * 50 + 250, "height": 1200, "margin": {"b": 740, "t": 30}
+                }   
 
             }
             
@@ -520,14 +529,12 @@ def col_percentile(df: pd.DataFrame, column: str, percentile: int):
     col = df[column].sort_values()
     bottom_index = int((100 - percentile) * len(col) / 100)
     top_index = int(percentile * len(col) / 100)
-
-
     col[top_index:] = 3
     col[:bottom_index] = 1
     col[bottom_index:top_index] = 2
     df[column] = col.astype("category")
 
-    print( "HERE col percent",df.head())
+    print("HERE col percent", df.head())
     return df
 
 def theme_layout(theme, specific_layout):
