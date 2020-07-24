@@ -25,48 +25,109 @@ from .._utils.ensemble_handling import filter_and_sum_responses
 
 
 class MultipleRegression(WebvizPluginABC):
-    """### Best fit using forward stepwise regression
+    """Visualizes the results of multiple regression of parameters and a chosen response using \
+forward selection to find the best fit.
 
-This plugin shows a multiple regression of numerical parameters and a response.
-Input can be given either as:
+---
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
 
-- Aggregated csv files for parameters and responses,
-- An ensemble name defined in shared_settings and a local csv file for responses
-stored per realizations.
+**Using aggregated data**
+* **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns \
+(absolute path or relative to config file).
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` \
+columns (absolute path or relative to config file).
 
-**Note**: Non-numerical (string-based) input parameters and responses are removed.
 
-**Note**: The response csv file will be aggregated per realization.
+**Using a response file per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be \
+                    combined with `response_csv` and `parameter_csv`).
 
-**Note**: Regression models break down when there are duplicate or highly correlated parameters.
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
+                implies that the input data should be time series data from simulation `.UNSMRY` \
+                files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
+                from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
+                used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
+               `.UNSMRY`-files (default is monthly).
+
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter \
+   of type `single` (as defined below under `response_filters`).
+
+
+**Common settings for all input options**
+
+All of these are optional, some have defaults seen in the code snippet below.
+
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation \
+                       vectors) that can be used as row filtering before aggregation. \
+                       Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore \
+                      (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include \
+                       (cannot use with response_ignore).
+* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
+
+
+**Note**: Regression models break down when there are duplicate or highly correlated parameters. \
 Please make sure to properly filter your inputs or the model will give answers that are misleading.
 
-Arguments:
-* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
-* `response_csv`: Aggregated csvfile for response with 'REAL' and 'ENSEMBLE' columns.
-* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
-            response_file is defined, the definition of ensembles implies that you want to
-            use simulation timeseries data directly from UNSMRY data. This also implies that
-            the date will be used as a response filter of type `single`.
-* `response_file`: Local (per realization) csv file for response parameters.
-* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
-as row filtering before aggregation. (See below for filter types).
-* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
-* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
-* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
-                defined ensembles using fmu-ensemble (cannot use with response_file,
-                response_csv or parameters_csv).
-* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
-            (Only relevant if neither response_csv or response_file is defined). Default monthly
-* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
-* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
+---
 
-The types of response_filters are:
-```
-- `single`: Dropdown with single selection.
-- `multi`: Dropdown with multiple selection.
-- `range`: Slider with range selection.
-```
+?> Non-numerical (string-based) input parameters and responses are removed.
+
+?> The responses will be aggregated per realization; meaning that if your filters do not reduce \
+the response to a single value per realization in your data, the values will be aggregated \
+accoording to your defined `aggregation`. If e.g. the response is a form of volume, \
+and the filters are regions (or other subdivisions of the total volume), then `sum` would \
+be a natural aggregation. If on the other hand the response is the pressures in the \
+same volume, aggregation as `mean` over the subdivisions of the same volume \
+would make more sense (though the pressures in this case would not be volume weighted means, \
+and the aggregation would therefore likely be imprecise).
+
+!> Regression models break down when there are **duplicate or highly correlated parameters**. \
+Please make sure to properly filter your inputs or the model will give answers that are misleading.
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
+`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+(controlled by the `sampling` key). This is because the statistics are calculated per DATE over \
+all realizations in an ensemble, and the available dates should therefore not differ between \
+individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `parameter_csv` file must have columns `REAL`, `ENSEMBLE` and the parameter columns.
+
+The `response_csv` file must have columns `REAL`, `ENSEMBLE` and the response columns \
+(and the columns to use as `response_filters`, if that option is used).
+
+
+**Using a response file per realization**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+The `response_file` must have the response columns (and the columns to use as `response_filters`, \
+if that option is used).
+
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
+individual realizations. You should therefore not have more than one `UNSMRY` file in this \
+folder, to avoid risk of not extracting the right data.
 """
 
     # pylint:disable=too-many-arguments
