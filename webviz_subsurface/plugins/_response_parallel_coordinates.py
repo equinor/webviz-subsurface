@@ -208,7 +208,7 @@ The types of response_filters are:
             {"id": self.uuid("exclude_include"), "content": (
                 "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
                 "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
-                ), 
+                ),
             },
             
         ]
@@ -321,12 +321,12 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                   html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                   html.Span(
-                       "\u003f\u20dd", 
-                       id=self.uuid("tooltip-parameters"), 
-                       style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                   dbc.Tooltip(
+                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
+                    html.Span(
+                        "\u003f\u20dd", 
+                        id=self.uuid("tooltip-parameters"), 
+                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
+                    dbc.Tooltip(
                         "This lets you control what parameters to include in your model. \n" +
                         "There are two modes, exclusive and subset: \n" +
                         "- Exclusive mode lets you remove specific parameters from \n" +
@@ -337,18 +337,18 @@ The types of response_filters are:
                         "included in the output model.",
                     target=self.uuid("tooltip-parameters"),
                     style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
-                   ),
-                   dcc.RadioItems(
-                       id=self.uuid("exclude_include"),
-                       options=[
-                           {"label": "Exclusive mode", "value": "exc"},
-                           {"label": "Subset mode", "value": "inc"}
-                       ],
-                       value="exc",
-                       labelStyle={'display': 'inline-block'},
-                       style={'fontSize': ".80em"},
-                   )
-               ]
+                    ),
+                    dcc.RadioItems(
+                        id=self.uuid("exclude_include"),
+                        options=[
+                            {"label": "Exclusive mode", "value": "exc"},
+                            {"label": "Subset mode", "value": "inc"}
+                        ],
+                        value="exc",
+                        labelStyle={'display': 'inline-block'},
+                        style={'fontSize': ".80em"},
+                    )
+                ]
             ),
             html.Div(
                 [
@@ -380,18 +380,11 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 3},
-                    children=[
-                        html.Div(
-                            children=[
-                                wcc.Graph(id=self.uuid('p-values-plot'))
-                            ]
-                        ),
-                    ],
+                    children=wcc.Graph(id=self.uuid('p-values-plot')),
                 ),
-                
             ]
         )
-        
+
     @property
     def model_callback_Inputs(self):
         """List of Inputs for multiple regression callback"""
@@ -420,11 +413,11 @@ The types of response_filters are:
 
     def set_callbacks(self, app):
         """Set callbacks for placeholder text for exc/inc dropdown"""
-        
-        
+
+
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
-            
+
             Output(self.uuid("p-values-plot"), "figure"),
             self.model_callback_Inputs
         )
@@ -449,13 +442,10 @@ The types of response_filters are:
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-            
+
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(parameterdf, responsedf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            #print(df.head())
-
             df = col_percentile(df, response, 70)
-            #print(df.head())
 
             dims = [
                 {"label": param, "values": df[param]} for param in df
@@ -468,19 +458,25 @@ The types of response_filters are:
                         "colorscale": "Electric",
                         "showscale": True,
                         "cmin": 1,
-                        "cmax": 3
+                        "cmax": 3,
+                        "colorbar": {
+                            #"tickvals": list(range(0, len(ens))),
+                            #"ticktext": ens,
+                            "title": "Title",
+                            "xanchor": "right",
+                            "x": -0.02,
+                            #"len": 0.2 * len(ens),
+                        },
                     },
                     "dimensions": dims,
                     "labelangle": -90,
                     "labelside": "bottom",
                 }],
-                "layout": {"width": len(dims) * 30 + 250, "height": 1200, "margin": {"b": 740, "t": 30}
-                }
-
+                "layout": {"width": len(dims) * 100 + 250, "height": 1200, "margin": {"b": 740, "t": 30}}
             }
-            
+
             return dict_of_fig
-            
+
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -510,19 +506,16 @@ The types of response_filters are:
         ]
 
 
-
 def col_percentile(df: pd.DataFrame, column: str, percentile: int):
     col = df[column].sort_values()
     bottom_index = int((100 - percentile) * len(col) / 100)
     top_index = int(percentile * len(col) / 100)
-
 
     col[top_index:] = 3
     col[:bottom_index] = 1
     col[bottom_index:top_index] = 2
     df[column] = col.astype("category")
 
-    print( "HERE col percent",df.head())
     return df
 
 def theme_layout(theme, specific_layout):
