@@ -6,6 +6,7 @@ import base64
 from PIL import Image
 import io
 
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_surface(surface_path):
     return RegularSurface(surface_path)
@@ -61,6 +62,7 @@ def make_surface_layer(
             }
         ],
     }
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def new_make_surface_layer(

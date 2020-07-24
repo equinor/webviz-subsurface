@@ -14,6 +14,7 @@ import webviz_core_components as wcc
 import webviz_subsurface_components
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
+from webviz_config.common_cache import CACHE
 
 from .._datainput.surface import new_make_surface_layer
 from .._datainput.huv_xsection import HuvXsection
@@ -101,9 +102,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
         # Store current layers
         self.LAYERS_STATE = []
-        self.state = {
-            'switch': True
-        }
+        self.state = {'switch': True}
 
     def ids(self, element):
         return f"{element}-id-{self.uid}"
@@ -381,16 +380,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
-                        labelStyle={'display': 'inline-block'},
-                        options=[
-                            {'label': 'Map view', 'value': 'map-view'},
-                            {'label': 'Table view', 'value': 'table-view'}
-                        ],
-                        id=self.ids('map-table-radioitems'),
-                        value='map-view'
+                            labelStyle={'display': 'inline-block'},
+                            options=[
+                                {'label': 'Map view', 'value': 'map-view'},
+                                {'label': 'Table view', 'value': 'table-view'}
+                            ],
+                            id=self.ids('map-table-radioitems'),
+                            value='map-view'
                         )
                     ],
-                style={"padding": "5px"},
+                    style={"padding": "5px"},
                 ),
                 html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout]),  # Hidden div to store polyline points when in table view
                 html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout]),
@@ -471,7 +470,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     filter_action="native",
                 ),
             ],
-        style = {"marginTop": "25px"},
+            style={"marginTop": "25px"},
         )
 
     @property
@@ -504,63 +503,35 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             Output(self.ids("layered-map"), "layers"),
             [
                 Input(self.ids("map-dropdown"), "value"),
-                Input(self.ids("layered-map"), "switch")
+                Input(self.ids("layered-map"), "switch")  # Toggle hillshading on/off
             ],
         )
         def _render_map(surfacefile, switch):
-            ''' Renders map view with depth error '''
+            ''' Renders map view for one surface with de, dt, dte, dr, dre and depth
+            Wells marked with circles and hillshading toggle
+            '''
             if self.state['switch'] is not switch['value']:
-                new_layers = self.LAYERS_STATE.copy()
-                for layer in new_layers:
+                hillshade_layers = self.LAYERS_STATE.copy()
+                for layer in hillshade_layers:
                     if "shader" in layer["data"][0]:
                         layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None
                         layer["action"] = "update"
                 self.state['switch'] = switch['value']
-                return new_layers
+                return hillshade_layers
+
             surface_name = self.surface_attributes[Path(surfacefile)]["name"]
-            shader_type = 'hillshading' if switch['value'] is True else None
-            min_val = None
-            max_val = None
-            color = ["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]
-            well_layers = []
-            for wellfile in self.wellfiles:
-                well = xtgeo.Well(Path(wellfile))
-                well_layer_dict = make_well_circle_layer(well.wellname, self.conditional_data, surface_name, radius=100, color="rgb(0,255,0)")
-                if len(well_layer_dict["data"]) != 0:
-                    well_layer_dict["id"] = surface_name + ' ' + well.wellname + "-id"
-                    well_layer_dict["action"] = "add"
-                    well_layers.append(well_layer_dict)
+            well_layers = get_well_layers(self.wellfiles, surface_name, self.conditional_data, radius=100, color="rgb(0,255,0)")
             surfaces = [
-                        self.surface_attributes[Path(surfacefile)]["surface_dt"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dte"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dr"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dre"],
-                        self.surface_attributes[Path(surfacefile)]["surface_de"],
-                        self.surface_attributes[Path(surfacefile)]["surface"]
+                self.surface_attributes[Path(surfacefile)]["surface_dt"],
+                self.surface_attributes[Path(surfacefile)]["surface_dte"],
+                self.surface_attributes[Path(surfacefile)]["surface_dr"],
+                self.surface_attributes[Path(surfacefile)]["surface_dre"],
+                self.surface_attributes[Path(surfacefile)]["surface_de"],
+                self.surface_attributes[Path(surfacefile)]["surface"]
             ]
-            d_list = [
-                        "Depth trend",
-                        "Depth trend uncertainty",
-                        "Depth residual",
-                        "Depth residual uncertainty",
-                        "Depth uncertainty",
-                        "Depth"
-            ]
-            layers = []
-            for i, sfc in enumerate(surfaces):
-                if sfc is not None:
-                    s_layer = new_make_surface_layer(
-                        sfc,
-                        name=d_list[i],
-                        min_val=min_val,
-                        max_val=max_val,
-                        color=color,
-                        shader_type=shader_type,
-                    )
-                    s_layer["id"] = surface_name + ' ' + d_list[i] + "-id"
-                    s_layer["action"] = "add"
-                    layers.append(s_layer)
+            layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
+
             # Deletes old layers
             old_layers = self.LAYERS_STATE
             self.LAYERS_STATE = layers.copy()
@@ -568,6 +539,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 for layer in old_layers:
                     layer["action"] = "delete"
                 layers.extend(old_layers)
+
             return layers
 
         @app.callback(
@@ -704,8 +676,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             else:
                 return False, True
 
-
-
         @app.callback(
             Output(self.ids('uncertainty-table'), 'data'),
             [Input(self.ids('well-dropdown'), 'value')]
@@ -755,36 +725,88 @@ def get_color(i):
     return colors[(i) % (n_colors)]
 
 
-def make_well_circle_layer(well_name, cond_path, surface_name, radius=1000, color="red"):
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_well_layers(wellfiles, surface_name, wellpoints_file, radius=1000, color="red"):
     """ Make circles around well in layered map view
     Args:
-        well_name: Name of well
-        cond_path: Path to wellpoints.csv
+        wellfiles: List of all wellfiles
         surface_name: Name of surface
+        wellpoints_file: Path to wellpoints.csv for conditional points (cp)
     Returns:
-        Dictionary with data
+        well_layers: Dictionary with data for circles
      """
-    conditional_data = pd.read_csv(cond_path)
-    cond_df = conditional_data[conditional_data["Surface"] == surface_name]
-    well_cond_df = cond_df[cond_df["Well"] == well_name]
-    coord = well_cond_df[['x', 'y']].values
-    if len(coord) == 0:
-        return {
-            "name": well_name,
-            "checked": True,
-            "baseLayer": False,
-            "data": [],
-        }
-    if len(coord) != 0:
-        return {
-            "name": well_name,
-            "checked": True,
-            "baseLayer": False,
-            "data": [{
-                "type": "circle",
-                "center": coord[0],
-                "color": color,
-                "radius": radius,
-                "tooltip": well_name,
-            }],
-        }
+    df = pd.read_csv(wellpoints_file)
+    cp_df = df[df["Surface"] == surface_name]  # Get conditional points
+    well_layers = []
+    for wellfile in wellfiles:
+        well = xtgeo.Well(wellfile)
+        well_name = well.wellname
+        well_cp_df = cp_df[cp_df["Well"] == well_name]
+        coordinates = well_cp_df[['x', 'y']].values
+        if len(coordinates) == 0:
+            well_layer = {
+                "name": well_name,
+                "checked": True,
+                "baseLayer": False,
+                "data": [],
+            }
+        else:
+            well_layer = {
+                "name": well_name,
+                "checked": True,
+                "baseLayer": False,
+                "data": [{
+                    "type": "circle",
+                    "center": coordinates[0],
+                    "color": color,
+                    "radius": radius,
+                    "tooltip": well_name,
+                }],
+            }
+        if len(well_layer["data"]) != 0:
+            well_layer["id"] = surface_name + ' ' + well.wellname + "-id"
+            well_layer["action"] = "add"
+            well_layers.append(well_layer)
+    return well_layers
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_surface_layers(switch, surface_name, surfaces):
+    ''' Creates layers in map from all surfaces with new_make_surface_layer in surface.py
+    Args:
+        switch: Toggle hillshading on/off
+        surface_name: Name of surface
+        surfaces: List containing a single surface with corresponding depth error, depth trend etc.
+    Returns:
+        layers: List of all surface layers
+    '''
+    min_val = None
+    max_val = None
+    shader_type = 'hillshading' if switch['value'] is True else None
+    depth_list = [
+                "Depth trend",
+                "Depth trend uncertainty",
+                "Depth residual",
+                "Depth residual uncertainty",
+                "Depth uncertainty",
+                "Depth"
+    ]
+    layers = []
+    for i, sfc in enumerate(surfaces):
+        if sfc is not None:
+            s_layer = new_make_surface_layer(
+                sfc,
+                name=depth_list[i],
+                min_val=min_val,
+                max_val=max_val,
+                color=[
+                    "#0d0887", "#46039f", "#7201a8",
+                    "#9c179e", "#bd3786", "#d8576b",
+                    "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"
+                ],
+                shader_type=shader_type,
+            )
+            s_layer["id"] = surface_name + ' ' + depth_list[i] + "-id"
+            s_layer["action"] = "add"
+            layers.append(s_layer)
+    return layers

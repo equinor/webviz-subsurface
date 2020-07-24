@@ -30,6 +30,7 @@ class HuvXsection:
         '''
         for wellfile in wellfiles:
             well = xtgeo.Well(Path(wellfile))
+            well_name = well.wellname
             fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
@@ -38,10 +39,11 @@ class HuvXsection:
             zonelog = self.get_zonelog_data(well, self.zonelogname)
             self.well_attributes[wellfile] = {
                 "well": well,
+                "name": well_name,
                 "zonelog": zonelog,
                 "zonation_points": zonation_points,
                 "conditional_points": conditional_points,
-                "fence": fence,
+                "fence": fence
             }
 
     def get_xsec_well_data(self, well_settings, wellfile):
@@ -110,38 +112,40 @@ class HuvXsection:
         Returns:
             layout: Dictionary with layout data
         '''
-        layout = {"plot_bgcolor": 'rgb(233,233,233)',
-                "showlegend": False,
-                "height": 830,
-                "margin": {"t": 0, "l": 100},}
+        layout = {
+            "plot_bgcolor": 'rgb(233,233,233)',
+            "showlegend": False,
+            "height": 830,
+            "margin": {"t": 0, "l": 100}
+        }
         if len(surfacefiles) == 0:
             layout.update({
-                "yaxis":{
+                "yaxis": {
                     "autorange": "reversed",
                     "title": "Depth (m)",
                     "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
-                "xaxis":{
+                "xaxis": {
                     "title": "Distance from polyline",
                     "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
             })
 
         elif wellfile is None:
             ymin, ymax = self.sfc_lines_min_max_TVD(surfacefiles)
             layout.update({
-                "yaxis":{
+                "yaxis": {
                     "range": [ymax, ymin],
                     "title": "Depth (m)",
                     "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
-                "xaxis":{
+                "xaxis": {
                     "title": "Distance from polyline",
                     "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
             })
 
@@ -153,17 +157,17 @@ class HuvXsection:
             if y_range/x_range > 1:
                 x_range = y_range + 10
             layout.update({
-                "yaxis":{
-                    "range" : [y_max + 0.15*y_range, y_min - 0.15*y_range],
+                "yaxis": {
+                    "range": [y_max + 0.15*y_range, y_min - 0.15*y_range],
                     "title": "Depth (m)",
                     "titlefont": {"size": 20},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
                 "xaxis": {
                     "range": [x_min - 0.35*x_range, x_max + 0.35*x_range],
                     "title": "Distance from polyline",
                     "titlefont": {"size": 18},
-                    "tickfont": {"size":16},
+                    "tickfont": {"size": 16}
                 },
             })
         return layout
