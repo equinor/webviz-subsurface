@@ -67,7 +67,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
         self.topofzone = parse_model_file.extract_topofzone_names(basedir)
         for i, surfacefile in enumerate(self.surfacefiles):
-            self.surface_attributes[Path(surfacefile)] = {
+            self.surface_attributes[get_path(surfacefile)] = {
                 "color": get_color(i),
                 'order': i,
                 "name": self.surfacenames[i], "topofzone": self.topofzone[i],
@@ -100,7 +100,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.xsec.set_well_attributes(self.wellfiles)
 
         # Store current layers
-        self.LAYERS_STATE = []
+        self.layers_state = []
         self.state = {
             'switch': True
         }
@@ -471,7 +471,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     filter_action="native",
                 ),
             ],
-        style = {"marginTop": "25px"},
+            style={"marginTop": "25px"},
         )
 
     @property
@@ -509,34 +509,41 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
         def _render_map(surfacefile, switch):
             ''' Renders map view with depth error '''
+            print("This callback is triggered")
             if self.state['switch'] is not switch['value']:
-                new_layers = self.LAYERS_STATE.copy()
+                new_layers = self.layers_state.copy()
                 for layer in new_layers:
                     if "shader" in layer["data"][0]:
                         layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None
                         layer["action"] = "update"
                 self.state['switch'] = switch['value']
                 return new_layers
-            surface_name = self.surface_attributes[Path(surfacefile)]["name"]
+            surface_name = self.surface_attributes[get_path(surfacefile)]["name"]
             shader_type = 'hillshading' if switch['value'] is True else None
             min_val = None
             max_val = None
             color = ["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"]
             well_layers = []
             for wellfile in self.wellfiles:
-                well = xtgeo.Well(Path(wellfile))
-                well_layer_dict = make_well_circle_layer(well.wellname, self.conditional_data, surface_name, radius=100, color="rgb(0,255,0)")
+                well = xtgeo.Well(get_path(wellfile))
+                well_layer_dict = make_well_circle_layer(
+                    well.wellname,
+                    self.conditional_data,
+                    surface_name,
+                    radius=100,
+                    color="rgb(0,255,0)"
+                    )
                 if len(well_layer_dict["data"]) != 0:
                     well_layer_dict["id"] = surface_name + ' ' + well.wellname + "-id"
                     well_layer_dict["action"] = "add"
                     well_layers.append(well_layer_dict)
             surfaces = [
-                        self.surface_attributes[Path(surfacefile)]["surface_dt"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dte"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dr"],
-                        self.surface_attributes[Path(surfacefile)]["surface_dre"],
-                        self.surface_attributes[Path(surfacefile)]["surface_de"],
-                        self.surface_attributes[Path(surfacefile)]["surface"]
+                        self.surface_attributes[get_path(surfacefile)]["surface_dt"],
+                        self.surface_attributes[get_path(surfacefile)]["surface_dte"],
+                        self.surface_attributes[get_path(surfacefile)]["surface_dr"],
+                        self.surface_attributes[get_path(surfacefile)]["surface_dre"],
+                        self.surface_attributes[get_path(surfacefile)]["surface_de"],
+                        self.surface_attributes[get_path(surfacefile)]["surface"]
             ]
             d_list = [
                         "Depth trend",
@@ -562,8 +569,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     layers.append(s_layer)
             layers.extend(well_layers)
             # Deletes old layers
-            old_layers = self.LAYERS_STATE
-            self.LAYERS_STATE = layers.copy()
+            old_layers = self.layers_state
+            self.layers_state = layers.copy()
             if old_layers is not None and len(old_layers) > 0:
                 for layer in old_layers:
                     layer["action"] = "delete"
@@ -587,12 +594,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         def _render_xsection(n_clicks, n_clicks2, wellfile, polyline, surfacefiles, de_keys, well_settings):
             ''' Renders cross section view from wellfile or polyline drawn in map view '''
             ctx = dash.callback_context
-            de_keys = get_path(de_keys)
-            surfacefiles = get_path(surfacefiles)
+            de_keys_2 = []
+            surfacefiles_2 = []
+            for i in range(len(de_keys)):
+                de_keys_2.append(get_path(de_keys[i]))
+            for j in range(len(surfacefiles)):
+                surfacefiles_2.append(get_path(surfacefiles[j]))
             if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
                 wellfile = None
-            self.xsec.set_de_and_surface_lines(surfacefiles, de_keys, wellfile, polyline)
-            self.xsec.set_xsec_fig(surfacefiles, de_keys, well_settings, wellfile)
+            self.xsec.set_de_and_surface_lines(surfacefiles_2, de_keys_2, wellfile, polyline)
+            self.xsec.set_xsec_fig(surfacefiles_2, de_keys_2, well_settings, wellfile)
             return self.xsec.fig
 
         @app.callback(
@@ -715,14 +726,20 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             return df.to_dict('records')
 
     def add_webvizstore(self):
-        return [(get_path, [{"paths": fn}]) for fn in self.surfacefiles]
+        files = []
+        files += self.surfacefiles if self.surfacefiles else []
+        files += self.surfacefiles_de if self.surfacefiles_de else []
+        files += self.surfacefiles_dr if self.surfacefiles_dr else []
+        files += self.surfacefiles_dt if self.surfacefiles_dt else []
+        files += self.surfacefiles_dre if self.surfacefiles_dre else []
+        files += self.surfacefiles_dte if self.surfacefiles_dte else []
+        files += self.wellfiles if self.wellfiles else []
+        return [(get_path, [{"path": fn}]) for fn in files]
 
 
 @webvizstore
-def get_path(paths) -> Path:
-    for i, path in enumerate(paths):
-        paths[i] = Path(path)
-    return paths
+def get_path(path) -> Path:
+    return Path(path)
 
 
 def get_color(i):
