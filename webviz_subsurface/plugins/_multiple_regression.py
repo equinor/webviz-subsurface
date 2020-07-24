@@ -7,6 +7,7 @@ import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
 import dash
+from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -560,8 +561,9 @@ folder, to avoid risk of not extracting the right data.
                 children=[
                     html.Button(
                         id=self.uuid("submit-button"),
-                        children="Press to update model",
-                        style={"color": "red", "background-color": "white"},
+                        children="Update model",
+                        style={"background-color": "LightGray"},
+                        disabled=True,
                     )
                 ],
             ),
@@ -650,7 +652,12 @@ folder, to avoid risk of not extracting the right data.
         return filteroptions
 
     def set_callbacks(self, app):
-        @app.callback(Output(self.uuid("submit-button"), "style"), self.model_callback_inputs)
+        @app.callback(
+            [
+                Output(self.uuid("submit-button"), "disabled"),
+                Output(self.uuid("submit-button"), "style"),
+            ],
+                self.model_callback_inputs)
         def update_button(
             n_clicks,
             exc_inc,
@@ -662,15 +669,14 @@ folder, to avoid risk of not extracting the right data.
             max_vars,
             *filters,
         ):
-            # Need fix: initial callback from force_in makes the button immediately
-            # change color to inidcate a change has been made
-            # Whole thing is maybe a bit hacky?
             ctx = dash.callback_context
+            if dash.callback_context.triggered[0]["value"] is None:
+                raise PreventUpdate
             # if the triggered comp is the sumbit-button
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
-                return {"color": "red", "background-color": "white"}
+                return True, {"background-color": "LightGray"}
             else:
-                return {"color": "green", "background-color": "blue"}
+                return False, {"color": "black", "background-color": self.plotly_theme["layout"]["colorway"][0]}
 
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
@@ -695,6 +701,8 @@ folder, to avoid risk of not extracting the right data.
         )
         def update_force_in(parameter_list, exc_inc, force_in):
             """Callback to update options for force in"""
+            if dash.callback_context.triggered[0]["value"] is None:
+                raise PreventUpdate
             if exc_inc == "exc":
                 df = self.parameterdf.drop(
                     columns=["ENSEMBLE", "REAL"] + parameter_list
