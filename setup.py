@@ -47,7 +47,11 @@ setup(
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "MultipleRegression = webviz_subsurface.plugins:MultipleRegression",
             "CorrelationInteractions = webviz_subsurface.plugins:CorrelationInteractions",
+<<<<<<< HEAD
+            "ResponseParallelCoordinates = webviz_subsurface.plugins:ResponseParallelCoordinates",
+=======
             "ResponseParallelCoordinates= webviz_subsurface.plugins:ResponseParallelCoordinates"
+>>>>>>> 54a9a70a7c99665ae559855d7f65cee9c79b32a4
         ]
     },
     install_requires=[
