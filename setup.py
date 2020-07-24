@@ -45,18 +45,8 @@ setup(
             "ReservoirSimulationTimeSeriesRegional = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
-            "ExamplePlugin = webviz_subsurface.plugins:ExamplePlugin",
-            "MultipleRegressionJostein = webviz_subsurface.plugins:MultipleRegressionJostein",
-            "DataTablefromFit = webviz_subsurface.plugins:DataTablefromFit",            
-            "MultipleRegressionSofie = webviz_subsurface.plugins:MultipleRegressionSofie",
-            "MultipleRegressionSara = webviz_subsurface.plugins:MultipleRegressionSara",
             "MultipleRegression = webviz_subsurface.plugins:MultipleRegression",
-            "CorrelationInteractions = webviz_subsurface.plugins:CorrelationInteractions",
-<<<<<<< HEAD
             "ResponseParallelCoordinates = webviz_subsurface.plugins:ResponseParallelCoordinates",
-=======
-            "ResponseParallelCoordinates= webviz_subsurface.plugins:ResponseParallelCoordinates"
->>>>>>> 54a9a70a7c99665ae559855d7f65cee9c79b32a4
         ]
     },
     install_requires=[

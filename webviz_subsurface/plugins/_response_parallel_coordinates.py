@@ -1,33 +1,24 @@
-import warnings
 from pathlib import Path
-from itertools import combinations
 
-import numpy as np
-import numpy.linalg as la
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 import dash_bootstrap_components as dbc
-import statsmodels.api as sm
-from dash_table import DataTable
 from dash.dependencies import Input, Output
-from dash_table.Format import Format, Scheme
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
-from webviz_config.utils import calculate_slider_step
-from sklearn.preprocessing import PolynomialFeatures
 
 from .._datainput.fmu_input import load_parameters, load_csv
 from .._utils.ensemble_handling import filter_and_sum_responses
 
+
 class ResponseParallelCoordinates(WebvizPluginABC):
     """### Best fit using forward stepwise regression
 
-This plugin shows a multiple regression of numerical parameters and a response.
+This plugin visualizes parameters used for individual realizations in FMU ensembles.
+the parameters can be filtered based on the value of a response.
 
 Input can be given either as:
 
@@ -102,20 +93,15 @@ The types of response_filters are:
 
         if response_ignore and response_include:
             raise ValueError(
-                'Incorrent argument. either provide "response_include", '
-                '"response_ignore" or neither'
+                "Incorrent argument. either provide 'response_include', "
+                "'response_ignore' or neither"
             )
         if parameter_csv and response_csv:
             if ensembles or response_file:
                 raise ValueError(
-                    'Incorrect arguments. Either provide "csv files" or '
-                    '"ensembles and response_file".'
+                    "Incorrect arguments. Either provide 'csv files' or "
+                    "'ensembles and response_file'."
                 )
-            #For csv files
-            #self.parameterdf = read_csv(self.parameter_csv)
-            #self.responsedf = read_csv(self.response_csv)
-
-            #For parquet files
             self.parameterdf = pd.read_parquet(self.parameter_csv)
             self.responsedf = pd.read_parquet(self.response_csv)
 
@@ -134,8 +120,8 @@ The types of response_filters are:
             )
         else:
             raise ValueError(
-                'Incorrect arguments.\
-                 Either provide "csv files" or "ensembles and response_file".'
+                "Incorrect arguments.\
+                 Either provide 'csv files' or 'ensembles and response_file'."
             )
         self.check_runs()
         self.check_response_filters()
@@ -173,42 +159,26 @@ The types of response_filters are:
             {
                 "id": self.uuid("layout"),
                 "content": (
-                    "Dashboard displaying the results of a multiple "
-                    "regression of input parameters and a chosen response."
+                    "Dashboard for paralell parameters plot"
+                    "filtered to indicate the value of the selected response"
+                    
                 )
             },
+            
             {
-                "id": self.uuid("table"),
+                "id": self.uuid("paralell-coords-plot"),
                 "content": (
-                    "A table showing the results for the best combination of "
-                    "parameters for a chosen response."
+                    "A plot showing the values of all the selected parameter at once."
+                    "it is possible to mark a range on each parameters to only show the ones within"
+                    "that range, most interesting being the response column to the far right"
                 )
             },
-            {
-                "id": self.uuid("p-values-plot"),
-                "content": (
-                    "A plot showing the p-values for the parameters from the table ranked from most significant "
-                    "to least significant.  Red indicates "
-                    "that the p-value is significant, gray indicates that the p-value "
-                    "is not significant."
-                )
-            },
-            {
-                "id": self.uuid("coefficient-plot"),
-                "content": (
-                    "A plot showing the sign of parameters' coefficient values by arrows pointing up and/or down, "
-                    "illustrating a positive and/or negative coefficient respectively. "
-                    "An arrow is red if the corresponding p-value is significant, that is, a p-value below 0.05. "
-                    "Arrows corresponding to p-values above this level of significance, are shown in gray."
-                )
-            },
-            {"id": self.uuid("submit-btn"), "content": ("Press this button to update the table and the plots based on the options below."), },
+            
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
             {"id": self.uuid("exclude_include"), "content": (
-                "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
-                "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
-                ),
+                "choose if the parameter selector should be inclusive or exclusive"
+                )
             },
             
         ]
@@ -252,7 +222,7 @@ The types of response_filters are:
                 raise ValueError("Parameter and response files have different runs")
 
     def check_response_filters(self):
-        """'Check that provided response filters are valid"""
+        """Check that provided response filters are valid"""
         if self.response_filters:
             for col_name, col_type in self.response_filters.items():
                 if col_name not in self.responsedf.columns:
@@ -321,34 +291,41 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span(
-                        "\u003f\u20dd", 
-                        id=self.uuid("tooltip-parameters"), 
-                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                    dbc.Tooltip(
+                   html.Div("Parameters:", style={
+                       "font-weight": "bold",
+                       "display": "inline-block", 
+                        "margin-right": "10px"}),
+                   html.Span(
+                       "\u003f\u20dd", 
+                       id=self.uuid("tooltip-parameters"), 
+                       style={
+                           "font-weight": "bold",
+                           "cursor": "pointer",
+                           "fontSize": ".90em",
+                           "color": "grey"}),
+                   dbc.Tooltip(
                         "This lets you control what parameters to include in your model. \n" +
                         "There are two modes, exclusive and subset: \n" +
-                        "- Exclusive mode lets you remove specific parameters from \n" +
-                        "beeing considered in the model selection. \n \n" +
-    
-                        "- Subset mode lets you pick a subset of parameters to \n" +
-                        "investigate. Parameters included here are not guaranteed to be \n" +
-                        "included in the output model.",
+                        "- Exclusive mode lets you remove specific parameters\n\n" +
+                        "- Subset mode lets you pick a subset of parameters \n",
                     target=self.uuid("tooltip-parameters"),
-                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
-                    ),
-                    dcc.RadioItems(
-                        id=self.uuid("exclude_include"),
-                        options=[
-                            {"label": "Exclusive mode", "value": "exc"},
-                            {"label": "Subset mode", "value": "inc"}
-                        ],
-                        value="exc",
-                        labelStyle={'display': 'inline-block'},
-                        style={'fontSize': ".80em"},
-                    )
-                ]
+                    style={"fontSize": ".75em",
+                    "backgroundColor": "#505050",
+                    "color": "white",
+                    "opacity": "85%",
+                    "white-space": "pre-wrap"}
+                   ),
+                   dcc.RadioItems(
+                       id=self.uuid("exclude_include"),
+                       options=[
+                           {"label": "Exclusive mode", "value": "exc"},
+                           {"label": "Subset mode", "value": "inc"}
+                       ],
+                       value="exc",
+                       labelStyle={"display": "inline-block"},
+                       style={"fontSize": ".80em"},
+                   )
+               ]
             ),
             html.Div(
                 [
@@ -364,7 +341,29 @@ The types of response_filters are:
                     ),
                 ]
             ),
-            html.Div("threshhold percentage"),
+            html.Div("threshold percentage", style={
+                "font-weight": "bold",
+                "display": "inline-block",
+                "margin-right": "10px"}),
+            html.Span(
+                       "\u003f\u20dd", 
+                       id=self.uuid("tooltip-percent"),
+                       style={
+                           "font-weight": "bold",
+                           "cursor": "pointer",
+                           "fontSize": ".90em",
+                           "color": "grey"}),
+                    dbc.Tooltip(
+                        "This lets you control the percenile to be considered 'high'  \n" +
+                        "A value is considered low when in the complimentary lower percentile. ",
+                    target=self.uuid("tooltip-percent"),
+                    style={
+                        "fontSize": ".75em",
+                        "backgroundColor": "#505050",
+                        "color": "white",
+                        "opacity": "85%",
+                        "white-space": "pre-wrap"}
+                   ),
             html.Div(dcc.Slider(
                 id=self.uuid("percent"),
                 min=50, max=100,
@@ -387,13 +386,13 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 3},
-                    children=wcc.Graph(id=self.uuid('p-values-plot')),
+                    children=wcc.Graph(id=self.uuid("paralell-coords-plot")),
                 ),
             ]
         )
 
     @property
-    def model_callback_Inputs(self):
+    def parallel_coords_callback_Inputs(self):
         """List of Inputs for multiple regression callback"""
         Inputs = [
             Input(self.uuid("exclude_include"), "value"),
@@ -407,7 +406,6 @@ The types of response_filters are:
             for col_name in self.response_filters:
                 Inputs.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return Inputs
-
 
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
@@ -425,10 +423,10 @@ The types of response_filters are:
 
         """Set callbacks for the table, p-values plot, and arrow plot"""
         @app.callback(
-            Output(self.uuid("p-values-plot"), "figure"),
-            self.model_callback_Inputs
+            Output(self.uuid("paralell-coords-plot"), "figure"),
+            self.parallel_coords_callback_Inputs
         )
-        def _update_visualizations(
+        def _update_paralell_coordinate_plot(
                 exc_inc, parameter_list,
                 ensemble, response,
                 percent, *filters):
@@ -438,7 +436,7 @@ The types of response_filters are:
             2. Filters parameters dataframe on selected ensemble.
             3. Merge parameter and response dataframe.
             4. Discretisize response.
-            5. generate paralell parameters plot.
+            5. generate parallel parameters plot.
             """
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -451,41 +449,42 @@ The types of response_filters are:
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-
+            
+            pallete=self.plotly_theme["layout"]["colorway"]
+            colmap=((0, pallete[0]), (0.33, pallete[0]), (0.33, pallete[1]), (0.66, pallete[1]), (0.66, pallete[2]), (1, pallete[2]))
+            print(colmap)
+            
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-
             df = col_percentile(df, response, percent)
-            
-            dims = [
-                {"label": param, "values": df[param]} for param in df
-            ]
-            dict_of_fig = {
-                "data": [{
-                    "type": "parcoords",
+            dims = [{"label": param, "values": df[param]} for param in df]
+            data = [{
+                "type": "parcoords",
                     "line": {
-                        "color": df[response],
-                        "colorscale": "Jet",
+                        "color": df[response].tolist(),
+                        "colorscale": colmap,
                         "showscale": True,
                         "cmin": 1,
                         "cmax": 3,
                         "colorbar": {
                             "title": response,
                             "xanchor": "left",
-                            "x": -0.05,
-                            "tickvals": [1.03, 2, 2.97],
-                            "ticktext": ["low", "medium", "high"]
+                            "x": -0.08,
+                            "tickvals": [1.3, 2, 2.7],
+                            "ticktext": ["low", "medium", "high"],
+                            
                         },
                     },
                     "dimensions": dims,
                     "labelangle": 45,
-                    "labelside": "bottom",
-                }],
-                "layout": {"width": len(dims)*100+250, "height": 1200, "margin": {"b": 740, "t": 30}
-                }
-            }
-            return dict_of_fig
-
+                    "labelside": "bottom",}]
+            layout = {}
+            layout.update(self.plotly_theme["layout"])
+            # Ensure sufficient spacing between each dimension and margin for labels
+            width = len(dims) * 100 + 250
+            layout.update({"width": width, "height": 1200, "margin": {"b": 740, "t": 30}})
+            return {"data": data, "layout": layout}
+            
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -522,8 +521,7 @@ def col_percentile(df: pd.DataFrame, column: str, percentile: int):
     col[top_index:] = 3
     col[:bottom_index] = 1
     col[bottom_index:top_index] = 2
-    df[column] = col.astype("category")
-    print("HERE col percent", df.head())
+    df[column] = col.astype("int64")
     return df
 
 

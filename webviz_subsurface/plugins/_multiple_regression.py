@@ -7,6 +7,7 @@ import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
 import dash
+from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -25,48 +26,109 @@ from .._utils.ensemble_handling import filter_and_sum_responses
 
 
 class MultipleRegression(WebvizPluginABC):
-    """### Best fit using forward stepwise regression
+    """Visualizes the results of multiple regression of parameters and a chosen response using \
+forward selection to find the best fit.
 
-This plugin shows a multiple regression of numerical parameters and a response.
-Input can be given either as:
+---
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
 
-- Aggregated csv files for parameters and responses,
-- An ensemble name defined in shared_settings and a local csv file for responses
-stored per realizations.
+**Using aggregated data**
+* **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns \
+(absolute path or relative to config file).
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` \
+columns (absolute path or relative to config file).
 
-**Note**: Non-numerical (string-based) input parameters and responses are removed.
 
-**Note**: The response csv file will be aggregated per realization.
+**Using a response file per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be \
+                    combined with `response_csv` and `parameter_csv`).
 
-**Note**: Regression models break down when there are duplicate or highly correlated parameters.
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
+                implies that the input data should be time series data from simulation `.UNSMRY` \
+                files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
+                from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
+                used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
+               `.UNSMRY`-files (default is monthly).
+
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter \
+   of type `single` (as defined below under `response_filters`).
+
+
+**Common settings for all input options**
+
+All of these are optional, some have defaults seen in the code snippet below.
+
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation \
+                       vectors) that can be used as row filtering before aggregation. \
+                       Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore \
+                      (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include \
+                       (cannot use with response_ignore).
+* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
+
+
+**Note**: Regression models break down when there are duplicate or highly correlated parameters. \
 Please make sure to properly filter your inputs or the model will give answers that are misleading.
 
-Arguments:
-* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
-* `response_csv`: Aggregated csvfile for response with 'REAL' and 'ENSEMBLE' columns.
-* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
-            response_file is defined, the definition of ensembles implies that you want to
-            use simulation timeseries data directly from UNSMRY data. This also implies that
-            the date will be used as a response filter of type `single`.
-* `response_file`: Local (per realization) csv file for response parameters.
-* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
-as row filtering before aggregation. (See below for filter types).
-* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
-* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
-* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
-                defined ensembles using fmu-ensemble (cannot use with response_file,
-                response_csv or parameters_csv).
-* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
-            (Only relevant if neither response_csv or response_file is defined). Default monthly
-* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
-* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
+---
 
-The types of response_filters are:
-```
-- `single`: Dropdown with single selection.
-- `multi`: Dropdown with multiple selection.
-- `range`: Slider with range selection.
-```
+?> Non-numerical (string-based) input parameters and responses are removed.
+
+?> The responses will be aggregated per realization; meaning that if your filters do not reduce \
+the response to a single value per realization in your data, the values will be aggregated \
+accoording to your defined `aggregation`. If e.g. the response is a form of volume, \
+and the filters are regions (or other subdivisions of the total volume), then `sum` would \
+be a natural aggregation. If on the other hand the response is the pressures in the \
+same volume, aggregation as `mean` over the subdivisions of the same volume \
+would make more sense (though the pressures in this case would not be volume weighted means, \
+and the aggregation would therefore likely be imprecise).
+
+!> Regression models break down when there are **duplicate or highly correlated parameters**. \
+Please make sure to properly filter your inputs or the model will give answers that are misleading.
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
+`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+(controlled by the `sampling` key). This is because the statistics are calculated per DATE over \
+all realizations in an ensemble, and the available dates should therefore not differ between \
+individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `parameter_csv` file must have columns `REAL`, `ENSEMBLE` and the parameter columns.
+
+The `response_csv` file must have columns `REAL`, `ENSEMBLE` and the response columns \
+(and the columns to use as `response_filters`, if that option is used).
+
+
+**Using a response file per realization**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+The `response_file` must have the response columns (and the columns to use as `response_filters`, \
+if that option is used).
+
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
+individual realizations. You should therefore not have more than one `UNSMRY` file in this \
+folder, to avoid risk of not extracting the right data.
 """
 
     # pylint:disable=too-many-arguments
@@ -140,12 +202,7 @@ The types of response_filters are:
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    [
-                        "REAL",
-                        "ENSEMBLE",
-                        *response_include,
-                        *list(response_filters.keys()),
-                    ]
+                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
                 ),
                 errors="ignore",
                 axis=1,
@@ -230,9 +287,7 @@ The types of response_filters are:
             },
             {
                 "id": self.uuid("interaction"),
-                "content": (
-                    "Select the desired level of interaction in the visualized model."
-                ),
+                "content": ("Select the desired level of interaction in the visualized model."),
             },
             {
                 "id": self.uuid("max-params"),
@@ -242,9 +297,7 @@ The types of response_filters are:
             },
             {
                 "id": self.uuid("force-in"),
-                "content": (
-                    "Select parameters forced to be included in the visualized model."
-                ),
+                "content": ("Select parameters forced to be included in the visualized model."),
             },
         ]
         return steps
@@ -301,9 +354,7 @@ The types of response_filters are:
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(
-                        f"Filter type {col_type} for {col_name} is not valid."
-                    )
+                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
 
     @property
     def filter_layout(self):
@@ -339,9 +390,7 @@ The types of response_filters are:
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
                         clearable=False,
                         value=self.ensembles[0],
                         style={"marginBottom": "20px"},
@@ -353,9 +402,7 @@ The types of response_filters are:
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.responses
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.responses],
                         clearable=False,
                         value=self.responses[0],
                         style={"marginBottom": "20px"},
@@ -398,9 +445,7 @@ The types of response_filters are:
                     ),
                     dcc.Dropdown(
                         id=self.uuid("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.parameters],
                         clearable=True,
                         multi=True,
                         placeholder="",
@@ -414,16 +459,13 @@ The types of response_filters are:
             html.Div(
                 [
                     html.Div(
-                        "Model settings:",
-                        style={"font-weight": "bold", "marginTop": "20px"},
+                        "Model settings:", style={"font-weight": "bold", "marginTop": "20px"},
                     ),
                     html.Div(
-                        "Interaction",
-                        style={"display": "inline-block", "margin-right": "10px"},
+                        "Interaction", style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style,),
-                        id=self.uuid("tooltip-filters"),
+                        dbc.Badge(" ? ", style=self.badge_style,), id=self.uuid("tooltip-filters"),
                     ),
                     dbc.Tooltip(
                         " Lets you select how deep the interaction level is: \n \n"
@@ -451,11 +493,7 @@ The types of response_filters are:
                         style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ",
-                            style=self.badge_style,
-                            id=self.uuid("tooltip-maxparams"),
-                        )
+                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-maxparams"),)
                     ),
                     dbc.Tooltip(
                         " Lets you put a cap on the number of parameters to include in your \n"
@@ -479,13 +517,10 @@ The types of response_filters are:
             html.Div(
                 [
                     html.Div(
-                        "Force in",
-                        style={"display": "inline-block", "margin-right": "10px"},
+                        "Force in", style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),
-                        )
+                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),)
                     ),
                     dbc.Tooltip(
                         " Lets you force parameters into the model. If interaction is active, \n"
@@ -506,10 +541,11 @@ The types of response_filters are:
             html.Div(
                 style={"display": "grid"},
                 children=[
-                    html.Button(
+                    dbc.Button(
                         id=self.uuid("submit-button"),
-                        children="Press to update model",
-                        style={"color": "red", "background-color": "white"},
+                        children="Update model",
+                        style={"background-color": "LightGray", "cursor": "not-allowed"},
+                        disabled=True
                     )
                 ],
             ),
@@ -535,9 +571,7 @@ The types of response_filters are:
                             },
                         ),
                         html.Div(children=[wcc.Graph(id=self.uuid("p-values-plot"))]),
-                        html.Div(
-                            children=[wcc.Graph(id=self.uuid("coefficient-plot"))]
-                        ),
+                        html.Div(children=[wcc.Graph(id=self.uuid("coefficient-plot"))]),
                         html.Label(
                             "Table of parameters and their corresponding p-values",
                             style={
@@ -592,13 +626,17 @@ The types of response_filters are:
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append(
-                    {"name": col_name, "type": col_type, "values": filters[i]}
-                )
+                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
         return filteroptions
 
     def set_callbacks(self, app):
-        @app.callback(Output(self.uuid("submit-button"), "style"), self.model_callback_inputs)
+        @app.callback(
+            [
+                Output(self.uuid("submit-button"), "disabled"),
+                Output(self.uuid("submit-button"), "style"),
+            ],
+            self.model_callback_inputs,
+        )
         def update_button(
             n_clicks,
             exc_inc,
@@ -610,15 +648,20 @@ The types of response_filters are:
             max_vars,
             *filters,
         ):
-            # Need fix: initial callback from force_in makes the button immediately
-            # change color to inidcate a change has been made
-            # Whole thing is maybe a bit hacky?
             ctx = dash.callback_context
+            if dash.callback_context.triggered[0]["value"] is None:
+                raise PreventUpdate
             # if the triggered comp is the sumbit-button
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
-                return {"color": "red", "background-color": "white"}
+                return True, {"background-color": "LightGray", "cursor": "not-allowed"}
             else:
-                return {"color": "green", "background-color": "blue"}
+                return (
+                    False,
+                    {
+                        "color": "black",
+                        "background-color": self.plotly_theme["layout"]["colorway"][0],
+                    },
+                )
 
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
@@ -631,10 +674,7 @@ The types of response_filters are:
             return "Select parameters for subset"
 
         @app.callback(
-            [
-                Output(self.uuid("force-in"), "options"),
-                Output(self.uuid("force-in"), "value"),
-            ],
+            [Output(self.uuid("force-in"), "options"), Output(self.uuid("force-in"), "value"),],
             [
                 Input(self.uuid("parameter-list"), "value"),
                 Input(self.uuid("exclude-include"), "value"),
@@ -643,10 +683,10 @@ The types of response_filters are:
         )
         def update_force_in(parameter_list, exc_inc, force_in):
             """Callback to update options for force in"""
+            if dash.callback_context.triggered[0]["value"] is None:
+                raise PreventUpdate
             if exc_inc == "exc":
-                df = self.parameterdf.drop(
-                    columns=["ENSEMBLE", "REAL"] + parameter_list
-                )
+                df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
@@ -704,9 +744,7 @@ The types of response_filters are:
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(
-                columns=["REAL", "ENSEMBLE"]
-            )
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             if exc_inc == "inc" and not parameter_list:
                 return (
@@ -726,11 +764,7 @@ The types of response_filters are:
                 )
 
             result = gen_model(
-                df,
-                response,
-                force_in=force_in,
-                max_vars=max_vars,
-                interaction_degree=interaction,
+                df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction,
             )
             if not result:
                 return (
@@ -753,9 +787,7 @@ The types of response_filters are:
                 )
             # Generate table
             table = result.model.fit().summary2().tables[1].drop("Intercept")
-            table.drop(
-                ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
-            )
+            table.drop(["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True)
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
             columns = [
@@ -787,12 +819,7 @@ The types of response_filters are:
         return [
             (
                 load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
+                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
             ),
             (
                 load_csv,
@@ -942,9 +969,7 @@ def _model_warnings(design_matrix: pd.DataFrame):
         warnings.filterwarnings("error", category=RuntimeWarning)
         warnings.filterwarnings("ignore", category=UserWarning)
         try:
-            model = sm.OLS(
-                design_matrix["response"], design_matrix.drop(columns="response")
-            ).fit()
+            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
         except (Exception, RuntimeWarning) as error:
             print("error: ", error)
             return None
@@ -990,9 +1015,7 @@ def make_p_values_plot(p_sorted, theme, color_dict):
             "line": {"color": "#303030", "width": 1.5},
         }
     )
-    fig.add_annotation(
-        x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False
-    )
+    fig.add_annotation(x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False)
     fig = fig.to_dict()
     fig["layout"].update(
         barmode="relative",
@@ -1018,9 +1041,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
     x = (
         [1]
         if len(parameters) == 1
-        else np.linspace(
-            max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),
-        )
+        else np.linspace(max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),)
     )
     y = np.zeros(len(x))
     fig = go.Figure(
@@ -1029,7 +1050,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             y=y,
             opacity=0,
             marker=dict(
-                color=(p_values < 0.05).astype(np.int), # 0.05: upper limit for stat.sig. p-value
+                color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sig. p-value
                 colorscale=[(0, color_dict["pval insig."]), 
                             (1, color_dict["pval sig."])],
                 cmin=0,
@@ -1067,12 +1088,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             line_width=0,
         )
     fig.add_shape(
-        type="line",
-        x0=-0.1,
-        y0=0,
-        x1=2 + 0.1,
-        y1=0,
-        line=dict(color="#222A2A", width=0.75),
+        type="line", x0=-0.1, y0=0, x1=2 + 0.1, y1=0, line=dict(color="#222A2A", width=0.75),
     )
     fig.add_shape(
         type="path",
@@ -1090,7 +1106,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
         title=dict(
             text="Parameters impact (increase or decrese) on response and their significance",
             x=0.5),
-        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False), # 0.08: arrow height
+        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),  # 0.08: arrow height
         xaxis=dict(
             title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
         ),
@@ -1111,9 +1127,7 @@ def make_range_slider(domid, values, col_name):
         min=values.min(),
         max=values.max(),
         step=calculate_slider_step(
-            min_value=values.min(),
-            max_value=values.max(),
-            steps=len(list(values.unique())) - 1,
+            min_value=values.min(), max_value=values.max(), steps=len(list(values.unique())) - 1,
         ),
         value=[values.min(), values.max()],
         marks={

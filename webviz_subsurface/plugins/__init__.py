@@ -49,11 +49,6 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
-from ._test_plug import ExamplePlugin
-from ._test2_plug import MultipleRegressionJostein
-from ._multiple_regression_sofie import MultipleRegressionSofie
-from ._multiple_regession_vegard import DataTablefromFit
-from ._multiple_regression_sara import MultipleRegressionSara
 from ._multiple_regression import MultipleRegression
 from ._correlation_interactions import CorrelationInteractions
 from ._response_parallel_coordinates import ResponseParallelCoordinates
@@ -78,12 +73,6 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
-    "ExamplePlugin",
-    "MultipleRegressionJostein",
-    "MultipleRegressionSofie",
-    "DataTablefromFit",
-    "MultipleRegressionSara",
     "MultipleRegression",
-    "CorrelationInteractions",
     "ResponseParallelCoordinates"
 ]
