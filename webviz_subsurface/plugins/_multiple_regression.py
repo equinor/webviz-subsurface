@@ -154,7 +154,7 @@ The types of response_filters are:
         if parameter_ignore:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.theme = app.webviz_settings["theme"]
         self.badge_style = {
             "font-weight": "bold",
             "fontSize": ".70em",
@@ -275,6 +275,15 @@ The types of response_filters are:
     def ensembles(self):
         """Returns list of ensembles"""
         return list(self.parameterdf["ENSEMBLE"].unique())
+
+    @property
+    def color_dict(self):
+        """ Dictionary of colors that are frequently used. "sig." is short for significant """
+        fig = go.Figure().to_dict()
+        fig["layout"] = self.theme.create_themed_layout(fig["layout"])
+        return {"pval sig.": fig["layout"]["colorway"][0],
+                "pval insig.": "#606060",
+                "default text": fig["layout"]["template"]["layout"]["font"]["color"]}
 
     def check_runs(self):
         """Check that input parameters and response files have
@@ -533,7 +542,7 @@ The types of response_filters are:
                             "Table of parameters and their corresponding p-values",
                             style={
                                 "fontSize": ".925em",
-                                "color": self.plotly_theme["layout"]["colorway"][1],
+                                "color": self.color_dict["default text"],
                                 "textAlign": "center",
                             },
                         ),
@@ -765,8 +774,8 @@ The types of response_filters are:
                 data,
                 columns,
                 f"Multiple regression with {response} as response",
-                make_p_values_plot(p_sorted, self.plotly_theme),
-                make_arrow_plot(coeff_sorted, p_sorted, self.plotly_theme),
+                make_p_values_plot(p_sorted, self.theme, self.color_dict),
+                make_arrow_plot(coeff_sorted, p_sorted, self.theme, self.color_dict),
             )
 
     def add_webvizstore(self):
@@ -942,11 +951,10 @@ def _model_warnings(design_matrix: pd.DataFrame):
     return model
 
 
-def make_p_values_plot(p_sorted, theme):
+def make_p_values_plot(p_sorted, theme, color_dict):
     """Make p-values plot"""
     p_values = p_sorted.values
     parameters = p_sorted.index
-    default_color = theme["layout"]["colorway"][0]
     fig = go.Figure()
     fig.add_trace(
         {
@@ -955,7 +963,7 @@ def make_p_values_plot(p_sorted, theme):
             "type": "bar",
             "marker": {
                 "color": [
-                    default_color if val < 0.05 else "#606060" for val in p_values
+                    color_dict["pval sig."] if val < 0.05 else color_dict["pval insig."] for val in p_values
                 ]
             },
         }
@@ -971,20 +979,6 @@ def make_p_values_plot(p_sorted, theme):
             for param, pval in zip(parameters, p_values)
         ]
     )
-    fig["layout"].update(
-        theme_layout(
-            theme,
-            {
-                "barmode": "relative",
-                "height": 500,
-                "title": {
-                    "text": "P-values for the parameters. Value lower than 0.05 indicates "
-                            "statistical significance",
-                    "x": 0.5,
-                },
-            },
-        )
-    )
     fig.add_shape(
         {
             "type": "line",
@@ -999,11 +993,19 @@ def make_p_values_plot(p_sorted, theme):
     fig.add_annotation(
         x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False
     )
-    fig["layout"]["font"].update({"size": 12})
+    fig = fig.to_dict()
+    fig["layout"].update(
+        barmode="relative",
+        height=500,
+        title=dict(text="P-values for the parameters. Value lower than 0.05 indicates "
+                        "statistical significance",
+                   x=0.5)
+    )
+    fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
 
-def make_arrow_plot(coeff_sorted, p_sorted, theme):
+def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
     """Make arrow plot for the coefficients"""
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
@@ -1021,26 +1023,19 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         )
     )
     y = np.zeros(len(x))
-    default_color = theme["layout"]["colorway"][0]
-
     fig = go.Figure(
         go.Scatter(
             x=x,
             y=y,
             opacity=0,
             marker=dict(
-                color=(p_values < 0.05).astype(np.int), # 0.05: upper limit for stat.sign. p-value
-                colorscale=[(0, "#606060"), (1, default_color)],
+                color=(p_values < 0.05).astype(np.int), # 0.05: upper limit for stat.sig. p-value
+                colorscale=[(0, color_dict["pval insig."]), 
+                            (1, color_dict["pval sig."])],
                 cmin=0,
                 cmax=1,
             ),
         )
-    )
-    fig.update_layout(
-        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False), # 0.08: arrow height
-        xaxis=dict(
-            title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
-        ),
     )
     fig.update_traces(
         hovertemplate=[
@@ -1053,21 +1048,6 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             for param, pval in zip(parameters, p_values)
         ]
     )
-    fig["layout"].update(
-        theme_layout(
-            theme,
-            {
-                "barmode": "relative",
-                "height": 500,
-                "title": {
-                    "text": "Parameters impact (increase or decrese) on response and "
-                            "their significance",
-                    "x": 0.5,
-                },
-            },
-        )
-    )
-    fig["layout"]["font"].update({"size": 12})
     # Litt lang kommentar kanskje? :(
     """ Arrows are added to plot at the points in the x-array. Parameters with positive coefficients
         have arrows pointing upwards (sign=+1), and vice versa. Drawn with line width = 0.025*2,
@@ -1083,7 +1063,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                  f" L {x_coordinate+0.07} {sign*0.06} "
                  f" L {x_coordinate+0.025} {sign*0.06} "
                  f" L {x_coordinate+0.025} 0 ",
-            fillcolor=default_color if p_values[i] < 0.05 else "#606060",
+            fillcolor=color_dict["pval sig."] if p_values[i] < 0.05 else color_dict["pval insig."],
             line_width=0,
         )
     fig.add_shape(
@@ -1103,6 +1083,19 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     """ Adding descriptive message about horisontal axis on the plot,
         positioned 0.35 length units rightwards from end of plot domain. """
     fig.add_annotation(x=2 + 0.35, y=0, text="Increasing<br>p-value", showarrow=False)
+    fig = fig.to_dict()
+    fig["layout"].update(
+        barmode="relative",
+        height=500,
+        title=dict(
+            text="Parameters impact (increase or decrese) on response and their significance",
+            x=0.5),
+        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False), # 0.08: arrow height
+        xaxis=dict(
+            title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
+        ),
+    )
+    fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
 
 
