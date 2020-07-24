@@ -20,6 +20,7 @@ class HuvXsection:
         self.conditional_data = conditional_data
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
+        self.planned_attributes = {}
         self.fig = None
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -44,6 +45,20 @@ class HuvXsection:
                 "fence": fence,
             }
 
+    def set_planned_attributes(self, planned_files):
+        ''' Set dictonary with data for all planned well files
+        Args:
+            planned_files: List of wellpaths
+        '''
+        for pf in planned_files:
+            well = xtgeo.well_from_file(pf)
+            fence = well.get_fence_polyline(nextend=100, sampling=5)
+            well.create_relative_hlen()
+            self.planned_attributes[pf] = {
+                'well': well,
+                'fence': fence
+            }
+
     def get_xsec_well_data(self, well_settings, wellfile):
         ''' Finds data for well to plot in cross section
         Args:
@@ -53,8 +68,8 @@ class HuvXsection:
             data: List with dictionary containing zonelog, zonation points and conditional points
         '''
         if wellfile is None:
-            return []
-        else:
+            data = []
+        elif wellfile in self.well_attributes:
             data = [{
                 "y": self.well_attributes[wellfile]['well'].dataframe["Z_TVDSS"],
                 "x": self.well_attributes[wellfile]['well'].dataframe["R_HLEN"],
@@ -80,7 +95,15 @@ class HuvXsection:
                     "name": "Conditional points",
                     "marker":{"size": 5, "color": "rgb(0,255,255)"}
                 }]
-            return data
+        else:
+            data = [{
+                "y": self.planned_attributes[wellfile]['well'].dataframe["Z_TVDSS"],
+                "x": self.planned_attributes[wellfile]['well'].dataframe["R_HLEN"],
+                "name": "well",
+                "line": {"width": 7, "color": "black"},
+                "fillcolor": "black",
+            }]
+        return data
 
     def set_de_and_surface_lines(self, surfacefiles, de_keys, wellfile, polyline):
         ''' Set surface lines and corresponding depth error lines with fence from wellfile or polyline
@@ -92,8 +115,10 @@ class HuvXsection:
         '''
         if wellfile is None:
             fence = get_fencespec(polyline)
-        else:
+        elif wellfile in self.well_attributes:
             fence = self.well_attributes[wellfile]['fence']
+        else:
+            fence = self.planned_attributes[wellfile]['fence']
         for sfc_file in surfacefiles:
             sfc_line = self.surface_attributes[sfc_file]['surface'].get_randomline(fence)
             self.surface_attributes[sfc_file]['surface_line'] = sfc_line
@@ -139,7 +164,10 @@ class HuvXsection:
 
         else:
             y_min, y_max = self.sfc_lines_min_max_TVD(surfacefiles)
-            x_min, x_max = get_range_from_well(self.well_attributes[wellfile]["well"].dataframe, y_min)
+            if wellfile in self.well_attributes:
+                x_min, x_max = get_range_from_well(self.well_attributes[wellfile]["well"].dataframe, y_min)
+            else:
+                x_min, x_max = get_range_from_well(self.planned_attributes[wellfile]["well"].dataframe, y_min)
             y_range = np.abs(y_max - y_min)
             x_range = np.abs(x_max - x_min)
             if y_range/x_range > 1:
@@ -272,7 +300,10 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_intersection_dataframe(self, wellfile):
-        well = self.well_attributes[wellfile]['well']
+        if wellfile in self.well_attributes:
+            well = self.well_attributes[wellfile]['well']
+        else:
+            well = self.planned_attributes[wellfile]['well']
         data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]['surface']
