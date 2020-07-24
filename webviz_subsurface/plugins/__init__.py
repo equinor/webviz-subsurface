@@ -73,12 +73,6 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
-    "ExamplePlugin",
-    "MultipleRegressionJostein",
-    "MultipleRegressionSofie",
-    "DataTablefromFit",
-    "MultipleRegressionSara",
     "MultipleRegression",
-    "CorrelationInteractions",
     "ResponseParallelCoordinates"
 ]

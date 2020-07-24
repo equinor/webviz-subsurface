@@ -46,7 +46,6 @@ setup(
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "MultipleRegression = webviz_subsurface.plugins:MultipleRegression",
-            "CorrelationInteractions = webviz_subsurface.plugins:CorrelationInteractions",
             "ResponseParallelCoordinates = webviz_subsurface.plugins:ResponseParallelCoordinates",
         ]
     },
