@@ -202,12 +202,7 @@ folder, to avoid risk of not extracting the right data.
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    [
-                        "REAL",
-                        "ENSEMBLE",
-                        *response_include,
-                        *list(response_filters.keys()),
-                    ]
+                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
                 ),
                 errors="ignore",
                 axis=1,
@@ -292,9 +287,7 @@ folder, to avoid risk of not extracting the right data.
             },
             {
                 "id": self.uuid("interaction"),
-                "content": (
-                    "Select the desired level of interaction in the visualized model."
-                ),
+                "content": ("Select the desired level of interaction in the visualized model."),
             },
             {
                 "id": self.uuid("max-params"),
@@ -304,9 +297,7 @@ folder, to avoid risk of not extracting the right data.
             },
             {
                 "id": self.uuid("force-in"),
-                "content": (
-                    "Select parameters forced to be included in the visualized model."
-                ),
+                "content": ("Select parameters forced to be included in the visualized model."),
             },
         ]
         return steps
@@ -354,9 +345,7 @@ folder, to avoid risk of not extracting the right data.
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(
-                        f"Filter type {col_type} for {col_name} is not valid."
-                    )
+                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
 
     @property
     def filter_layout(self):
@@ -392,9 +381,7 @@ folder, to avoid risk of not extracting the right data.
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
                         clearable=False,
                         value=self.ensembles[0],
                         style={"marginBottom": "20px"},
@@ -406,9 +393,7 @@ folder, to avoid risk of not extracting the right data.
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.responses
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.responses],
                         clearable=False,
                         value=self.responses[0],
                         style={"marginBottom": "20px"},
@@ -451,9 +436,7 @@ folder, to avoid risk of not extracting the right data.
                     ),
                     dcc.Dropdown(
                         id=self.uuid("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.parameters],
                         clearable=True,
                         multi=True,
                         placeholder="",
@@ -467,16 +450,13 @@ folder, to avoid risk of not extracting the right data.
             html.Div(
                 [
                     html.Div(
-                        "Model settings:",
-                        style={"font-weight": "bold", "marginTop": "20px"},
+                        "Model settings:", style={"font-weight": "bold", "marginTop": "20px"},
                     ),
                     html.Div(
-                        "Interaction",
-                        style={"display": "inline-block", "margin-right": "10px"},
+                        "Interaction", style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style,),
-                        id=self.uuid("tooltip-filters"),
+                        dbc.Badge(" ? ", style=self.badge_style,), id=self.uuid("tooltip-filters"),
                     ),
                     dbc.Tooltip(
                         " Lets you select how deep the interaction level is: \n \n"
@@ -504,11 +484,7 @@ folder, to avoid risk of not extracting the right data.
                         style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ",
-                            style=self.badge_style,
-                            id=self.uuid("tooltip-maxparams"),
-                        )
+                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-maxparams"),)
                     ),
                     dbc.Tooltip(
                         " Lets you put a cap on the number of parameters to include in your \n"
@@ -532,13 +508,10 @@ folder, to avoid risk of not extracting the right data.
             html.Div(
                 [
                     html.Div(
-                        "Force in",
-                        style={"display": "inline-block", "margin-right": "10px"},
+                        "Force in", style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     html.Span(
-                        dbc.Badge(
-                            " ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),
-                        )
+                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),)
                     ),
                     dbc.Tooltip(
                         " Lets you force parameters into the model. If interaction is active, \n"
@@ -589,9 +562,7 @@ folder, to avoid risk of not extracting the right data.
                             },
                         ),
                         html.Div(children=[wcc.Graph(id=self.uuid("p-values-plot"))]),
-                        html.Div(
-                            children=[wcc.Graph(id=self.uuid("coefficient-plot"))]
-                        ),
+                        html.Div(children=[wcc.Graph(id=self.uuid("coefficient-plot"))]),
                         html.Label(
                             "Table of parameters and their corresponding p-values",
                             style={
@@ -646,9 +617,7 @@ folder, to avoid risk of not extracting the right data.
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append(
-                    {"name": col_name, "type": col_type, "values": filters[i]}
-                )
+                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
         return filteroptions
 
     def set_callbacks(self, app):
@@ -657,7 +626,8 @@ folder, to avoid risk of not extracting the right data.
                 Output(self.uuid("submit-button"), "disabled"),
                 Output(self.uuid("submit-button"), "style"),
             ],
-                self.model_callback_inputs)
+            self.model_callback_inputs,
+        )
         def update_button(
             n_clicks,
             exc_inc,
@@ -676,7 +646,13 @@ folder, to avoid risk of not extracting the right data.
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
                 return True, {"background-color": "LightGray"}
             else:
-                return False, {"color": "black", "background-color": self.plotly_theme["layout"]["colorway"][0]}
+                return (
+                    False,
+                    {
+                        "color": "black",
+                        "background-color": self.plotly_theme["layout"]["colorway"][0],
+                    },
+                )
 
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
@@ -689,10 +665,7 @@ folder, to avoid risk of not extracting the right data.
             return "Select parameters for subset"
 
         @app.callback(
-            [
-                Output(self.uuid("force-in"), "options"),
-                Output(self.uuid("force-in"), "value"),
-            ],
+            [Output(self.uuid("force-in"), "options"), Output(self.uuid("force-in"), "value"),],
             [
                 Input(self.uuid("parameter-list"), "value"),
                 Input(self.uuid("exclude-include"), "value"),
@@ -704,9 +677,7 @@ folder, to avoid risk of not extracting the right data.
             if dash.callback_context.triggered[0]["value"] is None:
                 raise PreventUpdate
             if exc_inc == "exc":
-                df = self.parameterdf.drop(
-                    columns=["ENSEMBLE", "REAL"] + parameter_list
-                )
+                df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
@@ -764,9 +735,7 @@ folder, to avoid risk of not extracting the right data.
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(
-                columns=["REAL", "ENSEMBLE"]
-            )
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
             if exc_inc == "inc" and not parameter_list:
                 return (
@@ -786,11 +755,7 @@ folder, to avoid risk of not extracting the right data.
                 )
 
             result = gen_model(
-                df,
-                response,
-                force_in=force_in,
-                max_vars=max_vars,
-                interaction_degree=interaction,
+                df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction,
             )
             if not result:
                 return (
@@ -813,9 +778,7 @@ folder, to avoid risk of not extracting the right data.
                 )
             # Generate table
             table = result.model.fit().summary2().tables[1].drop("Intercept")
-            table.drop(
-                ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
-            )
+            table.drop(["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True)
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
             columns = [
@@ -847,12 +810,7 @@ folder, to avoid risk of not extracting the right data.
         return [
             (
                 load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
+                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
             ),
             (
                 load_csv,
@@ -1002,9 +960,7 @@ def _model_warnings(design_matrix: pd.DataFrame):
         warnings.filterwarnings("error", category=RuntimeWarning)
         warnings.filterwarnings("ignore", category=UserWarning)
         try:
-            model = sm.OLS(
-                design_matrix["response"], design_matrix.drop(columns="response")
-            ).fit()
+            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
         except (Exception, RuntimeWarning) as error:
             print("error: ", error)
             return None
@@ -1022,11 +978,7 @@ def make_p_values_plot(p_sorted, theme):
             "x": [param.replace(" × ", "<br>× ") for param in parameters],
             "y": p_values,
             "type": "bar",
-            "marker": {
-                "color": [
-                    default_color if val < 0.05 else "#606060" for val in p_values
-                ]
-            },
+            "marker": {"color": [default_color if val < 0.05 else "#606060" for val in p_values]},
         }
     )
     fig.update_traces(
@@ -1048,7 +1000,7 @@ def make_p_values_plot(p_sorted, theme):
                 "height": 500,
                 "title": {
                     "text": "P-values for the parameters. Value lower than 0.05 indicates "
-                            "statistical significance",
+                    "statistical significance",
                     "x": 0.5,
                 },
             },
@@ -1065,9 +1017,7 @@ def make_p_values_plot(p_sorted, theme):
             "line": {"color": "#303030", "width": 1.5},
         }
     )
-    fig.add_annotation(
-        x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False
-    )
+    fig.add_annotation(x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False)
     fig["layout"]["font"].update({"size": 12})
     return fig
 
@@ -1085,9 +1035,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
     x = (
         [1]
         if len(parameters) == 1
-        else np.linspace(
-            max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),
-        )
+        else np.linspace(max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),)
     )
     y = np.zeros(len(x))
     default_color = theme["layout"]["colorway"][0]
@@ -1098,7 +1046,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
             y=y,
             opacity=0,
             marker=dict(
-                color=(p_values < 0.05).astype(np.int), # 0.05: upper limit for stat.sign. p-value
+                color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sign. p-value
                 colorscale=[(0, "#606060"), (1, default_color)],
                 cmin=0,
                 cmax=1,
@@ -1106,7 +1054,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         )
     )
     fig.update_layout(
-        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False), # 0.08: arrow height
+        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),  # 0.08: arrow height
         xaxis=dict(
             title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
         ),
@@ -1130,7 +1078,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
                 "height": 500,
                 "title": {
                     "text": "Parameters impact (increase or decrese) on response and "
-                            "their significance",
+                    "their significance",
                     "x": 0.5,
                 },
             },
@@ -1146,22 +1094,17 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme):
         fig.add_shape(
             type="path",
             path=f" M {x_coordinate-0.025} 0 "
-                 f" L {x_coordinate-0.025} {sign*0.06} "
-                 f" L {x_coordinate-0.07} {sign*0.06} "
-                 f" L {x_coordinate} {sign*0.08} "
-                 f" L {x_coordinate+0.07} {sign*0.06} "
-                 f" L {x_coordinate+0.025} {sign*0.06} "
-                 f" L {x_coordinate+0.025} 0 ",
+            f" L {x_coordinate-0.025} {sign*0.06} "
+            f" L {x_coordinate-0.07} {sign*0.06} "
+            f" L {x_coordinate} {sign*0.08} "
+            f" L {x_coordinate+0.07} {sign*0.06} "
+            f" L {x_coordinate+0.025} {sign*0.06} "
+            f" L {x_coordinate+0.025} 0 ",
             fillcolor=default_color if p_values[i] < 0.05 else "#606060",
             line_width=0,
         )
     fig.add_shape(
-        type="line",
-        x0=-0.1,
-        y0=0,
-        x1=2 + 0.1,
-        y1=0,
-        line=dict(color="#222A2A", width=0.75),
+        type="line", x0=-0.1, y0=0, x1=2 + 0.1, y1=0, line=dict(color="#222A2A", width=0.75),
     )
     fig.add_shape(
         type="path",
@@ -1187,9 +1130,7 @@ def make_range_slider(domid, values, col_name):
         min=values.min(),
         max=values.max(),
         step=calculate_slider_step(
-            min_value=values.min(),
-            max_value=values.max(),
-            steps=len(list(values.unique())) - 1,
+            min_value=values.min(), max_value=values.max(), steps=len(list(values.unique())) - 1,
         ),
         value=[values.min(), values.max()],
         marks={
