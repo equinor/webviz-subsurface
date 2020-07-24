@@ -149,8 +149,7 @@ The types of response_filters are:
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
-    
-    @property
+
     def ids(self, element):
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
