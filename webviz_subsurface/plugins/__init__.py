@@ -85,9 +85,5 @@ __all__ = [
     "MultipleRegressionSara",
     "MultipleRegression",
     "CorrelationInteractions",
-<<<<<<< HEAD
-    "ResponseParallelCoordinates",
-=======
     "ResponseParallelCoordinates"
->>>>>>> 54a9a70a7c99665ae559855d7f65cee9c79b32a4
 ]

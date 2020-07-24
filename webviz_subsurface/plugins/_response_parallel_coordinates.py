@@ -472,8 +472,8 @@ The types of response_filters are:
                         "colorbar": {
                             "title": response,
                             "xanchor": "left",
-                            "x": -0.08,
-                            "tickvals": [1, 2, 3],
+                            "x": -0.05,
+                            "tickvals": [1.03, 2, 2.97],
                             "ticktext": ["low", "medium", "high"]
                         },
                     },
@@ -481,11 +481,9 @@ The types of response_filters are:
                     "labelangle": 45,
                     "labelside": "bottom",
                 }],
-                "layout": {"width": len(dims) * 50 + 250, "height": 1200, "margin": {"b": 740, "t": 30}
-                }   
-
+                "layout": {"width": len(dims)*100+250, "height": 1200, "margin": {"b": 740, "t": 30}
+                }
             }
-
             return dict_of_fig
 
     def add_webvizstore(self):
