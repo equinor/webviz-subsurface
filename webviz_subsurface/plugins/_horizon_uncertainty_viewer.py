@@ -91,13 +91,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.df_well_target_points = FilterTable(self.target_points, self.well_points)
         if planned_wells_dir is not None:
             self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-            self.planned_wells = [xtgeo.well_from_file(wf) for wf in self.planned_well_files]
             self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
         else:
-            self.planned_well_files = None
-            self.planned_wells = None
-            self.planned_well_names = None
+            self.planned_well_files = []
+            self.planned_wells = []
+            self.planned_well_names = []
         self.xsec.set_well_attributes(self.wellfiles)
+        self.xsec.set_planned_attributes(self.planned_well_files)
 
         # Store current layers
         self.LAYERS_STATE = []
@@ -276,6 +276,11 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         {"label": name, "value": path}
                                         for name, path in zip(
                                             self.wellnames, self.wellfiles
+                                        )
+                                    ] + [
+                                        {'label': name, 'value': path}
+                                        for name, path in zip(
+                                            self.planned_well_names, self.planned_well_files
                                         )
                                     ],
                                     value=self.wellfiles[0],
