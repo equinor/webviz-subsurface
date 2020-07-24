@@ -177,14 +177,8 @@ The types of response_filters are:
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
             {"id": self.uuid("exclude_include"), "content": (
-<<<<<<< HEAD
                 "choose if the parameter selector should be inclusive or exclusive"
                 )
-=======
-                "Choose between using all availabe parameters or a subset of the available parameters in the regression. "
-                "If all parameters are chosen it is possible to exclude some the parameters by choosing them from the drop down menu."
-                ),
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
             },
             
         ]
@@ -297,7 +291,6 @@ The types of response_filters are:
             ),
             html.Div(
                 [
-<<<<<<< HEAD
                    html.Div("Parameters:", style={
                        "font-weight": "bold",
                        "display": "inline-block", 
@@ -311,20 +304,11 @@ The types of response_filters are:
                            "fontSize": ".90em",
                            "color": "grey"}),
                    dbc.Tooltip(
-=======
-                    html.Div("Parameters:", style={"font-weight": "bold", 'display': 'inline-block', 'margin-right': '10px'}),
-                    html.Span(
-                        "\u003f\u20dd", 
-                        id=self.uuid("tooltip-parameters"), 
-                        style={"font-weight": "bold", "cursor": "pointer", "fontSize": ".90em", "color": "grey"}),
-                    dbc.Tooltip(
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
                         "This lets you control what parameters to include in your model. \n" +
                         "There are two modes, exclusive and subset: \n" +
                         "- Exclusive mode lets you remove specific parameters\n\n" +
                         "- Subset mode lets you pick a subset of parameters \n",
                     target=self.uuid("tooltip-parameters"),
-<<<<<<< HEAD
                     style={"fontSize": ".75em",
                     "backgroundColor": "#505050",
                     "color": "white",
@@ -342,21 +326,6 @@ The types of response_filters are:
                        style={"fontSize": ".80em"},
                    )
                ]
-=======
-                    style={"fontSize": ".75em", "backgroundColor": "#505050", "color": "white", "opacity": "85%", "white-space": "pre-wrap"}
-                    ),
-                    dcc.RadioItems(
-                        id=self.uuid("exclude_include"),
-                        options=[
-                            {"label": "Exclusive mode", "value": "exc"},
-                            {"label": "Subset mode", "value": "inc"}
-                        ],
-                        value="exc",
-                        labelStyle={'display': 'inline-block'},
-                        style={'fontSize': ".80em"},
-                    )
-                ]
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
             ),
             html.Div(
                 [
@@ -417,17 +386,7 @@ The types of response_filters are:
                 ),
                 html.Div(
                     style={"flex": 3},
-<<<<<<< HEAD
-                    children=[
-                        html.Div(
-                            children=[
-                                wcc.Graph(id=self.uuid("paralell-coords-plot"))
-                            ]
-                        ),
-                    ],
-=======
-                    children=wcc.Graph(id=self.uuid('p-values-plot')),
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
+                    children=wcc.Graph(id=self.uuid("paralell-coords-plot")),
                 ),
             ]
         )
@@ -490,15 +449,11 @@ The types of response_filters are:
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-<<<<<<< HEAD
             
             pallete=self.plotly_theme["layout"]["colorway"]
             colmap=((0, pallete[0]), (0.33, pallete[0]), (0.33, pallete[1]), (0.66, pallete[1]), (0.66, pallete[2]), (1, pallete[2]))
             print(colmap)
             
-=======
-
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
             df = col_percentile(df, response, percent)
@@ -514,21 +469,14 @@ The types of response_filters are:
                         "colorbar": {
                             "title": response,
                             "xanchor": "left",
-<<<<<<< HEAD
                             "x": -0.08,
                             "tickvals": [1.3, 2, 2.7],
                             "ticktext": ["low", "medium", "high"],
                             
-=======
-                            "x": -0.05,
-                            "tickvals": [1.03, 2, 2.97],
-                            "ticktext": ["low", "medium", "high"]
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
                         },
                     },
                     "dimensions": dims,
                     "labelangle": 45,
-<<<<<<< HEAD
                     "labelside": "bottom",}]
             layout = {}
             layout.update(self.plotly_theme["layout"])
@@ -537,15 +485,6 @@ The types of response_filters are:
             layout.update({"width": width, "height": 1200, "margin": {"b": 740, "t": 30}})
             return {"data": data, "layout": layout}
             
-=======
-                    "labelside": "bottom",
-                }],
-                "layout": {"width": len(dims)*100+250, "height": 1200, "margin": {"b": 740, "t": 30}
-                }
-            }
-            return dict_of_fig
-
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -582,12 +521,7 @@ def col_percentile(df: pd.DataFrame, column: str, percentile: int):
     col[top_index:] = 3
     col[:bottom_index] = 1
     col[bottom_index:top_index] = 2
-<<<<<<< HEAD
     df[column] = col.astype("int64")
-=======
-    df[column] = col.astype("category")
-    print("HERE col percent", df.head())
->>>>>>> 7763b8f4f5372433156999cf78a6fb32a444fea3
     return df
 
 
