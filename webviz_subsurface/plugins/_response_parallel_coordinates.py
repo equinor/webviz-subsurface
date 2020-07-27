@@ -15,53 +15,103 @@ from .._utils.ensemble_handling import filter_and_sum_responses
 
 
 class ResponseParallelCoordinates(WebvizPluginABC):
-    """### Best fit using forward stepwise regression
 
-This plugin visualizes parameters used for individual realizations in FMU ensembles.
-the parameters can be filtered based on the value of a response.
+    """ Visualizes parameters in a paralell parameter plot, colored by the value of the response.
+    Helpful for seeing trends in the relation of the parameters and the response.
+---
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
 
-Input can be given either as:
+**Using aggregated data**
+* **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns \
+(absolute path or relative to config file).
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` \
+columns (absolute path or relative to config file).
 
-- Aggregated csv files for parameters and responses,
-- An ensemble name defined in shared_settings and a local csv file for responses
-stored per realizations.
 
-**Note**: Non-numerical (string-based) input parameters and responses are removed.
+**Using a response file per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be \
+                    combined with `response_csv` and `parameter_csv`).
 
-**Note**: The response csv file will be aggregated per realization.
 
-**Note**: Regression models break down when there are duplicate or highly correlated parameters,
-please make sure to properly filter your inputs as the model will give a response, but it will be wrong.
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
+                implies that the input data should be time series data from simulation `.UNSMRY` \
+                files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
+                from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
+                used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
+               `.UNSMRY`-files (default is monthly).
 
-Arguments:
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter \
+   of type `single` (as defined below under `response_filters`).
 
-* `parameter_csv`: Aggregated csvfile for input parameters with 'REAL' and 'ENSEMBLE' columns.
-* `response_csv`: Aggregated csvfile for response with 'REAL' and 'ENSEMBLE' columns.
-* `ensembles`: Which ensembles in `shared_settings` to visualize. If neither response_csv or
-            response_file is defined, the definition of ensembles implies that you want to
-            use simulation timeseries data directly from UNSMRY data. This also implies that
-            the date will be used as a response filter of type `single`.
-* `response_file`: Local (per realization) csv file for response parameters.
-* `response_filters`: Optional dictionary of responses (columns in csv file) that can be used
-as row filtering before aggregation. (See below for filter types).
-* `response_ignore`: Response (columns in csv) to ignore (cannot use with response_include).
-* `response_include`: Response (columns in csv) to include (cannot use with response_ignore).
-* `column_keys`: Simulation vectors to use as responses read directly from UNSMRY-files in the
-                defined ensembles using fmu-ensemble (cannot use with response_file,
-                response_csv or parameters_csv).
-* `sampling`: Sampling frequency if using fmu-ensemble to import simulation time series data.
-            (Only relevant if neither response_csv or response_file is defined). Default monthly
-* `aggregation`: How to aggregate responses per realization. Either `sum` or `mean`.
-* `corr_method`: Correlation algorithm. Either `pearson` or `spearman`.
 
-The types of response_filters are:
-```
-- `single`: Dropdown with single selection.
-- `multi`: Dropdown with multiple selection.
-- `range`: Slider with range selection.
-```
-"""
+**Common settings for all input options**
 
+All of these are optional, some have defaults seen in the code snippet below.
+
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation \
+                       vectors) that can be used as row filtering before aggregation. \
+                       Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore \
+                      (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include \
+                       (cannot use with response_ignore).
+* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
+
+
+---
+
+?> Non-numerical (string-based) input parameters and responses are removed.
+
+?> The responses will be aggregated per realization; meaning that if your filters do not reduce \
+the response to a single value per realization in your data, the values will be aggregated \
+accoording to your defined `aggregation`. If e.g. the response is a form of volume, \
+and the filters are regions (or other subdivisions of the total volume), then `sum` would \
+be a natural aggregation. If on the other hand the response is the pressures in the \
+same volume, aggregation as `mean` over the subdivisions of the same volume \
+would make more sense (though the pressures in this case would not be volume weighted means, \
+and the aggregation would therefore likely be imprecise).
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
+`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+(controlled by the `sampling` key). This is because the statistics are calculated per DATE over \
+all realizations in an ensemble, and the available dates should therefore not differ between \
+individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `parameter_csv` file must have columns `REAL`, `ENSEMBLE` and the parameter columns.
+
+The `response_csv` file must have columns `REAL`, `ENSEMBLE` and the response columns \
+(and the columns to use as `response_filters`, if that option is used).
+
+
+**Using a response file per realization**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+The `response_file` must have the response columns (and the columns to use as `response_filters`, \
+if that option is used).
+
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
+individual realizations. You should therefore not have more than one `UNSMRY` file in this \
+folder, to avoid risk of not extracting the right data."""
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -76,7 +126,6 @@ The types of response_filters are:
         column_keys: list = None,
         sampling: str = "monthly",
         aggregation: str = "sum",
-        parameter_ignore: list = None,
     ):
 
         super().__init__()
@@ -86,7 +135,6 @@ The types of response_filters are:
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
-        self.parameter_ignore = parameter_ignore if parameter_ignore else None
         self.column_keys = column_keys
         self.time_index = sampling
         self.aggregation = aggregation
@@ -143,8 +191,7 @@ The types of response_filters are:
                 axis=1,
                 inplace=True,
             )
-        if parameter_ignore:
-            self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
+
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
@@ -160,11 +207,9 @@ The types of response_filters are:
                 "id": self.uuid("layout"),
                 "content": (
                     "Dashboard for paralell parameters plot"
-                    "filtered to indicate the value of the selected response"
-                    
-                )
+                    "filtered to indicate the value of the selected response")
             },
-            
+
             {
                 "id": self.uuid("paralell-coords-plot"),
                 "content": (
@@ -173,14 +218,14 @@ The types of response_filters are:
                     "that range, most interesting being the response column to the far right"
                 )
             },
-            
+
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
             {"id": self.uuid("responses"), "content": ("Select the active response."), },
             {"id": self.uuid("exclude_include"), "content": (
                 "choose if the parameter selector should be inclusive or exclusive"
                 )
             },
-            
+
         ]
         return steps
 
@@ -293,11 +338,11 @@ The types of response_filters are:
                 [
                    html.Div("Parameters:", style={
                        "font-weight": "bold",
-                       "display": "inline-block", 
+                       "display": "inline-block",
                         "margin-right": "10px"}),
                    html.Span(
-                       "\u003f\u20dd", 
-                       id=self.uuid("tooltip-parameters"), 
+                       "\u003f\u20dd",
+                       id=self.uuid("tooltip-parameters"),
                        style={
                            "font-weight": "bold",
                            "cursor": "pointer",
@@ -346,7 +391,7 @@ The types of response_filters are:
                 "display": "inline-block",
                 "margin-right": "10px"}),
             html.Span(
-                       "\u003f\u20dd", 
+                       "\u003f\u20dd",
                        id=self.uuid("tooltip-percent"),
                        style={
                            "font-weight": "bold",
@@ -392,9 +437,9 @@ The types of response_filters are:
         )
 
     @property
-    def parallel_coords_callback_Inputs(self):
-        """List of Inputs for multiple regression callback"""
-        Inputs = [
+    def parallel_coords_callback_inputs(self):
+        """List of Inputs for paralell parameters callback"""
+        inputs = [
             Input(self.uuid("exclude_include"), "value"),
             Input(self.uuid("parameter-list"), "value"),
             Input(self.uuid("ensemble"), "value"),
@@ -404,8 +449,8 @@ The types of response_filters are:
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                Inputs.append(Input(self.uuid(f"filter-{col_name}"), "value"))
-        return Inputs
+                inputs.append(Input(self.uuid(f"filter-{col_name}"), "value"))
+        return inputs
 
     def make_response_filters(self, filters):
         """Returns a list of active response filters"""
@@ -418,25 +463,22 @@ The types of response_filters are:
         return filteroptions
 
     def set_callbacks(self, app):
-        """Set callbacks for placeholder text for exc/inc dropdown"""
 
-
-        """Set callbacks for the table, p-values plot, and arrow plot"""
+        """Set callback for paralell coordinate plot"""
         @app.callback(
             Output(self.uuid("paralell-coords-plot"), "figure"),
-            self.parallel_coords_callback_Inputs
+            self.parallel_coords_callback_inputs
         )
         def _update_paralell_coordinate_plot(
                 exc_inc, parameter_list,
                 ensemble, response,
                 percent, *filters):
             """Callback to update the model for multiple regression
-
             1. Filters and aggregates response dataframe per realization.
             2. Filters parameters dataframe on selected ensemble.
             3. Merge parameter and response dataframe.
             4. Discretisize response.
-            5. generate parallel parameters plot.
+            5. Generate parallel parameters plot.
             """
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
@@ -449,15 +491,40 @@ The types of response_filters are:
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
-            
-            pallete=self.plotly_theme["layout"]["colorway"]
-            colmap=((0, pallete[0]), (0.33, pallete[0]), (0.33, pallete[1]), (0.66, pallete[1]), (0.66, pallete[2]), (1, pallete[2]))
-            print(colmap)
-            
+
+            pallete = self.plotly_theme["layout"]["colorway"]
+            colmap = [
+                (0, pallete[0]), (0.33, pallete[0]),
+                (0.33, pallete[2]), (0.66, pallete[2]),
+                (0.66, pallete[1]), (1, pallete[1])]
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
-            df = col_percentile(df, response, percent)
-            dims = [{"label": param, "values": df[param]} for param in df]
+
+            # if min and max are indistinguishable we return invalid parameter.
+            if isinstance(col_percentile(df, response, percent), pd.DataFrame):
+                df = col_percentile(df, response, percent)
+            else:
+                return  {"layout": {
+                            "title": "invalid resoponse, high and low indistinguishable",
+                            "height": 600,
+                            "width": 800
+                        }
+                    }
+
+            dims = []
+            # genereate lines for plot
+            for param in df:
+                if param != response:
+                    dims.append(dict(
+                        label=param,
+                        values=df[param]
+                    ))
+                else:
+                    dims.append(dict(
+                        label=param,
+                        values=df[param],
+                        range=(1, 3)
+                    ))
             data = [{
                 "type": "parcoords",
                     "line": {
@@ -470,9 +537,9 @@ The types of response_filters are:
                             "title": response,
                             "xanchor": "left",
                             "x": -0.08,
-                            "tickvals": [1.3, 2, 2.7],
+                            "tickvals": [1.333, 2, 2.6666],
                             "ticktext": ["low", "medium", "high"],
-                            
+
                         },
                     },
                     "dimensions": dims,
@@ -484,7 +551,7 @@ The types of response_filters are:
             width = len(dims) * 100 + 250
             layout.update({"width": width, "height": 1200, "margin": {"b": 740, "t": 30}})
             return {"data": data, "layout": layout}
-            
+
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
@@ -516,6 +583,8 @@ The types of response_filters are:
 
 def col_percentile(df: pd.DataFrame, column: str, percentile: int):
     col = df[column].sort_values()
+    if list(col)[0] == list(col)[-1]:
+        return None
     bottom_index = int((100 - percentile) * len(col) / 100)
     top_index = int(percentile * len(col) / 100)
     col[top_index:] = 3
