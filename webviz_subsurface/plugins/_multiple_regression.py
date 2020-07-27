@@ -334,8 +334,8 @@ folder, to avoid risk of not extracting the right data.
         """ Dictionary of colors that are frequently used. "sig." is short for significant """
         fig = go.Figure().to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
-        return {"pval sig.": fig["layout"]["colorway"][0],
-                "pval insig.": "#606060",
+        return {"default color": fig["layout"]["colorway"][0],
+                "dark gray": "#606060",
                 "default text": fig["layout"]["template"]["layout"]["font"]["color"]}
 
     def check_runs(self):
@@ -659,7 +659,7 @@ folder, to avoid risk of not extracting the right data.
                     False,
                     {
                         "color": "black",
-                        "background-color": self.plotly_theme["layout"]["colorway"][0],
+                        "background-color": self.color_dict["default color"],
                     },
                 )
 
@@ -988,7 +988,7 @@ def make_p_values_plot(p_sorted, theme, color_dict):
             "type": "bar",
             "marker": {
                 "color": [
-                    color_dict["pval sig."] if val < 0.05 else color_dict["pval insig."] for val in p_values
+                    color_dict["default color"] if val < 0.05 else color_dict["dark gray"] for val in p_values
                 ]
             },
         }
@@ -1051,8 +1051,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             opacity=0,
             marker=dict(
                 color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sig. p-value
-                colorscale=[(0, color_dict["pval insig."]), 
-                            (1, color_dict["pval sig."])],
+                colorscale=[(0, color_dict["dark gray"]), 
+                            (1, color_dict["default color"])],
                 cmin=0,
                 cmax=1,
             ),
@@ -1084,7 +1084,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
                  f" L {x_coordinate+0.07} {sign*0.06} "
                  f" L {x_coordinate+0.025} {sign*0.06} "
                  f" L {x_coordinate+0.025} 0 ",
-            fillcolor=color_dict["pval sig."] if p_values[i] < 0.05 else color_dict["pval insig."],
+            fillcolor=color_dict["default color"] if p_values[i] < 0.05 else color_dict["dark gray"],
             line_width=0,
         )
     fig.add_shape(
@@ -1135,13 +1135,6 @@ def make_range_slider(domid, values, col_name):
             str(values.max()): {"label": f"{values.max():.2f}"},
         },
     )
-
-
-def theme_layout(theme, specific_layout):
-    layout = {}
-    layout.update(theme["layout"])
-    layout.update(specific_layout)
-    return layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
