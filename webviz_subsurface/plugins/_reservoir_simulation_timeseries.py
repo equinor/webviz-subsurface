@@ -22,7 +22,10 @@ from .._abbreviations.reservoir_simulation import (
 from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
+    calc_series_statistics,
+    add_fanchart_traces,
 )
+from .._utils.unique_theming import unique_colors
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -195,33 +198,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def ens_colors(self):
-        try:
-            colors = self.theme.plotly_theme["layout"]["colorway"]
-        except KeyError:
-            colors = self.theme.plotly_theme.get(
-                "colorway",
-                [
-                    "#243746",
-                    "#eb0036",
-                    "#919ba2",
-                    "#7d0023",
-                    "#66737d",
-                    "#4c9ba1",
-                    "#a44c65",
-                    "#80b7bc",
-                    "#ff1243",
-                    "#919ba2",
-                    "#be8091",
-                    "#b2d4d7",
-                    "#ff597b",
-                    "#bdc3c7",
-                    "#d8b2bd",
-                    "#ffe7d6",
-                    "#d5eaf4",
-                    "#ff88a1",
-                ],
-            )
-        return {ens: colors[self.ensembles.index(ens)] for ens in self.ensembles}
+        return unique_colors(self.ensembles, self.theme)
 
     @property
     def tour_steps(self):
@@ -536,6 +513,19 @@ folder, to avoid risk of not extracting the right data.
                 subplot_titles=titles,
             )
 
+            if calc_mode == "ensembles":
+                data = filter_df(self.smry, ensembles, vectors, self.smry_meta)
+            elif calc_mode == "delta_ensembles":
+                data = filter_df(
+                    self.smry, [base_ens, delta_ens], vectors, self.smry_meta
+                )
+                data = calculate_delta(data, base_ens, delta_ens)
+            else:
+                raise PreventUpdate
+
+            if visualization in ["statistics", "statistics_hist"]:
+                stat_df = calc_series_statistics(data, vectors)
+
             # Loop through each vector and calculate relevant plot
             legends = []
             for i, vector in enumerate(vectors):
@@ -544,47 +534,35 @@ folder, to avoid risk of not extracting the right data.
                     vector=vector,
                     smry_meta=self.smry_meta,
                 )
-                if calc_mode == "ensembles":
-                    data = filter_df(self.smry, ensembles, vector, self.smry_meta)
-                elif calc_mode == "delta_ensembles":
-                    data = filter_df(
-                        self.smry, [base_ens, delta_ens], vector, self.smry_meta
+
+                if visualization in ["statistics", "statistics_hist"]:
+                    traces = add_statistic_traces(
+                        stat_df, vector, colors=self.ens_colors, line_shape=line_shape,
                     )
-                    data = calculate_delta(data, base_ens, delta_ens)
+                    if visualization == "statistics_hist":
+                        histdata = add_histogram_traces(
+                            data, vector, date=date, colors=self.ens_colors
+                        )
+                        for trace in histdata:
+                            fig.add_trace(trace, i + 1, 2)
+                elif visualization == "realizations":
+                    traces = add_realization_traces(
+                        data, vector, colors=self.ens_colors, line_shape=line_shape,
+                    )
                 else:
                     raise PreventUpdate
 
-                if visualization == "statistics":
-                    traces = add_statistic_traces(
-                        data,
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        smry_meta=self.smry_meta,
+                if (
+                    historical_vector(vector=vector, smry_meta=self.smry_meta)
+                    in data.columns
+                ):
+                    traces.append(
+                        add_history_trace(
+                            data,
+                            historical_vector(vector=vector, smry_meta=self.smry_meta),
+                            line_shape,
+                        )
                     )
-                elif visualization == "realizations":
-                    traces = add_realization_traces(
-                        data,
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        smry_meta=self.smry_meta,
-                    )
-                elif visualization == "statistics_hist":
-                    traces = add_statistic_traces(
-                        data,
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        smry_meta=self.smry_meta,
-                    )
-                    histdata = add_histogram_traces(
-                        data, vector, date=date, colors=self.ens_colors
-                    )
-                    for trace in histdata:
-                        fig.add_trace(trace, i + 1, 2)
-                else:
-                    raise PreventUpdate
 
                 # Remove unwanted legends(only keep one for each ensemble)
                 for trace in traces:
@@ -621,6 +599,80 @@ folder, to avoid risk of not extracting the right data.
                     fig["layout"]["xaxis6"]["matches"] = None
                     fig["layout"]["xaxis6"]["showticklabels"] = True
             return fig
+
+        @app.callback(
+            self.plugin_data_output,
+            [self.plugin_data_requested],
+            [
+                State(self.uuid("vector1"), "value"),
+                State(self.uuid("vector2"), "value"),
+                State(self.uuid("vector3"), "value"),
+                State(self.uuid("ensemble"), "value"),
+                State(self.uuid("mode"), "value"),
+                State(self.uuid("base_ens"), "value"),
+                State(self.uuid("delta_ens"), "value"),
+                State(self.uuid("statistics"), "value"),
+            ],
+        )
+        def _user_download_data(
+            data_requested,
+            vector1,
+            vector2,
+            vector3,
+            ensembles,
+            calc_mode,
+            base_ens,
+            delta_ens,
+            visualization,
+        ):
+            """Callback to download data based on selections"""
+
+            # Combine selected vectors
+            vectors = [vector1]
+            if vector2:
+                vectors.append(vector2)
+            if vector3:
+                vectors.append(vector3)
+
+            if calc_mode == "ensembles":
+                # Ensure selected ensembles is a list
+                ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
+                data = filter_df(self.smry, ensembles, vectors, self.smry_meta)
+            elif calc_mode == "delta_ensembles":
+                data = filter_df(
+                    self.smry, [base_ens, delta_ens], vectors, self.smry_meta
+                )
+                data = calculate_delta(data, base_ens, delta_ens)
+            else:
+                raise PreventUpdate
+
+            if visualization in ["statistics", "statistics_hist"]:
+                data = calc_series_statistics(data, vectors)
+                data = data.sort_values(by=[("", "ENSEMBLE"), ("", "DATE")])
+            else:
+                data = data.sort_values(by=["ENSEMBLE", "REAL", "DATE"])
+                # Reorder columns
+                data = data[
+                    ["ENSEMBLE", "REAL", "DATE"]
+                    + [
+                        col
+                        for col in data.columns
+                        if col not in ["ENSEMBLE", "REAL", "DATE"]
+                    ]
+                ]
+
+            return (
+                WebvizPluginABC.plugin_data_compress(
+                    [
+                        {
+                            "filename": "reservoir_simulation_timeseries.csv",
+                            "content": data.to_csv(index=False),
+                        }
+                    ]
+                )
+                if data_requested
+                else ""
+            )
 
         @app.callback(
             [
@@ -690,12 +742,13 @@ def format_observations(obslist):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_df(df, ensembles, vector, smry_meta):
+def filter_df(df, ensembles, vectors, smry_meta):
     """Filter dataframe for current vector. Include history
     vector if present"""
-    columns = ["REAL", "ENSEMBLE", vector, "DATE"]
-    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
-        columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
+    columns = ["REAL", "ENSEMBLE", "DATE"] + vectors
+    for vector in vectors:
+        if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
+            columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
 
     return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
@@ -760,9 +813,9 @@ def add_observation_trace(obs):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_realization_traces(dframe, vector, colors, line_shape, smry_meta):
+def add_realization_traces(dframe, vector, colors, line_shape):
     """Renders line trace for each realization, includes history line if present"""
-    traces = [
+    return [
         {
             "line": {"shape": line_shape},
             "x": list(real_df["DATE"]),
@@ -776,16 +829,6 @@ def add_realization_traces(dframe, vector, colors, line_shape, smry_meta):
         for ens_no, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE"))
         for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
     ]
-
-    if historical_vector(vector=vector, smry_meta=smry_meta) in dframe.columns:
-        traces.append(
-            add_history_trace(
-                dframe,
-                historical_vector(vector=vector, smry_meta=smry_meta),
-                line_shape,
-            )
-        )
-    return traces
 
 
 def add_history_trace(dframe, vector, line_shape):
@@ -807,113 +850,20 @@ def add_history_trace(dframe, vector, line_shape):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_statistic_traces(df, vector, colors, line_shape, smry_meta):
-    """Calculate statistics for a given vector for relevant ensembles"""
-    quantiles = [10, 90]
+def add_statistic_traces(stat_df, vector, colors, line_shape):
+    """Add fanchart traces for selected vector"""
     traces = []
-
-    for ensemble, ens_df in df.groupby("ENSEMBLE"):
-        dframe = ens_df.drop(columns=["ENSEMBLE", "REAL"]).groupby("DATE")
-
-        # Build a dictionary of dataframes to be concatenated
-        dframes = {}
-        dframes["mean"] = dframe.mean()
-        for quantile in quantiles:
-            quantile_str = "p" + str(quantile)
-            dframes[quantile_str] = dframe.quantile(q=quantile / 100.0)
-        dframes["maximum"] = dframe.max()
-        dframes["minimum"] = dframe.min()
+    for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
         traces.extend(
             add_fanchart_traces(
-                pd.concat(dframes, names=["STATISTIC"], sort=False)[vector],
+                ens_df,
+                vector,
                 colors.get(ensemble, colors[list(colors.keys())[0]]),
                 ensemble,
                 line_shape,
             )
         )
-    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
-        traces.append(
-            add_history_trace(
-                df, historical_vector(vector=vector, smry_meta=smry_meta), line_shape,
-            )
-        )
     return traces
-
-
-def add_fanchart_traces(vector_stats, color, legend_group: str, line_shape):
-    """Renders a fanchart for an ensemble vector"""
-
-    fill_color = hex_to_rgb(color, 0.3)
-    line_color = hex_to_rgb(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": "Maximum",
-            "x": vector_stats["maximum"].index.tolist(),
-            "y": vector_stats["maximum"].values,
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P10",
-            "x": vector_stats["p10"].index.tolist(),
-            "y": vector_stats["p10"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Mean",
-            "x": vector_stats["mean"].index.tolist(),
-            "y": vector_stats["mean"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P90",
-            "x": vector_stats["p90"].index.tolist(),
-            "y": vector_stats["p90"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Minimum",
-            "x": vector_stats["minimum"].index.tolist(),
-            "y": vector_stats["minimum"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
-
-
-def hex_to_rgb(hex_string, opacity=1):
-    """Converts a hex color to rgb"""
-    hex_string = hex_string.lstrip("#")
-    hlen = len(hex_string)
-    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
-    rgb.append(opacity)
-    return f"rgba{tuple(rgb)}"
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
