@@ -544,7 +544,7 @@ folder, to avoid risk of not extracting the right data.
                     dbc.Button(
                         id=self.uuid("submit-button"),
                         children="Update model",
-                        style={"background-color": "LightGray", "cursor": "not-allowed"},
+                        style={"background-color": "LightGray", "cursor": "not-allowed", "border": "none"},
                         disabled=True
                     )
                 ],
@@ -653,7 +653,7 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
             # if the triggered comp is the sumbit-button
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
-                return True, {"background-color": "LightGray", "cursor": "not-allowed"}
+                return True, {"background-color": "LightGray", "cursor": "not-allowed", "border": "none"}
             else:
                 return (
                     False,
