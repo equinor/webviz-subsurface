@@ -26,32 +26,76 @@ from .._utils.simulation_timeseries import (
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
-    """### ReservoirSimulationTimeSeries
+    """Visualizes reservoir simulation time series data for FMU ensembles.
 
-Visualizes reservoir simulation time series for FMU ensembles.
-Input can be given either as aggregated csv file or an ensemble defined
-in plugin settings.
+---
+**Two main options for input data: Aggregated and read from UNSMRY.**
 
-* `csvfile`: Aggregated csvfile for unsmry with 'REAL', 'ENSEMBLE', 'DATE' and vector columns
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* `column_keys`: List of vectors to extract. If not given, all vectors
-                 from the simulations will be extracted. Wild card asterisk *
-                 can be used.
-* `sampling`: Time separation between extracted values. Can be e.g. `monthly`
-              or `yearly`.
-* `options`: Options to initialize plots with. See below
-* `line_shape_fallback`: Fallback interpolation method between points. Vectors identified as rates
-                or phase ratios are always backfilled, vectors identified as cumulative (totals)
-                are always linearly interpolated. The rest use the fallback.
-                Supported: `linear` (default), `backfilled` + regular Plotly options: `hv`, `vh`,
-                `hvh`, `vhv` and `spline`.
+**Using aggregated data**
+* **`csvfile`:** Aggregated csv file with `REAL`, `ENSEMBLE`, \
+    `DATE` and vector columns.
 
-Plot options:
+**Using simulation time series data directly from `UNSMRY` files**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors \
+    from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or \
+    `yearly`.
+
+**Common optional settings for both input options**
+* **`obsfile`**: File with observations to plot together with the relevant time series. \
+(absolute path or relative to config file).
+* **`options`:** Options to initialize plots with:
     * `vector1` : First vector to display
     * `vector2` : Second vector to display
     * `vector3` : Third vector to display
-    * `visualization` : 'realizations', 'statistics' or 'statistics_hist',
+    * `visualization` : `realizations`, `statistics` or `statistics_hist`
     * `date` : Date to show in histograms
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
+    rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are \
+    always linearly interpolated. The rest use the fallback.
+    Supported options:
+    * `linear` (default)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
+
+---
+
+?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will \
+be plotted together with their non-historical counterparts as reference lines, and they are \
+therefore not selectable as vectors to plot initially.
+
+?> The `obsfile` is a common (optional) file for all ensembles, which currently has to be made \
+manually. [An example of the format can be found here]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/share/observations/observations.yml).
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
+`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+(controlled by the `sampling` key). This is because the statistics and fancharts are calculated \
+per DATE over all realizations in an ensemble, and the available dates should therefore not \
+differ between individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `csvfile` must have columns `ENSEMBLE`, `REAL` and `DATE` in addition to the individual
+vectors.
+* [Example of aggregated file]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv).
+
+**Using simulation time series data directly from `.UNSMRY` files**
+
+Vectors are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a \
+rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and \
+cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other \
+speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
+individual realizations. You should therefore not have more than one `UNSMRY` file in this \
+folder, to avoid risk of not extracting the right data.
 """
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]

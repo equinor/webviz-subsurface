@@ -20,21 +20,39 @@ from .._datainput.surface import make_surface_layer, get_surface_fence
 
 
 class SurfaceWithGridCrossSection(WebvizPluginABC):
-    """### SurfaceWithGridCrossSection
-
-This plugin visualizes surfaces in a map view and grid parameters in a cross section view.
+    """Visualizes surfaces in a map view and grid parameters in a cross section view. \
 The cross section is defined by a polyline interactively edited in the map view.
 
-NOTE: This is an experimental plugin exploring how we can visualize 3D grid data in Webviz.
+!> This is an experimental plugin exploring how we can visualize 3D grid data in Webviz. \
 The performance is currently slow for large grids.
 
-* `gridfile`: Path to grid geometry (ROFF format)
-* `gridparameterfiles`: List of file paths to grid parameters (ROFF format)
-* `gridparameternames`: Corresponding list of displayed parameter names
-* `surfacefiles`: List of file paths to Irap Binary surfaces
-* `surfacenames`: Corresponding list of displayed surface names
-* `zunit`: z-unit for display
-* `colors`: List of colors to use
+---
+
+* **`gridfile`:** Path to grid geometry (`ROFF` format) (absolute or relative to config file).
+* **`gridparameterfiles`:** List of file paths to grid parameters (`ROFF` format) \
+ (absolute or relative to config file).
+* **`gridparameternames`:** List corresponding to filepaths of displayed parameter names.
+* **`surfacefiles`:** List of file paths to surfaces (`irap binary` format) \
+ (absolute or relative to config file).
+* **`surfacenames`:** List corresponding to file paths of displayed surface names.
+* **`zunit`:** z-unit for display.
+* **`colors`:** List of hex colors to use. \
+Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. \
+`'#000000'` for black.
+
+---
+**Example files**
+
+* [Gridfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/grids/geogrid.roff).
+* [One file for gridparameterfiles](https://github.com/equinor/webviz-subsurface-testdata/blob/\
+master/reek_history_match/realization-0/iter-0/share/results/grids/geogrid--poro.roff).
+* [One file for surfacefiles](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/\
+maps/topupperreek--ds_extracted_horizons.gri).
+
+The files above are on a `ROFF binary` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 """
 
     # pylint: disable=too-many-arguments

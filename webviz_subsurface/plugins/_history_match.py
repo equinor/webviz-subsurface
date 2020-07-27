@@ -12,13 +12,22 @@ from .._datainput.history_match import extract_mismatch
 
 
 class HistoryMatch(WebvizPluginABC):
-    """### History match
+    """Visualizes the quality of the history match.
 
-Visualizes the quality of the history match.
+---
 
-* `ensembles`: List of the ensembles in `shared_settings` to visualize.
-* `observation_File`: Path to the observation `.yaml` file.
-* `title`: Optional title for the plugin.
+* **`ensembles`:** List of the ensembles in `shared_settings` to visualize.
+* **`observation_file`:** Path to the observation `.yaml` file \
+(absolute or relative to config file).
+
+---
+Parameter values are extracted automatically from the `parameters.txt` files
+of the individual realizations of your given `ensembles`, using the `fmu-ensemble` library.
+
+?> The `observation_file` is a common (optional) file for all ensembles, which currently has to \
+be made manually. [An example of the format can be found here]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/\
+observations/observations.yml).
 """
 
     def __init__(self, app, ensembles: list, observation_file: Path):

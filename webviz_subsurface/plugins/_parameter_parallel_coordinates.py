@@ -9,15 +9,22 @@ from .._datainput.fmu_input import load_parameters
 
 
 class ParameterParallelCoordinates(WebvizPluginABC):
-    """### ParameterParallelCoordinates
+    """Visualizes parameters used in FMU ensembles side-by-side.
 
-This plugin visualizes parameters used for individual realizations in FMU ensembles.
-Useful to investigate initial distributions, and convergence of parameters over multiple iterations
+Useful to investigate initial distributions, and convergence of parameters over multiple iterations.
 
-Input:
-* `ensembles`: Which ensembles in `shared_settings` to visualize.
-* 'visual_parameters': List of default visualized parameteres.
-If undefined: all parameters visualized.
+!> At least two parameters have to be selected to make the plot work.
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`visual_parameters`:** List of default visualized parameteres. \
+                           If not provided, all parameters are visualized initially.
+
+---
+
+Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 """
 
     def __init__(self, app, ensembles: list, visual_parameters=None):

@@ -13,20 +13,43 @@ from .._datainput.fmu_input import scratch_ensemble
 
 
 class SubsurfaceMap(WebvizPluginABC):
-    """### Subsurface map
-
-This plugin visualizes reservoir grids in a map view, additionally it can
+    """Visualizes reservoir grids in a map view, additionally it can
 visualize the flow pattern in the simulation output using streamlines.
 Input can be either a premade json object or data can be extracted from
 a FMU ensemble.
 
-* `jsonfile`: jsonfile with data.
-* `ensemble`: Which ensemble in `shared_settings` to visualize.
-* `map_value`: Which property to show in the map (e.g. `PERMX`).
-* `flow_value`: Which property to use for the streamlines animation
+---
+**Two input options: Ensemble data or premade json file**
+
+**json file**
+* **`jsonfile`:** jsonfile with data, suitable for the \
+corresponding [subsurface map component]\
+(https://github.com/equinor/webviz-subsurface-components) \
+ (absolute path or relative to config file).
+
+**Ensemble data**
+* **`ensemble`:** Which ensemble in `shared_settings` to visualize (**just one**).
+* **`map_value`:** Which property to show in the map (e.g. `PERMX`).
+* **`flow_value`:** Which property to use for the streamlines animation
   (e.g. `FLOWAT`).
-* `time_step`: Which report or time step to use in the simulation output.
-* `title`: Optional title for the plugin.
+* **`time_step`:** Which report or time step to use in the simulation output.
+
+---
+
+For ensemble data input, the key `FLORES` needs to be in the `RPTRST` keyword of the simulation
+data deck for flow fields like `FLOWAT` and `FLOOIL` to be included in the data.
+
+?> Using the ensemble method, the cell-by-cell mean values over all the grids in the ensemble are \
+used, both for properties and flow fields. A consequence of this is that all the grids in the \
+ensemble have to be equal (though the properties can vary), meaning that e.g. structural \
+uncertainty unfortunately is not supported. Taking the cell-by-cell will also tend to \
+give less property variations than you would see in a single realization. \
+To look at a single realization you currently have to define a separate ensemble \
+consisting of just a single realization.
+
+!> Using the ensemble method, `UNRST` and `INIT` files are autodetected in the realizations under \
+`eclipse/model`. You should therefore not have more than one of each of these files to make sure \
+that you are reading the correct data.
 """
 
     def __init__(

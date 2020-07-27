@@ -18,21 +18,45 @@ from .._datainput.surface import load_surface, make_surface_layer
 
 
 class WellCrossSection(WebvizPluginABC):
-    """### WellCrossSection
-    Displays a cross section along a well with intersected surfaces,
-    and optionally seismic cubes.
+    """Displays a cross section along a well with intersected surfaces,
+and optionally seismic cubes.
 
-* `segyfiles`: List of file paths to segyfiles
-* `surfacefiles`: List of file paths to Irap binary surfaces
-* `surfacenames`: Corresponding list of displayed surface names
-* `wellfiles`: List of file paths to RMS wells
-* `zunit`: z-unit for display
-* `zonelog`: Name of zonelog
-* `zmin`: Visualized minimum z-value in cross section
-* `zmax`: Visualized maximum z-value in cross section
-* `zonemin`: First zonenumber to draw in log
-* `sampling`: Sampling interval of well fence
-* `nextend`: Number to extend distance of sampling, e.g. 2*20 (nextend*sampling)
+!> See also WellCrossSectionFMU for additional functionality with FMU ensembles.
+---
+
+* **`segyfiles`:** List of file paths to segyfiles (absolute or relative to config file).
+* **`surfacefiles`:** List of file paths to Irap binary surfaces \
+(absolute or relative to config file).
+* **`surfacenames`:** Corresponding list of displayed surface names.
+* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
+* **`zunit`:** z-unit for display.
+* **`zonelog`:** Name of zonelog (for the RMS wells in `wellfiles`).
+* **`zmin`:** Visualized minimum z-value in cross section.
+* **`zmax`:** Visualized maximum z-value in cross section.
+* **`zonemin`:** First zonenumber to draw in log.
+* **`sampling`:** Sampling interval of well fence.
+* **`nextend`:** Number of samples to extend well fence on each side of well, \
+e.g. with distance of sampling=20 and nextend=2: extension=2*20 (nextend*sampling). \
+
+---
+
+**Example files**
+
+* [Segyfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/\
+observed_data/seismic).
+
+* [One file for surfacefiles](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+reek_history_match/realization-0/iter-0/share/results/\
+maps/topupperreek--ds_extracted_horizons.gri).
+
+* [Wellfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/\
+observed_data/wells).
+
+The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
+
+The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using \
+e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
 """
 
