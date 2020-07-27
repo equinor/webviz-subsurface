@@ -94,13 +94,20 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.df_well_target_points = FilterTable(self.target_points_file, self.well_points_file)
 
         # Wellfiles and planned wells
+        self.planned_well_files = []
+        self.planned_wells = []
+        self.planned_well_names = []
         if planned_wells_dir is not None:
-            self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-            self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
-        else:
-            self.planned_well_files = []
-            self.planned_wells = []
-            self.planned_well_names = []
+            try:
+                for f in os.listdir(planned_wells_dir):
+                    if Path(f).suffix != '.txt':
+                        message = f'Planned well file "{f}" is not a text file \n' +\
+                                  'planned wells must be of type "ROXAR RMS well"'
+                        raise ValueError(message)
+                self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
+                self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
+            except ValueError as e:
+                print(e)
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.xsec.set_well_attributes(self.wellfiles)
