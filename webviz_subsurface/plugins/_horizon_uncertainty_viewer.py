@@ -388,7 +388,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                             labelStyle={'display': 'inline-block'},
                             options=[
                                 {'label': 'Map view', 'value': 'map-view'},
-                                {'label': 'Table view', 'value': 'table-view'}
+                                {'label': 'Surface picks table', 'value': 'table-view'}
                             ],
                             id=self.ids('map-table-radioitems'),
                             value='map-view'
@@ -467,6 +467,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         df = self.xsec.get_intersection_dataframe(self.wellfiles[0])
         return html.Div(
             children=[
+                html.Label(
+                    id=self.ids('surface-picks-label'),
+                    style={
+                        'font-weight': 'bold',
+                        'textAlign': 'center',
+                    },
+                ),
                 dash_table.DataTable(
                     id=self.ids('uncertainty-table'),
                     columns=[{"name": i, "id": i} for i in df.columns],
@@ -475,7 +482,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     filter_action="native",
                 ),
             ],
-            style={"marginTop": "25px"},
+            style={"marginTop": "0px"},
         )
 
     @property
@@ -689,6 +696,17 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         def _render_uncertainty_table(wellfile):
             df = self.xsec.get_intersection_dataframe(wellfile)
             return df.to_dict('records')
+
+        @app.callback(
+            Output(self.ids('surface-picks-label'), 'children'),
+            [Input(self.ids('well-dropdown'), 'value')]
+        )
+        def _render_surface_picks_label(value):
+            if value in self.wellfiles:
+                wellname = self.xsec.well_attributes[value]['well'].wellname
+            else:
+                wellname = self.xsec.planned_attributes[value]['well'].wellname
+            return f'Surface picks for {wellname}'
 
     def add_webvizstore(self):
         files = []
