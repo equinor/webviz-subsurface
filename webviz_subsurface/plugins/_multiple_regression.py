@@ -20,7 +20,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_csv, load_parameters
+from .._datainput.fmu_input import load_parameters, load_csv, load_smry
 from .._utils.ensemble_handling import filter_and_sum_responses
 
 
@@ -48,7 +48,7 @@ columns (absolute path or relative to config file).
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
                 implies that the input data should be time series data from simulation `.UNSMRY` \
                 files, read using `fmu-ensemble`.
-* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
+* **`column_keys`:** (Optional) list of simulation vectors to include as responses when reading \
                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
                 used as wild card.
 * **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
@@ -72,6 +72,7 @@ All of these are optional, some have defaults seen in the code snippet below.
                       (cannot use with response_include).
 * **`response_include`:** List of response (columns in csv or simulation vectors) to include \
                        (cannot use with response_ignore).
+* **`parameter_ignore`:** List of parameters (columns in csv or simulation vectors) to ignore
 * **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
 
 
@@ -144,10 +145,10 @@ folder, to avoid risk of not extracting the right data.
         response_filters: dict = None,
         response_ignore: list = None,
         response_include: list = None,
+        parameter_ignore: list = None,
         column_keys: list = None,
         sampling: str = "monthly",
         aggregation: str = "sum",
-        parameter_ignore: list = None,
     ):
 
         super().__init__()
@@ -176,7 +177,7 @@ folder, to avoid risk of not extracting the right data.
             self.parameterdf = pd.read_parquet(self.parameter_csv)
             self.responsedf = pd.read_parquet(self.response_csv)
 
-        elif ensembles and response_file:
+        elif ensembles:
             self.ens_paths = {
                 ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
@@ -184,11 +185,19 @@ folder, to avoid risk of not extracting the right data.
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
-            self.responsedf = load_csv(
-                ensemble_paths=self.ens_paths,
-                csv_file=response_file,
-                ensemble_set_name="EnsembleSet",
-            )
+            if self.response_file:
+                self.responsedf = load_csv(
+                    ensemble_paths=self.ens_paths,
+                    csv_file=response_file,
+                    ensemble_set_name="EnsembleSet",
+                )
+            else:
+                self.responsedf = load_smry(
+                    ensemble_paths=self.ens_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                )
+                self.response_filters["DATE"] = "single"
         else:
             raise ValueError(
                 'Incorrect arguments.\
@@ -341,7 +350,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def color_dict(self):
-        """ Dictionary of colors that are frequently used. "sig." is short for significant """
+        """Dictionary of colors that are frequently used"""
         fig = go.Figure().to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return {
@@ -799,6 +808,17 @@ folder, to avoid risk of not extracting the right data.
                         "ensemble_set_name": "EnsembleSet",
                     }
                 ],
+            )
+            if self.response_file
+            else (
+                load_smry,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "column_keys": self.column_keys,
+                        "time_index": self.time_index,
+                    }
+                ],
             ),
         ]
 
@@ -818,7 +838,7 @@ def gen_model(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 4):
+def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 2):
     newdf = df.copy()
 
     name_combinations = []
@@ -939,7 +959,7 @@ def _model_warnings(design_matrix: pd.DataFrame):
         warnings.filterwarnings("ignore", category=UserWarning)
         try:
             model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
-        except (Exception, RuntimeWarning) as error:
+        except (RuntimeWarning) as error:
             print("error: ", error)
             return None
     return model
