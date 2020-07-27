@@ -347,13 +347,8 @@ folder, to avoid risk of not extracting the right data.
         return list(self.parameterdf["ENSEMBLE"].unique())
 
     @property
-<<<<<<< HEAD
     def colors(self):
-        """ Dictionary of colors that are frequently used. "sig." is short for significant """
-=======
-    def color_dict(self):
         """Dictionary of colors that are frequently used"""
->>>>>>> 8095f4c3ae52e4a18bc92a8a214338eb89d65664
         fig = go.Figure().to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return {
