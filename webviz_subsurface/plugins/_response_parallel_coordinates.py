@@ -4,19 +4,19 @@ import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 
-from .._datainput.fmu_input import load_parameters, load_csv
+from .._datainput.fmu_input import load_parameters, load_csv, load_smry
 from .._utils.ensemble_handling import filter_and_sum_responses
 
 
 class ResponseParallelCoordinates(WebvizPluginABC):
 
-    """ Visualizes parameters in a paralell parameter plot, colored by the value of the response.
+    """
+    Visualizes parameters in a paralell parameter plot, colored by the value of the response.
     Helpful for seeing trends in the relation of the parameters and the response.
 ---
 **Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
@@ -141,19 +141,19 @@ folder, to avoid risk of not extracting the right data."""
 
         if response_ignore and response_include:
             raise ValueError(
-                "Incorrent argument. either provide 'response_include', "
-                "'response_ignore' or neither"
+                'Incorrent argument. either provide "response_include", '
+                '"response_ignore" or neither'
             )
         if parameter_csv and response_csv:
             if ensembles or response_file:
                 raise ValueError(
-                    "Incorrect arguments. Either provide 'csv files' or "
-                    "'ensembles and response_file'."
+                    'Incorrect arguments. Either provide "csv files" or '
+                    '"ensembles and response_file".'
                 )
-            self.parameterdf = pd.read_parquet(self.parameter_csv)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
-        elif ensembles and response_file:
+        elif ensembles:
             self.ens_paths = {
                 ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
                 for ens in ensembles
@@ -161,15 +161,22 @@ folder, to avoid risk of not extracting the right data."""
             self.parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
-            self.responsedf = load_csv(
-                ensemble_paths=self.ens_paths,
-                csv_file=response_file,
-                ensemble_set_name="EnsembleSet",
-            )
+            if self.response_file:
+                self.responsedf = load_csv(
+                    ensemble_paths=self.ens_paths,
+                    csv_file=response_file,
+                    ensemble_set_name="EnsembleSet",
+                )
+            else:
+                self.responsedf = load_smry(
+                    ensemble_paths=self.ens_paths,
+                    column_keys=self.column_keys,
+                    time_index=self.time_index,
+                )
+                self.response_filters["DATE"] = "single"
         else:
             raise ValueError(
-                "Incorrect arguments.\
-                 Either provide 'csv files' or 'ensembles and response_file'."
+                'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
             )
         self.check_runs()
         self.check_response_filters()
@@ -209,13 +216,17 @@ folder, to avoid risk of not extracting the right data."""
                     "Dashboard for paralell parameters plot"
                     "filtered to indicate the value of the selected response")
             },
-
+            {
+                "id": self.uuid("parameters"),
+                "content": ("Lets you control what parameters to include in your model. \n" +
+                        "There are two modes, exclusive and subset: \n" +
+                        "- Exclusive mode lets you remove specific parameters\n\n" +
+                        "- Subset mode lets you pick a subset of parameters \n")
+            },
             {
                 "id": self.uuid("paralell-coords-plot"),
                 "content": (
-                    "A plot showing the values of all the selected parameter at once."
-                    "it is possible to mark a range on each parameters to only show the ones within"
-                    "that range, most interesting being the response column to the far right"
+                    "Plot showing the values of all the selected parameter at once."
                 )
             },
 
@@ -336,30 +347,10 @@ folder, to avoid risk of not extracting the right data."""
             ),
             html.Div(
                 [
-                   html.Div("Parameters:", style={
+                   html.Div("Parameters:", id=self.uuid("parameters"), style={
                        "font-weight": "bold",
                        "display": "inline-block",
                         "margin-right": "10px"}),
-                   html.Span(
-                       "\u003f\u20dd",
-                       id=self.uuid("tooltip-parameters"),
-                       style={
-                           "font-weight": "bold",
-                           "cursor": "pointer",
-                           "fontSize": ".90em",
-                           "color": "grey"}),
-                   dbc.Tooltip(
-                        "This lets you control what parameters to include in your model. \n" +
-                        "There are two modes, exclusive and subset: \n" +
-                        "- Exclusive mode lets you remove specific parameters\n\n" +
-                        "- Subset mode lets you pick a subset of parameters \n",
-                    target=self.uuid("tooltip-parameters"),
-                    style={"fontSize": ".75em",
-                    "backgroundColor": "#505050",
-                    "color": "white",
-                    "opacity": "85%",
-                    "white-space": "pre-wrap"}
-                   ),
                    dcc.RadioItems(
                        id=self.uuid("exclude_include"),
                        options=[
@@ -385,36 +376,6 @@ folder, to avoid risk of not extracting the right data."""
                         style={"marginBottom": "20px"}
                     ),
                 ]
-            ),
-            html.Div("threshold percentage", style={
-                "font-weight": "bold",
-                "display": "inline-block",
-                "margin-right": "10px"}),
-            html.Span(
-                       "\u003f\u20dd",
-                       id=self.uuid("tooltip-percent"),
-                       style={
-                           "font-weight": "bold",
-                           "cursor": "pointer",
-                           "fontSize": ".90em",
-                           "color": "grey"}),
-                    dbc.Tooltip(
-                        "This lets you control the percenile to be considered 'high'  \n" +
-                        "A value is considered low when in the complimentary lower percentile. ",
-                    target=self.uuid("tooltip-percent"),
-                    style={
-                        "fontSize": ".75em",
-                        "backgroundColor": "#505050",
-                        "color": "white",
-                        "opacity": "85%",
-                        "white-space": "pre-wrap"}
-                   ),
-            html.Div(dcc.Slider(
-                id=self.uuid("percent"),
-                min=50, max=100,
-                step=1, value=70,
-                marks={x: x for x in range(50, 101, 5)}
-                )
             ),
             html.Div("Filters:", style={"font-weight": "bold"}),
             html.Div(children=self.filter_layout),]
@@ -444,7 +405,6 @@ folder, to avoid risk of not extracting the right data."""
             Input(self.uuid("parameter-list"), "value"),
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
-            Input(self.uuid("percent"), "value")
 
         ]
         if self.response_filters:
@@ -472,12 +432,11 @@ folder, to avoid risk of not extracting the right data."""
         def _update_paralell_coordinate_plot(
                 exc_inc, parameter_list,
                 ensemble, response,
-                percent, *filters):
+                *filters):
             """Callback to update the model for multiple regression
             1. Filters and aggregates response dataframe per realization.
             2. Filters parameters dataframe on selected ensemble.
             3. Merge parameter and response dataframe.
-            4. Discretisize response.
             5. Generate parallel parameters plot.
             """
             filteroptions = self.make_response_filters(filters)
@@ -485,66 +444,34 @@ folder, to avoid risk of not extracting the right data."""
                 self.responsedf,
                 ensemble, response,
                 filteroptions=filteroptions,
-                aggregation=self.aggregation,
-            )
+                aggregation=self.aggregation)
             if exc_inc == "exc":
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
-            pallete = self.plotly_theme["layout"]["colorway"]
-            colmap = [
-                (0, pallete[0]), (0.33, pallete[0]),
-                (0.33, pallete[2]), (0.66, pallete[2]),
-                (0.66, pallete[1]), (1, pallete[1])]
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
-            # if min and max are indistinguishable we return invalid parameter.
-            if isinstance(col_percentile(df, response, percent), pd.DataFrame):
-                df = col_percentile(df, response, percent)
-            else:
-                return  {"layout": {
-                            "title": "invalid resoponse, high and low indistinguishable",
-                            "height": 600,
-                            "width": 800
-                        }
-                    }
+            pallete = self.plotly_theme["layout"]["colorway"]
+            colmap = [(0, pallete[0]), (1, pallete[2])]
 
-            dims = []
-            # genereate lines for plot
-            for param in df:
-                if param != response:
-                    dims.append(dict(
-                        label=param,
-                        values=df[param]
-                    ))
-                else:
-                    dims.append(dict(
-                        label=param,
-                        values=df[param],
-                        range=(1, 3)
-                    ))
+            dims = [{"label": param, "values": df[param]} for param in df]
             data = [{
                 "type": "parcoords",
-                    "line": {
-                        "color": df[response].tolist(),
-                        "colorscale": colmap,
-                        "showscale": True,
-                        "cmin": 1,
-                        "cmax": 3,
-                        "colorbar": {
-                            "title": response,
-                            "xanchor": "left",
-                            "x": -0.08,
-                            "tickvals": [1.333, 2, 2.6666],
-                            "ticktext": ["low", "medium", "high"],
-
-                        },
+                "line": {
+                    "color": df[response],
+                    "colorscale": colmap,
+                    "showscale": True,
+                    "colorbar": {
+                        "title": response,
+                        "xanchor": "left",
+                        "x": -0.08,
                     },
-                    "dimensions": dims,
-                    "labelangle": 45,
-                    "labelside": "bottom",}]
+                },
+                "dimensions": dims,
+                "labelangle": 45,
+                "labelside": "bottom",}]
             layout = {}
             layout.update(self.plotly_theme["layout"])
             # Ensure sufficient spacing between each dimension and margin for labels
@@ -581,24 +508,12 @@ folder, to avoid risk of not extracting the right data."""
         ]
 
 
-def col_percentile(df: pd.DataFrame, column: str, percentile: int):
-    col = df[column].sort_values()
-    if list(col)[0] == list(col)[-1]:
-        return None
-    bottom_index = int((100 - percentile) * len(col) / 100)
-    top_index = int(percentile * len(col) / 100)
-    col[top_index:] = 3
-    col[:bottom_index] = 1
-    col[bottom_index:top_index] = 2
-    df[column] = col.astype("int64")
-    return df
-
-
 def theme_layout(theme, specific_layout):
     layout = {}
     layout.update(theme["layout"])
     layout.update(specific_layout)
     return layout
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
