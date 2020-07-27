@@ -10,14 +10,14 @@ class HuvXsection:
     def __init__(
             self,
             surface_attributes={},
-            zonation_data=None,
-            conditional_data=None,
+            zonation_status_file=None,
+            well_points_file=None,
             zonelogname=None,
             well_attributes={},
     ):
         self.surface_attributes = surface_attributes
-        self.zonation_data = zonation_data
-        self.conditional_data = conditional_data
+        self.zonation_status_file = zonation_status_file
+        self.well_points_file = well_points_file
         self.zonelogname = zonelogname
         self.well_attributes = well_attributes
         self.planned_attributes = {}
@@ -35,8 +35,8 @@ class HuvXsection:
             fence = well.get_fence_polyline(nextend=100, sampling=5)
             well_df = well.dataframe
             well.create_relative_hlen()
-            zonation_points = get_zonation_points(well_df, well.wellname, self.zonation_data)
-            conditional_points = get_conditional_points(well_df, well.wellname, self.conditional_data)
+            zonation_points = get_zonation_points(well_df, well.wellname, self.zonation_status_file)
+            conditional_points = get_conditional_points(well_df, well.wellname, self.well_points_file)
             zonelog = self.get_zonelog_data(well, self.zonelogname)
             self.well_attributes[wellfile] = {
                 "well": well,
@@ -137,12 +137,12 @@ class HuvXsection:
         Returns:
             layout: Dictionary with layout data
         '''
-        layout = {"yaxis":{
+        layout = {"yaxis": {
                     "title": "True vertical depth [m]",
                     "titlefont": {"size": 20},
                     "tickfont": {"size": 16}
                 },
-                "xaxis":{
+                "xaxis": {
                     "title": "Lateral length [m]",
                     "titlefont": {"size": 18},
                     "tickfont": {"size": 16}
@@ -168,8 +168,8 @@ class HuvXsection:
             x_range = np.abs(x_max - x_min)
             if y_range/x_range > 1:
                 x_range = y_range + 10
-            layout["yaxis"].update({"range" : [y_max + 0.15*y_range, y_min - 0.15*y_range]})
-            layout["xaxis"].update({"range" : [x_min - 0.35*x_range, x_max + 0.35*x_range]})
+            layout["yaxis"].update({"range": [y_max + 0.15*y_range, y_min - 0.15*y_range]})
+            layout["xaxis"].update({"range": [x_min - 0.35*x_range, x_max + 0.35*x_range]})
         return layout
 
     def get_xsec_de_data(self, surfacefiles, de_keys):
@@ -300,7 +300,7 @@ class HuvXsection:
             well = self.well_attributes[wellfile]['well']
         else:
             well = self.planned_attributes[wellfile]['well']
-        data = {'Surface name': [], 'TVD': [], 'Depth uncertainty': [], 'Direction': []}
+        data = {'Surface name': [], 'TVD SD [m]': [], 'Depth uncertainty [m]': [], 'Direction': []}
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]['surface']
             err = self.surface_attributes[sfc_path]['surface_de']
@@ -311,8 +311,8 @@ class HuvXsection:
                     surface_name = self.surface_attributes[sfc_path]['name']
                     depth_uncertainty = err.get_value_from_xy(point=(row['X_UTME'], row['Y_UTMN']))
                     data['Surface name'].append(surface_name)
-                    data['TVD'].append("%.2f" % row['Z_TVDSS'])
-                    data['Depth uncertainty'].append("%.2f" % depth_uncertainty)
+                    data['TVD SD [m]'].append("%.2f" % row['Z_TVDSS'])
+                    data['Depth uncertainty [m]'].append("%.2f" % depth_uncertainty)
                     data['Direction'].append(row['DIRECTION'])
         return pd.DataFrame(data=data)
 
@@ -405,17 +405,17 @@ def stratigraphic_sort(elem):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_zonation_points(well_df, wellname, zone_path):
+def get_zonation_points(well_df, wellname, zonation_status_file):
     ''' Finds zonation points along well trajectory
     Args:
         well_df: Dataframe of XTgeo well from filepath to wellfile
         wellname: Name of well
-        zone_path: Filepath to zonation_status.csv
+        zonation_status_file: Filepath to zonation_status.csv
     Returns:
         Numpy array with zone relative horizontal length and TVD
     '''
-    zonation_data = pd.read_csv(zone_path)
-    zone_df = zonation_data[zonation_data["Well"] == wellname]
+    zonation_status_data = pd.read_csv(zonation_status_file)
+    zone_df = zonation_status_data[zonation_status_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
     zone_RHLEN = np.zeros(len(zone_df_xval))
@@ -429,17 +429,17 @@ def get_zonation_points(well_df, wellname, zone_path):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_conditional_points(well_df, wellname, wellpoints_path):
+def get_conditional_points(well_df, wellname, well_points_file):
     ''' Finds conditional points where surfaces and well intersect
     Args:
         well_df: Dataframe with well from XTGeo
         wellname: Name of well
-        wellpoints_path: Filepath to wellpoints.csv
+        well_points_file: Filepath to wellpoints.csv
     Returns:
         Numpy array of relative horizontal length and TVD
         Dictionary of conditional points linked to surfaces since surfaces might have more than one conditional point
     '''
-    wellpoint_data = pd.read_csv(wellpoints_path)
+    wellpoint_data = pd.read_csv(well_points_file)
     wellpoint_df = wellpoint_data[wellpoint_data["Well"] == wellname]
     wellpoint_df_xval = wellpoint_df["x"].values.copy()
     wellpoint_df_yval = wellpoint_df["y"].values.copy()

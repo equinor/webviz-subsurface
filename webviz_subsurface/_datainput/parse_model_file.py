@@ -114,12 +114,8 @@ def get_zonelog_name(basedir):
     return zonelog_wrapper.get_text()
 
 
-def get_zonation_data(basedir):
+def get_zonation_status(basedir):
     return os.path.join(basedir, 'output', 'log_files', 'zonation_status.csv')
-
-
-def get_conditional_data(basedir):
-    return get_well_points(basedir)
 
 
 if __name__ == '__main__':

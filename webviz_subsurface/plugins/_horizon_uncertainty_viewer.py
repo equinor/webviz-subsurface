@@ -55,23 +55,28 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
     ):
 
         super().__init__()
+        self.zonemin = zonemin
         self.zunit = zunit
+        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.uid = uuid4()
+        self.set_callbacks(app)
+
+        # Surfacefiles
         self.surfacefiles = parse_model_file.get_surface_files(basedir)
         self.surfacefiles_de = parse_model_file.get_error_files(basedir)
         self.surfacefiles_dr = parse_model_file.get_surface_dr_files(basedir)
         self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
         self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
         self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
-        self.surface_attributes = {}
-        self.target_points = parse_model_file.get_target_points(basedir)
-        self.well_points = parse_model_file.get_well_points(basedir)
+        self.topofzone = parse_model_file.extract_topofzone_names(basedir) # Name of zone
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
-        self.topofzone = parse_model_file.extract_topofzone_names(basedir)
+        self.surface_attributes = {}
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[get_path(surfacefile)] = {
                 "color": get_color(i),
                 'order': i,
-                "name": self.surfacenames[i], "topofzone": self.topofzone[i],
+                "name": self.surfacenames[i], 
+                "topofzone": self.topofzone[i],
                 "surface": xtgeo.surface_from_file(Path(surfacefile), fformat='irap_binary'),
                 "surface_de": xtgeo.surface_from_file(Path(self.surfacefiles_de[i]), fformat='irap_binary'),
                 "surface_dt": xtgeo.surface_from_file(Path(self.surfacefiles_dt[i]), fformat="irap_binary") if self.surfacefiles_dt is not None else None,
@@ -79,17 +84,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
                 "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
             }
-        self.wellfiles = parse_model_file.get_well_files(basedir)
-        self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        self.zonation_data = parse_model_file.get_zonation_data(basedir)
-        self.conditional_data = parse_model_file.get_conditional_data(basedir)
-        self.zonemin = zonemin
+
+        # Log files
+        self.zonation_status_file = parse_model_file.get_zonation_status(basedir)
+        self.well_points_file = parse_model_file.get_well_points(basedir)
         self.zonelog_name = parse_model_file.get_zonelog_name(basedir)  # name of zonelog in OP txt files
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
-        self.uid = uuid4()
-        self.set_callbacks(app)
-        self.xsec = HuvXsection(self.surface_attributes, self.zonation_data, self.conditional_data, self.zonelog_name)
-        self.df_well_target_points = FilterTable(self.target_points, self.well_points)
+        self.xsec = HuvXsection(self.surface_attributes, self.zonation_status_file, self.well_points_file, self.zonelog_name)
+        self.target_points_file = parse_model_file.get_target_points(basedir)
+        self.df_well_target_points = FilterTable(self.target_points_file, self.well_points_file)
+
+        # Wellfiles and planned wells
         if planned_wells_dir is not None:
             self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
             self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
@@ -97,10 +101,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             self.planned_well_files = []
             self.planned_wells = []
             self.planned_well_names = []
+        self.wellfiles = parse_model_file.get_well_files(basedir)
+        self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
         self.xsec.set_well_attributes(self.wellfiles)
         self.xsec.set_planned_attributes(self.planned_well_files)
 
-        # Store current layers
+        # Store current surface layers
         self.state = {'switch': True}
         self.layers_state = []
 
@@ -515,7 +521,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ''' Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles and hillshading toggle
             '''
-            if self.state['switch'] is not switch['value']:
+            if self.state['switch'] is not switch['value']:  # Store layers when switching to hillshading
                 hillshade_layers = self.layers_state.copy()
                 for layer in hillshade_layers:
                     if "shader" in layer["data"][0]:
@@ -524,7 +530,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.state['switch'] = switch['value']
                 return hillshade_layers
             surface_name = self.surface_attributes[get_path(surfacefile)]["name"]
-            well_layers = get_well_layers(self.wellfiles, surface_name, self.conditional_data, radius=100, color="rgb(0,255,0)")
+            well_layers = get_well_layers(self.wellfiles, surface_name, self.well_points_file, radius=100, color="rgb(0,255,0)")
             surfaces = [
                         self.surface_attributes[get_path(surfacefile)]["surface_dt"],
                         self.surface_attributes[get_path(surfacefile)]["surface_dte"],
@@ -535,7 +541,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ]
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
-            # Deletes old layers
+            # Deletes old layers when switching surface in dropdown
             old_layers = self.layers_state
             self.layers_state = layers.copy()
             if old_layers is not None and len(old_layers) > 0:
