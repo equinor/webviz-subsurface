@@ -58,6 +58,7 @@ setup(
         "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.0.23",
         "xtgeo>=2.8",
+        "dash_bootstrap_components>=0.10.3",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
