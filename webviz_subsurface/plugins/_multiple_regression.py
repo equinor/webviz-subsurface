@@ -1,27 +1,26 @@
 import warnings
-from pathlib import Path
 from itertools import combinations
+from pathlib import Path
 
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
 import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import plotly.graph_objects as go
-import dash
-from dash.exceptions import PreventUpdate
-import dash_html_components as html
-import dash_core_components as dcc
-import webviz_core_components as wcc
-import dash_bootstrap_components as dbc
 import statsmodels.api as sm
+import webviz_core_components as wcc
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 from dash_table import DataTable
 from dash_table.Format import Format
-from dash.dependencies import Input, Output, State
-from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config.common_cache import CACHE
 from webviz_config.utils import calculate_slider_step
+from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_parameters, load_csv
+from .._datainput.fmu_input import load_csv, load_parameters
 from .._utils.ensemble_handling import filter_and_sum_responses
 
 
@@ -243,34 +242,28 @@ folder, to avoid risk of not extracting the right data.
                 ),
             },
             {
-                "id": self.uuid("table"),
-                "content": (
-                    "A table showing the results for the best combination of "
-                    "parameters for a chosen response."
-                ),
-            },
-            {
                 "id": self.uuid("p-values-plot"),
                 "content": (
-                    "A plot showing the p-values for the parameters from the table ranked from most"
-                    " significant to least significant.  Red indicates that the p-value is "
+                    "A plot showing the p-values for the parameters from the table ranked from most "
+                    "significant to least significant.  Red indicates that the p-value is "
                     "significant, gray indicates that the p-value is not significant."
                 ),
             },
             {
                 "id": self.uuid("coefficient-plot"),
                 "content": (
-                    "A plot showing the sign of parameters coefficient values by arrows pointing "
-                    "up and/or down, illustrating a positive and/or negative coefficient "
+                    "A plot showing the sign of the parameters' coefficient values by arrows "
+                    "pointing up or down, illustrating a positive or a negative coefficient "
                     "respectively. An arrow is red if the corresponding p-value is significant, "
                     "that is, a p-value below 0.05. Arrows corresponding to p-values above this "
-                    "level of significance, are shown in gray."
+                    "level of significance are shown in gray."
                 ),
             },
             {
-                "id": self.uuid("submit-button"),
+                "id": self.uuid("table"),
                 "content": (
-                    "Press this button to update the table and the plots based on the options below"
+                    "A table showing the p-values for the best combination of "
+                    "parameters for a chosen response."
                 ),
             },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble.")},
@@ -278,24 +271,41 @@ folder, to avoid risk of not extracting the right data.
             {
                 "id": self.uuid("exclude-include"),
                 "content": (
-                    "Choose between using all availabe parameters or a subset of the available "
-                    "parameters in the regression. If all parameters are chosen it is possible "
-                    "to exclude some the parameters by choosing them from the drop down menu."
+                    "Select which parameters to include in your model. Exclusive mode lets you "
+                    "remove specific parameters from beeing considered in the model selection. "
+                    "Subset mode lets you pick a subset of parameters to investigate. "
+                    "Parameters included here are not guaranteed to be included in the output model."
                 ),
             },
             {
                 "id": self.uuid("interaction"),
-                "content": ("Select the desired level of interaction in the visualized model."),
+                "content": (
+                    "Select the depth of the interaction level. 'Off' allows only for the parameters "
+                    "in their original state. '2 levels' allow for the product of two original "
+                    "parameters. '3 levels' allow for the product of three original parameters. "
+                    "This feature allows you to investigate possible feedback effects."
+                ),
             },
             {
                 "id": self.uuid("max-params"),
                 "content": (
-                    "Select the maximum number of parameters to be included in the visualized model"
+                    "Choose the maximum number of parameters to include in your model. If "
+                    "interaction is active, the number of included parameters is the selected value "
+                    "here plus the interaction level. This is to make sure the interaction terms "
+                    "have an intuitive interpretation."
                 ),
             },
             {
                 "id": self.uuid("force-in"),
-                "content": ("Select parameters forced to be included in the visualized model."),
+                "content": (
+                    "Select parameters to force into the model."
+                ),
+            },
+            {
+                "id": self.uuid("submit-button"),
+                "content": (
+                    "Press this button to update the table and the plots based on the settings above."
+                ),
             },
         ]
         return steps
@@ -332,10 +342,12 @@ folder, to avoid risk of not extracting the right data.
         """ Dictionary of colors that are frequently used. "sig." is short for significant """
         fig = go.Figure().to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
-        return {"default color": fig["layout"]["colorway"][0],
-                "gray": "#606060",
-                "dark gray": "#303030",
-                "default text": fig["layout"]["template"]["layout"]["font"]["color"]}
+        return {
+            "default color": fig["layout"]["colorway"][0],
+            "gray": "#606060",
+            "dark gray": "#303030",
+            "default text": fig["layout"]["template"]["layout"]["font"]["color"]
+        }
 
     def check_runs(self):
         """ Check that input parameters and response files have
@@ -418,25 +430,11 @@ folder, to avoid risk of not extracting the right data.
                             "margin-right": "10px",
                         },
                     ),
-                    html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style,),
-                        id=self.uuid("tooltip-parameters"),
-                    ),
-                    dbc.Tooltip(
-                        " This lets you control what parameters to include in your model. \n \n"
-                        + " - Exclusive mode lets you remove specific parameters from \n"
-                        + " beeing considered in the model selection. \n \n"
-                        + " - Subset mode lets you pick a subset of parameters to \n"
-                        + " investigate. Parameters included here are not guaranteed to be \n"
-                        + " included in the output model. ",
-                        target=self.uuid("tooltip-parameters"),
-                        style=self.tooltip_style,
-                    ),
                     dcc.RadioItems(
                         id=self.uuid("exclude-include"),
                         options=[
-                            {"label": "Exclusive mode", "value": "exc"},
-                            {"label": "Subset mode", "value": "inc"},
+                            {"label": "Exclusive", "value": "exc"},
+                            {"label": "Subset", "value": "inc"},
                         ],
                         value="exc",
                         labelStyle={"display": "inline-block"},
@@ -463,18 +461,6 @@ folder, to avoid risk of not extracting the right data.
                     html.Div(
                         "Interaction", style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style,), id=self.uuid("tooltip-filters"),
-                    ),
-                    dbc.Tooltip(
-                        " Lets you select how deep the interaction level is: \n \n"
-                        + " – Off allows only for the parameters in their original state. \n"
-                        + " – 2 levels allow for the product of 2 original parameters. \n"
-                        + " – 3 levels allow for the product of 3 original parameters. \n \n"
-                        + " This feature allows you to investigate possible feedback effects. ",
-                        target=self.uuid("tooltip-filters"),
-                        style=self.tooltip_style,
-                    ),
                     dcc.Slider(
                         id=self.uuid("interaction"),
                         min=0,
@@ -490,17 +476,6 @@ folder, to avoid risk of not extracting the right data.
                     html.Div(
                         "Max number of parameters",
                         style={"display": "inline-block", "margin-right": "10px"},
-                    ),
-                    html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-maxparams"),)
-                    ),
-                    dbc.Tooltip(
-                        " Lets you put a cap on the number of parameters to include in your \n"
-                        + " model. If interaction is active, cap is the selected value + \n"
-                        + " interaction level. This is to make sure the interaction terms have \n"
-                        + " an intuitive interpretation. ",
-                        target=self.uuid("tooltip-maxparams"),
-                        style=self.tooltip_style,
                     ),
                     dcc.Dropdown(
                         id=self.uuid("max-params"),
@@ -518,15 +493,6 @@ folder, to avoid risk of not extracting the right data.
                     html.Div(
                         "Force in", style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    html.Span(
-                        dbc.Badge(" ? ", style=self.badge_style, id=self.uuid("tooltip-fi"),)
-                    ),
-                    dbc.Tooltip(
-                        " Lets you force parameters into the model. If interaction is active, \n"
-                        + " the cap is the selected value + the interaction level. ",
-                        target=self.uuid("tooltip-fi"),
-                        style=self.tooltip_style,
-                    ),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
                         clearable=True,
@@ -540,15 +506,15 @@ folder, to avoid risk of not extracting the right data.
             html.Div(
                 style={"display": "grid"},
                 children=[
-                    dbc.Button(
+                    html.Button(
                         id=self.uuid("submit-button"),
                         children="Update model",
                         style={
                             "background-color": "LightGray",
                             "cursor": "not-allowed",
-                            "border": "none"
+                            "border": "none",
                         },
-                        disabled=True
+                        disabled=True,
                     )
                 ],
             ),
@@ -656,15 +622,14 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
             # if the triggered comp is the sumbit-button
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
-                return True, {"background-color": "LightGray", "cursor": "not-allowed", "border": "none"}
-            else:
                 return (
-                    False,
-                    {
-                        "color": "black",
-                        "background-color": self.colors["default color"],
-                    },
+                    True,
+                    {"background-color": "LightGray", "cursor": "not-allowed", "border": "none"},
                 )
+            return (
+                False,
+                {"color": "black", "background-color": self.colors["default color"],},
+            )
 
         @app.callback(
             Output(self.uuid("parameter-list"), "placeholder"),
@@ -1023,9 +988,11 @@ def make_p_values_plot(p_sorted, theme, colors):
     fig["layout"].update(
         barmode="relative",
         height=500,
-        title=dict(text="P-values for the parameters. Value lower than 0.05 indicates "
-                        "statistical significance",
-                   x=0.5)
+        title=dict(
+            text="P-values for the parameters. Value lower than 0.05 indicates "
+            "statistical significance",
+            x=0.5,
+        ),
     )
     fig["layout"] = theme.create_themed_layout(fig["layout"])
     return fig
@@ -1053,8 +1020,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
             opacity=0,
             marker=dict(
                 color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sig. p-value
-                colorscale=[(0, colors["gray"]),
-                            (1, colors["default color"])],
+                colorscale=[(0, colors["gray"]), (1, colors["default color"])],
                 cmin=0,
                 cmax=1,
             ),
@@ -1078,12 +1044,12 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
         fig.add_shape(
             type="path",
             path=f" M {x_coordinate-0.025} 0 "
-                 f" L {x_coordinate-0.025} {sign*0.06} "
-                 f" L {x_coordinate-0.07} {sign*0.06} "
-                 f" L {x_coordinate} {sign*0.08} "
-                 f" L {x_coordinate+0.07} {sign*0.06} "
-                 f" L {x_coordinate+0.025} {sign*0.06} "
-                 f" L {x_coordinate+0.025} 0 ",
+            f" L {x_coordinate-0.025} {sign*0.06} "
+            f" L {x_coordinate-0.07} {sign*0.06} "
+            f" L {x_coordinate} {sign*0.08} "
+            f" L {x_coordinate+0.07} {sign*0.06} "
+            f" L {x_coordinate+0.025} {sign*0.06} "
+            f" L {x_coordinate+0.025} 0 ",
             fillcolor=colors["default color"] if p_values[i] < 0.05 else colors["gray"],
             line_width=0,
         )
@@ -1103,8 +1069,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
         barmode="relative",
         height=500,
         title=dict(
-            text="Parameters impact (increase or decrese) on response and their significance",
-            x=0.5),
+            text="Parameters impact (increase or decrese) on response and their significance", x=0.5
+        ),
         yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),  # 0.08: arrow height
         xaxis=dict(
             title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
