@@ -39,17 +39,14 @@ def get_surface_files(basedir):
     return surface_files
 
 
-def get_error_files(basedir):
+def get_surface_de_files(basedir):
     surface_names = extract_surface_names(basedir)
-    surface_dir = os.path.join(basedir, "output", "surfaces")
-    error_files = [
-        os.path.join(surface_dir, "de_" + surface_name + ".rxb")
-        for surface_name in surface_names
-    ]
-    for path in error_files:
+    surface_dir = os.path.join(basedir, 'output', 'surfaces')
+    surface_de_files = [os.path.join(surface_dir, 'de_' + s + '.rxb') for s in surface_names]
+    for path in surface_de_files:
         if not os.path.isfile(path):
-            return FileNotFoundError
-    return error_files
+            return None
+    return surface_de_files
 
 
 def get_surface_dr_files(basedir):
