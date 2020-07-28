@@ -131,16 +131,25 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         if planned_wells_dir is not None:
             try:
                 for file in os.listdir(planned_wells_dir):
-                    if Path(file).suffix != '.txt':
-                        raise ValueError(f"Planned well file '{file}' is not a txt file \n")
-                self.planned_wellfiles = [os.path.join(planned_wells_dir, file) for file in os.listdir(planned_wells_dir)]
-                self.planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
+                    if Path(file).suffix != ".txt":
+                        raise ValueError(
+                            f"Planned well file '{file}' is not a txt file \n"
+                        )
+                self.planned_wellfiles = [
+                    os.path.join(planned_wells_dir, file)
+                    for file in os.listdir(planned_wells_dir)
+                ]
+                self.planned_wells = {
+                    wf: xtgeo.Well(wf) for wf in self.planned_wellfiles
+                }
             except Exception as ex:
                 self.planned_wells = {}
                 self.planned_wellfiles = []
                 print("Something went wrong when initializing planned wells")
-                print(type(ex).__name__,': ', ex)
-                print("Make sure that all planned wells have format 'ROXAR RMS well'.\n")
+                print(type(ex).__name__, ": ", ex)
+                print(
+                    "Make sure that all planned wells have format 'ROXAR RMS well'.\n"
+                )
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
 
@@ -316,8 +325,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                     options=[
                                         {"label": self.wells[wf].wellname, "value": wf}
                                         for wf in self.wellfiles
-                                    ] + [
-                                        {"label": self.planned_wells[wf].wellname, "value": wf}
+                                    ]
+                                    + [
+                                        {
+                                            "label": self.planned_wells[wf].wellname,
+                                            "value": wf,
+                                        }
                                         for wf in self.planned_wellfiles
                                     ],
                                     value=self.wellfiles[0],
@@ -497,12 +510,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                 "disabled": False,
                                 "label": "Hillshading",
                             },
-                            mouseCoords={
-                                "position": "bottomright"
-                            },
-                            colorBar={
-                                "position": "bottomright"
-                            },
+                            mouseCoords={"position": "bottomright"},
+                            colorBar={"position": "bottomright"},
                         ),
                     ],
                 ),
@@ -564,7 +573,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [
                 Input(self.ids("map-dropdown"), "value"),
                 Input(self.ids("layered-map"), "switch"),  # Toggle hillshading on/off
-                Input(self.ids("well-dropdown"), "value") # Wellfile
+                Input(self.ids("well-dropdown"), "value"),  # Wellfile
             ],
         )
         def _render_map(surfacefile, switch, wellfile):
@@ -585,12 +594,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 return hillshade_layers
             surface_name = self.surface_attributes[get_path(surfacefile)]["name"]
             surfaces = [
-                        self.surface_attributes[get_path(surfacefile)]["surface"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_de"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dr"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dre"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dt"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dte"],           
+                self.surface_attributes[get_path(surfacefile)]["surface"],
+                self.surface_attributes[get_path(surfacefile)]["surface_de"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dr"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dre"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dt"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dte"],
             ]
             well_list = []
             for wellfile_path in self.wellfiles:
@@ -603,7 +612,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 surfaces[0],
                 dropdown_well,
                 radius=50,
-                color="rgb(0,255,0,1.0)")
+                color="rgb(0,255,0,1.0)",
+            )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
             # Deletes old layers when switching surface in dropdown
@@ -643,7 +653,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             polyline,
             surfacefiles,
             de_keys,
-            well_settings
+            well_settings,
         ):
             """ Renders cross section view from wellfile or polyline drawn in map view """
             ctx = dash.callback_context
@@ -657,23 +667,14 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             de_keys = [get_path(de_key) for de_key in de_keys]
             surfacefiles = [get_path(sf) for sf in surfacefiles]
             if (
-                ctx.triggered[0]["prop_id"] ==
-                self.ids("layered-map") + ".polyline_points"
+                ctx.triggered[0]["prop_id"]
+                == self.ids("layered-map") + ".polyline_points"
                 and polyline is not None
             ):
                 well = None
-            self.xsec.set_de_and_surface_lines(
-                surfacefiles,
-                de_keys,
-                well,
-                polyline
-            )
+            self.xsec.set_de_and_surface_lines(surfacefiles, de_keys, well, polyline)
             self.xsec.set_xsec_fig(
-                surfacefiles,
-                de_keys,
-                well_settings,
-                well,
-                is_planned=is_planned
+                surfacefiles, de_keys, well_settings, well, is_planned=is_planned
             )
             return self.xsec.fig
 
@@ -834,21 +835,21 @@ def get_color(i):
         List of colors for surface layers
     """
     colors = [
-        "rgb(70,130,180)",      # Steel blue
-        "rgb(0,0,255)",         # Blue
-        "rgb(173,255,47)",      # Green yellow
-        "rgb(0,128,0)",         # Green
-        "rgb(0,255,0)",         # Lime
-        "rgb(60,179,113)",      # Medium sea green
-        "rgb(255,105,180)",     # Pink
-        "rgb(221,160,221)",     # Plum
-        "rgb(255,255,0)",       # Yellow
-        "rgb(244,164,96)",      # Tan
-        "rgb(255,140,0)",       # Orange
-        "rgb(255,69,0)",        # Blood orange
-        "rgb(255,0,0)",         # Red
-        "rgb(220,20,60)",       # Crimson
-        "rgb(255,0,255)",       # Fuchsia
+        "rgb(70,130,180)",  # Steel blue
+        "rgb(0,0,255)",  # Blue
+        "rgb(173,255,47)",  # Green yellow
+        "rgb(0,128,0)",  # Green
+        "rgb(0,255,0)",  # Lime
+        "rgb(60,179,113)",  # Medium sea green
+        "rgb(255,105,180)",  # Pink
+        "rgb(221,160,221)",  # Plum
+        "rgb(255,255,0)",  # Yellow
+        "rgb(244,164,96)",  # Tan
+        "rgb(255,140,0)",  # Orange
+        "rgb(255,69,0)",  # Blood orange
+        "rgb(255,0,0)",  # Red
+        "rgb(220,20,60)",  # Crimson
+        "rgb(255,0,255)",  # Fuchsia
     ]
     n_colors = len(colors)
     return colors[(i) % (n_colors)]

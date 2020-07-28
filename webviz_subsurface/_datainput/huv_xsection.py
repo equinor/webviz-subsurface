@@ -6,6 +6,7 @@ from pathlib import Path
 from webviz_config.common_cache import CACHE
 import time
 
+
 class HuvXsection:
     def __init__(
         self,
@@ -33,36 +34,47 @@ class HuvXsection:
         Returns:
             data: List with dictionary containing zonelog, zonation points and conditional points
         """
+        print("JA DET FUNKER!!")
         if well is None:
             return []
-        data = [{
-            "y": well.dataframe["Z_TVDSS"],
-            "x": well.dataframe["R_HLEN"],
-            "name": "well",
-            "line": {"width": 7, "color": "black"},
-            "fillcolor": "black",
-        }]
+        data = [
+            {
+                "y": well.dataframe["Z_TVDSS"],
+                "x": well.dataframe["R_HLEN"],
+                "name": "well",
+                "line": {"width": 7, "color": "black"},
+                "fillcolor": "black",
+            }
+        ]
         if not is_planned:
             if "zonelog" in well_settings:
                 data += self.get_zonelog_data(well, self.zonelogname)
             if "zonation_points" in well_settings:
-                zonation_points = get_zonation_points(well.dataframe, well.wellname, self.zonation_status_file)
-                data += [{
-                    "mode": "markers",
-                    "y": zonation_points[1],
-                    "x": zonation_points[0],
-                    "name": "Zonation points",
-                    "marker": {"size": 5, "color": "rgb(153,50,204)"}
-                }]
+                zonation_points = get_zonation_points(
+                    well.dataframe, well.wellname, self.zonation_status_file
+                )
+                data += [
+                    {
+                        "mode": "markers",
+                        "y": zonation_points[1],
+                        "x": zonation_points[0],
+                        "name": "Zonation points",
+                        "marker": {"size": 5, "color": "rgb(153,50,204)"},
+                    }
+                ]
             if "conditional_points" in well_settings:
-                conditional_points = get_conditional_points(well.dataframe, well.wellname, self.well_points_file)
-                data += [{
-                    "mode": "markers",
-                    "y": conditional_points[1],
-                    "x": conditional_points[0],
-                    "name": "Conditional points",
-                    "marker":{"size": 5, "color": "rgb(0,255,255)"}
-                }]
+                conditional_points = get_conditional_points(
+                    well.dataframe, well.wellname, self.well_points_file
+                )
+                data += [
+                    {
+                        "mode": "markers",
+                        "y": conditional_points[1],
+                        "x": conditional_points[0],
+                        "name": "Conditional points",
+                        "marker": {"size": 5, "color": "rgb(0,255,255)"},
+                    }
+                ]
         return data
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -251,7 +263,9 @@ class HuvXsection:
         return np.around(self.surface_attributes[sfc_file]["de_line"][:, 1], 2)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def set_xsec_fig(self, surfacefiles, de_keys, well_settings, well, is_planned=False):
+    def set_xsec_fig(
+        self, surfacefiles, de_keys, well_settings, well, is_planned=False
+    ):
         """ Set cross section plotly figure with data from wells, surfaces and depth error
         Args:
             surfacefiles: List of filepaths to surfacefiles
@@ -261,10 +275,11 @@ class HuvXsection:
             is_planned: boolean, if False well meta-data like zonelog is not added to plot
         """
         layout = self.get_xsec_layout(surfacefiles, well)
-        data = \
-            self.get_xsec_sfc_data(surfacefiles) + \
-            self.get_xsec_de_data(surfacefiles, de_keys) + \
-            self.get_xsec_well_data(well_settings, well, is_planned)
+        data = (
+            self.get_xsec_sfc_data(surfacefiles)
+            + self.get_xsec_de_data(surfacefiles, de_keys)
+            + self.get_xsec_well_data(well_settings, well, is_planned)
+        )
         self.fig = go.Figure(dict({"data": data, "layout": layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -275,7 +290,12 @@ class HuvXsection:
         Returns:
             df: Dataframe with surfacename, TVD, depth uncertainty and direction
         """
-        data = {"Surface name": [], "TVD SD [m]": [], "Depth uncertainty [m]": [], "Direction": []}
+        data = {
+            "Surface name": [],
+            "TVD SD [m]": [],
+            "Depth uncertainty [m]": [],
+            "Direction": [],
+        }
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]["surface"]
             err = self.surface_attributes[sfc_path]["surface_de"]
@@ -304,7 +324,7 @@ class HuvXsection:
             data: List containing dictionary with zonelog data
         """
         well_df = well.dataframe
-        color_list = [None]*len(well.get_logrecord(zonelogname))
+        color_list = [None] * len(well.get_logrecord(zonelogname))
         for sfc_file in self.surface_attributes:
             for i in range(len(color_list)):
                 if well.get_logrecord_codename(zonelogname, i) == "dummy":

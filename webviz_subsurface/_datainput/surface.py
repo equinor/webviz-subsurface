@@ -130,26 +130,27 @@ def new_make_surface_layer(
         ],
     }
 
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_surface_layers(switch, surface_name, surfaces):
-    ''' Creates layers in map from all surfaces with new_make_surface_layer in surface.py
+    """ Creates layers in map from all surfaces with new_make_surface_layer in surface.py
     Args:
         switch: Toggle hillshading on/off
         surface_name: Name of surface
         surfaces: List containing a single surface with corresponding depth error, depth trend etc.
     Returns:
         layers: List of all surface layers
-    '''
+    """
     min_val = None
     max_val = None
-    shader_type = 'hillshading' if switch['value'] is True else None
+    shader_type = "hillshading" if switch["value"] is True else None
     depth_list = [
-                "Depth",
-                "Depth uncertainty",
-                "Depth residual",
-                "Depth residual uncertainty",
-                "Depth trend",
-                "Depth trend uncertainty"
+        "Depth",
+        "Depth uncertainty",
+        "Depth residual",
+        "Depth residual uncertainty",
+        "Depth trend",
+        "Depth trend uncertainty",
     ]
     layers = []
     for i, sfc in enumerate(surfaces):
@@ -160,13 +161,20 @@ def get_surface_layers(switch, surface_name, surfaces):
                 min_val=min_val,
                 max_val=max_val,
                 color=[
-                    "#0d0887", "#46039f", "#7201a8",
-                    "#9c179e", "#bd3786", "#d8576b",
-                    "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"
+                    "#0d0887",
+                    "#46039f",
+                    "#7201a8",
+                    "#9c179e",
+                    "#bd3786",
+                    "#d8576b",
+                    "#ed7953",
+                    "#fb9f3a",
+                    "#fdca26",
+                    "#f0f921",
                 ],
                 shader_type=shader_type,
             )
-            s_layer["id"] = surface_name + ' ' + depth_list[i] + "-id"
+            s_layer["id"] = surface_name + " " + depth_list[i] + "-id"
             s_layer["action"] = "add"
             layers.append(s_layer)
     return layers
