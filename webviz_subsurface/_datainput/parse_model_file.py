@@ -126,8 +126,3 @@ def get_zonelog_name(basedir):
 
 def get_zonation_status(basedir):
     return os.path.join(basedir, "output", "log_files", "zonation_status.csv")
-
-
-if __name__ == "__main__":
-    basedir = Path(r"..\..\..\Datasets\simple_model")
-    print(get_well_files(basedir))
