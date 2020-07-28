@@ -77,7 +77,6 @@ def new_make_surface_layer(
     """Make NewLayeredMap surface image base layer"""
     zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
-    print(bounds, " bounds")
     min_val = min_val if min_val is not None else np.nanmin(zvalues)
     max_val = max_val if max_val is not None else np.nanmax(zvalues)
     image = base64.b64decode(array_to_png(zvalues.copy())[22:])

@@ -443,7 +443,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                             id=self.ids("layered-map"),
                             layers=[],
                             syncedMaps=[],
-                            minZoom=-5,
+                            syncMapSize=True,
+                            minZoom=-4,
                             drawTools={
                                 "drawMarker": False,
                                 "drawPolygon": False,
@@ -521,7 +522,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ''' Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles and hillshading toggle
             '''
-            print("This callback was triggered")
             if self.state['switch'] is not switch['value']:
                 hillshade_layers = self.layers_state.copy()
                 for layer in hillshade_layers:
@@ -531,7 +531,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.state['switch'] = switch['value']
                 return hillshade_layers
             surface_name = self.surface_attributes[get_path(surfacefile)]["name"]
-            well_layers = get_well_layers(self.wellfiles, surface_name, self.conditional_data, wellfile, radius=50, color="rgb(0,255,0)")
             surfaces = [
                         self.surface_attributes[get_path(surfacefile)]["surface"],
                         self.surface_attributes[get_path(surfacefile)]["surface_de"],
@@ -540,8 +539,15 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         self.surface_attributes[get_path(surfacefile)]["surface_dt"],
                         self.surface_attributes[get_path(surfacefile)]["surface_dte"],           
             ]
+            well_list = []
+            for wellfile_path in self.wellfiles:
+                well = xtgeo.Well(wellfile_path)
+                well_list.append(well)
+            dropdown_well = xtgeo.Well(wellfile)
+            well_layers = get_well_layers(well_list, surface_name, surfaces[0],\
+                dropdown_well, radius=50, color="rgb(0,255,0,1.0)")
             layers = get_surface_layers(switch, surface_name, surfaces)
-            layers.append(well_layers)
+            layers.extend(well_layers)
             # Deletes old layers
             old_layers = self.layers_state
             self.layers_state = layers.copy()
@@ -686,9 +692,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
         def _toggle_left_flexbox_content(value):
             if value == 'table-view':
-                return False, False #True, False
+                return True, False
             else:
-                return False, False #False, True
+                return False, True
 
         @app.callback(
             Output(self.ids('uncertainty-table'), 'data'),

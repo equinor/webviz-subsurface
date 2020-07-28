@@ -121,7 +121,3 @@ def get_zonation_data(basedir):
 def get_conditional_data(basedir):
     return get_well_points(basedir)
 
-
-if __name__ == '__main__':
-    basedir = Path(r"..\..\..\Datasets\simple_model")
-    print(get_well_files(basedir))

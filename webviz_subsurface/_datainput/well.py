@@ -53,7 +53,7 @@ def make_well_layers(wellfiles, zmin=0, max_points=100):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_well_layers(wellfiles, surface_name, wellpoints_file, dropdown_wellfile, radius=100, color="red"):
+def get_well_layers(well_list, surface_name, surface, dropdown_well, radius=100, color="red"):
     """ Make circles around well in layered map view
     Args:
         wellfiles: List of all wellfiles
@@ -62,26 +62,33 @@ def get_well_layers(wellfiles, surface_name, wellpoints_file, dropdown_wellfile,
     Returns:
         well_layers: Dictionary with data for circles
      """
-    df = pd.read_csv(wellpoints_file)
-    cp_df = df[df["Surface"] == surface_name]  # Get conditional points
     data = []
-    dropdown_well = xtgeo.Well(dropdown_wellfile)
     dropdown_well_name = dropdown_well.wellname
-    for wellfile in wellfiles:
-        well = xtgeo.Well(wellfile)
+    dropdown_well.dataframe = dropdown_well.dataframe[dropdown_well.dataframe["Z_TVDSS"] > 0]
+    positions = dropdown_well.dataframe[["X_UTME", "Y_UTMN"]].values
+    dropdown_data = []
+    dropdown_data.append({
+                "type": "polyline",
+                "color": "yellow",
+                "positions": positions,
+                "tooltip": dropdown_well_name + " trajectory",
+        })
+    for well in well_list:
         well_name = well.wellname
-        well_cp_df = cp_df[cp_df["Well"] == well_name]
-        coordinates = well_cp_df[['x', 'y']].values
-        if len(coordinates) == 0:
-            data += []
-        else:
-            data.append({
-                "type": "circle",
-                "center": coordinates[0],
-                "color": "yellow" if dropdown_well_name == well_name else color,
-                "fillcolor": "yellow" if dropdown_well_name == well_name else color,
-                "radius": radius,
-                "tooltip": well_name,
-                })
-    return {"name": "Wells", "checked": True, "baseLayer": False, "data": data,\
-            "id": surface_name + ' ' + "well" + "-id", "action": "add"}
+        surface_picks = well.get_surface_picks(surface)
+        if surface_picks is not None:
+            surface_picks_df = surface_picks.dataframe
+            coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values
+            for i in range(len(coordinates)):
+                data.append({
+                    "type": "circle",
+                    "center": coordinates[i],
+                    "color": "rgb(255,255,0,1.0)" if dropdown_well_name == well_name else color,
+                    "radius": radius,
+                    "tooltip": well_name,
+                    })
+    return [{"name": "Wells", "checked": True, "baseLayer": False, "data": data,\
+            "id": surface_name + ' ' + "well" + "-id", "action": "add"},\
+            {"name": dropdown_well_name + " trajectory", "checked": True,\
+            "baseLayer": False, "data": dropdown_data, "action": "add",\
+            "id": surface_name + ' ' + "well_trajectory" + "-id"}]
