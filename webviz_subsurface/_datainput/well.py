@@ -1,6 +1,6 @@
 import xtgeo
+
 from webviz_config.common_cache import CACHE
-import pandas as pd
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -87,11 +87,11 @@ def get_well_layers(
         if surface_picks is not None:
             surface_picks_df = surface_picks.dataframe
             coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values
-            for i in range(len(coordinates)):
+            for coordinate in coordinates:
                 data.append(
                     {
                         "type": "circle",
-                        "center": coordinates[i],
+                        "center": coordinate,
                         "color": "rgb(255,255,0,1.0)"
                         if dropdown_well_name == well_name
                         else color,

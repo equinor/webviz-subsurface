@@ -1,10 +1,9 @@
+import os
 from uuid import uuid4
 from pathlib import Path
 import dash
 import dash_table
 import xtgeo
-import os
-import pandas as pd
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
@@ -14,9 +13,8 @@ import webviz_core_components as wcc
 import webviz_subsurface_components
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import CACHE
 
-from .._datainput.surface import new_make_surface_layer, get_surface_layers
+from .._datainput.surface import get_surface_layers
 from .._datainput.well import get_well_layers
 from .._datainput.huv_xsection import HuvXsection
 from .._datainput.huv_table import FilterTable
@@ -142,11 +140,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.planned_wells = {
                     wf: xtgeo.Well(wf) for wf in self.planned_wellfiles
                 }
-            except Exception as ex:
+            # FIX: webviz_subsurface/plugins/_horizon_uncertainty_viewer.py:145:19: W0703:
+            # Catching too general exception Exception (broad-except)
+            except Exception as exception:
                 self.planned_wells = {}
                 self.planned_wellfiles = []
                 print("Something went wrong when initializing planned wells")
-                print(type(ex).__name__, ": ", ex)
+                print(type(exception).__name__, ": ", exception)
                 print(
                     "Make sure that all planned wells have format 'ROXAR RMS well'.\n"
                 )
@@ -171,14 +171,14 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 html.Div(
                     children=[
                         dbc.Button(
-                            "Graph Settings",
+                            "Surfaces Settings",
                             id=self.ids("button-open-graph-settings"),
                             color="light",
                             className="mr-1",
                         ),
                         dbc.Modal(
                             children=[
-                                dbc.ModalHeader("Graph Settings"),
+                                dbc.ModalHeader("Surfaces Settings"),
                                 dbc.ModalBody(
                                     children=[
                                         html.Label(
@@ -602,8 +602,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.surface_attributes[get_path(surfacefile)]["surface_dte"],
             ]
             well_list = []
-            for wellfile_path in self.wellfiles:
-                well = xtgeo.Well(wellfile_path)
+            for wellfile in self.wellfiles:
+                well = xtgeo.Well(wellfile)
                 well_list.append(well)
             dropdown_well = xtgeo.Well(wellfile)
             well_layers = get_well_layers(
@@ -632,18 +632,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 Input(self.ids("button-apply-checklist"), "n_clicks"),
                 Input(self.ids("button-apply-well-settings-checklist"), "n_clicks"),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
-                Input(
-                    self.ids("layered-map"), "polyline_points"
-                ),  # coordinates from layered-map
+                Input(self.ids("layered-map"), "polyline_points"),  # Polyline
             ],
             [
-                State(self.ids("surfaces-checklist"), "value"),  # List of surfacefiles
-                State(
-                    self.ids("surfaces-de-checklist"), "value"
-                ),  # List of surfacefiles keys
-                State(
-                    self.ids("well-settings-checklist"), "value"
-                ),  # Well settings checkbox content
+                State(self.ids("surfaces-checklist"), "value"),  # surfacefiles
+                State(self.ids("surfaces-de-checklist"), "value"),  # surfacefiles keys
+                State(self.ids("well-settings-checklist"), "value"),  # Well settings
             ],
         )
         def _render_xsection(
@@ -656,6 +650,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             well_settings,
         ):
             """ Renders cross section view from wellfile or polyline drawn in map view """
+            _ = n_apply_sfc, n_apply_well
             ctx = dash.callback_context
             if wellfile in self.wellfiles:
                 well = self.wells[wellfile]
@@ -695,14 +690,15 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
-        def _toggle_modal_graph_settings(n1, n2, disabled, is_open):
+        def _toggle_modal_graph_settings(n_open, n_close, disabled, is_open):
             """ Open or close graph settings modal button """
             if disabled:
-                return False
-            elif n1 or n2:
-                return not is_open
+                switch = False
+            elif n_open or n_close:
+                switch = not is_open
             else:
-                return is_open
+                switch = is_open
+            return switch
 
         @app.callback(
             Output(self.ids("surfaces-de-checklist"), "options"),
@@ -710,7 +706,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [State(self.ids("surfaces-de-checklist"), "options")],
         )
         def _disable_error_checkboxes(surface_values, de_options):
-            """ Removes ability to toggle depth error when corresponding surface is disabled in graph settings modal """
+            """ Removes ability to toggle depth error when
+            corresponding surface is disabled in graph settings modal
+            """
             for i, opt in enumerate(de_options):
                 if (surface_values is None) or (opt["value"] not in surface_values):
                     de_options[i]["disabled"] = True
@@ -737,8 +735,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ],
             [State(self.ids("modal-well-settings"), "is_open")],
         )
-        def _toggle_modal_well_settings(n1, n2, is_open):
-            if n1 or n2:
+        def _toggle_modal_well_settings(n_open, n_close, is_open):
+            if n_open or n_close:
                 return not is_open
             return is_open
 
@@ -748,6 +746,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
         def display_output(n_clicks, column_list):
+            _ = n_clicks
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
             return html.Div(
                 [
@@ -769,8 +768,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ],
             [State(self.ids("modal-table-settings"), "is_open")],
         )
-        def _toggle_modal_table_settings(n1, n2, is_open):
-            if n1 or n2:
+        def _toggle_modal_table_settings(n_open, n_close, is_open):
+            if n_open or n_close:
                 return not is_open
             return is_open
 

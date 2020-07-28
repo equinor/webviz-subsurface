@@ -2,19 +2,18 @@ import xtgeo
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from pathlib import Path
+
 from webviz_config.common_cache import CACHE
-import time
 
 
 class HuvXsection:
     def __init__(
         self,
-        surface_attributes={},
+        surface_attributes=dict,
         zonation_status_file=None,
         well_points_file=None,
         zonelogname=None,
-        well_attributes={},
+        well_attributes=dict,
     ):
         self.surface_attributes = surface_attributes
         self.zonation_status_file = zonation_status_file
@@ -34,7 +33,6 @@ class HuvXsection:
         Returns:
             data: List with dictionary containing zonelog, zonation points and conditional points
         """
-        print("JA DET FUNKER!!")
         if well is None:
             return []
         data = [
@@ -79,7 +77,7 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def set_de_and_surface_lines(self, surfacefiles, de_keys, well, polyline):
-        """ Set surface lines and corresponding depth error lines with fence from wellfile or polyline
+        """ Surface lines and corresponding depth error lines with fence from wellfile or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
@@ -103,7 +101,7 @@ class HuvXsection:
                 self.surface_attributes[sfc_file]["de_line"] = de_line
 
     def get_xsec_layout(self, surfacefiles, well):
-        """ Scale cross section figure to fit well trajectory, well and surface intersection or polyline
+        """ Scale cross section figure to well trajectory, well and surface intersection or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
             well: xtgeo well
@@ -130,11 +128,11 @@ class HuvXsection:
             layout["yaxis"].update({"autorange": "reversed"})
 
         elif well is None:
-            ymin, ymax = self.sfc_lines_min_max_TVD(surfacefiles)
+            ymin, ymax = self.sfc_lines_min_max_tvd(surfacefiles)
             layout["yaxis"].update({"range": [ymax, ymin]})
 
         else:
-            y_min, y_max = self.sfc_lines_min_max_TVD(surfacefiles)
+            y_min, y_max = self.sfc_lines_min_max_tvd(surfacefiles)
             x_min, x_max = get_range_from_well(well.dataframe, y_min)
             y_range = np.abs(y_max - y_min)
             x_range = np.abs(x_max - x_min)
@@ -195,7 +193,7 @@ class HuvXsection:
         if len(surfacefiles) == 0:
             data = []
         else:
-            _, _max = self.sfc_lines_min_max_TVD(surfacefiles)
+            _, _max = self.sfc_lines_min_max_tvd(surfacefiles)
             first_sfc_line = self.surface_attributes[surfacefiles[0]]["surface_line"]
             surface_tuples = [
                 (sfc_file, self.surface_attributes[sfc_file]["order"])
@@ -232,7 +230,7 @@ class HuvXsection:
             ]
         return data
 
-    def sfc_lines_min_max_TVD(self, surfacefiles):
+    def sfc_lines_min_max_tvd(self, surfacefiles):
         """ Find max and min TVD values of all surfaces
         Args:
             surfacefiles: List of filepaths to surfacefiles
@@ -316,7 +314,7 @@ class HuvXsection:
         return pd.DataFrame(data=data)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_zonelog_data(self, well, zonelogname="Zonelog", zomin=-999):
+    def get_zonelog_data(self, well, zonelogname="Zonelog"):
         """ Find zonelogs where well trajectory intersects surfaces and assigns color.
         Args:
             well: XTGeo well from filepath to wellfile
@@ -335,8 +333,8 @@ class HuvXsection:
                 ):
                     self.surface_attributes[sfc_file]["zone_number"] = i
                     color_list[i] = self.surface_attributes[sfc_file]["color"]
-        well_TVD = well_df["Z_TVDSS"].values.copy()
-        well_RHLEN = well_df["R_HLEN"].values.copy()
+        well_tvd = well_df["Z_TVDSS"].values.copy()
+        well_rhlen = well_df["R_HLEN"].values.copy()
         zonevals = well_df[zonelogname].values
         zoneplot = []
         start = 0
@@ -345,9 +343,9 @@ class HuvXsection:
         )  # Index of zone transitions?
         for transition in zone_transitions:
             try:
-                well_TVD = np.insert(well_TVD, transition, well_TVD[transition + 1])
-                well_RHLEN = np.insert(
-                    well_RHLEN, transition, well_RHLEN[transition + 1]
+                well_tvd = np.insert(well_tvd, transition, well_tvd[transition + 1])
+                well_rhlen = np.insert(
+                    well_rhlen, transition, well_rhlen[transition + 1]
                 )
                 zonevals = np.insert(zonevals, transition, zonevals[transition])
             except IndexError:
@@ -358,8 +356,8 @@ class HuvXsection:
                 color = "rgb(211,211,211)"
                 zoneplot.append(
                     {
-                        "x": well_RHLEN[start:end],
-                        "y": well_TVD[start:end],
+                        "x": well_rhlen[start:end],
+                        "y": well_tvd[start:end],
                         "line": {"width": 4, "color": color},
                         "name": f"Zone: {zonevals[i-1]}",
                     }
@@ -370,8 +368,8 @@ class HuvXsection:
                 color = color_list[int(zonevals[i - 1])]
                 zoneplot.append(
                     {
-                        "x": well_RHLEN[start:end],
-                        "y": well_TVD[start:end],
+                        "x": well_rhlen[start:end],
+                        "y": well_tvd[start:end],
                         "line": {"width": 4, "color": color},
                         "name": f"Zone: {zonevals[i-1]}",
                     }
@@ -386,8 +384,8 @@ class HuvXsection:
                 color = color_list[int(zonevals[i - 1])]
                 zoneplot.append(
                     {
-                        "x": well_RHLEN[start:end],
-                        "y": well_TVD[start:end],
+                        "x": well_rhlen[start:end],
+                        "y": well_tvd[start:end],
                         "line": {"width": 4, "color": color},
                         "name": f"Zone: {zonevals[i-1]}",
                     }
@@ -398,8 +396,8 @@ class HuvXsection:
             color = color_list[int(zonevals[-1])]
             zoneplot.append(
                 {
-                    "x": well_RHLEN[start:end],
-                    "y": well_TVD[start:end],
+                    "x": well_rhlen[start:end],
+                    "y": well_tvd[start:end],
                     "line": {"width": 4, "color": color},
                     "name": f"Zone: {zonevals[-2]}",
                 }
@@ -409,8 +407,8 @@ class HuvXsection:
             zoneplot.append(
                 {
                     "mode": "markers",
-                    "x": np.array([well_RHLEN[-2], well_RHLEN[-1]]),
-                    "y": np.array([well_TVD[-2], well_TVD[-1]]),
+                    "x": np.array([well_rhlen[-2], well_rhlen[-1]]),
+                    "y": np.array([well_tvd[-2], well_tvd[-1]]),
                     "marker": {"size": 3, "color": color},
                     "name": f"Zone: {zonevals[-1]}",
                 }
@@ -437,14 +435,14 @@ def get_zonation_points(well_df, wellname, zonation_status_file):
     zone_df = zonation_status_data[zonation_status_data["Well"] == wellname]
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
-    zone_RHLEN = np.zeros(len(zone_df_xval))
+    zone_rhlen = np.zeros(len(zone_df_xval))
     for i in range(len(zone_df_xval)):
         well_df["XLEN"] = well_df["X_UTME"] - zone_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - zone_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
-        zone_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
-    return np.array([zone_RHLEN, zone_df["TVD"]])
+        zone_rhlen[i] = well_df["R_HLEN"].values[index_array[0]][0]
+    return np.array([zone_rhlen, zone_df["TVD"]])
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -456,21 +454,20 @@ def get_conditional_points(well_df, wellname, well_points_file):
         well_points_file: Filepath to wellpoints.csv
     Returns:
         Numpy array of relative horizontal length and TVD
-        Dictionary of conditional points linked to surfaces since surfaces might have more than one conditional point
     """
     wellpoint_data = pd.read_csv(well_points_file)
     wellpoint_df = wellpoint_data[wellpoint_data["Well"] == wellname]
     wellpoint_df_xval = wellpoint_df["x"].values.copy()
     wellpoint_df_yval = wellpoint_df["y"].values.copy()
-    cond_RHLEN = np.zeros(len(wellpoint_df_xval))
+    cond_rhlen = np.zeros(len(wellpoint_df_xval))
 
     for i in range(len(wellpoint_df_xval)):
         well_df["XLEN"] = well_df["X_UTME"] - wellpoint_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - wellpoint_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
-        cond_RHLEN[i] = well_df["R_HLEN"].values[index_array[0]][0]
-    return np.array([cond_RHLEN, wellpoint_df["TVD"]])
+        cond_rhlen[i] = well_df["R_HLEN"].values[index_array[0]][0]
+    return np.array([cond_rhlen, wellpoint_df["TVD"]])
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

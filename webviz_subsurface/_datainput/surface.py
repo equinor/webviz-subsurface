@@ -1,10 +1,11 @@
+import io
+import base64
 import numpy as np
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
-from .image_processing import array_to_png, get_colormap
-import base64
 from PIL import Image
-import io
+
+from .image_processing import array_to_png, get_colormap
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -70,7 +71,7 @@ def new_make_surface_layer(
     name="surface",
     min_val=None,
     max_val=None,
-    color=[
+    color=[ #FIX Dangerous default value [] as argument
         "#0d0887",
         "#46039f",
         "#7201a8",
@@ -85,7 +86,12 @@ def new_make_surface_layer(
     shader_type="hillshading",
     unit="",
 ):
-    """Make NewLayeredMap surface image base layer"""
+    """Make NewLayeredMap surface image base layer
+    Args:
+        FIX
+    Returns:
+        FIX
+    """
     zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
     min_val = min_val if min_val is not None else np.nanmin(zvalues)
