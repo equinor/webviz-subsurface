@@ -100,16 +100,15 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             try:
                 for f in os.listdir(planned_wells_dir):
                     if Path(f).suffix != '.txt':
-                        raise ValueError(f'Planned well file "{f}" is not a text file \n')
-                planned_wellfiles = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-                planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
+                        raise ValueError(f'Planned well file "{f}" is not a txt file \n')
+                self.planned_wellfiles = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
+                self.planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
             except Exception as ex:
+                self.planned_wells = {}
+                self.planned_wellfiles = []
                 print('Something went wrong when initializing planned wells')
                 print(type(ex).__name__,': ', ex)
                 print('Make sure that all planned wells have format "ROXAR RMS well".\n')
-            else:
-                self.planned_wellfiles = planned_wellfiles
-                self.planned_wells = planned_wells
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
 
