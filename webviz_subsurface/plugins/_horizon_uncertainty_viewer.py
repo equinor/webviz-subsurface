@@ -94,27 +94,24 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.df_well_target_points = FilterTable(self.target_points_file, self.well_points_file)
 
         # Wellfiles and planned wells
-        self.planned_well_files = []
-        self.planned_wells = []
-        self.planned_well_names = []
+        self.planned_wellfiles = []
+        self.planned_wells = {}
         if planned_wells_dir is not None:
             try:
                 for f in os.listdir(planned_wells_dir):
                     if Path(f).suffix != '.txt':
-                        message = f'Planned well file "{f}" is not a text file \n' +\
-                                  'planned wells must be of type "ROXAR RMS well"'
-                        raise ValueError(message)
-                self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-                self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
-            except ValueError as e:
-                print(e)
+                        raise ValueError(f'Planned well file "{f}" is not a text file \n')
+                planned_wellfiles = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
+                planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
+            except Exception as ex:
+                print('Something went wrong when initializing planned wells')
+                print(type(ex).__name__,': ', ex)
+                print('Make sure that all planned wells have format "ROXAR RMS well".\n')
+            else:
+                self.planned_wellfiles = planned_wellfiles
+                self.planned_wells = planned_wells
         self.wellfiles = parse_model_file.get_well_files(basedir)
-        self.wells = {
-            wf: xtgeo.Well(wf)
-            for wf in self.wellfiles
-        }
-        #self.xsec.set_well_attributes(self.wellfiles)
-        #self.xsec.set_planned_attributes(self.planned_well_files)
+        self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
 
         # Store current surface layers
         self.state = {'switch': True}
@@ -291,10 +288,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         {"label": self.wells[wf].wellname, "value": wf}
                                         for wf in self.wellfiles
                                     ] + [
-                                        {'label': name, 'value': path}
-                                        for name, path in zip(
-                                            self.planned_well_names, self.planned_well_files
-                                        )
+                                        {'label': self.planned_wells[wf].wellname, 'value': wf}
+                                        for wf in self.planned_wellfiles
                                     ],
                                     value=self.wellfiles[0],
                                     clearable=False,
@@ -582,18 +577,19 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         def _render_xsection(n_apply_sfc, n_apply_well, wellfile, polyline, surfacefiles, de_keys, well_settings):
             ''' Renders cross section view from wellfile or polyline drawn in map view '''
             ctx = dash.callback_context
-            de_keys_2 = []
-            surfacefiles_2 = []
-            well = self.wells[wellfile]
+            if wellfile in self.wellfiles:
+                well = self.wells[wellfile]
+                is_planned = False
+            else:
+                well = self.planned_wells[wellfile]
+                is_planned = True
             well.create_relative_hlen()
-            for i in range(len(de_keys)):
-                de_keys_2.append(get_path(de_keys[i]))
-            for j in range(len(surfacefiles)):
-                surfacefiles_2.append(get_path(surfacefiles[j]))
+            de_keys = [get_path(de_key) for de_key in de_keys]
+            surfacefiles = [get_path(sf) for sf in surfacefiles]
             if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
                 well = None
-            self.xsec.set_de_and_surface_lines(surfacefiles_2, de_keys_2, well, polyline)
-            self.xsec.set_xsec_fig(surfacefiles_2, de_keys_2, well_settings, well)
+            self.xsec.set_de_and_surface_lines(surfacefiles, de_keys, well, polyline)
+            self.xsec.set_xsec_fig(surfacefiles, de_keys, well_settings, well, is_planned=is_planned)
             return self.xsec.fig
 
         @app.callback(
@@ -710,7 +706,10 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids('well-dropdown'), 'value')]
         )
         def _render_uncertainty_table(wellfile):
-            well = self.wells[wellfile]
+            if wellfile in self.wellfiles:
+                well = self.wells[wellfile]
+            else:
+                well = self.planned_wells[wellfile]
             df = self.xsec.get_intersection_dataframe(well)
             return df.to_dict('records')
 
@@ -719,7 +718,10 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids('well-dropdown'), 'value')]
         )
         def _render_surface_picks_label(wellfile):
-            wellname = self.wells[wellfile].wellname
+            if wellfile in self.wellfiles:
+                wellname = self.wells[wellfile].wellname
+            else:
+                wellname = self.planned_wells[wellfile].wellname
             return f'Surface picks for {wellname}'
 
     def add_webvizstore(self):
