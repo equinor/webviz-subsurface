@@ -71,7 +71,7 @@ def new_make_surface_layer(
     name="surface",
     min_val=None,
     max_val=None,
-    color=[ #FIX Dangerous default value [] as argument
+    color=[  # FIX Dangerous default value [] as argument
         "#0d0887",
         "#46039f",
         "#7201a8",
