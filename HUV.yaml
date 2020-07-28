@@ -6,4 +6,4 @@ pages:
     content:
       - HorizonUncertaintyViewer:
           basedir: ..\Datasets\simple_model
-          planned_wells_dir: ..\Planned_wells_simple
+          #planned_wells_dir: ..\Planned_wells_simple
