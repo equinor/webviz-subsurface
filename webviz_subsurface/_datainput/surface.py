@@ -70,7 +70,18 @@ def new_make_surface_layer(
     name="surface",
     min_val=None,
     max_val=None,
-    color=["#0d0887", "#46039f", "#7201a8", "#9c179e", "#bd3786", "#d8576b", "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"],
+    color=[
+        "#0d0887",
+        "#46039f",
+        "#7201a8",
+        "#9c179e",
+        "#bd3786",
+        "#d8576b",
+        "#ed7953",
+        "#fb9f3a",
+        "#fdca26",
+        "#f0f921",
+    ],
     shader_type="hillshading",
     unit="",
 ):
@@ -82,10 +93,10 @@ def new_make_surface_layer(
     image = base64.b64decode(array_to_png(zvalues.copy())[22:])
     img = Image.open(io.BytesIO(image))
     width, height = img.size
-    if width*height >= 300*300:
+    if width * height >= 300 * 300:
         scale = 1.0
     else:
-        ratio = (1000**2) / (width*height)
+        ratio = (1000 ** 2) / (width * height)
         scale = np.sqrt(ratio).round(2)
     return {
         "name": name,
@@ -101,7 +112,6 @@ def new_make_surface_layer(
                     "scaleType": "linear",
                     "cutPointMin": min_val,
                     "cutPointMax": max_val,
-
                 },
                 "bounds": bounds,
                 "shader": {

@@ -3,9 +3,7 @@ import pandas as pd
 
 class FilterTable:
     def __init__(
-            self,
-            target_points=None,
-            well_points=None,
+        self, target_points=None, well_points=None,
     ):
         self.target_points = target_points
         self.well_points = well_points

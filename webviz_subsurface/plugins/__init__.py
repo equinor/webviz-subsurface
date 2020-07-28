@@ -73,5 +73,5 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
-    "HorizonUncertaintyViewer"
+    "HorizonUncertaintyViewer",
 ]

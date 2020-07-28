@@ -46,12 +46,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 """
 
     def __init__(
-            self,
-            app,
-            basedir: Path = None,
-            planned_wells_dir: Path = None,
-            zunit="depth (m)",
-            zonemin: int = 1,
+        self,
+        app,
+        basedir: Path = None,
+        planned_wells_dir: Path = None,
+        zunit="depth (m)",
+        zonemin: int = 1,
     ):
 
         super().__init__()
@@ -68,30 +68,61 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
         self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
         self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
-        self.topofzone = parse_model_file.extract_topofzone_names(basedir) # Name of zone
+        self.topofzone = parse_model_file.extract_topofzone_names(
+            basedir
+        )  # Name of zone
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
         self.surface_attributes = {}
         for i, surfacefile in enumerate(self.surfacefiles):
             self.surface_attributes[get_path(surfacefile)] = {
                 "color": get_color(i),
-                'order': i,
-                "name": self.surfacenames[i], 
+                "order": i,
+                "name": self.surfacenames[i],
                 "topofzone": self.topofzone[i],
-                "surface": xtgeo.surface_from_file(Path(surfacefile), fformat='irap_binary'),
-                "surface_de": xtgeo.surface_from_file(Path(self.surfacefiles_de[i]), fformat='irap_binary'),
-                "surface_dt": xtgeo.surface_from_file(Path(self.surfacefiles_dt[i]), fformat="irap_binary") if self.surfacefiles_dt is not None else None,
-                "surface_dr": xtgeo.surface_from_file(Path(self.surfacefiles_dr[i]), fformat="irap_binary") if self.surfacefiles_dr is not None else None,
-                "surface_dte": xtgeo.surface_from_file(Path(self.surfacefiles_dte[i]), fformat="irap_binary") if self.surfacefiles_dte is not None else None,
-                "surface_dre": xtgeo.surface_from_file(Path(self.surfacefiles_dre[i]), fformat="irap_binary") if self.surfacefiles_dre is not None else None,
+                "surface": xtgeo.surface_from_file(
+                    Path(surfacefile), fformat="irap_binary"
+                ),
+                "surface_de": xtgeo.surface_from_file(
+                    Path(self.surfacefiles_de[i]), fformat="irap_binary"
+                ),
+                "surface_dt": xtgeo.surface_from_file(
+                    Path(self.surfacefiles_dt[i]), fformat="irap_binary"
+                )
+                if self.surfacefiles_dt is not None
+                else None,
+                "surface_dr": xtgeo.surface_from_file(
+                    Path(self.surfacefiles_dr[i]), fformat="irap_binary"
+                )
+                if self.surfacefiles_dr is not None
+                else None,
+                "surface_dte": xtgeo.surface_from_file(
+                    Path(self.surfacefiles_dte[i]), fformat="irap_binary"
+                )
+                if self.surfacefiles_dte is not None
+                else None,
+                "surface_dre": xtgeo.surface_from_file(
+                    Path(self.surfacefiles_dre[i]), fformat="irap_binary"
+                )
+                if self.surfacefiles_dre is not None
+                else None,
             }
 
         # Log files
         self.zonation_status_file = parse_model_file.get_zonation_status(basedir)
         self.well_points_file = parse_model_file.get_well_points(basedir)
-        self.zonelog_name = parse_model_file.get_zonelog_name(basedir)  # name of zonelog in OP txt files
-        self.xsec = HuvXsection(self.surface_attributes, self.zonation_status_file, self.well_points_file, self.zonelog_name)
+        self.zonelog_name = parse_model_file.get_zonelog_name(
+            basedir
+        )  # name of zonelog in OP txt files
+        self.xsec = HuvXsection(
+            self.surface_attributes,
+            self.zonation_status_file,
+            self.well_points_file,
+            self.zonelog_name,
+        )
         self.target_points_file = parse_model_file.get_target_points(basedir)
-        self.df_well_target_points = FilterTable(self.target_points_file, self.well_points_file)
+        self.df_well_target_points = FilterTable(
+            self.target_points_file, self.well_points_file
+        )
 
         # Wellfiles and planned wells
         self.planned_well_files = []
@@ -100,12 +131,19 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         if planned_wells_dir is not None:
             try:
                 for f in os.listdir(planned_wells_dir):
-                    if Path(f).suffix != '.txt':
-                        message = f'Planned well file "{f}" is not a text file \n' +\
-                                  'planned wells must be of type "ROXAR RMS well"'
+                    if Path(f).suffix != ".txt":
+                        message = (
+                            f'Planned well file "{f}" is not a text file \n'
+                            + 'planned wells must be of type "ROXAR RMS well"'
+                        )
                         raise ValueError(message)
-                self.planned_well_files = [os.path.join(planned_wells_dir, f) for f in os.listdir(planned_wells_dir)]
-                self.planned_well_names = [Path(wf).stem for wf in self.planned_well_files]
+                self.planned_well_files = [
+                    os.path.join(planned_wells_dir, f)
+                    for f in os.listdir(planned_wells_dir)
+                ]
+                self.planned_well_names = [
+                    Path(wf).stem for wf in self.planned_well_files
+                ]
             except ValueError as e:
                 print(e)
         self.wellfiles = parse_model_file.get_well_files(basedir)
@@ -114,7 +152,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.xsec.set_planned_attributes(self.planned_well_files)
 
         # Store current surface layers
-        self.state = {'switch': True}
+        self.state = {"switch": True}
         self.layers_state = []
 
     def ids(self, element):
@@ -122,13 +160,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
     @property
     def cross_section_graph_layout(self):
-        return html.Div(
-            children=[
-                wcc.Graph(
-                    id=self.ids("xsec-view"),
-                )
-            ]
-        )
+        return html.Div(children=[wcc.Graph(id=self.ids("xsec-view"),)])
 
     @property
     def cross_section_widgets_layout(self):
@@ -139,8 +171,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         dbc.Button(
                             "Graph Settings",
                             id=self.ids("button-open-graph-settings"),
-                            color='light',
-                            className='mr-1'
+                            color="light",
+                            className="mr-1",
                         ),
                         dbc.Modal(
                             children=[
@@ -155,12 +187,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                             children="Select Surfaces",
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('all-surfaces-checkbox'),
-                                            options=[{'label': 'all', 'value': 'True'}],
-                                            value=['True'],
+                                            id=self.ids("all-surfaces-checkbox"),
+                                            options=[{"label": "all", "value": "True"}],
+                                            value=["True"],
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('surfaces-checklist'),
+                                            id=self.ids("surfaces-checklist"),
                                             options=[
                                                 {"label": name, "value": path}
                                                 for name, path in zip(
@@ -170,12 +202,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                             value=self.surfacefiles,
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('surfaces-de-checklist'),
+                                            id=self.ids("surfaces-de-checklist"),
                                             options=[
                                                 {
-                                                    "label": name + '_depth_error',
+                                                    "label": name + "_depth_error",
                                                     "value": path,
-                                                    "disabled": False
+                                                    "disabled": False,
                                                 }
                                                 for name, path in zip(
                                                     self.surfacenames, self.surfacefiles
@@ -190,13 +222,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         dbc.Button(
                                             "Close",
                                             id=self.ids("button-close-graph-settings"),
-                                            className="ml-auto"
+                                            className="ml-auto",
                                         ),
                                         dbc.Button(
-                                            'Apply changes',
-                                            id=self.ids('button-apply-checklist'),
-                                            className='ml-auto'
-                                        )
+                                            "Apply changes",
+                                            id=self.ids("button-apply-checklist"),
+                                            className="ml-auto",
+                                        ),
                                     ]
                                 ),
                             ],
@@ -206,7 +238,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                             backdrop=False,
                             fade=False,
                         ),
-                        dbc.Button("Well Settings", id=self.ids("button-open-well-settings")),
+                        dbc.Button(
+                            "Well Settings", id=self.ids("button-open-well-settings")
+                        ),
                         dbc.Modal(
                             children=[
                                 dbc.ModalHeader("Well Settings"),
@@ -220,31 +254,31 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                             children="Select Well Attributes",
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('all-well-settings-checkbox'),
-                                            options=[{'label': 'all', 'value': 'True'}],
-                                            value=['True'],
+                                            id=self.ids("all-well-settings-checkbox"),
+                                            options=[{"label": "all", "value": "True"}],
+                                            value=["True"],
                                         ),
                                         dcc.Checklist(
-                                            id=self.ids('well-settings-checklist'),
+                                            id=self.ids("well-settings-checklist"),
                                             options=[
                                                 {
                                                     "label": "Zonelog",
-                                                    "value": "zonelog"
+                                                    "value": "zonelog",
                                                 },
                                                 {
                                                     "label": "Zonation points",
-                                                    "value": "zonation_points"
+                                                    "value": "zonation_points",
                                                 },
                                                 {
                                                     "label": "Conditional points",
-                                                    "value": "conditional_points"
-                                                }
+                                                    "value": "conditional_points",
+                                                },
                                             ],
                                             value=[
                                                 "zonelog",
                                                 "zonation_points",
-                                                "conditional_points"
-                                            ]
+                                                "conditional_points",
+                                            ],
                                         ),
                                     ],
                                 ),
@@ -253,13 +287,15 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         dbc.Button(
                                             "Close",
                                             id=self.ids("button-close-well-settings"),
-                                            className="ml-auto"
+                                            className="ml-auto",
                                         ),
                                         dbc.Button(
-                                            'Apply',
-                                            id=self.ids('button-apply-well-settings-checklist'),
-                                            className='ml-auto'
-                                        )
+                                            "Apply",
+                                            id=self.ids(
+                                                "button-apply-well-settings-checklist"
+                                            ),
+                                            className="ml-auto",
+                                        ),
                                     ]
                                 ),
                             ],
@@ -289,10 +325,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                         for name, path in zip(
                                             self.wellnames, self.wellfiles
                                         )
-                                    ] + [
-                                        {'label': name, 'value': path}
+                                    ]
+                                    + [
+                                        {"label": name, "value": path}
                                         for name, path in zip(
-                                            self.planned_well_names, self.planned_well_files
+                                            self.planned_well_names,
+                                            self.planned_well_files,
                                         )
                                     ],
                                     value=self.wellfiles[0],
@@ -325,71 +363,74 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         return dash_table.DataTable(
             id=self.ids("target-point-table"),
             columns=[{"name": i, "id": i} for i in df.columns],
-            data=df.to_dict('records'),
+            data=df.to_dict("records"),
             sort_action="native",
             filter_action="native",
         )
 
     @property
     def well_points_tab_layout(self):
-        return html.Div([
-            dbc.Button("Table Settings", id=self.ids("button-open-table-settings")),
-            dbc.Modal(
-                children=[
-                    dbc.ModalHeader("Table Settings"),
-                    dbc.ModalBody(
-                        children=[
-                            html.Label(
-                                style={
-                                    "font-weight": "bold",
-                                    "textAlign": "Left",
-                                },
-                                children="Select Table Columns",
-                            ),
-                            dcc.Checklist(
-                                id=self.ids('columns-checklist'),
-                                options=[
-                                    {"label": name, "value": column_name}
-                                    for name, column_name in zip(
-                                        self.df_well_target_points.get_wellpoints_df().keys().values,
-                                        self.df_well_target_points.get_wellpoints_df().keys().values
-                                    )
-                                ],
-                                value=[
-                                    'Surface',
-                                    'Well',
-                                    'TVD',
-                                    'MD',
-                                    'Outlier',
-                                    'Deleted',
-                                    'Residual'
-                                ]
-                            ),
-                        ],
-                    ),
-                    dbc.ModalFooter(
-                        children=[
-                            dbc.Button(
-                                "Close",
-                                id=self.ids("button-close-table-settings"),
-                                className="ml-auto"
-                            ),
-                            dbc.Button(
-                                'Apply',
-                                id=self.ids('button-apply-columnlist'),
-                                className='ml-auto'
-                            )
-                        ]
-                    ),
-                ],
-                id=self.ids("modal-table-settings"),
-                size="sm",
-                centered=True,
-                backdrop=False,
-                fade=False,
-            ),
-            html.Div(id=self.ids('well-points-table-container')),
-        ])
+        return html.Div(
+            [
+                dbc.Button("Table Settings", id=self.ids("button-open-table-settings")),
+                dbc.Modal(
+                    children=[
+                        dbc.ModalHeader("Table Settings"),
+                        dbc.ModalBody(
+                            children=[
+                                html.Label(
+                                    style={"font-weight": "bold", "textAlign": "Left",},
+                                    children="Select Table Columns",
+                                ),
+                                dcc.Checklist(
+                                    id=self.ids("columns-checklist"),
+                                    options=[
+                                        {"label": name, "value": column_name}
+                                        for name, column_name in zip(
+                                            self.df_well_target_points.get_wellpoints_df()
+                                            .keys()
+                                            .values,
+                                            self.df_well_target_points.get_wellpoints_df()
+                                            .keys()
+                                            .values,
+                                        )
+                                    ],
+                                    value=[
+                                        "Surface",
+                                        "Well",
+                                        "TVD",
+                                        "MD",
+                                        "Outlier",
+                                        "Deleted",
+                                        "Residual",
+                                    ],
+                                ),
+                            ],
+                        ),
+                        dbc.ModalFooter(
+                            children=[
+                                dbc.Button(
+                                    "Close",
+                                    id=self.ids("button-close-table-settings"),
+                                    className="ml-auto",
+                                ),
+                                dbc.Button(
+                                    "Apply",
+                                    id=self.ids("button-apply-columnlist"),
+                                    className="ml-auto",
+                                ),
+                            ]
+                        ),
+                    ],
+                    id=self.ids("modal-table-settings"),
+                    size="sm",
+                    centered=True,
+                    backdrop=False,
+                    fade=False,
+                ),
+                html.Div(id=self.ids("well-points-table-container")),
+            ]
+        )
 
     @property
     def left_flexbox_layout(self):
@@ -398,19 +439,24 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 wcc.FlexBox(
                     children=[
                         dcc.RadioItems(
-                            labelStyle={'display': 'inline-block'},
+                            labelStyle={"display": "inline-block"},
                             options=[
-                                {'label': 'Map view', 'value': 'map-view'},
-                                {'label': 'Surface picks table', 'value': 'table-view'}
+                                {"label": "Map view", "value": "map-view"},
+                                {"label": "Surface picks table", "value": "table-view"},
                             ],
-                            id=self.ids('map-table-radioitems'),
-                            value='map-view'
+                            id=self.ids("map-table-radioitems"),
+                            value="map-view",
                         )
                     ],
                     style={"padding": "5px"},
                 ),
-                html.Div(id=self.ids('hidden-div-map-view'), children=[self.map_view_layout]),  # Hidden div to store polyline points when in table view
-                html.Div(id=self.ids('hidden-div-table-view'), children=[self.table_view_layout]),
+                html.Div(
+                    id=self.ids("hidden-div-map-view"), children=[self.map_view_layout]
+                ),  # Hidden div to store polyline points when in table view
+                html.Div(
+                    id=self.ids("hidden-div-table-view"),
+                    children=[self.table_view_layout],
+                ),
             ]
         )
 
@@ -445,11 +491,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     ],
                 ),
                 html.Div(
-                    style={
-                        "marginTop": "0px",
-                        "height": "800px",
-                        "zIndex": -9999,
-                    },
+                    style={"marginTop": "0px", "height": "800px", "zIndex": -9999,},
                     children=[
                         webviz_subsurface_components.NewLayeredMap(
                             id=self.ids("layered-map"),
@@ -460,18 +502,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                 "drawMarker": False,
                                 "drawPolygon": False,
                                 "drawPolyline": True,
-                                "position": "topright"
+                                "position": "topright",
                             },
                             switch={
-                                "value": self.state['switch'],
+                                "value": self.state["switch"],
                                 "label": "Hillshading",
                             },
-                            colorBar={
-                                "position": "bottomright"
-                            },
+                            colorBar={"position": "bottomright"},
                         ),
                     ],
-                )
+                ),
             ]
         )
 
@@ -481,16 +521,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         return html.Div(
             children=[
                 html.Label(
-                    id=self.ids('surface-picks-label'),
-                    style={
-                        'font-weight': 'bold',
-                        'textAlign': 'center',
-                    },
+                    id=self.ids("surface-picks-label"),
+                    style={"font-weight": "bold", "textAlign": "center",},
                 ),
                 dash_table.DataTable(
-                    id=self.ids('uncertainty-table'),
+                    id=self.ids("uncertainty-table"),
                     columns=[{"name": i, "id": i} for i in df.columns],
-                    data=df.to_dict('records'),
+                    data=df.to_dict("records"),
                     sort_action="native",
                     filter_action="native",
                 ),
@@ -500,58 +537,72 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
     @property
     def layout(self):
-        return dcc.Tabs(children=[
-            dcc.Tab(
-                label="Cross section & map view",
-                children=[
-                    wcc.FlexBox(
-                        id=self.ids("layout"),
-                        children=[
-                            html.Div(style={"flex": 1}, children=self.left_flexbox_layout),
-                            html.Div(style={"flex": 1.5}, children=self.cross_section_widgets_layout),
-                        ]
-                    )
-                ]
-            ),
-            dcc.Tab(
-                label="Target Points",
-                children=[html.Div(children=self.target_points_tab_layout)]
-            ),
-            dcc.Tab(
-                label='Well Points',
-                children=[self.well_points_tab_layout]
-            )
-        ])
+        return dcc.Tabs(
+            children=[
+                dcc.Tab(
+                    label="Cross section & map view",
+                    children=[
+                        wcc.FlexBox(
+                            id=self.ids("layout"),
+                            children=[
+                                html.Div(
+                                    style={"flex": 1}, children=self.left_flexbox_layout
+                                ),
+                                html.Div(
+                                    style={"flex": 1.5},
+                                    children=self.cross_section_widgets_layout,
+                                ),
+                            ],
+                        )
+                    ],
+                ),
+                dcc.Tab(
+                    label="Target Points",
+                    children=[html.Div(children=self.target_points_tab_layout)],
+                ),
+                dcc.Tab(label="Well Points", children=[self.well_points_tab_layout]),
+            ]
+        )
 
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("layered-map"), "layers"),
             [
                 Input(self.ids("map-dropdown"), "value"),
-                Input(self.ids("layered-map"), "switch")  # Toggle hillshading on/off
+                Input(self.ids("layered-map"), "switch"),  # Toggle hillshading on/off
             ],
         )
         def _render_map(surfacefile, switch):
-            ''' Renders map view for one surface with de, dt, dte, dr, dre and depth
+            """ Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles and hillshading toggle
-            '''
-            if self.state['switch'] is not switch['value']:  # Store layers when switching to hillshading
+            """
+            if (
+                self.state["switch"] is not switch["value"]
+            ):  # Store layers when switching to hillshading
                 hillshade_layers = self.layers_state.copy()
                 for layer in hillshade_layers:
                     if "shader" in layer["data"][0]:
-                        layer["data"][0]["shader"]["type"] = 'hillshading' if switch['value'] is True else None
+                        layer["data"][0]["shader"]["type"] = (
+                            "hillshading" if switch["value"] is True else None
+                        )
                         layer["action"] = "update"
-                self.state['switch'] = switch['value']
+                self.state["switch"] = switch["value"]
                 return hillshade_layers
             surface_name = self.surface_attributes[get_path(surfacefile)]["name"]
-            well_layers = get_well_layers(self.wellfiles, surface_name, self.well_points_file, radius=100, color="rgb(0,255,0)")
+            well_layers = get_well_layers(
+                self.wellfiles,
+                surface_name,
+                self.well_points_file,
+                radius=100,
+                color="rgb(0,255,0)",
+            )
             surfaces = [
-                        self.surface_attributes[get_path(surfacefile)]["surface_dt"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dte"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dr"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_dre"],
-                        self.surface_attributes[get_path(surfacefile)]["surface_de"],
-                        self.surface_attributes[get_path(surfacefile)]["surface"]
+                self.surface_attributes[get_path(surfacefile)]["surface_dt"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dte"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dr"],
+                self.surface_attributes[get_path(surfacefile)]["surface_dre"],
+                self.surface_attributes[get_path(surfacefile)]["surface_de"],
+                self.surface_attributes[get_path(surfacefile)]["surface"],
             ]
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
@@ -567,19 +618,33 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         @app.callback(
             Output(self.ids("xsec-view"), "figure"),
             [
-                Input(self.ids('button-apply-checklist'), 'n_clicks'),
-                Input(self.ids('button-apply-well-settings-checklist'), 'n_clicks'),
+                Input(self.ids("button-apply-checklist"), "n_clicks"),
+                Input(self.ids("button-apply-well-settings-checklist"), "n_clicks"),
                 Input(self.ids("well-dropdown"), "value"),  # wellpath
-                Input(self.ids("layered-map"), "polyline_points"),  # coordinates from layered-map
+                Input(
+                    self.ids("layered-map"), "polyline_points"
+                ),  # coordinates from layered-map
             ],
             [
                 State(self.ids("surfaces-checklist"), "value"),  # List of surfacefiles
-                State(self.ids("surfaces-de-checklist"), "value"),  # List of surfacefiles keys
-                State(self.ids("well-settings-checklist"), "value"),  # Well settings checkbox content
+                State(
+                    self.ids("surfaces-de-checklist"), "value"
+                ),  # List of surfacefiles keys
+                State(
+                    self.ids("well-settings-checklist"), "value"
+                ),  # Well settings checkbox content
             ],
         )
-        def _render_xsection(n_clicks, n_clicks2, wellfile, polyline, surfacefiles, de_keys, well_settings):
-            ''' Renders cross section view from wellfile or polyline drawn in map view '''
+        def _render_xsection(
+            n_clicks,
+            n_clicks2,
+            wellfile,
+            polyline,
+            surfacefiles,
+            de_keys,
+            well_settings,
+        ):
+            """ Renders cross section view from wellfile or polyline drawn in map view """
             ctx = dash.callback_context
             de_keys_2 = []
             surfacefiles_2 = []
@@ -587,9 +652,15 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 de_keys_2.append(get_path(de_keys[i]))
             for j in range(len(surfacefiles)):
                 surfacefiles_2.append(get_path(surfacefiles[j]))
-            if ctx.triggered[0]['prop_id'] == self.ids('layered-map') + '.polyline_points' and polyline is not None:
+            if (
+                ctx.triggered[0]["prop_id"]
+                == self.ids("layered-map") + ".polyline_points"
+                and polyline is not None
+            ):
                 wellfile = None
-            self.xsec.set_de_and_surface_lines(surfacefiles_2, de_keys_2, wellfile, polyline)
+            self.xsec.set_de_and_surface_lines(
+                surfacefiles_2, de_keys_2, wellfile, polyline
+            )
             self.xsec.set_xsec_fig(surfacefiles_2, de_keys_2, well_settings, wellfile)
             return self.xsec.fig
 
@@ -598,20 +669,20 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("all-surfaces-checkbox"), "value")],
         )
         def _update_surface_tickboxes(all_surfaces_checkbox):
-            ''' Toggle on/off all surfaces in graph settings modal '''
-            return self.surfacefiles if all_surfaces_checkbox == ['True'] else []
+            """ Toggle on/off all surfaces in graph settings modal """
+            return self.surfacefiles if all_surfaces_checkbox == ["True"] else []
 
         @app.callback(
             Output(self.ids("modal-graph-settings"), "is_open"),
             [
                 Input(self.ids("button-open-graph-settings"), "n_clicks"),
                 Input(self.ids("button-close-graph-settings"), "n_clicks"),
-                Input(self.ids('button-open-graph-settings'), 'disabled')
+                Input(self.ids("button-open-graph-settings"), "disabled"),
             ],
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
         def _toggle_modal_graph_settings(n1, n2, disabled, is_open):
-            ''' Open or close graph settings modal button '''
+            """ Open or close graph settings modal button """
             if disabled:
                 return False
             elif n1 or n2:
@@ -620,17 +691,17 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 return is_open
 
         @app.callback(
-            Output(self.ids('surfaces-de-checklist'), 'options'),
-            [Input(self.ids('surfaces-checklist'), 'value')],
-            [State(self.ids('surfaces-de-checklist'), 'options')],
+            Output(self.ids("surfaces-de-checklist"), "options"),
+            [Input(self.ids("surfaces-checklist"), "value")],
+            [State(self.ids("surfaces-de-checklist"), "options")],
         )
         def _disable_error_checkboxes(surface_values, de_options):
-            ''' Removes ability to toggle depth error when corresponding surface is disabled in graph settings modal '''
+            """ Removes ability to toggle depth error when corresponding surface is disabled in graph settings modal """
             for i, opt in enumerate(de_options):
-                if (surface_values is None) or (opt['value'] not in surface_values):
-                    de_options[i]['disabled'] = True
+                if (surface_values is None) or (opt["value"] not in surface_values):
+                    de_options[i]["disabled"] = True
                 else:
-                    de_options[i]['disabled'] = False
+                    de_options[i]["disabled"] = False
             return de_options
 
         @app.callback(
@@ -638,16 +709,18 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("all-well-settings-checkbox"), "value")],
         )
         def _update_well_settings_tickboxes(all_well_attributes_checkbox):
-            return [
-                "zonelog",
-                "zonation_points",
-                "conditional_points"
-            ] if all_well_attributes_checkbox == ['True'] else []
+            return (
+                ["zonelog", "zonation_points", "conditional_points"]
+                if all_well_attributes_checkbox == ["True"]
+                else []
+            )
 
         @app.callback(
             Output(self.ids("modal-well-settings"), "is_open"),
-            [Input(self.ids("button-open-well-settings"), "n_clicks"),
-             Input(self.ids("button-close-well-settings"), "n_clicks")],
+            [
+                Input(self.ids("button-open-well-settings"), "n_clicks"),
+                Input(self.ids("button-close-well-settings"), "n_clicks"),
+            ],
             [State(self.ids("modal-well-settings"), "is_open")],
         )
         def _toggle_modal_well_settings(n1, n2, is_open):
@@ -656,30 +729,30 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             return is_open
 
         @app.callback(
-            Output(self.ids('well-points-table-container'), 'children'),
-            [
-                Input(self.ids('button-apply-columnlist'), 'n_clicks'),
-            ],
-            [
-                State(self.ids("columns-checklist"), "value"),  # columns list
-            ],
+            Output(self.ids("well-points-table-container"), "children"),
+            [Input(self.ids("button-apply-columnlist"), "n_clicks"),],
+            [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
         def display_output(n_clicks, column_list):
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
-            return html.Div([
-                dash_table.DataTable(
-                    id=self.ids('well-points-table'),
-                    columns=[{"name": i, "id": i} for i in wellpoints_df.columns],
-                    data=wellpoints_df.to_dict('records'),
-                    sort_action="native",
-                    filter_action="native",
-                ),
-            ])
+            return html.Div(
+                [
+                    dash_table.DataTable(
+                        id=self.ids("well-points-table"),
+                        columns=[{"name": i, "id": i} for i in wellpoints_df.columns],
+                        data=wellpoints_df.to_dict("records"),
+                        sort_action="native",
+                        filter_action="native",
+                    ),
+                ]
+            )
 
         @app.callback(
             Output(self.ids("modal-table-settings"), "is_open"),
-            [Input(self.ids("button-open-table-settings"), "n_clicks"),
-             Input(self.ids("button-close-table-settings"), "n_clicks")],
+            [
+                Input(self.ids("button-open-table-settings"), "n_clicks"),
+                Input(self.ids("button-close-table-settings"), "n_clicks"),
+            ],
             [State(self.ids("modal-table-settings"), "is_open")],
         )
         def _toggle_modal_table_settings(n1, n2, is_open):
@@ -689,37 +762,35 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
         @app.callback(
             [
-                Output(self.ids('hidden-div-map-view'), 'hidden'),
-                Output(self.ids('hidden-div-table-view'), 'hidden')
+                Output(self.ids("hidden-div-map-view"), "hidden"),
+                Output(self.ids("hidden-div-table-view"), "hidden"),
             ],
-            [
-                Input(self.ids('map-table-radioitems'), 'value')
-            ],
+            [Input(self.ids("map-table-radioitems"), "value")],
         )
         def _toggle_left_flexbox_content(value):
-            if value == 'table-view':
+            if value == "table-view":
                 return True, False
             else:
                 return False, True
 
         @app.callback(
-            Output(self.ids('uncertainty-table'), 'data'),
-            [Input(self.ids('well-dropdown'), 'value')]
+            Output(self.ids("uncertainty-table"), "data"),
+            [Input(self.ids("well-dropdown"), "value")],
         )
         def _render_uncertainty_table(wellfile):
             df = self.xsec.get_intersection_dataframe(wellfile)
-            return df.to_dict('records')
+            return df.to_dict("records")
 
         @app.callback(
-            Output(self.ids('surface-picks-label'), 'children'),
-            [Input(self.ids('well-dropdown'), 'value')]
+            Output(self.ids("surface-picks-label"), "children"),
+            [Input(self.ids("well-dropdown"), "value")],
         )
         def _render_surface_picks_label(value):
             if value in self.wellfiles:
-                wellname = self.xsec.well_attributes[value]['well'].wellname
+                wellname = self.xsec.well_attributes[value]["well"].wellname
             else:
-                wellname = self.xsec.planned_attributes[value]['well'].wellname
-            return f'Surface picks for {wellname}'
+                wellname = self.xsec.planned_attributes[value]["well"].wellname
+            return f"Surface picks for {wellname}"
 
     def add_webvizstore(self):
         files = []
@@ -746,23 +817,23 @@ def get_color(i):
         List of colors for surface layers
     """
     colors = [
-        "rgb(70,130,180)",      # Steel blue
-        "rgb(0,0,255)",         # Blue
-        "rgb(51,51,0)",         # Olive green
-        "rgb(0,128,0)",         # Green
-        "rgb(0,255,0)",         # Lime
-        "rgb(255,255,0)",       # Yellow
-        "rgb(255,105,180)",     # Pink
-        "rgb(221,160,221)",     # Plum
-        "rgb(75,0,130)",        # Purple
-        "rgb(160,82,45)",       # Sienna
-        "rgb(244,164,96)",      # Tan
-        "rgb(255,140,0)",       # Orange
-        "rgb(255,69,0)",        # Blood orange
-        "rgb(255,0,0)",         # Red
-        "rgb(220,20,60)",       # Crimson
-        "rgb(128,0,0)",         # Dark red
-        "rgb(101,67,33)",       # Dark brown
+        "rgb(70,130,180)",  # Steel blue
+        "rgb(0,0,255)",  # Blue
+        "rgb(51,51,0)",  # Olive green
+        "rgb(0,128,0)",  # Green
+        "rgb(0,255,0)",  # Lime
+        "rgb(255,255,0)",  # Yellow
+        "rgb(255,105,180)",  # Pink
+        "rgb(221,160,221)",  # Plum
+        "rgb(75,0,130)",  # Purple
+        "rgb(160,82,45)",  # Sienna
+        "rgb(244,164,96)",  # Tan
+        "rgb(255,140,0)",  # Orange
+        "rgb(255,69,0)",  # Blood orange
+        "rgb(255,0,0)",  # Red
+        "rgb(220,20,60)",  # Crimson
+        "rgb(128,0,0)",  # Dark red
+        "rgb(101,67,33)",  # Dark brown
     ]
     n_colors = len(colors)
     return colors[(i) % (n_colors)]
@@ -785,7 +856,7 @@ def get_well_layers(wellfiles, surface_name, wellpoints_file, radius=1000, color
         well = xtgeo.Well(wellfile)
         well_name = well.wellname
         well_cp_df = cp_df[cp_df["Well"] == well_name]
-        coordinates = well_cp_df[['x', 'y']].values
+        coordinates = well_cp_df[["x", "y"]].values
         if len(coordinates) == 0:
             well_layer = {
                 "name": well_name,
@@ -798,16 +869,18 @@ def get_well_layers(wellfiles, surface_name, wellpoints_file, radius=1000, color
                 "name": well_name,
                 "checked": True,
                 "baseLayer": False,
-                "data": [{
-                    "type": "circle",
-                    "center": coordinates[0],
-                    "color": color,
-                    "radius": radius,
-                    "tooltip": well_name,
-                }],
+                "data": [
+                    {
+                        "type": "circle",
+                        "center": coordinates[0],
+                        "color": color,
+                        "radius": radius,
+                        "tooltip": well_name,
+                    }
+                ],
             }
         if len(well_layer["data"]) != 0:
-            well_layer["id"] = surface_name + ' ' + well.wellname + "-id"
+            well_layer["id"] = surface_name + " " + well.wellname + "-id"
             well_layer["action"] = "add"
             well_layers.append(well_layer)
     return well_layers
@@ -815,24 +888,24 @@ def get_well_layers(wellfiles, surface_name, wellpoints_file, radius=1000, color
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_surface_layers(switch, surface_name, surfaces):
-    ''' Creates layers in map from all surfaces with new_make_surface_layer in surface.py
+    """ Creates layers in map from all surfaces with new_make_surface_layer in surface.py
     Args:
         switch: Toggle hillshading on/off
         surface_name: Name of surface
         surfaces: List containing a single surface with corresponding depth error, depth trend etc.
     Returns:
         layers: List of all surface layers
-    '''
+    """
     min_val = None
     max_val = None
-    shader_type = 'hillshading' if switch['value'] is True else None
+    shader_type = "hillshading" if switch["value"] is True else None
     depth_list = [
-                "Depth trend",
-                "Depth trend uncertainty",
-                "Depth residual",
-                "Depth residual uncertainty",
-                "Depth uncertainty",
-                "Depth"
+        "Depth trend",
+        "Depth trend uncertainty",
+        "Depth residual",
+        "Depth residual uncertainty",
+        "Depth uncertainty",
+        "Depth",
     ]
     layers = []
     for i, sfc in enumerate(surfaces):
@@ -843,13 +916,20 @@ def get_surface_layers(switch, surface_name, surfaces):
                 min_val=min_val,
                 max_val=max_val,
                 color=[
-                    "#0d0887", "#46039f", "#7201a8",
-                    "#9c179e", "#bd3786", "#d8576b",
-                    "#ed7953", "#fb9f3a", "#fdca26", "#f0f921"
+                    "#0d0887",
+                    "#46039f",
+                    "#7201a8",
+                    "#9c179e",
+                    "#bd3786",
+                    "#d8576b",
+                    "#ed7953",
+                    "#fb9f3a",
+                    "#fdca26",
+                    "#f0f921",
                 ],
                 shader_type=shader_type,
             )
-            s_layer["id"] = surface_name + ' ' + depth_list[i] + "-id"
+            s_layer["id"] = surface_name + " " + depth_list[i] + "-id"
             s_layer["action"] = "add"
             layers.append(s_layer)
     return layers
