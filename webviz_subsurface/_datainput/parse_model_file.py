@@ -1,6 +1,6 @@
-from bs4 import BeautifulSoup
 import os
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 
 def extract_surface_names(basedir):
@@ -9,8 +9,8 @@ def extract_surface_names(basedir):
         soup = BeautifulSoup(file, "xml")
     surface_wrappers = soup.find_all("surface")
     surface_names = []
-    for s in surface_wrappers:
-        name = s.find("name")
+    for element in surface_wrappers:
+        name = element.find("name")
         surface_names.append(name.get_text())
     return surface_names
 
@@ -21,8 +21,8 @@ def extract_topofzone_names(basedir):
         soup = BeautifulSoup(file, "xml")
     surface_wrappers = soup.find_all("surface")
     topofzone_names = []
-    for s in surface_wrappers:
-        name = s.find("top-of-zone")
+    for element in surface_wrappers:
+        name = element.find("top-of-zone")
         topofzone_names.append(name.get_text())
     return topofzone_names
 
@@ -42,7 +42,7 @@ def get_surface_files(basedir):
 def get_error_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, "output", "surfaces")
-    error_files = [os.path.join(surface_dir, "de_" + s + ".rxb") for s in surface_names]
+    error_files = [os.path.join(surface_dir, "de_" + surface_name + ".rxb") for surface_name in surface_names]
     for path in error_files:
         if not os.path.isfile(path):
             return FileNotFoundError
@@ -53,7 +53,7 @@ def get_surface_dr_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, "output", "surfaces")
     surface_dr_files = [
-        os.path.join(surface_dir, "dr_" + s + ".rxb") for s in surface_names
+        os.path.join(surface_dir, "dr_" + surface_name + ".rxb") for surface_name in surface_names
     ]
     for path in surface_dr_files:
         if not os.path.isfile(path):
@@ -65,7 +65,7 @@ def get_surface_dre_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, "output", "surfaces")
     surface_dre_files = [
-        os.path.join(surface_dir, "dre_" + s + ".rxb") for s in surface_names
+        os.path.join(surface_dir, "dre_" + surface_name + ".rxb") for surface_name in surface_names
     ]
     for path in surface_dre_files:
         if not os.path.isfile(path):
@@ -77,7 +77,7 @@ def get_surface_dt_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, "output", "surfaces")
     surface_dt_files = [
-        os.path.join(surface_dir, "dt_" + s + ".rxb") for s in surface_names
+        os.path.join(surface_dir, "dt_" + surface_name + ".rxb") for surface_name in surface_names
     ]
     for path in surface_dt_files:
         if not os.path.isfile(path):
@@ -89,7 +89,7 @@ def get_surface_dte_files(basedir):
     surface_names = extract_surface_names(basedir)
     surface_dir = os.path.join(basedir, "output", "surfaces")
     surface_dte_files = [
-        os.path.join(surface_dir, "dte_" + s + ".rxb") for s in surface_names
+        os.path.join(surface_dir, "dte_" + surface_name + ".rxb") for surface_name in surface_names
     ]
     for path in surface_dte_files:
         if not os.path.isfile(path):
@@ -99,11 +99,10 @@ def get_surface_dte_files(basedir):
 
 def get_well_files(basedir):
     well_dir = os.path.join(basedir, "input", "welldata")
-    well_dir_list = os.listdir(well_dir)
     well_files = []
-    for i, w in enumerate(well_dir_list):
-        if Path(w).suffix == ".txt":
-            well_files.append(os.path.join(well_dir, w))
+    for file in os.listdir(well_dir):
+        if Path(file).suffix == ".txt":
+            well_files.append(os.path.join(well_dir, file))
     well_files.sort()
     return well_files
 
