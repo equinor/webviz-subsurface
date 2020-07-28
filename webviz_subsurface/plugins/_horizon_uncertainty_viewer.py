@@ -568,9 +568,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ],
         )
         def _render_map(surfacefile, switch, wellfile):
-            ''' Renders map view for one surface with de, dt, dte, dr, dre and depth
+            """ Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles and hillshading toggle
-            '''
+            """
             if (
                 self.state["switch"] is not switch["value"]
             ):  # Store layers when switching to hillshading
@@ -645,7 +645,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             de_keys,
             well_settings
         ):
-            ''' Renders cross section view from wellfile or polyline drawn in map view '''
+            """ Renders cross section view from wellfile or polyline drawn in map view """
             ctx = dash.callback_context
             if wellfile in self.wellfiles:
                 well = self.wells[wellfile]
