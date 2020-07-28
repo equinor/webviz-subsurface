@@ -25,7 +25,7 @@ from .._utils.ensemble_handling import filter_and_sum_responses
 
 
 class MultipleRegression(WebvizPluginABC):
-    """Visualizes the results of multiple regression of parameters and a chosen response using \
+    """ Visualizes the results of multiple regression of parameters and a chosen response using \
 forward selection to find the best fit.
 
 ---
@@ -238,12 +238,10 @@ folder, to avoid risk of not extracting the right data.
         }
         self.set_callbacks(app)
 
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uuid}"
 
     @property
     def tour_steps(self):
+        """ Adding a "Guided tour" functionality """
         steps = [
             {
                 "id": self.uuid("layout"),
@@ -323,7 +321,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def responses(self):
-        """Returns valid responses. Filters out non numerical and filterable columns."""
+        """ Returns valid responses. Filters out non numerical and filterable columns. """
         responses = list(
             self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
             .apply(pd.to_numeric, errors="coerce")
@@ -334,7 +332,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def parameters(self):
-        """Returns numerical input parameters"""
+        """ Returns numerical input parameters """
         parameters = list(
             self.parameterdf.drop(["ENSEMBLE", "REAL"], axis=1)
             .apply(pd.to_numeric, errors="coerce")
@@ -345,23 +343,24 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def ensembles(self):
-        """Returns list of ensembles"""
+        """ Returns list of ensembles """
         return list(self.parameterdf["ENSEMBLE"].unique())
 
     @property
-    def color_dict(self):
+    def colors(self):
         """Dictionary of colors that are frequently used"""
         fig = go.Figure().to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return {
             "default color": fig["layout"]["colorway"][0],
-            "dark gray": "#606060",
-            "default text": fig["layout"]["template"]["layout"]["font"]["color"],
+            "gray": "#606060",
+            "dark gray": "#303030",
+            "default text": fig["layout"]["template"]["layout"]["font"]["color"]
         }
 
     def check_runs(self):
-        """Check that input parameters and response files have
-        the same number of runs"""
+        """ Check that input parameters and response files have
+        the same number of runs """
         for col in ["ENSEMBLE", "REAL"]:
             if sorted(list(self.parameterdf[col].unique())) != sorted(
                 list(self.responsedf[col].unique())
@@ -369,7 +368,7 @@ folder, to avoid risk of not extracting the right data.
                 raise ValueError("Parameter and response files have different runs")
 
     def check_response_filters(self):
-        """'Check that provided response filters are valid"""
+        """ Check that provided response filters are valid """
         if self.response_filters:
             for col_name, col_type in self.response_filters.items():
                 if col_name not in self.responsedf.columns:
@@ -379,7 +378,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def filter_layout(self):
-        """Layout to display selectors for response filters"""
+        """ Layout to display selectors for response filters """
         children = []
         for col_name, col_type in self.response_filters.items():
             values = list(self.responsedf[col_name].unique())
@@ -404,7 +403,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def control_layout(self):
-        """Layout to select e.g. iteration and response"""
+        """ Layout to select e.g. iteration and response """
         return [
             html.Div(
                 [
@@ -532,7 +531,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def layout(self):
-        """Main layout"""
+        """ Main layout """
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
@@ -555,7 +554,7 @@ folder, to avoid risk of not extracting the right data.
                             "Table of parameters and their corresponding p-values",
                             style={
                                 "fontSize": ".925em",
-                                "color": self.color_dict["default text"],
+                                "color": self.colors["default text"],
                                 "textAlign": "center",
                             },
                         ),
@@ -573,7 +572,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     def get_callback_list(self, func):
-        """Returns a list with either Inputs or States for multiple regression callback"""
+        """ Returns a list with either Inputs or States for multiple regression callback """
         components = [
             func(self.uuid("exclude-include"), "value"),
             func(self.uuid("parameter-list"), "value"),
@@ -590,18 +589,18 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def model_callback_states(self):
-        """List of states for multiple regression callback"""
+        """ List of states for multiple regression callback """
         return self.get_callback_list(State)
 
     @property
     def model_callback_inputs(self):
-        """List of states for multiple regression callback"""
+        """ List of states for multiple regression callback """
         inputs = self.get_callback_list(Input)
         inputs.insert(0, Input(self.uuid("submit-button"), "n_clicks"))
         return inputs
 
     def make_response_filters(self, filters):
-        """Returns a list of active response filters"""
+        """ Returns a list of active response filters """
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
@@ -638,7 +637,7 @@ folder, to avoid risk of not extracting the right data.
                 )
             return (
                 False,
-                {"color": "black", "background-color": self.color_dict["default color"],},
+                {"color": "black", "background-color": self.colors["default color"],},
             )
 
         @app.callback(
@@ -646,7 +645,7 @@ folder, to avoid risk of not extracting the right data.
             [Input(self.uuid("exclude-include"), "value")],
         )
         def update_placeholder(exc_inc):
-            """Callback to update placeholder text in exlude/subset mode"""
+            """ Callback to update placeholder text in exlude/subset mode """
             if exc_inc == "exc":
                 return "Select parameters to exclude"
             return "Select parameters for subset"
@@ -660,7 +659,7 @@ folder, to avoid risk of not extracting the right data.
             [State(self.uuid("force-in"), "value"),],
         )
         def update_force_in(parameter_list, exc_inc, force_in):
-            """Callback to update options for force in"""
+            """ Callback to update options for force in """
             if dash.callback_context.triggered[0]["value"] is None:
                 raise PreventUpdate
             if exc_inc == "exc":
@@ -700,7 +699,7 @@ folder, to avoid risk of not extracting the right data.
             max_vars,
             *filters,
         ):
-            """Callback to update the model for multiple regression
+            """ Callback to update the model for multiple regression
 
             1. Filters and aggregates response dataframe per realization
             2. Filters parameters dataframe on selected ensemble
@@ -784,8 +783,8 @@ folder, to avoid risk of not extracting the right data.
                 data,
                 columns,
                 f"Multiple regression with {response} as response",
-                make_p_values_plot(p_sorted, self.theme, self.color_dict),
-                make_arrow_plot(coeff_sorted, p_sorted, self.theme, self.color_dict),
+                make_p_values_plot(p_sorted, self.theme, self.colors),
+                make_arrow_plot(coeff_sorted, p_sorted, self.theme, self.colors),
             )
 
     def add_webvizstore(self):
@@ -831,7 +830,7 @@ def gen_model(
     force_in: list = None,
     interaction_degree: bool = False,
 ):
-    """Wrapper for model selection algorithm."""
+    """ Wrapper for model selection algorithm. """
     if interaction_degree:
         df = _gen_interaction_df(df, response, interaction_degree + 1)
     return forward_selected(data=df, resp=response, force_in=force_in, maxvars=max_vars)
@@ -966,8 +965,8 @@ def _model_warnings(design_matrix: pd.DataFrame):
     return model
 
 
-def make_p_values_plot(p_sorted, theme, color_dict):
-    """Make p-values plot"""
+def make_p_values_plot(p_sorted, theme, colors):
+    """ Make p-values plot """
     p_values = p_sorted.values
     parameters = p_sorted.index
     fig = go.Figure()
@@ -978,8 +977,7 @@ def make_p_values_plot(p_sorted, theme, color_dict):
             "type": "bar",
             "marker": {
                 "color": [
-                    color_dict["default color"] if val < 0.05 else color_dict["dark gray"]
-                    for val in p_values
+                    colors["default color"] if val < 0.05 else colors["gray"] for val in p_values
                 ]
             },
         }
@@ -1003,7 +1001,7 @@ def make_p_values_plot(p_sorted, theme, color_dict):
             "x0": -0.5,
             "x1": len(p_values) - 0.5,
             "xref": "x",
-            "line": {"color": "#303030", "width": 1.5},
+            "line": {"color": colors["dark gray"], "width": 1.5},
         }
     )
     fig.add_annotation(x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False)
@@ -1021,16 +1019,15 @@ def make_p_values_plot(p_sorted, theme, color_dict):
     return fig
 
 
-def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
-    """Make arrow plot for the coefficients"""
+def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
+    """ Make arrow plot for the coefficients """
     params_to_coefs = dict(coeff_sorted)
     p_values = p_sorted.values
     parameters = p_sorted.index
     coeff_vals = list(map(params_to_coefs.get, parameters))
     centre_dist = len(parameters) / 3
 
-    """ Making an array of len(parameters) points along the
-        x-axis, centered about x=1, with the domain x in [0, 2] """
+    # Array with len(parameters) points for the x-axis, centered about x=1, with domain [0, 2]
     x = (
         [1]
         if len(parameters) == 1
@@ -1044,7 +1041,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             opacity=0,
             marker=dict(
                 color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sig. p-value
-                colorscale=[(0, color_dict["dark gray"]), (1, color_dict["default color"])],
+                colorscale=[(0, colors["gray"]), (1, colors["default color"])],
                 cmin=0,
                 cmax=1,
             ),
@@ -1061,10 +1058,8 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             for param, pval in zip(parameters, p_values)
         ]
     )
-    # Litt lang kommentar kanskje? :(
-    """ Arrows are added to plot at the points in the x-array. Parameters with positive coefficients
-        have arrows pointing upwards (sign=+1), and vice versa. Drawn with line width = 0.025*2,
-        line height = 0.06, head width = 0.07*2, total height = 0.08. """
+    # Arrows are drawn and added to plot.
+    # Parameters with positive coefficients have arrows pointing upwards, and vice versa.
     for i, sign in enumerate(np.sign(coeff_vals)):
         x_coordinate = x[i]
         fig.add_shape(
@@ -1076,22 +1071,19 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, color_dict):
             f" L {x_coordinate+0.07} {sign*0.06} "
             f" L {x_coordinate+0.025} {sign*0.06} "
             f" L {x_coordinate+0.025} 0 ",
-            fillcolor=color_dict["default color"]
-            if p_values[i] < 0.05
-            else color_dict["dark gray"],
+            fillcolor=colors["default color"] if p_values[i] < 0.05 else colors["gray"],
             line_width=0,
         )
     fig.add_shape(
-        type="line", x0=-0.1, y0=0, x1=2 + 0.1, y1=0, line=dict(color="#222A2A", width=0.75),
+        type="line", x0=-0.1, y0=0, x1=2+0.1, y1=0, line=dict(color=colors["dark gray"], width=1.5),
     )
     fig.add_shape(
         type="path",
         path=f" M {2+0.12} 0 L {2+0.1} -0.0035 L {2+0.1} 0.0035 Z",
-        line_color="#222A2A",
-        line_width=0.75,
+        line_color=colors["dark gray"],
+        line_width=1.5,
     )
-    """ Adding descriptive message about horisontal axis on the plot,
-        positioned 0.35 length units rightwards from end of plot domain. """
+    # Description of horisontal axis, placed 0.35 units rightwards from end of plot domain.
     fig.add_annotation(x=2 + 0.35, y=0, text="Increasing<br>p-value", showarrow=False)
     fig = fig.to_dict()
     fig["layout"].update(
