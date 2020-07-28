@@ -4,7 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from pathlib import Path
 from webviz_config.common_cache import CACHE
-
+import time
 
 class HuvXsection:
     def __init__(
@@ -24,112 +24,60 @@ class HuvXsection:
         self.fig = None
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def set_well_attributes(self, wellfiles):
-        """ Set dictionary with well data from all wellfiles
-        Args:
-            wellfiles: List of wellpaths
-        """
-        for wellfile in wellfiles:
-            well = xtgeo.Well(Path(wellfile))
-            well_name = well.wellname
-            fence = well.get_fence_polyline(nextend=100, sampling=5)
-            well_df = well.dataframe
-            well.create_relative_hlen()
-            zonation_points = get_zonation_points(
-                well_df, well.wellname, self.zonation_status_file
-            )
-            conditional_points = get_conditional_points(
-                well_df, well.wellname, self.well_points_file
-            )
-            zonelog = self.get_zonelog_data(well, self.zonelogname)
-            self.well_attributes[wellfile] = {
-                "well": well,
-                "name": well_name,
-                "zonelog": zonelog,
-                "zonation_points": zonation_points,
-                "conditional_points": conditional_points,
-                "fence": fence,
-            }
-
-    def set_planned_attributes(self, planned_files):
-        """ Set dictonary with data for all planned well files
-        Args:
-            planned_files: List of wellpaths
-        """
-        for pf in planned_files:
-            well = xtgeo.well_from_file(pf)
-            fence = well.get_fence_polyline(nextend=100, sampling=5)
-            well.create_relative_hlen()
-            self.planned_attributes[pf] = {"well": well, "fence": fence}
-
-    def get_xsec_well_data(self, well_settings, wellfile):
+    def get_xsec_well_data(self, well_settings, well, is_planned=False):
         """ Finds data for well to plot in cross section
         Args:
             well_settings: List of checked options from well settings modal button
-            wellfile: Filepath to wellfile
+            well: xtgeo well
+            is_planned: boolean, if False well meta-data like zonelog is not added
         Returns:
             data: List with dictionary containing zonelog, zonation points and conditional points
         """
-        if wellfile is None:
-            data = []
-        elif wellfile in self.well_attributes:
-            data = [
-                {
-                    "y": self.well_attributes[wellfile]["well"].dataframe["Z_TVDSS"],
-                    "x": self.well_attributes[wellfile]["well"].dataframe["R_HLEN"],
-                    "name": "well",
-                    "line": {"width": 7, "color": "black"},
-                    "fillcolor": "black",
-                }
-            ]
+        if well is None:
+            return []
+        data = [{
+            "y": well.dataframe["Z_TVDSS"],
+            "x": well.dataframe["R_HLEN"],
+            "name": "well",
+            "line": {"width": 7, "color": "black"},
+            "fillcolor": "black",
+        }]
+        if not is_planned:
             if "zonelog" in well_settings:
-                data += self.well_attributes[wellfile]["zonelog"]
+                data += self.get_zonelog_data(well, self.zonelogname)
             if "zonation_points" in well_settings:
-                data += [
-                    {
-                        "mode": "markers",
-                        "y": self.well_attributes[wellfile]["zonation_points"][1],
-                        "x": self.well_attributes[wellfile]["zonation_points"][0],
-                        "name": "Zonation points",
-                        "marker": {"size": 5, "color": "rgb(153,50,204)"},
-                    }
-                ]
+                zonation_points = get_zonation_points(well.dataframe, well.wellname, self.zonation_status_file)
+                data += [{
+                    "mode": "markers",
+                    "y": zonation_points[1],
+                    "x": zonation_points[0],
+                    "name": "Zonation points",
+                    "marker": {"size": 5, "color": "rgb(153,50,204)"}
+                }]
             if "conditional_points" in well_settings:
-                data += [
-                    {
-                        "mode": "markers",
-                        "y": self.well_attributes[wellfile]["conditional_points"][1],
-                        "x": self.well_attributes[wellfile]["conditional_points"][0],
-                        "name": "Conditional points",
-                        "marker": {"size": 5, "color": "rgb(0,255,255)"},
-                    }
-                ]
-        else:
-            data = [
-                {
-                    "y": self.planned_attributes[wellfile]["well"].dataframe["Z_TVDSS"],
-                    "x": self.planned_attributes[wellfile]["well"].dataframe["R_HLEN"],
-                    "name": "well",
-                    "line": {"width": 7, "color": "black"},
-                    "fillcolor": "black",
-                }
-            ]
+                conditional_points = get_conditional_points(well.dataframe, well.wellname, self.well_points_file)
+                data += [{
+                    "mode": "markers",
+                    "y": conditional_points[1],
+                    "x": conditional_points[0],
+                    "name": "Conditional points",
+                    "marker":{"size": 5, "color": "rgb(0,255,255)"}
+                }]
         return data
 
-    def set_de_and_surface_lines(self, surfacefiles, de_keys, wellfile, polyline):
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    def set_de_and_surface_lines(self, surfacefiles, de_keys, well, polyline):
         """ Set surface lines and corresponding depth error lines with fence from wellfile or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
-            wellfile: Filepath to wellfile
+            well: xtgeo well
             polyline: Coordinates to polyline drawn in map view.
         """
-        if wellfile is None:
+        if well is None:
             fence = get_fencespec(polyline)
-        elif wellfile in self.well_attributes:
-            fence = self.well_attributes[wellfile]["fence"]
         else:
-            fence = self.planned_attributes[wellfile]["fence"]
+            fence = well.get_fence_polyline(nextend=100, sampling=5)
         for sfc_file in surfacefiles:
             sfc_line = self.surface_attributes[sfc_file]["surface"].get_randomline(
                 fence
@@ -142,11 +90,11 @@ class HuvXsection:
                 sfc_line = self.surface_attributes[sfc_file]["surface_line"]
                 self.surface_attributes[sfc_file]["de_line"] = de_line
 
-    def get_xsec_layout(self, surfacefiles, wellfile):
+    def get_xsec_layout(self, surfacefiles, well):
         """ Scale cross section figure to fit well trajectory, well and surface intersection or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
-            wellfile: Filepath to wellfile
+            well: xtgeo well
         Returns:
             layout: Dictionary with layout data
         """
@@ -169,20 +117,13 @@ class HuvXsection:
         if len(surfacefiles) == 0:
             layout["yaxis"].update({"autorange": "reversed"})
 
-        elif wellfile is None:
+        elif well is None:
             ymin, ymax = self.sfc_lines_min_max_TVD(surfacefiles)
             layout["yaxis"].update({"range": [ymax, ymin]})
 
         else:
             y_min, y_max = self.sfc_lines_min_max_TVD(surfacefiles)
-            if wellfile in self.well_attributes:
-                x_min, x_max = get_range_from_well(
-                    self.well_attributes[wellfile]["well"].dataframe, y_min
-                )
-            else:
-                x_min, x_max = get_range_from_well(
-                    self.planned_attributes[wellfile]["well"].dataframe, y_min
-                )
+            x_min, x_max = get_range_from_well(well.dataframe, y_min)
             y_range = np.abs(y_max - y_min)
             x_range = np.abs(x_max - x_min)
             if y_range / x_range > 1:
@@ -310,40 +251,31 @@ class HuvXsection:
         return np.around(self.surface_attributes[sfc_file]["de_line"][:, 1], 2)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def set_xsec_fig(self, surfacefiles, de_keys, well_settings, wellfile):
+    def set_xsec_fig(self, surfacefiles, de_keys, well_settings, well, is_planned=False):
         """ Set cross section plotly figure with data from wells, surfaces and depth error
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
             well_settings: List of checked options from well settings modal button
-            wellfile: Filepath to wellfile
+            well: xtgeo well
+            is_planned: boolean, if False well meta-data like zonelog is not added to plot
         """
-        layout = self.get_xsec_layout(surfacefiles, wellfile)
-        data = (
-            self.get_xsec_sfc_data(surfacefiles)
-            + self.get_xsec_de_data(surfacefiles, de_keys)
-            + self.get_xsec_well_data(well_settings, wellfile)
-        )
+        layout = self.get_xsec_layout(surfacefiles, well)
+        data = \
+            self.get_xsec_sfc_data(surfacefiles) + \
+            self.get_xsec_de_data(surfacefiles, de_keys) + \
+            self.get_xsec_well_data(well_settings, well, is_planned)
         self.fig = go.Figure(dict({"data": data, "layout": layout}))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_intersection_dataframe(self, wellfile):
+    def get_intersection_dataframe(self, well):
         """ Get intersection between surfaces and well with XTGeo
         Args:
-            wellfile: Filepath to wellfile
+            well: xtgeo well
         Returns:
             df: Dataframe with surfacename, TVD, depth uncertainty and direction
         """
-        if wellfile in self.well_attributes:
-            well = self.well_attributes[wellfile]["well"]
-        else:
-            well = self.planned_attributes[wellfile]["well"]
-        data = {
-            "Surface name": [],
-            "TVD SD [m]": [],
-            "Depth uncertainty [m]": [],
-            "Direction": [],
-        }
+        data = {"Surface name": [], "TVD SD [m]": [], "Depth uncertainty [m]": [], "Direction": []}
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]["surface"]
             err = self.surface_attributes[sfc_path]["surface_de"]
@@ -372,8 +304,7 @@ class HuvXsection:
             data: List containing dictionary with zonelog data
         """
         well_df = well.dataframe
-        well.create_relative_hlen()
-        color_list = [None] * len(well.get_logrecord(zonelogname))
+        color_list = [None]*len(well.get_logrecord(zonelogname))
         for sfc_file in self.surface_attributes:
             for i in range(len(color_list)):
                 if well.get_logrecord_codename(zonelogname, i) == "dummy":

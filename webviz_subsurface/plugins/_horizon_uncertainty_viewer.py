@@ -126,34 +126,26 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
 
         # Wellfiles and planned wells
-        self.planned_well_files = []
-        self.planned_wells = []
-        self.planned_well_names = []
+        self.planned_wellfiles = []
+        self.planned_wells = {}
         if planned_wells_dir is not None:
             try:
-                for f in os.listdir(planned_wells_dir):
-                    if Path(f).suffix != ".txt":
-                        message = (
-                            f'Planned well file "{f}" is not a text file \n'
-                            + 'planned wells must be of type "ROXAR RMS well"'
-                        )
-                        raise ValueError(message)
-                self.planned_well_files = [
-                    os.path.join(planned_wells_dir, f)
-                    for f in os.listdir(planned_wells_dir)
-                ]
-                self.planned_well_names = [
-                    Path(wf).stem for wf in self.planned_well_files
-                ]
-            except ValueError as e:
-                print(e)
+                for file in os.listdir(planned_wells_dir):
+                    if Path(file).suffix != '.txt':
+                        raise ValueError(f"Planned well file '{file}' is not a txt file \n")
+                self.planned_wellfiles = [os.path.join(planned_wells_dir, file) for file in os.listdir(planned_wells_dir)]
+                self.planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
+            except Exception as ex:
+                self.planned_wells = {}
+                self.planned_wellfiles = []
+                print("Something went wrong when initializing planned wells")
+                print(type(ex).__name__,': ', ex)
+                print("Make sure that all planned wells have format 'ROXAR RMS well'.\n")
         self.wellfiles = parse_model_file.get_well_files(basedir)
-        self.wellnames = [Path(wellfile).stem for wellfile in self.wellfiles]
-        self.xsec.set_well_attributes(self.wellfiles)
-        self.xsec.set_planned_attributes(self.planned_well_files)
+        self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
 
         # Store current layers
-        self.state = {'switch': False}
+        self.state = {"switch": False}
         self.layers_state = []
 
     def ids(self, element):
@@ -322,17 +314,11 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                 dcc.Dropdown(
                                     id=self.ids("well-dropdown"),
                                     options=[
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.wellnames, self.wellfiles
-                                        )
-                                    ]
-                                    + [
-                                        {"label": name, "value": path}
-                                        for name, path in zip(
-                                            self.planned_well_names,
-                                            self.planned_well_files,
-                                        )
+                                        {"label": self.wells[wf].wellname, "value": wf}
+                                        for wf in self.wellfiles
+                                    ] + [
+                                        {"label": self.planned_wells[wf].wellname, "value": wf}
+                                        for wf in self.planned_wellfiles
                                     ],
                                     value=self.wellfiles[0],
                                     clearable=False,
@@ -507,7 +493,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                 "position": "topright",
                             },
                             switch={
-                                "value": self.state['switch'],
+                                "value": self.state["switch"],
                                 "disabled": False,
                                 "label": "Hillshading",
                             },
@@ -525,7 +511,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
     @property
     def table_view_layout(self):
-        df = self.xsec.get_intersection_dataframe(self.wellfiles[0])
+        df = self.xsec.get_intersection_dataframe(self.wells[self.wellfiles[0]])
         return html.Div(
             children=[
                 html.Label(
@@ -651,32 +637,44 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ],
         )
         def _render_xsection(
-            n_clicks,
-            n_clicks2,
+            n_apply_sfc,
+            n_apply_well,
             wellfile,
             polyline,
             surfacefiles,
             de_keys,
-            well_settings,
+            well_settings
         ):
-            """ Renders cross section view from wellfile or polyline drawn in map view """
+            ''' Renders cross section view from wellfile or polyline drawn in map view '''
             ctx = dash.callback_context
-            de_keys_2 = []
-            surfacefiles_2 = []
-            for i in range(len(de_keys)):
-                de_keys_2.append(get_path(de_keys[i]))
-            for j in range(len(surfacefiles)):
-                surfacefiles_2.append(get_path(surfacefiles[j]))
+            if wellfile in self.wellfiles:
+                well = self.wells[wellfile]
+                is_planned = False
+            else:
+                well = self.planned_wells[wellfile]
+                is_planned = True
+            well.create_relative_hlen()
+            de_keys = [get_path(de_key) for de_key in de_keys]
+            surfacefiles = [get_path(sf) for sf in surfacefiles]
             if (
-                ctx.triggered[0]["prop_id"]
-                == self.ids("layered-map") + ".polyline_points"
+                ctx.triggered[0]["prop_id"] ==
+                self.ids("layered-map") + ".polyline_points"
                 and polyline is not None
             ):
-                wellfile = None
+                well = None
             self.xsec.set_de_and_surface_lines(
-                surfacefiles_2, de_keys_2, wellfile, polyline
+                surfacefiles,
+                de_keys,
+                well,
+                polyline
             )
-            self.xsec.set_xsec_fig(surfacefiles_2, de_keys_2, well_settings, wellfile)
+            self.xsec.set_xsec_fig(
+                surfacefiles,
+                de_keys,
+                well_settings,
+                well,
+                is_planned=is_planned
+            )
             return self.xsec.fig
 
         @app.callback(
@@ -793,18 +791,22 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("well-dropdown"), "value")],
         )
         def _render_uncertainty_table(wellfile):
-            df = self.xsec.get_intersection_dataframe(wellfile)
+            if wellfile in self.wellfiles:
+                well = self.wells[wellfile]
+            else:
+                well = self.planned_wells[wellfile]
+            df = self.xsec.get_intersection_dataframe(well)
             return df.to_dict("records")
 
         @app.callback(
             Output(self.ids("surface-picks-label"), "children"),
             [Input(self.ids("well-dropdown"), "value")],
         )
-        def _render_surface_picks_label(value):
-            if value in self.wellfiles:
-                wellname = self.xsec.well_attributes[value]["well"].wellname
+        def _render_surface_picks_label(wellfile):
+            if wellfile in self.wellfiles:
+                wellname = self.wells[wellfile].wellname
             else:
-                wellname = self.xsec.planned_attributes[value]["well"].wellname
+                wellname = self.planned_wells[wellfile].wellname
             return f"Surface picks for {wellname}"
 
     def add_webvizstore(self):
