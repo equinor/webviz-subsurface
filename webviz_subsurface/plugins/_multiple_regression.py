@@ -744,7 +744,7 @@ folder, to avoid risk of not extracting the right data.
             result = gen_model(
                 df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction,
             )
-            if not result:
+            if not result or result.model.fit().df_model == 0:
                 return (
                     [{"e": ""}],
                     [{"name": "", "id": "e"}],
@@ -883,7 +883,8 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
 
     # Initialize values for use in algorithm (sst is the total sum of squares)
     response = data[resp].to_numpy(dtype="float32")
-    if (response == 0).all():
+    # Check for constant response
+    if np.all(response == response[0]):
         return None
     sst = np.sum((response - np.mean(response)) ** 2)
     remaining = set(data.columns).difference(set(force_in + [resp]))
