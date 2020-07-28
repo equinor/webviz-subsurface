@@ -56,11 +56,13 @@ def make_well_layers(wellfiles, zmin=0, max_points=100):
 def get_well_layers(well_list, surface_name, surface, dropdown_well, radius=100, color="red"):
     """ Make circles around well in layered map view
     Args:
-        wellfiles: List of all wellfiles
+        well_list: List of all wells
         surface_name: Name of surface
+        surface: An xtgeo surface object
+        dropdown_well: An xtgeo well object from dropdown menu
         wellpoints_file: Path to wellpoints.csv for conditional points (cp)
     Returns:
-        well_layers: Dictionary with data for circles
+        well_layers: Dictionary with data for circles and trajectory
      """
     data = []
     dropdown_well_name = dropdown_well.wellname
