@@ -184,7 +184,12 @@ folder, to avoid risk of not extracting the right data."""
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
+                    [
+                        "REAL",
+                        "ENSEMBLE",
+                        *response_include,
+                        *list(response_filters.keys()),
+                    ]
                 ),
                 errors="ignore",
                 axis=1,
@@ -214,13 +219,17 @@ folder, to avoid risk of not extracting the right data."""
             },
             {
                 "id": self.uuid("parallel-coords-plot"),
-                "content": ("Plot showing the values of all the selected parameters at once."),
+                "content": (
+                    "Plot showing the values of all the selected parameters at once."
+                ),
             },
             {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."),},
             {"id": self.uuid("responses"), "content": ("Select the active response."),},
             {
                 "id": self.uuid("exclude_include"),
-                "content": ("Choose if the parameter selector should be inclusive or exclusive"),
+                "content": (
+                    "Choose if the parameter selector should be inclusive or exclusive"
+                ),
             },
         ]
         return steps
@@ -269,7 +278,9 @@ folder, to avoid risk of not extracting the right data."""
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
+                    raise ValueError(
+                        f"Filter type {col_type} for {col_name} is not valid."
+                    )
 
     @property
     def filter_layout(self):
@@ -305,7 +316,9 @@ folder, to avoid risk of not extracting the right data."""
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.ensembles
+                        ],
                         clearable=False,
                         value=self.ensembles[0],
                         style={"marginBottom": "20px"},
@@ -317,7 +330,9 @@ folder, to avoid risk of not extracting the right data."""
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[{"label": ens, "value": ens} for ens in self.responses],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.responses
+                        ],
                         clearable=False,
                         value=self.responses[0],
                         style={"marginBottom": "20px"},
@@ -351,7 +366,9 @@ folder, to avoid risk of not extracting the right data."""
                 [
                     wcc.Select(
                         id=self.uuid("parameter-list"),
-                        options=[{"label": ens, "value": ens} for ens in self.parameters],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
                         multi=True,
                         size=10,
                         value=[],
@@ -371,7 +388,8 @@ folder, to avoid risk of not extracting the right data."""
             children=[
                 html.Div(style={"flex": 1}, children=self.control_layout),
                 html.Div(
-                    style={"flex": 3}, children=wcc.Graph(id=self.uuid("parallel-coords-plot")),
+                    style={"flex": 3},
+                    children=wcc.Graph(id=self.uuid("parallel-coords-plot")),
                 ),
             ],
         )
@@ -395,7 +413,9 @@ folder, to avoid risk of not extracting the right data."""
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
+                filteroptions.append(
+                    {"name": col_name, "type": col_type, "values": filters[i]}
+                )
         return filteroptions
 
     def set_callbacks(self, app):
@@ -406,7 +426,9 @@ folder, to avoid risk of not extracting the right data."""
             Output(self.uuid("parallel-coords-plot"), "figure"),
             self.parallel_coords_callback_inputs,
         )
-        def _update_parallel_coordinate_plot(exc_inc, parameter_list, ensemble, response, *filters):
+        def _update_parallel_coordinate_plot(
+            exc_inc, parameter_list, ensemble, response, *filters
+        ):
             """
             Callback to update the parallel coordinates plot
             1. Filter Dataframes according to chosen filter options
@@ -428,7 +450,9 @@ folder, to avoid risk of not extracting the right data."""
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(
+                columns=["REAL", "ENSEMBLE"]
+            )
 
             # plot generation
             pallete = self.plotly_theme["layout"]["colorway"]
@@ -441,7 +465,11 @@ folder, to avoid risk of not extracting the right data."""
                         "color": df[response],
                         "colorscale": colmap,
                         "showscale": True,
-                        "colorbar": {"title": response, "xanchor": "right", "x": -0.02,},
+                        "colorbar": {
+                            "title": response,
+                            "xanchor": "right",
+                            "x": -0.02,
+                        },
                     },
                     "dimensions": dims,
                     "labelangle": 45,
@@ -452,7 +480,9 @@ folder, to avoid risk of not extracting the right data."""
             layout.update(self.plotly_theme["layout"])
             # Ensure sufficient spacing between each dimension and margin for labels
             width = len(dims) * 100 + 250
-            layout.update({"width": width, "height": 1200, "margin": {"b": 740, "t": 30}})
+            layout.update(
+                {"width": width, "height": 1200, "margin": {"b": 740, "t": 30}}
+            )
             return {"data": data, "layout": layout}
 
     def add_webvizstore(self):
@@ -464,7 +494,12 @@ folder, to avoid risk of not extracting the right data."""
         return [
             (
                 load_parameters,
-                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
             ),
             (
                 load_csv,

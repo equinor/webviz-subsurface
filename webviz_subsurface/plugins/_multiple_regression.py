@@ -20,13 +20,8 @@ from webviz_config.common_cache import CACHE
 from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
-<<<<<<< HEAD
 from .._datainput.fmu_input import load_csv, load_parameters
 from .._utils.response_aggregation import filter_and_sum_responses
-=======
-from .._datainput.fmu_input import load_parameters, load_csv, load_smry
-from .._utils.ensemble_handling import filter_and_sum_responses
->>>>>>> f595c3d9f2897ce5fe7f65715a996fbc72106341
 
 
 class MultipleRegression(WebvizPluginABC):
