@@ -564,7 +564,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 Wells marked with circles, trajectory and hillshading toggle
             """
             # Store layers when switching to hillshading
-            if (self.state["switch"] is not switch["value"]):
+            if self.state["switch"] is not switch["value"]:
                 hillshade_layers = self.layers_state.copy()
                 for layer in hillshade_layers:
                     if "shader" in layer["data"][0]:
@@ -584,11 +584,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.surface_attributes[get_path(surfacefile)]["surface_dte"],
             ]
             well_layers = get_well_layers(
-                self.wells,
-                self.planned_wells,
-                surface_name,
-                surfaces[0],
-                wellfile,
+                self.wells, self.planned_wells, surface_name, surfaces[0], wellfile,
             )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)

@@ -7,6 +7,7 @@ class FilterTable:
         * `target_points`: File path to targetpoints.csv
         * `well_points`: File path to wellpoints.csv
     """
+
     def __init__(
         self, target_points=None, well_points=None,
     ):

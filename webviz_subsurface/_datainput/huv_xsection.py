@@ -321,6 +321,7 @@ class HuvXsection:
         Args:
             well: XTGeo well from filepath to wellfile
             well_df: Dataframe of well
+            zonelogname: Name of zonelog
         Returns:
             data: List containing dictionary with zonelog data
         """
@@ -340,9 +341,7 @@ class HuvXsection:
         zonevals = well_df[zonelogname].values
         zoneplot = []
         start = 0
-        zone_transitions = np.where(
-            zonevals[:-1] != zonevals[1:]
-        )
+        zone_transitions = np.where(zonevals[:-1] != zonevals[1:])
         for transition in zone_transitions:
             try:
                 well_tvd = np.insert(well_tvd, transition, well_tvd[transition + 1])
