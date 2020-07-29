@@ -589,7 +589,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
-            
+
             # Deletes old layers when switching surface in dropdown
             old_layers = self.layers_state
             self.layers_state = layers.copy()
