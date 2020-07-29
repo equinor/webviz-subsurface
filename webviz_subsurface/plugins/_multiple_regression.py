@@ -75,10 +75,6 @@ All of these are optional, some have defaults seen in the code snippet below.
 * **`parameter_ignore`:** List of parameters (columns in csv or simulation vectors) to ignore
 * **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
 
-
-**Note**: Regression models break down when there are duplicate or highly correlated parameters. \
-Please make sure to properly filter your inputs or the model will give answers that are misleading.
-
 ---
 
 ?> Non-numerical (string-based) input parameters and responses are removed.
@@ -238,7 +234,6 @@ folder, to avoid risk of not extracting the right data.
         }
         self.set_callbacks(app)
 
-
     @property
     def tour_steps(self):
         """ Adding a "Guided tour" functionality """
@@ -246,32 +241,35 @@ folder, to avoid risk of not extracting the right data.
             {
                 "id": self.uuid("layout"),
                 "content": (
-                    "Dashboard displaying the results of a multiple "
-                    "regression of input parameters and a chosen response."
+                    "Dashboard displaying the results of a multiple regression of parameters and "
+                    "a chosen response using forward selection to limit the number of terms. "
+                    "Interaction terms can be added, up to third order. Adjusted R-squared is "
+                    "used as the criterion in the forward selection algorithm."
                 ),
             },
             {
                 "id": self.uuid("p-values-plot"),
                 "content": (
-                    "A plot showing the p-values for the parameters from the table ranked from most "
-                    "significant to least significant.  Red indicates that the p-value is "
-                    "significant, gray indicates that the p-value is not significant."
+                    "A plot showing the p-values for the parameters from the table ranked from "
+                    "most significant to least significant (low to high). Bars are highlighted "
+                    "when the p-values are less than 0.05, meaning that the terms are likely to "
+                    "be significant. Otherwise the bars are colored gray."
                 ),
             },
             {
                 "id": self.uuid("coefficient-plot"),
                 "content": (
-                    "A plot showing the sign of the parameters' coefficient values by arrows "
-                    "pointing up or down, illustrating a positive or a negative coefficient "
-                    "respectively. An arrow is red if the corresponding p-value is significant, "
-                    "that is, a p-value below 0.05. Arrows corresponding to p-values above this "
-                    "level of significance are shown in gray."
+                    "A plot showing the sign of the parameters' regression coefficient values by "
+                    "arrows pointing up or down, illustrating a positive or a negative coefficient "
+                    "respectively. An arrow is highlighted if the corresponding p-value is "
+                    "statistically significant, that is, a p-value below 0.05. Arrows "
+                    "corresponding to p-values above this level of significance are shown in gray."
                 ),
             },
             {
                 "id": self.uuid("table"),
                 "content": (
-                    "A table showing the p-values for the best combination of "
+                    "A table showing the p-values for a forward selected combination of "
                     "parameters for a chosen response."
                 ),
             },
@@ -282,38 +280,37 @@ folder, to avoid risk of not extracting the right data.
                 "content": (
                     "Select which parameters to include in your model. Exclusive mode lets you "
                     "remove specific parameters from beeing considered in the model selection. "
-                    "Subset mode lets you pick a subset of parameters to investigate. "
-                    "Parameters included here are not guaranteed to be included in the output model."
+                    "Subset mode lets you pick a subset of parameters to investigate. Parameters "
+                    "included here are not guaranteed to be included in the output model."
                 ),
             },
             {
                 "id": self.uuid("interaction"),
                 "content": (
-                    "Select the depth of the interaction level. 'Off' allows only for the parameters "
-                    "in their original state. '2 levels' allow for the product of two original "
-                    "parameters. '3 levels' allow for the product of three original parameters. "
-                    "This feature allows you to investigate possible feedback effects."
+                    "Select the depth of the interaction level. 'Off' allows only for the "
+                    "parameters in their original state. '2 levels' allow for the product of two "
+                    "original parameters. '3 levels' allow for the product of three original "
+                    "parameters. This feature allows you to investigate possible feedback effects."
                 ),
             },
             {
                 "id": self.uuid("max-params"),
                 "content": (
                     "Choose the maximum number of parameters to include in your model. If "
-                    "interaction is active, the number of included parameters is the selected value "
-                    "here plus the interaction level. This is to make sure the interaction terms "
-                    "have an intuitive interpretation."
+                    "interaction is active, the number of included parameters is the selected "
+                    "value here plus the interaction level. This is to make sure the interaction "
+                    "terms have an intuitive interpretation."
                 ),
             },
             {
                 "id": self.uuid("force-in"),
-                "content": (
-                    "Select parameters to force into the model."
-                ),
+                "content": ("Select parameters to force into the model."),
             },
             {
                 "id": self.uuid("submit-button"),
                 "content": (
-                    "Press this button to update the table and the plots based on the settings above."
+                    "Press this button to update the table and the plots based on the settings "
+                    "above."
                 ),
             },
         ]
@@ -355,7 +352,7 @@ folder, to avoid risk of not extracting the right data.
             "default color": fig["layout"]["colorway"][0],
             "gray": "#606060",
             "dark gray": "#303030",
-            "default text": fig["layout"]["template"]["layout"]["font"]["color"]
+            "default text": fig["layout"]["template"]["layout"]["font"]["color"],
         }
 
     def check_runs(self):
@@ -637,7 +634,7 @@ folder, to avoid risk of not extracting the right data.
                 )
             return (
                 False,
-                {"color": "black", "background-color": self.colors["default color"],},
+                {"color": "white", "background-color": self.colors["default color"]},
             )
 
         @app.callback(
@@ -1075,7 +1072,12 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
             line_width=0,
         )
     fig.add_shape(
-        type="line", x0=-0.1, y0=0, x1=2+0.1, y1=0, line=dict(color=colors["dark gray"], width=1.5),
+        type="line",
+        x0=-0.1,
+        y0=0,
+        x1=2 + 0.1,
+        y1=0,
+        line=dict(color=colors["dark gray"], width=1.5),
     )
     fig.add_shape(
         type="path",
