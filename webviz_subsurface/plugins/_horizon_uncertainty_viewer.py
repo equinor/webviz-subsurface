@@ -137,7 +137,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.files += surfacefiles_dte if surfacefiles_dte else []
 
         # Store current layers
-        self.state = {"switch": False}
+        self.state = {"switch": True}
         self.layers_state = []
 
     def ids(self, element):
@@ -479,8 +479,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         webviz_subsurface_components.NewLayeredMap(
                             id=self.ids("layered-map"),
                             layers=[],
-                            syncedMaps=[],
-                            syncMapSize=True,
+                            autoScaleMap=True,
                             minZoom=-5,
                             drawTools={
                                 "drawMarker": False,
@@ -649,6 +648,14 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 surfacefiles, de_keys, well_settings, well, is_planned=is_planned
             )
             return self.xsec.fig
+
+        @app.callback(
+            Output(self.ids("well-dropdown"), "value"),  # Wellfile
+            [Input(self.ids("layered-map"), "clicked_shape")],  # Clicked circle on map
+        )
+        def _update_render_map_and_xsection(clicked_shape):
+            """ Updates well dropdown value when choosing a new circle """
+            return clicked_shape["id"] if clicked_shape is not None else self.wellfiles[0]
 
         @app.callback(
             Output(self.ids("surfaces-checklist"), "value"),
