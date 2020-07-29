@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from webviz_config.common_cache import CACHE
+
 # pylint: disable=too-many-arguments, too-many-locals
 
 
