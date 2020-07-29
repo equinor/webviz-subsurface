@@ -299,9 +299,9 @@ class HuvXsection:
         for sfc_path in self.surface_attributes:
             sfc = self.surface_attributes[sfc_path]["surface"]
             err = self.surface_attributes[sfc_path]["surface_de"]
-            surface_picks = well.get_surface_picks(
-                sfc
-            )  # This line causes WARNNG: Invalid value encountered in greater
+            with np.errstate(invalid="ignore"):
+                surface_picks = well.get_surface_picks(sfc)
+                # get_surface_picks raises warning when MD column is missing in well
             if surface_picks is not None:
                 surface_picks_df = surface_picks.dataframe
                 for _, row in surface_picks_df.iterrows():

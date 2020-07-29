@@ -1,4 +1,5 @@
 import xtgeo
+import numpy as np
 
 from webviz_config.common_cache import CACHE
 
@@ -118,7 +119,9 @@ def get_well_layers(
 
 
 def append_well_to_data(data, well, wellfile, surface, color):
-    surface_picks = well.get_surface_picks(surface)
+    with np.errstate(invalid="ignore"):
+        surface_picks = well.get_surface_picks(surface)
+        # get_surface_picks raises warning when MD column is missing in well
     if surface_picks is not None:
         surface_picks_df = surface_picks.dataframe
         coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values

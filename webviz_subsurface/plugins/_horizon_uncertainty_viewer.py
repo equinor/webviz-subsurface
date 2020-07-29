@@ -480,6 +480,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         webviz_subsurface_components.NewLayeredMap(
                             id=self.ids("layered-map"),
                             layers=[],
+                            unitScale={},
                             autoScaleMap=True,
                             minZoom=-5,
                             drawTools={
