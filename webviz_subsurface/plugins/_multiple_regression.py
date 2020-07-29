@@ -132,8 +132,6 @@ folder, to avoid risk of not extracting the right data.
 """
 
     # pylint:disable=too-many-arguments
-    # pylint:disable=unused-argument
-    # pylint:disable=unused-variable
     # pylint:disable=too-many-lines
     def __init__(
         self,
@@ -254,24 +252,25 @@ folder, to avoid risk of not extracting the right data.
                 "id": self.uuid("p-values-plot"),
                 "content": (
                     "A plot showing the p-values for the parameters from the table ranked from most "
-                    "significant to least significant.  Red indicates that the p-value is "
-                    "significant, gray indicates that the p-value is not significant."
+                    "significant to least significant (low to high p-value). A bar is highlighted "
+                    "if its corresponding p-value is below 0.05, meaning that the parameters are "
+                    "likely to be statistically significant. Otherwise, the bars are colored gray."
                 ),
             },
             {
                 "id": self.uuid("coefficient-plot"),
                 "content": (
-                    "A plot showing the sign of the parameters' coefficient values by arrows "
-                    "pointing up or down, illustrating a positive or a negative coefficient "
-                    "respectively. An arrow is red if the corresponding p-value is significant, "
-                    "that is, a p-value below 0.05. Arrows corresponding to p-values above this "
-                    "level of significance are shown in gray."
+                    "A plot showing the sign of the parameters' regression coefficient values by "
+                    "arrows pointing up or down, illustrating a positive or a negative coefficient "
+                    "respectively. An arrow is highlighted if its corresponding p-value is below "
+                    "0.05, meaning that the parameters are likely to be statistically significant. "
+                    "Otherwise, the arrows are colored gray."
                 ),
             },
             {
                 "id": self.uuid("table"),
                 "content": (
-                    "A table showing the p-values for the best combination of "
+                    "A table showing the p-values for the forward selected combination of "
                     "parameters for a chosen response."
                 ),
             },
@@ -349,13 +348,10 @@ folder, to avoid risk of not extracting the right data.
     @property
     def colors(self):
         """Dictionary of colors that are frequently used"""
-        fig = go.Figure().to_dict()
-        fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return {
-            "default color": fig["layout"]["colorway"][0],
+            "default color": self.theme.plotly_theme["layout"]["colorway"][0],
             "gray": "#606060",
-            "dark gray": "#303030",
-            "default text": fig["layout"]["template"]["layout"]["font"]["color"]
+            "dark gray": "#303030"
         }
 
     def check_runs(self):
@@ -403,7 +399,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def control_layout(self):
-        """ Layout to select e.g. iteration and response """
+        """Layout to select forward selection input, e.g. ensemble, response, settings, etc."""
         return [
             html.Div(
                 [
@@ -465,7 +461,7 @@ folder, to avoid risk of not extracting the right data.
             html.Div(
                 [
                     html.Div(
-                        "Model settings:", style={"font-weight": "bold", "marginTop": "20px"},
+                        "Settings:", style={"font-weight": "bold", "marginTop": "20px"},
                     ),
                     html.Div(
                         "Interaction", style={"display": "inline-block", "margin-right": "10px"},
@@ -517,7 +513,7 @@ folder, to avoid risk of not extracting the right data.
                 children=[
                     html.Button(
                         id=self.uuid("submit-button"),
-                        children="Update model",
+                        children="Update",
                         style={
                             "background-color": "LightGray",
                             "cursor": "not-allowed",
@@ -554,7 +550,6 @@ folder, to avoid risk of not extracting the right data.
                             "Table of parameters and their corresponding p-values",
                             style={
                                 "fontSize": ".925em",
-                                "color": self.colors["default text"],
                                 "textAlign": "center",
                             },
                         ),
@@ -594,7 +589,7 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def model_callback_inputs(self):
-        """ List of states for multiple regression callback """
+        """ List of inputs for multiple regression callback """
         inputs = self.get_callback_list(Input)
         inputs.insert(0, Input(self.uuid("submit-button"), "n_clicks"))
         return inputs
@@ -866,7 +861,7 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
         - Initialize values
         - While there are parameters left and the last model was the best model yet and the
         parameter limit isnt reached, for every parameter not chosen yet:
-            1.  If it is an interaction parameter, add the base features to the model.
+            1.  If it is an interaction parameter, add the base parameters to the model.
             2.  Create a model matrix, fit the model and calculate selection criterion for each
                 remaining parameter.
             3.  Pick the best parameter and repeat with remaining parameters until we satisfy an
@@ -930,21 +925,20 @@ def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxva
             )
             scores_with_candidates.append((r_2_adj, candidate))
 
-        # If the best parameter is interactive, add all base features
+        # If the best parameter is in an interaction, add all base parameters
         scores_with_candidates.sort(key=lambda x: x[0])
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
             if " × " in best_candidate:
-                for base_feature in best_candidate.split(" × "):
-                    if base_feature in remaining:
-                        remaining.remove(base_feature)
-                    if base_feature not in selected:
-                        selected.append(base_feature)
+                for base_parameter in best_candidate.split(" × "):
+                    if base_parameter in remaining:
+                        remaining.remove(base_parameter)
+                    if base_parameter not in selected:
+                        selected.append(base_parameter)
 
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-
     # Finally fit a statsmodel from the selected parameters
     model_df = data.filter(items=selected)
     model_df["Intercept"] = np.ones((len(response), 1))
@@ -984,13 +978,10 @@ def make_p_values_plot(p_sorted, theme, colors):
     )
     fig.update_traces(
         hovertemplate=[
-            "<b>Parameter:</b> "
-            + str(param)
-            + "<br>"
-            + "<b>P-value:</b> "
+            "<b>P-value:</b> "
             + str(format(pval, ".4g"))
             + "<extra></extra>"
-            for param, pval in zip(parameters, p_values)
+            for pval in p_values
         ]
     )
     fig.add_shape(
@@ -1009,6 +1000,7 @@ def make_p_values_plot(p_sorted, theme, colors):
     fig["layout"].update(
         barmode="relative",
         height=500,
+        hovermode="x",
         title=dict(
             text="P-values for the parameters. Value lower than 0.05 indicates "
             "statistical significance",
@@ -1049,13 +1041,10 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
     )
     fig.update_traces(
         hovertemplate=[
-            "<b>Parameter:</b> "
-            + str(param)
-            + "<br>"
-            + "<b>P-value:</b> "
+            "<b>P-value:</b> "
             + str(format(pval, ".4g"))
             + "<extra></extra>"
-            for param, pval in zip(parameters, p_values)
+            for pval in p_values
         ]
     )
     # Arrows are drawn and added to plot.
@@ -1089,6 +1078,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
     fig["layout"].update(
         barmode="relative",
         height=500,
+        hovermode="x",
         title=dict(
             text="Parameters impact (increase or decrese) on response and their significance", x=0.5
         ),
