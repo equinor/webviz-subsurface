@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 
 from webviz_config.common_cache import CACHE
 
+# pylint: disable=too-many-arguments, too-many-locals
+
 
 class HuvXsection:
     def __init__(
