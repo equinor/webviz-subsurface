@@ -5,8 +5,6 @@ import plotly.graph_objects as go
 
 from webviz_config.common_cache import CACHE
 
-# pylint: disable=too-many-arguments, too-many-locals
-
 
 class HuvXsection:
     def __init__(
@@ -318,6 +316,7 @@ class HuvXsection:
         return pd.DataFrame(data=data)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    # pylint: disable=too-many-locals
     def get_zonelog_data(self, well, well_df, zonelogname="Zonelog"):
         """ Find zonelogs where well trajectory intersects surfaces and assigns color.
         Args:

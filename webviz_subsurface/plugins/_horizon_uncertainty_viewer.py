@@ -729,7 +729,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("button-apply-columnlist"), "n_clicks"),],
             [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
-        # pylint: disable=too-many-locals
+        # pylint: disable=unused-variable
         def display_output(n_clicks, column_list):
             """ Renders wellpoints table from csv file """
             _ = n_clicks
