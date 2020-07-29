@@ -53,61 +53,82 @@ def make_well_layers(wellfiles, zmin=0, max_points=100):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_well_layers(
-        well_list,
-        planned_list,
+        wells,
+        planned_wells,
         surface_name,
         surface,
-        dropdown_well,
-        radius=100,
+        dropdown_file,
 ):
     """ Make circles around well in layered map view
     Args:
-        well_list: List of wells
-        planned_list: list of planned wells
+        wells: dictionary of  type {wellfile: xtgeo.Well(wellfile)}
+        planned_list: dictionary of  type {wellfile: xtgeo.Well(wellfile)}
         surface_name: Name of surface
         surface: An xtgeo surface object
-        dropdown_well: An xtgeo well object from dropdown menu
+        dropdown_well: A well file from dropdown value
         wellpoints_file: Path to wellpoints.csv for conditional points (cp)
     Returns:
         well_layers: Dictionary with data for circles and trajectory
      """
     data = []
-    dropdown_well.dataframe = dropdown_well.dataframe[dropdown_well.dataframe["Z_TVDSS"] > 0]
-    positions = dropdown_well.dataframe[["X_UTME", "Y_UTMN"]].values
-    dropdown_data = []
-    dropdown_data.append({
+    planned_data = []
+    dropdown_well = wells[dropdown_file] if dropdown_file in wells \
+    else planned_wells[dropdown_file]
+    dropdown_well_df = dropdown_well.dataframe[dropdown_well.dataframe["Z_TVDSS"] > 0]
+    positions = dropdown_well_df[["X_UTME", "Y_UTMN"]].values
+    dropdown_data = (
+        [{
                 "type": "polyline",
-                "color": "yellow",
+                "color": "rgba(0,255,255,1)",
                 "positions": positions,
                 "tooltip": dropdown_well.wellname + " trajectory",
-        })
-    for well in well_list + planned_list:
-        surface_picks = well.get_surface_picks(surface)
-        if surface_picks is not None:
-            surface_picks_df = surface_picks.dataframe
-            coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values
-            for coord in coordinates:
-                if well.wellname == dropdown_well.wellname:
-                    color = "rgb(255,255,0,1.0)"
-                elif well in well_list:
-                    color = "rgb(0,255,0,1.0)"
-                else:
-                    color = "rgb(80,80,80,1.0)"
-                data.append({
-                    "type": "circle",
-                    "center": coord,
-                    "color": color,
-                    "radius": radius,
-                    "tooltip": well.wellname,
-                    })
+        }]
+    )
+    for wellfile, well in wells.items():
+        color = "rgba(0,255,255,1)" if wellfile == dropdown_file \
+        else "rgba(0,255,0,1)"
+        append_well_to_data(data, well, surface, color)
+    for wellfile, well in planned_wells.items():
+        color = "rgba(0,255,255,1)" if wellfile == dropdown_file \
+        else "rgba(224,224,224,1)"
+        append_well_to_data(planned_data, well, surface, color)
     return [
         {
-            "name": "Wells", "checked": True, "baseLayer": False, "data": data,
-            "id": surface_name + ' ' + "well" + "-id", "action": "add"
+            "name": "Wells",
+            "checked": True,
+            "baseLayer": False,
+            "data": data,
+            "id": surface_name + "-wells",
+            "action": "add"
         },
         {
-            "name": dropdown_well.wellname + " trajectory", "checked": True,
-            "baseLayer": False, "data": dropdown_data, "action": "add",
-            "id": surface_name + ' ' + "well_trajectory" + "-id"
+            "name": "Planned wells",
+            "checked": True,
+            "baselayer": False,
+            "data": planned_data,
+            "id": surface_name + "-planned-wells",
+            "action": "add"
+        },
+        {
+            "name": dropdown_well.wellname + " trajectory",
+            "checked": True,
+            "baseLayer": False,
+            "data": dropdown_data,
+            "action": "add",
+            "id": surface_name + "-well-trajectory"
         }
     ]
+
+def append_well_to_data(data, well, surface, color):
+    surface_picks = well.get_surface_picks(surface)
+    if surface_picks is not None:
+        surface_picks_df = surface_picks.dataframe
+        coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values
+        for coord in coordinates:
+            data.append({
+                "type": "circle",
+                "center": coord,
+                "color": color,
+                "radius": 50,
+                "tooltip": well.wellname,
+            })

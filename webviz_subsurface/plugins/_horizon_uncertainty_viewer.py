@@ -592,19 +592,13 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                         self.surface_attributes[get_path(surfacefile)]["surface_dt"],
                         self.surface_attributes[get_path(surfacefile)]["surface_dte"],           
             ]
-            well_list = [self.wells[wf].copy() for wf in self.wells]
-            planned_list = [self.planned_wells[wf].copy() for wf in self.planned_wells]
-            dropdown_well = \
-                self.wells[wellfile].copy() if wellfile in self.wells \
-                else self.planned_wells[wellfile].copy()
             well_layers = get_well_layers(
-                well_list,
-                planned_list,
+                self.wells,
+                self.planned_wells,
                 surface_name,
                 surfaces[0],
-                dropdown_well,
-                radius=50,
-                )
+                wellfile,
+            )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
             # Deletes old layers when switching surface in dropdown
