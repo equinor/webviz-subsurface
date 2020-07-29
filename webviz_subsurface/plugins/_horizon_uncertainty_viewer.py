@@ -584,18 +584,12 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.surface_attributes[get_path(surfacefile)]["surface_dt"],
                 self.surface_attributes[get_path(surfacefile)]["surface_dte"],
             ]
-            well_list = []
-            for file in self.wellfiles:
-                well = xtgeo.Well(file)
-                well_list.append(well)
-            dropdown_well = xtgeo.Well(wellfile)
             well_layers = get_well_layers(
-                well_list,
+                self.wells,
+                self.planned_wells,
                 surface_name,
                 surfaces[0],
-                dropdown_well,
-                radius=50,
-                color="rgb(0,255,0,1.0)",
+                wellfile,
             )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
