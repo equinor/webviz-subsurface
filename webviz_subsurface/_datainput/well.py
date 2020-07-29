@@ -66,21 +66,20 @@ def get_well_layers(
     Returns:
         well_layers: Dictionary with data for circles and trajectory
      """
-    data = []
     dropdown_well_name = dropdown_well.wellname
     dropdown_well.dataframe = dropdown_well.dataframe[
         dropdown_well.dataframe["Z_TVDSS"] > 0
     ]
-    positions = dropdown_well.dataframe[["X_UTME", "Y_UTMN"]].values
     dropdown_data = []
     dropdown_data.append(
         {
             "type": "polyline",
             "color": "yellow",
-            "positions": positions,
+            "positions": dropdown_well.dataframe[["X_UTME", "Y_UTMN"]].values,
             "tooltip": dropdown_well_name + " trajectory",
         }
     )
+    data = []
     for well in well_list:
         well_name = well.wellname
         surface_picks = well.get_surface_picks(surface)

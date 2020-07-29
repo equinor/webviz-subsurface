@@ -55,11 +55,11 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 
         # Surfacefiles
         self.surfacefiles = parse_model_file.get_surface_files(basedir)
-        self.surfacefiles_de = parse_model_file.get_surface_de_files(basedir)
-        self.surfacefiles_dr = parse_model_file.get_surface_dr_files(basedir)
-        self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
-        self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
-        self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
+        surfacefiles_de = parse_model_file.get_surface_de_files(basedir)
+        surfacefiles_dt = parse_model_file.get_surface_dr_files(basedir)
+        surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
+        surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
+        surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
         topofzone = parse_model_file.extract_topofzone_names(basedir)
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
         self.surface_attributes = {}
@@ -73,27 +73,27 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                     Path(surfacefile), fformat="irap_binary"
                 ),
                 "surface_de": xtgeo.surface_from_file(
-                    Path(self.surfacefiles_de[i]), fformat="irap_binary"
+                    Path(surfacefiles_de[i]), fformat="irap_binary"
                 ),
                 "surface_dt": xtgeo.surface_from_file(
-                    Path(self.surfacefiles_dt[i]), fformat="irap_binary"
+                    Path(surfacefiles_dt[i]), fformat="irap_binary"
                 )
-                if self.surfacefiles_dt is not None
+                if surfacefiles_dt is not None
                 else None,
                 "surface_dr": xtgeo.surface_from_file(
-                    Path(self.surfacefiles_dr[i]), fformat="irap_binary"
+                    Path(surfacefiles_dt[i]), fformat="irap_binary"
                 )
-                if self.surfacefiles_dr is not None
+                if surfacefiles_dt is not None
                 else None,
                 "surface_dte": xtgeo.surface_from_file(
-                    Path(self.surfacefiles_dte[i]), fformat="irap_binary"
+                    Path(surfacefiles_dte[i]), fformat="irap_binary"
                 )
-                if self.surfacefiles_dte is not None
+                if surfacefiles_dte is not None
                 else None,
                 "surface_dre": xtgeo.surface_from_file(
-                    Path(self.surfacefiles_dre[i]), fformat="irap_binary"
+                    Path(surfacefiles_dre[i]), fformat="irap_binary"
                 )
-                if self.surfacefiles_dre is not None
+                if surfacefiles_dre is not None
                 else None,
             }
 
@@ -137,6 +137,16 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 print("Fileformat must be type 'ROXAR RMS well'.\n")
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
+
+        # List of wells and surfaces provided
+        self.files = []
+        self.files += self.wellfiles if self.wellfiles else []
+        self.files += self.surfacefiles if self.surfacefiles else []
+        self.files += surfacefiles_de if surfacefiles_de else []
+        self.files += surfacefiles_dt if surfacefiles_dt else []
+        self.files += surfacefiles_dt if surfacefiles_dt else []
+        self.files += surfacefiles_dre if surfacefiles_dre else []
+        self.files += surfacefiles_dte if surfacefiles_dte else []
 
         # Store current layers
         self.state = {"switch": False}
@@ -796,15 +806,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             return f"Surface picks for {wellname}"
 
     def add_webvizstore(self):
-        files = []
-        files += self.surfacefiles if self.surfacefiles else []
-        files += self.surfacefiles_de if self.surfacefiles_de else []
-        files += self.surfacefiles_dr if self.surfacefiles_dr else []
-        files += self.surfacefiles_dt if self.surfacefiles_dt else []
-        files += self.surfacefiles_dre if self.surfacefiles_dre else []
-        files += self.surfacefiles_dte if self.surfacefiles_dte else []
-        files += self.wellfiles if self.wellfiles else []
-        return [(get_path, [{"path": fn}]) for fn in files]
+        return [(get_path, [{"path": fn}]) for fn in self.files]
 
 
 @webvizstore
