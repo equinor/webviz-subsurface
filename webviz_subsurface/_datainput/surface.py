@@ -71,26 +71,21 @@ def new_make_surface_layer(
     name="surface",
     min_val=None,
     max_val=None,
-    color=[
-        "#0d0887",
-        "#46039f",
-        "#7201a8",
-        "#9c179e",
-        "#bd3786",
-        "#d8576b",
-        "#ed7953",
-        "#fb9f3a",
-        "#fdca26",
-        "#f0f921",
-    ],
+    color=None,
     shader_type="hillshading",
     unit="",
 ):
     """Make NewLayeredMap surface image base layer
     Args:
-        FIX
+        surface: an xtgeo surface object
+        name: name of the surface object
+        min_val: minimum value to be plotted in map
+        max_val: maximum value to be plotted in map
+        color: an array with colors as strings
+        shader_type: determines shader in map
+        unit: determines unit on the map axes
     Returns:
-        FIX
+        A surface layer that can be plotted in NewLayeredMap
     """
     zvalues = get_surface_arr(surface)[2]
     bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
@@ -113,7 +108,7 @@ def new_make_surface_layer(
                 "type": "image",
                 "url": array_to_png(zvalues.copy()),
                 "colorScale": {
-                    "colors": color,
+                    "colors": get_colormap("magma") if color is None else color,
                     "prefixZeroAlpha": False,
                     "scaleType": "linear",
                     "cutPointMin": min_val,

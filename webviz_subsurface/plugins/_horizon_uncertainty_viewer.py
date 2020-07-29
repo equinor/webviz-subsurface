@@ -26,22 +26,10 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
 Visualizes depth error for surfaces in map view and cross section view.
 The cross section is defined by surfacefiles and wellfiles or a polyline.
 Polyline drawn interactivly in map view. Files parsed from model_file.xml.
-* `surfacefiles`: List of file paths to Irap Binary surfaces
-* `surfacefiles_de`: List of file paths to Irap Binary depth error surfaces
-* `surfacenames`: Corresponding list of displayed surface names
-* `surface_attributes`: Dictionary with data related to all surfaces
-* `targetpoints`: Targetpoints from targetpoints.csv
-* `wellpoints`: Wellpoints from wellpoints.csv
-* `topofzone`: Top of zone from model_file.xml
-* `wellfiles`: List of file paths to wells
-* `wellnames`: List of well names
-* `zonation_data`: zonation_status.csv
-* `conditional_data`: Data for conditional points from wellpoints.csv
-* `zonelogname`: Name of zone logs from model_file.xml
-* `well_attributes`: Dictionary with data related to all wells
-* `plotly_theme`: Theme from webviz
-* `basedir`: Base directory to model_file.xml
-* `zunit`: z-unit for display
+* `basedir`: Path to folder with model_file.xml
+   Make sure that the folder has the same format as a COHIBA folder
+* `planned_wells_dir`: Path to folder with planned well files.
+   Make sure that all planned wells have format 'ROXAR RMS well'.
 """
 
     def __init__(
@@ -573,7 +561,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
         def _render_map(surfacefile, switch, wellfile):
             """ Renders map view for one surface with de, dt, dte, dr, dre and depth
-                Wells marked with circles and hillshading toggle
+                Wells marked with circles, trajectory and hillshading toggle
             """
             if (
                 self.state["switch"] is not switch["value"]
@@ -716,6 +704,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("all-well-settings-checkbox"), "value")],
         )
         def _update_well_settings_tickboxes(all_well_attributes_checkbox):
+            """ Toggle on/off all options in well settings modal """
             return (
                 ["zonelog", "zonation_points", "conditional_points"]
                 if all_well_attributes_checkbox == ["True"]
@@ -731,6 +720,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [State(self.ids("modal-well-settings"), "is_open")],
         )
         def _toggle_modal_well_settings(n_open, n_close, is_open):
+            """ Open or close well settings modal button """
             if n_open or n_close:
                 return not is_open
             return is_open
@@ -741,6 +731,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
         def display_output(n_clicks, column_list):
+            """ Renders wellpoints table from csv file """
             _ = n_clicks
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
             return html.Div(
@@ -764,6 +755,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [State(self.ids("modal-table-settings"), "is_open")],
         )
         def _toggle_modal_table_settings(n_open, n_close, is_open):
+            """ Open or close table settings modal button """
             if n_open or n_close:
                 return not is_open
             return is_open
@@ -776,6 +768,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("map-table-radioitems"), "value")],
         )
         def _toggle_left_flexbox_content(value):
+            """ Returns which left flexbox content is visible/hidden """
             if value == "table-view":
                 switch = True, False
             else:

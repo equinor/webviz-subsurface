@@ -59,12 +59,11 @@ def get_well_layers(
     """ Make circles around well in layered map view
     Args:
         well_list: List of all wells
-        surface_name: Name of surface
+        surface_name: Name of surface object
         surface: An xtgeo surface object
         dropdown_well: An xtgeo well object from dropdown menu
-        wellpoints_file: Path to wellpoints.csv for conditional points (cp)
     Returns:
-        well_layers: Dictionary with data for circles and trajectory
+        List of well layers with data for well circles and trajectory
      """
     dropdown_well_name = dropdown_well.wellname
     dropdown_well.dataframe = dropdown_well.dataframe[
