@@ -32,6 +32,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
    Make sure that all planned wells have format 'ROXAR RMS well'.
 """
 
+    # pylint: disable=too-many-locals
     def __init__(
         self, app, basedir: Path = None, planned_wells_dir: Path = None,
     ):
@@ -115,8 +116,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.planned_wells = {
                     wf: xtgeo.Well(wf) for wf in self.planned_wellfiles
                 }
-            # FIX: webviz_subsurface/plugins/_horizon_uncertainty_viewer.py:145:19: W0703:
-            # Catching too general exception Exception (broad-except)
+            # pylint: disable=broad-except
             except Exception as exception:
                 self.planned_wells = {}
                 self.planned_wellfiles = []
@@ -549,6 +549,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             ]
         )
 
+    # pylint: disable=too-many-statements
     def set_callbacks(self, app):
         @app.callback(
             Output(self.ids("layered-map"), "layers"),
@@ -558,7 +559,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 Input(self.ids("well-dropdown"), "value"),  # Wellfile
             ],
         )
-        # pylint: disable=too-many-statements
         def _render_map(surfacefile, switch, wellfile):
             """ Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles, trajectory and hillshading toggle
@@ -588,7 +588,6 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
-
             # Deletes old layers when switching surface in dropdown
             old_layers = self.layers_state
             self.layers_state = layers.copy()
@@ -652,7 +651,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
         def _update_render_map_and_xsection(clicked_shape):
             """ Updates well dropdown value when choosing a new circle """
-            return clicked_shape["id"] if clicked_shape is not None else self.wellfiles[0]
+            return (
+                clicked_shape["id"] if clicked_shape is not None else self.wellfiles[0]
+            )
 
         @app.callback(
             Output(self.ids("surfaces-checklist"), "value"),
@@ -728,6 +729,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("button-apply-columnlist"), "n_clicks"),],
             [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
+        # pylint: disable=too-many-locals
         def display_output(n_clicks, column_list):
             """ Renders wellpoints table from csv file """
             _ = n_clicks

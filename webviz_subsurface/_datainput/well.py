@@ -82,12 +82,12 @@ def get_well_layers(
         }
     ]
     for wellfile, well in wells.items():
-        color = "rgba(0,255,255,1)" if wellfile == dropdown_file \
-        else "rgba(0,255,0,1)"
+        color = "rgba(0,255,255,1)" if wellfile == dropdown_file else "rgba(0,255,0,1)"
         append_well_to_data(data, well, wellfile, surface, color)
     for wellfile, well in planned_wells.items():
-        color = "rgba(0,255,255,1)" if wellfile == dropdown_file \
-        else "rgba(224,224,224,1)"
+        color = (
+            "rgba(0,255,255,1)" if wellfile == dropdown_file else "rgba(224,224,224,1)"
+        )
         append_well_to_data(planned_data, well, wellfile, surface, color)
     return [
         {
@@ -116,17 +116,20 @@ def get_well_layers(
         },
     ]
 
+
 def append_well_to_data(data, well, wellfile, surface, color):
     surface_picks = well.get_surface_picks(surface)
     if surface_picks is not None:
         surface_picks_df = surface_picks.dataframe
         coordinates = surface_picks_df[["X_UTME", "Y_UTMN"]].values
         for coord in coordinates:
-            data.append({
-                "type": "circle",
-                "center": coord,
-                "color": color,
-                "radius": 50,
-                "tooltip": well.wellname,
-                "id": wellfile
-            })
+            data.append(
+                {
+                    "type": "circle",
+                    "center": coord,
+                    "color": color,
+                    "radius": 50,
+                    "tooltip": well.wellname,
+                    "id": wellfile,
+                }
+            )
