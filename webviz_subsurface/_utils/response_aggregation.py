@@ -1,5 +1,6 @@
 from webviz_config.common_cache import CACHE
-
+import numpy as np
+import pandas as pd
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_and_sum_responses(
