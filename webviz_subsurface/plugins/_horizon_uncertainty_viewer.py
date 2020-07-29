@@ -476,6 +476,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 html.Div(
                     style={"marginTop": "0px", "height": "800px", "zIndex": -9999,},
                     children=[
+                        # pylint: disable=no-member
                         webviz_subsurface_components.NewLayeredMap(
                             id=self.ids("layered-map"),
                             layers=[],
@@ -729,10 +730,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             [Input(self.ids("button-apply-columnlist"), "n_clicks"),],
             [State(self.ids("columns-checklist"), "value"),],  # columns list
         )
-        # pylint: disable=unused-variable
+        # pylint: disable=unused-variable, unused-argument
         def display_output(n_clicks, column_list):
             """ Renders wellpoints table from csv file """
-            _ = n_clicks
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
             return html.Div(
                 [
