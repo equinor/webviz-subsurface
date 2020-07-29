@@ -49,13 +49,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         app,
         basedir: Path = None,
         planned_wells_dir: Path = None,
-        zunit="depth (m)",
-        zonemin: int = 1,
     ):
 
         super().__init__()
-        self.zonemin = zonemin
-        self.zunit = zunit
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
@@ -67,9 +63,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         self.surfacefiles_dt = parse_model_file.get_surface_dt_files(basedir)
         self.surfacefiles_dte = parse_model_file.get_surface_dte_files(basedir)
         self.surfacefiles_dre = parse_model_file.get_surface_dre_files(basedir)
-        self.topofzone = parse_model_file.extract_topofzone_names(
-            basedir
-        )  # Name of zone
+        topofzone = parse_model_file.extract_topofzone_names(basedir)
         self.surfacenames = parse_model_file.extract_surface_names(basedir)
         self.surface_attributes = {}
         for i, surfacefile in enumerate(self.surfacefiles):
@@ -77,7 +71,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 "color": get_color(i),
                 "order": i,
                 "name": self.surfacenames[i],
-                "topofzone": self.topofzone[i],
+                "topofzone": topofzone[i],
                 "surface": xtgeo.surface_from_file(
                     Path(surfacefile), fformat="irap_binary"
                 ),
@@ -107,20 +101,18 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             }
 
         # Log files
-        self.zonation_status_file = parse_model_file.get_zonation_status(basedir)
-        self.well_points_file = parse_model_file.get_well_points(basedir)
-        self.zonelog_name = parse_model_file.get_zonelog_name(
-            basedir
-        )  # name of zonelog in OP txt files
+        zonation_status_file = parse_model_file.get_zonation_status(basedir)
+        well_points_file = parse_model_file.get_well_points(basedir)
+        zonelog_name = parse_model_file.get_zonelog_name(basedir)
         self.xsec = HuvXsection(
             self.surface_attributes,
-            self.zonation_status_file,
-            self.well_points_file,
-            self.zonelog_name,
+            zonation_status_file,
+            well_points_file,
+            zonelog_name,
         )
-        self.target_points_file = parse_model_file.get_target_points(basedir)
+        target_points_file = parse_model_file.get_target_points(basedir)
         self.df_well_target_points = FilterTable(
-            self.target_points_file, self.well_points_file
+            target_points_file, well_points_file
         )
 
         # Wellfiles and planned wells
@@ -145,11 +137,9 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             except Exception as exception:
                 self.planned_wells = {}
                 self.planned_wellfiles = []
-                print("Something went wrong when initializing planned wells")
+                print("Something went wrong when initializing planned wells.")
                 print(type(exception).__name__, ": ", exception)
-                print(
-                    "Make sure that all planned wells have format 'ROXAR RMS well'.\n"
-                )
+                print("Fileformat must be type 'ROXAR RMS well'.\n")
         self.wellfiles = parse_model_file.get_well_files(basedir)
         self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
 
@@ -602,8 +592,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 self.surface_attributes[get_path(surfacefile)]["surface_dte"],
             ]
             well_list = []
-            for wellfile in self.wellfiles:
-                well = xtgeo.Well(wellfile)
+            for file in self.wellfiles:
+                well = xtgeo.Well(file)
                 well_list.append(well)
             dropdown_well = xtgeo.Well(wellfile)
             well_layers = get_well_layers(
@@ -782,9 +772,10 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
         )
         def _toggle_left_flexbox_content(value):
             if value == "table-view":
-                return True, False
+                switch = True, False
             else:
-                return False, True
+                switch = False, True
+            return switch
 
         @app.callback(
             Output(self.ids("uncertainty-table"), "data"),

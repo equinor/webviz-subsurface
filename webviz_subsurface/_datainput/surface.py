@@ -71,7 +71,7 @@ def new_make_surface_layer(
     name="surface",
     min_val=None,
     max_val=None,
-    color=[  # FIX Dangerous default value [] as argument
+    color=[
         "#0d0887",
         "#46039f",
         "#7201a8",
@@ -138,17 +138,17 @@ def new_make_surface_layer(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surface_layers(switch, surface_name, surfaces):
-    """ Creates layers in map from all surfaces with new_make_surface_layer in surface.py
+def get_surface_layers(switch, surface_name, surfaces, min_val=None, max_val=None):
+    """ Creates layers in map view from all surfaces
     Args:
         switch: Toggle hillshading on/off
         surface_name: Name of surface
         surfaces: List containing a single surface with corresponding depth error, depth trend etc.
+        min_val: Minimum z-value of surface
+        max_val: Maximum z-value of surface
     Returns:
         layers: List of all surface layers
     """
-    min_val = None
-    max_val = None
     shader_type = "hillshading" if switch["value"] is True else None
     depth_list = [
         "Depth",
@@ -159,10 +159,10 @@ def get_surface_layers(switch, surface_name, surfaces):
         "Depth trend uncertainty",
     ]
     layers = []
-    for i, sfc in enumerate(surfaces):
-        if sfc is not None:
+    for i, surface in enumerate(surfaces):
+        if surface is not None:
             s_layer = new_make_surface_layer(
-                sfc,
+                surface,
                 name=depth_list[i],
                 min_val=min_val,
                 max_val=max_val,
