@@ -46,11 +46,12 @@ class HuvXsection:
             }
         ]
         if not is_planned:
+            well_df = well.dataframe
             if "zonelog" in well_settings:
-                data += self.get_zonelog_data(well, self.zonelogname)
+                data += self.get_zonelog_data(well, well_df, self.zonelogname)
             if "zonation_points" in well_settings:
                 zonation_points = get_zonation_points(
-                    well.dataframe, well.wellname, self.zonation_status_file
+                    well_df, well.wellname, self.zonation_status_file
                 )
                 data += [
                     {
@@ -63,7 +64,7 @@ class HuvXsection:
                 ]
             if "conditional_points" in well_settings:
                 conditional_points = get_conditional_points(
-                    well.dataframe, well.wellname, self.well_points_file
+                    well_df, well.wellname, self.well_points_file
                 )
                 data += [
                     {
@@ -315,17 +316,17 @@ class HuvXsection:
         return pd.DataFrame(data=data)
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_zonelog_data(self, well, zonelogname="Zonelog"):
+    def get_zonelog_data(self, well, well_df, zonelogname="Zonelog"):
         """ Find zonelogs where well trajectory intersects surfaces and assigns color.
         Args:
             well: XTGeo well from filepath to wellfile
+            well_df: Dataframe of well
         Returns:
             data: List containing dictionary with zonelog data
         """
-        well_df = well.dataframe
         color_list = [None] * len(well.get_logrecord(zonelogname))
         for sfc_file in self.surface_attributes:
-            for i in range(len(color_list)):
+            for i, _ in enumerate(color_list):
                 if well.get_logrecord_codename(zonelogname, i) == "dummy":
                     color_list[i] = "rgb(211,211,211)"
                 if (
@@ -341,7 +342,7 @@ class HuvXsection:
         start = 0
         zone_transitions = np.where(
             zonevals[:-1] != zonevals[1:]
-        )  # Index of zone transitions?
+        )
         for transition in zone_transitions:
             try:
                 well_tvd = np.insert(well_tvd, transition, well_tvd[transition + 1])
@@ -437,7 +438,7 @@ def get_zonation_points(well_df, wellname, zonation_status_file):
     zone_df_xval = zone_df["x"].values.copy()
     zone_df_yval = zone_df["y"].values.copy()
     zone_rhlen = np.zeros(len(zone_df_xval))
-    for i in range(len(zone_df_xval)):
+    for i, _ in enumerate(zone_df_xval):
         well_df["XLEN"] = well_df["X_UTME"] - zone_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - zone_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)
@@ -461,8 +462,7 @@ def get_conditional_points(well_df, wellname, well_points_file):
     wellpoint_df_xval = wellpoint_df["x"].values.copy()
     wellpoint_df_yval = wellpoint_df["y"].values.copy()
     cond_rhlen = np.zeros(len(wellpoint_df_xval))
-
-    for i in range(len(wellpoint_df_xval)):
+    for i, _ in enumerate(wellpoint_df_xval):
         well_df["XLEN"] = well_df["X_UTME"] - wellpoint_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - wellpoint_df_yval[i]
         well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)

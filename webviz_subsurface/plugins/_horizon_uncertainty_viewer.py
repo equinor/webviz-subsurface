@@ -563,9 +563,8 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             """ Renders map view for one surface with de, dt, dte, dr, dre and depth
                 Wells marked with circles, trajectory and hillshading toggle
             """
-            if (
-                self.state["switch"] is not switch["value"]
-            ):  # Store layers when switching to hillshading
+            # Store layers when switching to hillshading
+            if (self.state["switch"] is not switch["value"]):
                 hillshade_layers = self.layers_state.copy()
                 for layer in hillshade_layers:
                     if "shader" in layer["data"][0]:
