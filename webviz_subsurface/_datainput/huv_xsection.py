@@ -31,7 +31,8 @@ class HuvXsection:
             well: xtgeo well
             is_planned: boolean, if False well meta-data like zonelog is not added
         Returns:
-            data: List with dictionary containing zonelog, zonation points and conditional points
+            data: List with dictionary containing well, zonelog, zonation points
+                  and conditional points
         """
         if well is None:
             return []
