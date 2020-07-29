@@ -45,10 +45,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 """
 
     def __init__(
-        self,
-        app,
-        basedir: Path = None,
-        planned_wells_dir: Path = None,
+        self, app, basedir: Path = None, planned_wells_dir: Path = None,
     ):
 
         super().__init__()
@@ -111,9 +108,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
             zonelog_name,
         )
         target_points_file = parse_model_file.get_target_points(basedir)
-        self.df_well_target_points = FilterTable(
-            target_points_file, well_points_file
-        )
+        self.df_well_target_points = FilterTable(target_points_file, well_points_file)
 
         # Wellfiles and planned wells
         self.planned_wellfiles = []
