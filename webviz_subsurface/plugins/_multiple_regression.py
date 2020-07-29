@@ -21,7 +21,7 @@ from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
 from .._datainput.fmu_input import load_csv, load_parameters
-from .._utils.ensemble_handling import filter_and_sum_responses
+from .._utils.response_aggregation import filter_and_sum_responses
 
 
 class MultipleRegression(WebvizPluginABC):
@@ -211,22 +211,7 @@ folder, to avoid risk of not extracting the right data.
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.theme = app.webviz_settings["theme"]
-        self.badge_style = {
-            "font-weight": "bold",
-            "fontSize": ".70em",
-            "borderRadius": "3px",
-            "backgroundColor": "#505050",
-            "color": "white",
-            "white-space": "pre-wrap",
-        }
-        self.tooltip_style = {
-            "fontSize": ".75em",
-            "backgroundColor": "#505050",
-            "color": "white",
-            "opacity": "85%",
-            "white-space": "pre-wrap",
-            "borderRadius": "5px",
-        }
+        self.parameterdf = self.parameterdf.loc[:,self.parameterdf.apply(pd.Series.nunique) != 1]
         self.set_callbacks(app)
 
     def ids(self, element):

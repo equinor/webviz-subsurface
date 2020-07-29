@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import pandas as pd
 import dash_html_components as html
 import dash_core_components as dcc
@@ -8,15 +7,14 @@ from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
-
 from .._datainput.fmu_input import load_parameters, load_csv, load_smry
-from .._utils.ensemble_handling import filter_and_sum_responses
+from .._utils.response_aggregation import filter_and_sum_responses
 
 
 class ResponseParallelCoordinates(WebvizPluginABC):
 
     """
-    Visualizes parameters in a paralell parameter plot, colored by the value of the response.
+    Visualizes parameters in a parallel parameter plot, colored by the value of the response.
     Helpful for seeing trends in the relation of the parameters and the response.
 ---
 **Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
@@ -112,6 +110,7 @@ using the `fmu-ensemble` library.
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
 individual realizations. You should therefore not have more than one `UNSMRY` file in this \
 folder, to avoid risk of not extracting the right data."""
+
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -181,31 +180,18 @@ folder, to avoid risk of not extracting the right data."""
         self.check_runs()
         self.check_response_filters()
         if response_ignore:
-            self.responsedf.drop(
-                response_ignore,
-                errors="ignore", axis=1, inplace=True)
+            self.responsedf.drop(response_ignore, errors="ignore", axis=1, inplace=True)
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    [
-                        "REAL",
-                        "ENSEMBLE",
-                        *response_include,
-                        *list(response_filters.keys()),
-                    ]
+                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
                 ),
                 errors="ignore",
                 axis=1,
                 inplace=True,
             )
-
-
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
-
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uuid}"
 
     @property
     def tour_steps(self):
@@ -213,37 +199,36 @@ folder, to avoid risk of not extracting the right data."""
             {
                 "id": self.uuid("layout"),
                 "content": (
-                    "Dashboard for paralell parameters plot"
-                    "filtered to indicate the value of the selected response")
+                    "Dashboard for parallel parameters plot"
+                    "colored by the value of a response"
+                ),
             },
             {
                 "id": self.uuid("parameters"),
-                "content": ("Lets you control what parameters to include in your model. \n" +
-                        "There are two modes, exclusive and subset: \n" +
-                        "- Exclusive mode lets you remove specific parameters\n\n" +
-                        "- Subset mode lets you pick a subset of parameters \n")
+                "content": (
+                    "Lets you control what parameters to include in your plot. \n"
+                    + "There are two modes, exclusive and subset: \n"
+                    + "- Exclusive mode lets you remove specific parameters\n\n"
+                    + "- Subset mode lets you pick a subset of parameters \n"
+                ),
             },
             {
-                "id": self.uuid("paralell-coords-plot"),
-                "content": (
-                    "Plot showing the values of all the selected parameter at once."
-                )
+                "id": self.uuid("parallel-coords-plot"),
+                "content": ("Plot showing the values of all the selected parameters at once."),
             },
-
-            {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."), },
-            {"id": self.uuid("responses"), "content": ("Select the active response."), },
-            {"id": self.uuid("exclude_include"), "content": (
-                "choose if the parameter selector should be inclusive or exclusive"
-                )
+            {"id": self.uuid("ensemble"), "content": ("Select the active ensemble."),},
+            {"id": self.uuid("responses"), "content": ("Select the active response."),},
+            {
+                "id": self.uuid("exclude_include"),
+                "content": ("Choose if the parameter selector should be inclusive or exclusive"),
             },
-
         ]
         return steps
 
     @property
     def responses(self):
         """Returns valid responses. Filters out non numerical columns,
-        and filterable columns. Replaces : and , with _ to make it work with the model"""
+        and filterable columns."""
         responses = list(
             self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
             .apply(pd.to_numeric, errors="coerce")
@@ -284,9 +269,7 @@ folder, to avoid risk of not extracting the right data."""
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(
-                        f"Filter type {col_type} for {col_name} is not valid."
-                    )
+                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
 
     @property
     def filter_layout(self):
@@ -322,12 +305,10 @@ folder, to avoid risk of not extracting the right data."""
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
                         clearable=False,
                         value=self.ensembles[0],
-                        style={"marginBottom": "20px"}
+                        style={"marginBottom": "20px"},
                     ),
                 ]
             ),
@@ -336,49 +317,51 @@ folder, to avoid risk of not extracting the right data."""
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.responses
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.responses],
                         clearable=False,
                         value=self.responses[0],
-                        style={"marginBottom": "20px"}
+                        style={"marginBottom": "20px"},
                     ),
                 ]
             ),
             html.Div(
                 [
-                   html.Div("Parameters:", id=self.uuid("parameters"), style={
-                       "font-weight": "bold",
-                       "display": "inline-block",
-                        "margin-right": "10px"}),
-                   dcc.RadioItems(
-                       id=self.uuid("exclude_include"),
-                       options=[
-                           {"label": "Exclusive mode", "value": "exc"},
-                           {"label": "Subset mode", "value": "inc"}
-                       ],
-                       value="exc",
-                       labelStyle={"display": "inline-block"},
-                       style={"fontSize": ".80em"},
-                   )
-               ]
+                    html.Div(
+                        "Parameters:",
+                        id=self.uuid("parameters"),
+                        style={
+                            "font-weight": "bold",
+                            "display": "inline-block",
+                            "margin-right": "10px",
+                        },
+                    ),
+                    dcc.RadioItems(
+                        id=self.uuid("exclude_include"),
+                        options=[
+                            {"label": "Exclusive mode", "value": "exc"},
+                            {"label": "Subset mode", "value": "inc"},
+                        ],
+                        value="exc",
+                        labelStyle={"display": "inline-block"},
+                        style={"fontSize": ".80em"},
+                    ),
+                ]
             ),
             html.Div(
                 [
                     wcc.Select(
                         id=self.uuid("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.parameters
-                        ],
+                        options=[{"label": ens, "value": ens} for ens in self.parameters],
                         multi=True,
                         size=10,
                         value=[],
-                        style={"marginBottom": "20px"}
+                        style={"marginBottom": "20px"},
                     ),
                 ]
             ),
             html.Div("Filters:", style={"font-weight": "bold"}),
-            html.Div(children=self.filter_layout),]
+            html.Div(children=self.filter_layout),
+        ]
 
     @property
     def layout(self):
@@ -386,26 +369,21 @@ folder, to avoid risk of not extracting the right data."""
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
+                html.Div(style={"flex": 1}, children=self.control_layout),
                 html.Div(
-                    style={"flex": 1},
-                    children=self.control_layout
+                    style={"flex": 3}, children=wcc.Graph(id=self.uuid("parallel-coords-plot")),
                 ),
-                html.Div(
-                    style={"flex": 3},
-                    children=wcc.Graph(id=self.uuid("paralell-coords-plot")),
-                ),
-            ]
+            ],
         )
 
     @property
     def parallel_coords_callback_inputs(self):
-        """List of Inputs for paralell parameters callback"""
+        """List of Inputs for parallel parameters callback"""
         inputs = [
             Input(self.uuid("exclude_include"), "value"),
             Input(self.uuid("parameter-list"), "value"),
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
-
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -417,34 +395,33 @@ folder, to avoid risk of not extracting the right data."""
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append(
-                    {"name": col_name, "type": col_type, "values": filters[i]}
-                )
+                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
         return filteroptions
 
     def set_callbacks(self, app):
 
-        """Set callback for paralell coordinate plot"""
+        """Set callback for parallel coordinates plot"""
+
         @app.callback(
-            Output(self.uuid("paralell-coords-plot"), "figure"),
-            self.parallel_coords_callback_inputs
+            Output(self.uuid("parallel-coords-plot"), "figure"),
+            self.parallel_coords_callback_inputs,
         )
-        def _update_paralell_coordinate_plot(
-                exc_inc, parameter_list,
-                ensemble, response,
-                *filters):
-            """Callback to update the model for multiple regression
-            1. Filters and aggregates response dataframe per realization.
-            2. Filters parameters dataframe on selected ensemble.
-            3. Merge parameter and response dataframe.
-            5. Generate parallel parameters plot.
+        def _update_parallel_coordinate_plot(exc_inc, parameter_list, ensemble, response, *filters):
             """
+            Callback to update the parallel coordinates plot
+            1. Filter Dataframes according to chosen filter options
+            5. Generate updated parallel parameters plot.
+            """
+
+            # filtering
             filteroptions = self.make_response_filters(filters)
             responsedf = filter_and_sum_responses(
                 self.responsedf,
-                ensemble, response,
+                ensemble,
+                response,
                 filteroptions=filteroptions,
-                aggregation=self.aggregation)
+                aggregation=self.aggregation,
+            )
             if exc_inc == "exc":
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
@@ -453,25 +430,24 @@ folder, to avoid risk of not extracting the right data."""
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
 
+            # plot generation
             pallete = self.plotly_theme["layout"]["colorway"]
             colmap = [(0, pallete[0]), (1, pallete[2])]
-
             dims = [{"label": param, "values": df[param]} for param in df]
-            data = [{
-                "type": "parcoords",
-                "line": {
-                    "color": df[response],
-                    "colorscale": colmap,
-                    "showscale": True,
-                    "colorbar": {
-                        "title": response,
-                        "xanchor": "left",
-                        "x": -0.08,
+            data = [
+                {
+                    "type": "parcoords",
+                    "line": {
+                        "color": df[response],
+                        "colorscale": colmap,
+                        "showscale": True,
+                        "colorbar": {"title": response, "xanchor": "right", "x": -0.02,},
                     },
-                },
-                "dimensions": dims,
-                "labelangle": 45,
-                "labelside": "bottom",}]
+                    "dimensions": dims,
+                    "labelangle": 45,
+                    "labelside": "bottom",
+                }
+            ]
             layout = {}
             layout.update(self.plotly_theme["layout"])
             # Ensure sufficient spacing between each dimension and margin for labels
@@ -488,12 +464,7 @@ folder, to avoid risk of not extracting the right data."""
         return [
             (
                 load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
+                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
             ),
             (
                 load_csv,
@@ -506,13 +477,6 @@ folder, to avoid risk of not extracting the right data."""
                 ],
             ),
         ]
-
-
-def theme_layout(theme, specific_layout):
-    layout = {}
-    layout.update(theme["layout"])
-    layout.update(specific_layout)
-    return layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
