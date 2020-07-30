@@ -75,11 +75,6 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
-<<<<<<< HEAD
-    "MultipleRegression",
-    "ParameterResponseParallelCoordinates"
-=======
     "ParameterResponseMultipleRegression",
     "ParameterResponseParallelCoordinates",
->>>>>>> 6bb9b5ddf3a5df523682a365fcbd755b92124b67
 ]
