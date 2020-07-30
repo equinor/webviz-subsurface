@@ -49,9 +49,11 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
-from ._multiple_regression import MultipleRegression
-from ._correlation_interactions import CorrelationInteractions
-from ._response_parallel_coordinates import ParameterResponseParallelCoordinates
+from ._parameter_response_multiple_regression import ParameterResponseMultipleRegression
+from ._parameter_response_parallel_coordinates import (
+    ParameterResponseParallelCoordinates,
+)
+
 __all__ = [
     "ParameterDistribution",
     "ParameterCorrelation",
@@ -73,6 +75,11 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
+<<<<<<< HEAD
     "MultipleRegression",
     "ParameterResponseParallelCoordinates"
+=======
+    "ParameterResponseMultipleRegression",
+    "ParameterResponseParallelCoordinates",
+>>>>>>> 6bb9b5ddf3a5df523682a365fcbd755b92124b67
 ]

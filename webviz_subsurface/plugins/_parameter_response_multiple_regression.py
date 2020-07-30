@@ -20,14 +20,19 @@ from webviz_config.common_cache import CACHE
 from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_csv, load_parameters
+from .._datainput.fmu_input import load_csv, load_parameters, load_smry
 from .._utils.response_aggregation import filter_and_sum_responses
 
 
-class MultipleRegression(WebvizPluginABC):
-    """ Visualizes the results of multiple regression of parameters and a chosen response using \
-forward selection to find the best fit.
+class ParameterResponseMultipleRegression(WebvizPluginABC):
+    """ Visualizes the results of multiple linear regression of parameters
+and a chosen response using forward selection to limit the number of terms. \
+Iteraction terms can be be added, up to third order.
 
+Adjusted R-squared is used as the criterion in the forward selection algorithm.
+
+!>Regression models break down when there are duplicate or highly correlated parameters. \
+Please make sure to properly filter your inputs or the model will give answers that are misleading.
 ---
 **Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
 
@@ -168,8 +173,8 @@ folder, to avoid risk of not extracting the right data.
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = pd.read_csv(self.parameter_csv)
-            self.responsedf = pd.read_csv(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
         elif ensembles:
             self.ens_paths = {
@@ -204,7 +209,12 @@ folder, to avoid risk of not extracting the right data.
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
+                    [
+                        "REAL",
+                        "ENSEMBLE",
+                        *response_include,
+                        *list(response_filters.keys()),
+                    ]
                 ),
                 errors="ignore",
                 axis=1,
@@ -214,7 +224,9 @@ folder, to avoid risk of not extracting the right data.
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
         self.theme = app.webviz_settings["theme"]
-        self.parameterdf = self.parameterdf.loc[:,self.parameterdf.apply(pd.Series.nunique) != 1]
+        self.parameterdf = self.parameterdf.loc[
+            :, self.parameterdf.apply(pd.Series.nunique) != 1
+        ]
         self.set_callbacks(app)
 
     @property
@@ -332,7 +344,7 @@ folder, to avoid risk of not extracting the right data.
         return {
             "default color": self.theme.plotly_theme["layout"]["colorway"][0],
             "gray": "#606060",
-            "dark gray": "#303030"
+            "dark gray": "#303030",
         }
 
     def check_runs(self):
@@ -351,7 +363,9 @@ folder, to avoid risk of not extracting the right data.
                 if col_name not in self.responsedf.columns:
                     raise ValueError(f"{col_name} is not in response file")
                 if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(f"Filter type {col_type} for {col_name} is not valid.")
+                    raise ValueError(
+                        f"Filter type {col_type} for {col_name} is not valid."
+                    )
 
     @property
     def filter_layout(self):
@@ -387,7 +401,9 @@ folder, to avoid risk of not extracting the right data.
                     html.Div("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("ensemble"),
-                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.ensembles
+                        ],
                         clearable=False,
                         value=self.ensembles[0],
                         style={"marginBottom": "20px"},
@@ -399,7 +415,9 @@ folder, to avoid risk of not extracting the right data.
                     html.Div("Response:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.uuid("responses"),
-                        options=[{"label": ens, "value": ens} for ens in self.responses],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.responses
+                        ],
                         clearable=False,
                         value=self.responses[0],
                         style={"marginBottom": "20px"},
@@ -428,7 +446,9 @@ folder, to avoid risk of not extracting the right data.
                     ),
                     dcc.Dropdown(
                         id=self.uuid("parameter-list"),
-                        options=[{"label": ens, "value": ens} for ens in self.parameters],
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
                         clearable=True,
                         multi=True,
                         placeholder="",
@@ -445,7 +465,8 @@ folder, to avoid risk of not extracting the right data.
                         "Settings:", style={"font-weight": "bold", "marginTop": "20px"},
                     ),
                     html.Div(
-                        "Interaction", style={"display": "inline-block", "margin-right": "10px"},
+                        "Interaction",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     dcc.Slider(
                         id=self.uuid("interaction"),
@@ -477,13 +498,17 @@ folder, to avoid risk of not extracting the right data.
             html.Div(
                 [
                     html.Div(
-                        "Force in", style={"display": "inline-block", "margin-right": "10px"},
+                        "Force in",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
                     dcc.Dropdown(
                         id=self.uuid("force-in"),
                         clearable=True,
                         multi=True,
                         placeholder="Select parameters to force in",
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.parameters
+                        ],
                         value=[],
                         style={"marginBottom": "20px"},
                     ),
@@ -526,18 +551,18 @@ folder, to avoid risk of not extracting the right data.
                             },
                         ),
                         html.Div(children=[wcc.Graph(id=self.uuid("p-values-plot"))]),
-                        html.Div(children=[wcc.Graph(id=self.uuid("coefficient-plot"))]),
+                        html.Div(
+                            children=[wcc.Graph(id=self.uuid("coefficient-plot"))]
+                        ),
                         html.Label(
                             "Table of parameters and their corresponding p-values",
-                            style={
-                                "fontSize": ".925em",
-                                "textAlign": "center",
-                            },
+                            style={"fontSize": ".925em", "textAlign": "center",},
                         ),
                         DataTable(
                             id=self.uuid("table"),
                             sort_action="native",
                             filter_action="native",
+                            sort_by=[{"column_id": "P>|t|", "direction": "asc"}],
                             page_action="native",
                             page_size=10,
                             style_cell={"fontSize": ".80em"},
@@ -580,7 +605,9 @@ folder, to avoid risk of not extracting the right data.
         filteroptions = []
         if filters:
             for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append({"name": col_name, "type": col_type, "values": filters[i]})
+                filteroptions.append(
+                    {"name": col_name, "type": col_type, "values": filters[i]}
+                )
         return filteroptions
 
     def set_callbacks(self, app):
@@ -591,6 +618,8 @@ folder, to avoid risk of not extracting the right data.
             ],
             self.model_callback_inputs,
         )
+        # pylint: disable=unused-argument
+        # pylint: disable=unused-variable
         def update_button(
             n_clicks,
             exc_inc,
@@ -609,7 +638,11 @@ folder, to avoid risk of not extracting the right data.
             if ctx.triggered[0]["prop_id"].split(".")[0] == self.uuid("submit-button"):
                 return (
                     True,
-                    {"background-color": "LightGray", "cursor": "not-allowed", "border": "none"},
+                    {
+                        "background-color": "LightGray",
+                        "cursor": "not-allowed",
+                        "border": "none",
+                    },
                 )
             return (
                 False,
@@ -620,6 +653,7 @@ folder, to avoid risk of not extracting the right data.
             Output(self.uuid("parameter-list"), "placeholder"),
             [Input(self.uuid("exclude-include"), "value")],
         )
+        # pylint: disable=unused-variable
         def update_placeholder(exc_inc):
             """ Callback to update placeholder text in exlude/subset mode """
             if exc_inc == "exc":
@@ -627,19 +661,25 @@ folder, to avoid risk of not extracting the right data.
             return "Select parameters for subset"
 
         @app.callback(
-            [Output(self.uuid("force-in"), "options"), Output(self.uuid("force-in"), "value"),],
+            [
+                Output(self.uuid("force-in"), "options"),
+                Output(self.uuid("force-in"), "value"),
+            ],
             [
                 Input(self.uuid("parameter-list"), "value"),
                 Input(self.uuid("exclude-include"), "value"),
             ],
             [State(self.uuid("force-in"), "value"),],
         )
+        # pylint: disable=unused-variable
         def update_force_in(parameter_list, exc_inc, force_in):
             """ Callback to update options for force in """
             if dash.callback_context.triggered[0]["value"] is None:
                 raise PreventUpdate
             if exc_inc == "exc":
-                df = self.parameterdf.drop(columns=["ENSEMBLE", "REAL"] + parameter_list)
+                df = self.parameterdf.drop(
+                    columns=["ENSEMBLE", "REAL"] + parameter_list
+                )
             elif exc_inc == "inc":
                 df = self.parameterdf[parameter_list] if parameter_list else []
 
@@ -664,6 +704,7 @@ folder, to avoid risk of not extracting the right data.
             self.model_callback_states,
         )
         # pylint:disable=too-many-locals
+        # pylint: disable=unused-argument
         def _update_visualizations(
             n_clicks,
             exc_inc,
@@ -697,7 +738,9 @@ folder, to avoid risk of not extracting the right data.
                 parameterdf = self.parameterdf[["ENSEMBLE", "REAL"] + parameter_list]
 
             parameterdf = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(columns=["REAL", "ENSEMBLE"])
+            df = pd.merge(responsedf, parameterdf, on=["REAL"]).drop(
+                columns=["REAL", "ENSEMBLE"]
+            )
 
             if exc_inc == "inc" and not parameter_list:
                 return (
@@ -717,7 +760,11 @@ folder, to avoid risk of not extracting the right data.
                 )
 
             result = gen_model(
-                df, response, force_in=force_in, max_vars=max_vars, interaction_degree=interaction,
+                df,
+                response,
+                force_in=force_in,
+                max_vars=max_vars,
+                interaction_degree=interaction,
             )
             if not result or result.model.fit().df_model == 0:
                 return (
@@ -740,7 +787,9 @@ folder, to avoid risk of not extracting the right data.
                 )
             # Generate table
             table = result.model.fit().summary2().tables[1].drop("Intercept")
-            table.drop(["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True)
+            table.drop(
+                ["Std.Err.", "Coef.", "t", "[0.025", "0.975]"], axis=1, inplace=True
+            )
             table.index.name = "Parameter"
             table.reset_index(inplace=True)
             columns = [
@@ -772,7 +821,12 @@ folder, to avoid risk of not extracting the right data.
         return [
             (
                 load_parameters,
-                [{"ensemble_paths": self.ens_paths, "ensemble_set_name": "EnsembleSet",}],
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
             ),
             (
                 load_csv,
@@ -829,7 +883,9 @@ def _gen_interaction_df(df: pd.DataFrame, response: str, degree: int = 2):
 
 
 # pylint:disable=too-many-locals
-def forward_selected(data: pd.DataFrame, resp: str, force_in: list = None, maxvars: int = 5):
+def forward_selected(
+    data: pd.DataFrame, resp: str, force_in: list = None, maxvars: int = 5
+):
     """ Forward model selection algorithm
 
         Returns Statsmodels RegressionResults object.
@@ -933,7 +989,9 @@ def _model_warnings(design_matrix: pd.DataFrame):
         warnings.filterwarnings("error", category=RuntimeWarning)
         warnings.filterwarnings("ignore", category=UserWarning)
         try:
-            model = sm.OLS(design_matrix["response"], design_matrix.drop(columns="response")).fit()
+            model = sm.OLS(
+                design_matrix["response"], design_matrix.drop(columns="response")
+            ).fit()
         except (RuntimeWarning) as error:
             print("error: ", error)
             return None
@@ -952,16 +1010,15 @@ def make_p_values_plot(p_sorted, theme, colors):
             "type": "bar",
             "marker": {
                 "color": [
-                    colors["default color"] if val < 0.05 else colors["gray"] for val in p_values
+                    colors["default color"] if val < 0.05 else colors["gray"]
+                    for val in p_values
                 ]
             },
         }
     )
     fig.update_traces(
         hovertemplate=[
-            "<b>P-value:</b> "
-            + str(format(pval, ".4g"))
-            + "<extra></extra>"
+            "<b>P-value:</b> " + str(format(pval, ".4g")) + "<extra></extra>"
             for pval in p_values
         ]
     )
@@ -976,7 +1033,9 @@ def make_p_values_plot(p_sorted, theme, colors):
             "line": {"color": colors["dark gray"], "width": 1.5},
         }
     )
-    fig.add_annotation(x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False)
+    fig.add_annotation(
+        x=len(p_values) - 0.2, y=0.05, text="P-value<br>= 0.05", showarrow=False
+    )
     fig = fig.to_dict()
     fig["layout"].update(
         barmode="relative",
@@ -1004,7 +1063,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
     x = (
         [1]
         if len(parameters) == 1
-        else np.linspace(max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),)
+        else np.linspace(
+            max(1 - centre_dist, 0), min(1 + centre_dist, 2), num=len(parameters),
+        )
     )
     y = np.zeros(len(x))
     fig = go.Figure(
@@ -1013,7 +1074,9 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
             y=y,
             opacity=0,
             marker=dict(
-                color=(p_values < 0.05).astype(np.int),  # 0.05: upper limit for stat.sig. p-value
+                color=(p_values < 0.05).astype(
+                    np.int
+                ),  # 0.05: upper limit for stat.sig. p-value
                 colorscale=[(0, colors["gray"]), (1, colors["default color"])],
                 cmin=0,
                 cmax=1,
@@ -1022,9 +1085,7 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
     )
     fig.update_traces(
         hovertemplate=[
-            "<b>P-value:</b> "
-            + str(format(pval, ".4g"))
-            + "<extra></extra>"
+            "<b>P-value:</b> " + str(format(pval, ".4g")) + "<extra></extra>"
             for pval in p_values
         ]
     )
@@ -1066,11 +1127,16 @@ def make_arrow_plot(coeff_sorted, p_sorted, theme, colors):
         height=500,
         hovermode="x",
         title=dict(
-            text="Parameters impact (increase or decrese) on response and their significance", x=0.5
+            text="Parameters impact (increase or decrese) on response and their significance",
+            x=0.5,
         ),
-        yaxis=dict(range=[-0.08, 0.08], title="", showticklabels=False),  # 0.08: arrow height
+        yaxis=dict(
+            range=[-0.08, 0.08], title="", showticklabels=False
+        ),  # 0.08: arrow height
         xaxis=dict(
-            title="", ticktext=[param.replace(" × ", "<br>× ") for param in parameters], tickvals=x,
+            title="",
+            ticktext=[param.replace(" × ", "<br>× ") for param in parameters],
+            tickvals=x,
         ),
     )
     fig["layout"] = theme.create_themed_layout(fig["layout"])
@@ -1089,7 +1155,9 @@ def make_range_slider(domid, values, col_name):
         min=values.min(),
         max=values.max(),
         step=calculate_slider_step(
-            min_value=values.min(), max_value=values.max(), steps=len(list(values.unique())) - 1,
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
         ),
         value=[values.min(), values.max()],
         marks={

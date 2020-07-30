@@ -151,8 +151,8 @@ folder, to avoid risk of not extracting the right data."""
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = pd.read_csv(self.parameter_csv)
-            self.responsedf = pd.read_csv(self.response_csv)
+            self.parameterdf = read_csv(self.parameter_csv)
+            self.responsedf = read_csv(self.response_csv)
 
         elif ensembles:
             self.ens_paths = {
@@ -187,7 +187,12 @@ folder, to avoid risk of not extracting the right data."""
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
+                    [
+                        "REAL",
+                        "ENSEMBLE",
+                        *response_include,
+                        *list(response_filters.keys()),
+                    ]
                 ),
                 errors="ignore",
                 axis=1,
@@ -195,7 +200,6 @@ folder, to avoid risk of not extracting the right data."""
             )
         if parameter_ignore:
             self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
-
 
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
