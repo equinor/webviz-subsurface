@@ -225,8 +225,8 @@ class HuvXsection:
                     "name": self.surface_attributes[sfc_file]["name"],
                     "text": self.get_hover_text(sfc_file),
                     "mode": "lines",
-                    "hovertemplate": "<b>Depth:<b> %{y:.2f} <br>"
-                    + "<b>Depth error:<b> %{text}",
+                    "hovertemplate": "<b>TVD:<b> %{y:.2f} <br>"
+                    + "<b>TVD SD:<b> %{text}",
                 }
                 for sfc_file, _ in surface_tuples
             ]
@@ -292,8 +292,8 @@ class HuvXsection:
         """
         data = {
             "Surface name": [],
+            "TVD [m]": [],
             "TVD SD [m]": [],
-            "Depth uncertainty [m]": [],
             "Direction": [],
         }
         for sfc_path in self.surface_attributes:
@@ -310,8 +310,8 @@ class HuvXsection:
                         point=(row["X_UTME"], row["Y_UTMN"])
                     )
                     data["Surface name"].append(surface_name)
-                    data["TVD SD [m]"].append("%.2f" % row["Z_TVDSS"])
-                    data["Depth uncertainty [m]"].append("%.2f" % depth_uncertainty)
+                    data["TVD [m]"].append("%.2f" % row["Z_TVDSS"])
+                    data["TVD SD [m]"].append("%.2f" % depth_uncertainty)
                     data["Direction"].append(row["DIRECTION"])
         return pd.DataFrame(data=data)
 
