@@ -47,8 +47,8 @@ setup(
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "ParameterResponseMultipleRegression = "
             + "webviz_subsurface.plugins:ParameterResponseMultipleRegression",
-            "ResponseColoredParallelCoordinates = "
-            + "webviz_subsurface.plugins:ResponseColoredParallelCoordinates",
+            "ParameterResponseParallelCoordinates = "
+            + "webviz_subsurface.plugins:ParameterResponseParallelCoordinates",
         ]
     },
     install_requires=[
@@ -61,6 +61,7 @@ setup(
         "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.0.23",
         "xtgeo>=2.8",
+        "statsmodels>=0.11.1",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},

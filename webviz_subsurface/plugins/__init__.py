@@ -50,7 +50,9 @@ from ._reservoir_simulation_timeseries_regional import (
 )
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._parameter_response_multiple_regression import ParameterResponseMultipleRegression
-from ._response_colored_parallel_coordinates import ResponseColoredParallelCoordinates
+from ._parameter_response_parallel_coordinates import (
+    ParameterResponseParallelCoordinates,
+)
 
 __all__ = [
     "ParameterDistribution",
@@ -74,5 +76,5 @@ __all__ = [
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
     "ParameterResponseMultipleRegression",
-    "ResponseColoredParallelCoordinates",
+    "ParameterResponseParallelCoordinates",
 ]
