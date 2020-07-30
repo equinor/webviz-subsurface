@@ -11,7 +11,7 @@ from .._datainput.fmu_input import load_parameters, load_csv, load_smry
 from .._utils.response_aggregation import filter_and_sum_responses
 
 
-class ResponseParallelCoordinates(WebvizPluginABC):
+class ParameterResponseParallelCoordinates(WebvizPluginABC):
 
     """
     Visualizes parameters in a parallel parameter plot, colored by the value of the response.

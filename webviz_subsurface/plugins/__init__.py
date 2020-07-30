@@ -51,7 +51,7 @@ from ._reservoir_simulation_timeseries_regional import (
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._multiple_regression import MultipleRegression
 from ._correlation_interactions import CorrelationInteractions
-from ._response_parallel_coordinates import ResponseParallelCoordinates
+from ._response_parallel_coordinates import ParameterResponseParallelCoordinates
 __all__ = [
     "ParameterDistribution",
     "ParameterCorrelation",
@@ -74,5 +74,5 @@ __all__ = [
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
     "MultipleRegression",
-    "ResponseParallelCoordinates"
+    "ParameterResponseParallelCoordinates"
 ]
