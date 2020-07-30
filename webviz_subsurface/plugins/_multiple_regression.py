@@ -170,8 +170,8 @@ folder, to avoid risk of not extracting the right data.
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = pd.read_parquet(self.parameter_csv)
-            self.responsedf = pd.read_parquet(self.response_csv)
+            self.parameterdf = pd.read_csv(self.parameter_csv)
+            self.responsedf = pd.read_csv(self.response_csv)
 
         elif ensembles:
             self.ens_paths = {

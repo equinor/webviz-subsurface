@@ -122,6 +122,7 @@ folder, to avoid risk of not extracting the right data."""
         response_filters: dict = None,
         response_ignore: list = None,
         response_include: list = None,
+        parameter_ignore: list = None,
         column_keys: list = None,
         sampling: str = "monthly",
         aggregation: str = "sum",
@@ -134,13 +135,14 @@ folder, to avoid risk of not extracting the right data."""
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.response_ignore = response_ignore if response_ignore else None
+        self.parameter_ignore = parameter_ignore if parameter_ignore else None
         self.column_keys = column_keys
         self.time_index = sampling
         self.aggregation = aggregation
 
         if response_ignore and response_include:
             raise ValueError(
-                'Incorrent argument. either provide "response_include", '
+                'Incorrent argument. Either provide "response_include", '
                 '"response_ignore" or neither'
             )
         if parameter_csv and response_csv:
@@ -149,8 +151,8 @@ folder, to avoid risk of not extracting the right data."""
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = read_csv(self.parameter_csv)
-            self.responsedf = read_csv(self.response_csv)
+            self.parameterdf = pd.read_csv(self.parameter_csv)
+            self.responsedf = pd.read_csv(self.response_csv)
 
         elif ensembles:
             self.ens_paths = {
@@ -175,7 +177,8 @@ folder, to avoid risk of not extracting the right data."""
                 self.response_filters["DATE"] = "single"
         else:
             raise ValueError(
-                'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
+                'Incorrect arguments.\
+                 Either provide "csv files" or "ensembles and response_file".'
             )
         self.check_runs()
         self.check_response_filters()
@@ -184,17 +187,16 @@ folder, to avoid risk of not extracting the right data."""
         if response_include:
             self.responsedf.drop(
                 self.responsedf.columns.difference(
-                    [
-                        "REAL",
-                        "ENSEMBLE",
-                        *response_include,
-                        *list(response_filters.keys()),
-                    ]
+                    ["REAL", "ENSEMBLE", *response_include, *list(response_filters.keys()),]
                 ),
                 errors="ignore",
                 axis=1,
                 inplace=True,
             )
+        if parameter_ignore:
+            self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
+
+
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
