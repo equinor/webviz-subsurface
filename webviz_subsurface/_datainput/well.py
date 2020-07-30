@@ -77,17 +77,17 @@ def get_well_layers(
     dropdown_data = [
         {
             "type": "polyline",
-            "color": "rgba(0,255,255,1)",
+            "color": "rgba(128,0,0)",
             "positions": positions,
             "tooltip": dropdown_well.wellname + " trajectory",
         }
     ]
     for wellfile, well in wells.items():
-        color = "rgba(0,255,255,1)" if wellfile == dropdown_file else "rgba(0,255,0,1)"
+        color = "rgba(128,0,0)" if wellfile == dropdown_file else "rgba(255,20,147)"
         append_well_to_data(data, well, wellfile, surface, color)
     for wellfile, well in planned_wells.items():
         color = (
-            "rgba(0,255,255,1)" if wellfile == dropdown_file else "rgba(224,224,224,1)"
+            "rgba(128,0,0)" if wellfile == dropdown_file else "rgba(224,224,224,1)"
         )
         append_well_to_data(planned_data, well, wellfile, surface, color)
     return [
@@ -131,7 +131,7 @@ def append_well_to_data(data, well, wellfile, surface, color):
                     "type": "circle",
                     "center": coord,
                     "color": color,
-                    "radius": 50,
+                    "radius": 100,
                     "tooltip": well.wellname,
                     "id": wellfile,
                 }
