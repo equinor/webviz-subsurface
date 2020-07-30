@@ -108,9 +108,20 @@ def new_make_surface_layer(
                 "type": "image",
                 "url": array_to_png(zvalues.copy()),
                 "colorScale": {
-                    "colors": ['#440154', '#482878', '#3e4989', '#31688e', '#26828e',\
-                    '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725']\
-                    if color is None else color,
+                    "colors": [
+                        "#440154",
+                        "#482878",
+                        "#3e4989",
+                        "#31688e",
+                        "#26828e",
+                        "#1f9e89",
+                        "#35b779",
+                        "#6ece58",
+                        "#b5de2b",
+                        "#fde725",
+                    ]
+                    if color is None
+                    else color,
                     "prefixZeroAlpha": False,
                     "scaleType": "linear",
                     "cutPointMin": min_val,
@@ -163,16 +174,18 @@ def get_surface_layers(switch, surface_name, surfaces, min_val=None, max_val=Non
                 name=depth_list[i],
                 min_val=min_val,
                 max_val=max_val,
-                color=['#440154',
-                    '#482878',
-                    '#3e4989',
-                    '#31688e',
-                    '#26828e',
-                    '#1f9e89',
-                    '#35b779',
-                    '#6ece58',
-                    '#b5de2b',
-                    '#fde725'],
+                color=[
+                    "#440154",
+                    "#482878",
+                    "#3e4989",
+                    "#31688e",
+                    "#26828e",
+                    "#1f9e89",
+                    "#35b779",
+                    "#6ece58",
+                    "#b5de2b",
+                    "#fde725",
+                ],
                 shader_type=shader_type,
             )
             s_layer["id"] = surface_name + " " + depth_list[i] + "-id"

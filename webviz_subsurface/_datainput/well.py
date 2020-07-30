@@ -86,9 +86,7 @@ def get_well_layers(
         color = "rgba(128,0,0)" if wellfile == dropdown_file else "rgba(255,20,147)"
         append_well_to_data(data, well, wellfile, surface, color)
     for wellfile, well in planned_wells.items():
-        color = (
-            "rgba(128,0,0)" if wellfile == dropdown_file else "rgba(224,224,224,1)"
-        )
+        color = "rgba(128,0,0)" if wellfile == dropdown_file else "rgba(224,224,224,1)"
         append_well_to_data(planned_data, well, wellfile, surface, color)
     return [
         {
