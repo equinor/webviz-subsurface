@@ -20,7 +20,7 @@ from .._datainput.huv_xsection import HuvXsection
 from .._datainput.huv_table import FilterTable
 from .._datainput import parse_model_file
 
-
+# Remove this
 class HorizonUncertaintyViewer(WebvizPluginABC):
     """ ### HorizonUncertaintyViewer
 Visualizes depth error for surfaces in map view and cross section view.
