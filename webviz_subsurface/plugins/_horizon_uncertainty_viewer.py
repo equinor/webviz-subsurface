@@ -24,7 +24,7 @@ from .._datainput import parse_model_file
 class HorizonUncertaintyViewer(WebvizPluginABC):
     """ ### HorizonUncertaintyViewer
 Visualizes depth error for surfaces in map view and cross section view.
-The cross section is defined by surfacefiles and wellfiles or a polyline.
+The cross section is defined by wellfiles and surfacefiles or a polyline.
 Polyline drawn interactivly in map view. Files parsed from model_file.xml.
 * `basedir`: Path to folder with model_file.xml
    Make sure that the folder has the same format as a COHIBA folder
