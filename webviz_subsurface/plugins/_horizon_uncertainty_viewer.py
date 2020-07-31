@@ -23,11 +23,12 @@ from .._datainput import parse_model_file
 
 class HorizonUncertaintyViewer(WebvizPluginABC):
     """ ### HorizonUncertaintyViewer
-Visualizes depth error for surfaces in map view and cross section view.
+Visualizes depth uncertainty for surfaces in map view and cross section view.
 The cross section is defined by wellfiles and surfacefiles or a polyline.
-Polyline drawn interactivly in map view. Files parsed from model_file.xml.
-* `basedir`: Path to folder with model_file.xml
-   Make sure that the folder has the same format as a COHIBA folder
+Polylines are drawn interactivly in map view. The plugin reads information
+from a COHIBA model file.
+* `basedir`: Path to folder with model_file.xml.
+   Make sure that the folder has the same format as a COHIBA folder.
 * `planned_wells_dir`: Path to folder with planned well files.
    Make sure that all planned wells have format 'ROXAR RMS well'.
 """
@@ -154,14 +155,14 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                 html.Div(
                     children=[
                         dbc.Button(
-                            "Surfaces Settings",
+                            "Surface Settings",
                             id=self.ids("button-open-graph-settings"),
                             color="light",
                             className="mr-1",
                         ),
                         dbc.Modal(
                             children=[
-                                dbc.ModalHeader("Surfaces Settings"),
+                                dbc.ModalHeader("Surface Settings"),
                                 dbc.ModalBody(
                                     children=[
                                         html.Label(
@@ -190,7 +191,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
                                             id=self.ids("surfaces-de-checklist"),
                                             options=[
                                                 {
-                                                    "label": name + "_depth_error",
+                                                    "label": name + " SD",
                                                     "value": path,
                                                     "disabled": False,
                                                 }
