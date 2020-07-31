@@ -72,7 +72,7 @@ jobs:
 
     - name: 🤖 Run tests
       env:
-        # If you want the CI to (temporarily) run against your fork of the testdada,
+        # If you want the CI to (temporarily) run against your fork of the testdata,
         # change the value her from "equinor" to your username.
         TESTDATA_REPO_OWNER: Nykaas
         # If you want the CI to (temporarily) run against another branch than master,
