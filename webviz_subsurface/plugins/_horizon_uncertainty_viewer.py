@@ -32,6 +32,7 @@ Polyline drawn interactivly in map view. Files parsed from model_file.xml.
    Make sure that all planned wells have format 'ROXAR RMS well'.
 """
 
+    #
     # pylint: disable=too-many-locals
     def __init__(
         self, app, basedir: Path = None, planned_wells_dir: Path = None,
