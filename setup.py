@@ -13,7 +13,12 @@ setup(
     url="https://github.com/equinor/webviz-subsurface",
     author="R&T Equinor",
     packages=find_packages(exclude=["tests"]),
-    package_data={"webviz_subsurface": ["_abbreviations/abbreviation_data/*.json"]},
+    package_data={
+        "webviz_subsurface": [
+            "_abbreviations/abbreviation_data/*.json",
+            "_assets/css/*.css",
+        ]
+    },
     entry_points={
         "webviz_config_plugins": [
             "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
@@ -45,19 +50,23 @@ setup(
             "ReservoirSimulationTimeSeriesRegional = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
+            "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
         ]
     },
     install_requires=[
         "dash>=1.11",
         "fmu-ensemble>=1.2.3",
+        "beautifulsoup4",
+        "lxml",
         "matplotlib>=3.0",
         "pandas>=0.24",
         "pillow>=6.1",
         "pyscal>=0.4.1",
         "scipy>=1.2",
         "webviz-config>=0.0.55",
-        "webviz-subsurface-components>=0.0.23",
+        "webviz-subsurface-components>=0.0.27",
         "xtgeo>=2.8",
+        "dash_bootstrap_components>=0.10.3",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
