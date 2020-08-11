@@ -659,7 +659,10 @@ def surface_to_json(surface):
 
 
 def surface_from_json(surfaceobj):
-    return xtgeo.RegularSurface(**surfaceobj)
+    # See https://github.com/equinor/xtgeo/issues/405
+    surface = xtgeo.RegularSurface(**surfaceobj)
+    surface.values = np.array(surfaceobj["values"])
+    return surface
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
