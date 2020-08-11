@@ -117,13 +117,13 @@ aggregated_data/parameters.csv)
     def __init__(
         self,
         app,
-        csvfile_vol: Path = None,
-        csvfile_parameters: Path = None,
-        ensembles: list = None,
-        volfiles: dict = None,
+        csvfile_vol: Optional[Path] = None,
+        csvfile_parameters: Optional[Path] = None,
+        ensembles: Optional[list] = None,
+        volfiles: Optional[dict] = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
-        metadata: Path = None,
+        metadata: Optional[str] = None,
     ):
 
         super().__init__()
@@ -163,13 +163,16 @@ aggregated_data/parameters.csv)
                 '"ensembles" and "volfiles"'
             )
         self.initial_response = response
-        self.metadata_path = metadata
-        self.metadata = (
-            self.metadata_path
-            if self.metadata_path is None
-            else json.load(get_metadata(self.metadata_path))
-        )
-
+        if isinstance(metadata, str) and metadata.lower() == "metric":
+            self.metadata_path = None
+            self.metadata = metadata
+        else:
+            self.metadata_path = None if metadata is None else Path(metadata)
+            self.metadata = (
+                self.metadata_path
+                if self.metadata_path is None
+                else json.load(get_metadata(self.metadata_path))
+            )
         # Merge into one dataframe
         # (TODO: Should raise error if not all ensembles have sensitivity data)
         self.volumes = pd.merge(volumes, parameters, on=["ENSEMBLE", "REAL"])

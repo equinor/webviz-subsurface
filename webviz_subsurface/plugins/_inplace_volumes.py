@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -91,12 +92,12 @@ description is given in `metadata`:
     def __init__(
         self,
         app,
-        csvfile: Path = None,
-        ensembles: list = None,
-        volfiles: dict = None,
+        csvfile: Optional[Path] = None,
+        ensembles: Optional[list] = None,
+        volfiles: Optional[dict] = None,
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
-        metadata: Path = None,
+        metadata: Optional[str] = None,
     ):
 
         super().__init__()
@@ -126,12 +127,16 @@ description is given in `metadata`:
             )
 
         self.initial_response = response
-        self.metadata_path = metadata
-        self.metadata = (
-            self.metadata_path
-            if self.metadata_path is None
-            else json.load(get_metadata(self.metadata_path))
-        )
+        if isinstance(metadata, str) and metadata.lower() == "metric":
+            self.metadata_path = None
+            self.metadata = metadata
+        else:
+            self.metadata_path = None if metadata is None else Path(metadata)
+            self.metadata = (
+                self.metadata_path
+                if self.metadata_path is None
+                else json.load(get_metadata(self.metadata_path))
+            )
         self.selectors_id = {x: self.uuid(x) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
@@ -207,7 +212,7 @@ description is given in `metadata`:
                     ],
                 )
             )
-        if self.metadata is not None:
+        if self.metadata_path is not None:
             functions.append((get_metadata, [{"metadata": self.metadata_path}]))
         return functions
 
