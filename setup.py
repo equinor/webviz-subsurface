@@ -45,6 +45,7 @@ setup(
             "ReservoirSimulationTimeSeriesRegional = "
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
+            "PvtPlot = webviz_subsurface.plugins:PvtPlot",
         ]
     },
     install_requires=[
@@ -57,6 +58,8 @@ setup(
         "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.0.23",
         "xtgeo>=2.8",
+        "opm>=2020.10.1",
+        "ecl2df>=0.6.1",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},

@@ -49,6 +49,7 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
+from ._pvt_plot import PvtPlot
 
 
 __all__ = [
@@ -72,4 +73,5 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
+    "PvtPlot",
 ]
