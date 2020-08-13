@@ -48,6 +48,7 @@ setup(
         ]
     },
     install_requires=[
+        "dash>=1.11",
         "fmu-ensemble>=1.2.3",
         "matplotlib>=3.0",
         "pandas>=0.24",
