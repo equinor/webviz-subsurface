@@ -5,7 +5,7 @@
 ########################################
 
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from opm.io.ecl import EclFile
 
@@ -60,7 +60,7 @@ class EclPropertyTableRawData:  # pylint: disable=too-few-public-methods
         self.num_tables = 0
 
 
-def const_compr_index():
+def const_compr_index() -> int:
     return InitFileDefinitions.LOGIHEAD_CONSTANT_OILCOMPR_INDEX
 
 
@@ -156,13 +156,13 @@ class Implementation:
     def __init__(self):
         self.values = []
 
-    def get_table(self, tab_index: int) -> List[VariateAndValues]:
+    def get_table(self, tab_index: int) -> Optional[List[VariateAndValues]]:
         if tab_index in range(0, len(self.values)):
             return self.values[tab_index]
 
         return None
 
-    def tables(self):
+    def tables(self) -> List[PvxOBase]:
         return self.values
 
     @staticmethod
@@ -181,7 +181,9 @@ class Oil(Implementation):
         self.values = self.create_pvt_function(raw, const_compr)
 
     # pylint: disable=unused-argument
-    def create_pvt_function(self, raw: EclPropertyTableRawData, const_compr: bool):
+    def create_pvt_function(
+        self, raw: EclPropertyTableRawData, const_compr: bool
+    ) -> List[PvxOBase]:
         if raw.num_primary == 0:
             raise super().InvalidArgument("Oil PVT table without primary lookup key")
         if raw.num_cols != 5:
@@ -251,7 +253,7 @@ class Oil(Implementation):
         return ret
 
     @staticmethod
-    def from_ecl_init_file(ecl_init_file: EclFile) -> "Oil":
+    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Oil"]:
         logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)
         is_const_compr = bool(logihead[const_compr_index()])
 
@@ -296,7 +298,7 @@ class Gas(Implementation):
         self.rhos = rhos
         self.values = self.create_pvt_function(raw)
 
-    def create_pvt_function(self, raw: EclPropertyTableRawData):
+    def create_pvt_function(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
         if raw.num_primary == 0:
             raise super().InvalidArgument("Gas PVT table without primary lookup key")
         if raw.num_cols != 5:
@@ -415,7 +417,7 @@ class Gas(Implementation):
         return ret
 
     @staticmethod
-    def from_ecl_init_file(ecl_init_file: EclFile) -> "Gas":
+    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Gas"]:
         intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
         intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX]
 
@@ -512,7 +514,7 @@ class Water(Implementation):
         return ret
 
     @staticmethod
-    def from_ecl_init_file(ecl_init_file: EclFile) -> "Water":
+    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Water"]:
         intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
         intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX]
 

@@ -4,7 +4,7 @@
 #
 ########################################
 
-from typing import List
+from typing import Callable, Dict, List, Tuple, Union
 
 import pandas as pd
 import dash_html_components as html
@@ -80,7 +80,16 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
 
         self.pvt_relative_file_path = pvt_relative_file_path
 
-        if self.pvt_relative_file_path is not None:
+        self.read_from_init_file = read_from_init_file
+
+        if self.pvt_relative_file_path is None:
+            self.pvt_data_frame = load_pvt_dataframe(
+                self.ensemble_paths, use_init_file=read_from_init_file
+            )
+            self.pvt_data_frame = self.pvt_data_frame.rename(
+                str.upper, axis="columns"
+            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
+        else:
             # Load data from all ensembles into a Panda DataFrame
             self.pvt_data_frame = load_csv(
                 ensemble_paths=self.ensemble_paths, csv_file=self.pvt_relative_file_path
@@ -115,19 +124,12 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                     if column in valid_columns
                 ]
             ]
-        else:
-            self.pvt_data_frame = load_pvt_dataframe(
-                self.ensemble_paths, use_init_file=read_from_init_file
-            )
-            self.pvt_data_frame = self.pvt_data_frame.rename(
-                str.upper, axis="columns"
-            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
 
         self.set_callbacks(app)
 
     @property
     def phases(self) -> List[str]:
-        return PvtPlot.PHASES.keys()
+        return list(PvtPlot.PHASES.keys())
 
     @property
     def ensembles(self) -> List[str]:
@@ -138,7 +140,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         return list(self.pvt_data_frame["PVTNUM"].unique())
 
     @property
-    def ensemble_colors(self) -> List[str]:
+    def ensemble_colors(self) -> Dict[str, List[str]]:
         return {
             ensemble: self.plotly_theme["layout"]["colorway"][
                 self.ensembles.index(ensemble)
@@ -147,7 +149,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         }
 
     @property
-    def pvtnum_colors(self) -> List[str]:
+    def pvtnum_colors(self) -> Dict[str, List[str]]:
         return {
             pvtnum: self.plotly_theme["layout"]["colorway"][self.pvtnums.index(pvtnum)]
             for pvtnum in self.pvtnums
@@ -193,7 +195,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         ]
 
     @staticmethod
-    def set_grid_layout(columns: int, padding: int = 0) -> dict:
+    def set_grid_layout(columns: int, padding: int = 0) -> Dict[str, str]:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -294,8 +296,11 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
             ],
         )
         def _update_graph(
-            color_by: str, phase: str, ensembles: List[str], pvtnums: List[str]
-        ):
+            color_by: str,
+            phase: str,
+            ensembles: Union[List[str], str],
+            pvtnums: Union[List[str], str],
+        ) -> Dict[str, Union[dict, List[dict]]]:
             if not phase:
                 raise PreventUpdate
             if ensembles is None:
@@ -328,7 +333,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         )
         def _set_ensemble_selector(
             color_by: str, stored_ensemble: pd.DataFrame
-        ) -> (bool, str):
+        ) -> Tuple[bool, str]:
             """If ensemble is selected as color by, set the ensemble
             selector to allow multiple selections, else use stored_ensemble
             """
@@ -351,7 +356,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         )
         def _set_pvtnum_selector(
             color_by: str, stored_pvtnum: pd.DataFrame
-        ) -> (bool, str):
+        ) -> Tuple[bool, str]:
             """If pvtnum is selected as color by, set the pvtnum
             selector to allow multiple selections, else use stored_satnum
             """
@@ -364,7 +369,11 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 stored_pvtnum.get("PVTNUM", self.pvtnums[0]),
             )
 
-    def add_webvizstore(self):
+    def add_webvizstore(
+        self,
+    ) -> List[
+        Tuple[Callable[[Dict[str, str], str, bool], pd.DataFrame], List[Dict[str, str]]]
+    ]:
         return [
             (
                 load_pvt_dataframe,
@@ -372,6 +381,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                     {
                         "ensemble_paths": self.ensemble_paths,
                         "ensemble_set_name": "EnsembleSet",
+                        "use_init_file": self.read_from_init_file,
                     }
                 ],
             )

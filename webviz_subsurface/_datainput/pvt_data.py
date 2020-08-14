@@ -5,6 +5,7 @@
 ########################################
 
 import sys
+from typing import Dict
 import pandas as pd
 
 # opm and ecl2df are only available for Linux,
@@ -30,7 +31,7 @@ from .fmu_input import load_ensemble_set
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_pvt_dataframe(
-    ensemble_paths: dict,
+    ensemble_paths: Dict[str, str],
     ensemble_set_name: str = "EnsembleSet",
     use_init_file: bool = False,
 ) -> pd.DataFrame:
