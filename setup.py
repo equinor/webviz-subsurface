@@ -49,6 +49,7 @@ setup(
         ]
     },
     install_requires=[
+        "dash>=1.11",
         "fmu-ensemble>=1.2.3",
         "matplotlib>=3.0",
         "pandas>=0.24",
@@ -58,8 +59,8 @@ setup(
         "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.0.23",
         "xtgeo>=2.8",
-        "opm>=2020.10.1",
-        "ecl2df>=0.6.1",
+        "opm>=2020.10.1; sys_platform=='linux'",
+        "ecl2df>=0.6.1; sys_platform=='linux'",
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},

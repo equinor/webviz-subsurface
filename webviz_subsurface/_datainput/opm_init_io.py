@@ -4,9 +4,6 @@
 #
 ########################################
 
-# This is giving conflicts with webvizstore
-# from __future__ import annotations
-
 from enum import Enum
 from typing import List
 
