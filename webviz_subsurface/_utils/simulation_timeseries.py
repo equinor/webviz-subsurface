@@ -1,8 +1,12 @@
+import sys
 import warnings
 from typing import Optional
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
+import yaml
+from webviz_config.utils import terminal_colors
 
 
 def set_simulation_line_shape_fallback(line_shape_fallback: str) -> str:
@@ -191,3 +195,88 @@ def date_to_interval_conversion(
         if interval == "yearly":
             date = date.split("-")[0] + ("-01-01" if as_date else "")
     return date
+
+
+# pylint: disable=too-many-branches
+def check_and_format_observations(obsfile: Path):
+    with open(obsfile, "r") as stream:
+        try:
+            obsfile_data = yaml.safe_load(stream)
+        except yaml.MarkedYAMLError as excep:
+            extra_info = (
+                f"There is something wrong in the configuration file {obsfile}. "
+            )
+
+            if hasattr(excep, "problem_mark"):
+                extra_info += (
+                    "The typo is probably somewhere around "
+                    f"line {excep.problem_mark.line + 1}."
+                )
+
+            raise type(excep)(
+                f"{excep}. {terminal_colors.RED}{terminal_colors.BOLD}"
+                f"{extra_info}{terminal_colors.END}"
+            ).with_traceback(sys.exc_info()[2])
+
+        try:
+            obslist = obsfile_data.pop("smry")
+        except KeyError:
+            raise KeyError(
+                "The observation file lacks a `smry` section, which is mandatory for observations "
+                "to work with this plugin."
+            )
+        except TypeError:
+            raise TypeError(
+                "The observation file's othermost level must be a dictionary, while the input "
+                f"file's outermost level is of type {type(obslist)}."
+            )
+        if not isinstance(obslist, list):
+            raise TypeError(
+                "The observation file's smry section must be formatted as a list of dictionaries."
+            )
+        observations = dict()
+
+        # pylint: disable=too-many-nested-blocks
+        for item in obslist:
+            if isinstance(item, dict):
+                if "key" not in item:
+                    raise KeyError(
+                        "Missing mandatory element `key` in the observation file's smry section "
+                        f"for the entry {item}."
+                    )
+                if "observations" not in item:
+                    raise KeyError(
+                        "Missing mandatory element `observations` in the observation file's smry "
+                        f"section the entry {item}."
+                    )
+                key = item.pop("key")
+                if isinstance(item["observations"], list):
+                    for obs in item["observations"]:
+                        if isinstance(obs, dict):
+                            if "value" in obs and "date" in obs:
+                                # Silently ignoring missing error, as the observation is still
+                                # plotted as a point as long as "value" and "date"
+                                # are present.
+                                pass
+                            else:
+                                raise KeyError(
+                                    f"Missing value and/or date for smry observation {obs} "
+                                    f"under key {key} in smry section of observation file."
+                                )
+                        else:
+                            raise TypeError(
+                                f"Observation not formatted as dictionary in smry section of "
+                                f"observation file. Check key: {key}, observation: {obs}."
+                            )
+                else:
+                    raise KeyError(
+                        "A smry observation must at least contain a `value` and a `date`."
+                        f"Check at least key: {key}, observation: {item} in the observation "
+                        f"file."
+                    )
+                observations[key] = item
+            else:
+                raise TypeError(
+                    f"{item} in the observation file's smry section is not a dictionary."
+                )
+    return observations

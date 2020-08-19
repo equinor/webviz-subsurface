@@ -2,7 +2,6 @@
 from pathlib import Path
 import json
 
-import yaml
 import pandas as pd
 from plotly.subplots import make_subplots
 from dash.exceptions import PreventUpdate
@@ -27,6 +26,7 @@ from .._utils.simulation_timeseries import (
     add_fanchart_traces,
     render_hovertemplate,
     date_to_interval_conversion,
+    check_and_format_observations,
 )
 from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
@@ -144,10 +144,8 @@ folder, to avoid risk of not extracting the right data.
             )
         self.observations = {}
         if obsfile:
-            with open(get_path(self.obsfile), "r") as stream:
-                self.observations = format_observations(
-                    yaml.safe_load(stream).get("smry", [dict()])
-                )
+            self.observations = check_and_format_observations(get_path(self.obsfile))
+
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
@@ -922,13 +920,6 @@ folder, to avoid risk of not extracting the right data.
         if self.obsfile:
             functions.append((get_path, [{"path": self.obsfile}]))
         return functions
-
-
-def format_observations(obslist):
-    try:
-        return {item.pop("key"): item for item in obslist}
-    except KeyError:
-        raise KeyError("Observation file has invalid format")
 
 
 # pylint: disable=too-many-arguments
