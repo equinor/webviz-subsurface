@@ -314,7 +314,6 @@ class Gas(Implementation):
                 "Size mismatch in Condensed table data of PVT table for gas"
             )
 
-        # For now, raise an exception if dry gas, since this is not supported yet
         if raw.num_primary == 1:
             return self.create_dry_gas(raw)
 

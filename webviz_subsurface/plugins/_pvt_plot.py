@@ -90,7 +90,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 str.upper, axis="columns"
             ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
         else:
-            # Load data from all ensembles into a Panda DataFrame
+            # Load data from all ensembles into a pandas DataFrame
             self.pvt_data_frame = load_csv(
                 ensemble_paths=self.ensemble_paths, csv_file=self.pvt_relative_file_path
             )
@@ -106,24 +106,48 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
                 )
 
-            valid_columns = [
-                "ENSEMBLE",
-                "REAL",
-                "KEYWORD",
-                "PVTNUM",
-                "GOR",
-                "PRESSURE",
-                "VOLUMEFACTOR",
-                "VISCOSITY",
-            ]
+        columns = [
+            "ENSEMBLE",
+            "REAL",
+            "PVTNUM",
+            "KEYWORD",
+            "GOR",
+            "PRESSURE",
+            "VOLUMEFACTOR",
+            "VISCOSITY",
+        ]
+        self.pvt_data_frame = self.pvt_data_frame[columns]
 
-            self.pvt_data_frame = self.pvt_data_frame[
-                [
-                    column
-                    for column in self.pvt_data_frame.columns
-                    if column in valid_columns
-                ]
-            ]
+        stored_data_frames = []
+        cleaned_data_frame = self.pvt_data_frame.iloc[0:0]
+        columns_subset = self.pvt_data_frame.columns.difference(["REAL", "ENSEMBLE"])
+
+        for iter_data_frame in self.pvt_data_frame.groupby("ENSEMBLE").items():
+            iter_merged_dataframe = self.pvt_data_frame.iloc[0:0]
+            for realization_data_frame in iter_data_frame.groupby("REAL").items():
+                if iter_merged_dataframe.empty:
+                    iter_merged_dataframe = iter_merged_dataframe.append(
+                        realization_data_frame
+                    ).reset_index(drop=True)
+                else:
+                    iter_merged_dataframe = (
+                        pd.concat([iter_merged_dataframe, realization_data_frame])
+                        .drop_duplicates(subset=columns_subset, keep="first",)
+                        .reset_index(drop=True)
+                    )
+            data_frame_stored = False
+            for data_frame in stored_data_frames:
+                if all(
+                    data_frame[columns_subset] == iter_merged_dataframe[columns_subset]
+                ):
+                    data_frame_stored = True
+                    break
+            if data_frame_stored:
+                continue
+            stored_data_frames.append(iter_merged_dataframe)
+            cleaned_data_frame = cleaned_data_frame.append(iter_merged_dataframe)
+
+        self.pvt_data_frame = cleaned_data_frame
 
         self.set_callbacks(app)
 
@@ -369,23 +393,32 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 stored_pvtnum.get("PVTNUM", self.pvtnums[0]),
             )
 
-    def add_webvizstore(
-        self,
-    ) -> List[
-        Tuple[Callable[[Dict[str, str], str, bool], pd.DataFrame], List[Dict[str, str]]]
-    ]:
-        return [
-            (
-                load_pvt_dataframe,
-                [
-                    {
-                        "ensemble_paths": self.ensemble_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                        "use_init_file": self.read_from_init_file,
-                    }
-                ],
-            )
-        ]
+    def add_webvizstore(self,) -> List[Tuple[Callable, List[Dict[str, any]]]]:
+        return (
+            [
+                (
+                    load_pvt_dataframe,
+                    [
+                        {
+                            "ensemble_paths": self.ensemble_paths,
+                            "use_init_file": self.read_from_init_file,
+                        }
+                    ],
+                )
+            ]
+            if self.pvt_relative_file_path is None
+            else [
+                (
+                    load_csv,
+                    [
+                        {
+                            "ensemble_paths": self.ensemble_paths,
+                            "csv_file": self.pvt_relative_file_path,
+                        }
+                    ],
+                )
+            ]
+        )
 
 
 # Caching should be safe here with DataFrame as it is always the same for an instance of the plugin.
@@ -397,17 +430,7 @@ def filter_data_frame(
     data_frame = data_frame.copy()
     data_frame = data_frame.loc[data_frame["ENSEMBLE"].isin(ensembles)]
     data_frame = data_frame.loc[data_frame["PVTNUM"].isin(pvtnums)]
-    columns = [
-        "ENSEMBLE",
-        "REAL",
-        "PVTNUM",
-        "KEYWORD",
-        "GOR",
-        "PRESSURE",
-        "VOLUMEFACTOR",
-        "VISCOSITY",
-    ]
-    return data_frame[columns].fillna(0)
+    return data_frame.fillna(0)
 
 
 def add_realization_traces(
