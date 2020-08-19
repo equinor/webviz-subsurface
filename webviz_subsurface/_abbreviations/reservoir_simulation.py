@@ -41,6 +41,14 @@ def simulation_vector_description(vector: str) -> str:
     """Returns a more human friendly description of the simulation vector if possible,
      otherwise returns the input as is.
     """
+    if vector.startswith("AVG_"):
+        prefix = "Average "
+        vector = vector[4:]
+    elif vector.startswith("INTVL_"):
+        prefix = "Interval "
+        vector = vector[6:]
+    else:
+        prefix = ""
     [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
     if len(vector_name) == 8:
         if vector_name[0] == "R":
@@ -54,8 +62,8 @@ def simulation_vector_description(vector: str) -> str:
                 and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region"
             ):
                 return (
-                    f"{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
-                    + f", region {fip} {node}"
+                    f"{prefix}{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
+                    f", region {fip} {node}"
                 )
         elif vector_name.startswith("W") and vector_name[4] == "L":
             # These are completion vectors, e.g. WWCTL:__1:OP_1 and WOPRL_10:OP_1 for
@@ -68,15 +76,15 @@ def simulation_vector_description(vector: str) -> str:
                 == "completion"
             ):
                 return (
-                    f"{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
-                    + f", well {node} completion {comp}"
+                    f"{prefix}{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
+                    f", well {node} completion {comp}"
                 )
 
     if vector_name in SIMULATION_VECTOR_TERMINOLOGY:
         metadata = SIMULATION_VECTOR_TERMINOLOGY[vector_name]
         if node is None:
-            return metadata["description"]
-        return f"{metadata['description']}, {metadata['type'].replace('_', ' ')} {node}"
+            return prefix + metadata["description"]
+        return f"{prefix}{metadata['description']}, {metadata['type'].replace('_', ' ')} {node}"
 
     if not vector.startswith(
         ("AU", "BU", "CU", "FU", "GU", "RU", "SU", "WU", "Recovery Factor of")
@@ -91,7 +99,7 @@ def simulation_vector_description(vector: str) -> str:
             ),
             UserWarning,
         )
-    return vector
+    return prefix + vector
 
 
 def historical_vector(
