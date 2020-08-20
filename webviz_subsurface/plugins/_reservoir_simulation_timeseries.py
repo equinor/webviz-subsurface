@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from pathlib import Path
 import json
 
@@ -24,12 +25,26 @@ from .._utils.simulation_timeseries import (
     get_simulation_line_shape,
     calc_series_statistics,
     add_fanchart_traces,
+    render_hovertemplate,
+    date_to_interval_conversion,
 )
 from .._utils.unique_theming import unique_colors
+from .._datainput.from_timeseries_cumulatives import (
+    calc_from_cumulatives,
+    rename_vec_from_cum,
+)
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
     """Visualizes reservoir simulation time series data for FMU ensembles.
+
+**Features**
+* Visualization of realization time series as line charts.
+* Visualization of ensemble time series statistics as fan charts.
+* Visualization of single date ensemble statistics as histograms.
+* Calculation and visualization of delta ensembles.
+* Calculation and visualization of average rates and cumulatives over a specified time interval.
+* Download of visualized data to csv files (except histogram data).
 
 ---
 **Two main options for input data: Aggregated and read from UNSMRY.**
@@ -94,7 +109,9 @@ using the `fmu-ensemble` library.
 ?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a \
 rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and \
 cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other \
-speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
+speed up the build of the app, as processing of `UNSMRY` files can be slow for large models. \
+Using this method is required to use the average rate and interval cumulative functionalities, \
+as they require identification of vectors that are cumulatives.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
 individual realizations. You should therefore not have more than one `UNSMRY` file in this \
@@ -134,6 +151,15 @@ folder, to avoid risk of not extracting the right data.
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
+            # Check of time_index for data to use in resampling. Quite naive as it only checks for
+            # unique values of the DATE column, and not per realization.
+            #
+            # Currently not necessary as we don't allow resampling for average rates and intervals
+            # unless we have metadata, which csvfile input currently doesn't support.
+            # See: https://github.com/equinor/webviz-subsurface/issues/402
+            self.time_index = pd.infer_freq(
+                sorted(pd.to_datetime(self.smry["DATE"]).unique())
+            )
         elif ensembles:
             self.ens_paths = {
                 ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
@@ -156,7 +182,12 @@ folder, to avoid risk of not extracting the right data.
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
             )
-
+        if any([col.startswith(("AVG_", "INTVL_")) for col in self.smry.columns]):
+            raise ValueError(
+                "Your data set includes time series vectors which have names starting with"
+                "'AVG_' and/or 'INTVL_'. These prefixes are not allowed, as they are used"
+                "internally in the plugin."
+            )
         self.smry_cols = [
             c
             for c in self.smry.columns
@@ -164,10 +195,32 @@ folder, to avoid risk of not extracting the right data.
             and not historical_vector(c, self.smry_meta, False) in self.smry.columns
         ]
 
-        self.dropdown_options = [
-            {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
-            for vec in self.smry_cols
-        ]
+        self.dropdown_options = []
+        for vec in self.smry_cols:
+            self.dropdown_options.append(
+                {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
+            )
+            if (
+                self.smry_meta is not None
+                and self.smry_meta.is_total[vec]
+                and self.time_index is not None
+            ):
+                # Get the likely name for equivalent rate vector and make dropdown options.
+                # Requires that the time_index was either defined or possible to infer.
+                avgrate_vec = rename_vec_from_cum(vector=vec, as_rate=True)
+                interval_vec = rename_vec_from_cum(vector=vec, as_rate=False)
+                self.dropdown_options.append(
+                    {
+                        "label": f"{simulation_vector_description(avgrate_vec)} ({avgrate_vec})",
+                        "value": avgrate_vec,
+                    }
+                )
+                self.dropdown_options.append(
+                    {
+                        "label": f"{simulation_vector_description(interval_vec)} ({interval_vec})",
+                        "value": interval_vec,
+                    }
+                )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = app.webviz_settings["theme"]
@@ -225,7 +278,10 @@ folder, to avoid risk of not extracting the right data.
                 "id": self.uuid("vectors"),
                 "content": (
                     "Display up to three different time series. "
-                    "Each time series will be visualized in a separate plot."
+                    "Each time series will be visualized in a separate plot. "
+                    "Vectors prefixed with AVG_ and INTVL_ are calculated in the fly "
+                    "from cumulative vectors, providing average rates and interval cumulatives "
+                    "over a time interval that can be defined in the menu."
                 ),
             },
             {
@@ -235,6 +291,16 @@ folder, to avoid risk of not extracting the right data.
                     "individual lines per realization. 2. Show statistical fanchart per "
                     "ensemble. 3. Show statistical fanchart per ensemble and histogram "
                     "per date. Select a data by clicking in the plot."
+                ),
+            },
+            {
+                "id": self.uuid("cum_interval"),
+                "content": (
+                    "Defines the time interval the average rates (prefixed AVG_) and interval "
+                    "cumulatives (prefixed INTVL_) are calculated over. Disabled unless at least "
+                    "one time series dependent on the interval setting is chosen."
+                    "The option might be completely hidden if the data input does not support "
+                    "calculation from cumulatives."
                 ),
             },
         ]
@@ -248,6 +314,16 @@ folder, to avoid risk of not extracting the right data.
             "gridTemplateColumns": f"{columns}",
             "padding": f"{padding}px",
         }
+
+    @property
+    def time_interval_options(self):
+        if self.time_index == "daily":
+            return ["daily", "monthly", "yearly"]
+        if self.time_index == "monthly":
+            return ["monthly", "yearly"]
+        if self.time_index == "yearly":
+            return ["yearly"]
+        return []
 
     @property
     def delta_layout(self):
@@ -349,6 +425,39 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
+    def from_cumulatives_layout(self):
+        return html.Div(
+            style=(
+                {"marginTop": "25px", "display": "block"}
+                if len(self.time_interval_options) > 0 and self.smry_meta is not None
+                else {"display": "none"}
+            ),
+            children=[
+                html.Span(
+                    "Calculated from cumulatives:", style={"font-weight": "bold"},
+                ),
+                html.Div(
+                    "Average (AVG_) and interval (INTVL_) time series",
+                    style={"font-style": "italic", "font-size": "0.75em"},
+                ),
+                html.Div(
+                    dcc.RadioItems(
+                        id=self.uuid("cum_interval"),
+                        options=[
+                            {
+                                "label": (f"{i.lower().capitalize()}"),
+                                "value": i,
+                                "disabled": False,
+                            }
+                            for i in self.time_interval_options
+                        ],
+                        value=self.time_index,
+                    ),
+                ),
+            ],
+        )
+
+    @property
     def layout(self):
         return wcc.FlexBox(
             id=self.uuid("layout"),
@@ -430,6 +539,7 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                             ],
                         ),
+                        self.from_cumulatives_layout,
                     ],
                 ),
                 html.Div(
@@ -461,6 +571,7 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("base_ens"), "value"),
                 Input(self.uuid("delta_ens"), "value"),
                 Input(self.uuid("statistics"), "value"),
+                Input(self.uuid("cum_interval"), "value"),
                 Input(self.uuid("date"), "data"),
             ],
         )
@@ -474,9 +585,13 @@ folder, to avoid risk of not extracting the right data.
             base_ens,
             delta_ens,
             visualization,
+            cum_interval,
             stored_date,
         ):
             """Callback to update all graphs based on selections"""
+
+            if calc_mode not in ["ensembles", "delta_ensembles"]:
+                raise PreventUpdate
 
             # Combine selected vectors
             vectors = [vector1]
@@ -485,24 +600,34 @@ folder, to avoid risk of not extracting the right data.
             if vector3:
                 vectors.append(vector3)
 
-            # Ensure selected ensembles is a list
-            ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
+            # Ensure selected ensembles is a list and prevent update if invalid calc_mode
+            if calc_mode == "delta_ensembles":
+                ensembles = [base_ens, delta_ens]
+            elif calc_mode == "ensembles":
+                ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
+            else:
+                raise PreventUpdate
 
             # Retrieve previous/current selected date
             date = json.loads(stored_date) if stored_date else None
 
             # Titles for subplots
             titles = []
-            for vect in vectors:
+            for vec in vectors:
+                unit_vec = vec.lstrip("AVG_").lstrip("INTVL_")
                 if self.smry_meta is None:
-                    titles.append(simulation_vector_description(vect))
+                    titles.append(simulation_vector_description(vec))
                 else:
                     titles.append(
-                        f"{simulation_vector_description(vect)}"
-                        f" [{simulation_unit_reformat(self.smry_meta.unit[vect])}]"
+                        f"{simulation_vector_description(vec)}"
+                        f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
                     )
                 if visualization == "statistics_hist":
-                    titles.append(date)
+                    titles.append(
+                        date_to_interval_conversion(
+                            date=date, vector=vec, interval=cum_interval, as_date=False
+                        )
+                    )
 
             # Make a plotly subplot figure
             fig = make_subplots(
@@ -513,52 +638,60 @@ folder, to avoid risk of not extracting the right data.
                 subplot_titles=titles,
             )
 
-            if calc_mode == "ensembles":
-                data = filter_df(self.smry, ensembles, vectors, self.smry_meta)
-            elif calc_mode == "delta_ensembles":
-                data = filter_df(
-                    self.smry, [base_ens, delta_ens], vectors, self.smry_meta
-                )
-                data = calculate_delta(data, base_ens, delta_ens)
-            else:
-                raise PreventUpdate
-
-            if visualization in ["statistics", "statistics_hist"]:
-                stat_df = calc_series_statistics(data, vectors)
-
             # Loop through each vector and calculate relevant plot
             legends = []
+            dfs = calculate_vector_dataframes(
+                smry=self.smry,
+                smry_meta=self.smry_meta,
+                ensembles=ensembles,
+                vectors=vectors,
+                calc_mode=calc_mode,
+                visualization=visualization,
+                time_index=self.time_index,
+                cum_interval=cum_interval,
+            )
             for i, vector in enumerate(vectors):
                 line_shape = get_simulation_line_shape(
                     line_shape_fallback=self.line_shape_fallback,
                     vector=vector,
                     smry_meta=self.smry_meta,
                 )
-
                 if visualization in ["statistics", "statistics_hist"]:
                     traces = add_statistic_traces(
-                        stat_df, vector, colors=self.ens_colors, line_shape=line_shape,
+                        dfs[vector]["stat"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
                     )
                     if visualization == "statistics_hist":
                         histdata = add_histogram_traces(
-                            data, vector, date=date, colors=self.ens_colors
+                            dfs[vector]["data"],
+                            vector,
+                            date=date,
+                            colors=self.ens_colors,
+                            interval=cum_interval,
                         )
                         for trace in histdata:
                             fig.add_trace(trace, i + 1, 2)
                 elif visualization == "realizations":
                     traces = add_realization_traces(
-                        data, vector, colors=self.ens_colors, line_shape=line_shape,
+                        dfs[vector]["data"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
                     )
                 else:
                     raise PreventUpdate
 
                 if (
                     historical_vector(vector=vector, smry_meta=self.smry_meta)
-                    in data.columns
+                    in dfs[vector]["data"].columns
                 ):
                     traces.append(
                         add_history_trace(
-                            data,
+                            dfs[vector]["data"],
                             historical_vector(vector=vector, smry_meta=self.smry_meta),
                             line_shape,
                         )
@@ -612,6 +745,7 @@ folder, to avoid risk of not extracting the right data.
                 State(self.uuid("base_ens"), "value"),
                 State(self.uuid("delta_ens"), "value"),
                 State(self.uuid("statistics"), "value"),
+                State(self.uuid("cum_interval"), "value"),
             ],
         )
         def _user_download_data(
@@ -624,6 +758,7 @@ folder, to avoid risk of not extracting the right data.
             base_ens,
             delta_ens,
             visualization,
+            cum_interval,
         ):
             """Callback to download data based on selections"""
 
@@ -633,41 +768,75 @@ folder, to avoid risk of not extracting the right data.
                 vectors.append(vector2)
             if vector3:
                 vectors.append(vector3)
-
-            if calc_mode == "ensembles":
-                # Ensure selected ensembles is a list
+            # Ensure selected ensembles is a list and prevent update if invalid calc_mode
+            if calc_mode == "delta_ensembles":
+                ensembles = [base_ens, delta_ens]
+            elif calc_mode == "ensembles":
                 ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
-                data = filter_df(self.smry, ensembles, vectors, self.smry_meta)
-            elif calc_mode == "delta_ensembles":
-                data = filter_df(
-                    self.smry, [base_ens, delta_ens], vectors, self.smry_meta
-                )
-                data = calculate_delta(data, base_ens, delta_ens)
             else:
                 raise PreventUpdate
 
-            if visualization in ["statistics", "statistics_hist"]:
-                data = calc_series_statistics(data, vectors)
-                data = data.sort_values(by=[("", "ENSEMBLE"), ("", "DATE")])
-            else:
-                data = data.sort_values(by=["ENSEMBLE", "REAL", "DATE"])
-                # Reorder columns
-                data = data[
-                    ["ENSEMBLE", "REAL", "DATE"]
-                    + [
-                        col
-                        for col in data.columns
-                        if col not in ["ENSEMBLE", "REAL", "DATE"]
+            dfs = calculate_vector_dataframes(
+                smry=self.smry,
+                smry_meta=self.smry_meta,
+                ensembles=ensembles,
+                vectors=vectors,
+                calc_mode=calc_mode,
+                visualization=visualization,
+                time_index=self.time_index,
+                cum_interval=cum_interval,
+            )
+            for vector, df in dfs.items():
+                if visualization in ["statistics", "statistics_hist"]:
+                    dfs[vector]["stat"] = df["stat"].sort_values(
+                        by=[("", "ENSEMBLE"), ("", "DATE")]
+                    )
+                    if vector.startswith(("AVG_", "INTVL_")):
+                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
+                            "", "DATE"
+                        ].astype(str)
+                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
+                            "", "DATE"
+                        ].apply(
+                            date_to_interval_conversion,
+                            vector=vector,
+                            interval=cum_interval,
+                            as_date=False,
+                        )
+                else:
+                    dfs[vector]["data"] = df["data"].sort_values(
+                        by=["ENSEMBLE", "REAL", "DATE"]
+                    )
+                    # Reorder columns
+                    dfs[vector]["data"] = dfs[vector]["data"][
+                        ["ENSEMBLE", "REAL", "DATE"]
+                        + [
+                            col
+                            for col in dfs[vector]["data"].columns
+                            if col not in ["ENSEMBLE", "REAL", "DATE"]
+                        ]
                     ]
-                ]
+                    if vector.startswith(("AVG_", "INTVL_")):
+                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"][
+                            "DATE"
+                        ].astype(str)
+                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"]["DATE"].apply(
+                            date_to_interval_conversion,
+                            vector=vector,
+                            interval=cum_interval,
+                            as_date=False,
+                        )
 
+            # : is replaced with _ in filenames to stay within POSIX portable pathnames
+            # (e.g. : is not valid in a Windows path)
             return (
                 WebvizPluginABC.plugin_data_compress(
                     [
                         {
-                            "filename": "reservoir_simulation_timeseries.csv",
-                            "content": data.to_csv(index=False),
+                            "filename": f"{vector.replace(':', '_')}.csv",
+                            "content": df.get("stat", df["data"]).to_csv(index=False),
                         }
+                        for vector, df in dfs.items()
                     ]
                 )
                 if data_requested
@@ -698,6 +867,27 @@ folder, to avoid risk of not extracting the right data.
             """Store clicked date for use in other callback"""
             date = clickdata["points"][0]["x"] if clickdata else json.loads(date)
             return json.dumps(date)
+
+        @app.callback(
+            Output(self.uuid("cum_interval"), "options"),
+            [
+                Input(self.uuid("vector1"), "value"),
+                Input(self.uuid("vector2"), "value"),
+                Input(self.uuid("vector3"), "value"),
+            ],
+            [State(self.uuid("cum_interval"), "options")],
+        )
+        def _activate_interval_radio_buttons(vector1, vector2, vector3, options):
+            """Switch activate/deactivate radio buttons for selectibg interval for
+            calculations from cumulatives"""
+            active = False
+            for vector in [vector1, vector2, vector3]:
+                if vector is not None and vector.startswith(("AVG_", "INTVL_")):
+                    active = True
+                    break
+            if active:
+                return [dict(option, **{"disabled": False}) for option in options]
+            return [dict(option, **{"disabled": True}) for option in options]
 
     def add_webvizstore(self):
         functions = []
@@ -741,19 +931,63 @@ def format_observations(obslist):
         raise KeyError("Observation file has invalid format")
 
 
+# pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_df(df, ensembles, vectors, smry_meta):
+def calculate_vector_dataframes(
+    smry,
+    smry_meta,
+    ensembles,
+    vectors,
+    calc_mode,
+    visualization,
+    time_index,
+    cum_interval,
+):
+    dfs = {}
+    for vector in vectors:
+        if vector.startswith("AVG_"):
+            total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
+            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = calc_from_cumulatives(
+                data=data,
+                column_keys=total_vector,
+                time_index=cum_interval,
+                time_index_input=time_index,
+                as_rate=True,
+            )
+            vector = rename_vec_from_cum(vector=vector[4:], as_rate=True)
+        elif vector.startswith("INTVL_"):
+            total_vector = vector.lstrip("INTVL_")
+            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = calc_from_cumulatives(
+                data=data,
+                column_keys=total_vector,
+                time_index=cum_interval,
+                time_index_input=time_index,
+                as_rate=False,
+            )
+        else:
+            data = filter_df(smry, ensembles, vector, smry_meta)
+
+        if calc_mode == "delta_ensembles":
+            data = calculate_delta(data, ensembles[0], ensembles[1])
+
+        dfs[vector] = {"data": data}
+        if visualization in ["statistics", "statistics_hist"]:
+            dfs[vector]["stat"] = calc_series_statistics(data, [vector])
+
+    return dfs
+
+
+def filter_df(df, ensembles, vector, smry_meta):
     """Filter dataframe for current vector. Include history
     vector if present"""
-    columns = ["REAL", "ENSEMBLE", "DATE"] + vectors
-    for vector in vectors:
-        if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
-            columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
-
+    columns = ["REAL", "ENSEMBLE", "DATE", vector]
+    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
+        columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
     return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_delta(df, base_ens, delta_ens):
     """Calculate delta between two ensembles"""
     base_df = (
@@ -772,10 +1006,13 @@ def calculate_delta(df, base_ens, delta_ens):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_histogram_traces(dframe, vector, date, colors):
+def add_histogram_traces(dframe, vector, date, colors, interval):
     """Renders a histogram trace per ensemble for a given date"""
-    dframe["DATE"] = dframe["DATE"].astype(str)
-    data = dframe.loc[dframe["DATE"] == date]
+    dframe[("DATE")] = dframe[("DATE")].astype(str)
+    date = date_to_interval_conversion(
+        date=date, vector=vector, interval=interval, as_date=True
+    )
+    data = dframe.loc[dframe[("DATE")] == date]
 
     return [
         {
@@ -788,7 +1025,7 @@ def add_histogram_traces(dframe, vector, date, colors):
             },
             "showlegend": False,
         }
-        for ensemble, ens_df in data.groupby("ENSEMBLE")
+        for ensemble, ens_df in data.groupby(("ENSEMBLE"))
     ]
 
 
@@ -813,14 +1050,15 @@ def add_observation_trace(obs):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_realization_traces(dframe, vector, colors, line_shape):
+def add_realization_traces(dframe, vector, colors, line_shape, interval):
     """Renders line trace for each realization, includes history line if present"""
+    hovertemplate = render_hovertemplate(vector, interval)
     return [
         {
             "line": {"shape": line_shape},
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector]),
-            "hovertext": f"Realization: {real_no}, Ensemble: {ensemble}",
+            "hovertemplate": f"{hovertemplate}Realization: {real_no}, Ensemble: {ensemble}",
             "name": ensemble,
             "legendgroup": ensemble,
             "marker": {"color": colors.get(ensemble, colors[list(colors.keys())[0]])},
@@ -850,17 +1088,18 @@ def add_history_trace(dframe, vector, line_shape):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_statistic_traces(stat_df, vector, colors, line_shape):
+def add_statistic_traces(stat_df, vector, colors, line_shape, interval):
     """Add fanchart traces for selected vector"""
     traces = []
     for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
         traces.extend(
             add_fanchart_traces(
-                ens_df,
-                vector,
-                colors.get(ensemble, colors[list(colors.keys())[0]]),
-                ensemble,
-                line_shape,
+                ens_stat_df=ens_df,
+                vector=vector,
+                color=colors.get(ensemble, colors[list(colors.keys())[0]]),
+                legend_group=ensemble,
+                line_shape=line_shape,
+                hovertemplate=render_hovertemplate(vector=vector, interval=interval),
             )
         )
     return traces

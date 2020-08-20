@@ -1,0 +1,1375 @@
+[1mdiff --git a/setup.py b/setup.py[m
+[1mindex e88f4c6..01d5177 100644[m
+[1m--- a/setup.py[m
+[1m+++ b/setup.py[m
+[36m@@ -45,9 +45,11 @@[m [msetup([m
+             "ReservoirSimulationTimeSeriesRegional = "[m
+             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",[m
+             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",[m
+[32m+[m[32m            "PvtPlot = webviz_subsurface.plugins:PvtPlot",[m
+         ][m
+     },[m
+     install_requires=[[m
+[32m+[m[32m        "dash>=1.11",[m
+         "fmu-ensemble>=1.2.3",[m
+         "matplotlib>=3.0",[m
+         "pandas>=0.24",[m
+[36m@@ -57,6 +59,8 @@[m [msetup([m
+         "webviz-config>=0.0.55",[m
+         "webviz-subsurface-components>=0.0.23",[m
+         "xtgeo>=2.8",[m
+[32m+[m[32m        "opm>=2020.10.1; sys_platform=='linux'",[m
+[32m+[m[32m        "ecl2df>=0.6.1; sys_platform=='linux'",[m
+     ],[m
+     tests_require=TESTS_REQUIRE,[m
+     extras_require={"tests": TESTS_REQUIRE},[m
+[1mdiff --git a/webviz_subsurface/_datainput/opm_init_io.py b/webviz_subsurface/_datainput/opm_init_io.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..c513443[m
+[1m--- /dev/null[m
+[1m+++ b/webviz_subsurface/_datainput/opm_init_io.py[m
+[36m@@ -0,0 +1,545 @@[m
+[32m+[m[32m########################################[m
+[32m+[m[32m#[m
+[32m+[m[32m#  Copyright (C) 2020-     Equinor ASA[m
+[32m+[m[32m#[m
+[32m+[m[32m########################################[m
+[32m+[m
+[32m+[m[32mfrom enum import Enum[m
+[32m+[m[32mfrom typing import List, Optional[m
+[32m+[m
+[32m+[m[32mfrom opm.io.ecl import EclFile[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass InitFileDefinitions:  # pylint: disable=too-few-public-methods[m
+[32m+[m[32m    """[m
+[32m+[m[32m    A namespace for constant definitions for[m
+[32m+[m[32m    reading Eclipse INIT files.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    LOGIHEAD_KW = "LOGIHEAD"[m
+[32m+[m[32m    INTEHEAD_KW = "INTEHEAD"[m
+[32m+[m[32m    INTEHEAD_UNIT_INDEX = 2[m
+[32m+[m[32m    INTEHEAD_PHASE_INDEX = 14[m
+[32m+[m[32m    LOGIHEAD_RS_INDEX = 0[m
+[32m+[m[32m    LOGIHEAD_RV_INDEX = 1[m
+[32m+[m[32m    TABDIMS_IBPVTO_OFFSET_ITEM = 6[m
+[32m+[m[32m    TABDIMS_JBPVTO_OFFSET_ITEM = 7[m
+[32m+[m[32m    TABDIMS_NRPVTO_ITEM = 8[m
+[32m+[m[32m    TABDIMS_NPPVTO_ITEM = 9[m
+[32m+[m[32m    TABDIMS_NTPVTO_ITEM = 10[m
+[32m+[m[32m    TABDIMS_IBPVTW_OFFSET_ITEM = 11[m
+[32m+[m[32m    TABDIMS_IBPVTG_OFFSET_ITEM = 13[m
+[32m+[m[32m    TABDIMS_JBPVTG_OFFSET_ITEM = 14[m
+[32m+[m[32m    TABDIMS_NRPVTG_ITEM = 15[m
+[32m+[m[32m    TABDIMS_NPPVTG_ITEM = 16[m
+[32m+[m[32m    TABDIMS_NTPVTG_ITEM = 17[m
+[32m+[m[32m    LOGIHEAD_CONSTANT_OILCOMPR_INDEX = 39 - 1[m
+[32m+[m
+[32m+[m[32m    TABDIMS_IBDENS_OFFSET_ITEM = 18[m
+[32m+[m[32m    TABDIMS_NTDENS_ITEM = 19[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass EclPhaseIndex(Enum):[m
+[32m+[m[32m    Aqua = 0[m
+[32m+[m[32m    Liquid = 1[m
+[32m+[m[32m    Vapour = 2[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass EclPropertyTableRawData:  # pylint: disable=too-few-public-methods[m
+[32m+[m[32m    """[m
+[32m+[m[32m    A structure for storing read[m
+[32m+[m[32m    INIT file data.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.data = [][m
+[32m+[m[32m        self.primary_key = [][m
+[32m+[m[32m        self.num_primary = 0[m
+[32m+[m[32m        self.num_rows = 0[m
+[32m+[m[32m        self.num_cols = 0[m
+[32m+[m[32m        self.num_tables = 0[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef const_compr_index() -> int:[m
+[32m+[m[32m    return InitFileDefinitions.LOGIHEAD_CONSTANT_OILCOMPR_INDEX[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef surface_mass_density(ecl_file: EclFile, phase: EclPhaseIndex) -> List[float]:[m
+[32m+[m[32m    if phase is EclPhaseIndex.Liquid:[m
+[32m+[m[32m        col = 0[m
+[32m+[m[32m    elif phase is EclPhaseIndex.Aqua:[m
+[32m+[m[32m        col = 1[m
+[32m+[m[32m    elif phase is EclPhaseIndex.Vapour:[m
+[32m+[m[32m        col = 2[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        col = -1[m
+[32m+[m
+[32m+[m[32m    if col == -1:[m
+[32m+[m[32m        raise AttributeError("Phase must be Liquid, Aqua or Vapour.")[m
+[32m+[m
+[32m+[m[32m    tabdims = ecl_file.__getitem__("TABDIMS")[m
+[32m+[m[32m    tab = ecl_file.__getitem__("TAB")[m
+[32m+[m
+[32m+[m[32m    start = tabdims[InitFileDefinitions.TABDIMS_IBDENS_OFFSET_ITEM] - 1[m
+[32m+[m[32m    nreg = tabdims[InitFileDefinitions.TABDIMS_NTDENS_ITEM][m
+[32m+[m
+[32m+[m[32m    rho = [tab[start + nreg * (col + 0)], tab[start + nreg * (col + 1)]][m
+[32m+[m
+[32m+[m[32m    return rho[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass VariateAndValues:  # pylint: disable=too-few-public-methods[m
+[32m+[m[32m    """[m
+[32m+[m[32m    A structure for holding a variate and[m
+[32m+[m[32m    multiple covariates.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.x = 0[m
+[32m+[m[32m        self.y = [][m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass PvxOBase:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    A base class for all fluids.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def __init__(self, values: List[VariateAndValues]):[m
+[32m+[m[32m        self.values = values[m
+[32m+[m
+[32m+[m[32m    def get_values(self):[m
+[32m+[m[32m        return self.values[m
+[32m+[m
+[32m+[m[32m    # pylint: disable=R0201[m
+[32m+[m[32m    def formation_volume_factor([m
+[32m+[m[32m        self, gas_oil_ratio: List[float], pressure: List[float][m
+[32m+[m[32m    ) -> List[float]:[m
+[32m+[m[32m        """[m
+[32m+[m[32m        Does only return an empty list for now.[m
+[32m+[m[32m        """[m
+[32m+[m[32m        if len(gas_oil_ratio) != len(pressure):[m
+[32m+[m[32m            raise ValueError("rs and po arguments must be of same size")[m
+[32m+[m[32m        return [][m
+[32m+[m
+[32m+[m[32m    def viscosity([m
+[32m+[m[32m        self, gas_oil_ratio: List[float], pressure: List[float][m
+[32m+[m[32m    ) -> List[float]:[m
+[32m+[m[32m        pass[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass LiveOil(PvxOBase):[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass WetGas(PvxOBase):[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass DryGas(PvxOBase):[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass WaterImpl(PvxOBase):[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Implementation:[m
+[32m+[m[32m    class InvalidArgument(Exception):[m
+[32m+[m[32m        def __init__(self, message: str):[m
+[32m+[m[32m            self.message = message[m
+[32m+[m[32m            super().__init__(message)[m
+[32m+[m
+[32m+[m[32m    class InvalidType(Exception):[m
+[32m+[m[32m        def __init__(self):[m
+[32m+[m[32m            super().__init__("Invalid type. Only live oil/wet gas/water supported.")[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.values = [][m
+[32m+[m
+[32m+[m[32m    def get_table(self, tab_index: int) -> Optional[List[VariateAndValues]]:[m
+[32m+[m[32m        if tab_index in range(0, len(self.values)):[m
+[32m+[m[32m            return self.values[tab_index][m
+[32m+[m
+[32m+[m[32m        return None[m
+[32m+[m
+[32m+[m[32m    def tables(self) -> List[PvxOBase]:[m
+[32m+[m[32m        return self.values[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def entry_valid(x: float) -> bool:[m
+[32m+[m[32m        # Equivalent to ECLPiecewiseLinearInterpolant.hpp line 293[m
+[32m+[m[32m        # or ECLPvtOil.cpp line 458[m
+[32m+[m[32m        return abs(x) < 1.0e20[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Oil(Implementation):[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self, raw: EclPropertyTableRawData, const_compr: bool, rhos: List[float][m
+[32m+[m[32m    ):[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m[32m        self.rhos = rhos[m
+[32m+[m[32m        self.values = self.create_pvt_function(raw, const_compr)[m
+[32m+[m
+[32m+[m[32m    # pylint: disable=unused-argument[m
+[32m+[m[32m    def create_pvt_function([m
+[32m+[m[32m        self, raw: EclPropertyTableRawData, const_compr: bool[m
+[32m+[m[32m    ) -> List[PvxOBase]:[m
+[32m+[m[32m        if raw.num_primary == 0:[m
+[32m+[m[32m            raise super().InvalidArgument("Oil PVT table without primary lookup key")[m
+[32m+[m[32m        if raw.num_cols != 5:[m
+[32m+[m[32m            raise super().InvalidArgument("PVT table for oil must have five columns")[m
+[32m+[m[32m        if len(raw.primary_key) != (raw.num_primary * raw.num_tables):[m
+[32m+[m[32m            raise super().InvalidArgument([m
+[32m+[m[32m                "Size mismatch in RS nodes of PVT table for oil"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        if len(raw.data) != ([m
+[32m+[m[32m            raw.num_primary * raw.num_rows * raw.num_cols * raw.num_tables[m
+[32m+[m[32m        ):[m
+[32m+[m[32m            raise super().InvalidArgument([m
+[32m+[m[32m                "Size mismatch in Condensed table data of PVT table for oil"[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        # For now, raise an exception if dead oil, since this is not supported yet[m
+[32m+[m[32m        if raw.num_primary == 1:[m
+[32m+[m[32m            raise super().InvalidType()[m
+[32m+[m
+[32m+[m[32m        return self.create_live_oil(raw)[m
+[32m+[m
+[32m+[m[32m    def create_live_oil(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:[m
+[32m+[m[32m        # Holding raw.num_tables values[m
+[32m+[m[32m        ret = [][m
+[32m+[m
+[32m+[m[32m        column_stride = raw.num_rows * raw.num_tables * raw.num_primary[m
+[32m+[m[32m        table_stride = raw.num_primary * raw.num_rows[m
+[32m+[m
+[32m+[m[32m        # pylint: disable=too-many-nested-blocks[m
+[32m+[m[32m        for index_table in range(0, raw.num_tables):[m
+[32m+[m[32m            values = [][m
+[32m+[m
+[32m+[m[32m            # PKey  Inner   C0  C1          C2          C3[m
+[32m+[m[32m            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo[m
+[32m+[m
+[32m+[m[32m            for index_primary in range(0, raw.num_primary):[m
+[32m+[m[32m                if self.entry_valid(raw.primary_key[index_primary]):[m
+[32m+[m[32m                    outer_value_pair = VariateAndValues()[m
+[32m+[m[32m                    outer_value_pair.x = raw.primary_key[index_primary][m
+[32m+[m[32m                    for index_row in range(0, raw.num_rows):[m
+[32m+[m[32m                        pressure = raw.data[[m
+[32m+[m[32m                            column_stride * 0[m
+[32m+[m[32m                            + index_table * table_stride[m
+[32m+[m[32m                            + index_primary * raw.num_rows[m
+[32m+[m[32m                            + index_row[m
+[32m+[m[32m                        ][m
+[32m+[m[32m                        if self.entry_valid(pressure):[m
+[32m+[m[32m                            inner_value_pair = VariateAndValues()[m
+[32m+[m[32m                            inner_value_pair.x = pressure[m
+[32m+[m[32m                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)][m
+[32m+[m[32m                            for index_column in range(1, raw.num_cols):[m
+[32m+[m[32m                                inner_value_pair.y[index_column - 1] = raw.data[[m
+[32m+[m[32m                                    column_stride * index_column[m
+[32m+[m[32m                                    + index_table * table_stride[m
+[32m+[m[32m                                    + index_primary * raw.num_rows[m
+[32m+[m[32m                                    + index_row[m
+[32m+[m[32m                                ][m
+[32m+[m[32m                            outer_value_pair.y.append(inner_value_pair)[m
+[32m+[m[32m                        else:[m
+[32m+[m[32m                            break[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    break[m
+[32m+[m
+[32m+[m[32m                values.append(outer_value_pair)[m
+[32m+[m[32m            ret.append(LiveOil(values))[m
+[32m+[m
+[32m+[m[32m        return ret[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Oil"]:[m
+[32m+[m[32m        logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)[m
+[32m+[m[32m        is_const_compr = bool(logihead[const_compr_index()])[m
+[32m+[m
+[32m+[m[32m        raw = EclPropertyTableRawData()[m
+[32m+[m
+[32m+[m[32m        tab_dims = ecl_init_file.__getitem__("TABDIMS")[m
+[32m+[m[32m        tab = ecl_init_file.__getitem__("TAB")[m
+[32m+[m
+[32m+[m[32m        num_rs = tab_dims[InitFileDefinitions.TABDIMS_NRPVTO_ITEM][m
+[32m+[m
+[32m+[m[32m        raw.num_rows = tab_dims[InitFileDefinitions.TABDIMS_NPPVTO_ITEM][m
+[32m+[m[32m        raw.num_cols = 5[m
+[32m+[m[32m        raw.num_tables = tab_dims[InitFileDefinitions.TABDIMS_NTPVTO_ITEM][m
+[32m+[m
+[32m+[m[32m        if raw.num_tables == 0:[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        if logihead[InitFileDefinitions.LOGIHEAD_RS_INDEX]:[m
+[32m+[m[32m            raw.num_primary = num_rs[m
+[32m+[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raw.num_primary = 1[m
+[32m+[m
+[32m+[m[32m        num_tab_elements = raw.num_primary * raw.num_tables[m
+[32m+[m[32m        start = tab_dims[InitFileDefinitions.TABDIMS_JBPVTO_OFFSET_ITEM] - 1[m
+[32m+[m[32m        raw.primary_key = tab[start : start + num_tab_elements][m
+[32m+[m
+[32m+[m[32m        num_tab_elements = ([m
+[32m+[m[32m            raw.num_primary * raw.num_rows * raw.num_cols * raw.num_tables[m
+[32m+[m[32m        )[m
+[32m+[m[32m        start = tab_dims[InitFileDefinitions.TABDIMS_IBPVTO_OFFSET_ITEM] - 1[m
+[32m+[m[32m        raw.data = tab[start : start + num_tab_elements][m
+[32m+[m
+[32m+[m[32m        rhos = surface_mass_density(ecl_init_file, EclPhaseIndex.Liquid)[m
+[32m+[m
+[32m+[m[32m        return Oil(raw, is_const_compr, rhos)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Gas(Implementation):[m
+[32m+[m[32m    def __init__(self, raw: EclPropertyTableRawData, rhos: List[float]):[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m[32m        self.rhos = rhos[m
+[32m+[m[32m        self.values = self.create_pvt_function(raw)[m
+[32m+[m
+[32m+[m[32m    def create_pvt_function(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:[m
+[32m+[m[32m        if raw.num_primary == 0:[m
+[32m+[m[32m            raise super().InvalidArgument("Gas PVT table without primary lookup key")[m
+[32m+[m[32m        if raw.num_cols != 5:[m
+[32m+[m[32m            raise super().InvalidArgument("PVT table for gas must have five columns")[m
+[32m+[m[32m        if len(raw.primary_key) != (raw.num_primary * raw.num_tables):[m
+[32m+[m[32m            raise super().InvalidArgument([m
+[32m+[m[32m                "Size mismatch in Pressure nodes of PVT table for gas"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        if len(raw.data) != ([m
+[32m+[m[32m            raw.num_primary * raw.num_rows * raw.num_cols * raw.num_tables[m
+[32m+[m[32m        ):[m
+[32m+[m[32m            raise super().InvalidArgument([m
+[32m+[m[32m                "Size mismatch in Condensed table data of PVT table for gas"[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        # For now, raise an exception if dry gas, since this is not supported yet[m
+[32m+[m[32m        if raw.num_primary == 1:[m
+[32m+[m[32m            return self.create_dry_gas(raw)[m
+[32m+[m
+[32m+[m[32m        return self.create_wet_gas(raw)[m
+[32m+[m
+[32m+[m[32m    def create_dry_gas(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:[m
+[32m+[m[32m        # Holding raw.num_tables values[m
+[32m+[m[32m        ret = [][m
+[32m+[m
+[32m+[m[32m        column_stride = raw.num_rows * raw.num_tables * raw.num_primary[m
+[32m+[m[32m        table_stride = raw.num_primary * raw.num_rows[m
+[32m+[m
+[32m+[m[32m        # pylint: disable=too-many-nested-blocks[m
+[32m+[m[32m        for index_table in range(0, raw.num_tables):[m
+[32m+[m[32m            values = [][m
+[32m+[m
+[32m+[m[32m            # PKey  Inner   C0  C1          C2          C3[m
+[32m+[m[32m            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo[m
+[32m+[m
+[32m+[m[32m            for index_primary in range(0, raw.num_primary):[m
+[32m+[m[32m                if self.entry_valid(raw.primary_key[index_primary]):[m
+[32m+[m[32m                    outer_value_pair = VariateAndValues()[m
+[32m+[m[32m                    outer_value_pair.x = raw.primary_key[index_primary][m
+[32m+[m[32m                    for index_row in range(0, raw.num_rows):[m
+[32m+[m[32m                        pressure = raw.data[[m
+[32m+[m[32m                            column_stride * 0[m
+[32m+[m[32m                            + index_table * table_stride[m
+[32m+[m[32m                            + index_primary * raw.num_rows[m
+[32m+[m[32m                            + index_row[m
+[32m+[m[32m                        ][m
+[32m+[m[32m                        if self.entry_valid(pressure):[m
+[32m+[m[32m                            inner_value_pair = VariateAndValues()[m
+[32m+[m[32m                            inner_value_pair.x = pressure[m
+[32m+[m[32m                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)][m
+[32m+[m[32m                            for index_column in range(1, raw.num_cols):[m
+[32m+[m[32m                                inner_value_pair.y[index_column - 1] = raw.data[[m
+[32m+[m[32m                                    column_stride * index_column[m
+[32m+[m[32m                                    + index_table * table_stride[m
+[32m+[m[32m                                    + index_primary * raw.num_rows[m
+[32m+[m[32m                                    + index_row[m
+[32m+[m[32m                                ][m
+[32m+[m[32m                            outer_value_pair.y.append(inner_value_pair)[m
+[32m+[m[32m                        else:[m
+[32m+[m[32m                            break[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    break[m
+[32m+[m
+[32m+[m[32m                values.append(outer_value_pair)[m
+[32m+[m
+[32m+[m[32m            ret.append(DryGas(values))[m
+[32m+[m
+[32m+[m[32m        return ret[m
+[32m+[m
+[32m+[m[32m    def create_wet_gas(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:[m
+[32m+[m[32m        # Holding raw.num_tables values[m
+[32m+[m[32m        ret = [][m
+[32m+[m
+[32m+[m[32m        column_stride = raw.num_rows * raw.num_tables * raw.num_primary[m
+[32m+[m[32m        table_stride = raw.num_primary * raw.num_rows[m
+[32m+[m
+[32m+[m[32m        # pylint: disable=too-many-nested-blocks[m
+[32m+[m[32m        for index_table in range(0, raw.num_tables):[m
+[32m+[m[32m            values = [][m
+[32m+[m
+[32m+[m[32m            # PKey  Inner   C0  C1          C2          C3[m
+[32m+[m[32m            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo[m
+[32m+[m
+[32m+[m[32m            for index_primary in range(0, raw.num_primary):[m
+[32m+[m[32m                if self.entry_valid(raw.primary_key[index_primary]):[m
+[32m+[m[32m                    outer_value_pair = VariateAndValues()[m
+[32m+[m[32m                    outer_value_pair.x = raw.primary_key[index_primary][m
+[32m+[m[32m                    for index_row in range(0, raw.num_rows):[m
+[32m+[m[32m                        pressure = raw.data[[m
+[32m+[m[32m                            column_stride * 0[m
+[32m+[m[32m                            + index_table * table_stride[m
+[32m+[m[32m                            + index_primary * raw.num_rows[m
+[32m+[m[32m                            + index_row[m
+[32m+[m[32m                        ][m
+[32m+[m[32m                        if self.entry_valid(pressure):[m
+[32m+[m[32m                            inner_value_pair = VariateAndValues()[m
+[32m+[m[32m                            inner_value_pair.x = pressure[m
+[32m+[m[32m                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)][m
+[32m+[m[32m                            for index_column in range(1, raw.num_cols):[m
+[32m+[m[32m                                inner_value_pair.y[index_column - 1] = raw.data[[m
+[32m+[m[32m                                    column_stride * index_column[m
+[32m+[m[32m                                    + index_table * table_stride[m
+[32m+[m[32m                                    + index_primary * raw.num_rows[m
+[32m+[m[32m                                    + index_row[m
+[32m+[m[32m                                ][m
+[32m+[m[32m                            outer_value_pair.y.append(inner_value_pair)[m
+[32m+[m[32m                        else:[m
+[32m+[m[32m                            break[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    break[m
+[32m+[m
+[32m+[m[32m                values.append(outer_value_pair)[m
+[32m+[m
+[32m+[m[32m            ret.append(WetGas(values))[m
+[32m+[m
+[32m+[m[32m        return ret[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Gas"]:[m
+[32m+[m[32m        intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)[m
+[32m+[m[32m        intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX][m
+[32m+[m
+[32m+[m[32m        if (intehead_phase & (1 << 2)) == 0:[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        raw = EclPropertyTableRawData()[m
+[32m+[m
+[32m+[m[32m        tab_dims = ecl_init_file.__getitem__("TABDIMS")[m
+[32m+[m[32m        tab = ecl_init_file.__getitem__("TAB")[m
+[32m+[m
+[32m+[m[32m        num_rv = tab_dims[InitFileDefinitions.TABDIMS_NRPVTG_ITEM][m
+[32m+[m[32m        num_pg = tab_dims[InitFileDefinitions.TABDIMS_NPPVTG_ITEM][m
+[32m+[m
+[32m+[m[32m        raw.num_cols = 5[m
+[32m+[m[32m        raw.num_tables = tab_dims[InitFileDefinitions.TABDIMS_NTPVTG_ITEM][m
+[32m+[m
+[32m+[m[32m        if raw.num_tables == 0:[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)[m
+[32m+[m
+[32m+[m[32m        if logihead[InitFileDefinitions.LOGIHEAD_RV_INDEX]:[m
+[32m+[m[32m            raw.num_primary = num_pg[m
+[32m+[m[32m            raw.num_rows = num_rv[m
+[32m+[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raw.num_primary = 1[m
+[32m+[m[32m            raw.num_rows = num_pg[m
+[32m+[m
+[32m+[m[32m        num_tab_elements = raw.num_primary * raw.num_tables[m
+[32m+[m[32m        start = tab_dims[InitFileDefinitions.TABDIMS_JBPVTG_OFFSET_ITEM] - 1[m
+[32m+[m[32m        raw.primary_key = tab[start : start + num_tab_elements][m
+[32m+[m
+[32m+[m[32m        num_tab_elements = ([m
+[32m+[m[32m            raw.num_primary * raw.num_rows * raw.num_cols * raw.num_tables[m
+[32m+[m[32m        )[m
+[32m+[m[32m        start = tab_dims[InitFileDefinitions.TABDIMS_IBPVTG_OFFSET_ITEM] - 1[m
+[32m+[m[32m        raw.data = tab[start : start + num_tab_elements][m
+[32m+[m
+[32m+[m[32m        rhos = surface_mass_density(ecl_init_file, EclPhaseIndex.Vapour)[m
+[32m+[m
+[32m+[m[32m        return Gas(raw, rhos)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Water(Implementation):[m
+[32m+[m[32m    def __init__(self, raw: EclPropertyTableRawData, rhos: List[float]):[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m[32m        self.rhos = rhos[m
+[32m+[m[32m        self.values = self.create_water(raw)[m
+[32m+[m
+[32m+[m[32m    def create_water(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:[m
+[32m+[m[32m        # Holding raw.num_tables values[m
+[32m+[m[32m        ret = [][m
+[32m+[m
+[32m+[m[32m        column_stride = raw.num_rows * raw.num_tables * raw.num_primary[m
+[32m+[m[32m        table_stride = raw.num_primary * raw.num_rows[m
+[32m+[m
+[32m+[m[32m        for index_table in range(0, raw.num_tables):[m
+[32m+[m[32m            values = [][m
+[32m+[m
+[32m+[m[32m            # PKey  Inner   C0  C1          C2          C3[m
+[32m+[m[32m            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo[m
+[32m+[m
+[32m+[m[32m            index_primary = 0[m
+[32m+[m[32m            outer_value_pair = VariateAndValues()[m
+[32m+[m[32m            outer_value_pair.x = 0[m
+[32m+[m[32m            for index_row in range(0, raw.num_rows):[m
+[32m+[m[32m                pressure = raw.data[[m
+[32m+[m[32m                    column_stride * 0[m
+[32m+[m[32m                    + index_table * table_stride[m
+[32m+[m[32m                    + index_primary * raw.num_rows[m
+[32m+[m[32m                    + index_row[m
+[32m+[m[32m                ][m
+[32m+[m[32m                if self.entry_valid(pressure):[m
+[32m+[m[32m                    inner_value_pair = VariateAndValues()[m
+[32m+[m[32m                    inner_value_pair.x = pressure[m
+[32m+[m[32m                    inner_value_pair.y = [0 for col in range(1, raw.num_cols)][m
+[32m+[m[32m                    for index_column in range(1, raw.num_cols):[m
+[32m+[m[32m                        inner_value_pair.y[index_column - 1] = raw.data[[m
+[32m+[m[32m                            column_stride * index_column[m
+[32m+[m[32m                            + index_table * table_stride[m
+[32m+[m[32m                            + index_primary * raw.num_rows[m
+[32m+[m[32m                            + index_row[m
+[32m+[m[32m                        ][m
+[32m+[m[32m                    outer_value_pair.y.append(inner_value_pair)[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    break[m
+[32m+[m
+[32m+[m[32m                values.append(outer_value_pair)[m
+[32m+[m
+[32m+[m[32m            ret.append(WaterImpl(values))[m
+[32m+[m
+[32m+[m[32m        return ret[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Water"]:[m
+[32m+[m[32m        intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)[m
+[32m+[m[32m        intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX][m
+[32m+[m
+[32m+[m[32m        if (intehead_phase & (1 << 2)) == 0:[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        raw = EclPropertyTableRawData()[m
+[32m+[m
+[32m+[m[32m        tab_dims = ecl_init_file.__getitem__("TABDIMS")[m
+[32m+[m[32m        tab = ecl_init_file.__getitem__("TAB")[m
+[32m+[m
+[32m+[m[32m        raw.num_primary = 1[m
+[32m+[m[32m        raw.num_rows = 1[m
+[32m+[m[32m        raw.num_cols = 5[m
+[32m+[m[32m        raw.num_tables = tab_dims[InitFileDefinitions.TABDIMS_NTPVTG_ITEM][m
+[32m+[m
+[32m+[m[32m        if raw.num_tables == 0:[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        num_tab_elements = ([m
+[32m+[m[32m            raw.num_primary * raw.num_rows * raw.num_cols * raw.num_tables[m
+[32m+[m[32m        )[m
+[32m+[m[32m        start = tab_dims[InitFileDefinitions.TABDIMS_IBPVTW_OFFSET_ITEM] - 1[m
+[32m+[m[32m        raw.data = tab[start : start + num_tab_elements][m
+[32m+[m
+[32m+[m[32m        rhos = surface_mass_density(ecl_init_file, EclPhaseIndex.Aqua)[m
+[32m+[m
+[32m+[m[32m        return Water(raw, rhos)[m
+[1mdiff --git a/webviz_subsurface/_datainput/pvt_data.py b/webviz_subsurface/_datainput/pvt_data.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1dd38c7[m
+[1m--- /dev/null[m
+[1m+++ b/webviz_subsurface/_datainput/pvt_data.py[m
+[36m@@ -0,0 +1,119 @@[m
+[32m+[m[32m########################################[m
+[32m+[m[32m#[m
+[32m+[m[32m#  Copyright (C) 2020-     Equinor ASA[m
+[32m+[m[32m#[m
+[32m+[m[32m########################################[m
+[32m+[m
+[32m+[m[32mimport sys[m
+[32m+[m[32mfrom typing import Dict[m
+[32m+[m[32mimport pandas as pd[m
+[32m+[m
+[32m+[m[32m# opm and ecl2df are only available for Linux,[m
+[32m+[m[32m# hence, ignore any import exception here to make[m
+[32m+[m[32m# it still possible to use the PvtPlugin on[m
+[32m+[m[32m# machines with other OSes.[m
+[32m+[m[32m#[m
+[32m+[m[32m# NOTE: Functions in this file cannot be used[m
+[32m+[m[32m#       on non-Linux OSes.[m
+[32m+[m[32mtry:[m
+[32m+[m[32m    import ecl2df[m
+[32m+[m[32m    from opm.io.ecl import EclFile[m
+[32m+[m[32mexcept ImportError:[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m[32mfrom webviz_config.common_cache import CACHE[m
+[32m+[m[32mfrom webviz_config.webviz_store import webvizstore[m
+[32m+[m
+[32m+[m[32mfrom .opm_init_io import Oil, Gas, Water, DryGas[m
+[32m+[m[32mfrom .fmu_input import load_ensemble_set[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@CACHE.memoize(timeout=CACHE.TIMEOUT)[m
+[32m+[m[32m@webvizstore[m
+[32m+[m[32mdef load_pvt_dataframe([m
+[32m+[m[32m    ensemble_paths: Dict[str, str],[m
+[32m+[m[32m    ensemble_set_name: str = "EnsembleSet",[m
+[32m+[m[32m    use_init_file: bool = False,[m
+[32m+[m[32m) -> pd.DataFrame:[m
+[32m+[m[32m    # If ecl2df is not loaded, this machine is probably not[m
+[32m+[m[32m    # running Linux and the modules are not available.[m
+[32m+[m[32m    # To avoid a crash, return an empty DataFrame here.[m
+[32m+[m[32m    if "ecl2df" not in sys.modules:[m
+[32m+[m[32m        print([m
+[32m+[m[32m            "Your operating system does not support opening and reading"[m
+[32m+[m[32m            " Eclipse files. An empty data frame will be returned and your"[m
+[32m+[m[32m            " plot will therefore not show any data points. Please specify"[m
+[32m+[m[32m            " a relative path to a PVT CSV file in your PvtPlot settings"[m
+[32m+[m[32m            " to display PVT data anyways."[m
+[32m+[m[32m        )[m
+[32m+[m[32m        return pd.DataFrame({})[m
+[32m+[m
+[32m+[m[32m    def ecl2df_pvt_dataframe(kwargs) -> pd.DataFrame:[m
+[32m+[m[32m        return ecl2df.pvt.df(kwargs["realization"].get_eclfiles())[m
+[32m+[m
+[32m+[m[32m    def init_to_pvt_dataframe(kwargs) -> pd.DataFrame:[m
+[32m+[m[32m        # pylint: disable-msg=too-many-locals[m
+[32m+[m[32m        ecl_init_file = EclFile([m
+[32m+[m[32m            kwargs["realization"].get_eclfiles().get_initfile().get_filename()[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        oil = Oil.from_ecl_init_file(ecl_init_file)[m
+[32m+[m[32m        gas = Gas.from_ecl_init_file(ecl_init_file)[m
+[32m+[m[32m        water = Water.from_ecl_init_file(ecl_init_file)[m
+[32m+[m
+[32m+[m[32m        column_pvtnum = [][m
+[32m+[m[32m        column_oil_gas_ratio = [][m
+[32m+[m[32m        column_volume_factor = [][m
+[32m+[m[32m        column_pressure = [][m
+[32m+[m[32m        column_viscosity = [][m
+[32m+[m[32m        column_keyword = [][m
+[32m+[m
+[32m+[m[32m        for table_index, table in enumerate(oil.tables()):[m
+[32m+[m[32m            for outer_pair in table.get_values():[m
+[32m+[m[32m                for inner_pair in outer_pair.y:[m
+[32m+[m[32m                    column_pvtnum.append(table_index + 1)[m
+[32m+[m[32m                    column_keyword.append("PVTO")[m
+[32m+[m[32m                    column_oil_gas_ratio.append(outer_pair.x)[m
+[32m+[m[32m                    column_pressure.append(inner_pair.x)[m
+[32m+[m[32m                    column_volume_factor.append(1 / inner_pair.y[0])[m
+[32m+[m[32m                    column_viscosity.append(inner_pair.y[0] / inner_pair.y[1])[m
+[32m+[m
+[32m+[m[32m        for table_index, table in enumerate(gas.tables()):[m
+[32m+[m[32m            for outer_pair in table.get_values():[m
+[32m+[m[32m                for inner_pair in outer_pair.y:[m
+[32m+[m[32m                    column_pvtnum.append(table_index + 1)[m
+[32m+[m[32m                    column_keyword.append("PVDG")[m
+[32m+[m[32m                    if isinstance(table, DryGas):[m
+[32m+[m[32m                        column_oil_gas_ratio.append(0)[m
+[32m+[m[32m                    else:[m
+[32m+[m[32m                        column_oil_gas_ratio.append(outer_pair.x)[m
+[32m+[m[32m                    column_pressure.append(inner_pair.x)[m
+[32m+[m[32m                    column_volume_factor.append(1 / inner_pair.y[0])[m
+[32m+[m[32m                    column_viscosity.append(inner_pair.y[0] / inner_pair.y[1])[m
+[32m+[m
+[32m+[m[32m        for table_index, table in enumerate(water.tables()):[m
+[32m+[m[32m            for outer_pair in table.get_values():[m
+[32m+[m[32m                for inner_pair in outer_pair.y:[m
+[32m+[m[32m                    column_pvtnum.append(table_index + 1)[m
+[32m+[m[32m                    column_keyword.append("PVTW")[m
+[32m+[m[32m                    column_oil_gas_ratio.append(outer_pair.x)[m
+[32m+[m[32m                    column_pressure.append(inner_pair.x)[m
+[32m+[m[32m                    column_volume_factor.append(1 / inner_pair.y[0])[m
+[32m+[m[32m                    column_viscosity.append(1.0 / inner_pair.y[2] * inner_pair.y[0])[m
+[32m+[m
+[32m+[m[32m        data_frame = pd.DataFrame([m
+[32m+[m[32m            {[m
+[32m+[m[32m                "PVTNUM": column_pvtnum,[m
+[32m+[m[32m                "KEYWORD": column_keyword,[m
+[32m+[m[32m                "RS": column_oil_gas_ratio,[m
+[32m+[m[32m                "PRESSURE": column_pressure,[m
+[32m+[m[32m                "VOLUMEFACTOR": column_volume_factor,[m
+[32m+[m[32m                "VISCOSITY": column_viscosity,[m
+[32m+[m[32m            }[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        return data_frame[m
+[32m+[m
+[32m+[m[32m    return load_ensemble_set(ensemble_paths, ensemble_set_name).apply([m
+[32m+[m[32m        init_to_pvt_dataframe if use_init_file else ecl2df_pvt_dataframe[m
+[32m+[m[32m    )[m
+[1mdiff --git a/webviz_subsurface/plugins/__init__.py b/webviz_subsurface/plugins/__init__.py[m
+[1mindex 1196e62..0aa5b25 100644[m
+[1m--- a/webviz_subsurface/plugins/__init__.py[m
+[1m+++ b/webviz_subsurface/plugins/__init__.py[m
+[36m@@ -49,6 +49,7 @@[m [mfrom ._reservoir_simulation_timeseries_regional import ([m
+     ReservoirSimulationTimeSeriesRegional,[m
+ )[m
+ from ._rft_plotter.rft_plotter import RftPlotter[m
+[32m+[m[32mfrom ._pvt_plot import PvtPlot[m
+ [m
+ [m
+ __all__ = [[m
+[36m@@ -72,4 +73,5 @@[m [m__all__ = [[m
+     "RelativePermeability",[m
+     "ReservoirSimulationTimeSeriesRegional",[m
+     "RftPlotter",[m
+[32m+[m[32m    "PvtPlot",[m
+ ][m
+[1mdiff --git a/webviz_subsurface/plugins/_pvt_plot.py b/webviz_subsurface/plugins/_pvt_plot.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..816e2d7[m
+[1m--- /dev/null[m
+[1m+++ b/webviz_subsurface/plugins/_pvt_plot.py[m
+[36m@@ -0,0 +1,650 @@[m
+[32m+[m[32m########################################[m
+[32m+[m[32m#[m
+[32m+[m[32m#  Copyright (C) 2020-     Equinor ASA[m
+[32m+[m[32m#[m
+[32m+[m[32m########################################[m
+[32m+[m
+[32m+[m[32mfrom typing import Callable, Dict, List, Tuple, Union[m
+[32m+[m
+[32m+[m[32mimport pandas as pd[m
+[32m+[m[32mimport dash_html_components as html[m
+[32m+[m[32mfrom dash.dependencies import Input, Output, State[m
+[32m+[m[32mfrom dash.exceptions import PreventUpdate[m
+[32m+[m[32mimport dash_core_components as dcc[m
+[32m+[m[32mimport webviz_core_components as wcc[m
+[32m+[m[32mfrom webviz_config.common_cache import CACHE[m
+[32m+[m[32mfrom webviz_config import WebvizPluginABC[m
+[32m+[m
+[32m+[m[32mfrom .._datainput.pvt_data import load_pvt_dataframe[m
+[32m+[m[32mfrom .._datainput.fmu_input import load_csv[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass PvtPlot(WebvizPluginABC):[m
+[32m+[m[32m    """Visualizes formation volume factor and viscosity data \[m
+[32m+[m[32mfor oil, gas and water from both Eclipse **init** and **include** files.[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m* **`ensembles`:** Which ensembles in `shared_settings` to visualize.[m
+[32m+[m[32m* **`pvt_relative_file_path`:** Local path to a csv file in each \[m
+[32m+[m[32m    realization with dumped pvt data.[m
+[32m+[m[32m* **`read_from_init_file`:** A boolean flag stating if data shall be \[m
+[32m+[m[32m    read from an Eclipse INIT file instead of an INCLUDE file. \[m
+[32m+[m[32m    This is only used when **pvt_relative_file_path** is not given.[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m[32mThe minimum requirement is to define `ensembles`.[m
+[32m+[m
+[32m+[m[32mIf no `pvt_relative_file_path` is given, the PVT data will be extracted automatically[m
+[32m+[m[32mfrom the simulation decks of individual realizations using `fmu_ensemble` and `ecl2data_frame`.[m
+[32m+[m[32mIf the `read_from_init_file` flag is set to True, then the extraction procedure in[m
+[32m+[m[32m`ecl2data_frame` will be replaced by an individual extracting procedure that reads the[m
+[32m+[m[32mnormalized Eclipse INIT file.[m
+[32m+[m[32mNote that the latter two extraction methods can be very slow for larger data and are therefore[m
+[32m+[m[32mnot recommended unless you have a very simple model/data deck.[m
+[32m+[m
+[32m+[m[32m`pvt_relative_file_path` is a path to a file stored per realization (e.g. in \[m
+[32m+[m[32m`share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:[m
+[32m+[m[32m* One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords[m
+[32m+[m[32m    (e.g. `PVTO` and `PVDG`).[m
+[32m+[m[32m* One column named `PVTNUM` with integer `PVTNUM` regions.[m
+[32m+[m[32m* One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.[m
+[32m+[m[32m* One column named `PRESSURE` with the fluids pressure as the secondary variate.[m
+[32m+[m[32m* One column named `VOLUMEFACTOR` as the first covariate.[m
+[32m+[m[32m* One column named `VISCOSITY` as the second covariate.[m
+[32m+[m
+[32m+[m[32mThe file can e.g. be dumped to disc per realization by a forward model in ERT using[m
+[32m+[m[32m`ecl2data_frame` or `pyscal`.[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32m    PHASES = {"OIL": "PVTO", "GAS": "PVDG", "WATER": "PVTW"}[m
+[32m+[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        app,[m
+[32m+[m[32m        ensembles: List[str],[m
+[32m+[m[32m        pvt_relative_file_path: str = None,[m
+[32m+[m[32m        read_from_init_file: bool = False,[m
+[32m+[m[32m    ):[m
+[32m+[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m
+[32m+[m[32m        self.ensemble_paths = {[m
+[32m+[m[32m            ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][[m
+[32m+[m[32m                ensemble[m
+[32m+[m[32m            ][m
+[32m+[m[32m            for ensemble in ensembles[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        self.plotly_theme = app.webviz_settings["theme"].plotly_theme[m
+[32m+[m
+[32m+[m[32m        self.pvt_relative_file_path = pvt_relative_file_path[m
+[32m+[m
+[32m+[m[32m        self.read_from_init_file = read_from_init_file[m
+[32m+[m
+[32m+[m[32m        if self.pvt_relative_file_path is None:[m
+[32m+[m[32m            self.pvt_data_frame = load_pvt_dataframe([m
+[32m+[m[32m                self.ensemble_paths, use_init_file=read_from_init_file[m
+[32m+[m[32m            )[m
+[32m+[m[32m            self.pvt_data_frame = self.pvt_data_frame.rename([m
+[32m+[m[32m                str.upper, axis="columns"[m
+[32m+[m[32m            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            # Load data from all ensembles into a Panda DataFrame[m
+[32m+[m[32m            self.pvt_data_frame = load_csv([m
+[32m+[m[32m                ensemble_paths=self.ensemble_paths, csv_file=self.pvt_relative_file_path[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m            # Rename "type" header column to "keyword" and make all headers having capital letters[m
+[32m+[m[32m            self.pvt_data_frame = self.pvt_data_frame.rename([m
+[32m+[m[32m                str.upper, axis="columns"[m
+[32m+[m[32m            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})[m
+[32m+[m
+[32m+[m[32m            # Ensure that the identifier string "KEYWORD" is contained in the header columns[m
+[32m+[m[32m            if "KEYWORD" not in self.pvt_data_frame.columns:[m
+[32m+[m[32m                raise ValueError([m
+[32m+[m[32m                    "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."[m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m            valid_columns = [[m
+[32m+[m[32m                "ENSEMBLE",[m
+[32m+[m[32m                "REAL",[m
+[32m+[m[32m                "KEYWORD",[m
+[32m+[m[32m                "PVTNUM",[m
+[32m+[m[32m                "GOR",[m
+[32m+[m[32m                "PRESSURE",[m
+[32m+[m[32m                "VOLUMEFACTOR",[m
+[32m+[m[32m                "VISCOSITY",[m
+[32m+[m[32m            ][m
+[32m+[m
+[32m+[m[32m            self.pvt_data_frame = self.pvt_data_frame[[m
+[32m+[m[32m                [[m
+[32m+[m[32m                    column[m
+[32m+[m[32m                    for column in self.pvt_data_frame.columns[m
+[32m+[m[32m                    if column in valid_columns[m
+[32m+[m[32m                ][m
+[32m+[m[32m            ][m
+[32m+[m
+[32m+[m[32m        self.set_callbacks(app)[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def phases(self) -> List[str]:[m
+[32m+[m[32m        return list(PvtPlot.PHASES.keys())[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def ensembles(self) -> List[str]:[m
+[32m+[m[32m        return list(self.pvt_data_frame["ENSEMBLE"].unique())[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def pvtnums(self) -> List[str]:[m
+[32m+[m[32m        return list(self.pvt_data_frame["PVTNUM"].unique())[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def ensemble_colors(self) -> Dict[str, List[str]]:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            ensemble: self.plotly_theme["layout"]["colorway"][[m
+[32m+[m[32m                self.ensembles.index(ensemble)[m
+[32m+[m[32m            ][m
+[32m+[m[32m            for ensemble in self.ensembles[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def pvtnum_colors(self) -> Dict[str, List[str]]:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            pvtnum: self.plotly_theme["layout"]["colorway"][self.pvtnums.index(pvtnum)][m
+[32m+[m[32m            for pvtnum in self.pvtnums[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def color_options(self) -> List[str]:[m
+[32m+[m[32m        """Options to color by"""[m
+[32m+[m[32m        return ["ENSEMBLE", "PVTNUM"][m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def tour_steps(self) -> List[dict]:[m
+[32m+[m[32m        return [[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": self.uuid("layout"),[m
+[32m+[m[32m                "content": "Dashboard displaying formation volume factor and viscosity"[m
+[32m+[m[32m                " data of either Oil, Gas or Water",[m
+[32m+[m[32m            },[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": self.uuid("graph"),[m
+[32m+[m[32m                "content": ([m
+[32m+[m[32m                    "Visualization of curves. "[m
+[32m+[m[32m                    "Different options can be set in the menu to the left."[m
+[32m+[m[32m                    "You can also toggle data on/off by clicking at the legend."[m
+[32m+[m[32m                ),[m
+[32m+[m[32m            },[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": self.uuid("color_by_selector"),[m
+[32m+[m[32m                "content": ("Choose the basis for your colormap."),[m
+[32m+[m[32m            },[m
+[32m+[m[32m            {"id": self.uuid("ensemble_selector"), "content": ("Select ensembles."),},[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": self.uuid("phase_selector"),[m
+[32m+[m[32m                "content": ([m
+[32m+[m[32m                    "Choose a phase. formation volume factor and viscosity data will be"[m
+[32m+[m[32m                    " shown for the selected phase in separate plots."[m
+[32m+[m[32m                ),[m
+[32m+[m[32m            },[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": self.uuid("pvtnum_selector"),[m
+[32m+[m[32m                "content": ("Choose PVTNUM regions."),[m
+[32m+[m[32m            },[m
+[32m+[m[32m        ][m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def set_grid_layout(columns: int, padding: int = 0) -> Dict[str, str]:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            "display": "grid",[m
+[32m+[m[32m            "alignContent": "space-around",[m
+[32m+[m[32m            "justifyContent": "space-between",[m
+[32m+[m[32m            "gridTemplateColumns": f"{columns}",[m
+[32m+[m[32m            "padding": f"{padding}px",[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def layout(self) -> wcc.FlexBox:[m
+[32m+[m[32m        return wcc.FlexBox([m
+[32m+[m[32m            id=self.uuid("layout"),[m
+[32m+[m[32m            children=[[m
+[32m+[m[32m                html.Div([m
+[32m+[m[32m                    id=self.uuid("filters"),[m
+[32m+[m[32m                    style={"flex": "1"},[m
+[32m+[m[32m                    children=[[m
+[32m+[m[32m                        html.Label([m
+[32m+[m[32m                            id=self.uuid("color_by_selector"),[m
+[32m+[m[32m                            children=[[m
+[32m+[m[32m                                html.Span("Color by:", style={"font-weight": "bold"}),[m
+[32m+[m[32m                                dcc.Dropdown([m
+[32m+[m[32m                                    id=self.uuid("color_by"),[m
+[32m+[m[32m                                    clearable=False,[m
+[32m+[m[32m                                    options=[[m
+[32m+[m[32m                                        {"label": i.lower().capitalize(), "value": i,}[m
+[32m+[m[32m                                        for i in self.color_options[m
+[32m+[m[32m                                    ],[m
+[32m+[m[32m                                    value=self.color_options[0],[m
+[32m+[m[32m                                ),[m
+[32m+[m[32m                            ],[m
+[32m+[m[32m                        ),[m
+[32m+[m[32m                        html.Label([m
+[32m+[m[32m                            id=self.uuid("ensemble_selector"),[m
+[32m+[m[32m                            children=[[m
+[32m+[m[32m                                dcc.Store(id=self.uuid("stored_ensemble"), data={}),[m
+[32m+[m[32m                                html.Span("Ensembles:", style={"font-weight": "bold"}),[m
+[32m+[m[32m                                dcc.Dropdown([m
+[32m+[m[32m                                    id=self.uuid("ensemble"),[m
+[32m+[m[32m                                    clearable=False,[m
+[32m+[m[32m                                    multi=True,[m
+[32m+[m[32m                                    options=[[m
+[32m+[m[32m                                        {"label": i, "value": i} for i in self.ensembles[m
+[32m+[m[32m                                    ],[m
+[32m+[m[32m                                    value=self.ensembles[0],[m
+[32m+[m[32m                                ),[m
+[32m+[m[32m                            ],[m
+[32m+[m[32m                        ),[m
+[32m+[m[32m                        html.Label([m
+[32m+[m[32m                            id=self.uuid("phase_selector"),[m
+[32m+[m[32m                            children=[[m
+[32m+[m[32m                                html.Span("Phase:", style={"font-weight": "bold"},),[m
+[32m+[m[32m                                dcc.Dropdown([m
+[32m+[m[32m                                    id=self.uuid("phase"),[m
+[32m+[m[32m                                    clearable=False,[m
+[32m+[m[32m                                    options=[[m
+[32m+[m[32m                                        {"label": i.lower().capitalize(), "value": i,}[m
+[32m+[m[32m                                        for i in self.phases[m
+[32m+[m[32m                                    ],[m
+[32m+[m[32m                                    value=list(self.phases)[0],[m
+[32m+[m[32m                                ),[m
+[32m+[m[32m                            ],[m
+[32m+[m[32m                        ),[m
+[32m+[m[32m                        dcc.Store(id=self.uuid("stored_pvtnum"), data={}),[m
+[32m+[m[32m                        html.Label([m
+[32m+[m[32m                            id=self.uuid("pvtnum_selector"),[m
+[32m+[m[32m                            children=[[m
+[32m+[m[32m                                html.Span("Pvtnum:", style={"font-weight": "bold"}),[m
+[32m+[m[32m                                dcc.Dropdown([m
+[32m+[m[32m                                    id=self.uuid("pvtnum"),[m
+[32m+[m[32m                                    clearable=False,[m
+[32m+[m[32m                                    multi=True,[m
+[32m+[m[32m                                    options=[[m
+[32m+[m[32m                                        {"label": i, "value": i} for i in self.pvtnums[m
+[32m+[m[32m                                    ],[m
+[32m+[m[32m                                    value=self.pvtnums[0],[m
+[32m+[m[32m                                ),[m
+[32m+[m[32m                            ],[m
+[32m+[m[32m                        ),[m
+[32m+[m[32m                    ],[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                html.Div([m
+[32m+[m[32m                    id=self.uuid("graphs"),[m
+[32m+[m[32m                    style={"flex": "4"},[m
+[32m+[m[32m                    children=wcc.Graph(id=self.uuid("graph")),[m
+[32m+[m[32m                ),[m
+[32m+[m[32m            ],[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m    def set_callbacks(self, app):[m
+[32m+[m[32m        @app.callback([m
+[32m+[m[32m            Output(self.uuid("graph"), "figure"),[m
+[32m+[m[32m            [[m
+[32m+[m[32m                Input(self.uuid("color_by"), "value"),[m
+[32m+[m[32m                Input(self.uuid("phase"), "value"),[m
+[32m+[m[32m                Input(self.uuid("ensemble"), "value"),[m
+[32m+[m[32m                Input(self.uuid("pvtnum"), "value"),[m
+[32m+[m[32m            ],[m
+[32m+[m[32m        )[m
+[32m+[m[32m        def _update_graph([m
+[32m+[m[32m            color_by: str,[m
+[32m+[m[32m            phase: str,[m
+[32m+[m[32m            ensembles: Union[List[str], str],[m
+[32m+[m[32m            pvtnums: Union[List[str], str],[m
+[32m+[m[32m        ) -> Dict[str, Union[dict, List[dict]]]:[m
+[32m+[m[32m            if not phase:[m
+[32m+[m[32m                raise PreventUpdate[m
+[32m+[m[32m            if ensembles is None:[m
+[32m+[m[32m                ensembles = [][m
+[32m+[m[32m            if not isinstance(ensembles, list):[m
+[32m+[m[32m                ensembles = [ensembles][m
+[32m+[m[32m            if not isinstance(pvtnums, list):[m
+[32m+[m[32m                pvtnums = [pvtnums][m
+[32m+[m
+[32m+[m[32m            data_frame = filter_data_frame(self.pvt_data_frame, ensembles, pvtnums)[m
+[32m+[m
+[32m+[m[32m            if color_by == "ENSEMBLE":[m
+[32m+[m[32m                colors = self.ensemble_colors[m
+[32m+[m[32m            elif color_by == "PVTNUM":[m
+[32m+[m[32m                colors = self.pvtnum_colors[m
+[32m+[m
+[32m+[m[32m            layout = plot_layout(phase, color_by, self.plotly_theme["layout"])[m
+[32m+[m
+[32m+[m[32m            traces = add_realization_traces(data_frame, color_by, colors, phase)[m
+[32m+[m
+[32m+[m[32m            return {"data": traces, "layout": layout}[m
+[32m+[m
+[32m+[m[32m        @app.callback([m
+[32m+[m[32m            [[m
+[32m+[m[32m                Output(self.uuid("ensemble"), "multi"),[m
+[32m+[m[32m                Output(self.uuid("ensemble"), "value"),[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            [Input(self.uuid("color_by"), "value")],[m
+[32m+[m[32m            [State(self.uuid("stored_ensemble"), "data")],[m
+[32m+[m[32m        )[m
+[32m+[m[32m        def _set_ensemble_selector([m
+[32m+[m[32m            color_by: str, stored_ensemble: pd.DataFrame[m
+[32m+[m[32m        ) -> Tuple[bool, str]:[m
+[32m+[m[32m            """If ensemble is selected as color by, set the ensemble[m
+[32m+[m[32m            selector to allow multiple selections, else use stored_ensemble[m
+[32m+[m[32m            """[m
+[32m+[m
+[32m+[m[32m            if color_by == "ENSEMBLE":[m
+[32m+[m[32m                return True, self.ensembles[m
+[32m+[m
+[32m+[m[32m            return ([m
+[32m+[m[32m                False,[m
+[32m+[m[32m                stored_ensemble.get("ENSEMBLE", self.ensembles[0]),[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        @app.callback([m
+[32m+[m[32m            [[m
+[32m+[m[32m                Output(self.uuid("pvtnum"), "multi"),[m
+[32m+[m[32m                Output(self.uuid("pvtnum"), "value"),[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            [Input(self.uuid("color_by"), "value")],[m
+[32m+[m[32m            [State(self.uuid("stored_pvtnum"), "data")],[m
+[32m+[m[32m        )[m
+[32m+[m[32m        def _set_pvtnum_selector([m
+[32m+[m[32m            color_by: str, stored_pvtnum: pd.DataFrame[m
+[32m+[m[32m        ) -> Tuple[bool, str]:[m
+[32m+[m[32m            """If pvtnum is selected as color by, set the pvtnum[m
+[32m+[m[32m            selector to allow multiple selections, else use stored_satnum[m
+[32m+[m[32m            """[m
+[32m+[m
+[32m+[m[32m            if color_by == "PVTNUM":[m
+[32m+[m[32m                return True, self.pvtnums[m
+[32m+[m
+[32m+[m[32m            return ([m
+[32m+[m[32m                False,[m
+[32m+[m[32m                stored_pvtnum.get("PVTNUM", self.pvtnums[0]),[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m    def add_webvizstore([m
+[32m+[m[32m        self,[m
+[32m+[m[32m    ) -> List[[m
+[32m+[m[32m        Tuple[Callable[[Dict[str, str], str, bool], pd.DataFrame], List[Dict[str, str]]][m
+[32m+[m[32m    ]:[m
+[32m+[m[32m        return [[m
+[32m+[m[32m            ([m
+[32m+[m[32m                load_pvt_dataframe,[m
+[32m+[m[32m                [[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "ensemble_paths": self.ensemble_paths,[m
+[32m+[m[32m                        "ensemble_set_name": "EnsembleSet",[m
+[32m+[m[32m                        "use_init_file": self.read_from_init_file,[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                ],[m
+[32m+[m[32m            )[m
+[32m+[m[32m        ][m
+[32m+[m
+[32m+[m
+[32m+[m[32m# Caching should be safe here with DataFrame as it is always the same for an instance of the plugin.[m
+[32m+[m[32m@CACHE.memoize(timeout=CACHE.TIMEOUT)[m
+[32m+[m[32mdef filter_data_frame([m
+[32m+[m[32m    data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[str][m
+[32m+[m[32m) -> pd.DataFrame:[m
+[32m+[m
+[32m+[m[32m    data_frame = data_frame.copy()[m
+[32m+[m[32m    data_frame = data_frame.loc[data_frame["ENSEMBLE"].isin(ensembles)][m
+[32m+[m[32m    data_frame = data_frame.loc[data_frame["PVTNUM"].isin(pvtnums)][m
+[32m+[m[32m    columns = [[m
+[32m+[m[32m        "ENSEMBLE",[m
+[32m+[m[32m        "REAL",[m
+[32m+[m[32m        "PVTNUM",[m
+[32m+[m[32m        "KEYWORD",[m
+[32m+[m[32m        "GOR",[m
+[32m+[m[32m        "PRESSURE",[m
+[32m+[m[32m        "VOLUMEFACTOR",[m
+[32m+[m[32m        "VISCOSITY",[m
+[32m+[m[32m    ][m
+[32m+[m[32m    return data_frame[columns].fillna(0)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef add_realization_traces([m
+[32m+[m[32m    data_frame: pd.DataFrame, color_by: str, colors: List[str], phase: str[m
+[32m+[m[32m) -> List[dict]:[m
+[32m+[m[32m    """Renders line traces for individual realizations"""[m
+[32m+[m[32m    # pylint: disable-msg=too-many-locals[m
+[32m+[m
+[32m+[m[32m    traces = [][m
+[32m+[m
+[32m+[m[32m    data_frame = data_frame.loc[data_frame["KEYWORD"] == PvtPlot.PHASES[phase]][m
+[32m+[m[32m    column_name = "GOR"[m
+[32m+[m
+[32m+[m[32m    border_value_pressure = {}[m
+[32m+[m[32m    border_value_viscosity = {}[m
+[32m+[m[32m    border_value_volumefactor = {}[m
+[32m+[m
+[32m+[m[32m    for ratio_no, oil_gas_ratio in enumerate(data_frame[column_name].unique()):[m
+[32m+[m[32m        constant_group = ([m
+[32m+[m[32m            data_frame["PVTNUM"].iloc[0][m
+[32m+[m[32m            if color_by == "ENSEMBLE"[m
+[32m+[m[32m            else data_frame["ENSEMBLE"].iloc[0][m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        for (group, grouped_data_frame) in data_frame.groupby(color_by):[m
+[32m+[m[32m            for realization_no, (realization, realization_data_frame) in enumerate([m
+[32m+[m[32m                grouped_data_frame.groupby("REAL")[m
+[32m+[m[32m            ):[m
+[32m+[m
+[32m+[m[32m                if group not in border_value_pressure:[m
+[32m+[m[32m                    border_value_pressure[group] = [][m
+[32m+[m[32m                    border_value_viscosity[group] = [][m
+[32m+[m[32m                    border_value_volumefactor[group] = [][m
+[32m+[m
+[32m+[m[32m                border_value_pressure[group].append([m
+[32m+[m[32m                    realization_data_frame.loc[[m
+[32m+[m[32m                        realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                    ]["PRESSURE"].iloc[0][m
+[32m+[m[32m                )[m
+[32m+[m[32m                border_value_volumefactor[group].append([m
+[32m+[m[32m                    realization_data_frame.loc[[m
+[32m+[m[32m                        realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                    ]["VOLUMEFACTOR"].iloc[0][m
+[32m+[m[32m                )[m
+[32m+[m[32m                border_value_viscosity[group].append([m
+[32m+[m[32m                    realization_data_frame.loc[[m
+[32m+[m[32m                        realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                    ]["VISCOSITY"].iloc[0][m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m                traces.extend([m
+[32m+[m[32m                    [[m
+[32m+[m[32m                        {[m
+[32m+[m[32m                            "type": "scatter",[m
+[32m+[m[32m                            "x": realization_data_frame.loc[[m
+[32m+[m[32m                                realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                            ]["PRESSURE"],[m
+[32m+[m[32m                            "y": realization_data_frame.loc[[m
+[32m+[m[32m                                realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                            ]["VOLUMEFACTOR"],[m
+[32m+[m[32m                            "xaxis": "x",[m
+[32m+[m[32m                            "yaxis": "y",[m
+[32m+[m[32m                            "hovertext": ([m
+[32m+[m[32m                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {oil_gas_ratio}"[m
+[32m+[m[32m                                ", Pvtnum: "[m
+[32m+[m[32m                                f"{group if color_by == 'PVTNUM' else constant_group}<br>"[m
+[32m+[m[32m                                f"Realization: {realization}, Ensemble: "[m
+[32m+[m[32m                                f"{group if color_by == 'ENSEMBLE' else constant_group}"[m
+[32m+[m[32m                            ),[m
+[32m+[m[32m                            "name": group,[m
+[32m+[m[32m                            "legendgroup": group,[m
+[32m+[m[32m                            "marker": {[m
+[32m+[m[32m                                "color": colors.get([m
+[32m+[m[32m                                    group, colors[list(colors.keys())[-1]][m
+[32m+[m[32m                                )[m
+[32m+[m[32m                            },[m
+[32m+[m[32m                            "showlegend": realization_no == 0 and ratio_no == 0,[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    ][m
+[32m+[m[32m                )[m
+[32m+[m[32m                traces.extend([m
+[32m+[m[32m                    [[m
+[32m+[m[32m                        {[m
+[32m+[m[32m                            "type": "scatter",[m
+[32m+[m[32m                            "x": realization_data_frame.loc[[m
+[32m+[m[32m                                realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                            ]["PRESSURE"],[m
+[32m+[m[32m                            "y": realization_data_frame.loc[[m
+[32m+[m[32m                                realization_data_frame[column_name] == oil_gas_ratio[m
+[32m+[m[32m                            ]["VISCOSITY"],[m
+[32m+[m[32m                            "xaxis": "x2",[m
+[32m+[m[32m                            "yaxis": "y2",[m
+[32m+[m[32m                            "hovertext": ([m
+[32m+[m[32m                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {oil_gas_ratio}"[m
+[32m+[m[32m                                ", Pvtnum: "[m
+[32m+[m[32m                                f"{group if color_by == 'PVTNUM' else constant_group}<br>"[m
+[32m+[m[32m                                f"Realization: {realization}, Ensemble: "[m
+[32m+[m[32m                                f"{group if color_by == 'ENSEMBLE' else constant_group}"[m
+[32m+[m[32m                            ),[m
+[32m+[m[32m                            "name": group,[m
+[32m+[m[32m                            "legendgroup": group,[m
+[32m+[m[32m                            "marker": {[m
+[32m+[m[32m                                "color": colors.get([m
+[32m+[m[32m                                    group, colors[list(colors.keys())[-1]][m
+[32m+[m[32m                                )[m
+[32m+[m[32m                            },[m
+[32m+[m[32m                            "showlegend": False,[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    ][m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m    for group in border_value_pressure:[m
+[32m+[m[32m        traces.extend([m
+[32m+[m[32m            [[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "type": "scatter",[m
+[32m+[m[32m                    "mode": "lines",[m
+[32m+[m[32m                    "x": border_value_pressure[group],[m
+[32m+[m[32m                    "y": border_value_volumefactor[group],[m
+[32m+[m[32m                    "xaxis": "x",[m
+[32m+[m[32m                    "yaxis": "y",[m
+[32m+[m[32m                    "line": {"width": 1, "color": "black",},[m
+[32m+[m[32m                    "showlegend": False,[m
+[32m+[m[32m                }[m
+[32m+[m[32m            ][m
+[32m+[m[32m        )[m
+[32m+[m[32m        traces.extend([m
+[32m+[m[32m            [[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "type": "scatter",[m
+[32m+[m[32m                    "mode": "lines",[m
+[32m+[m[32m                    "x": border_value_pressure[group],[m
+[32m+[m[32m                    "y": border_value_viscosity[group],[m
+[32m+[m[32m                    "xaxis": "x2",[m
+[32m+[m[32m                    "yaxis": "y2",[m
+[32m+[m[32m                    "line": {"width": 1, "color": "black",},[m
+[32m+[m[32m                    "showlegend": False,[m
+[32m+[m[32m                }[m
+[32m+[m[32m            ][m
+[32m+[m[32m        )[m
+[32m+[m[32m    return traces[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@CACHE.memoize(timeout=CACHE.TIMEOUT)[m
+[32m+[m[32mdef plot_layout(phase: str, color_by: str, theme: dict) -> dict:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Constructing plot layout from scratch as it is more responsive than plotly subplots package.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    titles = [[m
+[32m+[m[32m        "{} Formation Volume Factor".format(phase.lower().capitalize()),[m
+[32m+[m[32m        "{} Viscosity".format(phase.lower().capitalize()),[m
+[32m+[m[32m    ][m
+[32m+[m[32m    layout = {}[m
+[32m+[m[32m    layout.update(theme)[m
+[32m+[m[32m    layout.update({"hovermode": "closest"})[m
+[32m+[m[32m    # create subplots[m
+[32m+[m[32m    layout.update([m
+[32m+[m[32m        {[m
+[32m+[m[32m            "annotations": [[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "showarrow": False,[m
+[32m+[m[32m                    "text": titles[0],[m
+[32m+[m[32m                    "x": 0.5,[m
+[32m+[m[32m                    "xanchor": "center",[m
+[32m+[m[32m                    "xref": "paper",[m
+[32m+[m[32m                    "y": 1.0,[m
+[32m+[m[32m                    "yanchor": "bottom",[m
+[32m+[m[32m                    "yref": "paper",[m
+[32m+[m[32m                    "font": {"size": 16},[m
+[32m+[m[32m                },[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "showarrow": False,[m
+[32m+[m[32m                    "text": titles[1],[m
+[32m+[m[32m                    "x": 0.5,[m
+[32m+[m[32m                    "xanchor": "center",[m
+[32m+[m[32m                    "xref": "paper",[m
+[32m+[m[32m                    "y": 0.475,[m
+[32m+[m[32m                    "yanchor": "bottom",[m
+[32m+[m[32m                    "yref": "paper",[m
+[32m+[m[32m                    "font": {"size": 16},[m
+[32m+[m[32m                },[m
+[32m+[m[32m            ],[m
+[32m+[m[32m        }[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    layout["legend"] = {"title": {"text": color_by.lower().capitalize()}}[m
+[32m+[m[32m    # format axes[m
+[32m+[m[32m    layout.update([m
+[32m+[m[32m        {[m
+[32m+[m[32m            "xaxis": {[m
+[32m+[m[32m                "automargin": True,[m
+[32m+[m[32m                "zeroline": False,[m
+[32m+[m[32m                "anchor": "y",[m
+[32m+[m[32m                "domain": [0.0, 1.0],[m
+[32m+[m[32m                "matches": "x2",[m
+[32m+[m[32m                "showticklabels": False,[m
+[32m+[m[32m                "showgrid": True,[m
+[32m+[m[32m            },[m
+[32m+[m[32m            "xaxis2": {[m
+[32m+[m[32m                "automargin": True,[m
+[32m+[m[32m                "ticks": "",[m
+[32m+[m[32m                "showticklabels": True,[m
+[32m+[m[32m                "zeroline": False,[m
+[32m+[m[32m                "anchor": "y2",[m
+[32m+[m[32m                "domain": [0.0, 1.0],[m
+[32m+[m[32m                "title": {"text": "Pressure [barsa]", "standoff": 15},[m
+[32m+[m[32m                "showgrid": True,[m
+[32m+[m[32m            },[m
+[32m+[m[32m            "yaxis": {[m
+[32m+[m[32m                "automargin": True,[m
+[32m+[m[32m                "ticks": "",[m
+[32m+[m[32m                "zeroline": False,[m
+[32m+[m[32m                "anchor": "x",[m
+[32m+[m[32m                "domain": [0.525, 1.0],[m
+[32m+[m[32m                "title": {[m
+[32m+[m[32m                    "text": "{} Formation Volume Factor [rm3/sm3]".format([m
+[32m+[m[32m                        phase.lower().capitalize()[m
+[32m+[m[32m                    )[m
+[32m+[m[32m                },[m
+[32m+[m[32m                "type": "linear",[m
+[32m+[m[32m                "showgrid": True,[m
+[32m+[m[32m            },[m
+[32m+[m[32m            "yaxis2": {[m
+[32m+[m[32m                "automargin": True,[m
+[32m+[m[32m                "ticks": "",[m
+[32m+[m[32m                "zeroline": False,[m
+[32m+[m[32m                "anchor": "x2",[m
+[32m+[m[32m                "domain": [0.0, 0.475],[m
+[32m+[m[32m                "title": {[m
+[32m+[m[32m                    "text": "{} Viscosity [cP]".format(phase.lower().capitalize())[m
+[32m+[m[32m                },[m
+[32m+[m[32m                "type": "linear",[m
+[32m+[m[32m                "showgrid": True,[m
+[32m+[m[32m            },[m
+[32m+[m[32m            "height": 800,[m
+[32m+[m[32m            "margin": {"t": 20, "b": 0},[m
+[32m+[m[32m            "plot_bgcolor": "rgba(0,0,0,0)",[m
+[32m+[m[32m        }[m
+[32m+[m[32m    )[m
+[32m+[m[32m    return layout[m

@@ -15,8 +15,7 @@ import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 
-from .._datainput.pvt_data import load_pvt_dataframe
-from .._datainput.fmu_input import load_csv
+from .._datainput.pvt_data import load_pvt_dataframe, load_pvt_csv
 
 
 class PvtPlot(WebvizPluginABC):
@@ -31,17 +30,22 @@ for oil, gas and water from both Eclipse **init** and **include** files.
 * **`read_from_init_file`:** A boolean flag stating if data shall be \
     read from an Eclipse INIT file instead of an INCLUDE file. \
     This is only used when **pvt_relative_file_path** is not given.
+* **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles \
+    which are holding duplicate data of other ensembles shall be dropped. \
+    Defaults to False.
 
 ---
 The minimum requirement is to define `ensembles`.
 
 If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
 from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2data_frame`.
-If the `read_from_init_file` flag is set to True, then the extraction procedure in
+If the `read_from_init_file` flag is set to True, the extraction procedure in
 `ecl2data_frame` will be replaced by an individual extracting procedure that reads the
 normalized Eclipse INIT file.
 Note that the latter two extraction methods can be very slow for larger data and are therefore
 not recommended unless you have a very simple model/data deck.
+If the `drop_ensemble_duplicates` flag is set to True, any ensembles which are holding
+duplicate data of other ensembles will be dropped.
 
 `pvt_relative_file_path` is a path to a file stored per realization (e.g. in \
 `share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:
@@ -65,6 +69,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         ensembles: List[str],
         pvt_relative_file_path: str = None,
         read_from_init_file: bool = False,
+        drop_ensemble_duplicates: bool = False,
     ):
 
         super().__init__()
@@ -82,72 +87,30 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
 
         self.read_from_init_file = read_from_init_file
 
+        self.drop_ensemble_duplicates = drop_ensemble_duplicates
+
         if self.pvt_relative_file_path is None:
             self.pvt_data_frame = load_pvt_dataframe(
-                self.ensemble_paths, use_init_file=read_from_init_file
+                self.ensemble_paths,
+                use_init_file=read_from_init_file,
+                drop_ensemble_duplicates=drop_ensemble_duplicates,
             )
             self.pvt_data_frame = self.pvt_data_frame.rename(
                 str.upper, axis="columns"
             ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
         else:
             # Load data from all ensembles into a pandas DataFrame
-            self.pvt_data_frame = load_csv(
-                ensemble_paths=self.ensemble_paths, csv_file=self.pvt_relative_file_path
+            self.pvt_data_frame = load_pvt_csv(
+                ensemble_paths=self.ensemble_paths,
+                csv_file=self.pvt_relative_file_path,
+                drop_ensemble_duplicates=drop_ensemble_duplicates,
             )
-
-            # Rename "type" header column to "keyword" and make all headers having capital letters
-            self.pvt_data_frame = self.pvt_data_frame.rename(
-                str.upper, axis="columns"
-            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
 
             # Ensure that the identifier string "KEYWORD" is contained in the header columns
             if "KEYWORD" not in self.pvt_data_frame.columns:
                 raise ValueError(
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
                 )
-
-        columns = [
-            "ENSEMBLE",
-            "REAL",
-            "PVTNUM",
-            "KEYWORD",
-            "GOR",
-            "PRESSURE",
-            "VOLUMEFACTOR",
-            "VISCOSITY",
-        ]
-        self.pvt_data_frame = self.pvt_data_frame[columns]
-
-        stored_data_frames = []
-        cleaned_data_frame = self.pvt_data_frame.iloc[0:0]
-        columns_subset = self.pvt_data_frame.columns.difference(["REAL", "ENSEMBLE"])
-
-        for iter_data_frame in self.pvt_data_frame.groupby("ENSEMBLE").items():
-            iter_merged_dataframe = self.pvt_data_frame.iloc[0:0]
-            for realization_data_frame in iter_data_frame.groupby("REAL").items():
-                if iter_merged_dataframe.empty:
-                    iter_merged_dataframe = iter_merged_dataframe.append(
-                        realization_data_frame
-                    ).reset_index(drop=True)
-                else:
-                    iter_merged_dataframe = (
-                        pd.concat([iter_merged_dataframe, realization_data_frame])
-                        .drop_duplicates(subset=columns_subset, keep="first",)
-                        .reset_index(drop=True)
-                    )
-            data_frame_stored = False
-            for data_frame in stored_data_frames:
-                if all(
-                    data_frame[columns_subset] == iter_merged_dataframe[columns_subset]
-                ):
-                    data_frame_stored = True
-                    break
-            if data_frame_stored:
-                continue
-            stored_data_frames.append(iter_merged_dataframe)
-            cleaned_data_frame = cleaned_data_frame.append(iter_merged_dataframe)
-
-        self.pvt_data_frame = cleaned_data_frame
 
         self.set_callbacks(app)
 
@@ -402,6 +365,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                         {
                             "ensemble_paths": self.ensemble_paths,
                             "use_init_file": self.read_from_init_file,
+                            "drop_ensemble_duplicates": self.drop_ensemble_duplicates,
                         }
                     ],
                 )
@@ -409,11 +373,12 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
             if self.pvt_relative_file_path is None
             else [
                 (
-                    load_csv,
+                    load_pvt_csv,
                     [
                         {
                             "ensemble_paths": self.ensemble_paths,
                             "csv_file": self.pvt_relative_file_path,
+                            "drop_ensemble_duplicates": self.drop_ensemble_duplicates,
                         }
                     ],
                 )

@@ -25,7 +25,77 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .opm_init_io import Oil, Gas, Water, DryGas
-from .fmu_input import load_ensemble_set
+from .fmu_input import load_ensemble_set, load_csv
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def filter_pvt_data_frame(
+    data_frame: pd.DataFrame, drop_ensemble_duplicates: bool = False
+) -> pd.DataFrame:
+
+    data_frame = data_frame.rename(str.upper, axis="columns").rename(
+        columns={"TYPE": "KEYWORD", "RS": "GOR"}
+    )
+
+    columns = [
+        "ENSEMBLE",
+        "REAL",
+        "PVTNUM",
+        "KEYWORD",
+        "GOR",
+        "PRESSURE",
+        "VOLUMEFACTOR",
+        "VISCOSITY",
+    ]
+    data_frame = data_frame[columns]
+
+    stored_data_frames = []
+    cleaned_data_frame = data_frame.iloc[0:0]
+    columns_subset = data_frame.columns.difference(["REAL", "ENSEMBLE"])
+
+    for _ino, iter_data_frame in data_frame.groupby("ENSEMBLE"):
+        iter_merged_dataframe = data_frame.iloc[0:0]
+        for _rno, realization_data_frame in iter_data_frame.groupby("REAL"):
+            if iter_merged_dataframe.empty:
+                iter_merged_dataframe = iter_merged_dataframe.append(
+                    realization_data_frame
+                ).reset_index(drop=True)
+            else:
+                iter_merged_dataframe = (
+                    pd.concat([iter_merged_dataframe, realization_data_frame])
+                    .drop_duplicates(subset=columns_subset, keep="first",)
+                    .reset_index(drop=True)
+                )
+
+        if drop_ensemble_duplicates:
+            data_frame_stored = False
+            for stored_data_frame in stored_data_frames:
+                if all(
+                    stored_data_frame[columns_subset]
+                    == iter_merged_dataframe[columns_subset]
+                ):
+                    data_frame_stored = True
+                    break
+            if data_frame_stored:
+                continue
+            stored_data_frames.append(iter_merged_dataframe)
+        cleaned_data_frame = cleaned_data_frame.append(iter_merged_dataframe)
+
+    return cleaned_data_frame
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def load_pvt_csv(
+    ensemble_paths: dict,
+    csv_file: str,
+    ensemble_set_name: str = "EnsembleSet",
+    drop_ensemble_duplicates: bool = False,
+) -> pd.DataFrame:
+    return filter_pvt_data_frame(
+        load_csv(ensemble_paths, csv_file, ensemble_set_name), drop_ensemble_duplicates
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -34,6 +104,7 @@ def load_pvt_dataframe(
     ensemble_paths: Dict[str, str],
     ensemble_set_name: str = "EnsembleSet",
     use_init_file: bool = False,
+    drop_ensemble_duplicates: bool = False,
 ) -> pd.DataFrame:
     # If ecl2df is not loaded, this machine is probably not
     # running Linux and the modules are not available.
@@ -48,10 +119,10 @@ def load_pvt_dataframe(
         )
         return pd.DataFrame({})
 
-    def ecl2df_pvt_dataframe(kwargs) -> pd.DataFrame:
+    def ecl2df_pvt_data_frame(kwargs) -> pd.DataFrame:
         return ecl2df.pvt.df(kwargs["realization"].get_eclfiles())
 
-    def init_to_pvt_dataframe(kwargs) -> pd.DataFrame:
+    def init_to_pvt_data_frame(kwargs) -> pd.DataFrame:
         # pylint: disable-msg=too-many-locals
         ecl_init_file = EclFile(
             kwargs["realization"].get_eclfiles().get_initfile().get_filename()
@@ -114,6 +185,9 @@ def load_pvt_dataframe(
 
         return data_frame
 
-    return load_ensemble_set(ensemble_paths, ensemble_set_name).apply(
-        init_to_pvt_dataframe if use_init_file else ecl2df_pvt_dataframe
+    return filter_pvt_data_frame(
+        load_ensemble_set(ensemble_paths, ensemble_set_name).apply(
+            init_to_pvt_data_frame if use_init_file else ecl2df_pvt_data_frame
+        ),
+        drop_ensemble_duplicates,
     )
