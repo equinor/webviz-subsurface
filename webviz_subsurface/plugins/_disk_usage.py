@@ -137,7 +137,7 @@ def get_disk_usage(scratch_dir, date) -> pd.DataFrame:
         return pd.read_csv(
             scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv"
         ).assign(date=date)
-    except FileNotFoundError:
+    except FileNotFoundError as exc:
         raise FileNotFoundError(
             f"No disk usage file found for {date} in {scratch_dir}."
-        )
+        ) from exc

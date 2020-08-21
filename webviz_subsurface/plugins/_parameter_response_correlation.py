@@ -684,11 +684,11 @@ def make_distribution_plot(df, parameter, response, theme):
 def make_range_slider(domid, values, col_name):
     try:
         values.apply(pd.to_numeric, errors="raise")
-    except ValueError:
+    except ValueError as exc:
         raise ValueError(
             f"Cannot calculate filter range for {col_name}. "
             "Ensure that it is a numerical column."
-        )
+        ) from exc
     return dcc.RangeSlider(
         id=domid,
         min=values.min(),

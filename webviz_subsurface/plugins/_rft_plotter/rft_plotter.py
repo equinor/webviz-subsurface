@@ -142,20 +142,20 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
 
             try:
                 self.simdf = load_csv(self.ens_paths, "share/results/tables/rft.csv")
-            except KeyError:
+            except KeyError as exc:
                 raise KeyError(
                     "Csv file for Eclipse RFT output (share/results/tables/rft.csv) not found!"
-                )
+                ) from exc
 
             try:
                 self.ertdatadf = load_csv(
                     self.ens_paths, "share/results/tables/rft_ert.csv"
                 )
-            except KeyError:
+            except KeyError as exc:
                 raise KeyError(
                     "Csv file for ERT RFT observations/simulations "
                     "(share/results/tables/rft_ert.csv) not found!"
-                )
+                ) from exc
 
         else:
             raise ValueError(
