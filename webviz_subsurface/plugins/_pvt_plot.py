@@ -4,7 +4,7 @@
 #
 ########################################
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union, Any
 
 import pandas as pd
 import dash_html_components as html
@@ -20,7 +20,7 @@ from .._datainput.pvt_data import load_pvt_dataframe, load_pvt_csv
 
 class PvtPlot(WebvizPluginABC):
     """Visualizes formation volume factor and viscosity data \
-for oil, gas and water from both Eclipse **init** and **include** files.
+for oil, gas and water from both **csv**, Eclipse **init** and **include** files.
 
 ---
 
@@ -38,9 +38,9 @@ for oil, gas and water from both Eclipse **init** and **include** files.
 The minimum requirement is to define `ensembles`.
 
 If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
-from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2data_frame`.
+from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
 If the `read_from_init_file` flag is set to True, the extraction procedure in
-`ecl2data_frame` will be replaced by an individual extracting procedure that reads the
+`ecl2df` will be replaced by an individual extracting procedure that reads the
 normalized Eclipse INIT file.
 Note that the latter two extraction methods can be very slow for larger data and are therefore
 not recommended unless you have a very simple model/data deck.
@@ -58,7 +58,7 @@ duplicate data of other ensembles will be dropped.
 * One column named `VISCOSITY` as the second covariate.
 
 The file can e.g. be dumped to disc per realization by a forward model in ERT using
-`ecl2data_frame` or `pyscal`.
+`ecl2df`.
 """
 
     PHASES = {"OIL": "PVTO", "GAS": "PVDG", "WATER": "PVTW"}
@@ -171,7 +171,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
             {
                 "id": self.uuid("phase_selector"),
                 "content": (
-                    "Choose a phase. formation volume factor and viscosity data will be"
+                    "Choose a phase. Formation volume factor and viscosity data will be"
                     " shown for the selected phase in separate plots."
                 ),
             },
@@ -320,7 +320,8 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
         )
         def _set_ensemble_selector(
             color_by: str, stored_ensemble: pd.DataFrame
-        ) -> Tuple[bool, str]:
+        ) -> Tuple[bool, Union[str, List[str]]]:
+            # pylint: disable=unused-argument
             """If ensemble is selected as color by, set the ensemble
             selector to allow multiple selections, else use stored_ensemble
             """
@@ -328,9 +329,10 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
             if color_by == "ENSEMBLE":
                 return True, self.ensembles
 
+            # Note: Reimplement using stored_ensemble as soon as it is working properly.
             return (
                 False,
-                stored_ensemble.get("ENSEMBLE", self.ensembles[0]),
+                self.ensembles[0],
             )
 
         @app.callback(
@@ -341,22 +343,26 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
             [Input(self.uuid("color_by"), "value")],
             [State(self.uuid("stored_pvtnum"), "data")],
         )
+
+        # pylint:
         def _set_pvtnum_selector(
             color_by: str, stored_pvtnum: pd.DataFrame
-        ) -> Tuple[bool, str]:
+        ) -> Tuple[bool, Union[str, List[str]]]:
+            # pylint: disable=unused-argument
             """If pvtnum is selected as color by, set the pvtnum
-            selector to allow multiple selections, else use stored_satnum
+            selector to allow multiple selections, else use stored_pvtnum
             """
 
             if color_by == "PVTNUM":
                 return True, self.pvtnums
 
+            # Note: Reimplement using stored_pvtnum as soon as it is working properly.
             return (
                 False,
-                stored_pvtnum.get("PVTNUM", self.pvtnums[0]),
+                self.pvtnums[0],
             )
 
-    def add_webvizstore(self,) -> List[Tuple[Callable, List[Dict[str, any]]]]:
+    def add_webvizstore(self,) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
         return (
             [
                 (
@@ -399,7 +405,7 @@ def filter_data_frame(
 
 
 def add_realization_traces(
-    data_frame: pd.DataFrame, color_by: str, colors: List[str], phase: str
+    data_frame: pd.DataFrame, color_by: str, colors: Dict[str, List[str]], phase: str
 ) -> List[dict]:
     """Renders line traces for individual realizations"""
     # pylint: disable-msg=too-many-locals
