@@ -282,8 +282,8 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                             "sens_name": sens_name,
                         }
                     )
-                except TypeError:
-                    raise PreventUpdate
+                except TypeError as exc:
+                    raise PreventUpdate from exc
 
 
 def scale_to_ref(value, ref, scale):

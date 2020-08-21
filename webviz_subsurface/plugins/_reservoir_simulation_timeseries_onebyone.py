@@ -405,8 +405,8 @@ folder, to avoid risk of not extracting the right data.
             to table"""
             try:
                 date = clickdata["points"][0]["x"]
-            except TypeError:
-                raise PreventUpdate
+            except TypeError as exc:
+                raise PreventUpdate from exc
             data = filter_ensemble(self.data, ensemble, [vector])
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows, table_columns = calculate_table(data, vector)

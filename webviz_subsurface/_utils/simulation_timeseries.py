@@ -220,16 +220,16 @@ def check_and_format_observations(obsfile: Path):
 
         try:
             obslist = obsfile_data.pop("smry")
-        except KeyError:
+        except KeyError as exc:
             raise KeyError(
                 "The observation file lacks a `smry` section, which is mandatory for observations "
                 "to work with this plugin."
-            )
+            ) from exc
         except TypeError:
             raise TypeError(
                 "The observation file's othermost level must be a dictionary, while the input "
                 f"file's outermost level is of type {type(obslist)}."
-            )
+            ) from exc
         if not isinstance(obslist, list):
             raise TypeError(
                 "The observation file's smry section must be formatted as a list of dictionaries."
