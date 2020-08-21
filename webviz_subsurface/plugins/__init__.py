@@ -6,14 +6,11 @@ relative to the location of the configuration file.
 I.e. you could have
 ```yaml
 title: Reek Webviz Demonstration
-
 shared_settings:
   scratch_ensembles:
     iter-0: /scratch/my_ensemble/realization-*/iter-0
     iter-1: /scratch/my_ensemble/realization-*/iter-1
-
 pages:
-
   - title: Front page
     content:
       - plugin: ReservoirSimulationTimeSeries
@@ -49,6 +46,7 @@ from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
 from ._rft_plotter.rft_plotter import RftPlotter
+from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 
 
 __all__ = [
@@ -72,4 +70,5 @@ __all__ = [
     "RelativePermeability",
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
+    "HorizonUncertaintyViewer",
 ]
