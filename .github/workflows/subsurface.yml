@@ -90,7 +90,7 @@ jobs:
     - name: 🐳 Build Docker example image
       run: |
         pip install webviz-config-equinor
-        webviz build ./webviz-subsurface-testdata/webviz_examples/full_demo.yaml --portable ./example_subsurface_app --theme equinor
+        webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
         # Related to https://github.com/equinor/webviz-config/issues/150:
