@@ -6,7 +6,7 @@ def test_full_example(dash_duo, tmp_path):
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
     subprocess.call(  # nosec
-        ["webviz", "build", "raw_data.yaml", "--portable", appdir],
+        ["webviz", "build", "webviz-raw-data.yml", "--portable", appdir],
         cwd="./webviz-subsurface-testdata/webviz_examples",
     )
     # Remove Talisman
