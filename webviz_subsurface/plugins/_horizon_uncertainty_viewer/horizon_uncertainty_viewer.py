@@ -3,10 +3,10 @@ import io
 import json
 from uuid import uuid4
 from pathlib import Path
+import defusedxml.ElementTree as ET
 
 import numpy as np
 import xtgeo
-from bs4 import BeautifulSoup
 import dash
 import dash_table
 from dash.dependencies import Input, Output, State
@@ -56,10 +56,9 @@ Polylines are drawn interactivly in map view.
 
         self.basedir = basedir
         self.planned_wells_dir = planned_wells_dir
-
-        with open(get_path(basedir / "model_file.xml"), "r") as file:
-            self.modelfile = BeautifulSoup(file, "xml")
-        self.surfaces = load_surfaces(basedir, self.modelfile)
+        self.modelfile_path = basedir / "model_file.xml"
+        self.modelfile = get_path(self.modelfile_path)
+        self.surfaces = load_surfaces(basedir, self.modelfile_path)
         self.planned_wellfiles = (
             json.load(find_files(planned_wells_dir, "*.txt"))
             if planned_wells_dir
@@ -68,6 +67,7 @@ Polylines are drawn interactivly in map view.
         self.wellfiles = json.load(find_files(basedir / "input" / "welldata", "*.txt"))
         self.wellfiles = [str(get_path(Path(w))) for w in self.wellfiles]
         self.allfiles = json.load(find_files(basedir))
+        self.allfiles.append(self.modelfile_path)
         self.allfiles += self.planned_wellfiles
         self.planned_wellfiles = [
             str(get_path(Path(w))) for w in self.planned_wellfiles
@@ -781,7 +781,10 @@ Polylines are drawn interactivly in map view.
                 )
             )
         functions.append(
-            (get_surfaces, [{"basedir": self.basedir, "modelfile": self.modelfile,}],)
+            (
+                get_surfaces,
+                [{"basedir": self.basedir, "modelfile": self.modelfile_path,}],
+            )
         )
         return functions
 
@@ -836,6 +839,7 @@ def load_surfaces(basedir: Path, modelfile):
 
 @webvizstore
 def get_surfaces(basedir: Path, modelfile) -> io.BytesIO:
+    modelfile = ET.parse(get_path(modelfile)).getroot()
     surface_types = {
         "depth": "d_",
         "depth-trend": "dt_",
@@ -843,12 +847,12 @@ def get_surfaces(basedir: Path, modelfile) -> io.BytesIO:
         "depth-trend-error": "dte_",
         "depth-residual": "dr_",
     }
-    surface_wrappers = modelfile.find_all("surface")
+    surface_wrappers = modelfile.findall(".//surface")
     surfaces = []
     for element in surface_wrappers:
         surface = {
-            "name": element.find("name").get_text(),
-            "topofzone": element.find("top-of-zone").get_text(),
+            "name": element.findtext("name"),
+            "topofzone": element.findtext("top-of-zone"),
         }
         for s_mtype, s_type in surface_types.items():
             surface[s_type] = (
@@ -860,7 +864,7 @@ def get_surfaces(basedir: Path, modelfile) -> io.BytesIO:
                         / f"{s_type}{surface['name']}.rxb"
                     )
                 )
-                if element.find(s_mtype).get_text() == "yes"
+                if element.find("output").findtext(s_mtype) == "yes"
                 else None
             )
         surfaces.append(surface)
@@ -891,11 +895,12 @@ def surface_from_json(surfaceobj):
 
 
 def extract_topofzone_names(modelfile):
-    surface_wrappers = modelfile.find_all("surface")
+    modelfile = ET.parse(modelfile).getroot()
+    surface_wrappers = modelfile.findall(".//surface")
     topofzone_names = []
     for element in surface_wrappers:
-        name = element.find("top-of-zone")
-        topofzone_names.append(name.get_text())
+        name = element.findtext("top-of-zone")
+        topofzone_names.append(name)
     return topofzone_names
 
 
@@ -922,8 +927,9 @@ def get_well_points(basedir: Path):
 
 
 def get_zonelog_name(modelfile):
-    zonelog_wrapper = modelfile.find("zone-log-name")
-    return zonelog_wrapper.get_text()
+    modelfile = ET.parse(modelfile).getroot()
+    zonelog_wrapper = modelfile.findtext(".//zone-log-name")
+    return zonelog_wrapper
 
 
 def get_zonation_status(basedir: Path):
