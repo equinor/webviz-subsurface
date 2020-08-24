@@ -1,6 +1,6 @@
 # Plugin package webviz_subsurface
 
-?> :bookmark: This documentation is valid for version `0.0.36` of `webviz_subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.1` of `webviz_subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -11,14 +11,11 @@ relative to the location of the configuration file.
 I.e. you could have
 ```yaml
 title: Reek Webviz Demonstration
-
 shared_settings:
   scratch_ensembles:
     iter-0: /scratch/my_ensemble/realization-*/iter-0
     iter-1: /scratch/my_ensemble/realization-*/iter-1
-
 pages:
-
   - title: Front page
     content:
       - plugin: ReservoirSimulationTimeSeries
@@ -60,8 +57,8 @@ to use the most recent file avaialable, limited to the last week.
 
 ```yaml
     - DiskUsage:
-        scratch_dir:   # Required. Type str (corresponding to a path).
-        date: None  # Optional. Type Union[_ForwardRef('str'), NoneType].
+        scratch_dir:  # Required, type str (corresponding to a path).
+        date: null # Optional, type Union[_ForwardRef('str'), NoneType].
 ```
 
    
@@ -110,8 +107,8 @@ Visualizes the quality of the history match.
 
 ```yaml
     - HistoryMatch:
-        ensembles:   # Required. Type list.
-        observation_file:   # Required. Type str (corresponding to a path).
+        ensembles:  # Required, type list.
+        observation_file:  # Required, type str (corresponding to a path).
 ```
 
    
@@ -122,6 +119,47 @@ Parameter values are extracted automatically from the `parameters.txt` files
 of the individual realizations of your given `ensembles`, using the `fmu-ensemble` library.
 
 ?> The `observation_file` is a common (optional) file for all ensembles, which currently has to be made manually. [An example of the format can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/observations/observations.yml).
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+#### HorizonUncertaintyViewer
+
+<!-- tabs:start -->
+   
+
+#### ** Description **
+
+Visualizes depth uncertainty for surfaces in map view and cross section view.
+
+The cross section is defined by wellfiles and surfacefiles or a polyline.
+Polylines are drawn interactivly in map view.
+
+!> The plugin reads information from a COHIBA model file.
+
+* **`basedir`:** Path to folder with model_file.xml.
+   Make sure that the folder has the same format as a COHIBA folder.
+* **`planned_wells_dir`:** Path to folder with planned well files.
+   Make sure that all planned wells have format 'ROXAR RMS well'.
+
+ 
+
+#### ** Arguments **
+
+
+
+```yaml
+    - HorizonUncertaintyViewer:
+        basedir: null # Optional, type str (corresponding to a path).
+        planned_wells_dir: null # Optional, type str (corresponding to a path).
+```
 
  
 
@@ -169,11 +207,11 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 ```yaml
     - InplaceVolumes:
-        csvfile: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        volfiles: None  # Optional. Type dict.
-        volfolder: share/results/volumes  # Optional. Type str.
-        response: STOIIP_OIL  # Optional. Type str.
+        csvfile: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        volfiles: null # Optional, type dict.
+        volfolder: "share/results/volumes" # Optional, type str.
+        response: "STOIIP_OIL" # Optional, type str.
 ```
 
    
@@ -254,12 +292,12 @@ stored per realization.
 
 ```yaml
     - InplaceVolumesOneByOne:
-        csvfile_vol: None  # Optional. Type str (corresponding to a path).
-        csvfile_parameters: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        volfiles: None  # Optional. Type dict.
-        volfolder: share/results/volumes  # Optional. Type str.
-        response: STOIIP_OIL  # Optional. Type str.
+        csvfile_vol: null # Optional, type str (corresponding to a path).
+        csvfile_parameters: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        volfiles: null # Optional, type dict.
+        volfolder: "share/results/volumes" # Optional, type str.
+        response: "STOIIP_OIL" # Optional, type str.
 ```
 
    
@@ -344,7 +382,7 @@ effect with other parameters.
 
 ```yaml
     - MorrisPlot:
-        csv_file:   # Required. Type str (corresponding to a path).
+        csv_file:  # Required, type str (corresponding to a path).
 ```
 
    
@@ -388,8 +426,8 @@ and scatter plot for any given pair of parameters.
 
 ```yaml
     - ParameterCorrelation:
-        ensembles:   # Required. Type list.
-        drop_constants: True  # Optional. Type bool.
+        ensembles:  # Required, type list.
+        drop_constants: true # Optional, type bool.
 ```
 
    
@@ -441,8 +479,8 @@ or as ensemble name(s) defined in `shared_settings`.
 
 ```yaml
     - ParameterDistribution:
-        csvfile: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
+        csvfile: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
 ```
 
    
@@ -472,9 +510,11 @@ and the parameter columns.
 
 #### ** Description **
 
-Visualizes parameters used in FMU ensembles side-by-side.
+Visualizes parameters used in FMU ensembles side-by-side. Also supports response coloring.
 
-Useful to investigate initial distributions, and convergence of parameters over multiple iterations.
+Useful to investigate:
+* Initial parameter distributions, and convergence of parameters over multiple iterations.
+* Trends in relations between parameters and responses.
 
 !> At least two parameters have to be selected to make the plot work.
 
@@ -484,16 +524,61 @@ Useful to investigate initial distributions, and convergence of parameters over 
 #### ** Arguments **
 
    
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
 
+**Using aggregated data**
+* **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
+
+
+**Using a response file per realization**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`visual_parameters`:** List of default visualized parameteres.                            If not provided, all parameters are visualized initially.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be                     combined with `response_csv` and `parameter_csv`).
+* Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file`                 implies that the input data should be time series data from simulation `.UNSMRY`                 files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be                 used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from                `.UNSMRY`-files (default is monthly).
+* Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter    of type `single` (as defined below under `response_filters`).
+
+**Using the plugin without responses**
+It is possible to use the plugin with only parameter data, in that case set the option `no_responses` to True, and give either `ensembles` or `parameter_csv` as input as described above. Response coloring and filtering will then not be available.
+
+**Common settings for responses**
+All of these are optional, some have defaults seen in the code snippet below.
+
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation                        vectors) that can be used as row filtering before aggregation.                        Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore                       (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include                        (cannot use with response_ignore).
+* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
+
+Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 
 
 
 ```yaml
     - ParameterParallelCoordinates:
-        ensembles:   # Required. Type list.
-        visual_parameters: None  # Optional.
+        ensembles: null # Optional, type list.
+        parameter_csv: null # Optional, type str (corresponding to a path).
+        response_csv: null # Optional, type str (corresponding to a path).
+        response_file: null # Optional, type str.
+        response_filters: null # Optional, type dict.
+        response_ignore: null # Optional, type list.
+        response_include: null # Optional, type list.
+        parameter_ignore: null # Optional, type list.
+        column_keys: null # Optional, type list.
+        sampling: "monthly" # Optional, type str.
+        aggregation: "sum" # Optional, type str.
+        no_responses: false # Optional.
 ```
 
    
@@ -501,8 +586,36 @@ Useful to investigate initial distributions, and convergence of parameters over 
 #### ** Data input **
 
 
-Parameter values are extracted automatically from the `parameters.txt` files in the individual
-realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+?> Non-numerical (string-based) input parameters and responses are removed.
+
+?> The responses will be aggregated per realization; meaning that if your filters do not reduce the response to a single value per realization in your data, the values will be aggregated accoording to your defined `aggregation`. If e.g. the response is a form of volume, and the filters are regions (or other subdivisions of the total volume), then `sum` would be a natural aggregation. If on the other hand the response is the pressures in the same volume, aggregation as `mean` over the subdivisions of the same volume would make more sense (though the pressures in this case would not be volume weighted means, and the aggregation would therefore likely be imprecise).
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `parameter_csv` file must have columns `REAL`, `ENSEMBLE` and the parameter columns.
+
+The `response_csv` file must have columns `REAL`, `ENSEMBLE` and the response columns (and the columns to use as `response_filters`, if that option is used).
+
+
+**Using a response file per realization**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+The `response_file` must have the response columns (and the columns to use as `response_filters`, if that option is used).
+
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+
+Parameters are extracted automatically from the `parameters.txt` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
  
 
@@ -566,17 +679,17 @@ All of these are optional, some have defaults seen in the code snippet below.
 
 ```yaml
     - ParameterResponseCorrelation:
-        parameter_csv: None  # Optional. Type str (corresponding to a path).
-        response_csv: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        response_file: None  # Optional. Type str.
-        response_filters: None  # Optional. Type dict.
-        response_ignore: None  # Optional. Type list.
-        response_include: None  # Optional. Type list.
-        column_keys: None  # Optional. Type list.
-        sampling: monthly  # Optional. Type str.
-        aggregation: sum  # Optional. Type str.
-        corr_method: pearson  # Optional. Type str.
+        parameter_csv: null # Optional, type str (corresponding to a path).
+        response_csv: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        response_file: null # Optional, type str.
+        response_filters: null # Optional, type dict.
+        response_ignore: null # Optional, type list.
+        response_include: null # Optional, type list.
+        column_keys: null # Optional, type list.
+        sampling: "monthly" # Optional, type str.
+        aggregation: "sum" # Optional, type str.
+        corr_method: "pearson" # Optional, type str.
 ```
 
    
@@ -650,10 +763,10 @@ Visualizes relative permeability and capillary pressure curves for FMU ensembles
 
 ```yaml
     - RelativePermeability:
-        ensembles:   # Required. Type list.
-        relpermfile: None  # Optional. Type str.
-        scalfile: None  # Optional. Type str (corresponding to a path).
-        sheet_name: None  # Optional. Type Union[str, int, list, NoneType].
+        ensembles:  # Required, type list.
+        relpermfile: null # Optional, type str.
+        scalfile: null # Optional, type str (corresponding to a path).
+        sheet_name: null # Optional, type Union[str, int, list, NoneType].
 ```
 
    
@@ -707,6 +820,14 @@ realizations/ensembles). The file has to be compatible with
 
 Visualizes reservoir simulation time series data for FMU ensembles.
 
+**Features**
+* Visualization of realization time series as line charts.
+* Visualization of ensemble time series statistics as fan charts.
+* Visualization of single date ensemble statistics as histograms.
+* Calculation and visualization of delta ensembles.
+* Calculation and visualization of average rates and cumulatives over a specified time interval.
+* Download of visualized data to csv files (except histogram data).
+
 
  
 
@@ -741,13 +862,13 @@ Visualizes reservoir simulation time series data for FMU ensembles.
 
 ```yaml
     - ReservoirSimulationTimeSeries:
-        csvfile: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        obsfile: None  # Optional. Type str (corresponding to a path).
-        column_keys: None  # Optional. Type list.
-        sampling: monthly  # Optional. Type str.
-        options: None  # Optional. Type dict.
-        line_shape_fallback: linear  # Optional. Type str.
+        csvfile: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        obsfile: null # Optional, type str (corresponding to a path).
+        column_keys: null # Optional, type list.
+        sampling: "monthly" # Optional, type str.
+        options: null # Optional, type dict.
+        line_shape_fallback: "linear" # Optional, type str.
 ```
 
    
@@ -772,7 +893,7 @@ vectors.
 Vectors are extracted automatically from the `UNSMRY` files in the individual realizations,
 using the `fmu-ensemble` library.
 
-?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
+?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other speed up the build of the app, as processing of `UNSMRY` files can be slow for large models. Using this method is required to use the average rate and interval cumulative functionalities, as they require identification of vectors that are cumulatives.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
@@ -828,13 +949,13 @@ run with that sensitivity.
 
 ```yaml
     - ReservoirSimulationTimeSeriesOneByOne:
-        csvfile_smry: None  # Optional. Type str (corresponding to a path).
-        csvfile_parameters: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        column_keys: None  # Optional. Type list.
-        initial_vector: None  # Optional.
-        sampling: monthly  # Optional. Type str.
-        line_shape_fallback: linear  # Optional. Type str.
+        csvfile_smry: null # Optional, type str (corresponding to a path).
+        csvfile_parameters: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        column_keys: null # Optional, type list.
+        initial_vector: null # Optional.
+        sampling: "monthly" # Optional, type str.
+        line_shape_fallback: "linear" # Optional, type str.
 ```
 
    
@@ -925,12 +1046,12 @@ Vectors that don't match the following patterns will be filtered out for this pl
 
 ```yaml
     - ReservoirSimulationTimeSeriesRegional:
-        ensembles:   # Required. Type list.
-        fipfile: None  # Optional. Type str (corresponding to a path).
-        initial_vector: ROIP  # Optional. Type str.
-        column_keys: None  # Optional. Type Union[list, NoneType].
-        sampling: monthly  # Optional. Type str.
-        line_shape_fallback: linear  # Optional. Type str.
+        ensembles:  # Required, type list.
+        fipfile: null # Optional, type str (corresponding to a path).
+        initial_vector: "ROIP" # Optional, type str.
+        column_keys: null # Optional, type Union[list, NoneType].
+        sampling: "monthly" # Optional, type str.
+        line_shape_fallback: "linear" # Optional, type str.
 ```
 
    
@@ -1036,12 +1157,12 @@ https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.
 
 ```yaml
     - RftPlotter:
-        csvfile_rft: None  # Optional. Type str (corresponding to a path).
-        csvfile_rft_ert: None  # Optional. Type str (corresponding to a path).
-        ensembles: None  # Optional. Type list.
-        formations: None  # Optional. Type str (corresponding to a path).
-        obsdata: None  # Optional. Type str (corresponding to a path).
-        faultlines: None  # Optional. Type str (corresponding to a path).
+        csvfile_rft: null # Optional, type str (corresponding to a path).
+        csvfile_rft_ert: null # Optional, type str (corresponding to a path).
+        ensembles: null # Optional, type list.
+        formations: null # Optional, type str (corresponding to a path).
+        obsdata: null # Optional, type str (corresponding to a path).
+        faultlines: null # Optional, type str (corresponding to a path).
 ```
 
    
@@ -1102,10 +1223,10 @@ Visualizations:
 
 ```yaml
     - RunningTimeAnalysisFMU:
-        ensembles:   # Required. Type list.
-        filter_shorter: 10  # Optional. Type Union[int, float].
-        status_file: status.json  # Optional. Type str.
-        visual_parameters: None  # Optional. Type Union[list, NoneType].
+        ensembles:  # Required, type list.
+        filter_shorter: 10 # Optional, type Union[int, float].
+        status_file: "status.json" # Optional, type str.
+        visual_parameters: null # Optional, type Union[list, NoneType].
 ```
 
    
@@ -1156,9 +1277,9 @@ The plots are linked and updates are done by clicking in the plots.
 
 ```yaml
     - SegyViewer:
-        segyfiles:   # Required. Type List[str (corresponding to a path)].
-        zunit: depth (m)  # Optional.
-        colors: None  # Optional. Type list.
+        segyfiles:  # Required, type List[str (corresponding to a path)].
+        zunit: "depth (m)" # Optional.
+        colors: null # Optional, type list.
 ```
 
    
@@ -1214,11 +1335,11 @@ a FMU ensemble.
 
 ```yaml
     - SubsurfaceMap:
-        jsonfile: None  # Optional. Type str (corresponding to a path).
-        ensemble: None  # Optional. Type str.
-        map_value: None  # Optional. Type str.
-        flow_value: None  # Optional. Type str.
-        time_step: None  # Optional.
+        jsonfile: null # Optional, type str (corresponding to a path).
+        ensemble: null # Optional, type str.
+        map_value: null # Optional, type str.
+        flow_value: null # Optional, type str.
+        time_step: null # Optional.
 ```
 
    
@@ -1287,11 +1408,11 @@ and available for instant viewing.
 
 ```yaml
     - SurfaceViewerFMU:
-        ensembles:   # Required. Type list.
-        attributes: None  # Optional. Type list.
-        attribute_settings: None  # Optional. Type dict.
-        wellfolder: None  # Optional. Type str (corresponding to a path).
-        wellsuffix: .w  # Optional. Type str.
+        ensembles:  # Required, type list.
+        attributes: null # Optional, type list.
+        attribute_settings: null # Optional, type dict.
+        wellfolder: null # Optional, type str (corresponding to a path).
+        wellsuffix: ".w" # Optional, type str.
 ```
 
    
@@ -1361,13 +1482,13 @@ Visualizes surfaces in a map view and grid parameters in a cross section view. T
 
 ```yaml
     - SurfaceWithGridCrossSection:
-        gridfile:   # Required. Type str (corresponding to a path).
-        gridparameterfiles:   # Required. Type List[str (corresponding to a path)].
-        surfacefiles:   # Required. Type List[str (corresponding to a path)].
-        gridparameternames: None  # Optional. Type list.
-        surfacenames: None  # Optional. Type list.
-        zunit: depth (m)  # Optional.
-        colors: None  # Optional. Type list.
+        gridfile:  # Required, type str (corresponding to a path).
+        gridparameterfiles:  # Required, type List[str (corresponding to a path)].
+        surfacefiles:  # Required, type List[str (corresponding to a path)].
+        gridparameternames: null # Optional, type list.
+        surfacenames: null # Optional, type list.
+        zunit: "depth (m)" # Optional.
+        colors: null # Optional, type list.
 ```
 
    
@@ -1420,12 +1541,12 @@ The cross section is defined by a polyline interactively edited in the map view.
 
 ```yaml
     - SurfaceWithSeismicCrossSection:
-        segyfiles:   # Required. Type List[str (corresponding to a path)].
-        surfacefiles:   # Required. Type List[str (corresponding to a path)].
-        surfacenames: None  # Optional. Type list.
-        segynames: None  # Optional. Type list.
-        zunit: depth (m)  # Optional.
-        colors: None  # Optional. Type list.
+        segyfiles:  # Required, type List[str (corresponding to a path)].
+        surfacefiles:  # Required, type List[str (corresponding to a path)].
+        surfacenames: null # Optional, type list.
+        segynames: null # Optional, type list.
+        zunit: "depth (m)" # Optional.
+        colors: null # Optional, type list.
 ```
 
    
@@ -1486,17 +1607,17 @@ and optionally seismic cubes.
 
 ```yaml
     - WellCrossSection:
-        surfacefiles:   # Required. Type List[str (corresponding to a path)].
-        wellfiles:   # Required. Type List[str (corresponding to a path)].
-        segyfiles: None  # Optional. Type List[str (corresponding to a path)].
-        surfacenames: None  # Optional. Type list.
-        zonelog: None  # Optional. Type str.
-        zunit: depth (m)  # Optional.
-        zmin: None  # Optional. Type float.
-        zmax: None  # Optional. Type float.
-        zonemin: 1  # Optional. Type int.
-        nextend: 2  # Optional. Type int.
-        sampling: 40  # Optional. Type int.
+        surfacefiles:  # Required, type List[str (corresponding to a path)].
+        wellfiles:  # Required, type List[str (corresponding to a path)].
+        segyfiles: null # Optional, type List[str (corresponding to a path)].
+        surfacenames: null # Optional, type list.
+        zonelog: null # Optional, type str.
+        zunit: "depth (m)" # Optional.
+        zmin: null # Optional, type float.
+        zmax: null # Optional, type float.
+        zonemin: 1 # Optional, type int.
+        nextend: 2 # Optional, type int.
+        sampling: 40 # Optional, type int.
 ```
 
    
@@ -1566,23 +1687,23 @@ per realization.
 
 ```yaml
     - WellCrossSectionFMU:
-        ensembles:   # Required. Type list.
-        surfacefiles:   # Required. Type list.
-        surfacenames: None  # Optional. Type list.
-        surfacefolder: share/results/maps  # Optional. Type str (corresponding to a path).
-        wellfiles: None  # Optional. Type List[str (corresponding to a path)].
-        wellfolder: None  # Optional. Type str (corresponding to a path).
-        wellsuffix: .w  # Optional. Type str.
-        segyfiles: None  # Optional. Type List[str (corresponding to a path)].
-        zonelog: None  # Optional. Type str.
-        marginal_logs: None  # Optional. Type list.
-        zunit: depth (m)  # Optional.
-        zmin: None  # Optional. Type float.
-        zmax: None  # Optional. Type float.
-        zonemin: 1  # Optional. Type int.
-        nextend: 2  # Optional. Type int.
-        sampling: 40  # Optional. Type int.
-        colors: None  # Optional. Type list.
+        ensembles:  # Required, type list.
+        surfacefiles:  # Required, type list.
+        surfacenames: null # Optional, type list.
+        surfacefolder: "share/results/maps" # Optional, type str (corresponding to a path).
+        wellfiles: null # Optional, type List[str (corresponding to a path)].
+        wellfolder: null # Optional, type str (corresponding to a path).
+        wellsuffix: ".w" # Optional, type str.
+        segyfiles: null # Optional, type List[str (corresponding to a path)].
+        zonelog: null # Optional, type str.
+        marginal_logs: null # Optional, type list.
+        zunit: "depth (m)" # Optional.
+        zmin: null # Optional, type float.
+        zmax: null # Optional, type float.
+        zonemin: 1 # Optional, type int.
+        nextend: 2 # Optional, type int.
+        sampling: 40 # Optional, type int.
+        colors: null # Optional, type list.
 ```
 
    

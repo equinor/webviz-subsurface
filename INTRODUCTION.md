@@ -99,3 +99,17 @@ runs. E.g.
 ```bash
 webviz preferences --theme equinor --browser firefox
 ```
+
+#### YAML schema
+
+By running `webviz schema` you will get a YAML (or technically, a JSON) schema which you can use in text editors, which then will
+help you with auto-completion, detect mistakes immediately, and get hover description on different plugins.
+
+If you are using Visual Studio Code, we recommend [Red Hat's YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml). After installing the extension, and adding something like
+```json
+{
+  ...
+  "yaml.schemas": { "file:///some/path/to/your/webviz_schema.json": ["*webviz*.yml", "*webviz*.yaml"]}
+}
+```
+to your `settings.json` file, you will get help from the editor on YAML files following the namepatterns to the right (might have to restart the editor after updating the settings).

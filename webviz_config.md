@@ -1,6 +1,6 @@
 # Plugin package webviz_config
 
-?> :bookmark: This documentation is valid for version `0.0.58` of `webviz_config`. 
+?> :bookmark: This documentation is valid for version `0.1.0` of `webviz_config`. 
 
    
 These are the basic Webviz configuration plugins, distributed through
@@ -40,11 +40,11 @@ Useful on e.g. the front page for introducing a field or project.
 
 ```yaml
     - BannerImage:
-        image:   # Required. Type str (corresponding to a path).
-        title: ''  # Optional. Type str.
-        color: white  # Optional. Type str.
-        shadow: True  # Optional. Type bool.
-        height: 300  # Optional. Type int.
+        image:  # Required, type str (corresponding to a path).
+        title: "" # Optional, type str.
+        color: "white" # Optional, type str.
+        shadow: true # Optional, type bool.
+        height: 300 # Optional, type int.
 ```
 
  
@@ -82,10 +82,10 @@ If feature is requested, the data could also come from a database.
 
 ```yaml
     - DataTable:
-        csv_file:   # Required. Type str (corresponding to a path).
-        sorting: True  # Optional. Type bool.
-        filtering: True  # Optional. Type bool.
-        pagination: True  # Optional. Type bool.
+        csv_file:  # Required, type str (corresponding to a path).
+        sorting: true # Optional, type bool.
+        filtering: true # Optional, type bool.
+        pagination: true # Optional, type bool.
 ```
 
  
@@ -122,9 +122,9 @@ Embeds a given PDF file into the page.
 
 ```yaml
     - EmbedPdf:
-        pdf_file:   # Required. Type str (corresponding to a path).
-        height: 80  # Optional. Type int.
-        width: 100  # Optional. Type int.
+        pdf_file:  # Required, type str (corresponding to a path).
+        height: 80 # Optional, type int.
+        width: 100 # Optional, type int.
 ```
 
  
@@ -159,7 +159,7 @@ Renders and includes the content from a Markdown file.
 
 ```yaml
     - Markdown:
-        markdown_file:   # Required. Type str (corresponding to a path).
+        markdown_file:  # Required, type str (corresponding to a path).
 ```
 
    
@@ -207,8 +207,8 @@ Adds support for syntax highlighting of code. Language is automatically detected
 
 ```yaml
     - SyntaxHighlighter:
-        filename:   # Required. Type str (corresponding to a path).
-        dark_theme: False  # Optional. Type bool.
+        filename:  # Required, type str (corresponding to a path).
+        dark_theme: false # Optional, type bool.
 ```
 
  
@@ -248,12 +248,12 @@ If feature is requested, the data could also come from a database.
 
 ```yaml
     - TablePlotter:
-        csv_file:   # Required. Type str (corresponding to a path).
-        plot_options: None  # Optional. Type dict.
-        filter_cols: None  # Optional. Type list.
-        filter_defaults: None  # Optional. Type dict.
-        column_color_discrete_maps: None  # Optional. Type dict.
-        lock: False  # Optional. Type bool.
+        csv_file:  # Required, type str (corresponding to a path).
+        plot_options: null # Optional, type dict.
+        filter_cols: null # Optional, type list.
+        filter_defaults: null # Optional, type dict.
+        column_color_discrete_maps: null # Optional, type dict.
+        lock: false # Optional, type bool.
 ```
 
  
