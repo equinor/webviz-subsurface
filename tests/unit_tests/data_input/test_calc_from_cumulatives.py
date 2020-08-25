@@ -1,22 +1,28 @@
 from pathlib import Path
+
 import pytest
 import pandas as pd
+
 import webviz_subsurface._datainput.from_timeseries_cumulatives as from_cum
 
-DATA_DF = pd.read_csv(
-    Path().absolute()
-    / "webviz-subsurface-testdata"
-    / "reek_history_match"
-    / "share"
-    / "results"
-    / "tables"
-    / "unsmry--monthly.csv"
-)
-DATA_DF.DATE = DATA_DF.DATE.astype(str)
+
+def get_data_df(testdata_folder):
+
+    data_df = pd.read_csv(
+        testdata_folder
+        / "reek_history_match"
+        / "share"
+        / "results"
+        / "tables"
+        / "unsmry--monthly.csv"
+    )
+    data_df.DATE = data_df.DATE.astype(str)
+    return data_df
 
 
-def test_calc_from_cumulatives():
+def test_calc_from_cumulatives(testdata_folder):
     # Includes monthly data, 10 reals x 4 ensembles, 3 years and 1 month (2000-01-01 to 2003-02-01)
+    DATA_DF = get_data_df(testdata_folder)
 
     ## Test single column key, FOPT as average rate avg_fopr, monthly
     calc_df = from_cum.calc_from_cumulatives(
@@ -133,8 +139,9 @@ def test_calc_from_cumulatives():
     ],
 )
 def test_calc_from_cumulatives_errors(
-    column_keys, time_index, time_index_input, as_rate
+    column_keys, time_index, time_index_input, as_rate, testdata_folder
 ):
+    DATA_DF = get_data_df(testdata_folder)
     with pytest.raises(ValueError):
         calc_df = from_cum.calc_from_cumulatives(
             data=DATA_DF,
