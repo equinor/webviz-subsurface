@@ -1,4 +1,5 @@
 import numpy as np
+
 from webviz_subsurface._datainput.image_processing import (
     array_to_png,
     get_colormap,

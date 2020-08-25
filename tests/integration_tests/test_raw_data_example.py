@@ -2,12 +2,12 @@ import sys
 import subprocess  # nosec
 
 
-def test_full_example(dash_duo, tmp_path):
+def test_full_example(testdata_folder, dash_duo, tmp_path):
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
     subprocess.call(  # nosec
         ["webviz", "build", "webviz-raw-data.yml", "--portable", appdir],
-        cwd="./webviz-subsurface-testdata/webviz_examples",
+        cwd=testdata_folder / "webviz_examples",
     )
     # Remove Talisman
     fn = appdir / "webviz_app.py"

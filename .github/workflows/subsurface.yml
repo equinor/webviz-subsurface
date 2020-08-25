@@ -84,7 +84,7 @@ jobs:
       run: |
         webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-        pytest ./tests --headless --forked
+        pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
         webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
