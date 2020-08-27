@@ -25,7 +25,7 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_xsec_well_data(self, well_settings, well, is_planned=False):
-        """ Finds data for well to plot in cross section
+        """Finds data for well to plot in cross section
         Args:
             well_settings: List of checked options from well settings modal button
             well: xtgeo well
@@ -79,7 +79,7 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def set_de_and_surface_lines(self, surfacefiles, de_keys, well, polyline):
-        """ Surface lines and corresponding depth error lines with fence from wellfile or polyline
+        """Surface lines and corresponding depth error lines with fence from wellfile or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
@@ -103,7 +103,7 @@ class HuvXsection:
                 self.surface_attributes[sfc_file]["de_line"] = de_line
 
     def get_xsec_layout(self, surfacefiles, well):
-        """ Scale cross section figure to well trajectory, well and surface intersection or polyline
+        """Scale cross section figure to well trajectory, well and surface intersection or polyline
         Args:
             surfacefiles: List of filepaths to surfacefiles
             well: xtgeo well
@@ -149,7 +149,7 @@ class HuvXsection:
         return layout
 
     def get_xsec_de_data(self, surfacefiles, de_keys):
-        """ Get cross section data for depth error
+        """Get cross section data for depth error
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
@@ -186,7 +186,7 @@ class HuvXsection:
         return data
 
     def get_xsec_sfc_data(self, surfacefiles):
-        """ Get cross section data for surfaces
+        """Get cross section data for surfaces
         Args:
             surfacefiles: List of filepaths to surfacefiles
         Returns:
@@ -233,7 +233,7 @@ class HuvXsection:
         return data
 
     def sfc_lines_min_max_tvd(self, surfacefiles):
-        """ Find max and min TVD values of all surfaces
+        """Find max and min TVD values of all surfaces
         Args:
             surfacefiles: List of filepaths to surfacefiles
         Returns:
@@ -254,7 +254,7 @@ class HuvXsection:
         return np.min(minvalues), np.max(maxvalues)
 
     def get_hover_text(self, sfc_file):
-        """ Hover text for cross section graph to display depth error relative to surface line
+        """Hover text for cross section graph to display depth error relative to surface line
         Args:
             sfc_file: Filepath to surfacefile
         Returns:
@@ -266,7 +266,7 @@ class HuvXsection:
     def set_xsec_fig(
         self, surfacefiles, de_keys, well_settings, well, is_planned=False
     ):
-        """ Set cross section plotly figure with data from wells, surfaces and depth error
+        """Set cross section plotly figure with data from wells, surfaces and depth error
         Args:
             surfacefiles: List of filepaths to surfacefiles
             de_keys: List of surfacepaths used as key in surface_attributes to access depth error
@@ -284,7 +284,7 @@ class HuvXsection:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_intersection_dataframe(self, well):
-        """ Get intersection between surfaces and well with XTGeo
+        """Get intersection between surfaces and well with XTGeo
         Args:
             well: xtgeo well
         Returns:
@@ -318,7 +318,7 @@ class HuvXsection:
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     # pylint: disable=too-many-locals
     def get_zonelog_data(self, well, well_df, zonelogname="Zonelog"):
-        """ Find zonelogs where well trajectory intersects surfaces and assigns color.
+        """Find zonelogs where well trajectory intersects surfaces and assigns color.
         Args:
             well: XTGeo well from filepath to wellfile
             well_df: Dataframe of well
@@ -425,7 +425,7 @@ def stratigraphic_sort(elem):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_zonation_points(well_df, wellname, zonation_status_file):
-    """ Finds zonation points along well trajectory
+    """Finds zonation points along well trajectory
     Args:
         well_df: Dataframe of XTgeo well from filepath to wellfile
         wellname: Name of well
@@ -449,7 +449,7 @@ def get_zonation_points(well_df, wellname, zonation_status_file):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_conditional_points(well_df, wellname, well_points_file):
-    """ Finds conditional points where surfaces and well intersect
+    """Finds conditional points where surfaces and well intersect
     Args:
         well_df: Dataframe with well from XTGeo
         wellname: Name of well
@@ -473,7 +473,7 @@ def get_conditional_points(well_df, wellname, well_points_file):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_range_from_well(well_df, ymin):
-    """ Finds min and max x values of well trajectory used in layout of cross section graph
+    """Finds min and max x values of well trajectory used in layout of cross section graph
     Args:
         well_df: Dataframe with well from XTgeo
     Returns:
@@ -491,7 +491,7 @@ def get_range_from_well(well_df, ymin):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_fencespec(polyline):
-    """ Create a XTGeo fence spec from polyline coordinates
+    """Create a XTGeo fence spec from polyline coordinates
     Args:
         polyline: Polyline drawn in map view
     Returns:

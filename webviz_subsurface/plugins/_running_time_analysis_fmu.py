@@ -124,7 +124,10 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
     @property
     def plot_fig(self):
         return html.Div(
-            style={"overflowX": "hidden", "width": "100%",},
+            style={
+                "overflowX": "hidden",
+                "width": "100%",
+            },
             children=[
                 html.Div(
                     id=self.uuid("plot_fig"),
@@ -141,14 +144,18 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
     @property
     def control_div(self):
         return html.Div(
-            style={"padding-right": 15,},
+            style={
+                "padding-right": 15,
+            },
             children=[
                 html.Label(
                     children=[
                         html.Span("Mode:", style={"font-weight": "bold"}),
                         dcc.RadioItems(
                             id=self.uuid("mode"),
-                            style={"padding-bottom": 10,},
+                            style={
+                                "padding-bottom": 10,
+                            },
                             options=[
                                 {
                                     "label": "Running time matrix",
@@ -167,7 +174,9 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                     children=[
                         html.Span("Set ensemble:", style={"font-weight": "bold"}),
                         html.Div(
-                            style={"padding-bottom": 10,},
+                            style={
+                                "padding-bottom": 10,
+                            },
                             children=[
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
@@ -191,7 +200,9 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                             style={"font-weight": "bold"},
                         ),
                         html.Div(
-                            style={"padding-bottom": 10,},
+                            style={
+                                "padding-bottom": 10,
+                            },
                             children=[
                                 dcc.Dropdown(
                                     id=self.uuid("relative_runtime"),
@@ -217,7 +228,9 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                             style={"font-weight": "bold"},
                         ),
                         html.Div(
-                            style={"padding-bottom": 10,},
+                            style={
+                                "padding-bottom": 10,
+                            },
                             children=[
                                 dcc.Dropdown(
                                     id=self.uuid("relative_real"),
@@ -239,7 +252,8 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                     style={"display": "none"},
                     children=[
                         html.Span(
-                            "Selected parameters:", style={"font-weight": "bold"},
+                            "Selected parameters:",
+                            style={"font-weight": "bold"},
                         ),
                         wcc.Select(
                             id=self.uuid("parameters"),
@@ -278,7 +292,9 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
     @property
     def layout(self):
         return wcc.FlexBox(
-            style={"padding-top": 10,},
+            style={
+                "padding-top": 10,
+            },
             children=[
                 html.Div(style={"flex": "1"}, children=self.control_div),
                 html.Div(style={"flex": "3"}, children=self.plot_fig),
@@ -388,7 +404,12 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             ),
             (
                 load_parameters,
-                [{"ensemble_paths": self.ens_paths, "filter_file": None,},],
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "filter_file": None,
+                    },
+                ],
             ),
         ]
 
@@ -415,8 +436,16 @@ def render_matrix(status_df, rel, theme):
         "hoverinfo": "text",
         "colorscale": theme["layout"]["colorscale"]["sequential"],
         "colorbar": {
-            "tickvals": [0, 0.5, 1,],
-            "ticktext": ["0 %", "50 %", "100 %",],
+            "tickvals": [
+                0,
+                0.5,
+                1,
+            ],
+            "ticktext": [
+                "0 %",
+                "50 %",
+                "100 %",
+            ],
             "xanchor": "left",
         },
     }
@@ -426,7 +455,11 @@ def render_matrix(status_df, rel, theme):
         {
             "paper_bgcolor": "rgba(0,0,0,0)",
             "plot_bgcolor": "rgba(0,0,0,0)",
-            "margin": {"t": 50, "b": 50, "l": 50,},
+            "margin": {
+                "t": 50,
+                "b": 50,
+                "l": 50,
+            },
             "xaxis": {
                 "ticks": "",
                 "title": "Realizations",
@@ -489,7 +522,13 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
         )
     else:
         data["line"].update(  # pylint: disable=expression-not-assigned
-            {"colorbar": {"title": "Running time", "xanchor": "right", "x": -0.02,},},
+            {
+                "colorbar": {
+                    "title": "Running time",
+                    "xanchor": "right",
+                    "x": -0.02,
+                },
+            },
         )
 
     layout = {}

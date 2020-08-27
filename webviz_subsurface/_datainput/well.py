@@ -54,9 +54,13 @@ def make_well_layers(wellfiles, zmin=0, max_points=100):
 
 
 def get_well_layers(
-    wells, planned_wells, surface_name, surface, dropdown_file,
+    wells,
+    planned_wells,
+    surface_name,
+    surface,
+    dropdown_file,
 ):
-    """ Make circles around well in layered map view
+    """Make circles around well in layered map view
     Args:
         wells: dictionary of  type {wellfile: xtgeo.Well(wellfile)}
         planned_wells: dictionary of type {wellfile: xtgeo.Well(wellfile)}
@@ -65,7 +69,7 @@ def get_well_layers(
         dropdown_file: A well file from dropdown value
     Returns:
         List of well layers with data for well circles and trajectory
-     """
+    """
     data = []
     planned_data = []
     dropdown_well = (

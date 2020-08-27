@@ -28,18 +28,18 @@ def simulation_unit_reformat(ecl_unit: str, unit_set: str = "METRIC") -> str:
 
 def simulation_vector_base(vector: str) -> str:
     """Returns base name of a simulation vector on Eclipse format.
-     E.g. WOPR for WOPR:OP_1 and ROIP for ROIP_REG:1.
-     Some description: If a vector contains a :, the first up to 5 characters describe the vector
-     base. In that case, if the vector base name is shorter than 5 characters, _ is used to fill
-     up the first five characters. Therefore splitting on first _ and limiting to max five
-     characters to identify the base name.
+    E.g. WOPR for WOPR:OP_1 and ROIP for ROIP_REG:1.
+    Some description: If a vector contains a :, the first up to 5 characters describe the vector
+    base. In that case, if the vector base name is shorter than 5 characters, _ is used to fill
+    up the first five characters. Therefore splitting on first _ and limiting to max five
+    characters to identify the base name.
     """
     return vector.split(":", 1)[0].split("_", 1)[0][:5] if ":" in vector else vector
 
 
 def simulation_vector_description(vector: str) -> str:
     """Returns a more human friendly description of the simulation vector if possible,
-     otherwise returns the input as is.
+    otherwise returns the input as is.
     """
     if vector.startswith("AVG_"):
         prefix = "Average "

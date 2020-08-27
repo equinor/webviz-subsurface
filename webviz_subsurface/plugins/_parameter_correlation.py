@@ -26,17 +26,16 @@ class Widgets:
 
 class ParameterCorrelation(WebvizPluginABC):
     """Shows parameter correlations using a correlation matrix,
-and scatter plot for any given pair of parameters.
+    and scatter plot for any given pair of parameters.
 
----
+    ---
 
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`drop_constants`:** Drop constant parameters.
+    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`drop_constants`:** Drop constant parameters.
 
----
-Parameter values are extracted automatically from the `parameters.txt` files in the individual
-realizations of your defined `ensembles`, using the `fmu-ensemble` library.
-"""
+    ---
+    Parameter values are extracted automatically from the `parameters.txt` files in the individual
+    realizations of your defined `ensembles`, using the `fmu-ensemble` library."""
 
     def __init__(self, app, ensembles: list, drop_constants: bool = True):
 
@@ -80,7 +79,8 @@ realizations of your defined `ensembles`, using the `fmu-ensemble` library.
                 style={"padding": "5px"},
                 children=[
                     html.Label(
-                        "Parameter horizontal axis:", style={"font-weight": "bold"},
+                        "Parameter horizontal axis:",
+                        style={"font-weight": "bold"},
                     ),
                     dcc.Dropdown(
                         id=self.ids("parameter1"),
@@ -119,7 +119,12 @@ realizations of your defined `ensembles`, using the `fmu-ensemble` library.
             dcc.Checklist(
                 id=self.ids("density"),
                 style={"padding": "5px"},
-                options=[{"label": "Show scatterplot density", "value": "density",}],
+                options=[
+                    {
+                        "label": "Show scatterplot density",
+                        "value": "density",
+                    }
+                ],
             ),
         ]
 
@@ -388,8 +393,16 @@ def render_matrix(ensemble_path, theme, drop_constants=True):
             "paper_bgcolor": "rgba(0,0,0,0)",
             "plot_bgcolor": "rgba(0,0,0,0)",
             "margin": {"t": 50, "b": 50},
-            "xaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
-            "yaxis": {"ticks": "", "showticklabels": False, "showgrid": False,},
+            "xaxis": {
+                "ticks": "",
+                "showticklabels": False,
+                "showgrid": False,
+            },
+            "yaxis": {
+                "ticks": "",
+                "showticklabels": False,
+                "showgrid": False,
+            },
         },
     )
 

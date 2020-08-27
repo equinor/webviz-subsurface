@@ -21,7 +21,8 @@ except ImportError:
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_satfunc(
-    ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet",
+    ensemble_paths: dict,
+    ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
     def ecl2df_satfunc(kwargs):
         return ecl2df.satfunc.df(kwargs["realization"].get_eclfiles())
