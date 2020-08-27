@@ -5,7 +5,7 @@ from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
 from PIL import Image
 
-from .image_processing import array_to_png, get_colormap
+from .image_processing import array_to_png
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -33,43 +33,11 @@ def get_surface_fence(fence, surface):
 def make_surface_layer(
     surface,
     name="surface",
-    min_val=None,
-    max_val=None,
-    color="viridis",
-    hillshading=False,
-    unit="",
-):
-    """Make LayeredMap surface image base layer"""
-    zvalues = get_surface_arr(surface)[2]
-    bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
-    min_val = min_val if min_val is not None else np.nanmin(zvalues)
-    max_val = max_val if max_val is not None else np.nanmax(zvalues)
-    return {
-        "name": name,
-        "checked": True,
-        "base_layer": True,
-        "data": [
-            {
-                "type": "image",
-                "url": array_to_png(zvalues.copy()),
-                "colormap": get_colormap(color),
-                "bounds": bounds,
-                "allowHillshading": hillshading,
-                "minvalue": f"{min_val:.2f}" if min_val is not None else None,
-                "maxvalue": f"{max_val:.2f}" if max_val is not None else None,
-                "unit": str(unit),
-            }
-        ],
-    }
-
-
-def new_make_surface_layer(
-    surface,
-    name="surface",
+    updatemode="update",
     min_val=None,
     max_val=None,
     color=None,
-    shader_type="hillshading",
+    shader_type="soft-hillshading",
     unit="",
 ):
     """Make NewLayeredMap surface image base layer
@@ -84,12 +52,11 @@ def new_make_surface_layer(
     Returns:
         A surface layer that can be plotted in NewLayeredMap
     """
+
     zvalues = get_surface_arr(surface)[2]
-    bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
     min_val = min_val if min_val is not None else np.nanmin(zvalues)
     max_val = max_val if max_val is not None else np.nanmax(zvalues)
-    image = base64.b64decode(array_to_png(zvalues.copy())[22:])
-    img = Image.open(io.BytesIO(image))
+    img = Image.open(io.BytesIO(base64.b64decode(array_to_png(zvalues.copy())[22:])))
     width, height = img.size
     if width * height >= 300 * 300:
         scale = 1.0
@@ -99,6 +66,8 @@ def new_make_surface_layer(
     return {
         "name": name,
         "checked": True,
+        "id": name,
+        "action": updatemode,
         "baseLayer": True,
         "data": [
             {
@@ -124,17 +93,17 @@ def new_make_surface_layer(
                     "cutPointMin": min_val,
                     "cutPointMax": max_val,
                 },
-                "bounds": bounds,
                 "shader": {
                     "type": shader_type,
-                    "shadows": False,
-                    "shadowIterations": 2,
-                    "elevationScale": 0.05,
+                    "shadows": True,
+                    "shadowIterations": 128,
+                    "elevationScale": 1.0,
                     "pixelScale": 1000,
                     "setBlackToAlpha": True,
                 },
-                "minvalue": min_val.round(2),
-                "maxvalue": max_val.round(2),
+                "bounds": [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]],
+                "minvalue": round(min_val, 4) if min_val else None,
+                "maxvalue": round(max_val, 4) if max_val else None,
                 "unit": str(unit),
                 "imageScale": scale,
             }
@@ -165,7 +134,7 @@ def get_surface_layers(switch, surface_name, surfaces, min_val=None, max_val=Non
     layers = []
     for i, surface in enumerate(surfaces):
         if surface is not None:
-            s_layer = new_make_surface_layer(
+            s_layer = make_surface_layer(
                 surface,
                 name=depth_list[i],
                 min_val=min_val,

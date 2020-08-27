@@ -3,14 +3,13 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from matplotlib.colors import ListedColormap
 import xtgeo
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
+from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
@@ -221,12 +220,54 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
-                            children=LayeredMap(
-                                id=self.ids("map-view"),
-                                draw_toolbar_polyline=True,
-                                hillShading=True,
-                                layers=[],
-                            ),
+                            children=[
+                                LeafletMap(
+                                    id=self.ids("map-view"),
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    # draw_toolbar_polyline=True,
+                                    layers=[
+                                        # make_surface_layer(
+                                        # xtgeo.RegularSurface(), name="surface"
+                                        # )
+                                    ],
+                                    drawTools={
+                                        "drawMarker": False,
+                                        "drawPolygon": False,
+                                        "drawPolyline": True,
+                                        "position": "topright",
+                                    },
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
+                                ),
+                                html.Div(
+                                    children=[
+                                        dcc.RadioItems(
+                                            id=self.uuid("hillshade"),
+                                            labelStyle={
+                                                "display": "inline-block",
+                                                "text-align": "justify",
+                                            },
+                                            options=[
+                                                {
+                                                    "value": None,
+                                                    "label": "No hillshading",
+                                                },
+                                                {
+                                                    "value": "soft-hillshading",
+                                                    "label": "Soft hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading",
+                                                    "label": "Hillshading",
+                                                },
+                                            ],
+                                            value=None,
+                                        ),
+                                    ]
+                                ),
+                            ],
                         )
                     ]
                 ),
@@ -338,28 +379,29 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("color-values"), "value"),
                 Input(self.ids("color-scale"), "colorscale"),
+                Input(self.uuid("hillshade"), "value"),
             ],
         )
         def _render_surface(
-            surfacepath, surface_type, cubepath, color_values, colorscale
+            surfacepath, surface_type, cubepath, color_values, colorscale, hillshade
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
-            hillshading = True
             min_val = None
             max_val = None
-            color = "viridis"
+            color = None
 
             if surface_type == "attribute":
-                hillshading = False
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
-                color = ListedColormap(colorscale) if colorscale else "viridis"
+                color = colorscale if colorscale else color
                 cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
                 surface.values = surface.values.filled(0)
-                surface.values[surface.values < min_val] = min_val
-                surface.values[surface.values > max_val] = max_val
+                if min_val is not None:
+                    surface.values[surface.values < min_val] = min_val
+                if max_val is not None:
+                    surface.values[surface.values > max_val] = max_val
 
             s_layer = make_surface_layer(
                 surface,
@@ -367,7 +409,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 min_val=min_val,
                 max_val=max_val,
                 color=color,
-                hillshading=hillshading,
+                shader_type=hillshade,
             )
             return [s_layer]
 

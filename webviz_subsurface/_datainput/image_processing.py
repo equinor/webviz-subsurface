@@ -2,7 +2,6 @@ import io
 import base64
 
 import numpy as np
-from matplotlib import cm
 from PIL import Image
 
 
@@ -76,9 +75,3 @@ def array_to_png(
     base64_data = base64.b64encode(byte_io.read()).decode("ascii")
 
     return f"data:image/png;base64,{base64_data}"
-
-
-def get_colormap(colormap):
-    return array_to_png(
-        cm.get_cmap(colormap, 256)([np.linspace(0, 1, 256)]), colormap=True
-    )

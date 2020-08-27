@@ -12,7 +12,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
+from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -377,7 +377,16 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                             },
                             children=[
                                 self.map_layout,
-                                LayeredMap(height=400, id=self.ids("map"), layers=[]),
+                                LeafletMap(
+                                    id=self.ids("map"),
+                                    layers=[],
+                                    unitScale={},
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
+                                ),
                             ],
                         ),
                         html.Button(
@@ -491,7 +500,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return style, "Show map"
 
         @app.callback(
-            [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
+            Output(self.ids("map"), "layers"),
             [
                 Input(self.ids("fencespec"), "data"),
                 Input(self.ids("surface-name"), "value"),
@@ -503,6 +512,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             """Update map"""
             intersect_layer = {
                 "name": "Well",
+                "id": "Well",
+                "action": "replace",
                 "checked": True,
                 "base_layer": False,
                 "data": [
@@ -521,10 +532,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 self.surfacefolder,
             )[surfacetype]
 
-            surface_layer = make_surface_layer(
-                surface, name=surfacename, hillshading=True
-            )
-            return [surface_layer, intersect_layer], "keep"
+            surface_layer = make_surface_layer(surface, name=surfacename)
+            return [surface_layer, intersect_layer]
 
     def add_webvizstore(self):
         store_functions = [
