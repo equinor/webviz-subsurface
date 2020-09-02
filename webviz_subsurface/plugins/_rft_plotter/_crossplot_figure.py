@@ -73,7 +73,10 @@ def update_crossplot(df, sizeby, colorby):
                     "y0": sim_range[0],
                     "x1": sim_range[1],
                     "y1": sim_range[1],
-                    "line": {"color": "#007079", "width": 2,},
+                    "line": {
+                        "color": "#007079",
+                        "width": 2,
+                    },
                 }
             ],
         }

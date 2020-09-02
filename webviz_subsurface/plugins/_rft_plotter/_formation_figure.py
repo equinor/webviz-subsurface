@@ -115,7 +115,10 @@ class FormationFigure:
                 "type": "scatter",
                 "mode": "markers",
                 "name": "Ert observations",
-                "marker": {"color": "#2584DE", "size": 20,},
+                "marker": {
+                    "color": "#2584DE",
+                    "size": 20,
+                },
                 "error_x": {
                     "type": "data",
                     "array": df["OBS_ERR"],

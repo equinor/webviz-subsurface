@@ -30,20 +30,22 @@ from ._huv_table import FilterTable
 class HorizonUncertaintyViewer(WebvizPluginABC):
     """Visualizes depth uncertainty for surfaces in map view and cross section view.
 
-The cross section is defined by wellfiles and surfacefiles or a polyline.
-Polylines are drawn interactivly in map view.
+    The cross section is defined by wellfiles and surfacefiles or a polyline.
+    Polylines are drawn interactivly in map view.
 
-!> The plugin reads information from a COHIBA model file.
+    !> The plugin reads information from a COHIBA model file.
 
-* **`basedir`:** Path to folder with model_file.xml.
-   Make sure that the folder has the same format as a COHIBA folder.
-* **`planned_wells_dir`:** Path to folder with planned well files.
-   Make sure that all planned wells have format 'ROXAR RMS well'.
-"""
+    * **`basedir`:** Path to folder with model_file.xml.
+       Make sure that the folder has the same format as a COHIBA folder.
+    * **`planned_wells_dir`:** Path to folder with planned well files.
+       Make sure that all planned wells have format 'ROXAR RMS well'."""
 
     # pylint: disable=too-many-locals,too-many-instance-attributes
     def __init__(
-        self, app, basedir: Path = None, planned_wells_dir: Path = None,
+        self,
+        app,
+        basedir: Path = None,
+        planned_wells_dir: Path = None,
     ):
 
         super().__init__()
@@ -116,7 +118,13 @@ Polylines are drawn interactivly in map view.
 
     @property
     def cross_section_graph_layout(self):
-        return html.Div(children=[wcc.Graph(id=self.ids("xsec-view"),)])
+        return html.Div(
+            children=[
+                wcc.Graph(
+                    id=self.ids("xsec-view"),
+                )
+            ]
+        )
 
     @property
     def cross_section_widgets_layout(self):
@@ -332,7 +340,10 @@ Polylines are drawn interactivly in map view.
                         dbc.ModalBody(
                             children=[
                                 html.Label(
-                                    style={"font-weight": "bold", "textAlign": "Left",},
+                                    style={
+                                        "font-weight": "bold",
+                                        "textAlign": "Left",
+                                    },
                                     children="Select Table Columns",
                                 ),
                                 dcc.Checklist(
@@ -442,7 +453,11 @@ Polylines are drawn interactivly in map view.
                     ],
                 ),
                 html.Div(
-                    style={"marginTop": "0px", "height": "800px", "zIndex": -9999,},
+                    style={
+                        "marginTop": "0px",
+                        "height": "800px",
+                        "zIndex": -9999,
+                    },
                     children=[
                         # pylint: disable=no-member
                         webviz_subsurface_components.LeafletMap(
@@ -477,7 +492,10 @@ Polylines are drawn interactivly in map view.
             children=[
                 html.Label(
                     id=self.ids("surface-picks-label"),
-                    style={"font-weight": "bold", "textAlign": "center",},
+                    style={
+                        "font-weight": "bold",
+                        "textAlign": "center",
+                    },
                 ),
                 dash_table.DataTable(
                     id=self.ids("uncertainty-table"),
@@ -530,8 +548,8 @@ Polylines are drawn interactivly in map view.
             ],
         )
         def _render_map(surface_name, switch, wellfile):
-            """ Renders map view for one surface with de, dt, dte, dr, dre and depth
-                Wells marked with circles, trajectory and hillshading toggle
+            """Renders map view for one surface with de, dt, dte, dr, dre and depth
+            Wells marked with circles, trajectory and hillshading toggle
             """
             # Store layers when switching to hillshading
             if self.state["switch"] is not switch["value"]:
@@ -553,7 +571,11 @@ Polylines are drawn interactivly in map view.
                 self.surface_attributes[surface_name]["surface_dte"],
             ]
             well_layers = get_well_layers(
-                self.wells, self.planned_wells, surface_name, surfaces[0], wellfile,
+                self.wells,
+                self.planned_wells,
+                surface_name,
+                surfaces[0],
+                wellfile,
             )
             layers = get_surface_layers(switch, surface_name, surfaces)
             layers.extend(well_layers)
@@ -655,7 +677,7 @@ Polylines are drawn interactivly in map view.
             [State(self.ids("surfaces-de-checklist"), "options")],
         )
         def _disable_error_checkboxes(surface_values, de_options):
-            """ Removes ability to toggle depth error when
+            """Removes ability to toggle depth error when
             corresponding surface is disabled in graph settings modal
             """
             for i, opt in enumerate(de_options):
@@ -693,8 +715,12 @@ Polylines are drawn interactivly in map view.
 
         @app.callback(
             Output(self.ids("well-points-table-container"), "children"),
-            [Input(self.ids("button-apply-columnlist"), "n_clicks"),],
-            [State(self.ids("columns-checklist"), "value"),],  # columns list
+            [
+                Input(self.ids("button-apply-columnlist"), "n_clicks"),
+            ],
+            [
+                State(self.ids("columns-checklist"), "value"),
+            ],  # columns list
         )
         # pylint: disable=unused-variable, unused-argument
         def display_output(n_clicks, column_list):
@@ -783,7 +809,12 @@ Polylines are drawn interactivly in map view.
         functions.append(
             (
                 get_surfaces,
-                [{"basedir": self.basedir, "modelfile": self.modelfile_path,}],
+                [
+                    {
+                        "basedir": self.basedir,
+                        "modelfile": self.modelfile_path,
+                    }
+                ],
             )
         )
         return functions
@@ -795,7 +826,7 @@ def get_path(path) -> Path:
 
 
 def get_color(i):
-    """ Create a list of colors for surface layers
+    """Create a list of colors for surface layers
     Args:
         i: Index of surface layer in surfacefiles list
     Returns:

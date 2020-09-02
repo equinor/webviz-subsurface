@@ -505,7 +505,13 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 "name": "Well",
                 "checked": True,
                 "base_layer": False,
-                "data": [{"type": "polyline", "color": "red", "positions": fencespec,}],
+                "data": [
+                    {
+                        "type": "polyline",
+                        "color": "red",
+                        "positions": fencespec,
+                    }
+                ],
             }
 
             surface = get_surface_statistics(

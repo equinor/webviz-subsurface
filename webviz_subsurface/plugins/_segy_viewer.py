@@ -286,8 +286,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             zfig,
             store,
         ):
-            """Updates dcc.Store object with active iline, xline, zlayer and color settings.
-            """
+            """Updates dcc.Store object with active iline, xline, zlayer and color settings."""
             store = json.loads(store)
             ctx = dash.callback_context.triggered[0]["prop_id"]
             x_was_clicked = (

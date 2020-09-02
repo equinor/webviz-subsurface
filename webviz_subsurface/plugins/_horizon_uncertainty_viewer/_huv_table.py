@@ -3,13 +3,15 @@ import pandas as pd
 
 class FilterTable:
     """Uses paths to csv files to render dataframes
-        and to update them.
-        * `target_points`: File path to targetpoints.csv
-        * `well_points`: File path to wellpoints.csv
+    and to update them.
+    * `target_points`: File path to targetpoints.csv
+    * `well_points`: File path to wellpoints.csv
     """
 
     def __init__(
-        self, target_points=None, well_points=None,
+        self,
+        target_points=None,
+        well_points=None,
     ):
         self.target_points = target_points
         self.well_points = well_points

@@ -14,24 +14,23 @@ from webviz_config import WebvizPluginABC
 
 class DiskUsage(WebvizPluginABC):
     """Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user,
-    where the user can choose to plot as a pie chart or as a bar chart.
+        where the user can choose to plot as a pie chart or as a bar chart.
 
----
+    ---
 
-* **`scratch_dir`:** Path to the scratch directory to show disk usage for.
-* **`date`:** Date as string of form YYYY-MM-DD to request an explisit date. Default is to
-to use the most recent file avaialable, limited to the last week.
+    * **`scratch_dir`:** Path to the scratch directory to show disk usage for.
+    * **`date`:** Date as string of form YYYY-MM-DD to request an explisit date. Default is to
+    to use the most recent file avaialable, limited to the last week.
 
----
+    ---
 
-?> The `scratch_dir` directory must have a hidden folder `.disk_usage` containing daily
-csv files called `disk_usage_user_YYYY-MM-DD.csv`, where YYYY-MM-DD is the date.
-The plugin will search backwards from the current date, and throw an error if no file was found
-from the last week.
+    ?> The `scratch_dir` directory must have a hidden folder `.disk_usage` containing daily
+    csv files called `disk_usage_user_YYYY-MM-DD.csv`, where YYYY-MM-DD is the date.
+    The plugin will search backwards from the current date, and throw an error if no file was found
+    from the last week.
 
-The csv file must have the columns `userid` and `usageKB` (where KB means kilobytes).
-All other columns are ignored.
-"""
+    The csv file must have the columns `userid` and `usageKB` (where KB means kilobytes).
+    All other columns are ignored."""
 
     def __init__(self, app, scratch_dir: pathlib.Path, date: Optional["str"] = None):
 

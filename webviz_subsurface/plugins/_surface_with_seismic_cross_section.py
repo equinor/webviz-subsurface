@@ -119,7 +119,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     "Plugin to display surfaces and random lines from a seismic cube. "
                 ),
             },
-            {"id": self.ids("surface"), "content": ("The visualized surface."),},
+            {
+                "id": self.ids("surface"),
+                "content": ("The visualized surface."),
+            },
             {
                 "id": self.ids("map-view"),
                 "content": (
@@ -141,7 +144,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     "the seismic value where the surface intersect the seismic cube."
                 ),
             },
-            {"id": self.ids("cube"), "content": "The visualized cube.",},
+            {
+                "id": self.ids("cube"),
+                "content": "The visualized cube.",
+            },
             {
                 "id": self.ids("color-scale"),
                 "content": ("Click this button to change colorscale"),

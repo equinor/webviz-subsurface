@@ -17,41 +17,44 @@ from .._abbreviations.number_formatting import si_prefixed
 class TornadoPlot:
     """### TornadoPlot
 
-This private plugin visualizes a Tornado plot.
-It is meant to be used as a component in other plugin, and is initialized
- with a dataframe of realizations with corresponding sensitivities,
-but without the response values that are to be plotted.
-Instead we registers a dcc.Store which will contain the response values.
+    This private plugin visualizes a Tornado plot.
+    It is meant to be used as a component in other plugin, and is initialized
+     with a dataframe of realizations with corresponding sensitivities,
+    but without the response values that are to be plotted.
+    Instead we registers a dcc.Store which will contain the response values.
 
-To use:
-1. Initialize an instance of this class in a plugin.
-2. Add tornadoplot.layout to the plugin layout
-3. Register a callback that writes a json dump to tornadoplot.storage_id
-The format of the json dump must be ('ENSEMBLE' and 'data' are mandatory, the others optional):
-{'ENSEMBLE': name of ensemble,
- 'data': 2d array of realizations / response values
- 'number_format' (str): Format of the numeric part based on the Python Format Specification
-  Mini-Language e.g. '#.3g' for 3 significant digits, '.2f' for two decimals, or '.0f' for no
-  decimals.
- 'unit' (str): String to append at the end as a unit.
- 'spaced' (bool): Include a space between last numerical digit and SI-prefix.
- 'locked_si_prefix' (str or int): Lock the SI prefix to either a string (e.g. 'm' (milli) or 'M'
-  (mega)), or an integer which is the base 10 exponent (e.g. 3 for kilo, -3 for milli).
-}
+    To use:
+    1. Initialize an instance of this class in a plugin.
+    2. Add tornadoplot.layout to the plugin layout
+    3. Register a callback that writes a json dump to tornadoplot.storage_id
+    The format of the json dump must be ('ENSEMBLE' and 'data' are mandatory, the others optional):
+    {'ENSEMBLE': name of ensemble,
+     'data': 2d array of realizations / response values
+     'number_format' (str): Format of the numeric part based on the Python Format Specification
+      Mini-Language e.g. '#.3g' for 3 significant digits, '.2f' for two decimals, or '.0f' for no
+      decimals.
+     'unit' (str): String to append at the end as a unit.
+     'spaced' (bool): Include a space between last numerical digit and SI-prefix.
+     'locked_si_prefix' (str or int): Lock the SI prefix to either a string (e.g. 'm' (milli) or 'M'
+      (mega)), or an integer which is the base 10 exponent (e.g. 3 for kilo, -3 for milli).
+    }
 
-Mouse events:
-The current case at mouse cursor can be retrieved by registering a callback
-that reads from  `tornadoplot.click_id` if `allow_click` has been specified at initialization.
+    Mouse events:
+    The current case at mouse cursor can be retrieved by registering a callback
+    that reads from  `tornadoplot.click_id` if `allow_click` has been specified at initialization.
 
 
-* `realizations`: Dataframe of realizations with corresponding sensitivity cases
-* `reference`: Which sensitivity to use as reference.
-* `allow_click`: Registers a callback to store current data on mouse click
-
-"""
+    * `realizations`: Dataframe of realizations with corresponding sensitivity cases
+    * `reference`: Which sensitivity to use as reference.
+    * `allow_click`: Registers a callback to store current data on mouse click
+    """
 
     def __init__(
-        self, app, realizations, reference="rms_seed", allow_click=False,
+        self,
+        app,
+        realizations,
+        reference="rms_seed",
+        allow_click=False,
     ):
 
         self.realizations = realizations
@@ -78,7 +81,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
     @property
     def tour_steps(self):
         return [
-            {"id": self.ids("tornado-graph"), "content": ("Shows tornado plot."),},
+            {
+                "id": self.ids("tornado-graph"),
+                "content": ("Shows tornado plot."),
+            },
             {
                 "id": self.ids("reference"),
                 "content": (
@@ -140,7 +146,10 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                         ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
-                            children=[html.Label("Reference:"), html.Label("Scale:"),],
+                            children=[
+                                html.Label("Reference:"),
+                                html.Label("Scale:"),
+                            ],
                         ),
                         html.Div(
                             style=self.set_grid_layout("1fr 1fr"),
@@ -269,7 +278,11 @@ that reads from  `tornadoplot.click_id` if `allow_click` has been specified at i
                 if ctx == self.ids("reset") and nclicks:
 
                     return json.dumps(
-                        {"real_low": [], "real_high": [], "sens_name": None,}
+                        {
+                            "real_low": [],
+                            "real_high": [],
+                            "sens_name": None,
+                        }
                     )
                 try:
                     real_low = data["points"][0]["customdata"]
@@ -390,7 +403,10 @@ def tornado_plot(
                 if reals
                 else None
                 for x, label, val, reals in zip(
-                    df["low_tooltip"], df["low_label"], df["true_low"], df["low_reals"],
+                    df["low_tooltip"],
+                    df["low_label"],
+                    df["true_low"],
+                    df["low_reals"],
                 )
             ],
             hoverinfo="text",

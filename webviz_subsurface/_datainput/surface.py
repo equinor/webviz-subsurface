@@ -143,7 +143,7 @@ def new_make_surface_layer(
 
 
 def get_surface_layers(switch, surface_name, surfaces, min_val=None, max_val=None):
-    """ Creates layers in map view from all surfaces
+    """Creates layers in map view from all surfaces
     Args:
         switch: Toggle hillshading on/off
         surface_name: Name of surface
