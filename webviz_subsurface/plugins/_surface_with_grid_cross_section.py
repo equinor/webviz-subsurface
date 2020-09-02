@@ -125,7 +125,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     "Plugin to display surfaces and random lines from a 3D grid parameter. "
                 ),
             },
-            {"id": self.ids("surface"), "content": ("The visualized surface."),},
+            {
+                "id": self.ids("surface"),
+                "content": ("The visualized surface."),
+            },
             {
                 "id": self.ids("map-view"),
                 "content": (

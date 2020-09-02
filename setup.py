@@ -3,7 +3,14 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
-TESTS_REQUIRE = ["selenium>=3.141", "pylint", "mock", "black", "bandit", "pytest-xdist"]
+TESTS_REQUIRE = [
+    "selenium>=3.141",
+    "pylint",
+    "mock",
+    "black>=20.8b1",
+    "bandit",
+    "pytest-xdist",
+]
 
 setup(
     name="webviz-subsurface",

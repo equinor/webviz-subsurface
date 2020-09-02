@@ -151,7 +151,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             options.append({"label": "Show zonelog", "value": "show_zonelog"})
             value.append("show_zonelog")
 
-        return dcc.Checklist(id=self.ids("options"), options=options, value=value,)
+        return dcc.Checklist(
+            id=self.ids("options"),
+            options=options,
+            value=value,
+        )
 
     @property
     def well_options(self):
@@ -198,7 +202,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         self.well_options,
                         self.seismic_layout,
                         self.viz_options_layout,
-                        html.Button(id=self.ids("show_map"), children="Show map",),
+                        html.Button(
+                            id=self.ids("show_map"),
+                            children="Show map",
+                        ),
                     ],
                 ),
                 html.Div(
@@ -306,7 +313,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surface = load_surface(get_path(self.surfacefiles[0]))
             well = load_well(wellfile)
             s_layer = make_surface_layer(
-                surface, name=self.surfacenames[0], hillshading=True,
+                surface,
+                name=self.surfacenames[0],
+                hillshading=True,
             )
             well_layer = make_well_layer(well, wellname)
             return [s_layer, well_layer], "keep"

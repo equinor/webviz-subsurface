@@ -17,7 +17,11 @@ def filter_and_sum_responses(
 
 
 def _filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum",
+    dframe,
+    ensemble,
+    response,
+    filteroptions=None,
+    aggregation="sum",
 ):
     """Filter response dataframe for the given ensemble
     and optional filter columns. Returns dataframe grouped and

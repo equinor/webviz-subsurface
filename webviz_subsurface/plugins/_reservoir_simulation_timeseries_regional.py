@@ -351,7 +351,12 @@ folder, to avoid risk of not extracting the right data.
             ),
             (
                 load_smry_meta,
-                [{"ensemble_paths": self.ens_paths, "column_keys": self.column_keys,}],
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "column_keys": self.column_keys,
+                    }
+                ],
             ),
         ]
         if not self.field_totals:
@@ -423,7 +428,8 @@ folder, to avoid risk of not extracting the right data.
                             children=[
                                 html.Div("Group by:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
-                                    id=self.selectors_id("groupby"), clearable=False,
+                                    id=self.selectors_id("groupby"),
+                                    clearable=False,
                                 ),
                             ],
                         ),
@@ -503,7 +509,10 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                             ],
                         ),
-                        html.Div(children="Filters:", style={"font-weight": "bold"},),
+                        html.Div(
+                            children="Filters:",
+                            style={"font-weight": "bold"},
+                        ),
                         html.Div(id=self.uuid("filters"), children=[]),
                     ],
                 ),
@@ -517,7 +526,9 @@ folder, to avoid risk of not extracting the right data.
                         ),
                         html.Div(
                             id=self.uuid("stats_title"),
-                            style={"textAlign": "center",},
+                            style={
+                                "textAlign": "center",
+                            },
                             children="",
                         ),
                         html.Div(id=self.uuid("date_view_wrapper")),
@@ -630,7 +641,11 @@ folder, to avoid risk of not extracting the right data.
                 ["regions"] if fipdesc is None else fipdesc["GROUP"].unique().tolist()
             )
             groupby_options = [
-                {"label": i.lower().capitalize(), "value": i,} for i in groups
+                {
+                    "label": i.lower().capitalize(),
+                    "value": i,
+                }
+                for i in groups
             ]
             groupby_value = current_groupby if current_groupby in groups else "ENSEMBLE"
             return (
@@ -824,7 +839,10 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             Output(self.uuid("stats_title"), "children"),
-            [Input(self.uuid("date"), "data"), Input(self.uuid("ref_vec"), "data"),],
+            [
+                Input(self.uuid("date"), "data"),
+                Input(self.uuid("ref_vec"), "data"),
+            ],
             [State(self.selectors_id("vector"), "value")],
         )
         def _update_single_date_title(date, ref_vector, vector):
@@ -1072,7 +1090,12 @@ def filter_and_aggregate_vectors(
         else:
             nodes = {str(node): [node] for node in filters["regions"]}
     else:
-        nodes = get_nodes(groupby=groupby, fipdesc=fipdesc, fip=fip, filters=filters,)
+        nodes = get_nodes(
+            groupby=groupby,
+            fipdesc=fipdesc,
+            fip=fip,
+            filters=filters,
+        )
     subgroup_vectors = {
         subgroup: [
             simulation_region_vector_recompose(
@@ -1248,7 +1271,12 @@ def calc_statistics(df):
 
 
 def add_statistic_traces(
-    stat_df, ensembles, mode, groupby, groupby_color, line_shape,
+    stat_df,
+    ensembles,
+    mode,
+    groupby,
+    groupby_color,
+    line_shape,
 ):
     columns = []
     if mode == "agg":

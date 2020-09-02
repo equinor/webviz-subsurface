@@ -16,7 +16,10 @@ def table_statistics_base() -> List[tuple]:
             i,
             {
                 "type": "numeric",
-                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s",},
+                "format": {
+                    "locale": {"symbol": ["", ""]},
+                    "specifier": "$.4s",
+                },
             },
         )
         if i != "Stddev"
@@ -24,7 +27,10 @@ def table_statistics_base() -> List[tuple]:
             i,
             {
                 "type": "numeric",
-                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.3s",},
+                "format": {
+                    "locale": {"symbol": ["", ""]},
+                    "specifier": "$.3s",
+                },
             },
         )
         for i in ["Mean", "Stddev", "Minimum", "P90", "P10", "Maximum"]

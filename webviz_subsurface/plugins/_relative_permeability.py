@@ -243,7 +243,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 "id": self.uuid("color_by_selector"),
                 "content": ("Choose basis for your colormap."),
             },
-            {"id": self.uuid("ensemble_selector"), "content": ("Select ensembles."),},
+            {
+                "id": self.uuid("ensemble_selector"),
+                "content": ("Select ensembles."),
+            },
             {
                 "id": self.uuid("curve_selector"),
                 "content": (
@@ -298,13 +301,17 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                             id=self.uuid("sataxis_selector"),
                             children=[
                                 html.Span(
-                                    "Saturation axis:", style={"font-weight": "bold"},
+                                    "Saturation axis:",
+                                    style={"font-weight": "bold"},
                                 ),
                                 dcc.Dropdown(
                                     id=self.uuid("sataxis"),
                                     clearable=False,
                                     options=[
-                                        {"label": i.lower().capitalize(), "value": i,}
+                                        {
+                                            "label": i.lower().capitalize(),
+                                            "value": i,
+                                        }
                                         for i in self.sat_axes
                                     ],
                                     value=self.sat_axes[0],
@@ -319,7 +326,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                     id=self.uuid("color_by"),
                                     clearable=False,
                                     options=[
-                                        {"label": i.lower().capitalize(), "value": i,}
+                                        {
+                                            "label": i.lower().capitalize(),
+                                            "value": i,
+                                        }
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
@@ -347,7 +357,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                             children=[
                                 html.Span("Curves:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
-                                    id=self.uuid("curve"), clearable=False, multi=True,
+                                    id=self.uuid("curve"),
+                                    clearable=False,
+                                    multi=True,
                                 ),
                             ],
                         ),
@@ -396,8 +408,14 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                 dcc.RadioItems(
                                     id=self.uuid("linlog"),
                                     options=[
-                                        {"label": "Linear", "value": "linear",},
-                                        {"label": "Log", "value": "log",},
+                                        {
+                                            "label": "Linear",
+                                            "value": "linear",
+                                        },
+                                        {
+                                            "label": "Log",
+                                            "value": "log",
+                                        },
                                     ],
                                     value="linear",
                                     labelStyle={"display": "inline-block"},
@@ -417,7 +435,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                 dcc.Checklist(
                                     id=self.uuid("scal"),
                                     options=[
-                                        {"label": "Show SCAL", "value": "show_scal",},
+                                        {
+                                            "label": "Show SCAL",
+                                            "value": "show_scal",
+                                        },
                                     ],
                                     value=["show_scal"]
                                     if self.scal is not None
@@ -547,7 +568,13 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             """
             return (
                 self.sat_axes_maps[sataxis],
-                [{"label": i, "value": i,} for i in self.sat_axes_maps[sataxis]],
+                [
+                    {
+                        "label": i,
+                        "value": i,
+                    }
+                    for i in self.sat_axes_maps[sataxis]
+                ],
             )
 
     def add_webvizstore(self):
@@ -697,7 +724,9 @@ def add_scal_traces(df, curves, sataxis, nplots):
                     ),
                     "name": "SCAL",
                     "legendgroup": "SCAL",
-                    "marker": {"color": "black",},
+                    "marker": {
+                        "color": "black",
+                    },
                     "line": {"dash": "dash"},
                     "showlegend": curve_no == 0 and satnum_no == 0 and case_no == 0,
                 }

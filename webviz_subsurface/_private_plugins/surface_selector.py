@@ -15,30 +15,29 @@ class SurfaceSelector:
     # pylint: disable=too-many-instance-attributes,too-many-statements
     """### Surface Selector
 
-Creates a widget to select surfaces from a yaml configuration file or dictionary, and
-a dataframe of ensemble/realizations, optionally with sensitivity cases.
-The current selections are stored in a dcc.Store object that can
-be accessed by the storage_id property of the class instance.
+    Creates a widget to select surfaces from a yaml configuration file or dictionary, and
+    a dataframe of ensemble/realizations, optionally with sensitivity cases.
+    The current selections are stored in a dcc.Store object that can
+    be accessed by the storage_id property of the class instance.
 
-* `config`: A dictionary / yaml configuration file of surfaces on the format below
-* `ensembles`: A pandas dataframe with ensemble, real(index), runpath, sensname and senscase
+    * `config`: A dictionary / yaml configuration file of surfaces on the format below
+    * `ensembles`: A pandas dataframe with ensemble, real(index), runpath, sensname and senscase
 
-Format of configuration:
-some_property:
-    names:
-        - surfacename
-        - surfacename
-    dates:
-        - somedate
-        - somedate
-another_property:
-    names:
-        - surfacename
-        - surfacename
-    dates:
-        - somedate
-        - somedate
-"""
+    Format of configuration:
+    some_property:
+        names:
+            - surfacename
+            - surfacename
+        dates:
+            - somedate
+            - somedate
+    another_property:
+        names:
+            - surfacename
+            - surfacename
+        dates:
+            - somedate
+            - somedate"""
 
     def __init__(self, app, config, ensembles):
 

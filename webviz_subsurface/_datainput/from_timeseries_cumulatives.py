@@ -72,7 +72,10 @@ def calc_from_cumulatives(
             data[["ensrealuid"] + column_keys]
             .diff()
             .shift(-1)
-            .rename(mapper=calc_cols, axis=1,),
+            .rename(
+                mapper=calc_cols,
+                axis=1,
+            ),
         ],
         axis=1,
     )

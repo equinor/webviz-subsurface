@@ -432,7 +432,8 @@ folder, to avoid risk of not extracting the right data.
             ),
             children=[
                 html.Span(
-                    "Calculated from cumulatives:", style={"font-weight": "bold"},
+                    "Calculated from cumulatives:",
+                    style={"font-weight": "bold"},
                 ),
                 html.Div(
                     "Average (AVG_) and interval (INTVL_) time series",
@@ -545,7 +546,9 @@ folder, to avoid risk of not extracting the right data.
                     children=[
                         html.Div(
                             style={"height": "300px"},
-                            children=wcc.Graph(id=self.uuid("graph"),),
+                            children=wcc.Graph(
+                                id=self.uuid("graph"),
+                            ),
                         ),
                         dcc.Store(
                             id=self.uuid("date"),

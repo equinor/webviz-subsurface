@@ -235,8 +235,14 @@ folder, to avoid risk of not extracting the right data.
                     "in the correlation chart."
                 ),
             },
-            {"id": self.ids("ensemble"), "content": ("Select the active ensemble."),},
-            {"id": self.ids("responses"), "content": ("Select the active response."),},
+            {
+                "id": self.ids("ensemble"),
+                "content": ("Select the active ensemble."),
+            },
+            {
+                "id": self.ids("responses"),
+                "content": ("Select the active response."),
+            },
         ]
 
         return steps
@@ -316,7 +322,14 @@ folder, to avoid risk of not extracting the right data.
                 selector = make_range_slider(domid, self.responsedf[col_name], col_name)
             else:
                 return children
-            children.append(html.Div(children=[html.Label(col_name), selector,]))
+            children.append(
+                html.Div(
+                    children=[
+                        html.Label(col_name),
+                        selector,
+                    ]
+                )
+            )
 
         return children
 
@@ -503,8 +516,22 @@ folder, to avoid risk of not extracting the right data.
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
             return [
-                (read_csv, [{"csv_file": self.parameter_csv,}],),
-                (read_csv, [{"csv_file": self.response_csv,}],),
+                (
+                    read_csv,
+                    [
+                        {
+                            "csv_file": self.parameter_csv,
+                        }
+                    ],
+                ),
+                (
+                    read_csv,
+                    [
+                        {
+                            "csv_file": self.response_csv,
+                        }
+                    ],
+                ),
             ]
         return [
             (
@@ -555,7 +582,11 @@ def filter_and_sum_responses(
 
 
 def _filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum",
+    dframe,
+    ensemble,
+    response,
+    filteroptions=None,
+    aggregation="sum",
 ):
     """Filter response dataframe for the given ensemble
     and optional filter columns. Returns dataframe grouped and
@@ -658,10 +689,22 @@ def make_distribution_plot(df, parameter, response, theme):
         1,
     )
     fig.add_trace(
-        {"type": "histogram", "x": df[parameter], "showlegend": False,}, 3, 1,
+        {
+            "type": "histogram",
+            "x": df[parameter],
+            "showlegend": False,
+        },
+        3,
+        1,
     )
     fig.add_trace(
-        {"type": "histogram", "x": df[response], "showlegend": False,}, 3, 2,
+        {
+            "type": "histogram",
+            "x": df[response],
+            "showlegend": False,
+        },
+        3,
+        2,
     )
     fig["layout"].update(
         theme_layout(
@@ -669,7 +712,9 @@ def make_distribution_plot(df, parameter, response, theme):
             {
                 "height": 800,
                 "bargap": 0.05,
-                "xaxis": {"title": parameter,},
+                "xaxis": {
+                    "title": parameter,
+                },
                 "yaxis": {"title": response},
                 "xaxis2": {"title": parameter},
                 "xaxis3": {"title": response},

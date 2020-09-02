@@ -186,7 +186,12 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
 
-        self.ertdatadf = filter_frame(self.ertdatadf, {"ACTIVE": 1,})
+        self.ertdatadf = filter_frame(
+            self.ertdatadf,
+            {
+                "ACTIVE": 1,
+            },
+        )
         self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
         )["SIMULATED"].transform("std")
@@ -272,7 +277,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
         for i, date_index in enumerate(idx_steps):
             marks[str(date_index)] = {
                 "label": f"{date_steps[i]}",
-                "style": {"white-space": "nowrap", "font-weight": "bold",},
+                "style": {
+                    "white-space": "nowrap",
+                    "font-weight": "bold",
+                },
             }
         return marks
 
@@ -301,7 +309,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                     html.Div(
                         style={"flex": 1},
                         children=[
-                            html.Label(style={"font-weight": "bold"}, children="Well",),
+                            html.Label(
+                                style={"font-weight": "bold"},
+                                children="Well",
+                            ),
                             dcc.Dropdown(
                                 id=self.uuid("well"),
                                 options=[
@@ -316,7 +327,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                     html.Div(
                         style={"flex": 1},
                         children=[
-                            html.Label(style={"font-weight": "bold"}, children="Date",),
+                            html.Label(
+                                style={"font-weight": "bold"},
+                                children="Date",
+                            ),
                             dcc.Dropdown(
                                 id=self.uuid("date"),
                                 options=[
@@ -339,11 +353,20 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                     dcc.RadioItems(
                         id=self.uuid("linetype"),
                         options=[
-                            {"label": "Realization lines", "value": "realization",},
-                            {"label": "Statistical fanchart", "value": "fanchart",},
+                            {
+                                "label": "Realization lines",
+                                "value": "realization",
+                            },
+                            {
+                                "label": "Statistical fanchart",
+                                "value": "fanchart",
+                            },
                         ],
                         value="realization",
-                        labelStyle={"display": "inline-block", "margin": "5px",},
+                        labelStyle={
+                            "display": "inline-block",
+                            "margin": "5px",
+                        },
                     ),
                 ]
             ),
@@ -390,7 +413,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                                                 "label": "Standard Deviation",
                                                 "value": "STDDEV",
                                             },
-                                            {"label": "Misfit", "value": "ABSDIFF",},
+                                            {
+                                                "label": "Misfit",
+                                                "value": "ABSDIFF",
+                                            },
                                         ],
                                         value="ABSDIFF",
                                         clearable=False,
@@ -407,12 +433,18 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                                     dcc.Dropdown(
                                         id=self.uuid("map_color"),
                                         options=[
-                                            {"label": "Misfit", "value": "ABSDIFF",},
+                                            {
+                                                "label": "Misfit",
+                                                "value": "ABSDIFF",
+                                            },
                                             {
                                                 "label": "Standard Deviation",
                                                 "value": "STDDEV",
                                             },
-                                            {"label": "Year", "value": "YEAR",},
+                                            {
+                                                "label": "Year",
+                                                "value": "YEAR",
+                                            },
                                         ],
                                         value="STDDEV",
                                         clearable=False,
@@ -421,7 +453,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                             ),
                         ]
                     ),
-                    html.Label(style={"font-weight": "bold"}, children="Date range",),
+                    html.Label(
+                        style={"font-weight": "bold"},
+                        children="Date range",
+                    ),
                     html.Div(
                         style={"width": "100%", "height": "70px"},
                         children=[
@@ -444,7 +479,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
     def filter_layout(self, tab):
         """Layout for shared filters"""
         return [
-            html.Label(style={"font-weight": "bold"}, children=["Ensembles"],),
+            html.Label(
+                style={"font-weight": "bold"},
+                children=["Ensembles"],
+            ),
             wcc.Select(
                 size=min(4, len(self.ensembles)),
                 id=self.uuid(f"ensemble-{tab}"),
@@ -452,7 +490,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                 value=self.ensembles,
                 multi=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Wells"],),
+            html.Label(
+                style={"font-weight": "bold"},
+                children=["Wells"],
+            ),
             wcc.Select(
                 size=min(20, len(self.well_names)),
                 id=self.uuid(f"well-{tab}"),
@@ -460,7 +501,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                 value=self.well_names,
                 multi=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Zones"],),
+            html.Label(
+                style={"font-weight": "bold"},
+                children=["Zones"],
+            ),
             wcc.Select(
                 size=min(10, len(self.zone_names)),
                 id=self.uuid(f"zone-{tab}"),
@@ -468,7 +512,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                 value=self.zone_names,
                 multi=True,
             ),
-            html.Label(style={"font-weight": "bold"}, children=["Dates"],),
+            html.Label(
+                style={"font-weight": "bold"},
+                children=["Dates"],
+            ),
             wcc.Select(
                 size=min(10, len(self.dates)),
                 id=self.uuid(f"date-{tab}"),
@@ -482,12 +529,21 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
         return [
             html.Div(
                 children=[
-                    html.Label(style={"font-weight": "bold"}, children="Color by",),
+                    html.Label(
+                        style={"font-weight": "bold"},
+                        children="Color by",
+                    ),
                     dcc.Dropdown(
                         id=self.uuid("crossplot_color"),
                         options=[
-                            {"label": "Misfit", "value": "ABSDIFF",},
-                            {"label": "Standard Deviation", "value": "STDDEV",},
+                            {
+                                "label": "Misfit",
+                                "value": "ABSDIFF",
+                            },
+                            {
+                                "label": "Standard Deviation",
+                                "value": "STDDEV",
+                            },
                         ],
                         value="STDDEV",
                         clearable=False,
@@ -496,12 +552,21 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
             ),
             html.Div(
                 children=[
-                    html.Label(style={"font-weight": "bold"}, children="Size by",),
+                    html.Label(
+                        style={"font-weight": "bold"},
+                        children="Size by",
+                    ),
                     dcc.Dropdown(
                         id=self.uuid("crossplot_size"),
                         options=[
-                            {"label": "Standard Deviation", "value": "STDDEV",},
-                            {"label": "Misfit", "value": "ABSDIFF",},
+                            {
+                                "label": "Standard Deviation",
+                                "value": "STDDEV",
+                            },
+                            {
+                                "label": "Misfit",
+                                "value": "ABSDIFF",
+                            },
                         ],
                         value="ABSDIFF",
                         clearable=False,
@@ -553,7 +618,8 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                                 wcc.FlexBox(
                                     children=[
                                         wcc.Graph(
-                                            style={"flex": 1}, id=self.uuid("map"),
+                                            style={"flex": 1},
+                                            id=self.uuid("map"),
                                         ),
                                         wcc.Graph(
                                             style={"flex": 1},
@@ -640,7 +706,10 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.uuid("well"), "value"), [Input(self.uuid("map"), "clickData"),],
+            Output(self.uuid("well"), "value"),
+            [
+                Input(self.uuid("map"), "clickData"),
+            ],
         )
         def _get_clicked_well(click_data):
             if not click_data:
@@ -702,7 +771,9 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
 
         @app.callback(
             [Output(self.uuid("date"), "options"), Output(self.uuid("date"), "value")],
-            [Input(self.uuid("well"), "value"),],
+            [
+                Input(self.uuid("well"), "value"),
+            ],
             [State(self.uuid("date"), "value")],
         )
         def _update_date(well, current_date):
