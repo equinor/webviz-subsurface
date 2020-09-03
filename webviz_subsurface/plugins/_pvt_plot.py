@@ -7,6 +7,7 @@
 from typing import Callable, Dict, List, Tuple, Union, Any
 
 import pandas as pd
+import dash
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -20,46 +21,48 @@ from .._datainput.pvt_data import load_pvt_dataframe, load_pvt_csv
 
 class PvtPlot(WebvizPluginABC):
     """Visualizes formation volume factor and viscosity data \
-for oil, gas and water from both **csv**, Eclipse **init** and **include** files.
+    for oil, gas and water from both **csv**, Eclipse **init** and **include** files.
 
----
+    !> The plugin supports variations in PVT between ensembles, but not between \
+    realizations in the same ensemble.
+    ---
 
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`pvt_relative_file_path`:** Local path to a csv file in each \
-    realization with dumped pvt data.
-* **`read_from_init_file`:** A boolean flag stating if data shall be \
-    read from an Eclipse INIT file instead of an INCLUDE file. \
-    This is only used when **pvt_relative_file_path** is not given.
-* **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles \
-    which are holding duplicate data of other ensembles shall be dropped. \
-    Defaults to False.
+    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`pvt_relative_file_path`:** Local path to a csv file in each \
+        realization with dumped pvt data.
+    * **`read_from_init_file`:** A boolean flag stating if data shall be \
+        read from an Eclipse INIT file instead of an INCLUDE file. \
+        This is only used when **pvt_relative_file_path** is not given.
+    * **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles \
+        which are holding duplicate data of other ensembles shall be dropped. \
+        Defaults to False.
 
----
-The minimum requirement is to define `ensembles`.
+    ---
+    The minimum requirement is to define `ensembles`.
 
-If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
-from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
-If the `read_from_init_file` flag is set to True, the extraction procedure in
-`ecl2df` will be replaced by an individual extracting procedure that reads the
-normalized Eclipse INIT file.
-Note that the latter two extraction methods can be very slow for larger data and are therefore
-not recommended unless you have a very simple model/data deck.
-If the `drop_ensemble_duplicates` flag is set to True, any ensembles which are holding
-duplicate data of other ensembles will be dropped.
+    If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
+    from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
+    If the `read_from_init_file` flag is set to True, the extraction procedure in
+    `ecl2df` will be replaced by an individual extracting procedure that reads the
+    normalized Eclipse INIT file.
+    Note that the latter two extraction methods can be very slow for larger data and are therefore
+    not recommended unless you have a very simple model/data deck.
+    If the `drop_ensemble_duplicates` flag is set to True, any ensembles which are holding
+    duplicate data of other ensembles will be dropped.
 
-`pvt_relative_file_path` is a path to a file stored per realization (e.g. in \
-`share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:
-* One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
-    (e.g. `PVTO` and `PVDG`).
-* One column named `PVTNUM` with integer `PVTNUM` regions.
-* One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.
-* One column named `PRESSURE` with the fluids pressure as the secondary variate.
-* One column named `VOLUMEFACTOR` as the first covariate.
-* One column named `VISCOSITY` as the second covariate.
+    `pvt_relative_file_path` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:
+    * One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
+        (e.g. `PVTO` and `PVDG`).
+    * One column named `PVTNUM` with integer `PVTNUM` regions.
+    * One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.
+    * One column named `PRESSURE` with the fluids pressure as the secondary variate.
+    * One column named `VOLUMEFACTOR` as the first covariate.
+    * One column named `VISCOSITY` as the second covariate.
 
-The file can e.g. be dumped to disc per realization by a forward model in ERT using
-`ecl2df`.
-"""
+    The file can e.g. be dumped to disc per realization by a forward model in ERT using
+    `ecl2df`.
+    """
 
     PHASES = {"OIL": "PVTO", "GAS": "PVDG", "WATER": "PVTW"}
 
@@ -167,7 +170,10 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 "id": self.uuid("color_by_selector"),
                 "content": ("Choose the basis for your colormap."),
             },
-            {"id": self.uuid("ensemble_selector"), "content": ("Select ensembles."),},
+            {
+                "id": self.uuid("ensemble_selector"),
+                "content": ("Select ensembles."),
+            },
             {
                 "id": self.uuid("phase_selector"),
                 "content": (
@@ -208,7 +214,10 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                                     id=self.uuid("color_by"),
                                     clearable=False,
                                     options=[
-                                        {"label": i.lower().capitalize(), "value": i,}
+                                        {
+                                            "label": i.lower().capitalize(),
+                                            "value": i,
+                                        }
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
@@ -218,7 +227,6 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                         html.Label(
                             id=self.uuid("ensemble_selector"),
                             children=[
-                                dcc.Store(id=self.uuid("stored_ensemble"), data={}),
                                 html.Span("Ensembles:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
@@ -227,26 +235,32 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                                     options=[
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
-                                    value=self.ensembles[0],
+                                    value=self.ensembles,
                                 ),
                             ],
                         ),
                         html.Label(
                             id=self.uuid("phase_selector"),
                             children=[
-                                html.Span("Phase:", style={"font-weight": "bold"},),
+                                html.Span(
+                                    "Phase:",
+                                    style={"font-weight": "bold"},
+                                ),
                                 dcc.Dropdown(
                                     id=self.uuid("phase"),
                                     clearable=False,
                                     options=[
-                                        {"label": i.lower().capitalize(), "value": i,}
+                                        {
+                                            "label": i.lower().capitalize(),
+                                            "value": i,
+                                        }
                                         for i in self.phases
                                     ],
+                                    multi=False,
                                     value=list(self.phases)[0],
                                 ),
                             ],
                         ),
-                        dcc.Store(id=self.uuid("stored_pvtnum"), data={}),
                         html.Label(
                             id=self.uuid("pvtnum_selector"),
                             children=[
@@ -254,7 +268,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                                 dcc.Dropdown(
                                     id=self.uuid("pvtnum"),
                                     clearable=False,
-                                    multi=True,
+                                    multi=False,
                                     options=[
                                         {"label": i, "value": i} for i in self.pvtnums
                                     ],
@@ -269,25 +283,38 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                     style={"flex": "4"},
                     children=wcc.Graph(id=self.uuid("graph")),
                 ),
+                dcc.Store(
+                    id=self.uuid("init_callback"), storage_type="session", data=True
+                ),
             ],
         )
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.uuid("graph"), "figure"),
             [
-                Input(self.uuid("color_by"), "value"),
+                Output(self.uuid("graph"), "figure"),
+                Output(self.uuid("init_callback"), "data"),
+            ],
+            [
                 Input(self.uuid("phase"), "value"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("pvtnum"), "value"),
+                Input(self.uuid("color_by"), "value"),
             ],
+            [State(self.uuid("init_callback"), "data")],
         )
         def _update_graph(
-            color_by: str,
             phase: str,
             ensembles: Union[List[str], str],
             pvtnums: Union[List[str], str],
-        ) -> Dict[str, Union[dict, List[dict]]]:
+            color_by: str,
+            init_callback: bool,
+        ) -> List[Union[Dict[str, Union[dict, List[dict]]], bool]]:
+            if (
+                not init_callback
+                and not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            ):
+                raise PreventUpdate
             if not phase:
                 raise PreventUpdate
             if ensembles is None:
@@ -308,7 +335,7 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
 
             traces = add_realization_traces(data_frame, color_by, colors, phase)
 
-            return {"data": traces, "layout": layout}
+            return [{"data": traces, "layout": layout}, False]
 
         @app.callback(
             [
@@ -316,15 +343,17 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 Output(self.uuid("ensemble"), "value"),
             ],
             [Input(self.uuid("color_by"), "value")],
-            [State(self.uuid("stored_ensemble"), "data")],
         )
-        def _set_ensemble_selector(
-            color_by: str, stored_ensemble: pd.DataFrame
-        ) -> Tuple[bool, Union[str, List[str]]]:
+        def _set_ensemble_selector(color_by: str) -> Tuple[bool, Union[str, List[str]]]:
             # pylint: disable=unused-argument
             """If ensemble is selected as color by, set the ensemble
-            selector to allow multiple selections, else use stored_ensemble
+            selector to allow multiple selections
             """
+            if (
+                dash.callback_context.triggered is None
+                or not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            ):
+                raise PreventUpdate
 
             if color_by == "ENSEMBLE":
                 return True, self.ensembles
@@ -341,17 +370,18 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 Output(self.uuid("pvtnum"), "value"),
             ],
             [Input(self.uuid("color_by"), "value")],
-            [State(self.uuid("stored_pvtnum"), "data")],
         )
-
         # pylint:
-        def _set_pvtnum_selector(
-            color_by: str, stored_pvtnum: pd.DataFrame
-        ) -> Tuple[bool, Union[str, List[str]]]:
+        def _set_pvtnum_selector(color_by: str) -> Tuple[bool, Union[str, List[str]]]:
             # pylint: disable=unused-argument
             """If pvtnum is selected as color by, set the pvtnum
-            selector to allow multiple selections, else use stored_pvtnum
+            selector to allow multiple selections
             """
+            if (
+                dash.callback_context.triggered is None
+                or not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            ):
+                raise PreventUpdate
 
             if color_by == "PVTNUM":
                 return True, self.pvtnums
@@ -362,7 +392,9 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
                 self.pvtnums[0],
             )
 
-    def add_webvizstore(self,) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
+    def add_webvizstore(
+        self,
+    ) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
         return (
             [
                 (
@@ -415,57 +447,63 @@ def add_realization_traces(
     data_frame = data_frame.loc[data_frame["KEYWORD"] == PvtPlot.PHASES[phase]]
     column_name = "GOR"
 
-    border_value_pressure = {}
-    border_value_viscosity = {}
-    border_value_volumefactor = {}
+    border_value_pressure: Dict[str, list] = {}
+    border_value_viscosity: Dict[str, list] = {}
+    border_value_volumefactor: Dict[str, list] = {}
+    constant_group = (
+        data_frame["PVTNUM"].iloc[0]
+        if color_by == "ENSEMBLE"
+        else data_frame["ENSEMBLE"].iloc[0]
+    )
 
-    for ratio_no, oil_gas_ratio in enumerate(data_frame[column_name].unique()):
-        constant_group = (
-            data_frame["PVTNUM"].iloc[0]
-            if color_by == "ENSEMBLE"
-            else data_frame["ENSEMBLE"].iloc[0]
-        )
-
-        for (group, grouped_data_frame) in data_frame.groupby(color_by):
+    for (group, grouped_data_frame) in data_frame.groupby(color_by):
+        for ratio_no, gas_oil_ratio in enumerate(
+            grouped_data_frame[column_name].unique()
+        ):
             for realization_no, (realization, realization_data_frame) in enumerate(
                 grouped_data_frame.groupby("REAL")
             ):
-
                 if group not in border_value_pressure:
                     border_value_pressure[group] = []
                     border_value_viscosity[group] = []
                     border_value_volumefactor[group] = []
-
-                border_value_pressure[group].append(
-                    realization_data_frame.loc[
-                        realization_data_frame[column_name] == oil_gas_ratio
-                    ]["PRESSURE"].iloc[0]
-                )
-                border_value_volumefactor[group].append(
-                    realization_data_frame.loc[
-                        realization_data_frame[column_name] == oil_gas_ratio
-                    ]["VOLUMEFACTOR"].iloc[0]
-                )
-                border_value_viscosity[group].append(
-                    realization_data_frame.loc[
-                        realization_data_frame[column_name] == oil_gas_ratio
-                    ]["VISCOSITY"].iloc[0]
-                )
+                try:
+                    border_value_pressure[group].append(
+                        realization_data_frame.loc[
+                            realization_data_frame[column_name] == gas_oil_ratio
+                        ]["PRESSURE"].iloc[0]
+                    )
+                    border_value_volumefactor[group].append(
+                        realization_data_frame.loc[
+                            realization_data_frame[column_name] == gas_oil_ratio
+                        ]["VOLUMEFACTOR"].iloc[0]
+                    )
+                    border_value_viscosity[group].append(
+                        realization_data_frame.loc[
+                            realization_data_frame[column_name] == gas_oil_ratio
+                        ]["VISCOSITY"].iloc[0]
+                    )
+                except IndexError as exc:
+                    raise IndexError(
+                        "This error is most likely due to PVT differences between "
+                        "realizations within the same ensemble. This is currently not "
+                        "supported."
+                    ) from exc
 
                 traces.extend(
                     [
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[column_name] == oil_gas_ratio
+                                realization_data_frame[column_name] == gas_oil_ratio
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[column_name] == oil_gas_ratio
+                                realization_data_frame[column_name] == gas_oil_ratio
                             ]["VOLUMEFACTOR"],
                             "xaxis": "x",
                             "yaxis": "y",
                             "hovertext": (
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {oil_gas_ratio}"
+                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {gas_oil_ratio}"
                                 ", Pvtnum: "
                                 f"{group if color_by == 'PVTNUM' else constant_group}<br>"
                                 f"Realization: {realization}, Ensemble: "
@@ -487,15 +525,15 @@ def add_realization_traces(
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[column_name] == oil_gas_ratio
+                                realization_data_frame[column_name] == gas_oil_ratio
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[column_name] == oil_gas_ratio
+                                realization_data_frame[column_name] == gas_oil_ratio
                             ]["VISCOSITY"],
                             "xaxis": "x2",
                             "yaxis": "y2",
                             "hovertext": (
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {oil_gas_ratio}"
+                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {gas_oil_ratio}"
                                 ", Pvtnum: "
                                 f"{group if color_by == 'PVTNUM' else constant_group}<br>"
                                 f"Realization: {realization}, Ensemble: "
@@ -523,7 +561,10 @@ def add_realization_traces(
                     "y": border_value_volumefactor[group],
                     "xaxis": "x",
                     "yaxis": "y",
-                    "line": {"width": 1, "color": "black",},
+                    "line": {
+                        "width": 1,
+                        "color": colors.get(group, colors[list(colors.keys())[-1]]),
+                    },
                     "showlegend": False,
                 }
             ]
@@ -537,7 +578,10 @@ def add_realization_traces(
                     "y": border_value_viscosity[group],
                     "xaxis": "x2",
                     "yaxis": "y2",
-                    "line": {"width": 1, "color": "black",},
+                    "line": {
+                        "width": 1,
+                        "color": colors.get(group, colors[list(colors.keys())[-1]]),
+                    },
                     "showlegend": False,
                 }
             ]

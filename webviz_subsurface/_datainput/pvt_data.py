@@ -6,6 +6,8 @@
 
 import sys
 from typing import Dict
+import warnings
+
 import pandas as pd
 
 # opm and ecl2df are only available for Linux,
@@ -54,33 +56,48 @@ def filter_pvt_data_frame(
     cleaned_data_frame = data_frame.iloc[0:0]
     columns_subset = data_frame.columns.difference(["REAL", "ENSEMBLE"])
 
-    for _ino, iter_data_frame in data_frame.groupby("ENSEMBLE"):
-        iter_merged_dataframe = data_frame.iloc[0:0]
-        for _rno, realization_data_frame in iter_data_frame.groupby("REAL"):
-            if iter_merged_dataframe.empty:
-                iter_merged_dataframe = iter_merged_dataframe.append(
+    for ens, ens_data_frame in data_frame.groupby("ENSEMBLE"):
+        ens_merged_dataframe = data_frame.iloc[0:0]
+        for _rno, realization_data_frame in ens_data_frame.groupby("REAL"):
+            if ens_merged_dataframe.empty:
+                ens_merged_dataframe = ens_merged_dataframe.append(
                     realization_data_frame
                 ).reset_index(drop=True)
             else:
-                iter_merged_dataframe = (
-                    pd.concat([iter_merged_dataframe, realization_data_frame])
-                    .drop_duplicates(subset=columns_subset, keep="first",)
+                ens_merged_dataframe = (
+                    pd.concat([ens_merged_dataframe, realization_data_frame])
+                    .drop_duplicates(
+                        subset=columns_subset,
+                        keep="first",
+                    )
                     .reset_index(drop=True)
                 )
 
+        if ens_merged_dataframe["REAL"].nunique() > 1:
+            warnings.warn(
+                (
+                    f"There are variations in PVT between realizations in ensemble {ens}. "
+                    "This is currently not supported. Only keeping data for realization "
+                    f"{ens_merged_dataframe['REAL'].iloc[0]}."
+                ),
+                UserWarning,
+            )
+            ens_merged_dataframe = ens_merged_dataframe[
+                ens_merged_dataframe["REAL"] == ens_merged_dataframe["REAL"].iloc[0]
+            ]
         if drop_ensemble_duplicates:
             data_frame_stored = False
             for stored_data_frame in stored_data_frames:
                 if all(
                     stored_data_frame[columns_subset]
-                    == iter_merged_dataframe[columns_subset]
+                    == ens_merged_dataframe[columns_subset]
                 ):
                     data_frame_stored = True
                     break
             if data_frame_stored:
                 continue
-            stored_data_frames.append(iter_merged_dataframe)
-        cleaned_data_frame = cleaned_data_frame.append(iter_merged_dataframe)
+            stored_data_frames.append(ens_merged_dataframe)
+        cleaned_data_frame = cleaned_data_frame.append(ens_merged_dataframe)
 
     return cleaned_data_frame
 
