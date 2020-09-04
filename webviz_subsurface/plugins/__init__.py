@@ -47,6 +47,7 @@ from ._reservoir_simulation_timeseries_regional import (
 )
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
+from ._pvt_plot import PvtPlot
 
 
 __all__ = [
@@ -71,4 +72,5 @@ __all__ = [
     "ReservoirSimulationTimeSeriesRegional",
     "RftPlotter",
     "HorizonUncertaintyViewer",
+    "PvtPlot",
 ]

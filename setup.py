@@ -58,14 +58,17 @@ setup(
             + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
+            "PvtPlot = webviz_subsurface.plugins:PvtPlot",
         ]
     },
     install_requires=[
         "dash>=1.11",
         "dash_bootstrap_components>=0.10.3",
         "defusedxml>=0.6.0",
+        "ecl2df>=0.6.1; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "matplotlib>=3.0",
+        "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=0.24",
         "pillow>=6.1",
         "pyscal>=0.4.1",
