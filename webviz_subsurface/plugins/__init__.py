@@ -20,6 +20,7 @@ pages:
 ```
 """
 
+from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer

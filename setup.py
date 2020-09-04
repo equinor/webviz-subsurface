@@ -29,6 +29,7 @@ setup(
     },
     entry_points={
         "webviz_config_plugins": [
+            "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
