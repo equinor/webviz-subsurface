@@ -3,14 +3,13 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from matplotlib.colors import ListedColormap
 import xtgeo
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
+from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
@@ -227,12 +226,48 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 "height": "800px",
                                 "zIndex": -9999,
                             },
-                            children=LayeredMap(
-                                id=self.ids("map-view"),
-                                draw_toolbar_polyline=True,
-                                hillShading=True,
-                                layers=[],
-                            ),
+                            children=[
+                                LeafletMap(
+                                    id=self.ids("map-view"),
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    drawTools={
+                                        "drawMarker": False,
+                                        "drawPolygon": False,
+                                        "drawPolyline": True,
+                                        "position": "topright",
+                                    },
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
+                                ),
+                                html.Div(
+                                    children=[
+                                        dcc.RadioItems(
+                                            id=self.uuid("hillshade"),
+                                            labelStyle={
+                                                "display": "inline-block",
+                                                "text-align": "justify",
+                                            },
+                                            options=[
+                                                {
+                                                    "value": None,
+                                                    "label": "No hillshading",
+                                                },
+                                                {
+                                                    "value": "soft-hillshading",
+                                                    "label": "Soft hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading",
+                                                    "label": "Hillshading",
+                                                },
+                                            ],
+                                            value=None,
+                                        ),
+                                    ]
+                                ),
+                            ],
                         )
                     ]
                 ),
@@ -346,23 +381,27 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("gridparameter"), "value"),
                 Input(self.ids("color-values"), "value"),
                 Input(self.ids("color-scale"), "colorscale"),
+                Input(self.uuid("hillshade"), "value"),
             ],
         )
         def _render_surface(
-            surfacepath, surface_type, gridparameter, color_values, colorscale
+            surfacepath,
+            surface_type,
+            gridparameter,
+            color_values,
+            colorscale,
+            hillshade,
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
-            hillshading = True
             min_val = None
             max_val = None
-            color = "viridis"
+            color = None
 
             if surface_type == "attribute":
-                hillshading = False
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
-                color = ListedColormap(colorscale) if colorscale else "viridis"
+                color = colorscale if colorscale else color
                 grid = load_grid(get_path(self.gridfile))
                 gridparameter = load_grid_parameter(grid, get_path(gridparameter))
                 surface.slice_grid3d(grid, gridparameter)
@@ -378,7 +417,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 min_val=min_val,
                 max_val=max_val,
                 color=color,
-                hillshading=hillshading,
+                shader_type=hillshade,
             )
             return [s_layer]
 

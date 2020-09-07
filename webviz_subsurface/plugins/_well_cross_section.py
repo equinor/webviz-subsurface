@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LayeredMap
+from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 
@@ -222,8 +222,15 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 "zIndex": 10000,
                                 "visibility": "hidden",
                             },
-                            children=LayeredMap(
-                                height=400, id=self.ids("map"), layers=[]
+                            children=LeafletMap(
+                                id=self.ids("map"),
+                                layers=[],
+                                unitScale={},
+                                autoScaleMap=True,
+                                minZoom=-5,
+                                updateMode="update",
+                                mouseCoords={"position": "bottomright"},
+                                colorBar={"position": "bottomleft"},
                             ),
                         ),
                         wcc.Graph(id=self.ids("graph")),
@@ -303,7 +310,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return style, btn
 
         @app.callback(
-            [Output(self.ids("map"), "layers"), Output(self.ids("map"), "uirevision")],
+            Output(self.ids("map"), "layers"),
             [Input(self.ids("wells"), "value")],
         )
         def _render_surface(wellfile):
@@ -315,10 +322,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             s_layer = make_surface_layer(
                 surface,
                 name=self.surfacenames[0],
-                hillshading=True,
             )
             well_layer = make_well_layer(well, wellname)
-            return [s_layer, well_layer], "keep"
+            return [s_layer, well_layer]
 
     def add_webvizstore(self):
         return [

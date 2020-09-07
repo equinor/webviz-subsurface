@@ -9,7 +9,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
 import dash_core_components as dcc
-from webviz_subsurface_components import LayeredMap
+from webviz_subsurface_components import LeafletMap
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -349,39 +349,129 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     style={"fontSize": "1rem"},
                     children=[
                         html.Div(
-                            style={"margin": "10px", "flex": 4},
+                            style={"height": "600px", "margin": "10px", "flex": 4},
                             children=[
-                                LayeredMap(
-                                    sync_ids=[self.uuid("map2"), self.uuid("map3")],
+                                LeafletMap(
+                                    syncedMaps=[self.uuid("map2"), self.uuid("map3")],
                                     id=self.uuid("map"),
-                                    height=600,
                                     layers=[],
-                                    hillShading=True,
-                                )
+                                    unitScale={},
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
+                                ),
+                                html.Div(
+                                    children=[
+                                        dcc.RadioItems(
+                                            id=self.uuid("hillshade"),
+                                            labelStyle={
+                                                "display": "inline-block",
+                                                "text-align": "justify",
+                                            },
+                                            options=[
+                                                {
+                                                    "value": None,
+                                                    "label": "No hillshading",
+                                                },
+                                                {
+                                                    "value": "soft-hillshading",
+                                                    "label": "Soft hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading",
+                                                    "label": "Hillshading",
+                                                },
+                                            ],
+                                            value=None,
+                                        ),
+                                    ]
+                                ),
                             ],
                         ),
                         html.Div(
                             style={"margin": "10px", "flex": 4},
                             children=[
-                                LayeredMap(
-                                    sync_ids=[self.uuid("map"), self.uuid("map3")],
+                                LeafletMap(
+                                    syncedMaps=[self.uuid("map"), self.uuid("map3")],
                                     id=self.uuid("map2"),
-                                    height=600,
                                     layers=[],
-                                    hillShading=True,
-                                )
+                                    unitScale={},
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomright"},
+                                ),
+                                html.Div(
+                                    children=[
+                                        dcc.RadioItems(
+                                            id=self.uuid("hillshade2"),
+                                            labelStyle={
+                                                "display": "inline-block",
+                                                "text-align": "justify",
+                                            },
+                                            options=[
+                                                {
+                                                    "value": None,
+                                                    "label": "No hillshading",
+                                                },
+                                                {
+                                                    "value": "soft-hillshading",
+                                                    "label": "Soft hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading",
+                                                    "label": "Hillshading",
+                                                },
+                                            ],
+                                            value=None,
+                                        ),
+                                    ]
+                                ),
                             ],
                         ),
                         html.Div(
                             style={"margin": "10px", "flex": 4},
                             children=[
-                                LayeredMap(
-                                    sync_ids=[self.uuid("map"), self.uuid("map2")],
+                                LeafletMap(
+                                    syncedMaps=[self.uuid("map"), self.uuid("map2")],
                                     id=self.uuid("map3"),
-                                    height=600,
                                     layers=[],
-                                    hillShading=True,
-                                )
+                                    unitScale={},
+                                    autoScaleMap=True,
+                                    minZoom=-5,
+                                    updateMode="update",
+                                    mouseCoords={"position": "bottomright"},
+                                    colorBar={"position": "bottomright"},
+                                ),
+                                html.Div(
+                                    children=[
+                                        dcc.RadioItems(
+                                            id=self.uuid("hillshade3"),
+                                            labelStyle={
+                                                "display": "inline-block",
+                                                "text-align": "justify",
+                                            },
+                                            options=[
+                                                {
+                                                    "value": None,
+                                                    "label": "No hillshading",
+                                                },
+                                                {
+                                                    "value": "soft-hillshading",
+                                                    "label": "Soft hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading",
+                                                    "label": "Hillshading",
+                                                },
+                                            ],
+                                            value=None,
+                                        ),
+                                    ]
+                                ),
                             ],
                         ),
                         dcc.Store(
@@ -432,6 +522,9 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 Input(self.uuid("attribute-settings"), "data"),
                 Input(self.uuid("truncate-diff-min"), "value"),
                 Input(self.uuid("truncate-diff-max"), "value"),
+                Input(self.uuid("hillshade"), "value"),
+                Input(self.uuid("hillshade2"), "value"),
+                Input(self.uuid("hillshade3"), "value"),
             ],
         )
         # pylint: disable=too-many-arguments, too-many-locals
@@ -446,6 +539,9 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
             attribute_settings,
             diff_min,
             diff_max,
+            hillshade,
+            hillshade2,
+            hillshade3,
         ):
             if not data or not data2:
                 raise PreventUpdate
@@ -470,26 +566,22 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 make_surface_layer(
                     surface,
                     name="surface",
-                    color=attribute_settings.get(data["attr"], {}).get(
-                        "color", "viridis"
-                    ),
+                    color=attribute_settings.get(data["attr"], {}).get("color"),
+                    shader_type=hillshade,
                     min_val=attribute_settings.get(data["attr"], {}).get("min", None),
                     max_val=attribute_settings.get(data["attr"], {}).get("max", None),
                     unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
-                    hillshading=True,
                 )
             ]
             surface_layers2 = [
                 make_surface_layer(
                     surface2,
-                    name="surface",
-                    color=attribute_settings.get(data2["attr"], {}).get(
-                        "color", "viridis"
-                    ),
+                    name="surface2",
+                    color=attribute_settings.get(data2["attr"], {}).get("color"),
+                    shader_type=hillshade2,
                     min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
                     max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
                     unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
-                    hillshading=True,
                 )
             ]
 
@@ -503,11 +595,15 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 diff_layers.append(
                     make_surface_layer(
                         surface3,
-                        name="surface",
-                        color=attribute_settings.get(data["attr"], {}).get(
-                            "color", "viridis"
+                        name="surface3",
+                        color=attribute_settings.get(data["attr"], {}).get("color"),
+                        shader_type=hillshade3,
+                        min_val=attribute_settings.get(data2["attr"], {}).get(
+                            "min", None
                         ),
-                        hillshading=True,
+                        max_val=attribute_settings.get(data2["attr"], {}).get(
+                            "max", None
+                        ),
                     )
                 )
                 error_label = ""
@@ -516,6 +612,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 error_label = (
                     "Cannot calculate because the surfaces have different geometries"
                 )
+
             if self.well_layer:
                 surface_layers.append(self.well_layer)
                 surface_layers2.append(self.well_layer)
