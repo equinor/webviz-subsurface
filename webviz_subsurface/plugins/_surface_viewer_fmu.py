@@ -189,6 +189,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                     value=self.ensembles[0],
                                     id=ensemble_id,
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                                 html.Button(
                                     style={
@@ -226,6 +228,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                     value=self.realizations(self.ensembles[0])[0],
                                     id=real_id,
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                                 html.Button(
                                     style={
@@ -309,6 +313,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                 "Quotient",
                                             ]
                                         ],
+                                        persistence=True,
+                                        persistence_type="session",
                                     )
                                 ),
                                 wcc.FlexBox(
@@ -321,6 +327,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-min"),
+                                                    persistence=True,
+                                                    persistence_type="session",
                                                 ),
                                             ],
                                         ),
@@ -332,6 +340,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                     debounce=True,
                                                     type="number",
                                                     id=self.uuid("truncate-diff-max"),
+                                                    persistence=True,
+                                                    persistence_type="session",
                                                 ),
                                             ],
                                         ),
@@ -385,6 +395,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                 },
                                             ],
                                             value=None,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -402,7 +414,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                     minZoom=-5,
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
-                                    colorBar={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
                                 ),
                                 html.Div(
                                     children=[
@@ -427,6 +439,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                 },
                                             ],
                                             value=None,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -444,7 +458,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                     minZoom=-5,
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
-                                    colorBar={"position": "bottomright"},
+                                    colorBar={"position": "bottomleft"},
                                 ),
                                 html.Div(
                                     children=[
@@ -469,6 +483,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                 },
                                             ],
                                             value=None,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -477,6 +493,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                         dcc.Store(
                             id=self.uuid("attribute-settings"),
                             data=json.dumps(self.attribute_settings),
+                            storage_type="session",
                         ),
                     ],
                 ),

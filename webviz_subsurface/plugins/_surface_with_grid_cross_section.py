@@ -195,6 +195,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.surfacefiles[0],
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ]
                         ),
@@ -213,6 +215,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                         },
                                     ],
                                     value="surface",
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -264,6 +268,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                 },
                                             ],
                                             value=None,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -300,6 +306,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.gridparafiles[0],
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ]
                         ),
@@ -342,6 +350,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 dcc.RangeSlider(
                                     id=self.ids("color-values"),
                                     tooltip={"always_visible": True},
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),

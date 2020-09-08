@@ -348,6 +348,8 @@ folder, to avoid risk of not extracting the right data.
                                     },
                                 ],
                                 value="ensembles",
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     ),
@@ -367,6 +369,8 @@ folder, to avoid risk of not extracting the right data.
                                     {"label": i, "value": i} for i in self.ensembles
                                 ],
                                 value=self.ensembles[0],
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ],
                     ),
@@ -396,6 +400,8 @@ folder, to avoid risk of not extracting the right data.
                                                 for i in self.ensembles
                                             ],
                                             value=self.ensembles[0],
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -413,6 +419,8 @@ folder, to avoid risk of not extracting the right data.
                                                 for i in self.ensembles
                                             ],
                                             value=self.ensembles[-1],
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ]
                                 ),
@@ -452,6 +460,8 @@ folder, to avoid risk of not extracting the right data.
                             for i in self.time_interval_options
                         ],
                         value=self.time_index,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ),
             ],
@@ -487,6 +497,8 @@ folder, to avoid risk of not extracting the right data.
                                     value=self.plot_options.get(
                                         "vector1", self.smry_cols[0]
                                     ),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                                 dcc.Dropdown(
                                     style={"marginBottom": "5px", "fontSize": ".95em"},
@@ -497,6 +509,8 @@ folder, to avoid risk of not extracting the right data.
                                     placeholder="Add additional series",
                                     options=self.dropdown_options,
                                     value=self.plot_options.get("vector2", None),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                                 dcc.Dropdown(
                                     style={"fontSize": ".95em"},
@@ -507,6 +521,8 @@ folder, to avoid risk of not extracting the right data.
                                     placeholder="Add additional series",
                                     options=self.dropdown_options,
                                     value=self.plot_options.get("vector3", None),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -536,6 +552,8 @@ folder, to avoid risk of not extracting the right data.
                                     value=self.plot_options.get(
                                         "visualization", "statistics"
                                     ),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -553,6 +571,7 @@ folder, to avoid risk of not extracting the right data.
                         ),
                         dcc.Store(
                             id=self.uuid("date"),
+                            storage_type="session",
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
                     ],

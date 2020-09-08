@@ -60,6 +60,8 @@ class DiskUsage(WebvizPluginABC):
                         {"label": i, "value": i} for i in ["Pie chart", "Bar chart"]
                     ],
                     value="Pie chart",
+                    persistence=True,
+                    persistence_type="session",
                 ),
                 wcc.Graph(id=self.uuid("chart")),
             ]

@@ -114,6 +114,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         ],
                         value=self.wellfiles[0],
                         clearable=False,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -136,6 +138,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         else None,
                         value=self.segyfiles[0] if self.segyfiles else None,
                         clearable=False,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -155,6 +159,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             id=self.ids("options"),
             options=options,
             value=value,
+            persistence=True,
+            persistence_type="session",
         )
 
     @property
@@ -171,6 +177,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 debounce=True,
                                 type="number",
                                 value=self.sampling,
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     )
@@ -184,6 +192,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 debounce=True,
                                 type="number",
                                 value=self.nextend,
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     )

@@ -107,6 +107,8 @@ class SurfaceSelector:
                             ],
                             value=self.attrs[0],
                             clearable=False,
+                            persistence=True,
+                            persistence_type="session",
                         ),
                         self._make_buttons(
                             self.attr_id_btn_prev, self.attr_id_btn_next
@@ -150,7 +152,12 @@ class SurfaceSelector:
                 html.Div(
                     style=self.set_grid_layout("6fr 1fr"),
                     children=[
-                        dcc.Dropdown(id=dropdown_id, clearable=False),
+                        dcc.Dropdown(
+                            id=dropdown_id,
+                            clearable=False,
+                            persistence=True,
+                            persistence_type="session",
+                        ),
                         self._make_buttons(btn_prev, btn_next),
                     ],
                 ),
@@ -184,7 +191,7 @@ class SurfaceSelector:
                         ),
                     ]
                 ),
-                dcc.Store(id=self.storage_id),
+                dcc.Store(id=self.storage_id, storage_type="session"),
             ]
         )
 

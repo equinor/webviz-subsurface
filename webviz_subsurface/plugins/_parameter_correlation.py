@@ -21,6 +21,8 @@ class Widgets:
             options=[{"label": k, "value": v} for k, v in dictionary.items()],
             value=list(dictionary.values())[0],
             clearable=False,
+            persistence=True,
+            persistence_type="session",
         )
 
 
@@ -87,6 +89,8 @@ class ParameterCorrelation(WebvizPluginABC):
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                     Widgets.dropdown_from_dict(self.ids("ensemble-1"), self.ensembles),
                 ],
@@ -102,6 +106,8 @@ class ParameterCorrelation(WebvizPluginABC):
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                     Widgets.dropdown_from_dict(self.ids("ensemble-2"), self.ensembles),
                 ],
@@ -113,6 +119,8 @@ class ParameterCorrelation(WebvizPluginABC):
                     dcc.Dropdown(
                         id=self.ids("scatter-color"),
                         options=[{"label": p, "value": p} for p in self.p_cols],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ],
             ),
@@ -125,6 +133,8 @@ class ParameterCorrelation(WebvizPluginABC):
                         "value": "density",
                     }
                 ],
+                persistence=True,
+                persistence_type="session",
             ),
         ]
 

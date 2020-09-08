@@ -419,6 +419,8 @@ folder, to avoid risk of not extracting the right data.
                                         else self.fip_arrays[0]
                                     ),
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -430,6 +432,8 @@ folder, to avoid risk of not extracting the right data.
                                 dcc.Dropdown(
                                     id=self.selectors_id("groupby"),
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -446,6 +450,8 @@ folder, to avoid risk of not extracting the right data.
                                     value=self.ensembles,
                                     multi=True,
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -458,6 +464,8 @@ folder, to avoid risk of not extracting the right data.
                                     id=self.selectors_id("vector"),
                                     clearable=False,
                                     optionHeight=80,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -482,6 +490,8 @@ folder, to avoid risk of not extracting the right data.
                                         },
                                     ],
                                     value="statistics",
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -506,6 +516,8 @@ folder, to avoid risk of not extracting the right data.
                                     ],
                                     value="table",
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -535,9 +547,13 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 ),
                 dcc.Store(
-                    id=self.uuid("date"), data=json.dumps(str(self.smry["DATE"].min()))
+                    id=self.uuid("date"),
+                    storage_type="session",
+                    data=json.dumps(str(self.smry["DATE"].min())),
                 ),
-                dcc.Store(id=self.uuid("ref_vec"), data=json.dumps("")),
+                dcc.Store(
+                    id=self.uuid("ref_vec"), storage_type="session", data=json.dumps("")
+                ),
             ],
         )
 
@@ -585,6 +601,8 @@ folder, to avoid risk of not extracting the right data.
                                 options=[{"label": i, "value": i} for i in nodes],
                                 size=min([len(nodes), 10]),
                                 value=nodes,
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ],
                     )
@@ -603,6 +621,8 @@ folder, to avoid risk of not extracting the right data.
                                 ],
                                 size=min([len(group_df["SUBGROUP"].unique()), 5]),
                                 value=group_df["SUBGROUP"].unique(),
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ],
                     )

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import os
 import io
 import json
@@ -154,6 +155,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                             id=self.ids("all-surfaces-checkbox"),
                                             options=[{"label": "all", "value": "True"}],
                                             value=["True"],
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                         dcc.Checklist(
                                             id=self.ids("surfaces-checklist"),
@@ -162,6 +165,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                                 for name in self.surfacenames
                                             ],
                                             value=self.surfacenames,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                         dcc.Checklist(
                                             id=self.ids("surfaces-de-checklist"),
@@ -174,6 +179,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                                 for name in self.surfacenames
                                             ],
                                             value=self.surfacenames,
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ],
                                 ),
@@ -217,6 +224,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                             id=self.ids("all-well-settings-checkbox"),
                                             options=[{"label": "all", "value": "True"}],
                                             value=["True"],
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                         dcc.Checklist(
                                             id=self.ids("well-settings-checklist"),
@@ -239,6 +248,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                                 "zonation_points",
                                                 "conditional_points",
                                             ],
+                                            persistence=True,
+                                            persistence_type="session",
                                         ),
                                     ],
                                 ),
@@ -297,6 +308,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                     value=str(self.wellfiles[0]),
                                     clearable=False,
                                     disabled=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ]
                         ),
@@ -368,6 +381,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                         "Deleted",
                                         "Residual",
                                     ],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -410,6 +425,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                             ],
                             id=self.ids("map-table-radioitems"),
                             value="map-view",
+                            persistence=True,
+                            persistence_type="session",
                         )
                     ],
                     style={"padding": "5px"},
@@ -447,6 +464,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                     ],
                                     value=self.surfacenames[0],
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ]
                         ),

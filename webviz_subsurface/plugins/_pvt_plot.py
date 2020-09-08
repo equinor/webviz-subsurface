@@ -221,6 +221,8 @@ class PvtPlot(WebvizPluginABC):
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -236,6 +238,8 @@ class PvtPlot(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -258,6 +262,8 @@ class PvtPlot(WebvizPluginABC):
                                     ],
                                     multi=False,
                                     value=list(self.phases)[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -273,6 +279,8 @@ class PvtPlot(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.pvtnums
                                     ],
                                     value=self.pvtnums[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),

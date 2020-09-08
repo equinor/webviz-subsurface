@@ -315,6 +315,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         for i in self.sat_axes
                                     ],
                                     value=self.sat_axes[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -333,13 +335,19 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
                         html.Label(
                             id=self.uuid("ensemble_selector"),
                             children=[
-                                dcc.Store(id=self.uuid("stored_ensemble"), data={}),
+                                dcc.Store(
+                                    id=self.uuid("stored_ensemble"),
+                                    storage_type="session",
+                                    data={},
+                                ),
                                 html.Span("Ensembles:", style={"font-weight": "bold"}),
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
@@ -349,6 +357,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -360,10 +370,16 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                     id=self.uuid("curve"),
                                     clearable=False,
                                     multi=True,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                        dcc.Store(id=self.uuid("stored_satnum"), data={}),
+                        dcc.Store(
+                            id=self.uuid("stored_satnum"),
+                            storage_type="session",
+                            data={},
+                        ),
                         html.Label(
                             id=self.uuid("satnum_selector"),
                             children=[
@@ -376,6 +392,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         {"label": i, "value": i} for i in self.satnums
                                     ],
                                     value=self.satnums[0],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -398,6 +416,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         },
                                     ],
                                     value="statistics",
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -419,6 +439,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                     ],
                                     value="linear",
                                     labelStyle={"display": "inline-block"},
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -443,6 +465,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                     value=["show_scal"]
                                     if self.scal is not None
                                     else [],
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
