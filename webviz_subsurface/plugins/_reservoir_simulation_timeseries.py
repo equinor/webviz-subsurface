@@ -1,4 +1,5 @@
 # pylint: disable=too-many-lines
+import sys
 from pathlib import Path
 import json
 
@@ -615,7 +616,14 @@ folder, to avoid risk of not extracting the right data.
             # Titles for subplots
             titles = []
             for vec in vectors:
-                unit_vec = vec.lstrip("AVG_").lstrip("INTVL_")
+                if sys.version_info >= (3, 9):
+                    unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
+                else:
+                    unit_vec = (
+                        vec[4:]
+                        if vec.startswith("AVG_")
+                        else (vec[6:] if vec.startswith("INTVL_") else vec)
+                    )
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
                 else:
