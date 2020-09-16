@@ -266,6 +266,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                     "value": "hillshading",
                                                     "label": "Hillshading",
                                                 },
+                                                {
+                                                    "value": "hillshading_shadows",
+                                                    "label": "Hillshading with shadows",
+                                                },
                                             ],
                                             value=None,
                                             persistence=True,
@@ -415,11 +419,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 grid = load_grid(get_path(self.gridfile))
                 gridparameter = load_grid_parameter(grid, get_path(gridparameter))
                 surface.slice_grid3d(grid, gridparameter)
-                surface.values = surface.values.filled(0)
-                if min_val is not None:
-                    surface.values[surface.values < min_val] = min_val
-                if max_val is not None:
-                    surface.values[surface.values > max_val] = max_val
 
             s_layer = make_surface_layer(
                 surface,

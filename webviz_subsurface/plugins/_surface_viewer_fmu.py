@@ -394,6 +394,10 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                     "value": "hillshading",
                                                     "label": "Hillshading",
                                                 },
+                                                {
+                                                    "value": "hillshading_shadows",
+                                                    "label": "Hillshading with shadows",
+                                                },
                                             ],
                                             value=None,
                                             persistence=True,
@@ -438,6 +442,10 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                     "value": "hillshading",
                                                     "label": "Hillshading",
                                                 },
+                                                {
+                                                    "value": "hillshading_shadows",
+                                                    "label": "Hillshading with shadows",
+                                                },
                                             ],
                                             value=None,
                                             persistence=True,
@@ -481,6 +489,10 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                                                 {
                                                     "value": "hillshading",
                                                     "label": "Hillshading",
+                                                },
+                                                {
+                                                    "value": "hillshading_shadows",
+                                                    "label": "Hillshading with shadows",
                                                 },
                                             ],
                                             value=None,
@@ -616,12 +628,6 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                         name="surface3",
                         color=attribute_settings.get(data["attr"], {}).get("color"),
                         shader_type=hillshade3,
-                        min_val=attribute_settings.get(data2["attr"], {}).get(
-                            "min", None
-                        ),
-                        max_val=attribute_settings.get(data2["attr"], {}).get(
-                            "max", None
-                        ),
                     )
                 )
                 error_label = ""
