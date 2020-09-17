@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import io
+import warnings
 
 import numpy as np
 import xtgeo
@@ -740,21 +741,33 @@ def save_surface(fns, statistic) -> io.BytesIO:
     surfaces = xtgeo.Surfaces(fns)
     if len(surfaces.surfaces) == 0:
         surface = xtgeo.RegularSurface()
-    elif statistic == "Mean":
-        surface = surfaces.apply(np.nanmean, axis=0)
-    elif statistic == "StdDev":
-        surface = surfaces.apply(np.nanstd, axis=0)
-    elif statistic == "Min":
-        surface = surfaces.apply(np.nanmin, axis=0)
-    elif statistic == "Max":
-        surface = surfaces.apply(np.nanmax, axis=0)
-    elif statistic == "P10":
-        surface = surfaces.apply(np.nanpercentile, 10, axis=0)
-    elif statistic == "P90":
-        surface = surfaces.apply(np.nanpercentile, 90, axis=0)
+    elif statistic in ["Mean", "StdDev", "Min", "Max", "P10", "P90"]:
+        # Suppress numpy warnings when surfaces have undefined z-values
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "All-NaN slice encountered")
+            warnings.filterwarnings("ignore", "Mean of empty slice")
+            warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
+            surface = calculate_statistic(surfaces, statistic)
     else:
         surface = xtgeo.RegularSurface()
     return io.BytesIO(surface_to_json(surface).encode())
+
+
+# pylint: disable=too-many-return-statements
+def calculate_statistic(surfaces, statistic):
+    if statistic == "Mean":
+        return surfaces.apply(np.nanmean, axis=0)
+    if statistic == "StdDev":
+        return surfaces.apply(np.nanstd, axis=0)
+    if statistic == "Min":
+        return surfaces.apply(np.nanmin, axis=0)
+    if statistic == "Max":
+        return surfaces.apply(np.nanmax, axis=0)
+    if statistic == "P10":
+        return surfaces.apply(np.nanpercentile, 10, axis=0)
+    if statistic == "P90":
+        return surfaces.apply(np.nanpercentile, 90, axis=0)
+    return xtgeo.RegularSurface()
 
 
 def surface_to_json(surface):
