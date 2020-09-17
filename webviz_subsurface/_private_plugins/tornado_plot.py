@@ -161,6 +161,8 @@ class TornadoPlot:
                                     ],
                                     value=self.initial_reference,
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                                 dcc.Dropdown(
                                     id=self.ids("scale"),
@@ -170,6 +172,8 @@ class TornadoPlot:
                                     ],
                                     value="Percentage",
                                     clearable=False,
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -182,6 +186,8 @@ class TornadoPlot:
                                 },
                             ],
                             value=[],
+                            persistence=True,
+                            persistence_type="session",
                         ),
                         html.Details(
                             open=False,
@@ -195,6 +201,8 @@ class TornadoPlot:
                                     value=self.sensnames,
                                     multi=True,
                                     size=min(10, len(self.sensnames)),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         ),
@@ -211,9 +219,11 @@ class TornadoPlot:
                             id=self.ids("tornado-graph"),
                             config={"displayModeBar": False},
                         ),
-                        dcc.Store(id=self.ids("storage")),
-                        dcc.Store(id=self.ids("click-store")),
-                        dcc.Store(id=self.ids("high-low-storage")),
+                        dcc.Store(id=self.ids("storage"), storage_type="session"),
+                        dcc.Store(id=self.ids("click-store"), storage_type="session"),
+                        dcc.Store(
+                            id=self.ids("high-low-storage"), storage_type="session"
+                        ),
                     ],
                 )
             ]

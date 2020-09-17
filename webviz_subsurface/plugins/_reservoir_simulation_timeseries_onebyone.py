@@ -245,6 +245,8 @@ folder, to avoid risk of not extracting the right data.
                         ],
                         clearable=False,
                         value=list(self.data["ENSEMBLE"].unique())[0],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -269,6 +271,8 @@ folder, to avoid risk of not extracting the right data.
                         ],
                         clearable=False,
                         value=self.initial_vector,
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -339,7 +343,10 @@ folder, to avoid risk of not extracting the right data.
                                     children=[
                                         self.ensemble_selector,
                                         self.smry_selector,
-                                        dcc.Store(id=self.ids("date-store")),
+                                        dcc.Store(
+                                            id=self.ids("date-store"),
+                                            storage_type="session",
+                                        ),
                                     ],
                                 ),
                                 wcc.FlexBox(
@@ -596,6 +603,8 @@ folder, to avoid risk of not extracting the right data.
                                 trace["hoverinfo"] = "skip"
 
             date = date_click["points"][0]["x"]
+            if figure is None:
+                raise PreventUpdate
             ymin = min([min(trace["y"]) for trace in figure["data"]])
             ymax = max([max(trace["y"]) for trace in figure["data"]])
             figure["layout"]["shapes"] = [

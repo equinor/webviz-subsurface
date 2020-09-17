@@ -269,6 +269,8 @@ but the following responses are given more descriptive names automatically:
                                     value=value,
                                     multi=True,
                                     size=min(20, len(elements)),
+                                    persistence=True,
+                                    persistence_type="session",
                                 ),
                             ],
                         )
@@ -296,6 +298,8 @@ but the following responses are given more descriptive names automatically:
                                 if self.initial_response in self.responses
                                 else self.responses[0],
                                 clearable=False,
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     )
@@ -311,6 +315,8 @@ but the following responses are given more descriptive names automatically:
                                 ],
                                 value=self.initial_plot,
                                 clearable=False,
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     )
@@ -327,6 +333,8 @@ but the following responses are given more descriptive names automatically:
                                 ],
                                 value=self.initial_group,
                                 placeholder="Not grouped",
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ]
                     )

@@ -325,6 +325,8 @@ folder, to avoid risk of not extracting the right data.
                 clearable=False,
                 value=self.responses[0],
                 style={"marginBottom": "20px"},
+                persistence=True,
+                persistence_type="session",
             ),
         ]
 
@@ -338,6 +340,8 @@ folder, to avoid risk of not extracting the right data.
                         value=values,
                         multi=True,
                         size=min(20, len(values)),
+                        persistence=True,
+                        persistence_type="session",
                     )
                 elif col_type == "single":
                     selector = dcc.Dropdown(
@@ -346,6 +350,8 @@ folder, to avoid risk of not extracting the right data.
                         value=values[0],
                         multi=False,
                         clearable=False,
+                        persistence=True,
+                        persistence_type="session",
                     )
                 children.append(
                     html.Div(
@@ -381,6 +387,8 @@ folder, to avoid risk of not extracting the right data.
                             ],
                             value="ensemble",
                             labelStyle={"display": "inline-block"},
+                            persistence=True,
+                            persistence_type="session",
                         ),
                     ]
                 )
@@ -395,6 +403,8 @@ folder, to avoid risk of not extracting the right data.
                 multi=True,
                 value=self.ensembles,
                 size=min(len(self.ensembles), 10),
+                persistence=True,
+                persistence_type="session",
             ),
             html.Label(
                 children=[
@@ -414,6 +424,8 @@ folder, to avoid risk of not extracting the right data.
                         value="exc",
                         labelStyle={"display": "inline-block"},
                         style={"fontSize": ".80em"},
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -428,6 +440,8 @@ folder, to avoid risk of not extracting the right data.
                     "fontSize": ".80em",
                     "overflowX": "auto",
                 },
+                persistence=True,
+                persistence_type="session",
             ),
         ]
 

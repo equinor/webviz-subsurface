@@ -215,6 +215,8 @@ aggregated_data/parameters.csv)
                         ],
                         clearable=False,
                         value=list(self.volumes[column])[0],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -321,6 +323,8 @@ aggregated_data/parameters.csv)
                     ],
                     value="Per realization",
                     clearable=False,
+                    persistence=True,
+                    persistence_type="session",
                 ),
             ]
         )
@@ -342,6 +346,8 @@ aggregated_data/parameters.csv)
                         value=self.initial_response
                         if self.initial_response in self.responses
                         else self.responses[0],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -366,6 +372,8 @@ aggregated_data/parameters.csv)
                                 value=list(self.volumes[selector].unique()),
                                 multi=True,
                                 size=min(20, len(self.volumes[selector].unique())),
+                                persistence=True,
+                                persistence_type="session",
                             ),
                         ],
                     )

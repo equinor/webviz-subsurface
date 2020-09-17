@@ -309,6 +309,8 @@ folder, to avoid risk of not extracting the right data.
                     value=values,
                     multi=True,
                     size=min(20, len(values)),
+                    persistence=True,
+                    persistence_type="session",
                 )
             elif col_type == "single":
                 selector = dcc.Dropdown(
@@ -317,6 +319,8 @@ folder, to avoid risk of not extracting the right data.
                     value=values[0],
                     multi=False,
                     clearable=False,
+                    persistence=True,
+                    persistence_type="session",
                 )
             elif col_type == "range":
                 selector = make_range_slider(domid, self.responsedf[col_name], col_name)
@@ -347,6 +351,8 @@ folder, to avoid risk of not extracting the right data.
                         ],
                         clearable=False,
                         value=self.ensembles[0],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -360,6 +366,8 @@ folder, to avoid risk of not extracting the right data.
                         ],
                         clearable=False,
                         value=self.responses[0],
+                        persistence=True,
+                        persistence_type="session",
                     ),
                 ]
             ),
@@ -375,7 +383,9 @@ folder, to avoid risk of not extracting the right data.
                     style={"flex": 3},
                     children=[
                         wcc.Graph(self.ids("correlation-graph")),
-                        dcc.Store(id=self.ids("initial-parameter")),
+                        dcc.Store(
+                            id=self.ids("initial-parameter"), storage_type="session"
+                        ),
                     ],
                 ),
                 html.Div(
