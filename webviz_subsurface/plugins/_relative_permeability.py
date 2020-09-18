@@ -25,9 +25,9 @@ class RelativePermeability(WebvizPluginABC):
 * **`relpermfile`:** Local path to a csvfile in each realization with dumped relperm data.
 * **`scalfile`:** Path to a reference file with SCAL recommendationed data. \
     Path to a single file, **not** per realization/ensemble. The path can be absolute or \
-    relative to the `Webviz` configuration
+    relative to the `webviz` configuration.
 * **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an \
-    `xlsx` file (recommended to use csv files with `Webviz`).
+    `xlsx` file (recommended to use csv files with `webviz`).
 
 ---
 The minimum requirement is to define `ensembles`.
@@ -45,14 +45,18 @@ recommended unless you have a very simple model/data deck.
 * One column **per** relative permeability curve (e.g. `KRW`, `KROW` and `KRG`)
 * One column **per** capillary pressure curve (e.g. `PCOW`).
 
-The file can e.g. be dumped to disc per realization by a forward model in ERT using
-`ecl2df` or `pyscal`.
+The `relpermfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
+wraps the command `ecl2csv satfunc input_file -o output_file` (requires that you have `ecl2df`
+installed). A typical example could be:
+`ecl2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
+[Link to ecl2csv satfunc documentation.](https://equinor.github.io/ecl2df/scripts.html#satfunc)
+
 
 `scalfile` is a path to __a single file of SCAL recommendations__ (for all
 realizations/ensembles). The file has to be compatible with
 [pyscal's](https://equinor.github.io/pyscal/pyscal.html#pyscal.\
 factory.PyscalFactory.load_relperm_df) input format. Including this file adds reference cases
-`Pess`, `Base` and `Opt` to the plots.
+`Pess`, `Base` and `Opt` to the plots. This file is typically a result of a SCAL study.
 
 `sheet_name` defines the sheet to use in the `scalfile`. Only relevant if `scalfile` is an
 `xlsx` file (it is recommended to use `csv` and not `xlsx` for `Webviz`).
