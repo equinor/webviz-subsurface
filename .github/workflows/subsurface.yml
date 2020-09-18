@@ -55,7 +55,8 @@ jobs:
         fi
         pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
-        pip install libecl  # while waiting for it to be included as dependency in fmu-ensemble
+        # There are dependencies which we can't have in setup.py yet due to limitations in internal deployment system ("komodo"):
+        pip install libecl ecl2df opm
 
     - name: 📦 Install test dependencies
       run: |
@@ -97,8 +98,8 @@ jobs:
         pushd example_subsurface_app
         # Related to https://github.com/equinor/webviz-config/issues/150:
         echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
-        # fmu-ensemble currently miss libecl dependency
-        echo "RUN pip install --user libecl" >> Dockerfile
+        # There are dependencies which we can't have in setup.py yet due to limitations in internal deployment system ("komodo"):
+        echo "RUN pip install --user libecl ecl2df opm" >> Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
