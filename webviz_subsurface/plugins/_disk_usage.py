@@ -1,7 +1,8 @@
+import shutil
+import warnings
 import pathlib
 import datetime
 from typing import Optional
-import shutil
 
 import pandas as pd
 import dash_html_components as html
@@ -12,11 +13,8 @@ from webviz_config import WebvizPluginABC
 
 
 class DiskUsage(WebvizPluginABC):
-    """Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user,
-        where the user can choose to plot as a pie chart or as a bar chart.
+    """Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user.
 
-    !> Free space is added if the data is from the date of app build, though there might be some
-    inconsistency, as the free space is calculated at the time when the app is built.
     ---
 
     * **`scratch_dir`:** Path to the scratch directory to show disk usage for.
@@ -30,8 +28,9 @@ class DiskUsage(WebvizPluginABC):
     The plugin will search backwards from the current date, and throw an error if no file was found
     from the last week.
 
-    The csv file must have the columns `userid` and `usageKB` (where KB means kilobytes).
-    All other columns are ignored."""
+    The csv file must have the columns `userid` and `usageKB` (where KB means
+    [kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
+    """
 
     def __init__(self, app, scratch_dir: pathlib.Path, date: Optional["str"] = None):
 
@@ -42,21 +41,24 @@ class DiskUsage(WebvizPluginABC):
         self.disk_usage = get_disk_usage(self.scratch_dir, self.date_input)
         self.date = str(self.disk_usage["date"].unique()[0])
         self.users = self.disk_usage["userid"]
-        self.usage_gb = self.disk_usage["usageKB"] / (1024 ** 2)
+        self.usage_gib = self.disk_usage["usageKB"] / (1024 ** 2)
         self.theme = app.webviz_settings["theme"]
 
     @property
     def layout(self):
         return html.Div(
             [
-                html.P(
-                    f"This is the disk usage on \
-                        {self.scratch_dir} per user, \
-                        as of {self.date}."
+                html.H5(
+                    f"Disk usage on {self.scratch_dir} per user as of {self.date}",
+                    style={"text-align": "center"},
                 ),
                 wcc.FlexBox(
                     children=[
-                        wcc.Graph(style={"flex": 1}, figure=self.pie_chart),
+                        wcc.Graph(
+                            style={"flex": 1},
+                            figure=self.pie_chart,
+                            config={"displayModeBar": False},
+                        ),
                         wcc.Graph(style={"flex": 2}, figure=self.bar_chart),
                     ]
                 ),
@@ -68,10 +70,10 @@ class DiskUsage(WebvizPluginABC):
         return {
             "data": [
                 {
-                    "values": self.usage_gb,
+                    "values": self.usage_gib,
                     "labels": self.users,
                     "pull": (self.users.values == "Free space") * 0.05,
-                    "text": (self.usage_gb).map("{:.2f} GB".format),
+                    "text": (self.usage_gib).map("{:.2f} GiB".format),
                     "textinfo": "label",
                     "textposition": "inside",
                     "hoverinfo": "label+text",
@@ -86,15 +88,15 @@ class DiskUsage(WebvizPluginABC):
         return {
             "data": [
                 {
-                    "y": self.usage_gb,
+                    "y": self.usage_gib,
                     "x": self.users,
-                    "text": (self.usage_gb).map("{:.2f} GB".format),
+                    "text": (self.usage_gib).map("{:.2f} GiB".format),
                     "hoverinfo": "x+text",
                     "type": "bar",
                 }
             ],
             "layout": self.theme.create_themed_layout(
-                {"yaxis": {"title": "Usage in Gigabytes"}}
+                {"yaxis": {"title": "GiB (GibiBytes)"}}
             ),
         }
 
@@ -137,14 +139,29 @@ def get_disk_usage(scratch_dir, date) -> pd.DataFrame:
             raise FileNotFoundError(
                 f"No disk usage file found for {date} in {scratch_dir}."
             ) from exc
-    if df.date.unique()[0] == datetime.datetime.today().strftime("%Y-%m-%d"):
-        # Data from current date, adding the available free space at time of build:
+
+    free_space_kib = (shutil.disk_usage(scratch_dir).total / 1024) - df["usageKB"].sum()
+
+    if free_space_kib < 0:
+        warnings.warn(
+            f"Reported disk usage in "
+            f"{scratch_dir}/.disk_usage/disk_usage_user_{df['date'].unique()[0]}.csv "
+            f"must be wrong (unless total disk size has changed after {df['date'].unique()[0]}). "
+            f"Total reported usage is {int(df['usageKB'].sum() / 1024**2)} GiB, "
+            f"but the disk size is only {int(shutil.disk_usage(scratch_dir).total / 1024**3)} GiB "
+            f"(this would imply negative free space of {int(free_space_kib / 1024**2)} GiB).",
+            UserWarning,
+            stacklevel=0,
+        )
+    else:
         df = df.append(
             {
-                "userid": "Free space",
-                "usageKB": shutil.disk_usage(scratch_dir).free / 1024,
-                "date": datetime.datetime.today().strftime("%Y-%m-%d"),
+                "userid": "<b>Free space</b>",
+                "usageKB": shutil.disk_usage(scratch_dir).total / 1024
+                - df["usageKB"].sum(),
+                "date": df["date"].unique()[0],
             },
             ignore_index=True,
         )
+
     return df.sort_values(by="usageKB", axis=0, ascending=False)
