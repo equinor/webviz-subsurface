@@ -1079,7 +1079,7 @@ def add_realization_traces(dframe, vector, colors, line_shape, interval):
             "line": {"shape": line_shape},
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector]),
-            "hovertemplate": f"{hovertemplate}Realization: {real_no}, Ensemble: {ensemble}",
+            "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
             "name": ensemble,
             "legendgroup": ensemble,
             "marker": {"color": colors.get(ensemble, colors[list(colors.keys())[0]])},
