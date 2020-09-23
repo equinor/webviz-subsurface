@@ -569,8 +569,8 @@ def plot_layout(plot_type, response, theme, min_val, max_val):
         layout.update(
             {
                 "barmode": "overlay",
-                "bargap": 0.01,
-                "bargroupgap": 0.2,
+                "bargap": 0.001,
+                # "bargroupgap": 0.2,
                 "sliders": [
                     dict(
                         active=10,
@@ -578,7 +578,7 @@ def plot_layout(plot_type, response, theme, min_val, max_val):
                         pad={"t": 20},
                         steps=[
                             dict(
-                                label=i,
+                                label=i + 1,
                                 method="restyle",
                                 args=["xbins.size", (max_val - min_val) / i],
                             )
@@ -586,8 +586,26 @@ def plot_layout(plot_type, response, theme, min_val, max_val):
                         ],
                     )
                 ],
+                "updatemenus": [
+                    {
+                        "type": "buttons",
+                        "buttons": [
+                            {
+                                "label": "overlay",
+                                "method": "relayout",
+                                "args": ["barmode", "overlay"],
+                            },
+                            {
+                                "label": "stacked",
+                                "method": "relayout",
+                                "args": ["barmode", "stacked"],
+                            },
+                        ],
+                    }
+                ],
             }
         )
+
     elif plot_type == "Box plot":
         layout.update(
             {
