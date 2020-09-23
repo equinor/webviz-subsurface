@@ -266,6 +266,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                     "value": "hillshading",
                                                     "label": "Hillshading",
                                                 },
+                                                {
+                                                    "value": "hillshading_shadows",
+                                                    "label": "Hillshading with shadows",
+                                                },
                                             ],
                                             value=None,
                                             persistence=True,
@@ -400,18 +404,12 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             min_val = None
             max_val = None
             color = None
-
             if surface_type == "attribute":
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
                 color = colorscale if colorscale else color
                 cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
-                surface.values = surface.values.filled(0)
-                if min_val is not None:
-                    surface.values[surface.values < min_val] = min_val
-                if max_val is not None:
-                    surface.values[surface.values > max_val] = max_val
 
             s_layer = make_surface_layer(
                 surface,
