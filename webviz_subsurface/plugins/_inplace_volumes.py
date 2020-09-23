@@ -420,18 +420,39 @@ but the following responses are given more descriptive names automatically:
             data = self.volumes
             data = filter_dataframe(data, self.selectors, selections)
 
+            min_val = data[response].min()
+            max_val = data[response].max()
+
             # If not grouped make one trace
             if not group:
+
                 dframe = data.groupby("REAL").sum().reset_index()
-                plot_traces = [plot_data(plot_type, dframe, response, "Total")]
+                plot_traces = [
+                    plot_data(
+                        plot_type,
+                        dframe,
+                        response,
+                        "Total",
+                        min_val=min_val,
+                        max_val=max_val,
+                    )
+                ]
                 table = [plot_table(dframe, response, "Total")]
             # Else make one trace for each group member
             else:
                 plot_traces = []
                 table = []
                 for name, vol_group_df in data.groupby(group):
+
                     dframe = vol_group_df.groupby("REAL").sum().reset_index()
-                    trace = plot_data(plot_type, dframe, response, name)
+                    trace = plot_data(
+                        plot_type,
+                        dframe,
+                        response,
+                        name,
+                        min_val=min_val,
+                        max_val=max_val,
+                    )
                     if trace is not None:
                         plot_traces.append(trace)
                         table.append(plot_table(dframe, response, name))
@@ -444,7 +465,13 @@ but the following responses are given more descriptive names automatically:
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
+                    "layout": plot_layout(
+                        plot_type,
+                        response,
+                        theme=self.plotly_theme,
+                        min_val=min_val,
+                        max_val=max_val,
+                    ),
                 },
                 table,
                 columns,
@@ -491,13 +518,19 @@ but the following responses are given more descriptive names automatically:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_data(plot_type, dframe, response, name):
+def plot_data(plot_type, dframe, response, name, min_val, max_val):
     values = dframe[response]
 
     if plot_type == "Histogram":
         if values.nunique() == 1:
             values = values[0]
-        output = {"x": values, "type": "histogram", "name": name}
+        output = {
+            "x": values,
+            "type": "histogram",
+            "name": name,
+            "bingroup": 1,
+            "xbins": {"size": (max_val - min_val) / 10},
+        }
     elif plot_type == "Box plot":
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
@@ -528,7 +561,7 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, theme):
+def plot_layout(plot_type, response, theme, min_val, max_val):
     layout = {}
     layout.update(theme["layout"])
     layout["height"] = 400
@@ -538,10 +571,21 @@ def plot_layout(plot_type, response, theme):
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {
-                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                },
-                "yaxis": {"title": "Count"},
+                "sliders": [
+                    dict(
+                        active=10,
+                        currentvalue={"prefix": "bin size: "},
+                        pad={"t": 20},
+                        steps=[
+                            dict(
+                                label=i,
+                                method="restyle",
+                                args=["xbins.size", (max_val - min_val) / i],
+                            )
+                            for i in range(1, 30)
+                        ],
+                    )
+                ],
             }
         )
     elif plot_type == "Box plot":
