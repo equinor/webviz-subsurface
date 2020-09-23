@@ -898,14 +898,16 @@ def make_title(smry_meta: pd.DataFrame, ref_vector: str, vector: str, mode: str)
     )
 
 
+# pylint: disable=too-many-locals
 def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, colors):
-    def _make_trace(date_viz, df, col, name, color):
+    def _make_trace(date_viz, df, col, name, color, min_val, max_val):
         if date_viz == "histogram":
             return {
                 "x": df[col],
                 "type": "histogram",
                 "name": name,
                 "marker": {"color": color},
+                "xbins": {"size": (max_val - min_val) / 10},
             }
         if date_viz == "box plot":
             return {
@@ -937,7 +939,10 @@ def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, co
     traces = []
     df["DATE"] = df["DATE"].astype(str)
     df = df.loc[df["DATE"] == date]
+
     if groupby == "ENSEMBLE":
+        min_val = df[columns[0]].min()
+        max_val = df[columns[0]].max()
         for ens in df["ENSEMBLE"].unique():
             if len(columns) != 1:
                 # Should never occur
@@ -945,11 +950,19 @@ def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, co
                     "Not unique data for column, date and ensemble combination."
                 )
             trace = _make_trace(
-                date_viz, df[df["ENSEMBLE"] == ens], columns[0], ens, colors[ens]
+                date_viz,
+                df[df["ENSEMBLE"] == ens],
+                columns[0],
+                ens,
+                colors[ens],
+                min_val=min_val,
+                max_val=max_val,
             )
             if trace is not None:
                 traces.append(trace)
     else:
+        min_val = min([df[col].min() for col in columns])
+        max_val = max([df[col].max() for col in columns])
         for col in columns:
             if len(df["ENSEMBLE"].unique()) > 1:
                 # Should never occur
@@ -957,7 +970,13 @@ def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, co
                     "Not unique data for column, date and ensemble combination."
                 )
             trace = _make_trace(
-                date_viz, df, col, col.split("_")[-1], colors[col.split("_")[-1]]
+                date_viz,
+                df,
+                col,
+                col.split("_")[-1],
+                colors[col.split("_")[-1]],
+                min_val=min_val,
+                max_val=max_val,
             )
             if trace is not None:
                 traces.append(trace)
@@ -966,9 +985,44 @@ def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, co
     if date_viz == "histogram":
         layout.update(
             {
-                "barmode": "overlay",
                 "bargap": 0.01,
-                "bargroupgap": 0.2,
+                "sliders": [
+                    dict(
+                        active=10,
+                        currentvalue={"prefix": "bin size: "},
+                        pad={"t": 20},
+                        steps=[
+                            dict(
+                                label=i + 1,
+                                method="restyle",
+                                args=["xbins.size", (max_val - min_val) / i],
+                            )
+                            for i in range(1, 30)
+                        ],
+                    )
+                ],
+                "updatemenus": [
+                    {
+                        "type": "buttons",
+                        "buttons": [
+                            {
+                                "label": "group",
+                                "method": "relayout",
+                                "args": ["barmode", ""],
+                            },
+                            {
+                                "label": "overlay",
+                                "method": "relayout",
+                                "args": ["barmode", "overlay"],
+                            },
+                            {
+                                "label": "stack",
+                                "method": "relayout",
+                                "args": ["barmode", "stack"],
+                            },
+                        ],
+                    }
+                ],
                 "xaxis": {
                     "exponentformat": "none",
                     "tickformat": ".1%",

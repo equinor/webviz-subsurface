@@ -568,9 +568,7 @@ def plot_layout(plot_type, response, theme, min_val, max_val):
     if plot_type == "Histogram":
         layout.update(
             {
-                "barmode": "overlay",
-                "bargap": 0.001,
-                # "bargroupgap": 0.2,
+                "bargap": 0.01,
                 "sliders": [
                     dict(
                         active=10,
@@ -591,14 +589,19 @@ def plot_layout(plot_type, response, theme, min_val, max_val):
                         "type": "buttons",
                         "buttons": [
                             {
+                                "label": "group",
+                                "method": "relayout",
+                                "args": ["barmode", ""],
+                            },
+                            {
                                 "label": "overlay",
                                 "method": "relayout",
                                 "args": ["barmode", "overlay"],
                             },
                             {
-                                "label": "stacked",
+                                "label": "stack",
                                 "method": "relayout",
-                                "args": ["barmode", "stacked"],
+                                "args": ["barmode", "stack"],
                             },
                         ],
                     }
