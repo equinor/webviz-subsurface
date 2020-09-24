@@ -62,7 +62,7 @@ class ParameterCorrelation(WebvizPluginABC):
         dfs = [
             get_corr_data(ens, self.drop_constants) for ens in self.ensembles.values()
         ]
-        return sorted(list(pd.concat(dfs).columns))
+        return sorted(list(pd.concat(dfs, sort=True).columns))
 
     @property
     def matrix_plot(self):
