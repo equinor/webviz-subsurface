@@ -72,7 +72,7 @@ class DiskUsage(WebvizPluginABC):
                 {
                     "values": self.usage_gib,
                     "labels": self.users,
-                    "pull": (self.users.values == "Free space") * 0.05,
+                    "pull": (self.users.values == "<b>Free space</b>") * 0.05,
                     "text": (self.usage_gib).map("{:.2f} GiB".format),
                     "textinfo": "label",
                     "textposition": "inside",
@@ -157,8 +157,7 @@ def get_disk_usage(scratch_dir, date) -> pd.DataFrame:
         df = df.append(
             {
                 "userid": "<b>Free space</b>",
-                "usageKB": shutil.disk_usage(scratch_dir).total / 1024
-                - df["usageKB"].sum(),
+                "usageKB": free_space_kib,
                 "date": df["date"].unique()[0],
             },
             ignore_index=True,
