@@ -1,6 +1,6 @@
 # Plugin package webviz_subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.2` of `webviz_subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.3` of `webviz_subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -37,15 +37,14 @@ pages:
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
-Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user,
-    where the user can choose to plot as a pie chart or as a bar chart.
+Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -63,7 +62,7 @@ to use the most recent file avaialable, limited to the last week.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 ?> The `scratch_dir` directory must have a hidden folder `.disk_usage` containing daily
@@ -71,8 +70,8 @@ csv files called `disk_usage_user_YYYY-MM-DD.csv`, where YYYY-MM-DD is the date.
 The plugin will search backwards from the current date, and throw an error if no file was found
 from the last week.
 
-The csv file must have the columns `userid` and `usageKB` (where KB means kilobytes).
-All other columns are ignored.
+The csv file must have the columns `userid` and `usageKB` (where KB means
+[kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
 
  
 
@@ -89,14 +88,14 @@ All other columns are ignored.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes the quality of the history match.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -113,7 +112,7 @@ Visualizes the quality of the history match.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 Parameter values are extracted automatically from the `parameters.txt` files
 of the individual realizations of your given `ensembles`, using the `fmu-ensemble` library.
@@ -135,7 +134,7 @@ of the individual realizations of your given `ensembles`, using the `fmu-ensembl
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes depth uncertainty for surfaces in map view and cross section view.
 
@@ -151,7 +150,7 @@ Polylines are drawn interactivly in map view.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
 
 
@@ -176,7 +175,7 @@ Polylines are drawn interactivly in map view.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes inplace volumetric results from
 FMU ensembles.
@@ -187,7 +186,7 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -216,7 +215,7 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 ?> The input files must follow FMU standards.
@@ -266,7 +265,7 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes inplace volumetrics related to a FMU ensemble with a design matrix.
 
@@ -277,7 +276,7 @@ stored per realization.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -302,7 +301,7 @@ stored per realization.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 ?> The input files must follow FMU standards.
 
@@ -362,7 +361,7 @@ An example of an aggregated file to use with `csvfile_parameters`
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Renders a visualization of the Morris sampling method.
 The Morris method can be used to screen parameters for how they
@@ -372,7 +371,7 @@ effect with other parameters.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -387,7 +386,7 @@ effect with other parameters.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 [Example of input file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/morris.csv).
@@ -407,7 +406,7 @@ effect with other parameters.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Shows parameter correlations using a correlation matrix,
 and scatter plot for any given pair of parameters.
@@ -415,7 +414,7 @@ and scatter plot for any given pair of parameters.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -432,7 +431,7 @@ and scatter plot for any given pair of parameters.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 Parameter values are extracted automatically from the `parameters.txt` files in the individual
 realizations of your defined `ensembles`, using the `fmu-ensemble` library.
@@ -452,7 +451,7 @@ realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes parameter distributions for FMU ensembles.
 
@@ -465,7 +464,7 @@ or as ensemble name(s) defined in `shared_settings`.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -485,7 +484,7 @@ or as ensemble name(s) defined in `shared_settings`.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 Parameter values are extracted automatically from the `parameters.txt` files in the individual
 realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
@@ -508,7 +507,7 @@ and the parameter columns.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes parameters used in FMU ensembles side-by-side. Also supports response coloring.
 
@@ -521,7 +520,7 @@ Useful to investigate:
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
@@ -583,7 +582,7 @@ realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 ?> Non-numerical (string-based) input parameters and responses are removed.
@@ -632,14 +631,14 @@ using the `fmu-ensemble` library.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes correlations between numerical input parameters and responses.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
@@ -694,7 +693,7 @@ All of these are optional, some have defaults seen in the code snippet below.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 ?> Non-numerical (string-based) input parameters and responses are removed.
@@ -738,26 +737,96 @@ using the `fmu-ensemble` library.
 
 <div class="plugin-doc">
 
+#### PvtPlot
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Visualizes formation volume factor and viscosity data     for oil, gas and water from both **csv**, Eclipse **init** and **include** files.
+
+!> The plugin supports variations in PVT between ensembles, but not between     realizations in the same ensemble.
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`pvt_relative_file_path`:** Local path to a csv file in each         realization with dumped pvt data.
+* **`read_from_init_file`:** A boolean flag stating if data shall be         read from an Eclipse INIT file instead of an INCLUDE file.         This is only used when **pvt_relative_file_path** is not given.
+* **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles         which are holding duplicate data of other ensembles shall be dropped.         Defaults to False.
+
+
+
+```yaml
+    - PvtPlot:
+        ensembles:  # Required, type List[str].
+        pvt_relative_file_path: null # Optional, type str.
+        read_from_init_file: false # Optional, type bool.
+        drop_ensemble_duplicates: false # Optional, type bool.
+```
+
+   
+
+<!-- tab:Data input -->
+
+The minimum requirement is to define `ensembles`.
+
+If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
+from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
+If the `read_from_init_file` flag is set to True, the extraction procedure in
+`ecl2df` will be replaced by an individual extracting procedure that reads the
+normalized Eclipse INIT file.
+Note that the latter two extraction methods can be very slow for larger data and are therefore
+not recommended unless you have a very simple model/data deck.
+If the `drop_ensemble_duplicates` flag is set to True, any ensembles which are holding
+duplicate data of other ensembles will be dropped.
+
+`pvt_relative_file_path` is a path to a file stored per realization (e.g. in     `share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:
+* One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
+    (e.g. `PVTO` and `PVDG`).
+* One column named `PVTNUM` with integer `PVTNUM` regions.
+* One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.
+* One column named `PRESSURE` with the fluids pressure as the secondary variate.
+* One column named `VOLUMEFACTOR` as the first covariate.
+* One column named `VISCOSITY` as the second covariate.
+
+The file can e.g. be dumped to disc per realization by a forward model in ERT using
+`ecl2df`.
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
 #### RelativePermeability
 
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes relative permeability and capillary pressure curves for FMU ensembles.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`relpermfile`:** Local path to a csvfile in each realization with dumped relperm data.
-* **`scalfile`:** Path to a reference file with SCAL recommendationed data.     Path to a single file, **not** per realization/ensemble. The path can be absolute or     relative to the `Webviz` configuration
-* **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an     `xlsx` file (recommended to use csv files with `Webviz`).
+* **`scalfile`:** Path to a reference file with SCAL recommendationed data.     Path to a single file, **not** per realization/ensemble. The path can be absolute or     relative to the `webviz` configuration.
+* **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an     `xlsx` file (recommended to use csv files with `webviz`).
 
 
 
@@ -771,7 +840,7 @@ Visualizes relative permeability and capillary pressure curves for FMU ensembles
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 The minimum requirement is to define `ensembles`.
 
@@ -787,13 +856,17 @@ recommended unless you have a very simple model/data deck.
 * One column **per** relative permeability curve (e.g. `KRW`, `KROW` and `KRG`)
 * One column **per** capillary pressure curve (e.g. `PCOW`).
 
-The file can e.g. be dumped to disc per realization by a forward model in ERT using
-`ecl2df` or `pyscal`.
+The `relpermfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
+wraps the command `ecl2csv satfunc input_file -o output_file` (requires that you have `ecl2df`
+installed). A typical example could be:
+`ecl2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
+[Link to ecl2csv satfunc documentation.](https://equinor.github.io/ecl2df/scripts.html#satfunc)
+
 
 `scalfile` is a path to __a single file of SCAL recommendations__ (for all
 realizations/ensembles). The file has to be compatible with
 [pyscal's](https://equinor.github.io/pyscal/pyscal.html#pyscal.factory.PyscalFactory.load_relperm_df) input format. Including this file adds reference cases
-`Pess`, `Base` and `Opt` to the plots.
+`Pess`, `Base` and `Opt` to the plots. This file is typically a result of a SCAL study.
 
 `sheet_name` defines the sheet to use in the `scalfile`. Only relevant if `scalfile` is an
 `xlsx` file (it is recommended to use `csv` and not `xlsx` for `Webviz`).
@@ -816,7 +889,7 @@ realizations/ensembles). The file has to be compatible with
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes reservoir simulation time series data for FMU ensembles.
 
@@ -831,7 +904,7 @@ Visualizes reservoir simulation time series data for FMU ensembles.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Two main options for input data: Aggregated and read from UNSMRY.**
@@ -873,7 +946,7 @@ Visualizes reservoir simulation time series data for FMU ensembles.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 ?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will be plotted together with their non-historical counterparts as reference lines, and they are therefore not selectable as vectors to plot initially.
@@ -912,7 +985,7 @@ using the `fmu-ensemble` library.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes reservoir simulation time series data for sensitivity studies based on a design matrix.
 
@@ -923,7 +996,7 @@ run with that sensitivity.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Two main options for input data: Aggregated and read from UNSMRY.**
@@ -960,7 +1033,7 @@ run with that sensitivity.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 !> It is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
 
@@ -999,7 +1072,7 @@ exist. If the `SENSCASE` of a realization is `p10_p90`, the sensitivity case is 
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Aggregates and visualizes regional time series data from simulation ensembles. That
 is: cumulatives, rates and inplace volumes. Allows human friendly filter names, e.g. regions,
@@ -1020,7 +1093,7 @@ $$\sf Rec(\sf ROIP)_{\sf date} = \frac{\sf ROIP_{\sf init} - \sf ROIP_{\sf date}
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1056,7 +1129,7 @@ Vectors that don't match the following patterns will be filtered out for this pl
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 Vectors are extracted automatically from the `UNSMRY` files in the individual realizations,
 using the `fmu-ensemble` library.
@@ -1098,7 +1171,7 @@ folder, to avoid risk of not extracting the right data.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 This plugin visualizes simulated RFT results from
 FMU ensembles combined with ERT observation data.
@@ -1118,7 +1191,7 @@ Several visualizations are available:
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Using data per realization**
@@ -1167,7 +1240,7 @@ https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 ?> Well name needs to be consistent with Eclipse well name.
 
@@ -1192,7 +1265,7 @@ The `rft_ert.csv` file currently lacks a standardized method of generation. A **
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Can e.g. be used to investigate which jobs that are important for the running
 time of realizations, and if specific parameter combinations increase running time or chance of
@@ -1210,7 +1283,7 @@ Visualizations:
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1231,7 +1304,7 @@ Visualizations:
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 Parameters are picked up automatically from `parameters.txt` in individual realizations in
@@ -1256,7 +1329,7 @@ on the same format [(example file)](https://github.com/equinor/webviz-subsurface
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Inspired by [SegyViewer for Python](https://github.com/equinor/segyviewer) this plugin
 visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
@@ -1265,7 +1338,7 @@ The plots are linked and updates are done by clicking in the plots.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1284,7 +1357,7 @@ The plots are linked and updates are done by clicking in the plots.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 * [Examples of segyfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/observed_data/seismic).
@@ -1306,7 +1379,7 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes reservoir grids in a map view, additionally it can
 visualize the flow pattern in the simulation output using streamlines.
@@ -1316,7 +1389,7 @@ a FMU ensemble.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 **Two input options: Ensemble data or premade json file**
@@ -1344,7 +1417,7 @@ a FMU ensemble.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 For ensemble data input, the key `FLORES` needs to be in the `RPTRST` keyword of the simulation
@@ -1369,7 +1442,7 @@ data deck for flow fields like `FLOWAT` and `FLOOIL` to be included in the data.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Covisualize surfaces from an ensemble.
 
@@ -1388,7 +1461,7 @@ and available for instant viewing.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1417,7 +1490,7 @@ and available for instant viewing.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 The available maps are gathered from the `share/results/maps/` folder
 for each realization. Subfolders are not supported.
@@ -1457,7 +1530,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes surfaces in a map view and grid parameters in a cross section view. The cross section is defined by a polyline interactively edited in the map view.
 
@@ -1466,7 +1539,7 @@ Visualizes surfaces in a map view and grid parameters in a cross section view. T
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1493,7 +1566,7 @@ Visualizes surfaces in a map view and grid parameters in a cross section view. T
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 **Example files**
 
@@ -1518,7 +1591,7 @@ The files above are on a `ROFF binary` format and can be investigated outside `w
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
@@ -1526,7 +1599,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1551,7 +1624,7 @@ The cross section is defined by a polyline interactively edited in the map view.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 **Example files**
@@ -1579,7 +1652,7 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Displays a cross section along a well with intersected surfaces,
 and optionally seismic cubes.
@@ -1588,7 +1661,7 @@ and optionally seismic cubes.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1622,7 +1695,7 @@ and optionally seismic cubes.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 **Example files**
@@ -1652,7 +1725,7 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Well cross-section displaying statistical surfaces from a FMU ensemble.
 
@@ -1662,7 +1735,7 @@ per realization.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -1708,7 +1781,7 @@ per realization.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 **Example files**

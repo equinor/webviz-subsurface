@@ -1,6 +1,6 @@
 # Plugin package webviz_config
 
-?> :bookmark: This documentation is valid for version `0.1.0` of `webviz_config`. 
+?> :bookmark: This documentation is valid for version `0.1.4` of `webviz_config`. 
 
    
 These are the basic Webviz configuration plugins, distributed through
@@ -19,7 +19,7 @@ the utility itself.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Adds a full width banner image, with an optional overlayed title.
 Useful on e.g. the front page for introducing a field or project.
@@ -27,7 +27,7 @@ Useful on e.g. the front page for introducing a field or project.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -62,7 +62,7 @@ Useful on e.g. the front page for introducing a field or project.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Adds a table to the webviz instance, using tabular data from a provided csv file.
 If feature is requested, the data could also come from a database.
@@ -70,7 +70,7 @@ If feature is requested, the data could also come from a database.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -103,7 +103,7 @@ If feature is requested, the data could also come from a database.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Embeds a given PDF file into the page.
 
@@ -111,7 +111,7 @@ Embeds a given PDF file into the page.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -142,18 +142,18 @@ Embeds a given PDF file into the page.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Renders and includes the content from a Markdown file.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
-* **`markdown_file`:** Path to the markdown file to render and include.                        Either absolute path or relative to the configuration file.
+* **`markdown_file`:** Path to the markdown file to render and include.                         Either absolute path or relative to the configuration file.
 
 
 
@@ -164,13 +164,13 @@ Renders and includes the content from a Markdown file.
 
    
 
-#### ** Data input **
+<!-- tab:Data input -->
 
 
 Images are supported, and should in the markdown file be given as either
 relative paths to the markdown file itself, or as absolute paths.
 
-> The markdown syntax for images has been extended to support   providing width and/or height for individual images (optional).   To specify the dimensions write e.g.
+> The markdown syntax for images has been extended to support     providing width and/or height for individual images (optional).     To specify the dimensions write e.g.
 > ```markdown
 > ![width=40%,height=300px](./example_banner.png "Some caption")
 > ```
@@ -190,14 +190,14 @@ relative paths to the markdown file itself, or as absolute paths.
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Adds support for syntax highlighting of code. Language is automatically detected.
 
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
@@ -226,7 +226,7 @@ Adds support for syntax highlighting of code. Language is automatically detected
 <!-- tabs:start -->
    
 
-#### ** Description **
+<!-- tab:Description -->
 
 Adds a plotter to the webviz instance, using tabular data from a provided csv file.
 If feature is requested, the data could also come from a database.
@@ -234,7 +234,7 @@ If feature is requested, the data could also come from a database.
 
  
 
-#### ** Arguments **
+<!-- tab:Arguments -->
 
    
 
