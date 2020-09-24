@@ -83,7 +83,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             filter_file=None,
         )
         all_data_df = make_status_df(
-            self.ens_paths, self.status_file, self.parameter_df
+            self.ens_paths, self.status_file
         )  # Has to be stored in one df due to webvizstore, see issue #206 in webviz-config
         self.job_status_df = all_data_df.loc["job"]
         self.real_status_df = all_data_df.loc["real"]
@@ -410,7 +410,6 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                     {
                         "ens_paths": self.ens_paths,
                         "status_file": self.status_file,
-                        "parameter_df": self.parameter_df,
                     }
                 ],
             ),
@@ -555,7 +554,10 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 # pylint: disable=too-many-locals
-def make_status_df(ens_paths, status_file, parameter_df) -> pd.DataFrame:
+def make_status_df(
+    ens_paths,
+    status_file,
+) -> pd.DataFrame:
     """Return DataFrame of information from status.json files.
     *Finds status.json filepaths.
     For jobs:
@@ -566,6 +568,11 @@ def make_status_df(ens_paths, status_file, parameter_df) -> pd.DataFrame:
     *Creates DataFrame of success/failure and total running time.
     """
 
+    parameter_df = load_parameters(
+        ensemble_paths=ens_paths,
+        ensemble_set_name="EnsembleSet",
+        filter_file=None,
+    )
     # sub-method to process ensemble data when all realizations in ensemble have been processed
     def ensemble_post_processing() -> list:
         # add missing realizations to get whitespace in heatmap matrix

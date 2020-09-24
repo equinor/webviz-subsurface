@@ -5,8 +5,9 @@ from uuid import uuid4
 from pathlib import Path
 from typing import List
 
-import numpy as np
 import xtgeo
+import numpy as np
+import pandas as pd
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -484,7 +485,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
             for surfacename, surfacefile in zip(surfacenames, surfacefiles):
                 stat_surfs = get_surface_statistics(
-                    self.realizations, ensemble, surfacefile, self.surfacefolder
+                    self.realizations.to_dict(orient="records"),
+                    ensemble,
+                    surfacefile,
+                    self.surfacefolder,
                 )
                 xsect.plot_statistical_surface(
                     stat_surfs, name=surfacename, fill="show_surface_fill" in options
@@ -552,7 +556,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             }
 
             surface = get_surface_statistics(
-                self.realizations,
+                self.realizations.to_dict(orient="records"),
                 ensemble,
                 self.surfacefiles[self.surfacenames.index(surfacename)],
                 self.surfacefolder,
@@ -572,7 +576,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         calculate_surface_statistics,
                         [
                             {
-                                "realdf": self.realizations,
+                                "realdf_dict": self.realizations.to_dict(
+                                    orient="records"
+                                ),
                                 "ensemble": ens,
                                 "surfacefile": surfacefile,
                                 "surfacefolder": self.surfacefolder,
@@ -601,8 +607,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
 @webvizstore
 def calculate_surface_statistics(
-    realdf, ensemble, surfacefile, surfacefolder
+    realdf_dict, ensemble, surfacefile, surfacefolder
 ) -> io.BytesIO:
+
+    realdf = pd.DataFrame(realdf_dict)
+
     fns = [
         os.path.join(real_path, surfacefolder, surfacefile)
         for real_path in list(realdf[realdf["ENSEMBLE"] == ensemble]["RUNPATH"])
@@ -623,9 +632,9 @@ def calculate_surface_statistics(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surface_statistics(realdf, ensemble, surfacefile, surfacefolder):
+def get_surface_statistics(realdf_dict, ensemble, surfacefile, surfacefolder):
     surfaces = json.load(
-        calculate_surface_statistics(realdf, ensemble, surfacefile, surfacefolder)
+        calculate_surface_statistics(realdf_dict, ensemble, surfacefile, surfacefolder)
     )
     return {
         statistic: surface_from_json(surface) for statistic, surface in surfaces.items()
