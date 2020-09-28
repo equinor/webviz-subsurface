@@ -110,7 +110,7 @@ class FormationFigure:
         )
         self.traces.append(
             {
-                "x": df["OBS"],
+                "x": df["OBSERVED"],
                 "y": df["TVD"],
                 "type": "scatter",
                 "mode": "markers",
@@ -121,7 +121,7 @@ class FormationFigure:
                 },
                 "error_x": {
                     "type": "data",
-                    "array": df["OBS_ERR"],
+                    "array": df["OBSERVED_ERR"],
                     "visible": True,
                     "thickness": 6,
                 },

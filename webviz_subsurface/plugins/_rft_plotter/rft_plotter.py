@@ -153,7 +153,7 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                 )
             except KeyError as exc:
                 raise KeyError(
-                    "Csv file for ERT RFT observations/simulations "
+                    "CSV file for ERT RFT observations/simulations "
                     "(share/results/tables/rft_ert.csv) not found!"
                 ) from exc
 
@@ -170,15 +170,18 @@ blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
                 "zone": "ZONE",
                 "pressure": "SIMULATED",
                 "true_vertical_depth": "TVD",
-                "obs": "OBS",
-                "error": "OBS_ERR",
+                "observed": "OBSERVED",
+                "obs": "OBSERVED",
+                "error": "OBSERVED_ERR",
                 "utm_x": "EAST",
                 "utm_y": "NORTH",
             }
         )
-        self.ertdatadf["DIFF"] = self.ertdatadf["SIMULATED"] - self.ertdatadf["OBS"]
+        self.ertdatadf["DIFF"] = (
+            self.ertdatadf["SIMULATED"] - self.ertdatadf["OBSERVED"]
+        )
         self.ertdatadf["ABSDIFF"] = abs(
-            self.ertdatadf["SIMULATED"] - self.ertdatadf["OBS"]
+            self.ertdatadf["SIMULATED"] - self.ertdatadf["OBSERVED"]
         )
 
         self.ertdatadf["YEAR"] = pd.to_datetime(self.ertdatadf["DATE"]).dt.year

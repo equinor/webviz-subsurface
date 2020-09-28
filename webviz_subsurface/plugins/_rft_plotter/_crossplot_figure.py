@@ -14,7 +14,7 @@ def update_crossplot(df, sizeby, colorby):
             ensdf.groupby(["WELL", "DATE", "ZONE", "TVD"]).mean().reset_index().copy()
         )
         trace = {
-            "x": dframe["OBS"],
+            "x": dframe["OBSERVED"],
             "y": dframe["SIMULATED"],
             "type": "scatter",
             "mode": "markers",
@@ -28,7 +28,7 @@ def update_crossplot(df, sizeby, colorby):
                 for well, zone, obs, stddev, misfit, pressure in zip(
                     dframe["WELL"],
                     dframe["ZONE"],
-                    dframe["OBS"],
+                    dframe["OBSERVED"],
                     dframe["STDDEV"],
                     dframe["DIFF"],
                     dframe["SIMULATED"],
@@ -102,13 +102,13 @@ def find_sim_range(df):
 
     max_sim = (
         df["SIMULATED"].max()
-        if df["SIMULATED"].max() > df["OBS"].max()
-        else df["OBS"].max()
+        if df["SIMULATED"].max() > df["OBSERVED"].max()
+        else df["OBSERVED"].max()
     )
     min_sim = (
         df["SIMULATED"].min()
-        if df["SIMULATED"].min() < df["OBS"].min()
-        else df["OBS"].min()
+        if df["SIMULATED"].min() < df["OBSERVED"].min()
+        else df["OBSERVED"].min()
     )
 
     axis_extend = (max_sim - min_sim) * 0.1
