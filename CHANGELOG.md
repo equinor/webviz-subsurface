@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
+- [#457](https://github.com/equinor/webviz-subsurface/pull/457) - Raise a descriptive error if a scratch ensemble is empty, i.e. no `OK` target file is found in any realizations. 
 
 ### Fixed
 - [#450](https://github.com/equinor/webviz-subsurface/pull/450) - Flipped colormap for subsurface maps (such that deeper areas get darker colors). Also fixed hill shading such that input values are treated as depth, not positive elevation.

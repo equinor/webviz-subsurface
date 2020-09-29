@@ -19,10 +19,18 @@ def subscribe(scratch_ensembles, config_folder, portable):
             if not pathlib.Path(ensemble_path).is_absolute():
                 scratch_ensembles[ensemble_name] = str(config_folder / ensemble_path)
 
-            if not portable and not glob.glob(scratch_ensembles[ensemble_name]):
+            if not portable and not glob.glob(
+                str(pathlib.Path(scratch_ensembles[ensemble_name]) / "OK")
+            ):
+                if not glob.glob(scratch_ensembles[ensemble_name]):
+                    raise ValueError(
+                        f"Ensemble {ensemble_name} is said to be located at {ensemble_path},"
+                        " but that wildcard path does not give any matches."
+                    )
                 raise ValueError(
-                    f"Ensemble {ensemble_name} is said to be located at {ensemble_path},"
-                    " but that wildcard path does not give any matches."
+                    f"No realizations with a valid target file ('OK') found for ensemble "
+                    f"{ensemble_name} located at {ensemble_path}. This can occur when running "
+                    "ERT if no simulations are finished, or all simulations have failed."
                 )
 
     return scratch_ensembles
