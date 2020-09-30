@@ -1105,6 +1105,7 @@ def add_history_trace(dframe, vector, line_shape):
         "name": "History",
         "marker": {"color": "black"},
         "showlegend": True,
+        "legendgroup": "History",
     }
 
 
