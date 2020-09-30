@@ -73,16 +73,16 @@ def make_surface_layer(
         scale = np.sqrt(ratio).round(2)
     color = (
         [
-            "#440154",
-            "#482878",
-            "#3e4989",
-            "#31688e",
-            "#26828e",
-            "#1f9e89",
-            "#35b779",
-            "#6ece58",
-            "#b5de2b",
             "#fde725",
+            "#b5de2b",
+            "#6ece58",
+            "#35b779",
+            "#1f9e89",
+            "#26828e",
+            "#31688e",
+            "#3e4989",
+            "#482878",
+            "#440154",
         ]
         if color is None
         else color
@@ -106,7 +106,7 @@ def make_surface_layer(
                     "type": shader_type,
                     "shadows": shadows,
                     "shadowIterations": 128,
-                    "elevationScale": 1.0,
+                    "elevationScale": -1.0,
                     "pixelScale": 11000,
                     "setBlackToAlpha": True,
                 },
