@@ -12,6 +12,7 @@ TESTS_REQUIRE = [
     "pytest-xdist",
 ]
 
+# pylint: disable=line-too-long
 setup(
     name="webviz-subsurface",
     description="Webviz config plugins for subsurface data",
@@ -28,37 +29,30 @@ setup(
     },
     entry_points={
         "webviz_config_plugins": [
-            "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
-            "ParameterCorrelation = webviz_subsurface.plugins:ParameterCorrelation",
-            "ParameterResponseCorrelation = "
-            + "webviz_subsurface.plugins:ParameterResponseCorrelation",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
-            "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
-            "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
+            "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
             "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
-            "ReservoirSimulationTimeSeries = "
-            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
-            "ReservoirSimulationTimeSeriesOneByOne = "
-            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
-            "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
+            "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
+            "ParameterCorrelation = webviz_subsurface.plugins:ParameterCorrelation",
+            "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
+            "ParameterParallelCoordinates = webviz_subsurface.plugins:ParameterParallelCoordinates",
+            "ParameterResponseCorrelation = webviz_subsurface.plugins:ParameterResponseCorrelation",
+            "PvtPlot = webviz_subsurface.plugins:PvtPlot",
+            "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
+            "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
+            "ReservoirSimulationTimeSeriesOneByOne = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
+            "ReservoirSimulationTimeSeriesRegional = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
+            "RftPlotter = webviz_subsurface.plugins:RftPlotter",
+            "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
-            "SurfaceWithGridCrossSection = "
-            + "webviz_subsurface.plugins:SurfaceWithGridCrossSection",
-            "SurfaceWithSeismicCrossSection = "
-            + "webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
+            "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
+            "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
+            "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
+            "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
-            "ParameterParallelCoordinates = "
-            + "webviz_subsurface.plugins:ParameterParallelCoordinates",
-            "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
-            "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
-            "ReservoirSimulationTimeSeriesRegional = "
-            + "webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
-            "RftPlotter =  webviz_subsurface.plugins:RftPlotter",
-            "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
-            "PvtPlot = webviz_subsurface.plugins:PvtPlot",
         ]
     },
     install_requires=[
