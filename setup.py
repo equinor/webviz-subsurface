@@ -40,6 +40,7 @@ setup(
             "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
             "ParameterParallelCoordinates = webviz_subsurface.plugins:ParameterParallelCoordinates",
             "ParameterResponseCorrelation = webviz_subsurface.plugins:ParameterResponseCorrelation",
+            "PropertyStatistics = webviz_subsurface.plugins:PropertyStatistics",
             "PvtPlot = webviz_subsurface.plugins:PvtPlot",
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
