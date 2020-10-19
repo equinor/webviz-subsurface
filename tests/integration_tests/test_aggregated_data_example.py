@@ -28,12 +28,11 @@ def test_basic_example(testdata_folder, dash_duo, tmp_path):
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
         "reservoirsimulationtimeseries",
-        "reservoirsimulationtimeseries_with_options_set",
+        "reservoirsimulationtimeseries-with-options-set",
         # "parameterdistribution",
-        "morris_plot",
-        "grid_viewer",
-        "seg-y_viewer",
-        "last_page",
+        "morris-plot",
+        "grid-viewer",
+        "seg-y-viewer",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
         logs = [
