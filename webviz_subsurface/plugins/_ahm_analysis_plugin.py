@@ -16,7 +16,7 @@ import plotly.express as px
 import dash_table
 
 
-class AHMAnalysisPlugin(WebvizPluginABC):
+class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     """### Parameter distribution change prior/posterior per observation
     Shows parameter change using a KS (Kolmogorov Smirnov test) matrix,
     and scatter plot/map for any given pair of parameters/observation."""
