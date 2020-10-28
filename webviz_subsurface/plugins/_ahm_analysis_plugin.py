@@ -305,14 +305,14 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             fig.add_trace(go.Histogram(x=prior_df[param], name="prior", nbinsx=10))
             fig.add_trace(go.Histogram(x=post_df[param], name="update", nbinsx=10))
             fig.update_layout(
-            	title="Parameter distribution for observation "
-            	+ obs
-            	+ " ("
-            	+ str(active_info.at["ratio", obs])
-            	+ ")",
-            	bargap=0.2,
-            	bargroupgap=0.1,
-            	xaxis=dict(title=param),
+                title="Parameter distribution for observation "
+                + obs
+                + " ("
+                + str(active_info.at["ratio", obs])
+                + ")",
+                bargap=0.2,
+                bargroupgap=0.1,
+                xaxis=dict(title=param),
             )
             return dcc.Graph(id="lineplots", style={"height": 750}, figure=fig)
 
