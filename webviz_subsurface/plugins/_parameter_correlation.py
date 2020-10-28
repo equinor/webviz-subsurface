@@ -373,6 +373,13 @@ def get_corr_data(ensemble_path, drop_constants=True):
     """
     data = get_parameters(ensemble_path)
 
+    # Necessary to drop constant before correlations due to
+    # https://github.com/pandas-dev/pandas/issues/37448
+    if drop_constants is True:
+        for col in data.columns:
+            if len(data[col].unique()) == 1:
+                data = data.drop(col, axis=1)
+
     return (
         data.corr()
         if not drop_constants
