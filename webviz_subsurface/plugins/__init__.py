@@ -48,4 +48,4 @@ from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
-from ._ahm_analysis_plugin.py import AssistedHistoryMatchingAnalysis
+from ._ahm_analysis_plugin import AssistedHistoryMatchingAnalysis
