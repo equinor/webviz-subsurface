@@ -17,7 +17,8 @@ class BhpQc(WebvizPluginABC):
     """QC simulated bottom hole pressures (BHP) from reservoir simulations.
 
     Can be used to check if your simulated BHPs are in a realistic range.
-    E.g. check if your simulated bottom hole pressures are very low.
+    E.g. check if your simulated bottom hole pressures are very low in producers,
+    or very high injectors.
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
@@ -180,10 +181,19 @@ class BhpQc(WebvizPluginABC):
                                 ),
                             ],
                         ),
+                        dcc.RadioItems(
+                            id=self.uuid("ascending"),
+                            options=[
+                                {"label": "Ascending", "value": True},
+                                {"label": "Descending", "value": False},
+                            ],
+                            value=True,
+                            labelStyle={"display": "inline-block"},
+                        ),
                         html.Label(
                             children=[
                                 html.Span(
-                                    "Number of wells in plot:",
+                                    "Max number of wells in plot:",
                                     style={"font-weight": "bold"},
                                 ),
                                 dcc.Slider(
@@ -231,12 +241,19 @@ class BhpQc(WebvizPluginABC):
             Input(self.uuid("wells"), "value"),
             Input(self.uuid("sort_by"), "value"),
             Input(self.uuid("stat_bars"), "value"),
+            Input(self.uuid("ascending"), "value"),
         )
-        def _update_graph(ensemble, plot_type, n_wells, wells, sort_by, stat_bars):
+        def _update_graph(
+            ensemble, plot_type, n_wells, wells, sort_by, stat_bars, ascending
+        ):
             wells = wells if isinstance(wells, list) else [wells]
             stat_bars = stat_bars if isinstance(stat_bars, list) else [stat_bars]
             df = filter_df(df=self.smry, ensemble=ensemble, wells=wells)
-            stat_df = calc_statistics(df).sort_values(sort_by).iloc[0:n_wells, :]
+            stat_df = (
+                calc_statistics(df)
+                .sort_values(sort_by, ascending=ascending)
+                .iloc[0:n_wells, :]
+            )
             traces = []
             if plot_type == "Fan chart":
                 traces.extend(
