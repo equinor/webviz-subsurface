@@ -75,7 +75,9 @@ class BhpQc(WebvizPluginABC):
             },
             {
                 "id": self.uuid("n_wells"),
-                "content": "Show only selected number of top ranked wells after sorting and filtering.",
+                "content": (
+                    "Show max selected number of top ranked wells after sorting and filtering."
+                ),
             },
             {"id": self.uuid("wells"), "content": "Filter wells."},
         ]
