@@ -1,6 +1,6 @@
-# Plugin package webviz_subsurface
+# Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.3` of `webviz_subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.4` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -27,6 +27,54 @@ pages:
  
 
 ---
+
+
+
+<div class="plugin-doc">
+
+#### BhpQc
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+QC simulated bottom hole pressures (BHP) from reservoir simulations.
+
+Can be used to check if your simulated BHPs are in a realistic range.
+E.g. check if your simulated bottom hole pressures are very low in producers,
+or very high injectors.
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+
+
+```yaml
+    - BhpQc:
+        ensembles:  # Required, type list.
+        wells: null # Optional, type Union[typing.List[str], NoneType].
+```
+
+   
+
+<!-- tab:Data input -->
+
+Data is read directly from the UNSMRY files with the raw frequency (not resampled).
+Resampling and csvs are not supported to avoid potential of interpolation, which
+might cover extreme BHP values.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the     individual realizations. You should therefore not have more than one `UNSMRY` file in this     folder, to avoid risk of not extracting the right data.
+
+ 
+
+<!-- tabs:end -->
+
+</div>
 
 
 
@@ -737,6 +785,85 @@ using the `fmu-ensemble` library.
 
 <div class="plugin-doc">
 
+#### PropertyStatistics
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+This plugin visualizes ensemble statistics calculated from grid properties.
+
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+**The main input to this plugin is property statistics extracted from grid models.
+See the documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+Additional data includes UNSMRY data and optionally irap binary surfaces stored in standardized FMU format.
+
+**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
+
+**Using aggregated data**
+* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and     vector columns (absolute path or relative to config file).
+* **`csvfile_statistics`:** Aggregated `csv` file for property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+
+**Using raw ensemble data stored in realization folders**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`statistic_file`:** Csv file for each realization with property statistics.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
+* **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames     stored on FMU standardized format (zone--property.gri)
+
+
+
+```yaml
+    - PropertyStatistics:
+        ensembles: null # Optional, type Union[list, NoneType].
+        statistics_file: "share/results/tables/gridpropstatistics.csv" # Optional, type str.
+        csvfile_statistics: null # Optional, type str (corresponding to a path).
+        csvfile_smry: null # Optional, type str (corresponding to a path).
+        surface_renaming: null # Optional, type Union[dict, NoneType].
+        time_index: "monthly" # Optional, type str.
+        column_keys: null # Optional, type Union[list, NoneType].
+```
+
+   
+
+<!-- tab:Data input -->
+
+
+?> Folders with statistical surfaces are assumed located at `<ensemble_path>/share/results/maps/<ensemble>/<statistic>` where `statistic` are subfolders with statistical calculation: `mean`, `stddev`, `p10`, `p90`, `min`, `max`.
+
+!> Surface data is currently not available when using aggregated files.
+
+!> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
+
+
+**Using aggregated data**
+
+
+**Using simulation time series data directly from `.UNSMRY` files**
+
+Time series data are extracted automatically from the `UNSMRY` files in the individual
+realizations, using the `fmu-ensemble` library.
+
+?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
 #### PvtPlot
 
 <!-- tabs:start -->
@@ -1198,12 +1325,11 @@ Several visualizations are available:
 
 * **`ensembles`**: Which ensembles in `shared_settings` to visualize.
 
-In addition, you need to have the following files in your realizations stored at the local path `share/results/tables`:
-
-* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft.csv).
+In addition, you need to have rft-files in your realizations stored at the local path `share/results/tables`. The `rft_ert.csv` is required as input, while the `rft.csv` is optional:
 
 * **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
+* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
 
 **Using aggregated data**
 
@@ -1246,9 +1372,7 @@ https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.
 
 ?> Only RFT observations marked as active in ERT are used to generate plots.
 
-?> Only TVD values are supported, plan to support MD values in a later release.
-
-The `rft_ert.csv` file currently lacks a standardized method of generation. A **temporary** script can be found [here](https://github.com/equinor/webviz-subsurface-testdata/blob/b8b7f1fdd3abc505b137b587dcd9e44bbcf411c9/preprocessing_scripts/ert_rft.py).
+The `rft_ert.csv` file can be generated by running the "MERGE_RFT_ERTOBS" forward model in ERT, this will collect ERT RFT observations and merge with CSV output from the "GENDATA_RFT" forward model. [ERT docs](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
  
 

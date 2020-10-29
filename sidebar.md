@@ -1,3 +1,3 @@
 * [Introduction](/)
-* [webviz_config package](webviz_config.md)
-* [webviz_subsurface package](webviz_subsurface.md)
+* [webviz-config package](webviz-config.md)
+* [webviz-subsurface package](webviz-subsurface.md)

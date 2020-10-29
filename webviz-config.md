@@ -1,10 +1,6 @@
-# Plugin package webviz_config
+# Plugin project webviz-config
 
-?> :bookmark: This documentation is valid for version `0.1.4` of `webviz_config`. 
-
-   
-These are the basic Webviz configuration plugins, distributed through
-the utility itself.
+?> :bookmark: This documentation is valid for version `0.2.1` of `webviz-config`. 
 
  
 

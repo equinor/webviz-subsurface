@@ -13,7 +13,7 @@ window.$docsify = {
         tabHeadings: false
     },
     search: {
-        paths: ["/", "/webviz_config", "/webviz_subsurface"],
+        paths: ["/", "/webviz-config", "/webviz-subsurface"],
         depth: 6,
         hideOtherSidebarContent: true,
         maxAge: 30e3 // default cache maxage one day (8.64e7 ms) - old cached content can be confusing if user changes installed webviz plugins
