@@ -51,7 +51,7 @@ def test_full_example(testdata_folder, dash_duo, tmp_path):
         "inplacevolumesonebyone",
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
-        "parameterdistribution",
+        #"parameterdistribution",
         "parametercorrelation",
         "reservoirsimulationtimeseries",
     ]:
