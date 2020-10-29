@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#459](https://github.com/equinor/webviz-subsurface/pull/459) - Bug fix in ReservoirSimulationTimeSeries. All `History` traces are now toggled when clicking `History` in the legend.
 - [#474](https://github.com/equinor/webviz-subsurface/pull/474) - Bug fix in ParameterCorrelation. Constant parameters are now removed if `drop_constants` is set to `True`
 - [#480](https://github.com/equinor/webviz-subsurface/pull/480) - Bug fix in SubsurfaceMap, InplaceVolumes and InplaceVolumesOneByOne: Filter on `OK` file is now applied when loading data from ensembles through fmu-ensemble.
+- [#482](https://github.com/equinor/webviz-subsurface/pull/482) - Bug fix in ReservoirSimulationTimeSeries: NaN values are now dropped instead of being replaced by zeros, e.g. if some realizations are missing in one of the ensembles, if the dates don't match, or if a vector is missing in one of the ensembles.
 
 ## [0.1.3] - 2020-09-24
 ### Added

@@ -679,6 +679,8 @@ folder, to avoid risk of not extracting the right data.
                 cum_interval=cum_interval,
             )
             for i, vector in enumerate(vectors):
+                if dfs[vector]["data"].empty:
+                    continue
                 line_shape = get_simulation_line_shape(
                     line_shape_fallback=self.line_shape_fallback,
                     vector=vector,
@@ -1023,7 +1025,7 @@ def calculate_delta(df, base_ens, delta_ens):
     )
     dframe = base_df.sub(delta_df).reset_index()
     dframe["ENSEMBLE"] = f"({base_ens}) - ({delta_ens})"
-    return dframe.fillna(0)
+    return dframe.dropna(axis=0, how="any")
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
