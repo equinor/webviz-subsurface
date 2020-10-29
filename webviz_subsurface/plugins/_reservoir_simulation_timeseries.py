@@ -1023,7 +1023,7 @@ def calculate_delta(df, base_ens, delta_ens):
     )
     dframe = base_df.sub(delta_df).reset_index()
     dframe["ENSEMBLE"] = f"({base_ens}) - ({delta_ens})"
-    return dframe.fillna(0)
+    return dframe.dropna(axis=0, how="any")
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
