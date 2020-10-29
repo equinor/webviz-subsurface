@@ -80,7 +80,7 @@ jobs:
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
+        TESTDATA_REPO_OWNER: anders-kiaer
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
         TESTDATA_REPO_BRANCH: master
