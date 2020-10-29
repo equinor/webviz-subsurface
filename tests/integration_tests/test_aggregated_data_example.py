@@ -23,13 +23,8 @@ def test_basic_example(testdata_folder, dash_duo, tmp_path):
         """Explicit wait until the element is clickable, timeout if not set,
         equals to the fixture's `wait_timeout` shortcut to `WebDriverWait` with
         `EC.element_to_be_clickable`."""
-        return dash_duo._wait_for(
-            EC.element_to_be_clickable,
-            ((By.CSS_SELECTOR, selector)),
-            timeout,
-            "timeout {}s => waiting for selector {} to be clickable".format(
-                timeout if timeout else dash_duo._wait_timeout, selector
-            ),
+        return dash_duo._wd_wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, selector)),
         )
 
     # Build a portable webviz from config file
