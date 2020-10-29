@@ -1,6 +1,7 @@
 import sys
 import subprocess  # nosec
 
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -16,6 +17,21 @@ def test_basic_example(testdata_folder, dash_duo, tmp_path):
         timeout=10,
         ignored_exceptions=(NoSuchElementException, StaleElementReferenceException),
     )
+
+    def wait_for_clickable(self, selector, timeout=None):
+        """Explicit wait until the element is clickable, timeout if not set,
+        equals to the fixture's `wait_timeout` shortcut to `WebDriverWait` with
+        `EC.element_to_be_clickable`."""
+        return dash_duo._wait_for(
+            EC.element_to_be_clickable,
+            ((By.CSS_SELECTOR, selector)),
+            timeout,
+            "timeout {}s => waiting for selector {} to be clickable".format(
+                timeout if timeout else dash_duo._wait_timeout, selector
+            ),
+        )
+
+    dash_duo.wait_for_clickable = wait_for_clickable
 
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
@@ -48,7 +64,7 @@ def test_basic_example(testdata_folder, dash_duo, tmp_path):
         "grid-viewer",
         "seg-y-viewer",
     ]:
-        dash_duo.wait_for_element(f"#{page}").click()
+        dash_duo.wait_for_clickable(f"#{page}").click()
         logs = [
             log
             for log in dash_duo.get_logs()
