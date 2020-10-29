@@ -58,7 +58,7 @@ def test_basic_example(testdata_folder, dash_duo, tmp_path):
         "grid-viewer",
         "seg-y-viewer",
     ]:
-        wait_for_clickable(f"#{page}").click()
+        dash_duo.wait_for_element(f"#{page}").click()
         logs = [
             log
             for log in dash_duo.get_logs()
