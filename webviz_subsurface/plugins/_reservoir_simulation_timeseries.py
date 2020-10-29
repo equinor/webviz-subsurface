@@ -679,6 +679,8 @@ folder, to avoid risk of not extracting the right data.
                 cum_interval=cum_interval,
             )
             for i, vector in enumerate(vectors):
+                if dfs[vector]["data"].empty:
+                    continue
                 line_shape = get_simulation_line_shape(
                     line_shape_fallback=self.line_shape_fallback,
                     vector=vector,
