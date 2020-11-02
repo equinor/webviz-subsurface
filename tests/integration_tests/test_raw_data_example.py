@@ -1,8 +1,22 @@
 import sys
 import subprocess  # nosec
 
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
+
 
 def test_full_example(testdata_folder, dash_duo, tmp_path):
+
+    # https://github.com/plotly/dash/issues/1164:
+    dash_duo._wd_wait = WebDriverWait(
+        dash_duo.driver,
+        timeout=10,
+        ignored_exceptions=(NoSuchElementException, StaleElementReferenceException),
+    )
+
     # Build a portable webviz from config file
     appdir = tmp_path / "app"
     subprocess.call(  # nosec
@@ -27,7 +41,7 @@ def test_full_example(testdata_folder, dash_duo, tmp_path):
         "inplacevolumesonebyone",
         "reservoirsimulationtimeseriesonebyone",
         "inplacevolumes",
-        # "parameterdistribution",
+        "parameterdistribution",
         "parametercorrelation",
         "reservoirsimulationtimeseries",
     ]:

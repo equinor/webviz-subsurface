@@ -9,8 +9,14 @@ from webviz_config.webviz_store import webvizstore
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def scratch_ensemble(ensemble_name: str, ensemble_path: Path):
-    return ScratchEnsemble(ensemble_name, ensemble_path)
+def scratch_ensemble(
+    ensemble_name: str, ensemble_path: Path, filter_file: Union[str, None] = "OK"
+):
+    return (
+        ScratchEnsemble(ensemble_name, ensemble_path)
+        if filter_file is None
+        else ScratchEnsemble(ensemble_name, ensemble_path).filter(filter_file)
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -22,9 +28,7 @@ def load_ensemble_set(
     return EnsembleSet(
         ensemble_set_name,
         [
-            ScratchEnsemble(ens_name, ens_path)
-            if filter_file is None
-            else ScratchEnsemble(ens_name, ens_path).filter(filter_file)
+            scratch_ensemble(ens_name, ens_path, filter_file)
             for ens_name, ens_path in ensemble_paths.items()
         ],
     )

@@ -20,6 +20,7 @@ pages:
 ```
 """
 
+from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
@@ -30,6 +31,7 @@ from ._parameter_correlation import ParameterCorrelation
 from ._parameter_distribution import ParameterDistribution
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._parameter_response_correlation import ParameterResponseCorrelation
+from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries

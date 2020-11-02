@@ -29,6 +29,7 @@ setup(
     },
     entry_points={
         "webviz_config_plugins": [
+            "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
@@ -39,6 +40,7 @@ setup(
             "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
             "ParameterParallelCoordinates = webviz_subsurface.plugins:ParameterParallelCoordinates",
             "ParameterResponseCorrelation = webviz_subsurface.plugins:ParameterResponseCorrelation",
+            "PropertyStatistics = webviz_subsurface.plugins:PropertyStatistics",
             "PvtPlot = webviz_subsurface.plugins:PvtPlot",
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
