@@ -29,7 +29,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         self.title = title
         self.input_dir = str(input_dir)
-
         self.uid = uuid4()
         self.set_callbacks(app)
 
@@ -49,7 +48,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 ),
                 dcc.Input(
                     id=self.ids("inputpath_id"),
-                    placeholder=self.input_dir,
+                    value=self.input_dir,
                     type="text",
                     debounce=True,
                     size=150,
@@ -420,7 +419,7 @@ def get_zzdata(joint_ks_sorted, yy_data, xx_data, active_info):
     """generate input values to heatmap,
     shows as missing data when 0active observations"""
     zz_data = joint_ks_sorted.loc[yy_data, xx_data].to_numpy()
-    for yid in enumerate(yy_data):
+    for yid in range(len(yy_data)):
         for xid, xxd in enumerate(xx_data):
             active_obs_info = active_info.at["ratio", xxd].split(" ")
             if active_obs_info[0] == "0":
