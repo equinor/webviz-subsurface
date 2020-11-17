@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+### Fixed
+- [#486](https://github.com/equinor/webviz-subsurface/pull/486) - Bug fix in `PropertyStatistics`. Show realization number instead of dataframe index for hover text.
+
 ## [0.1.4] - 2020-10-29
 ### Added
 - [#457](https://github.com/equinor/webviz-subsurface/pull/457) - Raise a descriptive error if a scratch ensemble is empty, i.e. no `OK` target file is found in any realizations. 

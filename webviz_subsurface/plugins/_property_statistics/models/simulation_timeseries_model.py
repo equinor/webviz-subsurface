@@ -186,7 +186,7 @@ class SimulationTimeSeriesModel:
                 "line": {"shape": self.get_line_shape(vector)},
                 "x": list(real_df["DATE"]),
                 "y": list(real_df[vector]),
-                "hovertext": f"Realization: {real_no}, Ensemble: {ensemble}",
+                "hovertext": f"Realization: {real}, Ensemble: {ensemble}",
                 "name": ensemble,
                 "legendgroup": ensemble,
                 "marker": {
@@ -194,10 +194,10 @@ class SimulationTimeSeriesModel:
                         ensemble, self.ens_colors[list(self.ens_colors.keys())[0]]
                     )
                 },
-                "showlegend": real_no == 0,
+                "showlegend": real_idx == 0,
             }
             for ens_no, (ensemble, ens_df) in enumerate(dataframe.groupby("ENSEMBLE"))
-            for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL"))
+            for real_idx, (real, real_df) in enumerate(ens_df.groupby("REAL"))
         ]
 
         if (
@@ -229,12 +229,12 @@ class SimulationTimeSeriesModel:
                 "y": list(real_df[vector]),
                 "hoverinfo": "skip",
                 "name": ensemble,
-                "customdata": real_no,
+                "customdata": real,
                 "legendgroup": ensemble,
                 "marker": {"color": "red"},
-                "showlegend": real_no == 0,
+                "showlegend": real_idx == 0,
             }
-            for real_no, (real, real_df) in enumerate(dataframe.groupby("REAL"))
+            for real_idx, (real, real_df) in enumerate(dataframe.groupby("REAL"))
         ]
 
         if (
