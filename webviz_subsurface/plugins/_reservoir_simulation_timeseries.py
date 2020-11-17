@@ -564,7 +564,6 @@ folder, to avoid risk of not extracting the right data.
                     style={"flex": 3},
                     children=[
                         html.Div(
-                            style={"height": "300px"},
                             children=wcc.Graph(
                                 id=self.uuid("graph"),
                             ),
