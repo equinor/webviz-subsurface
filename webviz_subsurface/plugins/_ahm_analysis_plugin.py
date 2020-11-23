@@ -25,10 +25,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         self.uid = uuid4()
         self.set_callbacks(app)
 
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
-
     @property
     def layout(self):
         return html.Div(
