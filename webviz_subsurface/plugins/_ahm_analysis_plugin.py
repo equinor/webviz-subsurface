@@ -30,9 +30,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             [
                 html.H1(self.title),
                 html.Div(
-                    children="""
-        Give path to input data:
-        """
+                    children="Give path to input data:"
                 ),
                 dcc.Input(
                     id=self.ids("inputpath_id"),
