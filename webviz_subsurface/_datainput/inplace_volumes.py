@@ -1,14 +1,10 @@
 import os
 
 import pandas as pd
-import fmu.ensemble
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def scratch_ensemble(ensemble_name, ensemble_path):
-    return fmu.ensemble.ScratchEnsemble(ensemble_name, ensemble_path)
+from .fmu_input import scratch_ensemble
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
