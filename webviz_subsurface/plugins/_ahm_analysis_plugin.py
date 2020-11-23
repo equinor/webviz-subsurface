@@ -22,7 +22,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         self.title = title
         self.input_dir = str(input_dir)
-        self.uid = uuid4()
         self.set_callbacks(app)
 
     @property
