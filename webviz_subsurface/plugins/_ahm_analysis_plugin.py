@@ -10,12 +10,24 @@ from webviz_config import WebvizPluginABC
 
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
-    """### Parameter distribution change prior/posterior per observation
-    Shows parameter change using a KS (Kolmogorov Smirnov test) matrix,
-    and scatter plot/map for any given pair of parameters/observation."""
+    """Visualize parameters distribution change prior to posterior per observation in assisted history matching process.
+    Shows parameter change using a KS (Kolmogorov Smirnov test) matrix, and scatter plot/map for any given pair of parameters/observation.
+    The closer to 0 the KS value is to smaller the change in parameter distribution between prior/posterior and vice-versa.
+    The top 10 biggest parameters change are also shown in a table.
+
+    ---
+
+    * **`title`:** to give a specific title to the page if wanted
+    * **`input_dir`:** Path to the directory where the csv files created by ahm_analysis ERT postprocess workflow are stored
+
+    ---
+
+    ?> The input_dir must have a folder share/output_analysis/scalar_<a_case_name> where results (csv files) from ert ahm_analysis worflow are stored.
+
+    """
 
     def __init__(
-        self, app, title: str = "Data analytics: what affects what", input_dir: str = ""
+        self, app, input_dir, title: str = "Data analytics: what affects what"
     ):
 
         super().__init__()
@@ -29,14 +41,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         return html.Div(
             [
                 html.H1(self.title),
-                html.Div(children="Give path to input data:"),
-                dcc.Input(
-                    id=self.uuid("inputpath_id"),
-                    value=self.input_dir,
-                    type="text",
-                    debounce=True,
-                    size=150,
-                ),
                 html.Div(children="Filter observations:"),
                 dcc.Input(
                     id=self.uuid("filter1_id"), value="", type="text", debounce=True
@@ -112,15 +116,15 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     def set_callbacks(self, app):
         @app.callback(
             Output(self.uuid("output_graph"), component_property="children"),
-            Input(self.uuid("inputpath_id"), component_property="value"),
             Input(self.uuid("filter1_id"), component_property="value"),
             Input(self.uuid("filter2_id"), component_property="value"),
             Input(self.uuid("choice_id"), component_property="value"),
         )
-        def _update_graph(inputdata, input_filter_obs, input_filter_param, choiceplot):
+        def _update_graph(input_filter_obs, input_filter_param, choiceplot):
             """Renders KS matrix
             (how much a parameter is changed from prior to posterior"""
             # Checks if any input have been given
+            inputdata = self.input_dir
             if inputdata == "":
                 return ""
             if inputdata[-1] != "/":
@@ -205,13 +209,13 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         @app.callback(
             Output(self.uuid("click_data"), component_property="children"),
-            Input(self.uuid("inputpath_id"), component_property="value"),
             Input(self.uuid("heatmap_id"), component_property="clickData"),
             Input(self.uuid("choice_hist_id"), component_property="value"),
         )
-        def _display_click_data(inputdata, celldata, hist_display):
+        def _display_click_data(celldata, hist_display):
             """render a histogram of parameters distribution prior/posterior or
             an average delta map prior-posterior."""
+            inputdata = self.input_dir
             if inputdata == "":
                 return ""
             if inputdata[-1] != "/":
@@ -275,11 +279,11 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         @app.callback(
             Output(self.uuid("generate_table"), component_property="children"),
-            Input(self.uuid("inputpath_id"), component_property="value"),
             Input(self.uuid("choice_id"), component_property="value"),
         )
-        def _generatetable(inputdata, choiceplot, max_rows=10):
+        def _generatetable(choiceplot, max_rows=10):
             """Generate output table of data in KS matrix plot"""
+            inputdata = self.input_dir
             if inputdata == "":
                 return ""
             if inputdata[-1] != "/":
