@@ -37,30 +37,18 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                     debounce=True,
                     size=150,
                 ),
-                html.Div(
-                    children="""
-        Filter observations:
-        """
-                ),
+                html.Div(children="Filter observations:"),
                 dcc.Input(
                     id=self.uuid("filter1_id"), value="", type="text", debounce=True
                 ),
-                html.Div(
-                    children="""
-        Filter parameters:
-        """
-                ),
+                html.Div(children="Filter parameters:"),
                 dcc.Input(
                     id=self.uuid("filter2_id"),
                     value="",
                     type="text",
                     debounce=True,
                 ),
-                html.Div(
-                    children="""
-        Selected output:
-        """
-                ),
+                html.Div(children="Selected output:"),
                 dcc.RadioItems(
                     id=self.uuid("choice_id"),
                     options=[
@@ -123,17 +111,11 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(
-                component_id=self.uuid("output_graph"), component_property="children"
-            ),
-            [
-                Input(
-                    component_id=self.uuid("inputpath_id"), component_property="value"
-                ),
-                Input(component_id=self.uuid("filter1_id"), component_property="value"),
-                Input(component_id=self.uuid("filter2_id"), component_property="value"),
-                Input(component_id=self.uuid("choice_id"), component_property="value"),
-            ],
+            Output(self.uuid("output_graph"), component_property="children"),
+            Input(self.uuid("inputpath_id"), component_property="value"),
+            Input(self.uuid("filter1_id"), component_property="value"),
+            Input(self.uuid("filter2_id"), component_property="value"),
+            Input(self.uuid("choice_id"), component_property="value"),
         )
         def _update_graph(inputdata, input_filter_obs, input_filter_param, choiceplot):
             """Renders KS matrix
@@ -222,18 +204,10 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             )
 
         @app.callback(
-            Output(component_id=self.uuid("click_data"), component_property="children"),
-            [
-                Input(
-                    component_id=self.uuid("inputpath_id"), component_property="value"
-                ),
-                Input(
-                    component_id=self.uuid("heatmap_id"), component_property="clickData"
-                ),
-                Input(
-                    component_id=self.uuid("choice_hist_id"), component_property="value"
-                ),
-            ],
+            Output(self.uuid("click_data"), component_property="children"),
+            Input(self.uuid("inputpath_id"), component_property="value"),
+            Input(self.uuid("heatmap_id"), component_property="clickData"),
+            Input(self.uuid("choice_hist_id"), component_property="value"),
         )
         def _display_click_data(inputdata, celldata, hist_display):
             """render a histogram of parameters distribution prior/posterior or
@@ -300,15 +274,9 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             return dcc.Graph(id="lineplots", style={"height": 750}, figure=fig)
 
         @app.callback(
-            Output(
-                component_id=self.uuid("generate_table"), component_property="children"
-            ),
-            [
-                Input(
-                    component_id=self.uuid("inputpath_id"), component_property="value"
-                ),
-                Input(component_id=self.uuid("choice_id"), component_property="value"),
-            ],
+            Output(self.uuid("generate_table"), component_property="children"),
+            Input(self.uuid("inputpath_id"), component_property="value"),
+            Input(self.uuid("choice_id"), component_property="value"),
         )
         def _generatetable(inputdata, choiceplot, max_rows=10):
             """Generate output table of data in KS matrix plot"""
@@ -413,6 +381,4 @@ def get_zzdata(joint_ks_sorted, yy_data, xx_data, active_info):
 
 def set_inputfilter(input_filter):
     """set the input filter to show all data if empty"""
-    if input_filter == "":
-        input_filter = "_"
-    return input_filter
+    return "_" if input_filter == "" else input_filter
