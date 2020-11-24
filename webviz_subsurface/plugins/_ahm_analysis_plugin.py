@@ -10,19 +10,25 @@ from webviz_config import WebvizPluginABC
 
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
-    """Visualize parameters distribution change prior to posterior per observation in assisted history matching process.
-    Shows parameter change using a KS (Kolmogorov Smirnov test) matrix, and scatter plot/map for any given pair of parameters/observation.
-    The closer to 0 the KS value is to smaller the change in parameter distribution between prior/posterior and vice-versa.
+    """Visualize parameters distribution change prior to posterior \
+    per observation in assisted history matching process.
+    Shows parameter change using a KS (Kolmogorov Smirnov test) matrix, \
+    and scatter plot/map for any given pair of parameters/observation.
+    The closer to 0 the KS value is \
+    the smaller the change in parameter distribution between prior/posterior \
+    and vice-versa.
     The top 10 biggest parameters change are also shown in a table.
 
     ---
 
     * **`title`:** to give a specific title to the page if wanted
-    * **`input_dir`:** Path to the directory where the csv files created by ahm_analysis ERT postprocess workflow are stored
+    * **`input_dir`:** Path to the directory where the csv files created \
+        by ahm_analysis ERT postprocess workflow are stored
 
     ---
 
-    ?> The input_dir must have a folder share/output_analysis/scalar_<a_case_name> where results (csv files) from ert ahm_analysis worflow are stored.
+    ?> The input_dir must have a folder share/output_analysis/scalar_<a_case_name> \
+    where results (csv files) from ert ahm_analysis worflow are stored.
 
     """
 
@@ -33,6 +39,8 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         super().__init__()
 
         self.title = title
+        if input_dir[-1] != "/":
+            input_dir = input_dir + "/"
         self.input_dir = str(input_dir)
         self.set_callbacks(app)
 
@@ -127,8 +135,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             inputdata = self.input_dir
             if inputdata == "":
                 return ""
-            if inputdata[-1] != "/":
-                inputdata = inputdata + "/"
             active_info = pd.read_csv(inputdata + "active_obs_info.csv", index_col=0)
             joint_ks = pd.read_csv(inputdata + "ks.csv", index_col=0).replace(
                 np.nan, 0.0
@@ -218,8 +224,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             inputdata = self.input_dir
             if inputdata == "":
                 return ""
-            if inputdata[-1] != "/":
-                inputdata = inputdata + "/"
             obs = celldata["points"][0]["x"]
             param = celldata["points"][0]["y"]
             active_info = pd.read_csv(inputdata + "active_obs_info.csv", index_col=0)
@@ -286,8 +290,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             inputdata = self.input_dir
             if inputdata == "":
                 return ""
-            if inputdata[-1] != "/":
-                inputdata = inputdata + "/"
             misfit_info = pd.read_csv(inputdata + "misfit_obs_info.csv", index_col=0)
             active_info = pd.read_csv(inputdata + "active_obs_info.csv", index_col=0)
             joint_ks = pd.read_csv(inputdata + "ks.csv", index_col=0).replace(
@@ -322,6 +324,47 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 page_current=0,
                 page_size=max_rows,
             )
+
+    @property
+    def tour_steps(self):
+        return [
+            {
+                "id": self.uuid("filter1_id"),
+                "content": (
+                    "Give option to filter on observations"
+                    "For instance only show observations for a specific well"
+                ),
+            },
+            {
+                "id": self.uuid("filter2_id"),
+                "content": (
+                    "Give option to filter on parameters"
+                    "For instance only show parameters containing SAT"
+                ),
+            },
+            {
+                "id": self.uuid("choice_hist_id"),
+                "content": (
+                    "Give option for plotting parameter prior/posterior distribution"
+                    "Some parameters may have transformed equivalent like LOG10"
+                ),
+            },
+            {
+                "id": self.uuid("output_graph"),
+                "content": "Renders KS matrix value between 0 and 1",
+            },
+            {
+                "id": self.uuid("click_data"),
+                "content": (
+                    "Render a histogram of parameters distribution prior/posterior"
+                    "or an average delta map prior-posterior"
+                ),
+            },
+            {
+                "id": self.uuid("generate_table"),
+                "content": "Generate output table of data in KS matrix plot",
+            },
+        ]
 
 
 def hovertext_list(xx_data, yy_data, zz_data, active_info):
