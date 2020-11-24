@@ -31,7 +31,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 html.H1(self.title),
                 html.Div(children="Give path to input data:"),
                 dcc.Input(
-                    id=seld.uuid("inputpath_id"),
+                    id=self.uuid("inputpath_id"),
                     value=self.input_dir,
                     type="text",
                     debounce=True,
@@ -43,7 +43,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         """
                 ),
                 dcc.Input(
-                    id=seld.uuid("filter1_id"), value="", type="text", debounce=True
+                    id=self.uuid("filter1_id"), value="", type="text", debounce=True
                 ),
                 html.Div(
                     children="""
@@ -51,7 +51,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         """
                 ),
                 dcc.Input(
-                    id=seld.uuid("filter2_id"),
+                    id=self.uuid("filter2_id"),
                     value="",
                     type="text",
                     debounce=True,
@@ -62,7 +62,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         """
                 ),
                 dcc.RadioItems(
-                    id=seld.uuid("choice_id"),
+                    id=self.uuid("choice_id"),
                     options=[
                         {"label": "One by one observation", "value": "ONE"},
                         {"label": "All minus one observation", "value": "ALL"},
@@ -71,7 +71,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                     labelStyle={"display": "inline-block"},
                 ),
                 dcc.RadioItems(
-                    id=seld.uuid("choice_hist_id"),
+                    id=self.uuid("choice_hist_id"),
                     options=[
                         {
                             "label": "Show default parameters distribution",
@@ -88,7 +88,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 html.Div(
                     children=[
                         html.Div(
-                            id=seld.uuid("output_graph"),
+                            id=self.uuid("output_graph"),
                             style={
                                 "width": "50%",
                                 "display": "inline-block",
@@ -96,7 +96,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                             },
                         ),
                         html.Div(
-                            id=seld.uuid("click_data"),
+                            id=self.uuid("click_data"),
                             style={
                                 "width": "50%",
                                 "display": "inline-block",
@@ -113,7 +113,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                             style={"marginLeft": 50},
                         ),
                         html.Div(
-                            id=seld.uuid("generate_table"),
+                            id=self.uuid("generate_table"),
                             style={"marginLeft": 50, "width": "80%"},
                         ),
                     ]
@@ -124,15 +124,15 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     def set_callbacks(self, app):
         @app.callback(
             Output(
-                component_id=seld.uuid("output_graph"), component_property="children"
+                component_id=self.uuid("output_graph"), component_property="children"
             ),
             [
                 Input(
-                    component_id=seld.uuid("inputpath_id"), component_property="value"
+                    component_id=self.uuid("inputpath_id"), component_property="value"
                 ),
-                Input(component_id=seld.uuid("filter1_id"), component_property="value"),
-                Input(component_id=seld.uuid("filter2_id"), component_property="value"),
-                Input(component_id=seld.uuid("choice_id"), component_property="value"),
+                Input(component_id=self.uuid("filter1_id"), component_property="value"),
+                Input(component_id=self.uuid("filter2_id"), component_property="value"),
+                Input(component_id=self.uuid("choice_id"), component_property="value"),
             ],
         )
         def _update_graph(inputdata, input_filter_obs, input_filter_param, choiceplot):
@@ -166,7 +166,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             zall_obs_data = joint_ks.loc[yall_obs_data, ["All_obs"]].to_numpy()
 
             return dcc.Graph(
-                id=seld.uuid("heatmap_id"),
+                id=self.uuid("heatmap_id"),
                 figure={
                     "data": [
                         go.Heatmap(
@@ -222,16 +222,16 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             )
 
         @app.callback(
-            Output(component_id=seld.uuid("click_data"), component_property="children"),
+            Output(component_id=self.uuid("click_data"), component_property="children"),
             [
                 Input(
-                    component_id=seld.uuid("inputpath_id"), component_property="value"
+                    component_id=self.uuid("inputpath_id"), component_property="value"
                 ),
                 Input(
-                    component_id=seld.uuid("heatmap_id"), component_property="clickData"
+                    component_id=self.uuid("heatmap_id"), component_property="clickData"
                 ),
                 Input(
-                    component_id=seld.uuid("choice_hist_id"), component_property="value"
+                    component_id=self.uuid("choice_hist_id"), component_property="value"
                 ),
             ],
         )
@@ -301,13 +301,13 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         @app.callback(
             Output(
-                component_id=seld.uuid("generate_table"), component_property="children"
+                component_id=self.uuid("generate_table"), component_property="children"
             ),
             [
                 Input(
-                    component_id=seld.uuid("inputpath_id"), component_property="value"
+                    component_id=self.uuid("inputpath_id"), component_property="value"
                 ),
-                Input(component_id=seld.uuid("choice_id"), component_property="value"),
+                Input(component_id=self.uuid("choice_id"), component_property="value"),
             ],
         )
         def _generatetable(inputdata, choiceplot, max_rows=10):
