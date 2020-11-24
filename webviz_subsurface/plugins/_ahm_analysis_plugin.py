@@ -29,9 +29,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         return html.Div(
             [
                 html.H1(self.title),
-                html.Div(
-                    children="Give path to input data:"
-                ),
+                html.Div(children="Give path to input data:"),
                 dcc.Input(
                     id=seld.uuid("inputpath_id"),
                     value=self.input_dir,
