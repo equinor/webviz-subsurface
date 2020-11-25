@@ -55,6 +55,7 @@ setup(
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
+            "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
         ]
     },
     install_requires=[
