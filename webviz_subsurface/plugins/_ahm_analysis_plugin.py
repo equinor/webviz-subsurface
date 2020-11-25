@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 import webviz_core_components as wcc
 
@@ -151,10 +152,8 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         )
         def _update_graph(input_filter_obs, input_filter_param, choiceplot):
             """Renders KS matrix (how much a parameter is changed from prior to posterior"""
-            active_info = pd.read_csv(
-                self.input_dir / "active_obs_info.csv", index_col=0
-            )
-            joint_ks = pd.read_csv(self.input_dir / "ks.csv", index_col=0).replace(
+            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
+            joint_ks = read_csv(self.input_dir / "ks.csv", index_col=0).replace(
                 np.nan, 0.0
             )
             input_filter_obs = _set_inputfilter(input_filter_obs)
@@ -247,12 +246,10 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             an average delta map prior-posterior."""
             obs = celldata["points"][0]["x"]
             param = celldata["points"][0]["y"]
-            active_info = pd.read_csv(
-                self.input_dir / "active_obs_info.csv", index_col=0
-            )
+            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
             if "FIELD" in param:
                 fieldparam = param.replace("FIELD_", "")
-                mygrid_ok_short = pd.read_csv(
+                mygrid_ok_short = read_csv(
                     Path(str(self.input_dir).replace("scalar_", "field_"))
                     / f"delta_field{fieldparam}.csv"
                 )
@@ -280,8 +277,8 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                         height=750,
                     ),
                 )
-            post_df = pd.read_csv(self.input_dir / f"{obs}.csv")
-            prior_df = pd.read_csv(self.input_dir / "prior.csv")
+            post_df = read_csv(self.input_dir / f"{obs}.csv")
+            prior_df = read_csv(self.input_dir / "prior.csv")
             if "TRANS" in hist_display:
                 paraml = [ele for ele in prior_df.keys() if f"_{param}" in ele]
                 if paraml != []:
@@ -311,13 +308,9 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         )
         def _generatetable(choiceplot, max_rows=10):
             """Generate output table of data in KS matrix plot"""
-            misfit_info = pd.read_csv(
-                self.input_dir / "misfit_obs_info.csv", index_col=0
-            )
-            active_info = pd.read_csv(
-                self.input_dir / "active_obs_info.csv", index_col=0
-            )
-            joint_ks = pd.read_csv(self.input_dir / "ks.csv", index_col=0).replace(
+            misfit_info = read_csv(self.input_dir / "misfit_obs_info.csv", index_col=0)
+            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
+            joint_ks = read_csv(self.input_dir / "ks.csv", index_col=0).replace(
                 np.nan, 0.0
             )
             list_ok = list(joint_ks.filter(like="All_obs", axis=1).columns)
@@ -481,3 +474,8 @@ def _set_inputfilter(input_filter: str) -> str:
 @webvizstore
 def get_path(path) -> Path:
     return Path(path)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def read_csv(path: Path, index_col: Optional[int] = None) -> pd.DataFrame:
+    return pd.read_csv(path, index_col=index_col)
