@@ -360,8 +360,8 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                     "during assisted history match using the ensemble smoother method. "
                     "This can give insight into which parameters are updated due to a "
                     "specific observation type, and also which observations are causing an "
-                    "update in a specific parameter. The reference KS refers to the "
-                    "Kolmogorov–Smirnov test."
+                    "update in a specific parameter. KS refers to "
+                    "Kolmogorov–Smirnov."
                 ),
             },
             {
