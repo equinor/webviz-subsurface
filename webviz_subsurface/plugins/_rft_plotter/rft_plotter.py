@@ -179,6 +179,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             self.ertdatadf["SIMULATED"] - self.ertdatadf["OBSERVED"]
         )
         self.ertdatadf["YEAR"] = pd.to_datetime(self.ertdatadf["DATE"]).dt.year
+        self.ertdatadf = self.ertdatadf.sort_values(by="DATE")
         self.ertdatadf["DATE_IDX"] = self.ertdatadf["DATE"].apply(
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
