@@ -152,10 +152,12 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         )
         def _update_graph(input_filter_obs, input_filter_param, choiceplot):
             """Renders KS matrix (how much a parameter is changed from prior to posterior"""
-            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
-            joint_ks = read_csv(self.input_dir / "ks.csv", index_col=0).replace(
-                np.nan, 0.0
+            active_info = read_csv(
+                get_path(self.input_dir / "active_obs_info.csv"), index_col=0
             )
+            joint_ks = read_csv(
+                get_path(self.input_dir / "ks.csv"), index_col=0
+            ).replace(np.nan, 0.0)
             input_filter_obs = _set_inputfilter(input_filter_obs)
             input_filter_param = _set_inputfilter(input_filter_param)
 
@@ -246,12 +248,16 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             an average delta map prior-posterior."""
             obs = celldata["points"][0]["x"]
             param = celldata["points"][0]["y"]
-            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
+            active_info = read_csv(
+                get_path(self.input_dir / "active_obs_info.csv"), index_col=0
+            )
             if "FIELD" in param:
                 fieldparam = param.replace("FIELD_", "")
                 mygrid_ok_short = read_csv(
-                    Path(str(self.input_dir).replace("scalar_", "field_"))
-                    / f"delta_field{fieldparam}.csv"
+                    get_path(
+                        Path(str(self.input_dir).replace("scalar_", "field_"))
+                        / f"delta_field{fieldparam}.csv"
+                    )
                 )
                 maxinput = mygrid_ok_short.filter(like="Mean_").max(axis=1)
                 deltadata = "Mean_D_" + obs
@@ -277,8 +283,8 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                         height=750,
                     ),
                 )
-            post_df = read_csv(self.input_dir / f"{obs}.csv")
-            prior_df = read_csv(self.input_dir / "prior.csv")
+            post_df = read_csv(get_path(self.input_dir / f"{obs}.csv"))
+            prior_df = read_csv(get_path(self.input_dir / "prior.csv"))
             if "TRANS" in hist_display:
                 paraml = [ele for ele in prior_df.keys() if f"_{param}" in ele]
                 if paraml != []:
@@ -308,11 +314,15 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         )
         def _generatetable(choiceplot, max_rows=10):
             """Generate output table of data in KS matrix plot"""
-            misfit_info = read_csv(self.input_dir / "misfit_obs_info.csv", index_col=0)
-            active_info = read_csv(self.input_dir / "active_obs_info.csv", index_col=0)
-            joint_ks = read_csv(self.input_dir / "ks.csv", index_col=0).replace(
-                np.nan, 0.0
+            misfit_info = read_csv(
+                get_path(self.input_dir / "misfit_obs_info.csv"), index_col=0
             )
+            active_info = read_csv(
+                get_path(self.input_dir / "active_obs_info.csv"), index_col=0
+            )
+            joint_ks = read_csv(
+                get_path(self.input_dir / "ks.csv"), index_col=0
+            ).replace(np.nan, 0.0)
             list_ok = list(joint_ks.filter(like="All_obs", axis=1).columns)
             listtoplot = [ele for ele in joint_ks.columns if ele not in list_ok]
             if choiceplot == "ALL":
