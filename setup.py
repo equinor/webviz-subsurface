@@ -36,6 +36,7 @@ setup(
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
             "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
             "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
+            "ParameterAnalysis = webviz_subsurface.plugins:ParameterAnalysis",
             "ParameterCorrelation = webviz_subsurface.plugins:ParameterCorrelation",
             "ParameterDistribution = webviz_subsurface.plugins:ParameterDistribution",
             "ParameterParallelCoordinates = webviz_subsurface.plugins:ParameterParallelCoordinates",
@@ -69,6 +70,7 @@ setup(
         "pillow>=6.1",
         "pyscal>=0.4.1",
         "scipy>=1.2",
+        "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.0.55",
         "webviz-subsurface-components>=0.2.0",
         "xtgeo>=2.8",

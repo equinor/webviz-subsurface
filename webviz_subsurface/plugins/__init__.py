@@ -27,6 +27,7 @@ from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 from ._inplace_volumes import InplaceVolumes
 from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
 from ._morris_plot import MorrisPlot
+from ._parameter_analysis import ParameterAnalysis
 from ._parameter_correlation import ParameterCorrelation
 from ._parameter_distribution import ParameterDistribution
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
