@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.4` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.5` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -27,6 +27,49 @@ pages:
  
 
 ---
+
+
+
+<div class="plugin-doc">
+
+#### AssistedHistoryMatchingAnalysis
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Visualize parameter distribution change prior to posterior     per observation in an assisted history matching process.
+This is done by using a     [KS (Kolmogorov Smirnov) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test)     matrix, and scatter plot/map for any given pair of parameter/observation.     The closer to zero the KS value is, the smaller the change in parameter distribution     between prior/posterior and vice-versa.     The top 10 biggest parameters change are also shown in a table.
+
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+
+* **`input_dir`:** Path to the directory where the `csv` files created         by the `ahm_analysis` ERT postprocess workflow are stored
+
+
+
+```yaml
+    - AssistedHistoryMatchingAnalysis:
+        input_dir:  # Required, type str (corresponding to a path).
+```
+
+   
+
+<!-- tab:Data input -->
+
+
+?> The input_dir must have a subfolder structure     `share/output_analysis/scalar_<a_case_name>` where the results (csv files) from     the ERT `ahm_analysis` worflow are stored.
+
+ 
+
+<!-- tabs:end -->
+
+</div>
 
 
 
@@ -438,6 +481,80 @@ effect with other parameters.
 
 
 [Example of input file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/morris.csv).
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+#### ParameterAnalysis
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+This plugin visualizes parameter distributions and statistics. /
+    for FMU ensembles, and can be used to investigate parameter correlations /
+    on reservoir simulation time series data.
+
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+
+**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
+
+**Using aggregated data**
+* **`csvfile_parameters`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns.     (absolute path or relative to config file).
+* **`csvfile_smry`:** (Optional) Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE`     and vector columns (absolute path or relative to config file).
+
+**Using raw ensemble data stored in realization folders**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
+
+**Common settings for all input options**
+* **`drop_constants`:** Bool used to determine if constant parameters should be dropped.     Default is True.
+
+
+
+```yaml
+    - ParameterAnalysis:
+        ensembles: null # Optional, type Union[list, NoneType].
+        csvfile_parameters: null # Optional, type str (corresponding to a path).
+        csvfile_smry: null # Optional, type str (corresponding to a path).
+        time_index: "monthly" # Optional, type str.
+        column_keys: null # Optional, type Union[list, NoneType].
+        drop_constants: true # Optional, type bool.
+```
+
+   
+
+<!-- tab:Data input -->
+
+
+!> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
+
+?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will be plotted together with their non-historical counterparts as reference lines.
+
+**Using simulation time series data directly from `.UNSMRY` files**
+
+!> Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
+
+**Using aggregated data**
+
+?> Aggregated data may speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
 
  
 

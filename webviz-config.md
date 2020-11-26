@@ -1,6 +1,6 @@
 # Plugin project webviz-config
 
-?> :bookmark: This documentation is valid for version `0.2.1` of `webviz-config`. 
+?> :bookmark: This documentation is valid for version `0.2.3` of `webviz-config`. 
 
  
 
@@ -170,6 +170,42 @@ relative paths to the markdown file itself, or as absolute paths.
 > ```markdown
 > ![width=40%,height=300px](./example_banner.png "Some caption")
 > ```
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+#### PivotTable
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Adds a pivot table to the webviz instance, using tabular data from a         provided csv file.
+
+
+ 
+
+<!-- tab:Arguments -->
+
+   
+
+* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute                   path or relative to the configuration file.
+* **`options`:** Additional options for the plot. See [dash-pivottable documentation]    (https://github.com/plotly/dash-pivottable#references) for all possible options.
+
+
+```yaml
+    - PivotTable:
+        csv_file:  # Required, type str (corresponding to a path).
+        options: null # Optional, type dict.
+```
 
  
 
