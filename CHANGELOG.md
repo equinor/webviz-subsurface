@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [#486](https://github.com/equinor/webviz-subsurface/pull/486) - Bug fix in `PropertyStatistics`. Show realization number instead of dataframe index for hover text.
+- [#498](https://github.com/equinor/webviz-subsurface/pull/498) - Bug fix in `RFT-plotter`. Sort dataframe by date to get correct order in date-slider.
 
 ## [0.1.4] - 2020-10-29
 ### Added
