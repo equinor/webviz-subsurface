@@ -323,7 +323,6 @@ def scale_to_ref(value: float, ref: float, scale: str) -> float:
 
 
 def sort_by_max(tornadotable: pd.DataFrame) -> pd.DataFrame:
-    # TODO(Ruben): This mypy error seems to be a false positive?
     """ Sorts table based on max(abs('low', 'high')) """
     tornadotable["max"] = (
         tornadotable[["low", "high"]]
