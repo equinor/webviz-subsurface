@@ -1,3 +1,2 @@
-from .ensemble_set_model import EnsembleSetModel
 from .simulation_timeseries_model import SimulationTimeSeriesModel
 from .parameters_model import ParametersModel

@@ -15,12 +15,11 @@ from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
+from webviz_subsurface._models import EnsembleSetModel
 from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.fmu_input import (
-    load_smry,
     get_realizations,
     find_sens_type,
-    load_smry_meta,
 )
 from .._abbreviations.reservoir_simulation import (
     simulation_vector_description,
@@ -155,27 +154,23 @@ folder, to avoid risk of not extracting the right data.
                 ]
                 for ensemble in ensembles
             }
+            self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
+            smry = self.emodel.load_smry(
+                time_index=self.time_index, column_keys=self.column_keys
+            )
+
+            self.smry_meta = self.emodel.load_smry_meta(
+                column_keys=self.column_keys,
+            )
             # Extract realizations and sensitivity information
             parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            )
-            smry = load_smry(
-                ensemble_paths=self.ens_paths,
-                ensemble_set_name="EnsembleSet",
-                time_index=self.time_index,
-                column_keys=self.column_keys,
-            )
-            self.smry_meta = load_smry_meta(
-                ensemble_paths=self.ens_paths,
-                ensemble_set_name="EnsembleSet",
-                column_keys=self.column_keys,
             )
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_parameters" or '
                 '"ensembles"'
             )
-
         self.data = pd.merge(smry, parameters, on=["ENSEMBLE", "REAL"])
         self.smry_cols = [
             c
@@ -295,28 +290,8 @@ folder, to avoid risk of not extracting the right data.
                 )
             ]
             if self.csvfile_smry and self.csvfile_parameters
-            else [
-                (
-                    load_smry,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "ensemble_set_name": "EnsembleSet",
-                            "time_index": self.time_index,
-                            "column_keys": self.column_keys,
-                        }
-                    ],
-                ),
-                (
-                    load_smry_meta,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "ensemble_set_name": "EnsembleSet",
-                            "column_keys": self.column_keys,
-                        }
-                    ],
-                ),
+            else self.emodel.webvizstore
+            + [
                 (
                     get_realizations,
                     [
@@ -325,7 +300,7 @@ folder, to avoid risk of not extracting the right data.
                             "ensemble_set_name": "EnsembleSet",
                         }
                     ],
-                ),
+                )
             ]
         )
 

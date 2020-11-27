@@ -20,7 +20,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 
-from .._datainput.fmu_input import load_smry, load_smry_meta
+from webviz_subsurface._models import EnsembleSetModel
 from .._abbreviations.reservoir_simulation import (
     simulation_vector_base,
     simulation_vector_description,
@@ -133,19 +133,18 @@ folder, to avoid risk of not extracting the right data.
                 "'monthly' or 'yearly', as the statistics require the same dates throughout an"
                 "ensemble."
             )
-        self.ens_paths = {
-            ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                ensemble
-            ]
-            for ensemble in ensembles
-        }
-        self.smry = load_smry(
-            ensemble_paths=self.ens_paths,
-            column_keys=self.column_keys,
-            time_index=self.time_index,
+        self.emodel = EnsembleSetModel(
+            ensemble_paths={
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
         )
-        self.smry_meta = load_smry_meta(
-            ensemble_paths=self.ens_paths, column_keys=self.column_keys
+        self.smry = self.emodel.load_smry(
+            time_index=self.time_index, column_keys=self.column_keys
+        )
+
+        self.smry_meta = self.emodel.load_smry_meta(
+            column_keys=self.column_keys,
         )
         self.field_totals = [
             col for col in self.smry.columns if fnmatch.fnmatch(col, "F[OWG]PT")
@@ -160,10 +159,15 @@ folder, to avoid risk of not extracting the right data.
                 ]
             )
         else:
-            self.smry_init_prod = load_smry(
-                ensemble_paths=self.ens_paths,
+            total_smry = self.emodel.load_smry(
+                time_index=self.time_index,
                 column_keys=["F[OWG]PT"],
-                time_index="first",
+            )
+            self.smry_init_prod = pd.concat(
+                [
+                    df[df["DATE"] == min(df["DATE"])]
+                    for _, df in total_smry.groupby("ENSEMBLE")
+                ]
             )
         self.rec_ensembles = set(self.smry["ENSEMBLE"].unique())
         for col in self.smry_init_prod.columns:
@@ -338,40 +342,7 @@ folder, to avoid risk of not extracting the right data.
         return color_dict
 
     def add_webvizstore(self):
-        functions = [
-            (
-                load_smry,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "column_keys": self.column_keys,
-                        "time_index": self.time_index,
-                    }
-                ],
-            ),
-            (
-                load_smry_meta,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "column_keys": self.column_keys,
-                    }
-                ],
-            ),
-        ]
-        if not self.field_totals:
-            functions.append(
-                (
-                    load_smry,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "column_keys": ["F[OWG]PT"],
-                            "time_index": "first",
-                        }
-                    ],
-                )
-            )
+        functions = self.emodel.webvizstore
         if self.fipfile is not None:
             functions.append(
                 (

@@ -6,8 +6,9 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
+from webviz_subsurface._models import EnsembleSetModel
 from .views import main_view
-from .models import ParametersModel, SimulationTimeSeriesModel, EnsembleSetModel
+from .models import ParametersModel, SimulationTimeSeriesModel
 from .controllers import (
     parameter_qc_controller,
     parameter_response_controller,
@@ -101,8 +102,6 @@ slow for large models.
                     ]
                     for ens in ensembles
                 }
-                if ensembles is not None
-                else None
             )
             self.pmodel = ParametersModel(
                 dataframe=self.emodel.load_parameters(),

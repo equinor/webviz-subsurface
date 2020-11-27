@@ -10,7 +10,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_parameters, load_csv, load_smry
+from webviz_subsurface._models import EnsembleSetModel
 from .._utils.parameter_response import filter_and_sum_responses
 
 
@@ -183,25 +183,21 @@ folder, to avoid risk of not extracting the right data.
                     'Incorrect arguments. Either provide "response_csv" or '
                     '"ensembles and/or response_file".'
                 )
-            self.ens_paths = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
-                for ens in ensembles
-            }
-            self.parameterdf = load_parameters(
-                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            self.emodel = EnsembleSetModel(
+                ensemble_paths={
+                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                        ens
+                    ]
+                    for ens in ensembles
+                }
             )
+            self.parameterdf = self.emodel.load_parameters()
             if not self.no_responses:
                 if self.response_file:
-                    self.responsedf = load_csv(
-                        ensemble_paths=self.ens_paths,
-                        csv_file=response_file,
-                        ensemble_set_name="EnsembleSet",
-                    )
+                    self.responsedf = self.emodel.load_csv(csv_file=response_file)
                 else:
-                    self.responsedf = load_smry(
-                        ensemble_paths=self.ens_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
+                    self.responsedf = self.emodel.load_smry(
+                        time_index=self.time_index, column_keys=self.column_keys
                     )
                     self.response_filters["DATE"] = "single"
         else:
@@ -605,42 +601,7 @@ folder, to avoid risk of not extracting the right data.
                     )
                 )
         else:
-            functions.append(
-                (
-                    load_parameters,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                        }
-                    ],
-                ),
-            )
-            if not self.no_responses:
-                if self.response_file:
-                    functions.append(
-                        (
-                            load_csv,
-                            [
-                                {
-                                    "ensemble_paths": self.ens_paths,
-                                    "csv_file": self.response_file,
-                                }
-                            ],
-                        ),
-                    )
-                else:
-                    functions.append(
-                        (
-                            load_smry,
-                            [
-                                {
-                                    "ensemble_paths": self.ens_paths,
-                                    "column_keys": self.column_keys,
-                                    "time_index": self.time_index,
-                                }
-                            ],
-                        ),
-                    )
+            functions.extend(self.emodel.webvizstore)
 
         return functions
 
