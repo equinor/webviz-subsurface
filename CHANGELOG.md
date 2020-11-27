@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.1.5] - 2020-11-26
 ### Added
 - [#478](https://github.com/equinor/webviz-subsurface/pull/478) - New plugin `AssistedHistoryMatchingAnalysis`. This dashboard helps to analyze the update step performed during assisted history match. E.g. which observations are causing an update in a specific parameter. Based on Kolmogorov–Smirnov.
 - [#494](https://github.com/equinor/webviz-subsurface/pull/494) - New plugin `ParameterAnalysis`. Dashboard to visualize parameter distributions and statistics for FMU ensembles, and to investigate parameter correlations on reservoir simulation time series data.
