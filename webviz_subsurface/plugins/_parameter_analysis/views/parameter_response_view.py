@@ -28,6 +28,11 @@ def timeseries_view(parent) -> html.Div:
 
 def selector_view(parent) -> html.Div:
 
+    theme_colors = parent.theme.plotly_theme.get("layout", {}).get("colorway", [])
+    theme_colors = (
+        theme_colors[1:12] if theme_colors and len(theme_colors) >= 12 else theme_colors
+    )
+
     return html.Div(
         style={
             "height": "80vh",
@@ -75,8 +80,9 @@ def selector_view(parent) -> html.Div:
                     color_selector(
                         parent=parent,
                         tab="response",
-                        px_colors={"sequential": ["Greys"], "diverging": ["BrBG"]},
-                        height=60,
+                        colors=[theme_colors, "Greys", "BrBG"],
+                        bargap=0.2,
+                        height=50,
                     ),
                     color_opacity_selector(parent=parent, tab="response", value=0.5),
                 ],

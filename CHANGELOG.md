@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#529](https://github.com/equinor/webviz-subsurface/pull/529) - Added support for PVDO and PVTG to PVT plot and to respective data modules.
+- [#509](https://github.com/equinor/webviz-subsurface/pull/509) - Added descriptive hoverinfo to  `ParameterAnalysis`. Average and standard deviation of parameter value
+for each ensemble shown on mouse hover over figure. Included dynamic sizing of plot titles and plot spacing to optimize the appearance of plots when many parameters are plotted.
 
 ## [0.1.6] - 2020-11-30
 ### Fixed
