@@ -14,7 +14,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
-from .._datainput.fmu_input import load_smry, load_smry_meta
+from webviz_subsurface._models import EnsembleSetModel
 from .._abbreviations.reservoir_simulation import (
     simulation_vector_description,
     simulation_unit_reformat,
@@ -160,21 +160,19 @@ folder, to avoid risk of not extracting the right data.
                 sorted(pd.to_datetime(self.smry["DATE"]).unique())
             )
         elif ensembles:
-            self.ens_paths = {
-                ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                    ensemble
-                ]
-                for ensemble in ensembles
-            }
-            self.smry = load_smry(
-                ensemble_paths=self.ens_paths,
-                ensemble_set_name="EnsembleSet",
-                time_index=self.time_index,
-                column_keys=self.column_keys,
+            self.emodel = EnsembleSetModel(
+                ensemble_paths={
+                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
+                        ens
+                    ]
+                    for ens in ensembles
+                }
             )
-            self.smry_meta = load_smry_meta(
-                ensemble_paths=self.ens_paths,
-                ensemble_set_name="EnsembleSet",
+            self.smry = self.emodel.load_smry(
+                time_index=self.time_index, column_keys=self.column_keys
+            )
+
+            self.smry_meta = self.emodel.load_smry_meta(
                 column_keys=self.column_keys,
             )
         else:
@@ -923,31 +921,7 @@ folder, to avoid risk of not extracting the right data.
         if self.csvfile:
             functions.append((read_csv, [{"csv_file": self.csvfile}]))
         else:
-            functions.append(
-                (
-                    load_smry,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "ensemble_set_name": "EnsembleSet",
-                            "time_index": self.time_index,
-                            "column_keys": self.column_keys,
-                        }
-                    ],
-                )
-            )
-            functions.append(
-                (
-                    load_smry_meta,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "ensemble_set_name": "EnsembleSet",
-                            "column_keys": self.column_keys,
-                        }
-                    ],
-                )
-            )
+            functions.extend(self.emodel.webvizstore)
         if self.obsfile:
             functions.append((get_path, [{"path": self.obsfile}]))
         return functions

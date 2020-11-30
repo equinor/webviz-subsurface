@@ -9,7 +9,7 @@ import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 
-from .._datainput.fmu_input import load_smry
+from webviz_subsurface._models import EnsembleSetModel
 from .._utils.unique_theming import unique_colors
 
 
@@ -39,21 +39,19 @@ class BhpQc(WebvizPluginABC):
         wells: Optional[List[str]] = None,
     ):
         super().__init__()
-        self.ens_paths = {
-            ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                ensemble
-            ]
-            for ensemble in ensembles
-        }
         if wells is None:
             self.column_keys = ["WBHP:*"]
         else:
             self.column_keys = [f"WBHP:{well}" for well in wells]
 
-        self.smry = load_smry(
-            ensemble_paths=self.ens_paths,
-            time_index="raw",
-            column_keys=self.column_keys,
+        self.emodel = EnsembleSetModel(
+            ensemble_paths={
+                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
+        )
+        self.smry = self.emodel.load_smry(
+            time_index="raw", column_keys=self.column_keys
         )
         self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
@@ -337,18 +335,7 @@ class BhpQc(WebvizPluginABC):
             )
 
     def add_webvizstore(self):
-        return [
-            (
-                load_smry,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "column_keys": self.column_keys,
-                        "time_index": "raw",
-                    }
-                ],
-            ),
-        ]
+        return self.emodel.webvizstore
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

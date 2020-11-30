@@ -13,7 +13,8 @@ from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config.utils import calculate_slider_step
 
-from .._datainput.fmu_input import load_parameters, load_csv, load_smry
+from webviz_subsurface._models import EnsembleSetModel
+from .._datainput.fmu_input import load_parameters, load_csv
 
 
 class ParameterResponseCorrelation(WebvizPluginABC):
@@ -172,8 +173,8 @@ folder, to avoid risk of not extracting the right data.
                     ensemble_set_name="EnsembleSet",
                 )
             else:
-                self.responsedf = load_smry(
-                    ensemble_paths=self.ens_paths,
+                self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
+                self.responsedf = self.emodel.load_smry(
                     column_keys=self.column_keys,
                     time_index=self.time_index,
                 )
@@ -543,7 +544,8 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 ),
             ]
-        return [
+
+        functions = [
             (
                 load_parameters,
                 [
@@ -553,28 +555,23 @@ folder, to avoid risk of not extracting the right data.
                     }
                 ],
             ),
-            (
-                load_csv,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "csv_file": self.response_file,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            )
-            if self.response_file
-            else (
-                load_smry,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "column_keys": self.column_keys,
-                        "time_index": self.time_index,
-                    }
-                ],
-            ),
         ]
+        if self.response_file:
+            functions.append(
+                (
+                    load_csv,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "csv_file": self.response_file,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                )
+            )
+        else:
+            functions.extend(self.emodel.webvizstore)
+        return functions
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

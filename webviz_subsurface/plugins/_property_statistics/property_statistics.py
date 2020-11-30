@@ -6,8 +6,9 @@ from webviz_config import WebvizPluginABC
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
+from webviz_subsurface._models import EnsembleSetModel
 from .views import main_view
-from .models import PropertyStatisticsModel, SimulationTimeSeriesModel, EnsembleSetModel
+from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
 from .controllers import (
     property_qc_controller,
     property_delta_controller,
@@ -112,8 +113,6 @@ folder, to avoid risk of not extracting the right data.
                     ]
                     for ens in ensembles
                 }
-                if ensembles is not None
-                else None
             )
             self.pmodel = PropertyStatisticsModel(
                 dataframe=self.emodel.load_csv(csv_file=self.statistics_file),
@@ -121,7 +120,7 @@ folder, to avoid risk of not extracting the right data.
             )
             self.vmodel = SimulationTimeSeriesModel(
                 dataframe=self.emodel.load_smry(
-                    time_index=self.time_index,
+                    time_index=self.time_index, column_keys=self.column_keys
                 ),
                 theme=self.theme,
             )
