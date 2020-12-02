@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import plotly.figure_factory as ff
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
@@ -121,6 +122,29 @@ but the following responses are given more descriptive names automatically:
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.colors = self.plotly_theme.get(
+            "colorway",
+            [
+                "#243746",
+                "#eb0036",
+                "#919ba2",
+                "#7d0023",
+                "#66737d",
+                "#4c9ba1",
+                "#a44c65",
+                "#80b7bc",
+                "#ff1243",
+                "#919ba2",
+                "#be8091",
+                "#b2d4d7",
+                "#ff597b",
+                "#bdc3c7",
+                "#d8b2bd",
+                "#ffe7d6",
+                "#d5eaf4",
+                "#ff88a1",
+            ],
+        )
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
             self.initial_plot = "Box plot"
             self.initial_group = "ENSEMBLE"
@@ -365,7 +389,7 @@ but the following responses are given more descriptive names automatically:
                             children=[
                                 self.plot_options_layout,
                                 html.Div(
-                                    style={"height": 400},
+                                    style={"height": 600},
                                     children=wcc.Graph(id=self.ids("graph")),
                                 ),
                                 html.Div(
@@ -401,6 +425,7 @@ but the following responses are given more descriptive names automatically:
             ],
             self.vol_callback_inputs,
         )
+        # pylint: disable=too-many-locals
         def _render_vol_chart(*args):
             """Renders a volume visualization either as a Plotly Graph or
             as a Dash table object.
@@ -420,31 +445,92 @@ but the following responses are given more descriptive names automatically:
             data = self.volumes
             data = filter_dataframe(data, self.selectors, selections)
 
+            min_val = data[response].min()
+            max_val = data[response].max()
+            layout = {}
+            plot_traces = []
             # If not grouped make one trace
             if not group:
+
                 dframe = data.groupby("REAL").sum().reset_index()
-                plot_traces = [plot_data(plot_type, dframe, response, "Total")]
+                if plot_type == "Histogram":
+                    try:
+                        fig = ff.create_distplot(
+                            [dframe[response]],
+                            ["Total"],
+                            colors=self.colors,
+                            bin_size=(max_val - min_val) / 30,
+                            show_rug=False,
+                        ).to_dict()
+                        plot_traces = fig["data"]
+                        layout = fig["layout"]
+                    except np.linalg.LinAlgError:
+                        pass
+
+                else:
+                    plot_traces = [
+                        plot_data(
+                            plot_type,
+                            dframe,
+                            response,
+                            "Total",
+                        )
+                    ]
                 table = [plot_table(dframe, response, "Total")]
             # Else make one trace for each group member
             else:
-                plot_traces = []
                 table = []
-                for name, vol_group_df in data.groupby(group):
-                    dframe = vol_group_df.groupby("REAL").sum().reset_index()
-                    trace = plot_data(plot_type, dframe, response, name)
-                    if trace is not None:
-                        plot_traces.append(trace)
+                if plot_type == "Histogram":
+                    dframes = []
+                    names = []
+                    for name, vol_group_df in data.groupby(group):
+                        dframe = vol_group_df.groupby("REAL").sum().reset_index()
+                        dframes.append(dframe[response])
+                        names.append(name)
                         table.append(plot_table(dframe, response, name))
+                    try:
+                        fig = ff.create_distplot(
+                            dframes,
+                            names,
+                            colors=self.colors,
+                            bin_size=(max_val - min_val) / 30,
+                            show_rug=False,
+                        ).to_dict()
+                        plot_traces = fig["data"]
+                        layout = fig["layout"]
+                    except np.linalg.LinAlgError:
+                        pass
+
+                else:
+
+                    for name, vol_group_df in data.groupby(group):
+
+                        dframe = vol_group_df.groupby("REAL").sum().reset_index()
+                        trace = plot_data(
+                            plot_type,
+                            dframe,
+                            response,
+                            name,
+                        )
+                        if trace is not None:
+                            plot_traces.append(trace)
+                            table.append(plot_table(dframe, response, name))
             # Column specification
             columns = [
                 {**{"name": i[0], "id": i[0]}, **i[1]}
                 for i in InplaceVolumes.TABLE_STATISTICS
             ]
             # Make a graph object and return
+
             return (
                 {
                     "data": plot_traces,
-                    "layout": plot_layout(plot_type, response, theme=self.plotly_theme),
+                    "layout": plot_layout(
+                        layout,
+                        plot_type,
+                        response,
+                        theme=self.plotly_theme,
+                    ),
                 },
                 table,
                 columns,
@@ -494,11 +580,7 @@ but the following responses are given more descriptive names automatically:
 def plot_data(plot_type, dframe, response, name):
     values = dframe[response]
 
-    if plot_type == "Histogram":
-        if values.nunique() == 1:
-            values = values[0]
-        output = {"x": values, "type": "histogram", "name": name}
-    elif plot_type == "Box plot":
+    if plot_type == "Box plot":
         output = {"y": values, "name": name, "type": "box"}
     elif plot_type == "Per realization":
         output = {"y": values, "x": dframe["REAL"], "name": name, "type": "bar"}
@@ -528,31 +610,19 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, theme):
-    layout = {}
+def plot_layout(layout, plot_type, response, theme):
     layout.update(theme["layout"])
-    layout["height"] = 400
-    if plot_type == "Histogram":
-        layout.update(
-            {
-                "barmode": "overlay",
-                "bargap": 0.01,
-                "bargroupgap": 0.2,
-                "xaxis": {
-                    "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                },
-                "yaxis": {"title": "Count"},
-            }
-        )
-    elif plot_type == "Box plot":
+
+    if plot_type == "Box plot":
         layout.update(
             {
                 "yaxis": {
                     "title": f"{volume_description(response)} [{volume_unit(response)}]"
-                }
+                },
+                "height": 600,
             }
         )
-    else:
+    if plot_type == "Per realization":
         layout.update(
             {
                 "margin": {"l": 60, "r": 40, "b": 30, "t": 10},
@@ -560,10 +630,10 @@ def plot_layout(plot_type, response, theme):
                     "title": f"{volume_description(response)} [{volume_unit(response)}]"
                 },
                 "xaxis": {"title": "Realization"},
+                "height": 600,
             }
         )
 
-    # output["colorway"] = colors
     return layout
 
 

@@ -743,7 +743,6 @@ folder, to avoid risk of not extracting the right data.
                 margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
-                bargroupgap=0.2,
             )
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
@@ -1009,7 +1008,8 @@ def add_histogram_traces(dframe, vector, date, colors, interval):
         date=date, vector=vector, interval=interval, as_date=True
     )
     data = dframe.loc[dframe[("DATE")] == date]
-
+    min_val = data[vector].min()
+    max_val = data[vector].max()
     return [
         {
             "type": "histogram",
@@ -1019,6 +1019,8 @@ def add_histogram_traces(dframe, vector, date, colors, interval):
                 "color": colors.get(ensemble, colors[list(colors.keys())[0]]),
                 "line": {"color": "black", "width": 1},
             },
+            "bingroup": f"{vector}{date}",
+            "xbins": {"size": (max_val - min_val) / 10},
             "showlegend": False,
         }
         for ensemble, ens_df in data.groupby(("ENSEMBLE"))
