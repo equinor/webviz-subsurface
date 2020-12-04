@@ -1,6 +1,10 @@
+from typing import Optional, List, Dict, Any
 import numpy.ma as ma
 import numpy as np
+import pandas as pd
+import xtgeo
 from plotly.subplots import make_subplots
+from .._utils.colors import hex_to_rgba
 
 
 class XSectionFigure:
@@ -21,23 +25,23 @@ class XSectionFigure:
     # pylint: disable=too-many-instance-attributes, too-many-arguments
     def __init__(
         self,
-        zmin=None,
-        zmax=None,
-        well=None,
-        surfaces=None,
-        sampling=5,
-        nextend=5,
-        zonelogshift=0,
-        surfacenames=None,
-        surfacecolors=None,
-        cube=None,
-        grid=None,
-        gridproperty=None,
-        zunit="",
-        show_marginal=False,
-    ):
+        zmin: Optional[float] = None,
+        zmax: Optional[float] = None,
+        well: Optional[xtgeo.Well] = None,
+        surfaces: Optional[List[xtgeo.RegularSurface]] = None,
+        sampling: int = 5,
+        nextend: int = 5,
+        zonelogshift: int = 0,
+        surfacenames: Optional[List[str]] = None,
+        surfacecolors: Optional[List[str]] = None,
+        cube: Optional[xtgeo.Cube] = None,
+        grid: Optional[xtgeo.Grid] = None,
+        gridproperty: Optional[xtgeo.GridProperty] = None,
+        zunit: str = "",
+        show_marginal: bool = False,
+    ) -> None:
 
-        self._data = []
+        self._data: List[Any] = []
         self._figure = make_subplots(
             rows=2 if show_marginal else 1,
             cols=1,
@@ -45,8 +49,9 @@ class XSectionFigure:
             vertical_spacing=0,
             row_heights=[0.05, 0.95] if show_marginal else [1],
         )
-        self._zmin = zmin if zmin else well.dataframe["Z_TVDSS"].min()
-        self._zmax = zmax if zmax else well.dataframe["Z_TVDSS"].max()
+        if well:
+            self._zmin = zmin if zmin else well.dataframe["Z_TVDSS"].min()
+            self._zmax = zmax if zmax else well.dataframe["Z_TVDSS"].max()
         self._well = well
         self._nextend = nextend
         self._sampling = sampling
@@ -79,12 +84,17 @@ class XSectionFigure:
         self._fence = None
 
     @property
-    def data(self):
+    def data(self) -> Any:
         """The Plotly figure traces"""
+        # pylint: disable=line-too-long
+        # TODO: According to
+        # https://plotly.com/python-api-reference/generated/plotly.graph_objects.Figure.html
+        # this can return very different types.
+        # pylint: enable=line-too-long
         return self._figure.data
 
     @property
-    def layout(self):
+    def layout(self) -> Dict[str, Any]:
         """The Plotly figure layout"""
         _layout = self._figure.layout
         yax = "yaxis2" if self.show_marginal else "yaxis"
@@ -111,7 +121,7 @@ class XSectionFigure:
         return _layout
 
     @property
-    def fence(self):
+    def fence(self) -> np.ndarray:
         """Set or get the fence spesification"""
         if self._fence is None:
             if self._well is not None:
@@ -127,8 +137,12 @@ class XSectionFigure:
         return self._fence
 
     def plot_well(
-        self, zonelogname="ZONELOG", facieslogname=None, marginal_log=None, zonemin=0
-    ):
+        self,
+        zonelogname: Optional[str] = "ZONELOG",
+        facieslogname: Optional[str] = None,
+        marginal_log: Optional[str] = None,
+        zonemin: int = 0,
+    ) -> None:
         """Input an XTGeo Well object and plot it."""
         well = self._well
 
@@ -154,7 +168,7 @@ class XSectionFigure:
         if marginal_log:
             self._plot_marginal_log(dfr, zvals, hvals, marginal_log)
 
-    def _plot_well_traj(self, zvals, hvals):
+    def _plot_well_traj(self, zvals: np.ndarray, hvals: np.ndarray) -> None:
         """Plot the trajectory as a black line"""
 
         zvals_copy = ma.masked_where(zvals < self._zmin, zvals)
@@ -174,7 +188,14 @@ class XSectionFigure:
         # ax.plot(hvals_copy, zvals_copy, linewidth=6, c="black")
 
     # pylint: disable-too-many-locals
-    def _plot_well_zlog(self, df, zvals, hvals, zonelogname, zomin=-999):
+    def _plot_well_zlog(
+        self,
+        df: pd.DataFrame,
+        zvals: np.ndarray,
+        hvals: np.ndarray,
+        zonelogname: str,
+        zomin: int = -999,
+    ) -> None:
         """Plot the zone log as colored segments."""
 
         if zonelogname not in df.columns:
@@ -214,7 +235,9 @@ class XSectionFigure:
                 1,
             )
 
-    def _plot_well_faclog(self, df, zvals, hvals, facieslogname):
+    def _plot_well_faclog(
+        self, df: pd.DataFrame, zvals: np.ndarray, hvals: np.ndarray, facieslogname: str
+    ) -> None:
         """Plot the facies log as colored segments.
 
         Args:
@@ -250,7 +273,14 @@ class XSectionFigure:
 
         # self._drawlegend(ax, bba, title="Facies")
 
-    def _plot_marginal_log(self, df, zvals, hvals, logname, row=1):
+    def _plot_marginal_log(
+        self,
+        df: pd.DataFrame,
+        zvals: np.ndarray,
+        hvals: np.ndarray,
+        logname: str,
+        row: int = 1,
+    ) -> None:
         """Plot a marginal log above main plot"""
         if logname in df.columns:
             self._figure.add_trace(
@@ -275,14 +305,14 @@ class XSectionFigure:
     # pylint: disable=too-many-locals, unused-argument
     def plot_cube(
         self,
-        cube=None,
-        vmin=None,
-        vmax=None,
-        alpha=0.7,
-        interpolation="gaussian",
-        sampling="nearest",
-        name="seismic",
-    ):
+        cube: xtgeo.Cube = None,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        alpha: float = 0.7,
+        interpolation: str = "gaussian",
+        sampling: str = "nearest",
+        name: str = "seismic",
+    ) -> None:
         """Plot a cube backdrop.
 
         Args:
@@ -339,7 +369,12 @@ class XSectionFigure:
         )
 
     # pylint: disable=too-many-locals, unused-argument
-    def plot_grid3d(self, vmin=None, vmax=None, alpha=0.7):
+    def plot_grid3d(
+        self,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        alpha: float = 0.7,
+    ) -> None:
         """Plot a sampled grid with gridproperty backdrop.
 
         Args:
@@ -389,8 +424,11 @@ class XSectionFigure:
         )
 
     def plot_surfaces(
-        self, fill=False, surfaces=None, surfacenames=None
-    ):  # pylint: disable=too-many-branches, too-many-statements
+        self,
+        fill: bool = False,
+        surfaces: List[xtgeo.RegularSurface] = None,
+        surfacenames: Optional[List[str]] = None,
+    ) -> None:  # pylint: disable=too-many-branches, too-many-statements
 
         """Input a surface list (ordered from top to base) , and plot them."""
 
@@ -399,26 +437,30 @@ class XSectionFigure:
         # either use surfaces from __init__, or override with surfaces
         # specified here
 
-        for i, surface in enumerate(surfaces):
+        if surfaces and surfacenames and len(surfaces) == len(surfacenames):
+            for i, surface in enumerate(surfaces):
 
-            hfence1 = surface.get_randomline(self.fence).copy()
-            self._figure.add_trace(
-                {
-                    "type": "scatter",
-                    "mode": "lines",
-                    "fill": "tonexty" if i != 0 and fill else None,
-                    "y": hfence1[:, 1],
-                    "x": hfence1[:, 0],
-                    "name": surfacenames[i],
-                    # "marker": {"color": s_color},
-                },
-                self.main_trace_row,
-                1,
-            )
+                hfence1 = surface.get_randomline(self.fence).copy()
+                self._figure.add_trace(
+                    {
+                        "type": "scatter",
+                        "mode": "lines",
+                        "fill": "tonexty" if i != 0 and fill else None,
+                        "y": hfence1[:, 1],
+                        "x": hfence1[:, 0],
+                        "name": surfacenames[i],
+                        # "marker": {"color": s_color},
+                    },
+                    self.main_trace_row,
+                    1,
+                )
 
     def plot_statistical_surface(
-        self, statistical_surfaces: dict, name: str, fill: bool = False
-    ):
+        self,
+        statistical_surfaces: Dict[str, xtgeo.RegularSurface],
+        name: str,
+        fill: bool = False,
+    ) -> None:
         """Plot statistical surfaces (p10/p90/min/max/mean) as fanchart
 
         Args:
@@ -426,11 +468,16 @@ class XSectionFigure:
             name: Name of surface (e.g. horizon name)
             fill: Toggles fill between surfaces
         """
-        color = self._surfacecolors[
-            self._surfacenames.index(name) % len(self._surfacecolors)
-        ]
-        fill_color = hex_to_rgb(color, 0.3)
-        line_color = hex_to_rgb(color, 1)
+        if self._surfacecolors and self._surfacenames:
+            color = self._surfacecolors[
+                self._surfacenames.index(name) % len(self._surfacecolors)
+            ]
+        else:
+            color = "rgba(0, 0, 0, 1.0)"
+            # Either self._surfacecolors or self._surfacenames not set.
+            assert False
+        fill_color = hex_to_rgba(color, 0.3)
+        line_color = hex_to_rgba(color, 1)
 
         # Extract surface values along well fence
         x_values = statistical_surfaces["mean"].get_randomline(self.fence).copy()[:, 0]
@@ -531,12 +578,3 @@ class XSectionFigure:
             self.main_trace_row,
             1,
         )
-
-
-def hex_to_rgb(hex_string, opacity=1):
-    """Converts a hex color to rgb"""
-    hex_string = hex_string.lstrip("#")
-    hlen = len(hex_string)
-    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
-    rgb.append(opacity)
-    return f"rgba{tuple(rgb)}"

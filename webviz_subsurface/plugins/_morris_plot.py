@@ -1,7 +1,9 @@
 from uuid import uuid4
 from pathlib import Path
+from typing import Callable, List, Tuple
 import pandas as pd
 
+import dash
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
@@ -27,7 +29,7 @@ effect with other parameters.
 aggregated_data/morris.csv).
 """
 
-    def __init__(self, app, csv_file: Path):
+    def __init__(self, app: dash.Dash, csv_file: Path):
 
         super().__init__()
 
@@ -39,7 +41,7 @@ aggregated_data/morris.csv).
         self.set_callbacks(app)
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             [
                 html.Label("Vector", style={"font-size": "2rem"}),
@@ -53,10 +55,10 @@ aggregated_data/morris.csv).
             ]
         )
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [(read_csv, [{"csv_file": self.csv_file}])]
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.graph_id, "output"),
@@ -65,7 +67,7 @@ aggregated_data/morris.csv).
             ],
             [Input(self.vector_id, "value")],
         )
-        def _update_plot(vector):
+        def _update_plot(vector: str) -> Tuple[list, str, List[dict]]:
             df = self.data[self.data["name"] == vector]
             df = df.sort_values("time")
             output = (
@@ -90,5 +92,5 @@ aggregated_data/morris.csv).
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file)

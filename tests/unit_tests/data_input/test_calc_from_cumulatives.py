@@ -1,3 +1,4 @@
+from typing import List
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ import pandas as pd
 import webviz_subsurface._datainput.from_timeseries_cumulatives as from_cum
 
 
-def get_data_df(testdata_folder):
+def get_data_df(testdata_folder: Path) -> pd.DataFrame:
 
     data_df = pd.read_csv(
         testdata_folder
@@ -20,13 +21,13 @@ def get_data_df(testdata_folder):
     return data_df
 
 
-def test_calc_from_cumulatives(testdata_folder):
+def test_calc_from_cumulatives(testdata_folder: Path) -> None:
     # Includes monthly data, 10 reals x 4 ensembles, 3 years and 1 month (2000-01-01 to 2003-02-01)
-    DATA_DF = get_data_df(testdata_folder)
+    data_df = get_data_df(testdata_folder)
 
     ## Test single column key, FOPT as average rate avg_fopr, monthly
     calc_df = from_cum.calc_from_cumulatives(
-        data=DATA_DF,
+        data=data_df,
         column_keys="FOPT",
         time_index="monthly",
         time_index_input="monthly",
@@ -34,7 +35,7 @@ def test_calc_from_cumulatives(testdata_folder):
     )
 
     # Test real 0, iter-2
-    real_data = DATA_DF[(DATA_DF["REAL"] == 0) & (DATA_DF["ENSEMBLE"] == "iter-2")]
+    real_data = data_df[(data_df["REAL"] == 0) & (data_df["ENSEMBLE"] == "iter-2")]
     real_calc = calc_df[(calc_df["REAL"] == 0) & (calc_df["ENSEMBLE"] == "iter-2")]
 
     assert real_calc[real_calc.DATE == "2000-01-01"]["AVG_FOPR"].values == (
@@ -55,14 +56,14 @@ def test_calc_from_cumulatives(testdata_folder):
 
     ## Test multiple column keys, WOPT:OP_1 as average rate avg_fopr, monthly
     calc_df = from_cum.calc_from_cumulatives(
-        data=DATA_DF,
+        data=data_df,
         column_keys=["WOPT:OP_1", "GOPT:OP"],
         time_index="yearly",
         time_index_input="monthly",
         as_rate=True,
     )
     # Test real 4, iter-0
-    real_data = DATA_DF[(DATA_DF["REAL"] == 4) & (DATA_DF["ENSEMBLE"] == "iter-0")]
+    real_data = data_df[(data_df["REAL"] == 4) & (data_df["ENSEMBLE"] == "iter-0")]
     real_calc = calc_df[(calc_df["REAL"] == 4) & (calc_df["ENSEMBLE"] == "iter-0")]
 
     assert real_calc[real_calc.DATE == "2000-01-01"]["AVG_WOPR:OP_1"].values == (
@@ -99,14 +100,14 @@ def test_calc_from_cumulatives(testdata_folder):
 
     ## Test multiple column keys, WOPR_OP as average rate avg_fopr, monthly
     calc_df = from_cum.calc_from_cumulatives(
-        data=DATA_DF,
+        data=data_df,
         column_keys=["WGPT:OP_2", "GWPT:OP"],
         time_index="monthly",
         time_index_input="monthly",
         as_rate=False,
     )
     # Test real 9, iter-0
-    real_data = DATA_DF[(DATA_DF["REAL"] == 9) & (DATA_DF["ENSEMBLE"] == "iter-0")]
+    real_data = data_df[(data_df["REAL"] == 9) & (data_df["ENSEMBLE"] == "iter-0")]
     real_calc = calc_df[(calc_df["REAL"] == 9) & (calc_df["ENSEMBLE"] == "iter-0")]
 
     assert real_calc[real_calc.DATE == "2000-01-01"]["INTVL_WGPT:OP_2"].values == (
@@ -139,12 +140,18 @@ def test_calc_from_cumulatives(testdata_folder):
     ],
 )
 def test_calc_from_cumulatives_errors(
-    column_keys, time_index, time_index_input, as_rate, testdata_folder
-):
-    DATA_DF = get_data_df(testdata_folder)
+    column_keys: List[str],
+    time_index: str,
+    time_index_input: str,
+    as_rate: bool,
+    testdata_folder: Path,
+) -> None:
+    data_df = get_data_df(testdata_folder)
     with pytest.raises(ValueError):
+        # Is this variable necessary?
+        # pylint: disable=unused-variable
         calc_df = from_cum.calc_from_cumulatives(
-            data=DATA_DF,
+            data=data_df,
             column_keys=column_keys,
             time_index=time_index,
             time_index_input=time_index_input,

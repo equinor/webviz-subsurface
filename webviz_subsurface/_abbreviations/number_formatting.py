@@ -2,7 +2,7 @@ import math
 import json
 import pathlib
 import warnings
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
@@ -10,7 +10,7 @@ _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 SI_PREFIXES = json.loads((_DATA_PATH / "si_prefixes.json").read_text())
 
 
-def table_statistics_base() -> List[tuple]:
+def table_statistics_base() -> List[Tuple[str, dict]]:
     return [
         (
             i,
@@ -58,7 +58,7 @@ def si_prefixed(
      'M' (mega)) or an integer which is the base 10 exponent (e.g. 3 for kilo, -3 for milli).
     """
 
-    def number_formatter(number_base: float, si_prefix: str):
+    def number_formatter(number_base: float, si_prefix: str) -> str:
         return (
             f"{number_base:{number_format}} {si_prefix}{unit}"
             if spaced

@@ -31,7 +31,9 @@ import webviz_subsurface._utils.simulation_timeseries as simulation_timeseries
         (None, "WWCT:OP_2", "daily", True, None),
     ],
 )
-def test_date_to_interval_conversion(date, vector, interval, as_date, res):
+def test_date_to_interval_conversion(
+    date: str, vector: str, interval: str, as_date: bool, res: str
+) -> None:
     if res is None:
         assert (
             simulation_timeseries.date_to_interval_conversion(

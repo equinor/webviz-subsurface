@@ -4,7 +4,7 @@ import fnmatch
 import warnings
 import json
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, List, Tuple, Callable, Union, Any
 
 import yaml
 import numpy as np
@@ -35,6 +35,7 @@ from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
 )
+from .._utils.colors import hex_to_rgba
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
@@ -109,13 +110,13 @@ individual realizations. You should therefore not have more than one `UNSMRY` fi
 folder, to avoid risk of not extracting the right data.
 """
 
-    TABLE_STATISTICS = [("Group", {})] + table_statistics_base()
+    TABLE_STATISTICS: List[Tuple[str, dict]] = [("Group", {})] + table_statistics_base()
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
     # pylint: disable=dangerous-default-value
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: list,
         fipfile: Path = None,
         initial_vector: str = "ROIP",
@@ -186,8 +187,7 @@ folder, to avoid risk of not extracting the right data.
                             " simulator metadata file format limitation."
                         )
                         self.rec_ensembles.discard(ens)
-        self.smry_cols = []
-        self.smry_options = []
+        self.smry_cols: List[str] = []
         for col in self.smry.columns:
             if (
                 col in ReservoirSimulationTimeSeriesRegional.ENSEMBLE_COLUMNS
@@ -229,7 +229,7 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("layout"),
@@ -309,11 +309,11 @@ folder, to avoid risk of not extracting the right data.
         ]
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         return list(self.smry["ENSEMBLE"].unique())
 
     @property
-    def all_nodes(self):
+    def all_nodes(self) -> List[str]:
         sorted_int_list = sorted(
             list(
                 {
@@ -326,7 +326,7 @@ folder, to avoid risk of not extracting the right data.
         return [str(i) for i in sorted_int_list]
 
     @property
-    def groupby_colors(self):
+    def groupby_colors(self) -> dict:
         color_dict = {"ENSEMBLE": unique_colors(self.ensembles, self.theme)}
         if self.fipdesc is None:
             color_dict.update({"regions": unique_colors(self.all_nodes, self.theme)})
@@ -341,7 +341,7 @@ folder, to avoid risk of not extracting the right data.
             )
         return color_dict
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions = self.emodel.webvizstore
         if self.fipfile is not None:
             functions.append(
@@ -352,13 +352,13 @@ folder, to avoid risk of not extracting the right data.
             )
         return functions
 
-    def selectors_id(self, selector):
+    def selectors_id(self, selector: str) -> dict:
         return {"page": self.uuid("selectors"), "value": selector}
 
-    def selectors_context_string(self, selector, prop):
+    def selectors_context_string(self, selector: str, prop: str) -> str:
         return '{"page":"' + self.uuid("selectors") + f'","value":"{selector}"}}.{prop}'
 
-    def selectors_unwrap_context_string(self, context_string):
+    def selectors_unwrap_context_string(self, context_string: str) -> str:
         return (
             context_string.split(',"value":"', 1)[1]
             .split('"}')[0]
@@ -366,7 +366,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
@@ -529,7 +529,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("filters"), "children"),
@@ -544,7 +544,9 @@ folder, to avoid risk of not extracting the right data.
                 State(self.selectors_id("groupby"), "value"),
             ],
         )
-        def _update_filters_vectors_groupby(fip, current_vector, current_groupby):
+        def _update_filters_vectors_groupby(
+            fip: str, current_vector: str, current_groupby: str
+        ) -> Tuple[List[html.Details], List[dict], str, List[dict], str]:
             """
             Makes "wcc.Select" components based on the available filters.
             If a fipfile is provided, the filters will be based on the available groups in that
@@ -648,7 +650,7 @@ folder, to avoid risk of not extracting the right data.
             )
 
         @app.callback(
-            [
+            [  # type: ignore
                 Output(self.uuid("graph"), "figure"),
                 Output(self.uuid("date_view_wrapper"), "children"),
                 Output(self.uuid("ref_vec"), "data"),
@@ -657,7 +659,10 @@ folder, to avoid risk of not extracting the right data.
             + [Input({"page": self.uuid("selectors"), "value": ALL}, "value")],
             [State(self.uuid("fip"), "value")],
         )  # pylint: disable=too-many-locals
-        def _render_charts(date, _, fip_array):
+        def _render_charts(date: str, _: Any, fip_array: str):
+            # TODO(Sigurd) Currently giving up on deciding on the return type for
+            # _render_charts() above. Some of the mypy errors indicate that there
+            # are some errors in the structure of the return values of this function
             inputs = dash.callback_context.inputs
             date = json.loads(inputs.pop(f"{self.uuid('date')}.data"))
             ensembles = inputs.pop(self.selectors_context_string("ensemble", "value"))
@@ -766,7 +771,7 @@ folder, to avoid risk of not extracting the right data.
                 )
             else:
                 date_view = html.Div(children="")
-            timeseries_layout = {
+            timeseries_layout: dict = {
                 "hovermode": "closest",
                 "yaxis": {
                     "title": make_title(self.smry_meta, ref_vector, vector, mode),
@@ -783,6 +788,9 @@ folder, to avoid risk of not extracting the right data.
                         "hoverformat": ".2%",
                     },
                 )
+
+            # TODO(Sigurd)
+            # Must have a look at the return value structure here!
             return (
                 (
                     [
@@ -795,7 +803,7 @@ folder, to avoid risk of not extracting the right data.
                     ]
                 )
                 + [date_view]
-                + [json.dumps(ref_vector)]
+                + [json.dumps(ref_vector)]  # type: ignore
             )
 
         @app.callback(
@@ -806,7 +814,9 @@ folder, to avoid risk of not extracting the right data.
             [Input(self.selectors_id("groupby"), "value")],
             [State(self.selectors_id("ensemble"), "multi")],
         )
-        def _set_ensemble_selector(group_by, multi):
+        def _set_ensemble_selector(
+            group_by: str, multi: bool
+        ) -> Tuple[bool, Union[List[str], str]]:
             """If ensemble is selected as group by, set the ensemble
             selector to allow multiple selections. Otherwise single selection.
             """
@@ -823,7 +833,7 @@ folder, to avoid risk of not extracting the right data.
             [Input(self.uuid("graph"), "clickData")],
             [State(self.uuid("date"), "data")],
         )
-        def _update_date(clickdata, date):
+        def _update_date(clickdata: dict, date: str) -> str:
             """Store clicked date for use in other callback"""
             date = clickdata["points"][0]["x"] if clickdata else json.loads(date)
             return json.dumps(date)
@@ -836,7 +846,7 @@ folder, to avoid risk of not extracting the right data.
             ],
             [State(self.selectors_id("vector"), "value")],
         )
-        def _update_single_date_title(date, ref_vector, vector):
+        def _update_single_date_title(date: str, ref_vector: str, vector: str) -> str:
             """Update single date title"""
             date = json.loads(date)
             ref_vector = json.loads(ref_vector)
@@ -856,7 +866,7 @@ folder, to avoid risk of not extracting the right data.
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def make_title(smry_meta: pd.DataFrame, ref_vector: str, vector: str, mode: str):
+def make_title(smry_meta: pd.DataFrame, ref_vector: str, vector: str, mode: str) -> str:
     return (
         f"{simulation_vector_description(vector).split(')')[0]})"
         if mode == "rec"
@@ -869,8 +879,19 @@ def make_title(smry_meta: pd.DataFrame, ref_vector: str, vector: str, mode: str)
     )
 
 
-def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, colors):
-    def _make_trace(date_viz, df, col, name, color):
+def render_single_date_graph(
+    date_viz: str,
+    df: pd.DataFrame,
+    mode: str,
+    groupby: str,
+    date: str,
+    theme: dict,
+    title: str,
+    colors: dict,
+) -> wcc.Graph:
+    def _make_trace(
+        date_viz: str, df: pd.DataFrame, col: str, name: str, color: str
+    ) -> Union[dict, None]:
         if date_viz == "histogram":
             return {
                 "x": df[col],
@@ -979,12 +1000,17 @@ def render_single_date_graph(date_viz, df, mode, groupby, date, theme, title, co
                 }
             )
 
+    # TODO(Sigurd) What is the type for theme variable here?
+    # Probably the assumption is that theme is of type WebvizConfigTheme but how should this
+    # type be propagated to the plugins?
     return wcc.Graph(
-        figure={"data": traces, "layout": theme.create_themed_layout(layout)}
+        figure={"data": traces, "layout": theme.create_themed_layout(layout)}  # type: ignore
     )
 
 
-def render_table(stat_df, mode, groupby, date):
+def render_table(
+    stat_df: pd.DataFrame, mode: str, groupby: str, date: str
+) -> DataTable:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1066,7 +1092,7 @@ def filter_and_aggregate_vectors(
     filters: dict,
     fipdesc: pd.DataFrame,
     fip: str,
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, str]:
     """Aggregate inplace vectors based on filters
     Note: ensemble is only in the list of inputs to reduce risk with caching
           See: https://github.com/equinor/webviz-config/issues/211
@@ -1122,9 +1148,9 @@ def filter_and_aggregate_vectors(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_nodes(groupby: str, fipdesc: pd.DataFrame, fip: str, filters: dict):
+def get_nodes(groupby: str, fipdesc: pd.DataFrame, fip: str, filters: dict) -> dict:
     df = fipdesc[fipdesc["FIP"] == fip]
-    nodes = dict()
+    nodes: dict = dict()
     for node, dfn in df.groupby("NODE"):
         node_inc = True
         node_subgroups = []
@@ -1156,7 +1182,8 @@ def get_nodes(groupby: str, fipdesc: pd.DataFrame, fip: str, filters: dict):
     return nodes
 
 
-def calc_real_recovery(df, agg_vectors):
+# TODO(Sigurd) What is the correct return type of this function? numpy.ndarray?
+def calc_real_recovery(df: pd.DataFrame, agg_vectors: List[str]):  # type: ignore
     first = df[agg_vectors].values[0]
     with np.errstate(invalid="ignore"):
         return (first - df[agg_vectors].values) / first
@@ -1241,12 +1268,12 @@ def per_real_calculations(
     return (traces, df)
 
 
-def calc_statistics(df):
+def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     # Switched P10 and P90 due to convention in petroleum industry
-    def p10(x):
+    def p10(x: np.array) -> float:
         return np.nanpercentile(x, q=90)
 
-    def p90(x):
+    def p90(x: np.array) -> float:
         return np.nanpercentile(x, q=10)
 
     stat_dfs = []
@@ -1262,14 +1289,14 @@ def calc_statistics(df):
 
 
 def add_statistic_traces(
-    stat_df,
-    ensembles,
-    mode,
-    groupby,
-    groupby_color,
-    line_shape,
-):
-    columns = []
+    stat_df: pd.DataFrame,
+    ensembles: List[str],
+    mode: str,
+    groupby: str,
+    groupby_color: dict,
+    line_shape: str,
+) -> list:
+    columns: List[str] = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
     elif mode == "rec":
@@ -1306,10 +1333,12 @@ def add_statistic_traces(
     return traces
 
 
-def add_fanchart_traces(stat_df, col, legend_group, color, line_shape):
+def add_fanchart_traces(
+    stat_df: pd.DataFrame, col: str, legend_group: str, color: str, line_shape: str
+) -> List[dict]:
     """Renders a fanchart"""
-    fill_color = hex_to_rgb(color, 0.3)
-    line_color = hex_to_rgb(color, 1)
+    fill_color = hex_to_rgba(color, 0.3)
+    line_color = hex_to_rgba(color, 1)
     return [
         {
             "name": legend_group,
@@ -1372,16 +1401,7 @@ def add_fanchart_traces(stat_df, col, legend_group, color, line_shape):
     ]
 
 
-def hex_to_rgb(hex_string, opacity=1):
-    """Converts a hex color to rgb"""
-    hex_string = hex_string.lstrip("#")
-    hlen = len(hex_string)
-    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
-    rgb.append(opacity)
-    return f"rgba{tuple(rgb)}"
-
-
-def get_fip_array_nodes(fip, smry_cols):
+def get_fip_array_nodes(fip: str, smry_cols: list) -> List[str]:
     """Sorted list of all available nodes for a given fip array (e.g FIPNUM)"""
     sorted_int_list = sorted(
         list(
@@ -1435,7 +1455,7 @@ def get_fipdesc(fipfile: Path, column_keys: list) -> pd.DataFrame:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_unit(smry_meta, vec):
+def get_unit(smry_meta: pd.DataFrame, vec: str) -> Union[str, None]:
     return (
         None
         if (smry_meta is None or vec not in smry_meta.index)

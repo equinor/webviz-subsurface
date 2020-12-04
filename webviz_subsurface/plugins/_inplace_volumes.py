@@ -1,8 +1,10 @@
 from uuid import uuid4
 from pathlib import Path
+from typing import List, Tuple, Callable, Union, Iterable
 
 import numpy as np
 import pandas as pd
+import dash
 from dash_table import DataTable
 import dash_html_components as html
 import dash_core_components as dcc
@@ -79,11 +81,11 @@ but the following responses are given more descriptive names automatically:
 
 """
 
-    TABLE_STATISTICS = [("Group", {})] + table_statistics_base()
+    TABLE_STATISTICS: List[Tuple[str, dict]] = [("Group", {})] + table_statistics_base()
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         csvfile: Path = None,
         ensembles: list = None,
         volfiles: dict = None,
@@ -99,7 +101,7 @@ but the following responses are given more descriptive names automatically:
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
         if csvfile:
-            self.volumes = read_csv(csvfile)
+            self.volumes: pd.DataFrame = read_csv(csvfile)
 
         elif ensembles and volfiles:
             self.ens_paths = {
@@ -121,6 +123,7 @@ but the following responses are given more descriptive names automatically:
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.initial_group: Union[str, None] = None
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
             self.initial_plot = "Box plot"
             self.initial_group = "ENSEMBLE"
@@ -129,12 +132,12 @@ but the following responses are given more descriptive names automatically:
             self.initial_group = None
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.ids("layout"),
@@ -181,7 +184,7 @@ but the following responses are given more descriptive names automatically:
             },
         ]
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
             [(read_csv, [{"csv_file": self.csvfile}])]
             if self.csvfile
@@ -200,32 +203,32 @@ but the following responses are given more descriptive names automatically:
         )
 
     @property
-    def vol_columns(self):
+    def vol_columns(self) -> List[str]:
         """List of all columns in dataframe"""
         return list(self.volumes.columns)
 
     @property
-    def all_selectors(self):
+    def all_selectors(self) -> List[str]:
         """List of all possible selectors"""
         return ["SOURCE", "ENSEMBLE", "ZONE", "REGION", "FACIES", "LICENSE"]
 
     @property
-    def plot_types(self):
+    def plot_types(self) -> List[str]:
         """List of available plots"""
         return ["Histogram", "Per realization", "Box plot"]
 
     @property
-    def selectors(self):
+    def selectors(self) -> List[str]:
         """List of available selector columns in dframe"""
         return [x for x in self.all_selectors if x in self.vol_columns]
 
     @property
-    def responses(self):
+    def responses(self) -> List[str]:
         """List of available volume responses in dframe"""
         return [x for x in self.vol_columns if x not in self.selectors and x != "REAL"]
 
     @property
-    def vol_callback_inputs(self):
+    def vol_callback_inputs(self) -> List[Input]:
         """Returns all Dash inputs for selecting and filtering volumes
         The number of inputs will vary depending on the available
         selector columns in the volumes dataframe
@@ -239,7 +242,7 @@ but the following responses are given more descriptive names automatically:
         return inputs
 
     @property
-    def selector_dropdowns(self):
+    def selector_dropdowns(self) -> List[html.Div]:
         """Makes dropdowns for each selector.
         Args:
             dframe - Volumetrics Dataframe
@@ -247,7 +250,7 @@ but the following responses are given more descriptive names automatically:
         Return:
             dcc.Dropdown objects
         """
-        dropdowns = []
+        dropdowns: List[html.Div] = []
         for selector in self.selectors:
             elements = list(self.volumes[selector].unique())
             if selector in ["ENSEMBLE", "SOURCE"]:
@@ -280,7 +283,7 @@ but the following responses are given more descriptive names automatically:
         return dropdowns
 
     @property
-    def plot_options_layout(self):
+    def plot_options_layout(self) -> wcc.FlexBox:
         """Row layout of dropdowns for plot options"""
         return wcc.FlexBox(
             children=[
@@ -343,7 +346,7 @@ but the following responses are given more descriptive names automatically:
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         """Main layout"""
         return html.Div(
             children=[
@@ -391,9 +394,9 @@ but the following responses are given more descriptive names automatically:
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
-            [
+            [  # type: ignore
                 Output(self.ids("graph"), "figure"),
                 Output(self.ids("table"), "data"),
                 Output(self.ids("table"), "columns"),
@@ -401,6 +404,8 @@ but the following responses are given more descriptive names automatically:
             ],
             self.vol_callback_inputs,
         )
+        # TODO(Sigurd) Doesn't seem to make sense with type hints
+        # here unless all args are of same type
         def _render_vol_chart(*args):
             """Renders a volume visualization either as a Plotly Graph or
             as a Dash table object.
@@ -413,10 +418,17 @@ but the following responses are given more descriptive names automatically:
             Return:
                 Plotly Graph/dash_table.DataTable
             """
-            response = args[0]
-            plot_type = args[1]
-            group = args[2]
-            selections = args[3:]
+            # pylint: disable=line-too-long
+            # TODO(Sigurd) Tricky to figure out the type hints without a bit of guesswork here due to the use of *args
+            # The reasoning below is:
+            #   response:   ids("response")  dcc.Dropdown(multi=False, clearable=False) => str
+            #   plot_type:  ids("plot_type") dcc.Dropdown(multi=False, clearable=False) => str
+            #   group:      ids("group")     dcc.Dropdown(multi=False, clearable=True)  => Union[str, None]
+            #   selection:  multiple ids     n*wcc.Select(multi=?, clearable=?)         => Tuple[Union[str, List[str], None], ...]
+            response: str = args[0]
+            plot_type: str = args[1]
+            group: Union[str, None] = args[2]
+            selections: Tuple[Union[str, List[str], None], ...] = args[3:]
             data = self.volumes
             data = filter_dataframe(data, self.selectors, selections)
 
@@ -459,7 +471,9 @@ but the following responses are given more descriptive names automatically:
             ],
             [Input(self.ids("group"), "value")],
         )
-        def _set_iteration_selector(group_by):
+        def _set_iteration_selector(
+            group_by: Union[str, None]
+        ) -> Tuple[bool, Union[str, list], int]:
             """If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
             """
@@ -479,7 +493,9 @@ but the following responses are given more descriptive names automatically:
                 ],
                 [Input(self.ids("group"), "value")],
             )
-            def _set_source_selector(group_by):
+            def _set_source_selector(
+                group_by: Union[str, None]
+            ) -> Tuple[bool, Union[str, list], int]:
                 """If iteration is selected as group by set the iteration
                 selector to allow multiple selections, else use single selection
                 """
@@ -491,9 +507,12 @@ but the following responses are given more descriptive names automatically:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_data(plot_type, dframe, response, name):
+def plot_data(
+    plot_type: str, dframe: pd.DataFrame, response: str, name: str
+) -> Union[dict, None]:
     values = dframe[response]
 
+    output: Union[dict, None] = None
     if plot_type == "Histogram":
         if values.nunique() == 1:
             values = values[0]
@@ -509,8 +528,10 @@ def plot_data(plot_type, dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_table(dframe, response, name):
+def plot_table(dframe: pd.DataFrame, response: str, name: str) -> Union[dict, None]:
     values = dframe[response]
+
+    output: Union[dict, None] = None
     try:
         output = {
             "Group": str(name),
@@ -528,7 +549,7 @@ def plot_table(dframe, response, name):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(plot_type, response, theme):
+def plot_layout(plot_type: str, response: str, theme: dict) -> dict:
     layout = {}
     layout.update(theme["layout"])
     layout["height"] = 400
@@ -568,7 +589,11 @@ def plot_layout(plot_type, response, theme):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_dataframe(dframe, columns, column_values):
+def filter_dataframe(
+    dframe: pd.DataFrame,
+    columns: Union[str, List[str]],
+    column_values: Iterable[Union[str, List[str]]],
+) -> pd.DataFrame:
     df = dframe.copy()
     if not isinstance(columns, list):
         columns = [columns]
@@ -582,5 +607,5 @@ def filter_dataframe(dframe, columns, column_values):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

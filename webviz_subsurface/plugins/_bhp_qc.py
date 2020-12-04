@@ -1,7 +1,8 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Union, Tuple, Callable
 
 import pandas as pd
 import numpy as np
+import dash
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_core_components as dcc
@@ -11,6 +12,7 @@ from webviz_config import WebvizPluginABC
 
 from webviz_subsurface._models import EnsembleSetModel
 from .._utils.unique_theming import unique_colors
+from .._utils.colors import hex_to_rgba
 
 
 class BhpQc(WebvizPluginABC):
@@ -34,7 +36,7 @@ class BhpQc(WebvizPluginABC):
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: list,
         wells: Optional[List[str]] = None,
     ):
@@ -57,7 +59,7 @@ class BhpQc(WebvizPluginABC):
         self.set_callbacks(app)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("layout"),
@@ -81,21 +83,21 @@ class BhpQc(WebvizPluginABC):
         ]
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         return list(self.smry["ENSEMBLE"].unique())
 
     @property
-    def wells(self):
+    def wells(self) -> List[set]:
         return sorted(
             list(set(col[5:] for col in self.smry.columns if col.startswith("WBHP:")))
         )
 
     @property
-    def ens_colors(self):
+    def ens_colors(self) -> dict:
         return unique_colors(self.ensembles, self.theme)
 
     @property
-    def label_map(self):
+    def label_map(self) -> Dict[str, str]:
         return {
             "Mean": "mean",
             "Count (data points)": "count",
@@ -108,7 +110,7 @@ class BhpQc(WebvizPluginABC):
         }
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
@@ -127,6 +129,7 @@ class BhpQc(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles[0],
+                                    clearable=False,
                                     multi=False,
                                 ),
                             ],
@@ -232,7 +235,7 @@ class BhpQc(WebvizPluginABC):
             ],
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             Input(self.uuid("ensemble"), "value"),
@@ -244,8 +247,14 @@ class BhpQc(WebvizPluginABC):
             Input(self.uuid("ascending"), "value"),
         )
         def _update_graph(
-            ensemble, plot_type, n_wells, wells, sort_by, stat_bars, ascending
-        ):
+            ensemble: str,
+            plot_type: str,
+            n_wells: int,
+            wells: Union[str, List[str]],
+            sort_by: str,
+            stat_bars: Union[str, List[str]],
+            ascending: bool,
+        ) -> dict:
             wells = wells if isinstance(wells, list) else [wells]
             stat_bars = stat_bars if isinstance(stat_bars, list) else [stat_bars]
             df = filter_df(df=self.smry, ensemble=ensemble, wells=wells)
@@ -327,19 +336,19 @@ class BhpQc(WebvizPluginABC):
             Output(self.uuid("select_stat"), "style"),
             Input(self.uuid("plot_type"), "value"),
         )
-        def _update_stat_selector(plot_type):
+        def _update_stat_selector(plot_type: str) -> dict:
             return (
                 {"display": "none"}
                 if plot_type == "Fan chart"
                 else {"display": "block"}
             )
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return self.emodel.webvizstore
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_df(df, ensemble, wells):
+def filter_df(df: pd.DataFrame, ensemble: str, wells: List[str]) -> pd.DataFrame:
     """Filter dataframe for current ensembles and wells.
     Replacing zeroes (well not open) with np.NaN to not be accounted for
     in statistics.
@@ -348,18 +357,18 @@ def filter_df(df, ensemble, wells):
     return df.loc[df["ENSEMBLE"] == ensemble][columns].replace(0, np.NaN)
 
 
-def calc_statistics(df: pd.DataFrame):
+def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate statistics for given vectors over the ensembles
     refaxis is used if another column than DATE should be used to groupby.
     """
     # Invert p10 and p90 due to oil industry convention.
-    def p10(x):
+    def p10(x: np.array) -> float:
         return np.nanpercentile(x, q=90)
 
-    def p50(x):
+    def p50(x: np.array) -> float:
         return np.nanpercentile(x, q=50)
 
-    def p90(x):
+    def p90(x: np.array) -> float:
         return np.nanpercentile(x, q=10)
 
     # Calculate statistics, ignoring NaNs.
@@ -387,11 +396,11 @@ def add_fanchart_traces(
     ens_stat_df: pd.DataFrame,
     color: str,
     legend_group: str,
-):
+) -> List[dict]:
     """Renders a fanchart for an ensemble vector"""
 
-    fill_color = hex_to_rgb(color, 0.3)
-    line_color = hex_to_rgb(color, 1)
+    fill_color = hex_to_rgba(color, 0.3)
+    line_color = hex_to_rgba(color, 1)
     x = [vec[5:] for vec in ens_stat_df.index]
 
     return [
@@ -454,12 +463,3 @@ def add_fanchart_traces(
             "showlegend": False,
         },
     ]
-
-
-def hex_to_rgb(hex_string, opacity=1):
-    """Converts a hex color to rgb"""
-    hex_string = hex_string.lstrip("#")
-    hlen = len(hex_string)
-    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
-    rgb.append(opacity)
-    return f"rgba{tuple(rgb)}"

@@ -10,7 +10,7 @@ from .fmu_input import load_ensemble_set
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def extract_mismatch(ens_paths, observation_file: Path) -> pd.DataFrame:
+def extract_mismatch(ens_paths: dict, observation_file: Path) -> pd.DataFrame:
     """Convert the fmu-ensemble mismatch dataframe into the the format
     suitable for the interactive history match visualization.
     """

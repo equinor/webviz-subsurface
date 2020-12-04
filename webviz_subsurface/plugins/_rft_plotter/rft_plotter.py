@@ -1,5 +1,8 @@
+from typing import Optional, List, Dict, Tuple, Callable, Any, Union
+
 from pathlib import Path
 
+import dash
 import numpy as np
 import pandas as pd
 import dash_html_components as html
@@ -100,14 +103,14 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
-        ensembles: list = None,
+        ensembles: Optional[List[str]] = None,
         formations: Path = None,
         obsdata: Path = None,
         faultlines: Path = None,
-    ):
+    ) -> None:
         super().__init__()
         self.formations = formations
         self.faultlines = faultlines
@@ -196,8 +199,8 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self):
-        functions = [
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
+        functions: List[Tuple[Callable, List[Dict[str, Any]]]] = [
             (
                 read_csv,
                 [
@@ -244,30 +247,30 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         return functions
 
     @property
-    def well_names(self):
+    def well_names(self) -> List[str]:
         return sorted(list(self.ertdatadf["WELL"].unique()))
 
     @property
-    def zone_names(self):
+    def zone_names(self) -> List[str]:
         return sorted(list(self.ertdatadf["ZONE"].unique()))
 
     @property
-    def dates(self):
+    def dates(self) -> List[str]:
         return sorted(list(self.ertdatadf["DATE"].unique()))
 
-    def date_in_well(self, well):
+    def date_in_well(self, well: str) -> List[str]:
         df = self.ertdatadf.loc[self.ertdatadf["WELL"] == well]
         return [str(d) for d in list(df["DATE"].unique())]
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         return list(self.ertdatadf["ENSEMBLE"].unique())
 
     @property
-    def enscolors(self):
+    def enscolors(self) -> dict:
         return unique_colors(self.ensembles)
 
-    def set_date_marks(self):
+    def set_date_marks(self) -> Dict[str, Dict[str, Any]]:
         marks = {}
         idx_steps = np.linspace(
             start=0,
@@ -290,7 +293,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         return marks
 
     @property
-    def formation_plot_selectors(self):
+    def formation_plot_selectors(self) -> List[html.Div]:
         return [
             html.Div(
                 [
@@ -420,9 +423,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         ]
 
     @property
-    def map_plot_selectors(self):
+    def map_plot_selectors(self) -> List[html.Div]:
 
-        return (
+        return [
             html.Div(
                 style={"marginRight": "10px"},
                 children=[
@@ -529,9 +532,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                     ),
                 ],
             ),
-        )
+        ]
 
-    def filter_layout(self, tab):
+    def filter_layout(
+        self, tab: str
+    ) -> List[dash.development.base_component.Component]:
         """Layout for shared filters"""
         return [
             html.Label(
@@ -588,7 +593,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             ),
         ]
 
-    def size_color_layout(self):
+    def size_color_layout(self) -> List[html.Div]:
         return [
             html.Div(
                 children=[
@@ -641,7 +646,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> dcc.Tabs:
 
         tabs_styles = {"height": "44px", "width": "100%"}
         tab_style = {
@@ -769,14 +774,14 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             ],
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.uuid("well"), "value"),
             [
                 Input(self.uuid("map"), "clickData"),
             ],
         )
-        def _get_clicked_well(click_data):
+        def _get_clicked_well(click_data: Dict[str, List[Dict[str, Any]]]) -> str:
             if not click_data:
                 return self.well_names[0]
             for layer in click_data["points"]:
@@ -795,7 +800,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 Input(self.uuid("map_date"), "value"),
             ],
         )
-        def _update_map(ensemble, sizeby, colorby, dates):
+        def _update_map(
+            ensemble: str, sizeby: str, colorby: str, dates: List[float]
+        ) -> Dict[str, Any]:
             figure = MapFigure(self.ertdatadf, ensemble)
             if self.faultlinesdf is not None:
                 figure.add_fault_lines(self.faultlinesdf)
@@ -813,7 +820,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 Input(self.uuid("depth_option"), "value"),
             ],
         )
-        def _update_formation_plot(well, date, ensembles, linetype, depth_option):
+        def _update_formation_plot(
+            well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
+        ) -> Dict[str, Any]:
             if date not in self.date_in_well(well):
                 raise PreventUpdate
 
@@ -849,8 +858,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             State(self.uuid("date"), "value"),
         )
         def _update_linetype(
-            depth_option, current_linetype, current_well, current_date
-        ):
+            depth_option: str,
+            current_linetype: str,
+            current_well: str,
+            current_date: str,
+        ) -> Tuple[List[Dict[str, str]], str]:
             if self.simdf is not None:
                 df = filter_frame(
                     self.simdf,
@@ -887,7 +899,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             ],
             [State(self.uuid("date"), "value")],
         )
-        def _update_date(well, current_date):
+        def _update_date(
+            well: str, current_date: str
+        ) -> Tuple[List[Dict[str, str]], str]:
             dates = self.date_in_well(well)
             available_dates = [{"label": date, "value": date} for date in dates]
             date = current_date if current_date in dates else dates[0]
@@ -902,7 +916,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 Input(self.uuid("ensemble-misfitplot"), "value"),
             ],
         )
-        def _misfit_plot(wells, zones, dates, ensembles):
+        def _misfit_plot(
+            wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
+        ) -> List[wcc.Graph]:
             df = filter_frame(
                 self.ertdatadf,
                 {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
@@ -920,7 +936,14 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 Input(self.uuid("crossplot_color"), "value"),
             ],
         )
-        def _crossplot(wells, zones, dates, ensembles, sizeby, colorby):
+        def _crossplot(
+            wells: List[str],
+            zones: List[str],
+            dates: List[str],
+            ensembles: List[str],
+            sizeby: str,
+            colorby: str,
+        ) -> List[wcc.Graph]:
             df = filter_frame(
                 self.ertdatadf,
                 {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
@@ -936,7 +959,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 Input(self.uuid("ensemble-errorplot"), "value"),
             ],
         )
-        def _errorplot(wells, zones, dates, ensembles):
+        def _errorplot(
+            wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
+        ) -> Dict[str, Union[list, dict]]:
             df = filter_frame(
                 self.ertdatadf,
                 {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
@@ -946,5 +971,5 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)

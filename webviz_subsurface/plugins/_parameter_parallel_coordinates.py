@@ -538,6 +538,7 @@ folder, to avoid risk of not extracting the right data.
                     filteroptions=filteroptions,
                     aggregation=self.aggregation,
                 )
+
                 # Renaming to make it clear in plot.
                 responsedf.rename(
                     columns={response: f"Response: {response}"}, inplace=True

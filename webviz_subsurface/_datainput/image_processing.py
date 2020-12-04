@@ -5,9 +5,8 @@ import numpy as np
 from PIL import Image
 
 
-def array_to_png(
-    tensor, shift=True, colormap=False
-):  # pylint: disable=too-many-branches
+def array_to_png(tensor: np.ndarray, shift: bool = True, colormap: bool = False) -> str:
+    # pylint: disable=too-many-branches
     """The layered map dash component takes in pictures as base64 data
     (or as a link to an existing hosted image). I.e. for containers wanting
     to create pictures on-the-fly from numpy arrays, they have to be converted

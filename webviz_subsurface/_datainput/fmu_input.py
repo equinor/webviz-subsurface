@@ -11,7 +11,7 @@ from webviz_config.webviz_store import webvizstore
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def scratch_ensemble(
     ensemble_name: str, ensemble_path: Path, filter_file: Union[str, None] = "OK"
-):
+) -> ScratchEnsemble:
     return (
         ScratchEnsemble(ensemble_name, ensemble_path)
         if filter_file is None
@@ -24,7 +24,7 @@ def load_ensemble_set(
     ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
     filter_file: Union[str, None] = "OK",
-):
+) -> EnsembleSet:
     return EnsembleSet(
         ensemble_set_name,
         [
@@ -111,7 +111,7 @@ def get_realizations(
     return df.sort_values(by=["ENSEMBLE", "REAL"])
 
 
-def find_sens_type(senscase: str):
+def find_sens_type(senscase: str) -> Optional[str]:
     """Finds sensitivity type from sensitivty case.
     If sensitivity case is 'p10_p90', sensitivity type is montecarlo,
     else sensitivity type is set to 'scalar'.
@@ -127,7 +127,9 @@ def find_sens_type(senscase: str):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def find_surfaces(ensemble_paths: dict, suffix="*.gri", delimiter="--") -> pd.DataFrame:
+def find_surfaces(
+    ensemble_paths: dict, suffix: str = "*.gri", delimiter: str = "--"
+) -> pd.DataFrame:
     """Reads surface file names stored in standard FMU format, and returns a dictionary
     on the following format:
     surface_property:

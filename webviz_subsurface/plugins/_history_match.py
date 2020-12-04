@@ -1,9 +1,12 @@
 import json
 from uuid import uuid4
 from pathlib import Path
+from typing import Callable, List, Tuple, Dict
 
 import numpy as np
+import pandas as pd
 from scipy.stats import chi2
+import dash
 import dash_html_components as html
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
@@ -30,7 +33,7 @@ be made manually. [An example of the format can be found here]\
 observations/observations.yml).
 """
 
-    def __init__(self, app, ensembles: list, observation_file: Path):
+    def __init__(self, app: dash.Dash, ensembles: List[str], observation_file: Path):
 
         super().__init__()
 
@@ -47,7 +50,7 @@ observations/observations.yml).
 
         self.hm_id = "hm-id-{}".format(uuid4())
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (
                 extract_mismatch,
@@ -60,7 +63,7 @@ observations/observations.yml).
             )
         ]
 
-    def _prepare_data(self, data):
+    def _prepare_data(self, data: pd.DataFrame) -> dict:
         data = data.copy().reset_index()
 
         num_obs_groups = len(data.obs_group_name.unique())
@@ -90,7 +93,7 @@ observations/observations.yml).
         return data
 
     @staticmethod
-    def _sort_iterations(iterations):
+    def _sort_iterations(iterations: List[pd.DataFrame]) -> List[pd.DataFrame]:
         sorted_data = []
 
         for df in iterations:
@@ -105,7 +108,9 @@ observations/observations.yml).
         return sorted_data
 
     @staticmethod
-    def _iterations_to_dict(iterations, labels):
+    def _iterations_to_dict(
+        iterations: List[pd.DataFrame], labels: List[str]
+    ) -> List[dict]:
         retval = []
 
         for iteration, label in zip(iterations, labels):
@@ -121,11 +126,11 @@ observations/observations.yml).
         return retval
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div([wsc.HistoryMatch(id=self.hm_id, data=self.hm_data)])
 
 
-def _get_unsorted_edges():
+def _get_unsorted_edges() -> dict:
     """P10 - P90 unsorted edge coordinates"""
 
     retval = {"low": chi2.ppf(0.1, 1), "high": chi2.ppf(0.9, 1)}
@@ -133,7 +138,7 @@ def _get_unsorted_edges():
     return retval
 
 
-def _get_sorted_edges(number_observation_groups):
+def _get_sorted_edges(number_observation_groups: int) -> Dict[str, list]:
     """P10 - P90 sorted edge coordinates"""
 
     monte_carlo_iterations = 100000

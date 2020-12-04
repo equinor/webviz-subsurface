@@ -1,4 +1,9 @@
+from typing import Tuple, TYPE_CHECKING
+
+import dash
 from dash.dependencies import Input, Output, ALL
+import dash_html_components as html
+import plotly.graph_objects as go
 
 from ..views.property_delta_view import table_view, surface_views
 from ..utils.surface import surface_from_zone_prop
@@ -6,8 +11,12 @@ from ..models.surface_leaflet_model import (
     SurfaceLeafletModel,
 )
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ..property_statistics import PropertyStatistics
 
-def property_delta_controller(parent, app):
+
+def property_delta_controller(parent: "PropertyStatistics", app: dash.Dash) -> None:
     @app.callback(
         Output(parent.uuid("delta-bar-graph"), "figure"),
         Output(parent.uuid("delta-table-surface-wrapper"), "children"),
@@ -26,8 +35,14 @@ def property_delta_controller(parent, app):
         Input(parent.uuid("delta-bar-graph"), "clickData"),
     )
     def _update_bars(
-        plot_type, sortby, ensemble, delta_ensemble, prop, selectors, clickdata
-    ):
+        plot_type: str,
+        sortby: str,
+        ensemble: str,
+        delta_ensemble: str,
+        prop: str,
+        selectors: list,
+        clickdata: dict,
+    ) -> Tuple[go.Figure, html.Div]:
         # Make bar chart
         bars = parent.pmodel.make_delta_bars(
             prop=prop,
@@ -66,13 +81,13 @@ def property_delta_controller(parent, app):
 
 
 def make_surfaces(
-    parent,
+    parent: "PropertyStatistics",
     prop: str,
     zone: str,
     ensemble: str,
     delta_ensemble: str,
     statistic: str = "mean",
-):
+) -> html.Div:
 
     sprop = parent.surface_renaming.get(prop, prop)
     szone = parent.surface_renaming.get(zone, zone)

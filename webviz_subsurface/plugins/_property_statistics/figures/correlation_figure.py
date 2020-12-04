@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 
 
@@ -8,15 +10,15 @@ class CorrelationFigure:
         self._data = self.initial_data
 
     @property
-    def data(self):
+    def data(self) -> List[dict]:
         return self._data
 
     @property
-    def figure(self):
+    def figure(self) -> dict:
         return {"data": self.data, "layout": self.layout}
 
     @property
-    def initial_data(self):
+    def initial_data(self) -> List[dict]:
         return [
             {
                 "x": self.series.values,
@@ -28,7 +30,7 @@ class CorrelationFigure:
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> dict:
         return {
             "barmode": "relative",
             "xaxis": {"range": [-1, 1]},
@@ -37,10 +39,10 @@ class CorrelationFigure:
         }
 
     @property
-    def first_y_value(self):
+    def first_y_value(self) -> str:
         return self.data[0]["y"][-1]
 
-    def set_bar_colors(self, selected_bar):
+    def set_bar_colors(self, selected_bar: str) -> None:
         self._data[0]["marker"]["color"] = [
             "grey" if _bar != selected_bar else "red" for _bar in self.data[0]["y"]
         ]

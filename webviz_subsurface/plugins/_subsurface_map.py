@@ -1,8 +1,10 @@
 import json
 from uuid import uuid4
 from pathlib import Path
+from typing import Callable, List, Tuple
 
 import pandas as pd
+import dash
 import dash_html_components as html
 from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
@@ -54,13 +56,14 @@ that you are reading the correct data.
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         jsonfile: Path = None,
         ensemble: str = None,
         map_value: str = None,
         flow_value: str = None,
-        time_step=None,
+        time_step: int = None,
     ):
+        # TODO(Sigurd) What is the correct type(s) for time_step?
 
         super().__init__()
 
@@ -92,10 +95,10 @@ that you are reading the correct data.
         self.map_id = "map-{}".format(uuid4())
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div([Map(id=self.map_id, data=self.map_data)])
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (get_path, [{"path": Path(self.jsonfile)}])
             if self.jsonfile
@@ -114,7 +117,9 @@ that you are reading the correct data.
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_map_data(ensemble_path, map_value, flow_value, time_step):
+def get_map_data(
+    ensemble_path: str, map_value: str, flow_value: str, time_step: int
+) -> str:
     """Returns map data in the format of a JSON string, suitable for the
     corresponding subsurface map component in
     https://github.com/equinor/webviz-subsurface-components
@@ -173,7 +178,7 @@ def get_map_data(ensemble_path, map_value, flow_value, time_step):
 
 @webvizstore
 def get_uncompressed_data(
-    ensemble_path, map_value, flow_value, time_step
+    ensemble_path: str, map_value: str, flow_value: str, time_step: int
 ) -> pd.DataFrame:
 
     ens = scratch_ensemble("", ensemble_path)
@@ -205,5 +210,5 @@ def get_uncompressed_data(
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: Path) -> Path:
     return Path(path)

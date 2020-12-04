@@ -1,3 +1,4 @@
+from typing import Dict, List, Any
 import xtgeo
 import numpy as np
 
@@ -5,12 +6,14 @@ from webviz_config.common_cache import CACHE
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_well(well_path):
+def load_well(well_path: str) -> xtgeo.Well:
     return xtgeo.Well(well_path)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def make_well_layer(well, name="well", zmin=0):
+def make_well_layer(
+    well: xtgeo.Well, name: str = "well", zmin: float = 0
+) -> Dict[str, Any]:
     """Make LayeredMap well polyline"""
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
     positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
@@ -30,7 +33,9 @@ def make_well_layer(well, name="well", zmin=0):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def make_well_layers(wellfiles, zmin=0, max_points=100):
+def make_well_layers(
+    wellfiles: List[str], zmin: float = 0, max_points: float = 100
+) -> Dict[str, Any]:
     """Make layeredmap wells layer"""
     data = []
     for wellfile in wellfiles:
@@ -54,12 +59,12 @@ def make_well_layers(wellfiles, zmin=0, max_points=100):
 
 
 def get_well_layers(
-    wells,
-    planned_wells,
-    surface_name,
-    surface,
-    dropdown_file,
-):
+    wells: Dict[str, xtgeo.Well],
+    planned_wells: Dict[str, xtgeo.Well],
+    surface_name: str,
+    surface: xtgeo.RegularSurface,
+    dropdown_file: str,
+) -> List[Dict[str, Any]]:
     """Make circles around well in layered map view
     Args:
         wells: dictionary of  type {wellfile: xtgeo.Well(wellfile)}
@@ -70,8 +75,8 @@ def get_well_layers(
     Returns:
         List of well layers with data for well circles and trajectory
     """
-    data = []
-    planned_data = []
+    data: List[Dict[str, Any]] = []
+    planned_data: List[Dict[str, Any]] = []
     dropdown_well = (
         wells[dropdown_file] if dropdown_file in wells else planned_wells[dropdown_file]
     )
@@ -119,7 +124,13 @@ def get_well_layers(
     ]
 
 
-def append_well_to_data(data, well, wellfile, surface, color):
+def append_well_to_data(
+    data: List[Dict[str, Any]],
+    well: xtgeo.Well,
+    wellfile: str,
+    surface: str,
+    color: str,
+) -> None:
     with np.errstate(invalid="ignore"):
         surface_picks = well.get_surface_picks(surface)
         # get_surface_picks raises warning when MD column is missing in well

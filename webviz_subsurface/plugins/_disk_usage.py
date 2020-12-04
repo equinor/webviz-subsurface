@@ -2,9 +2,10 @@ import shutil
 import warnings
 import pathlib
 import datetime
-from typing import Optional
+from typing import Optional, List, Tuple, Callable
 
 import pandas as pd
+import dash
 import dash_html_components as html
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
@@ -32,7 +33,9 @@ class DiskUsage(WebvizPluginABC):
     [kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
     """
 
-    def __init__(self, app, scratch_dir: pathlib.Path, date: Optional["str"] = None):
+    def __init__(
+        self, app: dash.Dash, scratch_dir: pathlib.Path, date: Optional["str"] = None
+    ):
 
         super().__init__()
 
@@ -45,7 +48,7 @@ class DiskUsage(WebvizPluginABC):
         self.theme = app.webviz_settings["theme"]
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             [
                 html.H5(
@@ -66,7 +69,7 @@ class DiskUsage(WebvizPluginABC):
         )
 
     @property
-    def pie_chart(self):
+    def pie_chart(self) -> dict:
         return {
             "data": [
                 {
@@ -84,7 +87,7 @@ class DiskUsage(WebvizPluginABC):
         }
 
     @property
-    def bar_chart(self):
+    def bar_chart(self) -> dict:
         return {
             "data": [
                 {
@@ -100,7 +103,7 @@ class DiskUsage(WebvizPluginABC):
             ),
         }
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (
                 get_disk_usage,
@@ -111,8 +114,8 @@ class DiskUsage(WebvizPluginABC):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def get_disk_usage(scratch_dir, date) -> pd.DataFrame:
-    def _loop_dates(scratch_dir):
+def get_disk_usage(scratch_dir: pathlib.Path, date: Optional[str]) -> pd.DataFrame:
+    def _loop_dates(scratch_dir: pathlib.Path) -> pd.DataFrame:
         today = datetime.datetime.today()
         for i in range(7):
             date = today - datetime.timedelta(days=i)

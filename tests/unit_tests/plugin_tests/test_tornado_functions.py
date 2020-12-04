@@ -1,7 +1,7 @@
 import webviz_subsurface._private_plugins.tornado_plot as tornado_plot
 
 
-def test_printable_int_list():
+def test_printable_int_list() -> None:
     assert (
         tornado_plot.printable_int_list([1, 2, 5, 6, 9, 8, 19]) == "1-2, 5-6, 8-9, 19"
     )

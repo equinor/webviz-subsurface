@@ -68,7 +68,7 @@ class PvtPlot(WebvizPluginABC):
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: List[str],
         pvt_relative_file_path: str = None,
         read_from_init_file: bool = False,
@@ -297,7 +297,7 @@ class PvtPlot(WebvizPluginABC):
             ],
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("graph"), "figure"),

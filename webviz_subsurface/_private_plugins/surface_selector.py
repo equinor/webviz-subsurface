@@ -1,9 +1,12 @@
+from typing import Union, List, Dict, Optional, Tuple
+
 from datetime import datetime
 from uuid import uuid4
 import json
 import yaml
 
 import numpy as np
+import pandas as pd
 import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -39,7 +42,9 @@ class SurfaceSelector:
             - somedate
             - somedate"""
 
-    def __init__(self, app, config, ensembles):
+    def __init__(
+        self, app: dash.Dash, config: Union[str, dict], ensembles: pd.DataFrame
+    ) -> None:
 
         self._configuration = self.read_config(config)
         self._ensembles = ensembles
@@ -49,7 +54,7 @@ class SurfaceSelector:
         self.set_callbacks(app)
 
     @staticmethod
-    def read_config(config):
+    def read_config(config: Union[str, dict]) -> dict:
         """Reads config file either from a yaml provided file or from a dict"""
         if isinstance(config, str):
             return yaml.safe_load(open(config, "r"))
@@ -60,11 +65,11 @@ class SurfaceSelector:
         raise TypeError("Config must be a dictionary of a yaml file")
 
     @property
-    def storage_id(self):
+    def storage_id(self) -> str:
         """The id of the dcc.Store component that holds the selection"""
         return self._storage_id
 
-    def set_ids(self):
+    def set_ids(self) -> None:
         uuid = str(uuid4())
         self.attr_id = f"{uuid}-attr"
         self.attr_id_btn_prev = f"{uuid}-attr-btn-prev"
@@ -79,20 +84,20 @@ class SurfaceSelector:
         self.date_wrapper_id = f"{uuid}-date-wrapper"
 
     @property
-    def attrs(self):
+    def attrs(self) -> List[str]:
         return list(self._configuration.keys())
 
-    def _names_in_attr(self, attr):
+    def _names_in_attr(self, attr: Optional[str]) -> Optional[List[str]]:
         return self._configuration[attr].get("names", None)
 
-    def _dates_in_attr(self, attr):
+    def _dates_in_attr(self, attr: Optional[str]) -> Optional[List[str]]:
         dates = self._configuration[attr].get("dates", None)
         if dates is not None and dates == [np.nan]:
             return None
         return dates
 
     @property
-    def attribute_selector(self):
+    def attribute_selector(self) -> html.Div:
         return html.Div(
             style={"display": "grid"},
             children=[
@@ -118,7 +123,7 @@ class SurfaceSelector:
             ],
         )
 
-    def _make_buttons(self, prev_id, next_id):
+    def _make_buttons(self, prev_id: str, next_id: str) -> html.Div:
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
@@ -143,7 +148,14 @@ class SurfaceSelector:
             ],
         )
 
-    def selector(self, wrapper_id, dropdown_id, title, btn_prev, btn_next):
+    def selector(
+        self,
+        wrapper_id: str,
+        dropdown_id: str,
+        title: str,
+        btn_prev: str,
+        btn_next: str,
+    ) -> html.Div:
         return html.Div(
             id=wrapper_id,
             style={"display": "none"},
@@ -165,11 +177,11 @@ class SurfaceSelector:
         )
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: Union[List[str], str]) -> Dict[str, str]:
         return {"display": "grid", "gridTemplateColumns": f"{columns}"}
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             children=[
                 html.Div(
@@ -195,7 +207,7 @@ class SurfaceSelector:
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         # pylint: disable=inconsistent-return-statements
         @app.callback(
             Output(self.attr_id, "value"),
@@ -205,7 +217,9 @@ class SurfaceSelector:
             ],
             [State(self.attr_id, "value")],
         )
-        def _update_attr(_n_prev, _n_next, current_value):
+        def _update_attr(
+            _n_prev: Optional[int], _n_next: Optional[int], current_value: str
+        ) -> str:
             ctx = dash.callback_context.triggered
             if ctx is None or not current_value:
                 raise PreventUpdate
@@ -216,6 +230,7 @@ class SurfaceSelector:
                 return prev_value(current_value, self.attrs)
             if callback == f"{self.attr_id_btn_next}.n_clicks":
                 return next_value(current_value, self.attrs)
+            return ""
 
         @app.callback(
             [
@@ -230,7 +245,12 @@ class SurfaceSelector:
             ],
             [State(self.name_id, "value")],
         )
-        def _update_name(attr, _n_prev, _n_next, current_value):
+        def _update_name(
+            attr: str,
+            _n_prev: Optional[int],
+            _n_next: Optional[int],
+            current_value: str,
+        ) -> Tuple[Optional[List[Dict[str, str]]], Optional[str], Dict[str, str]]:
             ctx = dash.callback_context.triggered
             if ctx is None:
                 raise PreventUpdate
@@ -261,7 +281,12 @@ class SurfaceSelector:
             ],
             [State(self.date_id, "value")],
         )
-        def _update_date(attr, _n_prev, _n_next, current_value):
+        def _update_date(
+            attr: str,
+            _n_prev: Optional[int],
+            _n_next: Optional[int],
+            current_value: str,
+        ) -> Tuple[List[Dict[str, str]], Optional[str], Dict[str, str]]:
             ctx = dash.callback_context.triggered
 
             if ctx is None:
@@ -289,8 +314,9 @@ class SurfaceSelector:
                 Input(self.date_id, "value"),
             ],
         )
-        def _set_data(attr, name, date):
-
+        def _set_data(
+            attr: Optional[str], name: Optional[str], date: Optional[str]
+        ) -> str:
             """
             Stores current selections to dcc.Store. The information can
             be retrieved as a json string from a dash callback Input.
@@ -298,14 +324,17 @@ class SurfaceSelector:
             """
 
             # Preventing update if selections are not valid (waiting for the other callbacks)
-            if not name in self._names_in_attr(attr):
+            names_in_attr = self._names_in_attr(attr)
+            if names_in_attr and not name in names_in_attr:
                 raise PreventUpdate
-            if date and not date in self._dates_in_attr(attr):
+
+            dates_in_attr = self._dates_in_attr(attr)
+            if dates_in_attr and date and not date in dates_in_attr:
                 raise PreventUpdate
             return json.dumps({"name": name, "attr": attr, "date": date})
 
 
-def prev_value(current_value, options):
+def prev_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
         return options[max(0, index - 1)]
@@ -313,7 +342,7 @@ def prev_value(current_value, options):
         return current_value
 
 
-def next_value(current_value, options):
+def next_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
         return options[min(len(options) - 1, index + 1)]
@@ -321,7 +350,7 @@ def next_value(current_value, options):
         return current_value
 
 
-def format_date(date_string):
+def format_date(date_string: str) -> str:
     """Reformat date string for presentation
     20010101 => Jan 2001
     20010101_20010601 => (Jan 2001) - (June 2001)

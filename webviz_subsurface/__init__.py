@@ -13,7 +13,9 @@ except DistributionNotFound:
 
 
 @webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe("scratch_ensembles")
-def subscribe(scratch_ensembles, config_folder, portable):
+def subscribe(
+    scratch_ensembles: dict, config_folder: pathlib.Path, portable: bool
+) -> dict:
     if scratch_ensembles is not None:
         for ensemble_name, ensemble_path in scratch_ensembles.items():
             if not pathlib.Path(ensemble_path).is_absolute():
