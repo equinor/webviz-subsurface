@@ -6,6 +6,7 @@ with open("README.md", "r") as fh:
 TESTS_REQUIRE = [
     "selenium>=3.141",
     "pylint",
+    "mypy",
     "mock",
     "black>=20.8b1",
     "bandit",
