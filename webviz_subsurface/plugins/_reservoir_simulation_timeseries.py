@@ -1,8 +1,8 @@
 # pylint: disable=too-many-lines
+from typing import List, Dict, Union, Tuple, Callable
 import sys
 from pathlib import Path
 import json
-from typing import List, Dict, Union, Tuple, Callable
 
 import pandas as pd
 from plotly.subplots import make_subplots

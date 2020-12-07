@@ -1,4 +1,5 @@
 import pytest
+
 import webviz_subsurface._utils.simulation_timeseries as simulation_timeseries
 
 

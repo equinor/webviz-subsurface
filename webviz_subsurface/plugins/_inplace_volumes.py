@@ -1,6 +1,6 @@
+from typing import List, Tuple, Callable, Union, Iterable
 from uuid import uuid4
 from pathlib import Path
-from typing import List, Tuple, Callable, Union, Iterable
 
 import numpy as np
 import pandas as pd

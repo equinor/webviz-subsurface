@@ -1,12 +1,13 @@
+from typing import Optional, List, Dict, Any
 import sys
 import warnings
-from typing import Optional, List, Dict, Any
 from pathlib import Path
 
 import pandas as pd
 import numpy as np
 import yaml
 from webviz_config.utils import terminal_colors
+
 from .._utils.colors import hex_to_rgba
 
 

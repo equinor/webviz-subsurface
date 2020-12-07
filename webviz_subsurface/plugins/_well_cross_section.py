@@ -1,6 +1,6 @@
+from typing import List, Dict, Union, Tuple, Any, Callable
 from uuid import uuid4
 from pathlib import Path
-from typing import List, Dict, Union, Tuple, Any, Callable
 
 import dash
 from dash.exceptions import PreventUpdate

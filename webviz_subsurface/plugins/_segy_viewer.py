@@ -1,7 +1,7 @@
+from typing import List, Dict, Any, Union, Tuple, Callable
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import List, Dict, Any, Union, Tuple, Callable
 
 import dash
 from dash.exceptions import PreventUpdate

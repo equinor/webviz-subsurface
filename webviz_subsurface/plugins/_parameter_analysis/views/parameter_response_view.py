@@ -1,5 +1,6 @@
 import dash_html_components as html
 import webviz_core_components as wcc
+
 from .selector_view import (
     ensemble_selector,
     filter_vector_selector,

@@ -1,5 +1,5 @@
-import pathlib
 from typing import Optional, Union, List, Tuple, Callable
+import pathlib
 
 import dash
 import dash_core_components as dcc

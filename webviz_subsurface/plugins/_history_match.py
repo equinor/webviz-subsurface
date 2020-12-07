@@ -1,7 +1,7 @@
+from typing import Callable, List, Tuple, Dict
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import Callable, List, Tuple, Dict
 
 import numpy as np
 import pandas as pd

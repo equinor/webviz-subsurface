@@ -1,7 +1,7 @@
+from typing import List, Tuple, Callable, Union
 from pathlib import Path
 from uuid import uuid4
 import json
-from typing import List, Tuple, Callable, Union
 import datetime
 
 import numpy as np

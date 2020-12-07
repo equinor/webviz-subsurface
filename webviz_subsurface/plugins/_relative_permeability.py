@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
-import warnings
 from typing import Optional, Union
+import warnings
 from pathlib import Path
 
 import numpy as np

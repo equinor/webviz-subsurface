@@ -1,5 +1,5 @@
-from pathlib import Path
 from typing import List, Dict, Optional
+from pathlib import Path
 
 import numpy as np
 import pandas as pd

@@ -1,4 +1,5 @@
 from typing import List, Tuple
+
 import webviz_core_components as wcc
 import pandas as pd
 import numpy as np

@@ -1,6 +1,6 @@
+from typing import List, Optional, Dict, Any, Union, Tuple
 from uuid import uuid4
 import json
-from typing import List, Optional, Dict, Any, Union, Tuple
 
 import pandas as pd
 import dash

@@ -1,7 +1,6 @@
 from typing import Dict, List, Union
 
 import pandas as pd
-
 from webviz_config.common_cache import CACHE
 
 

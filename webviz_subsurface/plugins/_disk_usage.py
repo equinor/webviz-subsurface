@@ -1,8 +1,8 @@
+from typing import Optional, List, Tuple, Callable
 import shutil
 import warnings
 import pathlib
 import datetime
-from typing import Optional, List, Tuple, Callable
 
 import pandas as pd
 import dash

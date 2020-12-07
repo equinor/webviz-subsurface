@@ -1,8 +1,8 @@
+from typing import List, Union, Tuple, Callable
 from pathlib import Path
 import json
 import io
 import warnings
-from typing import List, Union, Tuple, Callable
 
 import numpy as np
 import pandas as pd

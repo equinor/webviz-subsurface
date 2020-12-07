@@ -1,4 +1,5 @@
 from typing import Union, Optional
+
 from webviz_config._theme_class import WebvizConfigTheme
 
 

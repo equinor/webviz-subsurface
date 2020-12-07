@@ -1,9 +1,8 @@
 import sys
 import subprocess  # nosec
-
 from pathlib import Path
-from dash.testing.composite import DashComposite
 
+from dash.testing.composite import DashComposite
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import (
     NoSuchElementException,

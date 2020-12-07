@@ -1,8 +1,8 @@
+from typing import Callable, List, Tuple
 from uuid import uuid4
 from pathlib import Path
-from typing import Callable, List, Tuple
-import pandas as pd
 
+import pandas as pd
 import dash
 import dash_html_components as html
 import dash_core_components as dcc

@@ -1,4 +1,5 @@
 from typing import Dict, List, Any
+
 import xtgeo
 import numpy as np
 

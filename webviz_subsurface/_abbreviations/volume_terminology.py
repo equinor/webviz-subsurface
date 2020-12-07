@@ -1,7 +1,6 @@
 import json
 import pathlib
 
-
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 
 VOLUME_TERMINOLOGY = json.loads((_DATA_PATH / "volume_terminology.json").read_text())

@@ -1,9 +1,9 @@
 # pylint: disable=too-many-lines
+from typing import List, Tuple, Callable
 import io
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import List, Tuple, Callable
 import defusedxml.ElementTree as ET
 
 import numpy as np

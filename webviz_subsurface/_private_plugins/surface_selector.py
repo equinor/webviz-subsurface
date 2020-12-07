@@ -1,10 +1,9 @@
 from typing import Union, List, Dict, Optional, Tuple
-
 from datetime import datetime
 from uuid import uuid4
 import json
-import yaml
 
+import yaml
 import numpy as np
 import pandas as pd
 import dash

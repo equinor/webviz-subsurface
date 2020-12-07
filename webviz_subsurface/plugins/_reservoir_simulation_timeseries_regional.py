@@ -1,10 +1,10 @@
 # pylint: disable=too-many-lines
+from typing import Optional, List, Tuple, Callable, Union, Any
 from pathlib import Path
 import fnmatch
 import warnings
 import json
 from copy import deepcopy
-from typing import Optional, List, Tuple, Callable, Union, Any
 
 import yaml
 import numpy as np

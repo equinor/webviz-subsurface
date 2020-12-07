@@ -1,11 +1,11 @@
 from typing import Optional, Union, List, Dict, Any
 import io
 import base64
+
 import numpy as np
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
 from PIL import Image
-
 from .image_processing import array_to_png
 
 

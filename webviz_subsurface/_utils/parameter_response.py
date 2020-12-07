@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict
-from webviz_config.common_cache import CACHE
-import pandas as pd
 
+import pandas as pd
 import numpy as np
+from webviz_config.common_cache import CACHE
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

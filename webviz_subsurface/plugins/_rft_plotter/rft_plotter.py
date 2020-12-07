@@ -1,5 +1,4 @@
 from typing import Optional, List, Dict, Tuple, Callable, Any, Union
-
 from pathlib import Path
 
 import dash
