@@ -137,7 +137,7 @@ folder, to avoid risk of not extracting the right data.
                 dataframe=read_csv(csvfile_statistics), theme=self.theme
             )
             self.vmodel = SimulationTimeSeriesModel(
-                dataframe=read_csv(csvfile_smry), theme=self.theme.plotly_theme
+                dataframe=read_csv(csvfile_smry), theme=self.theme
             )
             self.surface_folders = None
 
