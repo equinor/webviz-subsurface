@@ -795,7 +795,7 @@ folder, to avoid risk of not extracting the right data.
             delta_ens: str,
             visualization: str,
             cum_interval: str,
-        ) -> EncodedFile:
+        ) -> Union[EncodedFile, str]:
             """Callback to download data based on selections"""
 
             # Combine selected vectors
