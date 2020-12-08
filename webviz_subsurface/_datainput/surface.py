@@ -1,19 +1,26 @@
+from typing import Optional, Union, List, Dict, Any
 import io
 import base64
+
 import numpy as np
 from xtgeo import RegularSurface
 from webviz_config.common_cache import CACHE
 from PIL import Image
-
 from .image_processing import array_to_png
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_surface(surface_path):
+def load_surface(surface_path: str) -> RegularSurface:
     return RegularSurface(surface_path)
 
 
-def get_surface_arr(surface, unrotate=True, flip=True, clip_min=None, clip_max=None):
+def get_surface_arr(
+    surface: RegularSurface,
+    unrotate: bool = True,
+    flip: bool = True,
+    clip_min: Union[float, np.ndarray, None] = None,
+    clip_max: Union[float, np.ndarray, None] = None,
+) -> List[np.ndarray]:
     if clip_min or clip_max:
         np.ma.clip(surface.values, clip_min, clip_max, out=surface.values)
     if unrotate:
@@ -29,22 +36,22 @@ def get_surface_arr(surface, unrotate=True, flip=True, clip_min=None, clip_max=N
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surface_fence(fence, surface):
+def get_surface_fence(fence: np.ndarray, surface: RegularSurface) -> np.ndarray:
     return surface.get_fence(fence)
 
 
 # pylint: disable=too-many-arguments
 def make_surface_layer(
-    surface,
-    name="surface",
-    updatemode="update",
-    min_val=None,
-    max_val=None,
-    color=None,
-    shader_type="soft-hillshading",
-    shadows=False,
-    unit="",
-):
+    surface: RegularSurface,
+    name: str = "surface",
+    updatemode: str = "update",
+    min_val: Optional[float] = None,
+    max_val: Optional[float] = None,
+    color: Optional[List[str]] = None,
+    shader_type: Optional[str] = "soft-hillshading",
+    shadows: bool = False,
+    unit: str = "",
+) -> Dict[str, Any]:
     """Make NewLayeredMap surface image base layer
     Args:
         surface: an xtgeo surface object
@@ -120,7 +127,13 @@ def make_surface_layer(
     }
 
 
-def get_surface_layers(switch, surface_name, surfaces, min_val=None, max_val=None):
+def get_surface_layers(
+    switch: Dict[str, bool],
+    surface_name: str,
+    surfaces: List[RegularSurface],
+    min_val: Optional[float] = None,
+    max_val: Optional[float] = None,
+) -> List[Dict[str, Any]]:
     """Creates layers in map view from all surfaces
     Args:
         switch: Toggle hillshading on/off

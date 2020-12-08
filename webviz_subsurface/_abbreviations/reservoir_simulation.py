@@ -1,7 +1,7 @@
+from typing import Tuple, Optional, cast
 import json
 import pathlib
 import warnings
-from typing import Optional
 
 import pandas as pd
 
@@ -49,7 +49,15 @@ def simulation_vector_description(vector: str) -> str:
         vector = vector[6:]
     else:
         prefix = ""
-    [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
+
+    vector_name: str
+    node: Optional[str]
+    if ":" in vector:
+        [vector_name, node] = vector.split(":", 1)
+    else:
+        vector_name = vector
+        node = None
+
     if len(vector_name) == 8:
         if vector_name[0] == "R":
             # Region vectors for other FIP regions than FIPNUM are written on a special form:
@@ -106,7 +114,7 @@ def historical_vector(
     vector: str,
     smry_meta: Optional[pd.DataFrame] = None,
     return_historical: Optional[bool] = True,
-):
+) -> Optional[str]:
     """This function is trying to make a best guess on converting between historical and
     non-historical vector names.
 
@@ -146,16 +154,22 @@ def historical_vector(
     return parts[0][:-1] if is_hist else None
 
 
-def simulation_region_vector_breakdown(vector):
+def simulation_region_vector_breakdown(
+    vector: str,
+) -> Tuple[str, Optional[str], Optional[str]]:
     [vector_base_name, node, fip] = _vector_breakdown(vector)
     if fip is not None and len(fip) == 3:
         fiparray = f"FIP{fip}"
+    elif fip is not None:
+        fiparray = cast(str, fip)
     else:
-        fiparray = fip
+        fiparray = ""
     return vector_base_name, fiparray, node
 
 
-def simulation_region_vector_recompose(vector_base_name, fiparray, node):
+def simulation_region_vector_recompose(
+    vector_base_name: str, fiparray: str, node: str
+) -> str:
     return (
         vector_base_name
         + (
@@ -167,8 +181,15 @@ def simulation_region_vector_recompose(vector_base_name, fiparray, node):
     )
 
 
-def _vector_breakdown(vector):
-    [vector_name, node] = vector.split(":", 1) if ":" in vector else [vector, None]
+def _vector_breakdown(vector: str) -> Tuple[str, Optional[str], Optional[str]]:
+    vector_name: str
+    node: Optional[str]
+    fip: Optional[str]
+    if ":" in vector:
+        [vector_name, node] = vector.split(":", 1)
+    else:
+        vector_name = vector
+        node = None
     if len(vector_name) == 8:
         # Region vectors for other FIP regions than FIPNUM are written on a special form:
         # 8 signs, with the last 3 defining the region.

@@ -1,13 +1,11 @@
+from typing import Union, Optional, List, Tuple, Callable, Dict
 import fnmatch
 import pathlib
 import re
-from typing import Union, Optional, List, Tuple, Callable, Dict
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 from webviz_config.common_cache import CACHE
-
-
 from webviz_config.webviz_store import webvizstore
 
 

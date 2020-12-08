@@ -1,16 +1,18 @@
 # pylint: disable=too-many-lines
+from typing import List, Dict, Union, Tuple, Callable
 import sys
 from pathlib import Path
 import json
 
 import pandas as pd
 from plotly.subplots import make_subplots
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
+from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
@@ -123,7 +125,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint:disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         csvfile: Path = None,
         ensembles: list = None,
         obsfile: Path = None,
@@ -147,6 +149,8 @@ folder, to avoid risk of not extracting the right data.
         if obsfile:
             self.observations = check_and_format_observations(get_path(self.obsfile))
 
+        self.smry: pd.DataFrame
+        self.smry_meta: Union[pd.DataFrame, None]
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
@@ -247,11 +251,11 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @property
-    def ens_colors(self):
+    def ens_colors(self) -> dict:
         return unique_colors(self.ensembles, self.theme)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("layout"),
@@ -303,7 +307,7 @@ folder, to avoid risk of not extracting the right data.
         ]
 
     @staticmethod
-    def set_grid_layout(columns, padding=0):
+    def set_grid_layout(columns: str, padding: int = 0) -> Dict[str, str]:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -313,7 +317,7 @@ folder, to avoid risk of not extracting the right data.
         }
 
     @property
-    def time_interval_options(self):
+    def time_interval_options(self) -> List[str]:
         if self.time_index == "daily":
             return ["daily", "monthly", "yearly"]
         if self.time_index == "monthly":
@@ -323,7 +327,7 @@ folder, to avoid risk of not extracting the right data.
         return []
 
     @property
-    def delta_layout(self):
+    def delta_layout(self) -> html.Div:
         show_delta = "block" if self.allow_delta else "none"
         return html.Div(
             children=[
@@ -366,7 +370,7 @@ folder, to avoid risk of not extracting the right data.
                                 options=[
                                     {"label": i, "value": i} for i in self.ensembles
                                 ],
-                                value=self.ensembles[0],
+                                value=[self.ensembles[0]],
                                 persistence=True,
                                 persistence_type="session",
                             ),
@@ -430,7 +434,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def from_cumulatives_layout(self):
+    def from_cumulatives_layout(self) -> html.Div:
         return html.Div(
             style=(
                 {"marginTop": "25px", "display": "block"}
@@ -466,7 +470,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
@@ -577,7 +581,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
@@ -595,18 +599,21 @@ folder, to avoid risk of not extracting the right data.
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
-            vector1,
-            vector2,
-            vector3,
-            ensembles,
-            calc_mode,
-            base_ens,
-            delta_ens,
-            visualization,
-            cum_interval,
-            stored_date,
-        ):
+            vector1: str,
+            vector2: Union[str, None],
+            vector3: Union[str, None],
+            ensembles: List[str],
+            calc_mode: str,
+            base_ens: str,
+            delta_ens: str,
+            visualization: str,
+            cum_interval: str,
+            stored_date: str,
+        ) -> dict:
             """Callback to update all graphs based on selections"""
+
+            if not isinstance(ensembles, list):
+                raise TypeError("ensembles should always be of type list")
 
             if calc_mode not in ["ensembles", "delta_ensembles"]:
                 raise PreventUpdate
@@ -618,19 +625,18 @@ folder, to avoid risk of not extracting the right data.
             if vector3:
                 vectors.append(vector3)
 
-            # Ensure selected ensembles is a list and prevent update if invalid calc_mode
+            # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
-            elif calc_mode == "ensembles":
-                ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
-            else:
-                raise PreventUpdate
 
             # Retrieve previous/current selected date
             date = json.loads(stored_date) if stored_date else None
 
             # Titles for subplots
-            titles = []
+            # TODO(Sigurd)
+            # Added None to union since date_to_interval_conversion() may return None.
+            # Need input on what should be done since a None title is probably not what we want
+            titles: List[Union[str, None]] = []
             for vec in vectors:
                 if sys.version_info >= (3, 9):
                     unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
@@ -712,14 +718,17 @@ folder, to avoid risk of not extracting the right data.
                 else:
                     raise PreventUpdate
 
+                historical_vector_name = historical_vector(
+                    vector=vector, smry_meta=self.smry_meta
+                )
                 if (
-                    historical_vector(vector=vector, smry_meta=self.smry_meta)
-                    in dfs[vector]["data"].columns
+                    historical_vector_name
+                    and historical_vector_name in dfs[vector]["data"].columns
                 ):
                     traces.append(
                         add_history_trace(
                             dfs[vector]["data"],
-                            historical_vector(vector=vector, smry_meta=self.smry_meta),
+                            historical_vector_name,
                             line_shape,
                         )
                     )
@@ -776,17 +785,17 @@ folder, to avoid risk of not extracting the right data.
             ],
         )
         def _user_download_data(
-            data_requested,
-            vector1,
-            vector2,
-            vector3,
-            ensembles,
-            calc_mode,
-            base_ens,
-            delta_ens,
-            visualization,
-            cum_interval,
-        ):
+            data_requested: Union[int, None],
+            vector1: str,
+            vector2: Union[str, None],
+            vector3: Union[str, None],
+            ensembles: List[str],
+            calc_mode: str,
+            base_ens: str,
+            delta_ens: str,
+            visualization: str,
+            cum_interval: str,
+        ) -> Union[EncodedFile, str]:
             """Callback to download data based on selections"""
 
             # Combine selected vectors
@@ -799,7 +808,8 @@ folder, to avoid risk of not extracting the right data.
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
             elif calc_mode == "ensembles":
-                ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
+                if not isinstance(ensembles, list):
+                    raise TypeError("ensembles should always be of type list")
             else:
                 raise PreventUpdate
 
@@ -877,7 +887,7 @@ folder, to avoid risk of not extracting the right data.
             ],
             [Input(self.uuid("mode"), "value")],
         )
-        def _update_mode(mode):
+        def _update_mode(mode: str) -> Tuple[dict, dict]:
             """Switch displayed ensemble selector for delta/no-delta"""
             if mode == "ensembles":
                 style = {"display": "block"}, {"display": "none"}
@@ -890,7 +900,7 @@ folder, to avoid risk of not extracting the right data.
             [Input(self.uuid("graph"), "clickData")],
             [State(self.uuid("date"), "data")],
         )
-        def _update_date(clickdata, date):
+        def _update_date(clickdata: dict, date: str) -> str:
             """Store clicked date for use in other callback"""
             date = clickdata["points"][0]["x"] if clickdata else json.loads(date)
             return json.dumps(date)
@@ -904,7 +914,12 @@ folder, to avoid risk of not extracting the right data.
             ],
             [State(self.uuid("cum_interval"), "options")],
         )
-        def _activate_interval_radio_buttons(vector1, vector2, vector3, options):
+        def _activate_interval_radio_buttons(
+            vector1: str,
+            vector2: Union[str, None],
+            vector3: Union[str, None],
+            options: List[dict],
+        ) -> List[dict]:
             """Switch activate/deactivate radio buttons for selectibg interval for
             calculations from cumulatives"""
             active = False
@@ -916,8 +931,8 @@ folder, to avoid risk of not extracting the right data.
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]
 
-    def add_webvizstore(self):
-        functions = []
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        functions: List[Tuple[Callable, list]] = []
         if self.csvfile:
             functions.append((read_csv, [{"csv_file": self.csvfile}]))
         else:
@@ -930,15 +945,15 @@ folder, to avoid risk of not extracting the right data.
 # pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_vector_dataframes(
-    smry,
-    smry_meta,
-    ensembles,
-    vectors,
-    calc_mode,
-    visualization,
-    time_index,
-    cum_interval,
-):
+    smry: pd.DataFrame,
+    smry_meta: Union[pd.DataFrame, None],
+    ensembles: List[str],
+    vectors: List[str],
+    calc_mode: str,
+    visualization: str,
+    time_index: str,
+    cum_interval: str,
+) -> dict:
     dfs = {}
     for vector in vectors:
         if vector.startswith("AVG_"):
@@ -975,16 +990,22 @@ def calculate_vector_dataframes(
     return dfs
 
 
-def filter_df(df, ensembles, vector, smry_meta):
+def filter_df(
+    df: pd.DataFrame,
+    ensembles: List[str],
+    vector: str,
+    smry_meta: Union[pd.DataFrame, None],
+) -> pd.DataFrame:
     """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", "DATE", vector]
-    if historical_vector(vector=vector, smry_meta=smry_meta) in df.columns:
-        columns.append(historical_vector(vector=vector, smry_meta=smry_meta))
+    historical_vector_name = historical_vector(vector=vector, smry_meta=smry_meta)
+    if historical_vector_name and historical_vector_name in df.columns:
+        columns.append(historical_vector_name)
     return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
 
 
-def calculate_delta(df, base_ens, delta_ens):
+def calculate_delta(df: pd.DataFrame, base_ens: str, delta_ens: str) -> pd.DataFrame:
     """Calculate delta between two ensembles"""
     base_df = (
         df.loc[df["ENSEMBLE"] == base_ens]
@@ -1002,7 +1023,13 @@ def calculate_delta(df, base_ens, delta_ens):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_histogram_traces(dframe, vector, date, colors, interval):
+def add_histogram_traces(
+    dframe: pd.DataFrame,
+    vector: str,
+    date: Union[str, None],
+    colors: dict,
+    interval: str,
+) -> List[dict]:
     """Renders a histogram trace per ensemble for a given date"""
     dframe[("DATE")] = dframe[("DATE")].astype(str)
     date = date_to_interval_conversion(
@@ -1026,7 +1053,7 @@ def add_histogram_traces(dframe, vector, date, colors, interval):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_observation_trace(obs):
+def add_observation_trace(obs: dict) -> List[dict]:
     return [
         {
             "x": [value.get("date"), []],
@@ -1046,7 +1073,9 @@ def add_observation_trace(obs):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_realization_traces(dframe, vector, colors, line_shape, interval):
+def add_realization_traces(
+    dframe: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
+) -> List[dict]:
     """Renders line trace for each realization, includes history line if present"""
     hovertemplate = render_hovertemplate(vector, interval)
     return [
@@ -1065,7 +1094,7 @@ def add_realization_traces(dframe, vector, colors, line_shape, interval):
     ]
 
 
-def add_history_trace(dframe, vector, line_shape):
+def add_history_trace(dframe: pd.DataFrame, vector: str, line_shape: str) -> dict:
     """Renders the history line"""
     df = dframe.loc[
         (dframe["REAL"] == dframe["REAL"].unique()[0])
@@ -1085,7 +1114,9 @@ def add_history_trace(dframe, vector, line_shape):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_statistic_traces(stat_df, vector, colors, line_shape, interval):
+def add_statistic_traces(
+    stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
+) -> list:
     """Add fanchart traces for selected vector"""
     traces = []
     for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
@@ -1104,10 +1135,10 @@ def add_statistic_traces(stat_df, vector, colors, line_shape, interval):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: Path) -> Path:
     return Path(path)

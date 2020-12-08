@@ -1,7 +1,10 @@
+from typing import List, Union, Tuple, Callable
 from uuid import uuid4
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -15,7 +18,7 @@ from .._datainput.fmu_input import scratch_ensemble
 
 class Widgets:
     @staticmethod
-    def dropdown_from_dict(dom_id, dictionary):
+    def dropdown_from_dict(dom_id: str, dictionary: dict) -> dcc.Dropdown:
         return dcc.Dropdown(
             id=dom_id,
             options=[{"label": k, "value": v} for k, v in dictionary.items()],
@@ -39,7 +42,7 @@ class ParameterCorrelation(WebvizPluginABC):
     Parameter values are extracted automatically from the `parameters.txt` files in the individual
     realizations of your defined `ensembles`, using the `fmu-ensemble` library."""
 
-    def __init__(self, app, ensembles: list, drop_constants: bool = True):
+    def __init__(self, app: dash.Dash, ensembles: list, drop_constants: bool = True):
 
         super().__init__()
 
@@ -53,19 +56,19 @@ class ParameterCorrelation(WebvizPluginABC):
         self.uid = uuid4()
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def p_cols(self):
+    def p_cols(self) -> list:
         dfs = [
             get_corr_data(ens, self.drop_constants) for ens in self.ensembles.values()
         ]
         return sorted(list(pd.concat(dfs, sort=True).columns))
 
     @property
-    def matrix_plot(self):
+    def matrix_plot(self) -> html.Div:
         return html.Div(
             style={"height": "400px"},
             children=wcc.Graph(
@@ -75,7 +78,7 @@ class ParameterCorrelation(WebvizPluginABC):
         )
 
     @property
-    def control_div(self):
+    def control_div(self) -> list:
         return [
             html.Div(
                 style={"padding": "5px"},
@@ -139,7 +142,7 @@ class ParameterCorrelation(WebvizPluginABC):
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             children=[
                 html.Div(
@@ -173,7 +176,7 @@ class ParameterCorrelation(WebvizPluginABC):
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.ids("matrix"), "figure"),
             [
@@ -182,7 +185,7 @@ class ParameterCorrelation(WebvizPluginABC):
                 Input(self.ids("parameter2"), "value"),
             ],
         )
-        def _update_matrix(ens, param1, param2):
+        def _update_matrix(ens: str, param1: str, param2: str) -> dict:
             """Renders correlation matrix.
             Currently also re-renders matrix to update currently
             selected cell. This is not optimal, but hard to prevent
@@ -223,7 +226,14 @@ class ParameterCorrelation(WebvizPluginABC):
                 Input(self.ids("density"), "value"),
             ],
         )
-        def _update_scatter(ens1, param1, ens2, param2, color, density):
+        def _update_scatter(
+            ens1: str,
+            param1: str,
+            ens2: str,
+            param2: str,
+            color: Union[str, None],
+            density: List[str],
+        ) -> dict:
             return render_scatter(
                 ens1, param1, ens2, param2, color, density, self.plotly_theme
             )
@@ -240,7 +250,7 @@ class ParameterCorrelation(WebvizPluginABC):
                 Input(self.ids("ensemble-all"), "value"),
             ],
         )
-        def _update_from_click(cell_data, ens):
+        def _update_from_click(cell_data: dict, ens: str) -> List[Union[str, None]]:
             try:
                 points = cell_data["points"][0]
             # TypeError is returned if no cells are clicked
@@ -249,15 +259,15 @@ class ParameterCorrelation(WebvizPluginABC):
 
             return [points["x"], points["y"], ens, ens]
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
-            ([get_parameters, [{"ensemble_path": v} for v in self.ensembles.values()]])
+            (get_parameters, [{"ensemble_path": v} for v in self.ensembles.values()])
         ]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def get_parameters(ensemble_path) -> pd.DataFrame:
+def get_parameters(ensemble_path: Path) -> pd.DataFrame:
 
     return (
         scratch_ensemble("", ensemble_path)
@@ -267,7 +277,15 @@ def get_parameters(ensemble_path) -> pd.DataFrame:
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_scatter(ens1, x_col, ens2, y_col, color, density, theme):
+def render_scatter(
+    ens1: str,
+    x_col: str,
+    ens2: str,
+    y_col: str,
+    color: Union[str, None],
+    density: bool,
+    theme: dict,
+) -> dict:
     if ens1 == ens2:
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
     else:
@@ -362,7 +380,7 @@ def render_scatter(ens1, x_col, ens2, y_col, color, density, theme):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_corr_data(ensemble_path, drop_constants=True):
+def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
     """
     if drop_constants:
     .dropna() removes undefined entries in correlation matrix after
@@ -390,7 +408,7 @@ def get_corr_data(ensemble_path, drop_constants=True):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_matrix(ensemble_path, theme, drop_constants=True):
+def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) -> dict:
     corrdf = get_corr_data(ensemble_path, drop_constants)
     # pylint: disable=no-member
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))
@@ -426,7 +444,7 @@ def render_matrix(ensemble_path, theme, drop_constants=True):
     return {"data": [data], "layout": layout}
 
 
-def theme_layout(theme, specific_layout):
+def theme_layout(theme: dict, specific_layout: dict) -> dict:
     layout = {}
     layout.update(theme["layout"])
     layout.update(specific_layout)

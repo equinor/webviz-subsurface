@@ -1,7 +1,10 @@
+from typing import Dict, List, Union
+
+import pandas as pd
 from webviz_config.common_cache import CACHE
 
 
-def interpolate_depth(df):
+def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
     df = (
         df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
         .interpolate(limit_direction="both")
@@ -11,7 +14,9 @@ def interpolate_depth(df):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_frame(dframe, column_values):
+def filter_frame(
+    dframe: pd.DataFrame, column_values: Dict[str, Union[List[str], str]]
+) -> pd.DataFrame:
     df = dframe.copy()
     for column, value in column_values.items():
         if isinstance(value, list):

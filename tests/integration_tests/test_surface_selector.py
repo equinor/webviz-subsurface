@@ -1,10 +1,11 @@
 import json
+
 import pandas as pd
 import dash
 from dash.dependencies import Input, Output
 import dash_html_components as html
-from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
+from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 surface_context = {
     "oilthickness": {
@@ -32,17 +33,21 @@ return_value = {
 }
 
 
-def test_surface_selector(dash_duo):
+def test_surface_selector(dash_duo: dash.testing.composite.DashComposite) -> None:
 
     app = dash.Dash(__name__)
     app.config.suppress_callback_exceptions = True
     realizations = pd.read_csv("tests/data/realizations.csv")
-    s = SurfaceSelector(app, surface_context, realizations)
+    surface_selector = SurfaceSelector(app, surface_context, realizations)
 
-    app.layout = html.Div(children=[s.layout, html.Pre(id="pre", children="ok")])
+    app.layout = html.Div(
+        children=[surface_selector.layout, html.Pre(id="pre", children="ok")]
+    )
 
-    @app.callback(Output("pre", "children"), [Input(s.storage_id, "data")])
-    def _test(data):
+    @app.callback(
+        Output("pre", "children"), [Input(surface_selector.storage_id, "data")]
+    )
+    def _test(data: str) -> str:
         return json.dumps(json.loads(data))
 
     dash_duo.start_server(app)

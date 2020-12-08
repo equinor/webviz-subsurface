@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-import os
+from typing import List, Tuple, Callable
 import io
 import json
 from uuid import uuid4
@@ -44,8 +44,8 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     # pylint: disable=too-many-locals,too-many-instance-attributes
     def __init__(
         self,
-        app,
-        basedir: Path = None,
+        app: dash.Dash,
+        basedir: Path,
         planned_wells_dir: Path = None,
     ):
 
@@ -114,11 +114,11 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         self.state = {"switch": False}
         self.layers_state = []
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         return f"{element}-id-{self.uid}"
 
     @property
-    def cross_section_graph_layout(self):
+    def cross_section_graph_layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.Graph(
@@ -128,7 +128,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def cross_section_widgets_layout(self):
+    def cross_section_widgets_layout(self) -> html.Div:
         return html.Div(
             children=[
                 html.Div(
@@ -332,7 +332,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def target_points_tab_layout(self):
+    def target_points_tab_layout(self) -> dash_table.DataTable:
         df = self.df_well_target_points.get_targetpoints_df()
         return dash_table.DataTable(
             id=self.ids("target-point-table"),
@@ -343,7 +343,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def well_points_tab_layout(self):
+    def well_points_tab_layout(self) -> html.Div:
         return html.Div(
             [
                 dbc.Button("Table Settings", id=self.ids("button-open-table-settings")),
@@ -412,7 +412,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def left_flexbox_layout(self):
+    def left_flexbox_layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.FlexBox(
@@ -442,7 +442,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def map_view_layout(self):
+    def map_view_layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.FlexBox(
@@ -505,7 +505,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def table_view_layout(self):
+    def table_view_layout(self) -> html.Div:
         df = self.xsec.get_intersection_dataframe(self.wells[self.wellfiles[0]])
         return html.Div(
             children=[
@@ -528,7 +528,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def layout(self):
+    def layout(self) -> dcc.Tabs:
         return dcc.Tabs(
             children=[
                 dcc.Tab(
@@ -557,7 +557,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.ids("layered-map"), "layers"),
             [
@@ -809,7 +809,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                 wellname = self.planned_wells[wellfile].wellname
             return f"Surface picks for {wellname}"
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions = [(get_path, [{"path": Path(fn)}]) for fn in self.allfiles]
         functions.append((find_files, [{"folder": self.basedir}]))
         if self.planned_wells_dir is not None:
@@ -921,7 +921,7 @@ def get_surfaces(basedir: Path, modelfile) -> io.BytesIO:
     return io.BytesIO(json.dumps(surfaces).encode())
 
 
-def surface_to_json(surfacepath: Path):
+def surface_to_json(surfacepath: Path) -> str:
     surface = xtgeo.surface_from_file(str(surfacepath), fformat="irap_binary")
     return json.dumps(
         {
@@ -944,35 +944,37 @@ def surface_from_json(surfaceobj):
     return surface
 
 
-def extract_topofzone_names(modelfile):
-    modelfile = ET.parse(modelfile).getroot()
-    surface_wrappers = modelfile.findall(".//surface")
-    topofzone_names = []
-    for element in surface_wrappers:
-        name = element.findtext("top-of-zone")
-        topofzone_names.append(name)
-    return topofzone_names
+# TODO(Sigurd) Delete unused function?
+# def extract_topofzone_names(modelfile):
+#    modelfile = ET.parse(modelfile).getroot()
+#    surface_wrappers = modelfile.findall(".//surface")
+#    topofzone_names = []
+#    for element in surface_wrappers:
+#        name = element.findtext("top-of-zone")
+#        topofzone_names.append(name)
+#    return topofzone_names
 
 
-def get_well_files(basedir: Path) -> io.BytesIO:
-    well_dir = os.path.join(basedir, "input", "welldata")
-    well_dir = basedir / "input" / "welldata"
-    well_files = []
-    try:
-        for file in os.listdir(well_dir):
-            if Path(file).suffix == ".txt":
-                well_files.append(os.path.join(well_dir, file))
-    except FileNotFoundError:
-        pass
-    well_files.sort()
-    return io.BytesIO(json.dumps(well_files).encode())
+# TODO(Sigurd) Delete unused function?
+# def get_well_files(basedir: Path) -> io.BytesIO:
+#    well_dir = os.path.join(basedir, "input", "welldata")
+#    well_dir = basedir / "input" / "welldata"
+#    well_files = []
+#    try:
+#        for file in os.listdir(well_dir):
+#            if Path(file).suffix == ".txt":
+#                well_files.append(os.path.join(well_dir, file))
+#    except FileNotFoundError:
+#        pass
+#    well_files.sort()
+#    return io.BytesIO(json.dumps(well_files).encode())
 
 
-def get_target_points(basedir: Path):
+def get_target_points(basedir: Path) -> Path:
     return get_path(basedir / "output" / "log_files" / "targetpoints.csv")
 
 
-def get_well_points(basedir: Path):
+def get_well_points(basedir: Path) -> Path:
     return get_path(basedir / "output" / "log_files" / "wellpoints.csv")
 
 
@@ -982,27 +984,28 @@ def get_zonelog_name(modelfile):
     return zonelog_wrapper
 
 
-def get_zonation_status(basedir: Path):
+def get_zonation_status(basedir: Path) -> Path:
     return get_path(basedir / "output" / "log_files" / "zonation_status.csv")
 
 
-@webvizstore
-def get_surface_files(basedir: Path, surface_names, surface_type) -> io.BytesIO:
-    surface_dir = basedir / "output" / "surfaces"
-    surface_files = [
-        surface_dir / f"{surface_type}{surface_name}.rxb"
-        for surface_name in surface_names
-    ]
-    for path in surface_files:
-        if not path.is_file():
-            surface_files = None
-    if surface_files is not None:
-        surface_files = [str(surf) for surf in surface_files]
-    return io.BytesIO(json.dumps(surface_files).encode())
+# TODO(Sigurd) Delete unused?
+# @webvizstore
+# def get_surface_files(basedir: Path, surface_names, surface_type) -> io.BytesIO:
+#    surface_dir = basedir / "output" / "surfaces"
+#    surface_files = [
+#        surface_dir / f"{surface_type}{surface_name}.rxb"
+#        for surface_name in surface_names
+#    ]
+#    for path in surface_files:
+#        if not path.is_file():
+#            surface_files = None
+#    if surface_files is not None:
+#        surface_files = [str(surf) for surf in surface_files]
+#    return io.BytesIO(json.dumps(surface_files).encode())
 
 
 @webvizstore
-def find_files(folder, pattern="*") -> io.BytesIO:
+def find_files(folder: Path, pattern: str = "*") -> io.BytesIO:
     return io.BytesIO(
         json.dumps(
             sorted(

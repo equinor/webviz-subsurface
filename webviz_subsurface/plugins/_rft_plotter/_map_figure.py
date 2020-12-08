@@ -1,5 +1,10 @@
+from typing import List, Dict, Any
+
+import pandas as pd
+
+
 class MapFigure:
-    def __init__(self, ertdf, ensemble):
+    def __init__(self, ertdf: pd.DataFrame, ensemble: str) -> None:
 
         self.ertdf = (
             ertdf.loc[ertdf["ENSEMBLE"] == ensemble]
@@ -7,9 +12,9 @@ class MapFigure:
             .aggregate("mean")
             .reset_index()
         )
-        self.traces = []
+        self.traces: List[Dict[str, Any]] = []
 
-    def add_misfit_plot(self, sizeby, colorby, dates):
+    def add_misfit_plot(self, sizeby: str, colorby: str, dates: List[float]) -> None:
         df = self.ertdf.loc[
             (self.ertdf["DATE_IDX"] >= dates[0]) & (self.ertdf["DATE_IDX"] <= dates[1])
         ]
@@ -48,7 +53,7 @@ class MapFigure:
             }
         )
 
-    def add_fault_lines(self, df):
+    def add_fault_lines(self, df: pd.DataFrame) -> None:
         for _fault, faultdf in df.groupby("POLY_ID"):
             self.traces.append(
                 {
@@ -63,7 +68,7 @@ class MapFigure:
             )
 
     @property
-    def layout(self):
+    def layout(self) -> Dict[str, Any]:
         """The plotly figure layout"""
         return {
             "hovermode": "closest",

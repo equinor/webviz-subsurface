@@ -1,6 +1,7 @@
 from typing import Optional
 import io
 import base64
+
 from PIL import Image
 import numpy as np
 import xtgeo

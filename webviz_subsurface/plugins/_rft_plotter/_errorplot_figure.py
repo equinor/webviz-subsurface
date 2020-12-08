@@ -1,4 +1,13 @@
-def update_errorplot(df, enscolors):
+from typing import Dict, Union
+
+import pandas as pd
+
+
+def update_errorplot(
+    df: pd.DataFrame, enscolors: Dict[str, str]
+) -> Dict[
+    str, Union[list, dict]
+]:  # TODO(Ruben Thoms) Better to make use of a TypedDict here at some point.
 
     df["RFT_NAME"] = df.agg(
         lambda x: f"{x['WELL']} {int(x['YEAR'])} {x['ZONE']} ({int(x['TVD'])} TVD)",

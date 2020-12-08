@@ -1,19 +1,19 @@
+from typing import Optional, Union, List, Tuple, Callable
 import pathlib
-from typing import Optional
 
+import dash
 import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
-from .views import main_view
+from .views.main_view import main_view
 from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
-from .controllers import (
-    property_qc_controller,
-    property_delta_controller,
-    property_response_controller,
-)
+from .controllers.property_qc_controller import property_qc_controller
+from .controllers.property_delta_controller import property_delta_controller
+from .controllers.property_response_controller import property_response_controller
 from .utils.surface import surface_store
 from .data_loaders import read_csv
 
@@ -81,7 +81,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: Optional[list] = None,
         statistics_file: str = "share/results/tables/gridpropstatistics.csv",
         csvfile_statistics: pathlib.Path = None,
@@ -97,13 +97,15 @@ folder, to avoid risk of not extracting the right data.
             / "css"
             / "container.css"
         )
-        self.theme = app.webviz_settings["theme"]
+        # TODO(Sigurd) fix this once we get a separate webviz_settings parameter
+        self.theme: WebvizConfigTheme = app.webviz_settings["theme"]
         self.time_index = time_index
         self.column_keys = column_keys
         self.statistics_file = statistics_file
         self.ensembles = ensembles
         self.csvfile_statistics = csvfile_statistics
         self.csvfile_smry = csvfile_smry
+        self.surface_folders: Union[dict, None]
 
         if ensembles is not None:
             self.emodel = EnsembleSetModel(
@@ -115,7 +117,9 @@ folder, to avoid risk of not extracting the right data.
                 }
             )
             self.pmodel = PropertyStatisticsModel(
-                dataframe=self.emodel.load_csv(csv_file=self.statistics_file),
+                dataframe=self.emodel.load_csv(
+                    csv_file=pathlib.Path(self.statistics_file)
+                ),
                 theme=self.theme,
             )
             self.vmodel = SimulationTimeSeriesModel(
@@ -133,7 +137,7 @@ folder, to avoid risk of not extracting the right data.
                 dataframe=read_csv(csvfile_statistics), theme=self.theme
             )
             self.vmodel = SimulationTimeSeriesModel(
-                dataframe=read_csv(csvfile_smry), theme=self.theme.plotly_theme
+                dataframe=read_csv(csvfile_smry), theme=self.theme
             )
             self.surface_folders = None
 
@@ -145,25 +149,27 @@ folder, to avoid risk of not extracting the right data.
     def layout(self) -> dcc.Tabs:
         return main_view(parent=self)
 
-    def set_callbacks(self, app) -> None:
+    def set_callbacks(self, app: dash.Dash) -> None:
         property_qc_controller(self, app)
         if len(self.pmodel.ensembles) > 1:
             property_delta_controller(self, app)
         property_response_controller(self, app)
 
-    def add_webvizstore(self):
-        store = []
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        store: List[Tuple[Callable, list]] = []
         if self.ensembles is not None:
             store.extend(self.emodel.webvizstore)
         else:
             store.extend(
-                (
-                    read_csv,
-                    [
-                        {"csv_file": self.csvfile_smry},
-                        {"csv_file": self.csvfile_statistics},
-                    ],
-                )
+                [
+                    (
+                        read_csv,
+                        [
+                            {"csv_file": self.csvfile_smry},
+                            {"csv_file": self.csvfile_statistics},
+                        ],
+                    )
+                ]
             )
         if self.surface_folders is not None:
             store.extend(surface_store(parent=self))

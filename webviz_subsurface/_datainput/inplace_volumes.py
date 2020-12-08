@@ -1,3 +1,4 @@
+from typing import Dict
 import os
 
 import pandas as pd
@@ -9,7 +10,9 @@ from .fmu_input import scratch_ensemble
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def extract_volumes(ensemble_paths, volfolder, volfiles) -> pd.DataFrame:
+def extract_volumes(
+    ensemble_paths: dict, volfolder: str, volfiles: Dict[str, str]
+) -> pd.DataFrame:
     """Aggregates volumetric files from an FMU ensemble.
     Files must be stored on standardized csv format.
     """

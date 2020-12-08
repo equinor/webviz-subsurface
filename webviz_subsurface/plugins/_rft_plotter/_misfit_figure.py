@@ -1,7 +1,11 @@
+from typing import List, Dict, Any
+
+import pandas as pd
+import numpy as np
 import webviz_core_components as wcc
 
 
-def update_misfit_plot(df, enscolors):
+def update_misfit_plot(df: pd.DataFrame, enscolors: Dict[str, Any]) -> List[wcc.Graph]:
 
     max_diff = find_max_diff(df)
     figures = []
@@ -39,7 +43,7 @@ def update_misfit_plot(df, enscolors):
     return figures
 
 
-def average_line_shape(mean_value, yref="y"):
+def average_line_shape(mean_value: np.float64, yref: str = "y") -> Dict[str, Any]:
     return {
         "type": "line",
         "yref": yref,
@@ -51,7 +55,7 @@ def average_line_shape(mean_value, yref="y"):
     }
 
 
-def average_arrow_annotation(mean_value, yref="y"):
+def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[str, Any]:
     return {
         "x": 0.2,
         "y": mean_value,
@@ -69,8 +73,8 @@ def average_arrow_annotation(mean_value, yref="y"):
     }
 
 
-def find_max_diff(df):
-    max_diff = 0
+def find_max_diff(df: pd.DataFrame) -> np.float64:
+    max_diff = np.float64(0)
     for _ens, ensdf in df.groupby("ENSEMBLE"):
         realdf = ensdf.groupby("REAL").sum().reset_index()
         max_diff = (

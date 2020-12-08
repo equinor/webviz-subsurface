@@ -1,8 +1,9 @@
-from typing import Union, Optional
+from typing import Union, Optional, List, Tuple, Callable
 import json
 
 import pandas as pd
 import numpy as np
+import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -62,7 +63,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: list,
         filter_shorter: Union[int, float] = 10,
         status_file: str = "status.json",
@@ -93,7 +94,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         self.set_callbacks(app)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("mode"),
@@ -112,7 +113,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         ]
 
     @property
-    def parameters(self):
+    def parameters(self) -> List[str]:
         """Returns numerical input parameters"""
         return list(
             self.parameter_df.drop(["ENSEMBLE", "REAL"], axis=1)
@@ -122,7 +123,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         )
 
     @property
-    def plot_fig(self):
+    def plot_fig(self) -> html.Div:
         return html.Div(
             style={
                 "overflowX": "hidden",
@@ -142,7 +143,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         )
 
     @property
-    def control_div(self):
+    def control_div(self) -> html.Div:
         return html.Div(
             style={
                 "padding-right": 15,
@@ -302,7 +303,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         )
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             style={
                 "padding-top": 10,
@@ -313,7 +314,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             ],
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.uuid("fig"), "figure"),
             [
@@ -325,7 +326,14 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                 Input(self.uuid("filter_short"), "value"),
             ],
         )
-        def _update_fig(ens, mode, rel_runtime, rel_real, params, filter_short):
+        def _update_fig(
+            ens: str,
+            mode: str,
+            rel_runtime: str,
+            rel_real: str,
+            params: Union[str, List[str]],
+            filter_short: List[str],
+        ) -> dict:
             """Update main figure
             Dependent on `mode` it will call rendering of the chosen form of visualization
             """
@@ -349,6 +357,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             # Ensure selected parameters is a list
             params = params if isinstance(params, list) else [params]
             # Color by success or runtime, for runtime drop unsuccesful
+            colormap_labels: Union[List[str], None]
             if rel_real == "Successful/failed realization":
                 plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
                 colormap = make_colormap(
@@ -384,7 +393,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             ],
             [Input(self.uuid("mode"), "value")],
         )
-        def _update_mode(mode):
+        def _update_mode(mode: str) -> Tuple[dict, dict, dict, dict]:
             """Switch displayed mode between running time matrix and parallel coordinates"""
             if mode == "running_time_matrix":
                 style = (
@@ -402,7 +411,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                 )
             return style
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (
                 make_status_df,
@@ -426,7 +435,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_matrix(status_df, rel, theme):
+def render_matrix(status_df: pd.DataFrame, rel: str, theme: dict) -> dict:
     """Render matrix
     Returns figure object as heatmap for the chosen ensemble and scaling method.
     """
@@ -497,7 +506,14 @@ def render_matrix(status_df, rel, theme):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels=None):
+def render_parcoord(
+    plot_df: pd.DataFrame,
+    params: List[str],
+    theme: dict,
+    colormap: Union[List[str], List[list]],
+    color_col: str,
+    colormap_labels: Union[List[str], None] = None,
+) -> dict:
     """Renders parallel coordinates plot"""
     # Create parcoords dimensions (one per parameter)
     dimensions = [
@@ -505,7 +521,7 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
     ]
 
     # Parcoords data dict
-    data = {
+    data: dict = {
         "line": {
             "color": plot_df[color_col].values.tolist(),
             "colorscale": colormap,
@@ -554,9 +570,10 @@ def render_parcoord(plot_df, params, theme, colormap, color_col, colormap_labels
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 # pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
 def make_status_df(
-    ens_paths,
-    status_file,
+    ens_paths: dict,
+    status_file: str,
 ) -> pd.DataFrame:
     """Return DataFrame of information from status.json files.
     *Finds status.json filepaths.
@@ -612,10 +629,12 @@ def make_status_df(
         ]
     )
     # Initial values for local variables
-    (job_status_dfs, ens_dfs, real_status) = ([], [], [])
+    job_status_dfs: list = []
+    ens_dfs: list = []
+    real_status: list = []
     ens_max_job_runtime = 1
     ens = ""
-    reals = []
+    reals: list = []
 
     # Loop through identified filepaths and get realization data
     for row in df.itertuples(index=False):
@@ -709,7 +728,7 @@ def make_status_df(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def make_colormap(color_array, discrete=None):
+def make_colormap(color_array: list, discrete: int = None) -> list:
     """
     Returns a colormap:
     * If the `discrete` variable is set to an integer x, the colormap will be a discrete map of

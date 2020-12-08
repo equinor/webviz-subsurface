@@ -5,7 +5,7 @@
 ########################################
 
 import sys
-from typing import Dict
+from typing import Dict, List, Any
 import warnings
 
 import pandas as pd
@@ -26,7 +26,7 @@ except ImportError:
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .opm_init_io import Oil, Gas, Water, DryGas
+from .opm_init_io import Oil, Gas, Water, DryGas, VariateAndValues
 from .fmu_input import load_ensemble_set, load_csv
 
 
@@ -52,7 +52,7 @@ def filter_pvt_data_frame(
     ]
     data_frame = data_frame[columns]
 
-    stored_data_frames = []
+    stored_data_frames: List[pd.DataFrame] = []
     cleaned_data_frame = data_frame.iloc[0:0]
     columns_subset = data_frame.columns.difference(["REAL", "ENSEMBLE"])
 
@@ -136,11 +136,13 @@ def load_pvt_dataframe(
         )
         return pd.DataFrame({})
 
-    def ecl2df_pvt_data_frame(kwargs) -> pd.DataFrame:
+    def ecl2df_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
         return ecl2df.pvt.df(kwargs["realization"].get_eclfiles())
 
-    def init_to_pvt_data_frame(kwargs) -> pd.DataFrame:
+    def init_to_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
         # pylint: disable-msg=too-many-locals
+        # pylint: disable=too-many-nested-blocks
+        # pylint: disable=too-many-branches
         ecl_init_file = EclFile(
             kwargs["realization"].get_eclfiles().get_initfile().get_filename()
         )
@@ -156,38 +158,59 @@ def load_pvt_dataframe(
         column_viscosity = []
         column_keyword = []
 
-        for table_index, table in enumerate(oil.tables()):
-            for outer_pair in table.get_values():
-                for inner_pair in outer_pair.y:
-                    column_pvtnum.append(table_index + 1)
-                    column_keyword.append("PVTO")
-                    column_oil_gas_ratio.append(outer_pair.x)
-                    column_pressure.append(inner_pair.x)
-                    column_volume_factor.append(1 / inner_pair.y[0])
-                    column_viscosity.append(inner_pair.y[0] / inner_pair.y[1])
+        if oil:
+            for table_index, table in enumerate(oil.tables()):
+                for outer_pair in table.get_values():
+                    for inner_pair in outer_pair.y:
+                        if isinstance(inner_pair, VariateAndValues):
+                            column_pvtnum.append(table_index + 1)
+                            column_keyword.append("PVTO")
+                            column_oil_gas_ratio.append(outer_pair.x)
+                            column_pressure.append(inner_pair.x)
+                            column_volume_factor.append(
+                                1.0 / inner_pair.get_values_as_floats()[0]
+                            )
+                            column_viscosity.append(
+                                inner_pair.get_values_as_floats()[0]
+                                / inner_pair.get_values_as_floats()[1]
+                            )
 
-        for table_index, table in enumerate(gas.tables()):
-            for outer_pair in table.get_values():
-                for inner_pair in outer_pair.y:
-                    column_pvtnum.append(table_index + 1)
-                    column_keyword.append("PVDG")
-                    if isinstance(table, DryGas):
-                        column_oil_gas_ratio.append(0)
-                    else:
-                        column_oil_gas_ratio.append(outer_pair.x)
-                    column_pressure.append(inner_pair.x)
-                    column_volume_factor.append(1 / inner_pair.y[0])
-                    column_viscosity.append(inner_pair.y[0] / inner_pair.y[1])
-
-        for table_index, table in enumerate(water.tables()):
-            for outer_pair in table.get_values():
-                for inner_pair in outer_pair.y:
-                    column_pvtnum.append(table_index + 1)
-                    column_keyword.append("PVTW")
-                    column_oil_gas_ratio.append(outer_pair.x)
-                    column_pressure.append(inner_pair.x)
-                    column_volume_factor.append(1 / inner_pair.y[0])
-                    column_viscosity.append(1.0 / inner_pair.y[2] * inner_pair.y[0])
+        if gas:
+            for table_index, table in enumerate(gas.tables()):
+                for outer_pair in table.get_values():
+                    for inner_pair in outer_pair.y:
+                        if isinstance(inner_pair, VariateAndValues):
+                            column_pvtnum.append(table_index + 1)
+                            column_keyword.append("PVDG")
+                            if isinstance(table, DryGas):
+                                column_oil_gas_ratio.append(0)
+                            else:
+                                column_oil_gas_ratio.append(outer_pair.x)
+                            column_pressure.append(inner_pair.x)
+                            column_volume_factor.append(
+                                1.0 / inner_pair.get_values_as_floats()[0]
+                            )
+                            column_viscosity.append(
+                                inner_pair.get_values_as_floats()[0]
+                                / inner_pair.get_values_as_floats()[1]
+                            )
+        if water:
+            for table_index, table in enumerate(water.tables()):
+                for outer_pair in table.get_values():
+                    for inner_pair in outer_pair.y:
+                        if isinstance(inner_pair, VariateAndValues):
+                            column_pvtnum.append(table_index + 1)
+                            column_keyword.append("PVTW")
+                            column_oil_gas_ratio.append(outer_pair.x)
+                            column_pressure.append(inner_pair.x)
+                            column_volume_factor.append(
+                                1.0 / inner_pair.get_values_as_floats()[0]
+                            )
+                            column_viscosity.append(
+                                1.0
+                                / inner_pair.get_values_as_floats()[2]
+                                * inner_pair.get_values_as_floats()[0]
+                            )
 
         data_frame = pd.DataFrame(
             {

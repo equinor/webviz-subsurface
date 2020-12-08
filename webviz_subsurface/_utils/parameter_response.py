@@ -1,11 +1,18 @@
-from webviz_config.common_cache import CACHE
+from typing import Optional, List, Dict
+
+import pandas as pd
 import numpy as np
+from webviz_config.common_cache import CACHE
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum"
-):
+    dframe: pd.DataFrame,
+    ensemble: str,
+    response: str,
+    filteroptions: Optional[List[Dict[str, str]]] = None,
+    aggregation: str = "sum",
+) -> pd.DataFrame:
     """Cached wrapper for _filter_and_sum_responses"""
     return _filter_and_sum_responses(
         dframe=dframe,
@@ -17,12 +24,12 @@ def filter_and_sum_responses(
 
 
 def _filter_and_sum_responses(
-    dframe,
-    ensemble,
-    response,
-    filteroptions=None,
-    aggregation="sum",
-):
+    dframe: pd.DataFrame,
+    ensemble: str,
+    response: str,
+    filteroptions: Optional[List[Dict[str, str]]] = None,
+    aggregation: str = "sum",
+) -> pd.DataFrame:
     """Filter response dataframe for the given ensemble
     and optional filter columns. Returns dataframe grouped and
     aggregated per realization.

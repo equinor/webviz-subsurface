@@ -1,9 +1,16 @@
+from typing import Union, List, TYPE_CHECKING
+
+import dash
 from dash.dependencies import Input, Output, ALL
 import dash_table
 import webviz_core_components as wcc
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ..property_statistics import PropertyStatistics
 
-def property_qc_controller(parent, app):
+
+def property_qc_controller(parent: "PropertyStatistics", app: dash.Dash) -> None:
     @app.callback(
         Output(parent.uuid("property-qc-wrapper"), "children"),
         Input({"id": parent.uuid("ensemble-selector"), "tab": "qc"}, "value"),
@@ -14,7 +21,9 @@ def property_qc_controller(parent, app):
         ),
         Input(parent.uuid("property-qc-plot-type"), "value"),
     )
-    def _update_bars(ensembles, prop, selectors, plot_type):
+    def _update_bars(
+        ensembles: Union[str, List[str]], prop: str, selectors: list, plot_type: str
+    ) -> Union[dash_table.DataTable, wcc.Graph]:
         ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
         if plot_type == "table":
             columns, dframe = parent.pmodel.make_statistics_table(

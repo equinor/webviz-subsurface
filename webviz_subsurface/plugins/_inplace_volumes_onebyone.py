@@ -1,3 +1,4 @@
+from typing import List, Tuple, Union, Callable, Iterable
 import json
 from uuid import uuid4
 from pathlib import Path
@@ -94,7 +95,10 @@ aggregated_data/parameters.csv)
 
     FILTERS = ["ZONE", "REGION", "FACIES", "LICENSE"]
 
-    TABLE_STATISTICS = [("Sens Name", {}), ("Sens Case", {})] + table_statistics_base()
+    TABLE_STATISTICS: List[Tuple[str, dict]] = [
+        ("Sens Name", {}),
+        ("Sens Case", {}),
+    ] + table_statistics_base()
 
     ENSEMBLE_COLUMNS = [
         "REAL",
@@ -109,7 +113,7 @@ aggregated_data/parameters.csv)
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
         ensembles: list = None,
@@ -167,7 +171,7 @@ aggregated_data/parameters.csv)
         self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
             [
                 (
@@ -202,7 +206,7 @@ aggregated_data/parameters.csv)
             ]
         )
 
-    def selector(self, label, id_name, column):
+    def selector(self, label: str, id_name: str, column: str) -> html.Div:
         return html.Div(
             children=html.Label(
                 children=[
@@ -223,7 +227,7 @@ aggregated_data/parameters.csv)
         )
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("layout"),
@@ -286,17 +290,17 @@ aggregated_data/parameters.csv)
         ]
 
     @property
-    def vol_columns(self):
+    def vol_columns(self) -> List[str]:
         """List of all columns in dataframe"""
         return list(self.volumes.columns)
 
     @property
-    def selectors(self):
+    def selectors(self) -> List[str]:
         """List of available selector columns in dframe"""
         return [x for x in InplaceVolumesOneByOne.FILTERS if x in self.vol_columns]
 
     @property
-    def responses(self):
+    def responses(self) -> List[str]:
         """List of available volume responses in dframe"""
         return [
             x
@@ -306,7 +310,7 @@ aggregated_data/parameters.csv)
         ]
 
     @property
-    def plot_selector(self):
+    def plot_selector(self) -> html.Div:
         """Radiobuttons to select plot type"""
         return html.Div(
             children=[
@@ -330,7 +334,7 @@ aggregated_data/parameters.csv)
         )
 
     @property
-    def response_selector(self):
+    def response_selector(self) -> html.Div:
         """Dropdown to select volumetric response"""
         return html.Div(
             children=html.Label(
@@ -354,7 +358,7 @@ aggregated_data/parameters.csv)
         )
 
     @property
-    def filter_selectors(self):
+    def filter_selectors(self) -> List[html.Div]:
         """Dropdowns for dataframe columns that can be filtered on (Zone, Region, etc)"""
         return [
             html.Div(
@@ -383,7 +387,7 @@ aggregated_data/parameters.csv)
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         """Main layout"""
         return html.Div(
             children=[
@@ -458,7 +462,7 @@ aggregated_data/parameters.csv)
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.tornadoplot.storage_id, "data"),
@@ -478,7 +482,9 @@ aggregated_data/parameters.csv)
                 for i in sublist
             ],
         )
-        def _render_table_and_tornado(ensemble, response, source, *filters):
+        def _render_table_and_tornado(
+            ensemble: str, response: str, source: str, *filters: Union[str, List[str]]
+        ) -> Tuple[str, List[dict], List[dict]]:
             # Filter data
             data = filter_dataframe(
                 self.volumes, self.selectors, ensemble, source, filters
@@ -525,19 +531,23 @@ aggregated_data/parameters.csv)
             ],
         )
         def _render_chart(
-            tornado_click,
-            high_low_storage,
-            plot_type,
-            ensemble,
-            response,
-            source,
-            *filters,
-        ):
+            tornado_click_data_str: Union[str, None],
+            high_low_storage: dict,
+            plot_type: str,
+            ensemble: str,
+            response: str,
+            source: str,
+            *filters: Union[str, List[str]],
+        ) -> Tuple[Union[wcc.Graph, html.Div], str]:
             if dash.callback_context.triggered is None:
                 raise PreventUpdate
+
+            tornado_click: Union[dict, None] = (
+                json.loads(tornado_click_data_str) if tornado_click_data_str else None
+            )
+
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
             if tornado_click:
-                tornado_click = json.loads(tornado_click)
                 if (
                     high_low_storage is not None
                     and ctx == self.tornadoplot.high_low_storage_id
@@ -703,8 +713,8 @@ aggregated_data/parameters.csv)
             return figure, volume_title
 
 
-def calculate_table(df, response):
-    table = []
+def calculate_table(df: pd.DataFrame, response: str) -> Tuple[List[dict], List[dict]]:
+    table: List[dict] = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
         values = dframe.groupby("REAL").sum().reset_index()[response]
         try:
@@ -722,7 +732,7 @@ def calculate_table(df, response):
             )
         except KeyError:
             pass
-    columns = [
+    columns: List[dict] = [
         {**{"name": i[0], "id": i[0]}, **i[1]}
         for i in InplaceVolumesOneByOne.TABLE_STATISTICS
     ]
@@ -730,7 +740,13 @@ def calculate_table(df, response):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_dataframe(dframe, columns, ensemble, source, column_values):
+def filter_dataframe(
+    dframe: pd.DataFrame,
+    columns: Union[str, List[str]],
+    ensemble: str,
+    source: str,
+    column_values: Iterable[Union[str, List[str]]],
+) -> pd.DataFrame:
     df = dframe.copy()
     if not isinstance(columns, list):
         columns = [columns]
@@ -746,5 +762,5 @@ def filter_dataframe(dframe, columns, ensemble, source, column_values):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

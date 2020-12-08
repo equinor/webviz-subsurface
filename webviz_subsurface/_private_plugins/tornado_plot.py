@@ -1,6 +1,6 @@
+from typing import List, Optional, Dict, Any, Union, Tuple
 from uuid import uuid4
 import json
-from typing import List, Optional
 
 import pandas as pd
 import dash
@@ -51,10 +51,10 @@ class TornadoPlot:
 
     def __init__(
         self,
-        app,
-        realizations,
-        reference="rms_seed",
-        allow_click=False,
+        app: dash.Dash,
+        realizations: pd.DataFrame,
+        reference: str = "rms_seed",
+        allow_click: bool = False,
     ):
 
         self.realizations = realizations
@@ -74,12 +74,12 @@ class TornadoPlot:
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[Dict[str, Any]]:
         return [
             {
                 "id": self.ids("tornado-graph"),
@@ -110,22 +110,22 @@ class TornadoPlot:
         ]
 
     @property
-    def storage_id(self):
+    def storage_id(self) -> str:
         """The id of the dcc.Store component that holds the tornado data"""
         return self.ids("storage")
 
     @property
-    def click_id(self):
+    def click_id(self) -> str:
         """The id of the dcc.Store component that holds click data"""
         return self.ids("click-store")
 
     @property
-    def high_low_storage_id(self):
+    def high_low_storage_id(self) -> str:
         """The id of the dcc.Store component that holds click data"""
         return self.ids("high-low-storage")
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: Union[str, List[str]]) -> Dict[str, str]:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -134,7 +134,7 @@ class TornadoPlot:
         }
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             [
                 html.Div(
@@ -229,7 +229,7 @@ class TornadoPlot:
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.ids("tornado-graph"), "figure"),
@@ -243,7 +243,13 @@ class TornadoPlot:
                 Input(self.ids("sens_filter"), "value"),
             ],
         )
-        def _calc_tornado(reference, scale, cutbyref, data, sens_filter):
+        def _calc_tornado(
+            reference: str,
+            scale: str,
+            cutbyref: str,
+            data: Union[str, bytes, bytearray],
+            sens_filter: List[str],
+        ) -> Tuple[dict, dict]:
             if not data:
                 raise PreventUpdate
             data = json.loads(data)
@@ -279,7 +285,7 @@ class TornadoPlot:
                     Input(self.ids("reset"), "n_clicks"),
                 ],
             )
-            def _save_click_data(data, nclicks):
+            def _save_click_data(data: dict, nclicks: Optional[int]) -> str:
                 if dash.callback_context.triggered is None:
                     raise PreventUpdate
 
@@ -309,18 +315,19 @@ class TornadoPlot:
                     raise PreventUpdate from exc
 
 
-def scale_to_ref(value, ref, scale):
+def scale_to_ref(value: float, ref: float, scale: str) -> float:
     value_ref = value - ref
     if scale == "Percentage":
         value_ref = (100 * (value_ref / ref)) if ref != 0 else 0
     return value_ref
 
 
-def sort_by_max(tornadotable):
+def sort_by_max(tornadotable: pd.DataFrame) -> pd.DataFrame:
+    # TODO(Ruben): This mypy error seems to be a false positive?
     """ Sorts table based on max(abs('low', 'high')) """
     tornadotable["max"] = (
         tornadotable[["low", "high"]]
-        .apply(lambda x: max(x.min(), x.max(), key=abs), axis=1)
+        .apply(lambda x: max(x.min(), x.max(), key=abs), axis=1)  # type: ignore
         .abs()
     )
     df_sorted = tornadotable.sort_values("max", ascending=True)
@@ -328,7 +335,7 @@ def sort_by_max(tornadotable):
     return df_sorted
 
 
-def cut_by_ref(tornadotable, refname):
+def cut_by_ref(tornadotable: pd.DataFrame, refname: str) -> pd.DataFrame:
     """ Removes sensitivities smaller than reference sensitivity from table """
     maskref = tornadotable.sensname == refname
     reflow = tornadotable[maskref].low.abs()
@@ -346,19 +353,20 @@ def cut_by_ref(tornadotable, refname):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 def tornado_plot(
-    realizations,
-    data,
-    sens_filter,
-    plotly_theme,
-    reference="rms_seed",
-    scale="Percentage",
-    cutbyref=True,
-    number_format="",
-    unit="",
-    spaced=True,
-    locked_si_prefix=None,
-):  # pylint: disable=too-many-locals
+    realizations: pd.DataFrame,
+    data: pd.DataFrame,
+    sens_filter: List[str],
+    plotly_theme: Dict[str, Any],
+    reference: str = "rms_seed",
+    scale: str = "Percentage",
+    cutbyref: bool = True,
+    number_format: str = "",
+    unit: str = "",
+    spaced: bool = True,
+    locked_si_prefix: Optional[int] = None,
+) -> Tuple[dict, dict]:
 
     # Raise key error if no senscases, i.e. the ensemble has no design matrix
     if list(realizations["SENSCASE"].unique()) == [None]:
@@ -372,6 +380,8 @@ def tornado_plot(
     ]["VALUE"].mean()
 
     df = calc_tornado_df(data, realizations, ref_avg, scale)
+
+    locked_si_prefix_relative: Optional[int]
 
     # Drops sensitivities smaller than reference if specified
     if cutbyref and df["sensname"].str.contains(reference).any():
@@ -448,7 +458,7 @@ def tornado_plot(
             orientation="h",
         ),
     ]
-    layout = {}
+    layout: Dict[str, Any] = {}
     layout.update(plotly_theme["layout"])
     layout.update(
         {
@@ -500,7 +510,9 @@ def tornado_plot(
 
 
 # pylint: disable=too-many-locals
-def calc_tornado_df(data, realizations, ref_avg, scale):
+def calc_tornado_df(
+    data: pd.DataFrame, realizations: pd.DataFrame, ref_avg: float, scale: str
+) -> pd.DataFrame:
     # Group by sensitivity name/case and calculate average values for each case
     arr = []
 
@@ -613,7 +625,7 @@ def calc_tornado_df(data, realizations, ref_avg, scale):
     return pd.DataFrame(arr2)
 
 
-def calc_low_base(low, high):
+def calc_low_base(low: float, high: float) -> float:
     """
     From the low and high value of a parameter,
     calculates the base (starting x value) of the
@@ -630,7 +642,7 @@ def calc_low_base(low, high):
     return low
 
 
-def calc_high_base(low, high):
+def calc_high_base(low: float, high: float) -> float:
     """
     From the low and high value of a parameter,
     calculates the base (starting x value) of the bar
@@ -647,7 +659,7 @@ def calc_high_base(low, high):
     return high
 
 
-def calc_high_x(low, high):
+def calc_high_x(low: float, high: float) -> float:
     """
     From the low and high value of a parameter,
     calculates the x-value (length of bar) of the bar
@@ -662,10 +674,10 @@ def calc_high_x(low, high):
     if high > 0:
         base = max(0, low)
         return high - base
-    return 0
+    return 0.0
 
 
-def calc_low_x(low, high):
+def calc_low_x(low: float, high: float) -> float:
     """
     From the low and high value of a parameter,
     calculates the x-value (length of bar) of the bar
@@ -680,10 +692,10 @@ def calc_low_x(low, high):
     if low < 0:
         base = min(0, high)
         return low - base
-    return 0
+    return 0.0
 
 
-def printable_int_list(integer_list: Optional[List[int]]):
+def printable_int_list(integer_list: Optional[List[int]]) -> str:
     """Creates a string out of a list of integers.
     The string gives a range x-y if all the integers between and
     including x and y are in the list, otherwise separated by commas.

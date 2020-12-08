@@ -100,7 +100,9 @@ def calc_from_cumulatives(
     return diff_cum
 
 
-def _verify_time_index(df: pd.DataFrame, time_index: str, time_index_input: str):
+def _verify_time_index(
+    df: pd.DataFrame, time_index: str, time_index_input: str
+) -> None:
     freqs = {"D": "daily", "MS": "monthly", "YS": "yearly"}
     valid_time_indices = {
         "daily": ["daily", "monthly", "yearly"],
@@ -150,7 +152,7 @@ def _resample_time_index(
     )
 
 
-def rename_vec_from_cum(vector: str, as_rate: bool):
+def rename_vec_from_cum(vector: str, as_rate: bool) -> str:
     """This function assumes that it is a cumulative/total vector named in the Eclipse standard
     and is fairly naive when converting to rate. Based in the list in libecl
     https://github.com/equinor/libecl/blob/69f1ee0ddf696c87b6d85eca37eed7e8b66ac2db/\

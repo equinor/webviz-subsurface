@@ -3,6 +3,7 @@ from typing import Union
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+
 from ..figures.color_figure import color_figure
 
 

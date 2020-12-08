@@ -20,3 +20,8 @@ good-names = i,
              z,
              df,
              _
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=FIXME

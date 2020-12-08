@@ -1,6 +1,8 @@
+from typing import List, Tuple, Callable, Union
 from pathlib import Path
 from uuid import uuid4
 import json
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -112,20 +114,23 @@ folder, to avoid risk of not extracting the right data.
         "RUNPATH",
     ]
 
-    TABLE_STAT = [("Sensitivity", {}), ("Case", {})] + table_statistics_base()
+    TABLE_STAT: List[Tuple[str, dict]] = [
+        ("Sensitivity", {}),
+        ("Case", {}),
+    ] + table_statistics_base()
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         csvfile_smry: Path = None,
         csvfile_parameters: Path = None,
         ensembles: list = None,
         column_keys: list = None,
-        initial_vector=None,
+        initial_vector: str = None,
         sampling: str = "monthly",
         line_shape_fallback: str = "linear",
-    ):
+    ) -> None:
 
         super().__init__()
 
@@ -191,12 +196,12 @@ folder, to avoid risk of not extracting the right data.
         self.theme = app.webviz_settings["theme"]
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.ids("layout"),
@@ -225,7 +230,7 @@ folder, to avoid risk of not extracting the right data.
         ]
 
     @property
-    def ensemble_selector(self):
+    def ensemble_selector(self) -> html.Div:
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
@@ -248,7 +253,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def smry_selector(self):
+    def smry_selector(self) -> html.Div:
         """Dropdown to select ensemble"""
         return html.Div(
             style={"paddingBottom": "30px"},
@@ -274,11 +279,11 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def initial_date(self):
+    def initial_date(self) -> datetime.date:
         df = self.data[self.data["ENSEMBLE"] == self.data["ENSEMBLE"].unique()[0]]
         return df["DATE"].max()
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
             [
                 (
@@ -305,7 +310,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.FlexBox(
@@ -367,7 +372,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 # Output(self.ids("date-store"), "children"),
@@ -382,7 +387,9 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.ids("vector"), "value"),
             ],
         )
-        def _render_date(ensemble, clickdata, vector):
+        def _render_date(
+            ensemble: str, clickdata: dict, vector: str
+        ) -> Tuple[list, list, str, str]:
             """Store selected date and tornado input. Write statistics
             to table"""
             try:
@@ -432,14 +439,22 @@ folder, to avoid risk of not extracting the right data.
             ],
         )  # pylint: disable=too-many-branches, too-many-locals
         def _render_tornado(
-            tornado_click, high_low_storage, ensemble, vector, date_click, figure
-        ):
+            tornado_click_data_str: Union[str, None],
+            high_low_storage: dict,
+            ensemble: str,
+            vector: str,
+            date_click: dict,
+            figure: dict,
+        ) -> dict:
             """Update graph with line coloring, vertical line and title"""
             if dash.callback_context.triggered is None:
                 raise PreventUpdate
             ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+
+            tornado_click: Union[dict, None] = (
+                json.loads(tornado_click_data_str) if tornado_click_data_str else None
+            )
             if tornado_click:
-                tornado_click = json.loads(tornado_click)
                 reset_click = tornado_click["sens_name"] is None
             else:
                 reset_click = False
@@ -609,7 +624,7 @@ folder, to avoid risk of not extracting the right data.
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_table(df, vector):
+def calculate_table(df: pd.DataFrame, vector: str) -> Tuple[List[dict], List[dict]]:
     table = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
         values = dframe[vector]
@@ -636,7 +651,9 @@ def calculate_table(df, vector):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_ensemble(data, ensemble, vector):
+def filter_ensemble(
+    data: pd.DataFrame, ensemble: str, vector: List[str]
+) -> pd.DataFrame:
     return data.loc[data["ENSEMBLE"] == ensemble][
         ["DATE", "REAL", "SENSCASE", "SENSNAME", "SENSTYPE"] + vector
     ]
@@ -644,10 +661,10 @@ def filter_ensemble(data, ensemble, vector):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_unit(smry_meta, vec):
+def get_unit(smry_meta: Union[pd.DataFrame, None], vec: str) -> Union[str, None]:
     return None if smry_meta is None else simulation_unit_reformat(smry_meta.unit[vec])

@@ -1,7 +1,8 @@
+from typing import List, Dict, Union, Tuple, Any, Callable
 from uuid import uuid4
 from pathlib import Path
-from typing import List
 
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -63,13 +64,13 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         surfacefiles: List[Path],
         wellfiles: List[Path],
         segyfiles: List[Path] = None,
         surfacenames: list = None,
         zonelog: str = None,
-        zunit="depth (m)",
+        zunit: str = "depth (m)",
         zmin: float = None,
         zmax: float = None,
         zonemin: int = 1,
@@ -85,23 +86,22 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.zmin = zmin
         self.zmax = zmax
         self.zonemin = zonemin
-        self.surfacenames = surfacenames
         self.surfacefiles = [str(surface) for surface in surfacefiles]
         self.wellfiles = [str(well) for well in wellfiles]
         self.segyfiles = [str(segy) for segy in segyfiles] if segyfiles else []
-        self.surfacenames = (
+        self.surfacenames: List[str] = (
             surfacenames if surfacenames else [surface.stem for surface in surfacefiles]
         )
         self.zonelog = zonelog
         self.uid = uuid4()
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def well_layout(self):
+    def well_layout(self) -> html.Div:
         return html.Div(
             children=html.Label(
                 children=[
@@ -122,7 +122,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def seismic_layout(self):
+    def seismic_layout(self) -> html.Div:
         return html.Div(
             style={} if self.segyfiles else {"display": "none"},
             children=html.Label(
@@ -146,7 +146,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def viz_options_layout(self):
+    def viz_options_layout(self) -> dcc.Checklist:
         options = [{"label": "Show surface fill", "value": "show_surface_fill"}]
         value = ["show_surface_fill"]
         if self.segyfiles:
@@ -164,7 +164,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def well_options(self):
+    def well_options(self) -> html.Div:
         return html.Div(
             style={"marginLeft": "20px", "marginRight": "0px", "marginBotton": "0px"},
             children=[
@@ -176,6 +176,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 id=self.ids("sampling"),
                                 debounce=True,
                                 type="number",
+                                required=True,
                                 value=self.sampling,
                                 persistence=True,
                                 persistence_type="session",
@@ -191,6 +192,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 id=self.ids("nextend"),
                                 debounce=True,
                                 type="number",
+                                required=True,
                                 value=self.nextend,
                                 persistence=True,
                                 persistence_type="session",
@@ -202,7 +204,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             children=[
                 html.Div(
@@ -250,7 +252,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: str) -> Dict[str, str]:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -258,7 +260,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             "gridTemplateColumns": f"{columns}",
         }
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.ids("graph"), "figure"),
             [
@@ -269,9 +271,19 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("nextend"), "value"),
             ],
         )
-        def _render_section(well, cube, options, sampling, nextend):
+        def _render_section(
+            wellfile: str,
+            cubefile: str,
+            options: List[str],
+            sampling: Union[int, float, None],
+            nextend: Union[int, float, None],
+        ) -> dict:
             """Update cross section"""
-            well = load_well(get_path(well))
+
+            if sampling is None or nextend is None:
+                raise PreventUpdate
+
+            well = load_well(get_path(wellfile))
             xsect = XSectionFigure(
                 well=well,
                 zmin=self.zmin,
@@ -289,7 +301,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             )
 
             if "show_seismic" in options:
-                cube = load_cube_data(get_path(cube))
+                cube = load_cube_data(get_path(cubefile))
                 xsect.plot_cube(cube)
 
             xsect.plot_well(
@@ -307,7 +319,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [Input(self.ids("show_map"), "n_clicks")],
             [State(self.ids("map_wrapper"), "style")],
         )
-        def _show_map(nclicks, style):
+        def _show_map(nclicks: int, style: dict) -> Tuple[dict, str]:
             """Show/hide map on button click"""
             btn = "Show Map"
             if not nclicks:
@@ -323,7 +335,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             Output(self.ids("map"), "layers"),
             [Input(self.ids("wells"), "value")],
         )
-        def _render_surface(wellfile):
+        def _render_surface(wellfile: str) -> List[Dict[str, Any]]:
             """Update map"""
             wellname = Path(wellfile).stem
             wellfile = get_path(wellfile)
@@ -336,7 +348,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             well_layer = make_well_layer(well, wellname)
             return [s_layer, well_layer]
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             *[(get_path, [{"path": fn}]) for fn in self.segyfiles],
             *[(get_path, [{"path": fn}]) for fn in self.surfacefiles],
@@ -345,5 +357,5 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: str) -> Path:
     return Path(path)

@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -6,15 +6,20 @@ from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import dash
 
-from ..utils.colors import find_intermediate_color
+from ..utils.colors import find_intermediate_color_rgba
 from ..figures.correlation_figure import CorrelationFigure
 from ..utils.surface import surface_from_zone_prop
+from ..models import SimulationTimeSeriesModel
 from ..models.surface_leaflet_model import (
     SurfaceLeafletModel,
 )
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ..property_statistics import PropertyStatistics
 
-def property_response_controller(parent, app):
+
+def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -> None:
     @app.callback(
         Output({"id": parent.uuid("surface-view"), "tab": "response"}, "layers"),
         Output({"id": parent.uuid("surface-name"), "tab": "response"}, "children"),
@@ -24,7 +29,7 @@ def property_response_controller(parent, app):
     )
     def _update_surface(
         clickdata: Union[None, dict], ensemble: str, stype: str
-    ) -> Tuple[dict, str]:
+    ) -> Tuple[list, str]:
         if clickdata is not None:
             label = clickdata["points"][0]["y"]
             prop = label.split(" | ")[0]
@@ -108,7 +113,7 @@ def property_response_controller(parent, app):
         timeseries_clickdata: Union[None, dict],
         correlation_clickdata: Union[None, dict],
         selectors: list,
-        corr_filter: str,
+        corr_filter: list,
         figure: dict,
         label: str,
     ) -> Tuple[dict, dict]:
@@ -209,28 +214,30 @@ def property_response_controller(parent, app):
         return figure, correlation_figure.figure
 
 
-def set_real_color(real_no: str, low_reals: list, high_reals: list):
+def set_real_color(real_no: str, low_reals: list, high_reals: list) -> str:
 
     if real_no in low_reals:
         index = int(list(low_reals).index(real_no))
         intermed = index / len(low_reals)
-        return find_intermediate_color(
-            "rgba(255,0,0, 100, .1)",
-            "rgba(220,220,220, 0.1)",
-            intermed,
-            colortype="rgba",
+        return find_intermediate_color_rgba(
+            "rgba(255,0,0, 100, .1)", "rgba(220,220,220, 0.1)", intermed
         )
     if real_no in high_reals:
         index = int(list(high_reals).index(real_no))
         intermed = index / len(high_reals)
-        return find_intermediate_color(
-            "rgba(220,220,220, 0.1)", "rgba(50,205,50, 1)", intermed, colortype="rgba"
+        return find_intermediate_color_rgba(
+            "rgba(220,220,220, 0.1)", "rgba(50,205,50, 1)", intermed
         )
 
     return "rgba(220,220,220, 0.2)"
 
 
-def update_timeseries_graph(timeseries_model, ensemble, vector, real_filter=None):
+def update_timeseries_graph(
+    timeseries_model: SimulationTimeSeriesModel,
+    ensemble: str,
+    vector: str,
+    real_filter: pd.Series = None,
+) -> dict:
 
     return {
         "data": timeseries_model.add_realization_traces(
@@ -242,7 +249,7 @@ def update_timeseries_graph(timeseries_model, ensemble, vector, real_filter=None
     }
 
 
-def correlate(vectordf, propdf, response):
+def correlate(vectordf: pd.DataFrame, propdf: pd.DataFrame, response: str) -> pd.Series:
     """Returns the correlation matrix for a dataframe"""
     df = pd.merge(propdf, vectordf, on=["REAL"])
     df = df[df.columns[df.nunique() > 1]]

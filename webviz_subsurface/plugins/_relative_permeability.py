@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
-import warnings
 from typing import Optional, Union
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +14,7 @@ from webviz_config import WebvizPluginABC
 
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
+from .._utils.colors import hex_to_rgba
 
 
 class RelativePermeability(WebvizPluginABC):
@@ -831,8 +832,8 @@ def add_fanchart_traces(
 ):
     """Renders a fanchart"""
 
-    fill_color = hex_to_rgb(color, 0.3)
-    line_color = hex_to_rgb(color, 1)
+    fill_color = hex_to_rgba(color, 0.3)
+    line_color = hex_to_rgba(color, 1)
     return [
         {
             "name": legend_group,
@@ -903,15 +904,6 @@ def add_fanchart_traces(
             "showlegend": False,
         },
     ]
-
-
-def hex_to_rgb(hex_string, opacity=1):
-    """Converts a hex color to rgb"""
-    hex_string = hex_string.lstrip("#")
-    hlen = len(hex_string)
-    rgb = [int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)]
-    rgb.append(opacity)
-    return f"rgba{tuple(rgb)}"
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

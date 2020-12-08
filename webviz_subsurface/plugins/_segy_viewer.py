@@ -1,7 +1,7 @@
+from typing import List, Dict, Any, Union, Tuple, Callable
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import List
 
 import dash
 from dash.exceptions import PreventUpdate
@@ -12,6 +12,7 @@ import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
+import numpy as np
 
 from .._datainput.seismic import load_cube_data, get_iline, get_xline, get_zslice
 
@@ -40,13 +41,17 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 """
 
     def __init__(
-        self, app, segyfiles: List[Path], zunit="depth (m)", colors: list = None
+        self,
+        app: dash.Dash,
+        segyfiles: List[Path],
+        zunit: str = "depth (m)",
+        colors: list = None,
     ):
 
         super().__init__()
 
         self.zunit = zunit
-        self.segyfiles = [str(segy) for segy in segyfiles]
+        self.segyfiles: List[str] = [str(segy) for segy in segyfiles]
         self.initial_colors = (
             colors
             if colors
@@ -72,11 +77,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
-    def update_state(self, cubepath, **kwargs):
+    def update_state(self, cubepath: str, **kwargs: Any) -> Dict[str, Any]:
         cube = load_cube_data(get_path(cubepath))
         state = {
             "cubepath": cubepath,
@@ -96,7 +101,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         return state
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.ids("layout"),
@@ -144,7 +149,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         ]
 
     @property
-    def settings_layout(self):
+    def settings_layout(self) -> wcc.FlexBox:
         """Layout for color and other settings"""
         return wcc.FlexBox(
             style={"margin": "50px"},
@@ -214,7 +219,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             id=self.ids("layout"),
             children=wcc.FlexBox(
@@ -261,7 +266,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.ids("state-storage"), "data"),
             [
@@ -281,19 +286,20 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
         # pylint: disable=unused-argument,too-many-arguments
         def _update_state(
-            cubepath,
-            icd,
-            xcd,
-            zcd,
-            color_values,
-            colorscale,
-            zoom_btn,
-            reset_range_btn,
-            zfig,
-            store,
-        ):
+            cubepath: str,
+            icd: Union[dict, None],
+            xcd: Union[dict, None],
+            zcd: Union[dict, None],
+            color_values: List[float],
+            colorscale: List[float],
+            _zoom_btn: Union[int, None],
+            _reset_range_btn: Union[int, None],
+            zfig: Union[dict, None],
+            state_data_str: str,
+        ) -> str:
             """Updates dcc.Store object with active iline, xline, zlayer and color settings."""
-            store = json.loads(store)
+
+            store: dict = json.loads(state_data_str)
             ctx = dash.callback_context.triggered[0]["prop_id"]
             x_was_clicked = (
                 xcd if xcd and ctx == f"{self.ids('xline')}.clickData" else None
@@ -308,14 +314,14 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 store = self.update_state(cubepath)
             if ctx == f"{self.ids('zoom')}.n_clicks":
                 store["uirevision"] = str(uuid4())
-            if x_was_clicked:
+            if x_was_clicked and xcd is not None:
                 store["iline"] = xcd["points"][0]["x"]
                 store["zslice"] = xcd["points"][0]["y"]
-            if z_was_clicked:
+            if z_was_clicked and zcd is not None and zfig is not None:
                 store["iline"] = zcd["points"][0]["x"]
                 store["xline"] = zcd["points"][0]["y"]
                 store["zslice"] = float(zfig["data"][0]["text"])
-            if i_was_clicked:
+            if i_was_clicked and icd is not None:
                 store["xline"] = icd["points"][0]["x"]
                 store["zslice"] = icd["points"][0]["y"]
             if ctx == f"{self.ids('color-reset')}.n_clicks":
@@ -331,11 +337,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             Output(self.ids("zslice"), "figure"),
             [Input(self.ids("state-storage"), "data")],
         )
-        def _set_zslice(state):
+        def _set_zslice(state_data_str: Union[str, None]) -> dict:
             """Updates z-slice heatmap"""
-            if not state:
+            if not state_data_str:
                 raise PreventUpdate
-            state = json.loads(state)
+            state = json.loads(state_data_str)
             cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
@@ -381,11 +387,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             Output(self.ids("inline"), "figure"),
             [Input(self.ids("state-storage"), "data")],
         )
-        def _set_iline(state):
+        def _set_iline(state_data_str: Union[str, None]) -> dict:
             """Updates inline heatmap"""
-            if not state:
+            if not state_data_str:
                 raise PreventUpdate
-            state = json.loads(state)
+            state = json.loads(state_data_str)
             cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
@@ -427,11 +433,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             Output(self.ids("xline"), "figure"),
             [Input(self.ids("state-storage"), "data")],
         )
-        def _set_xline(state):
+        def _set_xline(state_data_str: Union[str, None]) -> dict:
             """Update xline heatmap"""
-            if not state:
+            if not state_data_str:
                 raise PreventUpdate
-            state = json.loads(state)
+            state = json.loads(state_data_str)
             cube = load_cube_data(get_path(state["cubepath"]))
             shapes = [
                 {
@@ -479,10 +485,12 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [State(self.ids("state-storage"), "data")],
         )
         # pylint: disable=unused-argument
-        def _reset_color_range(btn_clicked, state):
-            if not state:
+        def _reset_color_range(
+            _btn_clicked: int, state_data_str: Union[str, None]
+        ) -> Tuple[float, float, list, float]:
+            if not state_data_str:
                 raise PreventUpdate
-            state = json.loads(state)
+            state = json.loads(state_data_str)
             minv = state["min_value"]
             maxv = state["max_value"]
             value = [minv, maxv]
@@ -490,7 +498,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return minv, maxv, value, step
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: str) -> dict:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -498,29 +506,29 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             "gridTemplateColumns": f"{columns}",
         }
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [(get_path, [{"path": fn}]) for fn in self.segyfiles]
 
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
 def make_heatmap(
-    arr,
-    theme,
-    height=400,
-    zmin=None,
-    zmax=None,
-    colorscale=None,
-    uirevision=None,
-    showscale=False,
-    reverse_y=True,
-    xaxis=None,
-    yaxis=None,
-    text=None,
-    title=None,
-    yaxis_title=None,
-    xaxis_title=None,
-):
+    arr: np.ndarray,
+    theme: dict,
+    height: int = 400,
+    zmin: float = None,
+    zmax: float = None,
+    colorscale: list = None,
+    uirevision: str = None,
+    showscale: bool = False,
+    reverse_y: bool = True,
+    xaxis: np.array = None,
+    yaxis: np.array = None,
+    text: str = None,
+    title: str = None,
+    yaxis_title: str = None,
+    xaxis_title: str = None,
+) -> Dict[str, Any]:
     """Createst heatmap plot"""
     colors = (
         [[i / (len(colorscale) - 1), color] for i, color in enumerate(colorscale)]
@@ -563,5 +571,5 @@ def make_heatmap(
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: str) -> Path:
     return Path(path)

@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 import pandas as pd
 from webviz_config.common_cache import CACHE
+from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
@@ -11,7 +12,7 @@ from webviz_subsurface._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
 )
-from ..utils.colors import hex_to_rgb
+from webviz_subsurface._utils.colors import hex_to_rgba
 
 
 class SimulationTimeSeriesModel:
@@ -20,7 +21,7 @@ class SimulationTimeSeriesModel:
     def __init__(
         self,
         dataframe: pd.DataFrame,
-        theme: dict = None,
+        theme: WebvizConfigTheme,
         metadata: Optional[pd.DataFrame] = None,
         line_shape_fallback: str = "linear",
     ) -> None:
@@ -77,7 +78,7 @@ class SimulationTimeSeriesModel:
         return self._metadata
 
     @property
-    def vectors(self):
+    def vectors(self) -> list:
         return [
             c
             for c in self.dataframe.columns
@@ -145,15 +146,12 @@ class SimulationTimeSeriesModel:
                     self.get_line_shape(vector),
                 )
             )
-        if (
-            historical_vector(vector=vector, smry_meta=self.metadata)
-            in dataframe.columns
-        ):
-            traces.append(
-                self.add_history_trace(
-                    dataframe, historical_vector(vector=vector, smry_meta=self.metadata)
-                )
-            )
+
+        historical_vector_name = historical_vector(
+            vector=vector, smry_meta=self.metadata
+        )
+        if historical_vector_name and historical_vector_name in dataframe.columns:
+            traces.append(self.add_history_trace(dataframe, historical_vector_name))
         return traces
 
     def add_history_trace(self, dframe: pd.DataFrame, vector: str) -> dict:
@@ -200,15 +198,11 @@ class SimulationTimeSeriesModel:
             for real_idx, (real, real_df) in enumerate(ens_df.groupby("REAL"))
         ]
 
-        if (
-            historical_vector(vector=vector, smry_meta=self.metadata)
-            in dataframe.columns
-        ):
-            traces.append(
-                self.add_history_trace(
-                    dataframe, historical_vector(vector=vector, smry_meta=self.metadata)
-                )
-            )
+        historical_vector_name = historical_vector(
+            vector=vector, smry_meta=self.metadata
+        )
+        if historical_vector_name and historical_vector_name in dataframe.columns:
+            traces.append(self.add_history_trace(dataframe, historical_vector_name))
         return traces
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -237,25 +231,21 @@ class SimulationTimeSeriesModel:
             for real_idx, (real, real_df) in enumerate(dataframe.groupby("REAL"))
         ]
 
-        if (
-            historical_vector(vector=vector, smry_meta=self.metadata)
-            in dataframe.columns
-        ):
-            traces.append(
-                self.add_history_trace(
-                    dataframe, historical_vector(vector=vector, smry_meta=self.metadata)
-                )
-            )
+        historical_vector_name = historical_vector(
+            vector=vector, smry_meta=self.metadata
+        )
+        if historical_vector_name and historical_vector_name in dataframe.columns:
+            traces.append(self.add_history_trace(dataframe, historical_vector_name))
         return traces
 
 
 def add_fanchart_traces(
-    vector_stats: pd.DataFrame, color: str, legend_group: str, line_shape
+    vector_stats: pd.DataFrame, color: str, legend_group: str, line_shape: str
 ) -> list:
     """Renders a fanchart for an ensemble vector"""
 
-    fill_color = hex_to_rgb(color, 0.3)
-    line_color = hex_to_rgb(color, 1)
+    fill_color = hex_to_rgba(color, 0.3)
+    line_color = hex_to_rgba(color, 1)
     return [
         {
             "name": legend_group,

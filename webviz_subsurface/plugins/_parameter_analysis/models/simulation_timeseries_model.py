@@ -1,4 +1,5 @@
 from typing import Optional, Union
+
 from itertools import chain
 import pandas as pd
 from webviz_config.common_cache import CACHE

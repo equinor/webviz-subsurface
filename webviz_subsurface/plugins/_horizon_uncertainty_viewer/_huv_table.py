@@ -1,3 +1,6 @@
+from typing import List
+from pathlib import Path
+
 import pandas as pd
 
 
@@ -10,21 +13,21 @@ class FilterTable:
 
     def __init__(
         self,
-        target_points=None,
-        well_points=None,
+        target_points: Path = None,
+        well_points: Path = None,
     ):
         self.target_points = target_points
         self.well_points = well_points
 
-    def get_targetpoints_df(self):
+    def get_targetpoints_df(self) -> pd.DataFrame:
         df = pd.read_csv(self.target_points)
         return df.round(2)
 
-    def get_wellpoints_df(self):
+    def get_wellpoints_df(self) -> pd.DataFrame:
         df = pd.read_csv(self.well_points)
         return df.round(2)
 
-    def update_wellpoints_df(self, column_list):
+    def update_wellpoints_df(self, column_list: List[str]) -> pd.DataFrame:
         df = pd.read_csv(self.well_points)
         sorted_list = []
         for colm in df.keys().values:

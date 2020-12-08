@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -9,8 +11,12 @@ from .selector_view import (
     source_selector,
 )
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ..property_statistics import PropertyStatistics
 
-def surface_select_view(parent, tab: str) -> html.Div:
+
+def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     return html.Div(
         id=parent.uuid("surface-select"),
         style={"width": "75%"},
@@ -35,7 +41,7 @@ def surface_select_view(parent, tab: str) -> html.Div:
     )
 
 
-def surface_view(parent, tab: str) -> html.Div:
+def surface_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     return html.Div(
         style={"height": "35vh"},
         children=[
@@ -57,7 +63,7 @@ def surface_view(parent, tab: str) -> html.Div:
     )
 
 
-def timeseries_view(parent) -> html.Div:
+def timeseries_view(parent: "PropertyStatistics") -> html.Div:
     return html.Div(
         style={"height": "38vh"},
         children=[
@@ -82,7 +88,7 @@ def timeseries_view(parent) -> html.Div:
     )
 
 
-def correlation_view(parent) -> html.Div:
+def correlation_view(parent: "PropertyStatistics") -> html.Div:
     return html.Div(
         style={"flex": 2, "height": "80vh"},
         className="framed",
@@ -95,7 +101,7 @@ def correlation_view(parent) -> html.Div:
     )
 
 
-def filter_correlated_parameter(parent) -> html.Div:
+def filter_correlated_parameter(parent: "PropertyStatistics") -> html.Div:
     return html.Div(
         [
             html.H5("Filter on property"),
@@ -122,7 +128,7 @@ def filter_correlated_parameter(parent) -> html.Div:
     )
 
 
-def selector_view(parent) -> html.Div:
+def selector_view(parent: "PropertyStatistics") -> html.Div:
     return html.Div(
         style={"height": "80vh", "overflowY": "auto"},
         className="framed",
@@ -142,7 +148,7 @@ def selector_view(parent) -> html.Div:
     )
 
 
-def property_response_view(parent) -> wcc.FlexBox:
+def property_response_view(parent: "PropertyStatistics") -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[

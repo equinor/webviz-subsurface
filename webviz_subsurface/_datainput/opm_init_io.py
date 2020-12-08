@@ -5,7 +5,7 @@
 ########################################
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union, cast
 
 from opm.io.ecl import EclFile
 
@@ -51,9 +51,9 @@ class EclPropertyTableRawData:  # pylint: disable=too-few-public-methods
     INIT file data.
     """
 
-    def __init__(self):
-        self.data = []
-        self.primary_key = []
+    def __init__(self) -> None:
+        self.data: List[float] = []
+        self.primary_key: List[int] = []
         self.num_primary = 0
         self.num_rows = 0
         self.num_cols = 0
@@ -94,9 +94,13 @@ class VariateAndValues:  # pylint: disable=too-few-public-methods
     multiple covariates.
     """
 
-    def __init__(self):
-        self.x = 0
-        self.y = []
+    def __init__(self) -> None:
+        self.x = 0.0
+        self.y: Union[List[float], List[VariateAndValues]]
+
+    def get_values_as_floats(self) -> List[float]:
+        assert len(self.y) > 0 and isinstance(self.y[0], float)
+        return cast(List[float], self.y)
 
 
 class PvxOBase:
@@ -104,10 +108,10 @@ class PvxOBase:
     A base class for all fluids.
     """
 
-    def __init__(self, values: List[VariateAndValues]):
+    def __init__(self, values: List[VariateAndValues]) -> None:
         self.values = values
 
-    def get_values(self):
+    def get_values(self) -> List[VariateAndValues]:
         return self.values
 
     # pylint: disable=R0201
@@ -150,13 +154,13 @@ class Implementation:
             super().__init__(message)
 
     class InvalidType(Exception):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__("Invalid type. Only live oil/wet gas/water supported.")
 
-    def __init__(self):
-        self.values = []
+    def __init__(self) -> None:
+        self.values: List[PvxOBase] = []
 
-    def get_table(self, tab_index: int) -> Optional[List[VariateAndValues]]:
+    def get_table(self, tab_index: int) -> Optional[PvxOBase]:
         if tab_index in range(0, len(self.values)):
             return self.values[tab_index]
 
@@ -207,7 +211,7 @@ class Oil(Implementation):
 
     def create_live_oil(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
         # Holding raw.num_tables values
-        ret = []
+        ret: List[PvxOBase] = []
 
         column_stride = raw.num_rows * raw.num_tables * raw.num_primary
         table_stride = raw.num_primary * raw.num_rows
@@ -223,6 +227,9 @@ class Oil(Implementation):
                 if self.entry_valid(raw.primary_key[index_primary]):
                     outer_value_pair = VariateAndValues()
                     outer_value_pair.x = raw.primary_key[index_primary]
+                    # TODO(Ruben): Is there a better way to achieve this?
+                    temp_list: List[VariateAndValues] = []
+                    outer_value_pair.y = temp_list
                     for index_row in range(0, raw.num_rows):
                         pressure = raw.data[
                             column_stride * 0
@@ -233,7 +240,7 @@ class Oil(Implementation):
                         if self.entry_valid(pressure):
                             inner_value_pair = VariateAndValues()
                             inner_value_pair.x = pressure
-                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)]
+                            inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                             for index_column in range(1, raw.num_cols):
                                 inner_value_pair.y[index_column - 1] = raw.data[
                                     column_stride * index_column
@@ -321,7 +328,7 @@ class Gas(Implementation):
 
     def create_dry_gas(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
         # Holding raw.num_tables values
-        ret = []
+        ret: List[PvxOBase] = []
 
         column_stride = raw.num_rows * raw.num_tables * raw.num_primary
         table_stride = raw.num_primary * raw.num_rows
@@ -337,6 +344,9 @@ class Gas(Implementation):
                 if self.entry_valid(raw.primary_key[index_primary]):
                     outer_value_pair = VariateAndValues()
                     outer_value_pair.x = raw.primary_key[index_primary]
+                    # TODO(Ruben): Is there a better way to achieve this?
+                    temp_list: List[VariateAndValues] = []
+                    outer_value_pair.y = temp_list
                     for index_row in range(0, raw.num_rows):
                         pressure = raw.data[
                             column_stride * 0
@@ -347,7 +357,7 @@ class Gas(Implementation):
                         if self.entry_valid(pressure):
                             inner_value_pair = VariateAndValues()
                             inner_value_pair.x = pressure
-                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)]
+                            inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                             for index_column in range(1, raw.num_cols):
                                 inner_value_pair.y[index_column - 1] = raw.data[
                                     column_stride * index_column
@@ -369,7 +379,7 @@ class Gas(Implementation):
 
     def create_wet_gas(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
         # Holding raw.num_tables values
-        ret = []
+        ret: List[PvxOBase] = []
 
         column_stride = raw.num_rows * raw.num_tables * raw.num_primary
         table_stride = raw.num_primary * raw.num_rows
@@ -385,6 +395,9 @@ class Gas(Implementation):
                 if self.entry_valid(raw.primary_key[index_primary]):
                     outer_value_pair = VariateAndValues()
                     outer_value_pair.x = raw.primary_key[index_primary]
+                    # TODO(Ruben): Is there a better way to achieve this?
+                    temp_list: List[VariateAndValues] = []
+                    outer_value_pair.y = temp_list
                     for index_row in range(0, raw.num_rows):
                         pressure = raw.data[
                             column_stride * 0
@@ -395,7 +408,7 @@ class Gas(Implementation):
                         if self.entry_valid(pressure):
                             inner_value_pair = VariateAndValues()
                             inner_value_pair.x = pressure
-                            inner_value_pair.y = [0 for col in range(1, raw.num_cols)]
+                            inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                             for index_column in range(1, raw.num_cols):
                                 inner_value_pair.y[index_column - 1] = raw.data[
                                     column_stride * index_column
@@ -470,7 +483,7 @@ class Water(Implementation):
 
     def create_water(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
         # Holding raw.num_tables values
-        ret = []
+        ret: List[PvxOBase] = []
 
         column_stride = raw.num_rows * raw.num_tables * raw.num_primary
         table_stride = raw.num_primary * raw.num_rows
@@ -484,6 +497,9 @@ class Water(Implementation):
             index_primary = 0
             outer_value_pair = VariateAndValues()
             outer_value_pair.x = 0
+            # TODO(Ruben): Is there a better way to achieve this?
+            temp_list: List[VariateAndValues] = []
+            outer_value_pair.y = temp_list
             for index_row in range(0, raw.num_rows):
                 pressure = raw.data[
                     column_stride * 0
@@ -494,7 +510,7 @@ class Water(Implementation):
                 if self.entry_valid(pressure):
                     inner_value_pair = VariateAndValues()
                     inner_value_pair.x = pressure
-                    inner_value_pair.y = [0 for col in range(1, raw.num_cols)]
+                    inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                     for index_column in range(1, raw.num_cols):
                         inner_value_pair.y[index_column - 1] = raw.data[
                             column_stride * index_column

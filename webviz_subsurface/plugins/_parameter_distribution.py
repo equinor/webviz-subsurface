@@ -1,3 +1,4 @@
+from typing import List, Dict, Tuple, Callable
 from uuid import uuid4
 from pathlib import Path
 
@@ -41,7 +42,7 @@ When using an aggregated `csvfile`, you need to have the columns `REAL`, `ENSEMB
 and the parameter columns.
 """
 
-    def __init__(self, app, csvfile: Path = None, ensembles: list = None):
+    def __init__(self, app: dash.Dash, csvfile: Path = None, ensembles: list = None):
 
         super().__init__()
 
@@ -66,7 +67,7 @@ and the parameter columns.
                 'Incorrect arguments. Either provide a "csvfile" or "ensembles".'
             )
 
-        self.parameter_columns = [
+        self.parameter_columns: List[str] = [
             col
             for col in list(self.parameters.columns)
             if col not in ["REAL", "ENSEMBLE"]
@@ -75,12 +76,12 @@ and the parameter columns.
         self.plotly_theme = app.webviz_settings["theme"].plotly_theme
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.ids("layout"),
@@ -102,7 +103,7 @@ and the parameter columns.
         ]
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: str) -> Dict[str, str]:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -110,7 +111,7 @@ and the parameter columns.
             "gridTemplateColumns": f"{columns}",
         }
 
-    def make_buttons(self, prev_id, next_id):
+    def make_buttons(self, prev_id: str, next_id: str) -> html.Div:
         return html.Div(
             style=self.set_grid_layout("1fr 1fr"),
             children=[
@@ -136,7 +137,7 @@ and the parameter columns.
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             id=self.ids("layout"),
             children=[
@@ -162,7 +163,7 @@ and the parameter columns.
             ],
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.ids("parameter"), "value"),
             [
@@ -171,7 +172,9 @@ and the parameter columns.
             ],
             [State(self.ids("parameter"), "value")],
         )
-        def _set_parameter_from_btn(_prev_click, _next_click, column):
+        def _set_parameter_from_btn(
+            _prev_click: int, _next_click: int, column: str
+        ) -> str:
 
             ctx = dash.callback_context.triggered
             if ctx is None:
@@ -188,7 +191,7 @@ and the parameter columns.
         @app.callback(
             Output(self.ids("graph"), "data"), [Input(self.ids("parameter"), "value")]
         )
-        def _set_parameter(column):
+        def _set_parameter(column: str) -> dict:
             param = self.parameters[[column, "REAL", "ENSEMBLE"]]
 
             ensembles = param["ENSEMBLE"].unique().tolist()
@@ -205,7 +208,7 @@ and the parameter columns.
 
             return {"iterations": iterations, "values": values, "labels": labels}
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (read_csv, [{"csv_file": self.csvfile}])
             if self.csvfile
@@ -221,27 +224,23 @@ and the parameter columns.
         ]
 
 
-def prev_value(current_value, options):
+def prev_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
+        return options[max(0, index - 1)]
     except ValueError:
-        index = None
-    if index > 0:
-        return options[index - 1]
-    return current_value
+        return current_value
 
 
-def next_value(current_value, options):
+def next_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
+        return options[min(len(options) - 1, index + 1)]
     except ValueError:
-        index = None
-    if index < len(options) - 1:
-        return options[index + 1]
-    return current_value
+        return current_value
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def read_csv(csv_file) -> pd.DataFrame:
+def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

@@ -1,13 +1,14 @@
+from typing import List, Tuple, Union, Dict, Callable, Any
 import io
 import os
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import List
 
 import xtgeo
 import numpy as np
 import pandas as pd
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -78,18 +79,18 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: list,
         surfacefiles: list,
         surfacenames: list = None,
-        surfacefolder: Path = "share/results/maps",
+        surfacefolder: Path = Path("share/results/maps"),
         wellfiles: List[Path] = None,
         wellfolder: Path = None,
         wellsuffix: str = ".w",
         segyfiles: List[Path] = None,
         zonelog: str = None,
         marginal_logs: list = None,
-        zunit="depth (m)",
+        zunit: str = "depth (m)",
         zmin: float = None,
         zmax: float = None,
         zonemin: int = 1,
@@ -106,11 +107,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             )
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
-        self.wellfiles = (
-            json.load(find_files(wellfolder, wellsuffix))
-            if wellfolder is not None
-            else [str(well) for well in wellfiles]
-        )
+        self.wellfiles: List[str]
+        if wellfolder is not None:
+            self.wellfiles = json.load(find_files(wellfolder, wellsuffix))
+        elif wellfiles is not None:
+            self.wellfiles = [str(well) for well in wellfiles]
 
         self.surfacefolder = surfacefolder
         self.surfacefiles = surfacefiles
@@ -129,7 +130,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             for ens in ensembles
         }
 
-        self.realizations = get_realizations(
+        self.realizations: pd.DataFrame = get_realizations(
             ensemble_paths=self.ensembles, ensemble_set_name="EnsembleSet"
         )
         self.marginal_logs = marginal_logs
@@ -163,12 +164,12 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.uid = uuid4()
         self.set_callbacks(app)
 
-    def ids(self, element):
+    def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
 
     @property
-    def well_layout(self):
+    def well_layout(self) -> html.Div:
         return html.Div(
             children=html.Label(
                 children=[
@@ -189,7 +190,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def surface_names_layout(self):
+    def surface_names_layout(self) -> html.Div:
         return html.Div(
             style=self.set_style(marginTop="20px"),
             children=html.Label(
@@ -211,7 +212,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def ensemble_layout(self):
+    def ensemble_layout(self) -> html.Div:
         return html.Div(
             style=self.set_style(marginTop="20px"),
             children=html.Label(
@@ -234,7 +235,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def seismic_layout(self):
+    def seismic_layout(self) -> html.Div:
         if self.segyfiles:
             return html.Div(
                 style=self.set_style(marginTop="20px")
@@ -262,7 +263,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def marginal_log_layout(self):
+    def marginal_log_layout(self) -> html.Div:
         if self.marginal_logs is not None:
             return html.Div(
                 children=html.Label(
@@ -288,7 +289,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def intersection_option(self):
+    def intersection_option(self) -> html.Div:
         options = [
             {"label": "Keep zoom state", "value": "keep_zoom_state"},
             {"label": "Show surface fill", "value": "show_surface_fill"},
@@ -309,6 +310,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     id=self.ids("sampling"),
                     debounce=True,
                     type="number",
+                    required=True,
                     value=self.sampling,
                     persistence=True,
                     persistence_type="session",
@@ -318,6 +320,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     id=self.ids("nextend"),
                     debounce=True,
                     type="number",
+                    required=True,
                     value=self.nextend,
                     persistence=True,
                     persistence_type="session",
@@ -333,7 +336,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def map_layout(self):
+    def map_layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             children=[
                 dcc.Dropdown(
@@ -370,7 +373,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             children=[
                 html.Div(
@@ -428,7 +431,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @staticmethod
-    def set_style(columns=None, **kwargs):
+    def set_style(columns: str = None, **kwargs: Any) -> dict:
         if columns is not None:
             return {
                 "display": "grid",
@@ -439,7 +442,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             }
         return {**kwargs}
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.ids("graph"), "figure"),
@@ -457,20 +460,38 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ],
         )
         def _render_section(
-            surfacenames, ensemble, well, cube, options, sampling, nextend, marginal_log
-        ):
+            surfacenames: List[str],
+            ensemble: str,
+            wellfile: str,
+            segyfile: str,
+            options: List[str],
+            sampling: Union[int, float, None],
+            nextend: Union[int, float, None],
+            marginal_log: Union[str, None],
+        ) -> Tuple[dict, List[List[float]]]:
             """Update cross section"""
-            # Ensure list
-            surfacenames = (
-                surfacenames if isinstance(surfacenames, list) else [surfacenames]
-            )
+
+            # TODO(Sigurd) According to dcc.Dropdown doc, surfacename should always be of
+            # type List[str] since multi=True
+            if not isinstance(surfacenames, list):
+                raise TypeError("surfacenames must be of type list")
+
+            # TODO(Sigurd) Can we prohibit clearing of the sampling and nextend input
+            # fields (dcc.Input) in the client? Until we can, we must guard against sampling
+            # and nextend being None. This happens when the user clears the input field and we
+            # have not yet found a solution that prohibits the input field from being cleared.
+            # The situation can be slightly remedied by setting required=True which will highlight
+            # the missing value with a red rectangle.
+            if sampling is None or nextend is None:
+                raise PreventUpdate
+
             # Sort selected surfaces
             surfacenames = [name for name in self.surfacenames if name in surfacenames]
             surfacefiles = [
                 self.surfacefiles[self.surfacenames.index(name)]
                 for name in surfacenames
             ]
-            well = load_well(get_path(well))
+            well = load_well(get_path(wellfile))
             xsect = XSectionFigure(
                 well=well,
                 zmin=self.zmin,
@@ -495,7 +516,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 )
 
             if "show_seismic" in options:
-                cube = load_cube_data(get_path(cube))
+                cube = load_cube_data(get_path(segyfile))
                 xsect.plot_cube(cube)
 
             xsect.plot_well(
@@ -507,7 +528,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             layout.update(self.plotly_theme["layout"])
             if "keep_zoom_state" in options:
                 layout["uirevision"] = "keep"
-            fencespec = [[coord[0], coord[1]] for coord in xsect.fence]
+            fencespec: List[List[float]] = [
+                [coord[0], coord[1]] for coord in xsect.fence
+            ]
             return {"data": xsect.data, "layout": layout}, fencespec
 
         @app.callback(
@@ -518,7 +541,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [Input(self.ids("show_map"), "n_clicks")],
             [State(self.ids("map_wrapper"), "style")],
         )
-        def _show_map(nclicks, style):
+        def _show_map(nclicks: int, style: dict) -> Tuple[dict, str]:
             """Show/hide map on button click"""
 
             if not nclicks:
@@ -538,7 +561,12 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("ensembles"), "value"),
             ],
         )
-        def _render_surface(fencespec, surfacename, surfacetype, ensemble):
+        def _render_surface(
+            fencespec: List[List[float]],
+            surfacename: str,
+            surfacetype: str,
+            ensemble: str,
+        ) -> List[dict]:
             """Update map"""
             intersect_layer = {
                 "name": "Well",
@@ -565,10 +593,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surface_layer = make_surface_layer(surface, name=surfacename)
             return [surface_layer, intersect_layer]
 
-    def add_webvizstore(self):
-        store_functions = [
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        store_functions: List[Tuple[Callable, list]] = [
             (get_path, [{"path": fn}]) for fn in self.segyfiles + self.wellfiles
         ]
+
         for ens in list(self.realizations["ENSEMBLE"].unique()):
             for surfacefile in self.surfacefiles:
                 store_functions.append(
@@ -607,7 +636,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
 @webvizstore
 def calculate_surface_statistics(
-    realdf_dict, ensemble, surfacefile, surfacefolder
+    realdf_dict: list, ensemble: str, surfacefile: str, surfacefolder: Path
 ) -> io.BytesIO:
 
     realdf = pd.DataFrame(realdf_dict)
@@ -632,7 +661,9 @@ def calculate_surface_statistics(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surface_statistics(realdf_dict, ensemble, surfacefile, surfacefolder):
+def get_surface_statistics(
+    realdf_dict: list, ensemble: str, surfacefile: str, surfacefolder: Path
+) -> Dict[str, xtgeo.RegularSurface]:
     surfaces = json.load(
         calculate_surface_statistics(realdf_dict, ensemble, surfacefile, surfacefolder)
     )
@@ -641,7 +672,7 @@ def get_surface_statistics(realdf_dict, ensemble, surfacefile, surfacefolder):
     }
 
 
-def surface_to_json(surface):
+def surface_to_json(surface: xtgeo.RegularSurface) -> str:
     return json.dumps(
         {
             "ncol": surface.ncol,
@@ -656,7 +687,7 @@ def surface_to_json(surface):
     )
 
 
-def surface_from_json(surfaceobj):
+def surface_from_json(surfaceobj: Union[str, bytes]) -> xtgeo.RegularSurface:
     # See https://github.com/equinor/xtgeo/issues/405
     data = json.loads(surfaceobj)
     surface = xtgeo.RegularSurface(**data)
@@ -665,17 +696,17 @@ def surface_from_json(surfaceobj):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surfaces(fns):
-    return xtgeo.surface.surfaces.Surfaces(fns)
+def get_surfaces(fns: List[str]) -> xtgeo.Surfaces:
+    return xtgeo.Surfaces(fns)
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: str) -> Path:
     return Path(path)
 
 
 @webvizstore
-def find_files(folder, suffix) -> io.BytesIO:
+def find_files(folder: Path, suffix: str) -> io.BytesIO:
     return io.BytesIO(
         json.dumps(
             sorted([str(filename) for filename in folder.glob(f"*{suffix}")])

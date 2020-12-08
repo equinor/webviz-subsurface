@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from dash_table.Format import Format
+from webviz_config import WebvizConfigTheme
 
 # pylint: disable=too-many-public-methods
 class PropertyStatisticsModel:
@@ -26,7 +27,7 @@ class PropertyStatisticsModel:
     ]
     REQUIRED_SELECTORS = ["ZONE"]
 
-    def __init__(self, dataframe: pd.DataFrame, theme: dict) -> None:
+    def __init__(self, dataframe: pd.DataFrame, theme: WebvizConfigTheme) -> None:
         self._dataframe = dataframe
         self._prepare_and_validate_data()
         self._dataframe["label"] = self._dataframe.agg(

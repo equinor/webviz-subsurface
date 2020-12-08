@@ -1,3 +1,5 @@
+from typing import List, Any, TYPE_CHECKING
+
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_table
@@ -12,8 +14,12 @@ from .selector_view import (
     source_selector,
 )
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ..property_statistics import PropertyStatistics
 
-def surface_select_view(parent, tab: str) -> html.Div:
+
+def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     return html.Div(
         id=parent.uuid("surface-select"),
         style={"width": "75%"},
@@ -39,7 +45,7 @@ def surface_select_view(parent, tab: str) -> html.Div:
 
 
 def surface_view(
-    parent, ensemble: str, layers: list, synced_ids: list = None
+    parent: "PropertyStatistics", ensemble: str, layers: list, synced_ids: list = None
 ) -> wsc.LeafletMap:
     return html.Div(
         style={"height": "22vh"},
@@ -63,7 +69,7 @@ def surface_view(
 
 # pylint: disable=too-many-arguments
 def surface_views(
-    parent,
+    parent: "PropertyStatistics",
     ensemble: str,
     delta_ensemble: str,
     ens_layer: dict,
@@ -110,7 +116,7 @@ def surface_views(
     )
 
 
-def selector_view(parent) -> html.Div:
+def selector_view(parent: "PropertyStatistics") -> html.Div:
     return html.Div(
         style={"height": "80vh", "overflowY": "auto"},
         className="framed",
@@ -135,7 +141,7 @@ def delta_avg_view() -> html.Div:
     )
 
 
-def property_delta_view(parent) -> wcc.FlexBox:
+def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
     table_surf_options = [{"label": "Table view", "value": "table"}]
     if parent.surface_folders is not None:
         table_surf_options.append(
@@ -192,7 +198,7 @@ def property_delta_view(parent) -> wcc.FlexBox:
     )
 
 
-def table_view(data, columns) -> html.Div:
+def table_view(data: List[Any], columns: List[Any]) -> html.Div:
     return html.Div(
         style={"fontSize": "1rem"},
         children=dash_table.DataTable(

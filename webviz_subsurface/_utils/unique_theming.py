@@ -1,8 +1,11 @@
-from typing import Union
+from typing import Union, Optional
+
 from webviz_config._theme_class import WebvizConfigTheme
 
 
-def unique_colors(elements: Union[list, set], theme=None):
+def unique_colors(
+    elements: Union[list, set], theme: Optional[Union[WebvizConfigTheme, dict]] = None
+) -> dict:
     """Returns a dict with discrete colors from your theme if that is defined,
     otherwise from the list below. If len(elements) > available unique colors
     the colors will be looped (and therefore not unique...)

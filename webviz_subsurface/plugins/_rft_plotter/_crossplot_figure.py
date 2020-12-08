@@ -1,7 +1,11 @@
+from typing import List, Tuple
+
 import webviz_core_components as wcc
+import pandas as pd
+import numpy as np
 
 
-def update_crossplot(df, sizeby, colorby):
+def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Graph]:
 
     sim_range = find_sim_range(df)
     sizeref, cmin, cmax = size_color_settings(df, sizeby, colorby)
@@ -85,7 +89,9 @@ def update_crossplot(df, sizeby, colorby):
     return figures
 
 
-def size_color_settings(df, sizeby, colorby):
+def size_color_settings(
+    df: pd.DataFrame, sizeby: str, colorby: str
+) -> Tuple[np.float64, np.float64, np.float64]:
 
     df = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"]).mean().reset_index()
 
@@ -96,7 +102,7 @@ def size_color_settings(df, sizeby, colorby):
     return sizeref, cmin, cmax
 
 
-def find_sim_range(df):
+def find_sim_range(df: pd.DataFrame) -> List[np.float64]:
 
     df = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"]).mean().reset_index()
 

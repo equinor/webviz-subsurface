@@ -1,9 +1,11 @@
+from typing import List, Union, Tuple, Callable
 from pathlib import Path
 import json
 import io
 import warnings
 
 import numpy as np
+import pandas as pd
 import xtgeo
 import dash
 from dash.dependencies import Input, Output, State
@@ -82,7 +84,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
 
     def __init__(
         self,
-        app,
+        app: dash.Dash,
         ensembles: list,
         attributes: list = None,
         attribute_settings: dict = None,
@@ -104,11 +106,11 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
             ]
             if self.surfacedf.empty:
                 raise ValueError("No surfaces found with the given attributes")
-        self.attribute_settings = attribute_settings if attribute_settings else {}
+        self.attribute_settings: dict = attribute_settings if attribute_settings else {}
         self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
-        self.wellfiles = (
+        self.wellfiles: Union[List[str], None] = (
             json.load(find_files(wellfolder, wellsuffix))
             if wellfolder is not None
             else None
@@ -128,17 +130,19 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         self.set_callbacks(app)
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         return list(self.ens_df["ENSEMBLE"].unique())
 
-    def realizations(self, ensemble, sensname=None, senstype=None):
+    def realizations(
+        self, ensemble: str, sensname: str = None, senstype: str = None
+    ) -> List[str]:
         df = self.ens_df.loc[self.ens_df["ENSEMBLE"] == ensemble].copy()
         if sensname and senstype:
             df = df.loc[(df["SENSNAME"] == sensname) & (df["SENSCASE"] == senstype)]
         return list(df["REAL"]) + ["Mean", "StdDev", "Min", "Max"]
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.uuid("layout"),
@@ -163,7 +167,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         ]
 
     @staticmethod
-    def set_grid_layout(columns):
+    def set_grid_layout(columns: str) -> dict:
         return {
             "display": "grid",
             "alignContent": "space-around",
@@ -172,8 +176,14 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         }
 
     def ensemble_layout(
-        self, ensemble_id, ens_prev_id, ens_next_id, real_id, real_prev_id, real_next_id
-    ):
+        self,
+        ensemble_id: str,
+        ens_prev_id: str,
+        ens_next_id: str,
+        real_id: str,
+        real_prev_id: str,
+        real_next_id: str,
+    ) -> wcc.FlexBox:
         return wcc.FlexBox(
             children=[
                 html.Div(
@@ -258,7 +268,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         )
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return html.Div(
             id=self.uuid("layout"),
             children=[
@@ -513,27 +523,27 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
             ],
         )
 
-    def get_real_runpath(self, data, ensemble, real):
-        data = make_fmu_filename(data)
+    def get_real_runpath(self, data: dict, ensemble: str, real: str) -> Path:
+        filename = make_fmu_filename(data)
         runpath = Path(
             self.ens_df.loc[
                 (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
             ]["RUNPATH"].unique()[0]
         )
 
-        return get_path(runpath / "share" / "results" / "maps" / f"{data}.gri")
+        return get_path(runpath / "share" / "results" / "maps" / f"{filename}.gri")
 
-    def get_ens_runpath(self, data, ensemble):
-        data = make_fmu_filename(data)
+    def get_ens_runpath(self, data: dict, ensemble: str) -> List[Path]:
+        filename = make_fmu_filename(data)
         runpaths = self.ens_df.loc[(self.ens_df["ENSEMBLE"] == ensemble)][
             "RUNPATH"
         ].unique()
         return [
-            Path(runpath) / "share" / "results" / "maps" / f"{data}.gri"
+            Path(runpath) / "share" / "results" / "maps" / f"{filename}.gri"
             for runpath in runpaths
         ]
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("map"), "layers"),
@@ -559,25 +569,38 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         )
         # pylint: disable=too-many-arguments, too-many-locals
         def _set_base_layer(
-            data,
-            ensemble,
-            real,
-            data2,
-            ensemble2,
-            real2,
-            calculation,
-            attribute_settings,
-            diff_min,
-            diff_max,
-            hillshade,
-            hillshade2,
-            hillshade3,
-        ):
-            if not data or not data2:
+            stored_selector_data: str,
+            ensemble: str,
+            real: str,
+            stored_selector2_data: str,
+            ensemble2: str,
+            real2: str,
+            calculation: str,
+            stored_attribute_settings: str,
+            diff_min: Union[int, float, None],
+            diff_max: Union[int, float, None],
+            hillshade: Union[str, None],
+            hillshade2: Union[str, None],
+            hillshade3: Union[str, None],
+        ) -> Tuple[List[dict], List[dict], List[dict], str]:
+            if not stored_selector_data or not stored_selector2_data:
                 raise PreventUpdate
-            data = json.loads(data)
-            data2 = json.loads(data2)
-            attribute_settings = json.loads(attribute_settings)
+
+            # TODO(Sigurd)
+            # These two are presumably of type dict, but the type depends on the actual python
+            # objects that get serialized inside SurfaceSelector.
+            # Should deserialization and validation be delegated to SurfaceSelector?
+            # Note that according to the doc, it seems that dcc.Store actualy does the
+            # serialization/deserialization for us!
+            # Should be refactored
+            data: dict = json.loads(stored_selector_data)
+            data2: dict = json.loads(stored_selector2_data)
+            if not isinstance(data, dict) or not isinstance(data2, dict):
+                raise TypeError("Selector data payload must be of type dict")
+
+            attribute_settings: dict = json.loads(stored_attribute_settings)
+            if not isinstance(attribute_settings, dict):
+                raise TypeError("Expected stored attribute_settings to be of type dict")
 
             if real in ["Mean", "StdDev", "Min", "Max"]:
                 surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
@@ -592,7 +615,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
             else:
                 surface2 = load_surface(self.get_real_runpath(data2, ensemble2, real2))
 
-            surface_layers = [
+            surface_layers: List[dict] = [
                 make_surface_layer(
                     surface,
                     name="surface",
@@ -603,7 +626,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
                 )
             ]
-            surface_layers2 = [
+            surface_layers2: List[dict] = [
                 make_surface_layer(
                     surface2,
                     name="surface2",
@@ -621,7 +644,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     surface3.values[surface3.values <= diff_min] = diff_min
                 if diff_max is not None:
                     surface3.values[surface3.values >= diff_max] = diff_max
-                diff_layers = []
+                diff_layers: List[dict] = []
                 diff_layers.append(
                     make_surface_layer(
                         surface3,
@@ -643,9 +666,11 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 diff_layers.append(self.well_layer)
             return (surface_layers, surface_layers2, diff_layers, error_label)
 
-        def _update_from_btn(_n_prev, _n_next, current_value, options):
+        def _update_from_btn(
+            _n_prev: int, _n_next: int, current_value: str, options: List[dict]
+        ) -> str:
             """Updates dropdown value if previous/next btn is clicked"""
-            options = [opt["value"] for opt in options]
+            option_values: List[str] = [opt["value"] for opt in options]
             ctx = dash.callback_context.triggered
             if not ctx or current_value is None:
                 raise PreventUpdate
@@ -653,9 +678,9 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 return current_value
             callback = ctx[0]["prop_id"]
             if "-prev" in callback:
-                return prev_value(current_value, options)
+                return prev_value(current_value, option_values)
             if "-next" in callback:
-                return next_value(current_value, options)
+                return next_value(current_value, option_values)
             return current_value
 
         for btn_name in ["ensemble", "realization", "ensemble2", "realization2"]:
@@ -671,8 +696,8 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                 ],
             )(_update_from_btn)
 
-    def add_webvizstore(self):
-        store_functions = [
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        store_functions: List[Tuple[Callable, list]] = [
             (
                 find_surfaces,
                 [
@@ -738,12 +763,12 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_surface(fns, statistic):
+def calculate_surface(fns: List[str], statistic: str) -> xtgeo.RegularSurface:
     return surface_from_json(json.load(save_surface(fns, statistic)))
 
 
 @webvizstore
-def save_surface(fns, statistic) -> io.BytesIO:
+def save_surface(fns: List[str], statistic: str) -> io.BytesIO:
     surfaces = xtgeo.Surfaces(fns)
     if len(surfaces.surfaces) == 0:
         surface = xtgeo.RegularSurface()
@@ -760,7 +785,9 @@ def save_surface(fns, statistic) -> io.BytesIO:
 
 
 # pylint: disable=too-many-return-statements
-def calculate_statistic(surfaces, statistic):
+def calculate_statistic(
+    surfaces: xtgeo.Surfaces, statistic: str
+) -> xtgeo.RegularSurface:
     if statistic == "Mean":
         return surfaces.apply(np.nanmean, axis=0)
     if statistic == "StdDev":
@@ -776,7 +803,7 @@ def calculate_statistic(surfaces, statistic):
     return xtgeo.RegularSurface()
 
 
-def surface_to_json(surface):
+def surface_to_json(surface: xtgeo.RegularSurface) -> str:
     return json.dumps(
         {
             "ncol": surface.ncol,
@@ -791,7 +818,7 @@ def surface_to_json(surface):
     )
 
 
-def surface_from_json(surfaceobj):
+def surface_from_json(surfaceobj: dict) -> xtgeo.RegularSurface:
     # See https://github.com/equinor/xtgeo/issues/405
     surface = xtgeo.RegularSurface(**surfaceobj)
     surface.values = np.array(surfaceobj["values"])
@@ -799,16 +826,16 @@ def surface_from_json(surfaceobj):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surfaces(fns):
-    return xtgeo.surface.surfaces.Surfaces(fns)
+def get_surfaces(fns: List[str]) -> xtgeo.Surfaces:
+    return xtgeo.Surfaces(fns)
 
 
 @webvizstore
-def get_path(path) -> Path:
+def get_path(path: Path) -> Path:
     return Path(path)
 
 
-def prev_value(current_value, options):
+def prev_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
         return options[max(0, index - 1)]
@@ -816,7 +843,7 @@ def prev_value(current_value, options):
         return current_value
 
 
-def next_value(current_value, options):
+def next_value(current_value: str, options: List[str]) -> str:
     try:
         index = options.index(current_value)
         return options[min(len(options) - 1, index + 1)]
@@ -825,7 +852,7 @@ def next_value(current_value, options):
         return current_value
 
 
-def surfacedf_to_dict(df):
+def surfacedf_to_dict(df: pd.DataFrame) -> dict:
     return {
         attr: {
             "names": list(dframe["name"].unique()),
@@ -838,7 +865,7 @@ def surfacedf_to_dict(df):
 
 
 @webvizstore
-def find_files(folder, suffix) -> io.BytesIO:
+def find_files(folder: Path, suffix: str) -> io.BytesIO:
     return io.BytesIO(
         json.dumps(
             sorted([str(filename) for filename in folder.glob(f"*{suffix}")])
@@ -846,14 +873,18 @@ def find_files(folder, suffix) -> io.BytesIO:
     )
 
 
-def make_fmu_filename(data):
+def make_fmu_filename(data: dict) -> str:
     filename = f"{data['name']}--{data['attr']}"
     if data["date"] is not None:
         filename += f"--{data['date']}"
     return filename
 
 
-def calculate_surface_difference(surface, surface2, calculation="Difference"):
+def calculate_surface_difference(
+    surface: xtgeo.RegularSurface,
+    surface2: xtgeo.RegularSurface,
+    calculation: str = "Difference",
+) -> xtgeo.RegularSurface:
     surface3 = surface.copy()
     if calculation == "Difference":
         surface3.values = surface3.values - surface2.values

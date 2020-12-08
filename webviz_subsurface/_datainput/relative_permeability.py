@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import pandas as pd
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
 from .fmu_input import load_ensemble_set
 
 try:
@@ -24,7 +23,7 @@ def load_satfunc(
     ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
-    def ecl2df_satfunc(kwargs):
+    def ecl2df_satfunc(kwargs: Any) -> pd.DataFrame:
         return ecl2df.satfunc.df(kwargs["realization"].get_eclfiles())
 
     return load_ensemble_set(ensemble_paths, ensemble_set_name).apply(ecl2df_satfunc)
