@@ -48,10 +48,11 @@ and available for instant viewing.
     Available settings are:
     * `min`: Truncate colorscale (lower limit).
     * `max`: Truncate colorscale (upper limit).
-    * `color`: Set the colormap (default is viridis).
+    * `color`: List of hexadecimal colors.
     * `unit`: Text to display as unit in label.
 * **`wellfolder`:** Folder with RMS wells.
 * **`wellsuffix`:** File suffix for wells in well folder.
+* **`map_height`:** Set the height in pixels for the map views.
 
 ---
 The available maps are gathered from the `share/results/maps/` folder
@@ -59,7 +60,7 @@ for each realization. Subfolders are not supported.
 
 The filenames need to follow a fairly strict convention, as the filenames are used as metadata:
 `horizon_name--attribute--date` (`--date` is optional). The files should be on `irap binary`
-format (typically `.gri` or `.irapbin`) The date is of the form `YYYYMMDD` or
+format with the suffix `.gri`. The date is of the form `YYYYMMDD` or
 `YYYYMMDD_YYYYMMDD`, the latter would be for a delta surface between two dates.
 See [this folder]\
 (https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/\
@@ -76,9 +77,12 @@ attribute_settings:
     max: 10
     unit: m
   atr_b:
-    color: rainbow
+    color:
+    - "#000004"
+    - "#1b0c41"
+    - "#4a0c6b"
+    - "#781c6d"
 ```
-Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and `rainbow`.
 
 """
 
@@ -90,6 +94,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
         attribute_settings: dict = None,
         wellfolder: Path = None,
         wellsuffix: str = ".w",
+        map_height: int = 600,
     ):
 
         super().__init__()
@@ -107,6 +112,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
             if self.surfacedf.empty:
                 raise ValueError("No surfaces found with the given attributes")
         self.attribute_settings: dict = attribute_settings if attribute_settings else {}
+        self.map_height = map_height
         self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
@@ -370,7 +376,11 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     style={"fontSize": "1rem"},
                     children=[
                         html.Div(
-                            style={"height": "600px", "margin": "10px", "flex": 4},
+                            style={
+                                "height": self.map_height,
+                                "margin": "10px",
+                                "flex": 4,
+                            },
                             children=[
                                 LeafletMap(
                                     syncedMaps=[self.uuid("map2"), self.uuid("map3")],
@@ -623,7 +633,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     shader_type=hillshade,
                     min_val=attribute_settings.get(data["attr"], {}).get("min", None),
                     max_val=attribute_settings.get(data["attr"], {}).get("max", None),
-                    unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
+                    unit=attribute_settings.get(data["attr"], {}).get("unit", " "),
                 )
             ]
             surface_layers2: List[dict] = [
@@ -634,7 +644,7 @@ Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and
                     shader_type=hillshade2,
                     min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
                     max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
-                    unit=attribute_settings.get(data2["attr"], {}).get("unit", ""),
+                    unit=attribute_settings.get(data2["attr"], {}).get("unit", " "),
                 )
             ]
 
