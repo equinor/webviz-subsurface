@@ -64,7 +64,7 @@ class PvtPlot(WebvizPluginABC):
     `ecl2df`.
     """
 
-    PHASES = {"OIL": "PVTO", "GAS": "PVDG", "WATER": "PVTW"}
+    PHASES = ["OIL", "GAS", "WATER"]
 
     def __init__(
         self,
@@ -115,11 +115,26 @@ class PvtPlot(WebvizPluginABC):
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
                 )
 
+        self.phases_additional_info: List[str] = []
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTO").any():
+            self.phases_additional_info.append("PVTO")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVDO").any():
+            self.phases_additional_info.append("PVDO")
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTG").any():
+            self.phases_additional_info.append("PVTG")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVDG").any():
+            self.phases_additional_info.append("PVDG")
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTW").any():
+            self.phases_additional_info.append("PVTW")
+
         self.set_callbacks(app)
 
     @property
-    def phases(self) -> List[str]:
-        return list(PvtPlot.PHASES.keys())
+    def phases(self) -> Dict[str, str]:
+        phase_descriptions: Dict[str, str] = {}
+        for i in range(0, len(PvtPlot.PHASES)):
+            phase_descriptions[PvtPlot.PHASES[i]] = self.phases_additional_info[i]
+        return phase_descriptions
 
     @property
     def ensembles(self) -> List[str]:
@@ -255,13 +270,13 @@ class PvtPlot(WebvizPluginABC):
                                     clearable=False,
                                     options=[
                                         {
-                                            "label": i.lower().capitalize(),
-                                            "value": i,
+                                            "label": f"{value.lower().capitalize()} ({info})",
+                                            "value": value,
                                         }
-                                        for i in self.phases
+                                        for value, info in self.phases.items()
                                     ],
                                     multi=False,
-                                    value=list(self.phases)[0],
+                                    value=list(self.phases.keys())[0],
                                     persistence=True,
                                     persistence_type="session",
                                 ),
@@ -452,7 +467,17 @@ def add_realization_traces(
 
     traces = []
 
-    data_frame = data_frame.loc[data_frame["KEYWORD"] == PvtPlot.PHASES[phase]]
+    if phase == "OIL":
+        data_frame = data_frame.loc[
+            (data_frame["KEYWORD"] == "PVTO") | (data_frame["KEYWORD"] == "PVDO")
+        ]
+    elif phase == "GAS":
+        data_frame = data_frame.loc[
+            (data_frame["KEYWORD"] == "PVTG") | (data_frame["KEYWORD"] == "PVDG")
+        ]
+    else:
+        data_frame = data_frame.loc[data_frame["KEYWORD"] == "PVTW"]
+
     column_name = "GOR"
 
     border_value_pressure: Dict[str, list] = {}

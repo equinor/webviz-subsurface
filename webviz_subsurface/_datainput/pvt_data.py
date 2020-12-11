@@ -26,7 +26,16 @@ except ImportError:
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .opm_init_io import Oil, Gas, Water, DryGas, VariateAndValues
+from .opm_init_io import (
+    Oil,
+    Gas,
+    Water,
+    DryGas,
+    LiveOil,
+    DeadOil,
+    WetGas,
+    VariateAndValues,
+)
 from .fmu_input import load_ensemble_set, load_csv
 
 
@@ -37,7 +46,7 @@ def filter_pvt_data_frame(
 ) -> pd.DataFrame:
 
     data_frame = data_frame.rename(str.upper, axis="columns").rename(
-        columns={"TYPE": "KEYWORD", "RS": "GOR"}
+        columns={"TYPE": "KEYWORD", "RS": "GOR", "RSO": "GOR"}
     )
 
     columns = [
@@ -50,6 +59,10 @@ def filter_pvt_data_frame(
         "VOLUMEFACTOR",
         "VISCOSITY",
     ]
+
+    if not "GOR" in data_frame.columns:
+        data_frame["GOR"] = 1.0
+
     data_frame = data_frame[columns]
 
     stored_data_frames: List[pd.DataFrame] = []
@@ -159,12 +172,16 @@ def load_pvt_dataframe(
         column_keyword = []
 
         if oil:
+            if isinstance(oil, LiveOil):
+                keyword = "PVTO"
+            else:
+                keyword = "PVDO"
             for table_index, table in enumerate(oil.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:
                         if isinstance(inner_pair, VariateAndValues):
                             column_pvtnum.append(table_index + 1)
-                            column_keyword.append("PVTO")
+                            column_keyword.append(keyword)
                             column_oil_gas_ratio.append(outer_pair.x)
                             column_pressure.append(inner_pair.x)
                             column_volume_factor.append(
@@ -176,6 +193,10 @@ def load_pvt_dataframe(
                             )
 
         if gas:
+            if isinstance(gas, DryGas):
+                keyword = "PVDG"
+            else:
+                keyword = "PVTG"
             for table_index, table in enumerate(gas.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:

@@ -135,6 +135,10 @@ class LiveOil(PvxOBase):
     pass
 
 
+class DeadOil(PvxOBase):
+    pass
+
+
 class WetGas(PvxOBase):
     pass
 
@@ -203,9 +207,8 @@ class Oil(Implementation):
                 "Size mismatch in Condensed table data of PVT table for oil"
             )
 
-        # For now, raise an exception if dead oil, since this is not supported yet
         if raw.num_primary == 1:
-            raise super().InvalidType()
+            return self.create_dead_oil(raw)
 
         return self.create_live_oil(raw)
 
@@ -259,6 +262,58 @@ class Oil(Implementation):
 
         return ret
 
+    def create_dead_oil(self, raw: EclPropertyTableRawData) -> List[PvxOBase]:
+        # Holding raw.num_tables values
+        ret: List[PvxOBase] = []
+
+        column_stride = raw.num_rows * raw.num_tables * raw.num_primary
+        table_stride = raw.num_primary * raw.num_rows
+
+        # pylint: disable=too-many-nested-blocks
+        for index_table in range(0, raw.num_tables):
+            values = []
+
+            # PKey  Inner   C0  C1          C2          C3
+            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo
+
+            # Dead oil does only have one primary index
+            # TODO(Ruben) Shall the structure be kept anyways?
+            for index_primary in range(0, raw.num_primary):
+                if self.entry_valid(raw.primary_key[index_primary]):
+                    outer_value_pair = VariateAndValues()
+                    outer_value_pair.x = raw.primary_key[index_primary]
+                    # TODO(Ruben): Is there a better way to achieve this?
+                    temp_list: List[VariateAndValues] = []
+                    outer_value_pair.y = temp_list
+                    for index_row in range(0, raw.num_rows):
+                        pressure = raw.data[
+                            column_stride * 0
+                            + index_table * table_stride
+                            + index_primary * raw.num_rows
+                            + index_row
+                        ]
+                        if self.entry_valid(pressure):
+                            inner_value_pair = VariateAndValues()
+                            inner_value_pair.x = pressure
+                            inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
+                            for index_column in range(1, raw.num_cols):
+                                inner_value_pair.y[index_column - 1] = raw.data[
+                                    column_stride * index_column
+                                    + index_table * table_stride
+                                    + index_primary * raw.num_rows
+                                    + index_row
+                                ]
+                            outer_value_pair.y.append(inner_value_pair)
+                        else:
+                            break
+                else:
+                    break
+
+                values.append(outer_value_pair)
+            ret.append(DeadOil(values))
+
+        return ret
+
     @staticmethod
     def from_ecl_init_file(ecl_init_file: EclFile) -> Optional["Oil"]:
         logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)
@@ -278,6 +333,8 @@ class Oil(Implementation):
         if raw.num_tables == 0:
             return None
 
+        # If there is no Rs index, no gas is dissolved in the oil -> dead oil
+        # Otherwise, gas is dissolved and the ratio is given -> live oil
         if logihead[InitFileDefinitions.LOGIHEAD_RS_INDEX]:
             raw.num_primary = num_rs
 
