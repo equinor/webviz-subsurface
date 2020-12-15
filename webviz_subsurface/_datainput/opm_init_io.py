@@ -116,18 +116,16 @@ class PvxOBase:
 
     # pylint: disable=R0201
     def formation_volume_factor(
-        self, gas_oil_ratio: List[float], pressure: List[float]
+        self, set_value: List[float], pressure: List[float]
     ) -> List[float]:
         """
         Does only return an empty list for now.
         """
-        if len(gas_oil_ratio) != len(pressure):
+        if len(set_value) != len(pressure):
             raise ValueError("rs and po arguments must be of same size")
         return []
 
-    def viscosity(
-        self, gas_oil_ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+    def viscosity(self, set_value: List[float], pressure: List[float]) -> List[float]:
         pass
 
 

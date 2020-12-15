@@ -55,7 +55,7 @@ class PvtPlot(WebvizPluginABC):
     * One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
         (e.g. `PVTO` and `PVDG`).
     * One column named `PVTNUM` with integer `PVTNUM` regions.
-    * One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.
+    * One column named `RATIO` or `R` with the gas-oil-ratio as the primary variate.
     * One column named `PRESSURE` with the fluids pressure as the secondary variate.
     * One column named `VOLUMEFACTOR` as the first covariate.
     * One column named `VISCOSITY` as the second covariate.
@@ -98,15 +98,18 @@ class PvtPlot(WebvizPluginABC):
                 use_init_file=read_from_init_file,
                 drop_ensemble_duplicates=drop_ensemble_duplicates,
             )
-            self.pvt_data_frame = self.pvt_data_frame.rename(
-                str.upper, axis="columns"
-            ).rename(columns={"TYPE": "KEYWORD", "RS": "GOR"})
         else:
             # Load data from all ensembles into a pandas DataFrame
             self.pvt_data_frame = load_pvt_csv(
                 ensemble_paths=self.ensemble_paths,
                 csv_file=self.pvt_relative_file_path,
                 drop_ensemble_duplicates=drop_ensemble_duplicates,
+            )
+
+            self.pvt_data_frame = self.pvt_data_frame.rename(
+                str.upper, axis="columns"
+            ).rename(
+                columns={"TYPE": "KEYWORD", "RS": "RATIO", "R": "RATIO", "GOR": "RATIO"}
             )
 
             # Ensure that the identifier string "KEYWORD" is contained in the header columns
@@ -467,6 +470,9 @@ def add_realization_traces(
 
     traces = []
 
+    dim1_column_name = "RATIO"
+    dim2_column_name = "PRESSURE"
+
     if phase == "OIL":
         data_frame = data_frame.loc[
             (data_frame["KEYWORD"] == "PVTO") | (data_frame["KEYWORD"] == "PVDO")
@@ -475,10 +481,10 @@ def add_realization_traces(
         data_frame = data_frame.loc[
             (data_frame["KEYWORD"] == "PVTG") | (data_frame["KEYWORD"] == "PVDG")
         ]
+        dim1_column_name = "PRESSURE"
+        dim2_column_name = "RATIO"
     else:
         data_frame = data_frame.loc[data_frame["KEYWORD"] == "PVTW"]
-
-    column_name = "GOR"
 
     border_value_pressure: Dict[str, list] = {}
     border_value_viscosity: Dict[str, list] = {}
@@ -490,8 +496,8 @@ def add_realization_traces(
     )
 
     for (group, grouped_data_frame) in data_frame.groupby(color_by):
-        for ratio_no, gas_oil_ratio in enumerate(
-            grouped_data_frame[column_name].unique()
+        for set_no, set_value in enumerate(
+            grouped_data_frame[dim1_column_name].unique()
         ):
             for realization_no, (realization, realization_data_frame) in enumerate(
                 grouped_data_frame.groupby("REAL")
@@ -503,17 +509,17 @@ def add_realization_traces(
                 try:
                     border_value_pressure[group].append(
                         realization_data_frame.loc[
-                            realization_data_frame[column_name] == gas_oil_ratio
-                        ]["PRESSURE"].iloc[0]
+                            realization_data_frame[dim1_column_name] == set_value
+                        ][dim2_column_name].iloc[0]
                     )
                     border_value_volumefactor[group].append(
                         realization_data_frame.loc[
-                            realization_data_frame[column_name] == gas_oil_ratio
+                            realization_data_frame[dim1_column_name] == set_value
                         ]["VOLUMEFACTOR"].iloc[0]
                     )
                     border_value_viscosity[group].append(
                         realization_data_frame.loc[
-                            realization_data_frame[column_name] == gas_oil_ratio
+                            realization_data_frame[dim1_column_name] == set_value
                         ]["VISCOSITY"].iloc[0]
                     )
                 except IndexError as exc:
@@ -528,20 +534,37 @@ def add_realization_traces(
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[column_name] == gas_oil_ratio
+                                realization_data_frame[dim1_column_name] == set_value
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[column_name] == gas_oil_ratio
+                                realization_data_frame[dim1_column_name] == set_value
                             ]["VOLUMEFACTOR"],
                             "xaxis": "x",
                             "yaxis": "y",
-                            "hovertext": (
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {gas_oil_ratio}"
+                            "hovertext": [
+                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[(realization_data_frame['PRESSURE'] == y) & (realization_data_frame['VOLUMEFACTOR'] == x)]['RATIO'].iloc[0]}"
                                 ", Pvtnum: "
                                 f"{group if color_by == 'PVTNUM' else constant_group}<br>"
                                 f"Realization: {realization}, Ensemble: "
                                 f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                            ),
+                                for (x, y) in dict(
+                                    zip(
+                                        realization_data_frame.loc[
+                                            realization_data_frame["PRESSURE"]
+                                            == set_value
+                                        ].VOLUMEFACTOR,
+                                        realization_data_frame.loc[
+                                            realization_data_frame["PRESSURE"]
+                                            == set_value
+                                        ].PRESSURE,
+                                    )
+                                ).items()
+                                # f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[realization_data_frame['PRESSURE'] == {x} & realization_data_frame['VOLUMEFACTOR'] == y]['RATIO']}"
+                                # ", Pvtnum: "
+                                # f"{group if color_by == 'PVTNUM' else constant_group}<br>"
+                                # f"Realization: {realization}, Ensemble: "
+                                # f"{group if color_by == 'ENSEMBLE' else constant_group}"
+                            ],
                             "name": group,
                             "legendgroup": group,
                             "marker": {
@@ -549,7 +572,7 @@ def add_realization_traces(
                                     group, colors[list(colors.keys())[-1]]
                                 )
                             },
-                            "showlegend": realization_no == 0 and ratio_no == 0,
+                            "showlegend": realization_no == 0 and set_no == 0,
                         }
                     ]
                 )
@@ -558,20 +581,37 @@ def add_realization_traces(
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[column_name] == gas_oil_ratio
+                                realization_data_frame[dim1_column_name] == set_value
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[column_name] == gas_oil_ratio
+                                realization_data_frame[dim1_column_name] == set_value
                             ]["VISCOSITY"],
                             "xaxis": "x2",
                             "yaxis": "y2",
-                            "hovertext": (
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {gas_oil_ratio}"
+                            "hovertext": [
+                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[(realization_data_frame['PRESSURE'] == y) & (realization_data_frame['VISCOSITY'] == x)]['RATIO'].iloc[0]}"
                                 ", Pvtnum: "
                                 f"{group if color_by == 'PVTNUM' else constant_group}<br>"
                                 f"Realization: {realization}, Ensemble: "
                                 f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                            ),
+                                for (x, y) in dict(
+                                    zip(
+                                        realization_data_frame.loc[
+                                            realization_data_frame["PRESSURE"]
+                                            == set_value
+                                        ].VISCOSITY,
+                                        realization_data_frame.loc[
+                                            realization_data_frame["PRESSURE"]
+                                            == set_value
+                                        ].PRESSURE,
+                                    )
+                                ).items()
+                                # f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value}"
+                                # ", Pvtnum: "
+                                # f"{group if color_by == 'PVTNUM' else constant_group}<br>"
+                                # f"Realization: {realization}, Ensemble: "
+                                # f"{group if color_by == 'ENSEMBLE' else constant_group}"
+                            ],
                             "name": group,
                             "legendgroup": group,
                             "marker": {

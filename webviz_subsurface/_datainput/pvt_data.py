@@ -33,7 +33,6 @@ from .opm_init_io import (
     DryGas,
     LiveOil,
     DeadOil,
-    WetGas,
     VariateAndValues,
 )
 from .fmu_input import load_ensemble_set, load_csv
@@ -46,7 +45,13 @@ def filter_pvt_data_frame(
 ) -> pd.DataFrame:
 
     data_frame = data_frame.rename(str.upper, axis="columns").rename(
-        columns={"TYPE": "KEYWORD", "RS": "GOR", "RSO": "GOR"}
+        columns={
+            "TYPE": "KEYWORD",
+            "RS": "RATIO",
+            "RSO": "RATIO",
+            "R": "RATIO",
+            "OGR": "RATIO",
+        }
     )
 
     columns = [
@@ -54,14 +59,14 @@ def filter_pvt_data_frame(
         "REAL",
         "PVTNUM",
         "KEYWORD",
-        "GOR",
+        "RATIO",
         "PRESSURE",
         "VOLUMEFACTOR",
         "VISCOSITY",
     ]
 
-    if not "GOR" in data_frame.columns:
-        data_frame["GOR"] = 1.0
+    if not "RATIO" in data_frame.columns:
+        data_frame["RATIO"] = 1.0
 
     data_frame = data_frame[columns]
 
@@ -182,7 +187,10 @@ def load_pvt_dataframe(
                         if isinstance(inner_pair, VariateAndValues):
                             column_pvtnum.append(table_index + 1)
                             column_keyword.append(keyword)
-                            column_oil_gas_ratio.append(outer_pair.x)
+                            if isinstance(table, DeadOil):
+                                column_oil_gas_ratio.append(0.0)
+                            else:
+                                column_oil_gas_ratio.append(outer_pair.x)
                             column_pressure.append(inner_pair.x)
                             column_volume_factor.append(
                                 1.0 / inner_pair.get_values_as_floats()[0]
@@ -202,9 +210,9 @@ def load_pvt_dataframe(
                     for inner_pair in outer_pair.y:
                         if isinstance(inner_pair, VariateAndValues):
                             column_pvtnum.append(table_index + 1)
-                            column_keyword.append("PVDG")
+                            column_keyword.append(keyword)
                             if isinstance(table, DryGas):
-                                column_oil_gas_ratio.append(0)
+                                column_oil_gas_ratio.append(0.0)
                             else:
                                 column_oil_gas_ratio.append(outer_pair.x)
                             column_pressure.append(inner_pair.x)
@@ -237,7 +245,7 @@ def load_pvt_dataframe(
             {
                 "PVTNUM": column_pvtnum,
                 "KEYWORD": column_keyword,
-                "RS": column_oil_gas_ratio,
+                "R": column_oil_gas_ratio,
                 "PRESSURE": column_pressure,
                 "VOLUMEFACTOR": column_volume_factor,
                 "VISCOSITY": column_viscosity,
