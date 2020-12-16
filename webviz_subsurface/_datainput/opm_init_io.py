@@ -393,7 +393,7 @@ class Gas(Implementation):
             values = []
 
             # PKey  Inner   C0  C1          C2          C3
-            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo
+            # Pg    Rv      1/B 1/(B*mu)    d(1/B)/dPg  d(1/(B*mu))/dPg
 
             for index_primary in range(0, raw.num_primary):
                 if self.entry_valid(raw.primary_key[index_primary]):
@@ -403,15 +403,15 @@ class Gas(Implementation):
                     temp_list: List[VariateAndValues] = []
                     outer_value_pair.y = temp_list
                     for index_row in range(0, raw.num_rows):
-                        pressure = raw.data[
+                        r_v = raw.data[
                             column_stride * 0
                             + index_table * table_stride
                             + index_primary * raw.num_rows
                             + index_row
                         ]
-                        if self.entry_valid(pressure):
+                        if self.entry_valid(r_v):
                             inner_value_pair = VariateAndValues()
-                            inner_value_pair.x = pressure
+                            inner_value_pair.x = r_v
                             inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                             for index_column in range(1, raw.num_cols):
                                 inner_value_pair.y[index_column - 1] = raw.data[
@@ -444,7 +444,7 @@ class Gas(Implementation):
             values = []
 
             # PKey  Inner   C0  C1          C2          C3
-            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo
+            # Pg    Rv      1/B 1/(B*mu)    d(1/B)/dPg  d(1/(B*mu))/dPg
 
             for index_primary in range(0, raw.num_primary):
                 if self.entry_valid(raw.primary_key[index_primary]):
@@ -454,15 +454,15 @@ class Gas(Implementation):
                     temp_list: List[VariateAndValues] = []
                     outer_value_pair.y = temp_list
                     for index_row in range(0, raw.num_rows):
-                        pressure = raw.data[
+                        r_v = raw.data[
                             column_stride * 0
                             + index_table * table_stride
                             + index_primary * raw.num_rows
                             + index_row
                         ]
-                        if self.entry_valid(pressure):
+                        if self.entry_valid(r_v):
                             inner_value_pair = VariateAndValues()
-                            inner_value_pair.x = pressure
+                            inner_value_pair.x = r_v
                             inner_value_pair.y = [0.0 for col in range(1, raw.num_cols)]
                             for index_column in range(1, raw.num_cols):
                                 inner_value_pair.y[index_column - 1] = raw.data[
@@ -545,9 +545,6 @@ class Water(Implementation):
 
         for index_table in range(0, raw.num_tables):
             values = []
-
-            # PKey  Inner   C0  C1          C2          C3
-            # Rs    Po      1/B 1/(B*mu)    d(1/B)/dPo  d(1/(B*mu))/dPo
 
             index_primary = 0
             outer_value_pair = VariateAndValues()

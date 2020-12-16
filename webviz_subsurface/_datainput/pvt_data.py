@@ -141,6 +141,7 @@ def load_pvt_dataframe(
     use_init_file: bool = False,
     drop_ensemble_duplicates: bool = False,
 ) -> pd.DataFrame:
+    # pylint: disable=too-many-statements
     # If ecl2df is not loaded, this machine is probably not
     # running Linux and the modules are not available.
     # To avoid a crash, return an empty DataFrame here.
@@ -177,7 +178,7 @@ def load_pvt_dataframe(
         column_keyword = []
 
         if oil:
-            if isinstance(oil, LiveOil):
+            if len(oil.tables()) > 0 and isinstance(oil.tables()[0], LiveOil):
                 keyword = "PVTO"
             else:
                 keyword = "PVDO"
@@ -201,7 +202,7 @@ def load_pvt_dataframe(
                             )
 
         if gas:
-            if isinstance(gas, DryGas):
+            if len(gas.tables()) > 0 and isinstance(gas.tables()[0], DryGas):
                 keyword = "PVDG"
             else:
                 keyword = "PVTG"
@@ -214,8 +215,8 @@ def load_pvt_dataframe(
                             if isinstance(table, DryGas):
                                 column_oil_gas_ratio.append(0.0)
                             else:
-                                column_oil_gas_ratio.append(outer_pair.x)
-                            column_pressure.append(inner_pair.x)
+                                column_oil_gas_ratio.append(inner_pair.x)
+                            column_pressure.append(outer_pair.x)
                             column_volume_factor.append(
                                 1.0 / inner_pair.get_values_as_floats()[0]
                             )

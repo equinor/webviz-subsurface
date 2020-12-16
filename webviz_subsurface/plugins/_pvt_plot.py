@@ -471,7 +471,6 @@ def add_realization_traces(
     traces = []
 
     dim1_column_name = "RATIO"
-    dim2_column_name = "PRESSURE"
 
     if phase == "OIL":
         data_frame = data_frame.loc[
@@ -482,7 +481,6 @@ def add_realization_traces(
             (data_frame["KEYWORD"] == "PVTG") | (data_frame["KEYWORD"] == "PVDG")
         ]
         dim1_column_name = "PRESSURE"
-        dim2_column_name = "RATIO"
     else:
         data_frame = data_frame.loc[data_frame["KEYWORD"] == "PVTW"]
 
@@ -510,7 +508,7 @@ def add_realization_traces(
                     border_value_pressure[group].append(
                         realization_data_frame.loc[
                             realization_data_frame[dim1_column_name] == set_value
-                        ][dim2_column_name].iloc[0]
+                        ]["PRESSURE"].iloc[0]
                     )
                     border_value_volumefactor[group].append(
                         realization_data_frame.loc[
@@ -529,6 +527,57 @@ def add_realization_traces(
                         "supported."
                     ) from exc
 
+                hovertext: Union[str, list] = ""
+                if phase == "OIL":
+                    hovertext = (
+                        "{} Pvtnum: {}<br />Realization: {}, Ensemble: {}".format(
+                            f"Rs = {set_value}"
+                            if realization_data_frame["KEYWORD"]
+                            .str.contains("PVTO")
+                            .any()
+                            else "",
+                            group if color_by == "PVTNUM" else constant_group,
+                            realization,
+                            group if color_by == "ENSEMBLE" else constant_group,
+                        )
+                    )
+                elif phase == "GAS":
+                    hovertext = [
+                        "{}"
+                        "Pvtnum: "
+                        "{}<br>"
+                        "Realization: {}, Ensemble: "
+                        "{}".format(
+                            "Rv = {}, ".format(
+                                realization_data_frame.loc[
+                                    (realization_data_frame["PRESSURE"] == y)
+                                    & (realization_data_frame["VOLUMEFACTOR"] == x)
+                                ]["RATIO"].iloc[0]
+                            )
+                            if realization_data_frame["KEYWORD"]
+                            .str.contains("PVTG")
+                            .any()
+                            else "",
+                            group if color_by == "PVTNUM" else constant_group,
+                            realization,
+                            group if color_by == "ENSEMBLE" else constant_group,
+                        )
+                        for x, y in zip(
+                            realization_data_frame.loc[
+                                realization_data_frame["PRESSURE"] == set_value
+                            ].VOLUMEFACTOR,
+                            realization_data_frame.loc[
+                                realization_data_frame["PRESSURE"] == set_value
+                            ].PRESSURE,
+                        )
+                    ]
+                else:
+                    hovertext = (
+                        f"Pvtnum: {group if color_by == 'PVTNUM' else constant_group}<br />"
+                        f"Realization: {realization}, "
+                        f"Ensemble: {group if color_by == 'ENSEMBLE' else constant_group}"
+                    )
+
                 traces.extend(
                     [
                         {
@@ -541,30 +590,7 @@ def add_realization_traces(
                             ]["VOLUMEFACTOR"],
                             "xaxis": "x",
                             "yaxis": "y",
-                            "hovertext": [
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[(realization_data_frame['PRESSURE'] == y) & (realization_data_frame['VOLUMEFACTOR'] == x)]['RATIO'].iloc[0]}"
-                                ", Pvtnum: "
-                                f"{group if color_by == 'PVTNUM' else constant_group}<br>"
-                                f"Realization: {realization}, Ensemble: "
-                                f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                                for (x, y) in dict(
-                                    zip(
-                                        realization_data_frame.loc[
-                                            realization_data_frame["PRESSURE"]
-                                            == set_value
-                                        ].VOLUMEFACTOR,
-                                        realization_data_frame.loc[
-                                            realization_data_frame["PRESSURE"]
-                                            == set_value
-                                        ].PRESSURE,
-                                    )
-                                ).items()
-                                # f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[realization_data_frame['PRESSURE'] == {x} & realization_data_frame['VOLUMEFACTOR'] == y]['RATIO']}"
-                                # ", Pvtnum: "
-                                # f"{group if color_by == 'PVTNUM' else constant_group}<br>"
-                                # f"Realization: {realization}, Ensemble: "
-                                # f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                            ],
+                            "hovertext": hovertext,
                             "name": group,
                             "legendgroup": group,
                             "marker": {
@@ -576,6 +602,34 @@ def add_realization_traces(
                         }
                     ]
                 )
+
+                if phase == "GAS":
+                    hovertext = [
+                        "{}Pvtnum: {}<br>Realization: {}, Ensemble: {}".format(
+                            "Rv = {}, ".format(
+                                realization_data_frame.loc[
+                                    (realization_data_frame["PRESSURE"] == y)
+                                    & (realization_data_frame["VISCOSITY"] == x)
+                                ]["RATIO"].iloc[0]
+                            )
+                            if realization_data_frame["KEYWORD"]
+                            .str.contains("PVTG")
+                            .any()
+                            else "",
+                            group if color_by == "PVTNUM" else constant_group,
+                            realization,
+                            group if color_by == "ENSEMBLE" else constant_group,
+                        )
+                        for x, y in zip(
+                            realization_data_frame.loc[
+                                realization_data_frame["PRESSURE"] == set_value
+                            ].VISCOSITY,
+                            realization_data_frame.loc[
+                                realization_data_frame["PRESSURE"] == set_value
+                            ].PRESSURE,
+                        )
+                    ]
+
                 traces.extend(
                     [
                         {
@@ -588,30 +642,7 @@ def add_realization_traces(
                             ]["VISCOSITY"],
                             "xaxis": "x2",
                             "yaxis": "y2",
-                            "hovertext": [
-                                f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value if phase == 'OIL' else realization_data_frame.loc[(realization_data_frame['PRESSURE'] == y) & (realization_data_frame['VISCOSITY'] == x)]['RATIO'].iloc[0]}"
-                                ", Pvtnum: "
-                                f"{group if color_by == 'PVTNUM' else constant_group}<br>"
-                                f"Realization: {realization}, Ensemble: "
-                                f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                                for (x, y) in dict(
-                                    zip(
-                                        realization_data_frame.loc[
-                                            realization_data_frame["PRESSURE"]
-                                            == set_value
-                                        ].VISCOSITY,
-                                        realization_data_frame.loc[
-                                            realization_data_frame["PRESSURE"]
-                                            == set_value
-                                        ].PRESSURE,
-                                    )
-                                ).items()
-                                # f"{'Rs' if phase == 'OIL' else 'Rv'} = {set_value}"
-                                # ", Pvtnum: "
-                                # f"{group if color_by == 'PVTNUM' else constant_group}<br>"
-                                # f"Realization: {realization}, Ensemble: "
-                                # f"{group if color_by == 'ENSEMBLE' else constant_group}"
-                            ],
+                            "hovertext": hovertext,
                             "name": group,
                             "legendgroup": group,
                             "marker": {
