@@ -450,8 +450,6 @@ class PvtPlot(WebvizPluginABC):
         )
 
 
-# Caching should be safe here with DataFrame as it is always the same for an instance of the plugin.
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_data_frame(
     data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[str]
 ) -> pd.DataFrame:

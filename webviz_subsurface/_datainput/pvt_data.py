@@ -47,12 +47,19 @@ def filter_pvt_data_frame(
     data_frame = data_frame.rename(str.upper, axis="columns").rename(
         columns={
             "TYPE": "KEYWORD",
-            "RS": "RATIO",
-            "RSO": "RATIO",
-            "R": "RATIO",
-            "OGR": "RATIO",
+            "RS": "GOR",
+            "RSO": "GOR",
+            "R": "GOR",
+            "RV": "OGR",
         }
     )
+    data_frame = data_frame.fillna(0)
+    if "GOR" in data_frame.columns and "OGR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["GOR"] + data_frame["OGR"]
+    elif "GOR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["GOR"]
+    elif "OGR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["OGR"]
 
     columns = [
         "ENSEMBLE",
