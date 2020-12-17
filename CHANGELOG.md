@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [UNRELEASED] - YYYY-MM-DD
+### Fixed
+- [#531](https://github.com/equinor/webviz-subsurface/pull/531) - The change in [#505](https://github.com/equinor/webviz-subsurface/pull/505) resulted in potentially very large datasets when using `raw` sampling. Some users experienced `MemoryError`. `column_keys` filtering is therefore now used when loading and storing data if `sampling` is `raw` in plugins using `UNSMRY` data, most noticable in `BhpQc` which has `raw` as the default and only option.
+
 ## [0.1.6] - 2020-11-30
 ### Fixed
 - [#505](https://github.com/equinor/webviz-subsurface/pull/505) - Fixed recent performance regression issue for loading of UNSMRY data. Loading times when multiple plugins are using the same data is now significantly reduced. Note that all UNSMRY vectors are now stored in portable apps, independent of choice of column_keys in individual plugins.
@@ -19,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.4] - 2020-10-29
 ### Added
-- [#457](https://github.com/equinor/webviz-subsurface/pull/457) - Raise a descriptive error if a scratch ensemble is empty, i.e. no `OK` target file is found in any realizations. 
-- [#427](https://github.com/equinor/webviz-subsurface/pull/427) - `BhpQc` plugin added: Quality check that simulated bottom hole pressures are realistic. 
+- [#457](https://github.com/equinor/webviz-subsurface/pull/457) - Raise a descriptive error if a scratch ensemble is empty, i.e. no `OK` target file is found in any realizations.
+- [#427](https://github.com/equinor/webviz-subsurface/pull/427) - `BhpQc` plugin added: Quality check that simulated bottom hole pressures are realistic.
 - [#481](https://github.com/equinor/webviz-subsurface/pull/481) - `RFT-plotter`: Added support for MD, and made ECLIPSE RFT data optional.
 - [#467](https://github.com/equinor/webviz-subsurface/pull/467) - `PropertyStatistics` plugin added: QC and analysis of grid property statistics.
 
