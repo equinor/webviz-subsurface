@@ -50,7 +50,7 @@ def make_surface_layer(
     color: Optional[List[str]] = None,
     shader_type: Optional[str] = "soft-hillshading",
     shadows: bool = False,
-    unit: str = "",
+    unit: str = " ",
 ) -> Dict[str, Any]:
     """Make NewLayeredMap surface image base layer
     Args:
