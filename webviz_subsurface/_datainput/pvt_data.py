@@ -31,6 +31,7 @@ from .opm_init_io import (
     Gas,
     Water,
     DryGas,
+    WetGas,
     LiveOil,
     DeadOil,
     VariateAndValues,
@@ -73,7 +74,9 @@ def filter_pvt_data_frame(
     ]
 
     if not "RATIO" in data_frame.columns:
-        data_frame["RATIO"] = 1.0
+        raise ValueError(
+            "The dataframe must contain a column for the ratio (OGR, GOR, R, RV, RS)."
+        )
 
     data_frame = data_frame[columns]
 
@@ -187,8 +190,13 @@ def load_pvt_dataframe(
         if oil:
             if len(oil.tables()) > 0 and isinstance(oil.tables()[0], LiveOil):
                 keyword = "PVTO"
-            else:
+            elif len(oil.tables()) > 0 and isinstance(oil.tables()[0], DeadOil):
                 keyword = "PVDO"
+            else:
+                raise NotImplementedError(
+                    f"Oil of type '{type(oil)}' is not supported yet."
+                )
+
             for table_index, table in enumerate(oil.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:
@@ -211,8 +219,12 @@ def load_pvt_dataframe(
         if gas:
             if len(gas.tables()) > 0 and isinstance(gas.tables()[0], DryGas):
                 keyword = "PVDG"
-            else:
+            elif len(gas.tables()) > 0 and isinstance(gas.tables()[0], WetGas):
                 keyword = "PVTG"
+            else:
+                raise NotImplementedError(
+                    f"Gas of type '{type(gas)}' is not supported yet."
+                )
             for table_index, table in enumerate(gas.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:
@@ -221,9 +233,10 @@ def load_pvt_dataframe(
                             column_keyword.append(keyword)
                             if isinstance(table, DryGas):
                                 column_oil_gas_ratio.append(0.0)
+                                column_pressure.append(inner_pair.x)
                             else:
                                 column_oil_gas_ratio.append(inner_pair.x)
-                            column_pressure.append(outer_pair.x)
+                                column_pressure.append(outer_pair.x)
                             column_volume_factor.append(
                                 1.0 / inner_pair.get_values_as_floats()[0]
                             )
