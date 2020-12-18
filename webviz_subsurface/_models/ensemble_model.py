@@ -62,6 +62,24 @@ class EnsembleModel:
         time_index: Optional[Union[list, str]] = None,
         column_keys: Optional[list] = None,
     ) -> pd.DataFrame:
+        # Limit saved columns if time_index = 'raw' or None, as the data density might
+        # be very high, and increases risk of `MemoryError`
+        if time_index == "raw" or time_index is None:
+            self._webviz_store.append(
+                (
+                    self._load_smry,
+                    [
+                        {
+                            "self": self,
+                            "time_index": time_index,
+                            "column_keys": column_keys,
+                        }
+                    ],
+                )
+            )
+            return self._load_smry(time_index=time_index, column_keys=column_keys)
+
+        # Otherwise store all columns to reduce risk of duplicates
         self._webviz_store.append(
             (
                 self._load_smry,
