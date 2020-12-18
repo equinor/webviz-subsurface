@@ -26,7 +26,16 @@ except ImportError:
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .opm_init_io import Oil, Gas, Water, DryGas, VariateAndValues
+from .opm_init_io import (
+    Oil,
+    Gas,
+    Water,
+    DryGas,
+    WetGas,
+    LiveOil,
+    DeadOil,
+    VariateAndValues,
+)
 from .fmu_input import load_ensemble_set, load_csv
 
 
@@ -37,19 +46,38 @@ def filter_pvt_data_frame(
 ) -> pd.DataFrame:
 
     data_frame = data_frame.rename(str.upper, axis="columns").rename(
-        columns={"TYPE": "KEYWORD", "RS": "GOR"}
+        columns={
+            "TYPE": "KEYWORD",
+            "RS": "GOR",
+            "RSO": "GOR",
+            "R": "GOR",
+            "RV": "OGR",
+        }
     )
+    data_frame = data_frame.fillna(0)
+    if "GOR" in data_frame.columns and "OGR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["GOR"] + data_frame["OGR"]
+    elif "GOR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["GOR"]
+    elif "OGR" in data_frame.columns:
+        data_frame["RATIO"] = data_frame["OGR"]
 
     columns = [
         "ENSEMBLE",
         "REAL",
         "PVTNUM",
         "KEYWORD",
-        "GOR",
+        "RATIO",
         "PRESSURE",
         "VOLUMEFACTOR",
         "VISCOSITY",
     ]
+
+    if not "RATIO" in data_frame.columns:
+        raise ValueError(
+            "The dataframe must contain a column for the ratio (OGR, GOR, R, RV, RS)."
+        )
+
     data_frame = data_frame[columns]
 
     stored_data_frames: List[pd.DataFrame] = []
@@ -123,6 +151,7 @@ def load_pvt_dataframe(
     use_init_file: bool = False,
     drop_ensemble_duplicates: bool = False,
 ) -> pd.DataFrame:
+    # pylint: disable=too-many-statements
     # If ecl2df is not loaded, this machine is probably not
     # running Linux and the modules are not available.
     # To avoid a crash, return an empty DataFrame here.
@@ -159,13 +188,25 @@ def load_pvt_dataframe(
         column_keyword = []
 
         if oil:
+            if len(oil.tables()) > 0 and isinstance(oil.tables()[0], LiveOil):
+                keyword = "PVTO"
+            elif len(oil.tables()) > 0 and isinstance(oil.tables()[0], DeadOil):
+                keyword = "PVDO"
+            else:
+                raise NotImplementedError(
+                    f"Oil of type '{type(oil)}' is not supported yet."
+                )
+
             for table_index, table in enumerate(oil.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:
                         if isinstance(inner_pair, VariateAndValues):
                             column_pvtnum.append(table_index + 1)
-                            column_keyword.append("PVTO")
-                            column_oil_gas_ratio.append(outer_pair.x)
+                            column_keyword.append(keyword)
+                            if isinstance(table, DeadOil):
+                                column_oil_gas_ratio.append(0.0)
+                            else:
+                                column_oil_gas_ratio.append(outer_pair.x)
                             column_pressure.append(inner_pair.x)
                             column_volume_factor.append(
                                 1.0 / inner_pair.get_values_as_floats()[0]
@@ -176,17 +217,26 @@ def load_pvt_dataframe(
                             )
 
         if gas:
+            if len(gas.tables()) > 0 and isinstance(gas.tables()[0], DryGas):
+                keyword = "PVDG"
+            elif len(gas.tables()) > 0 and isinstance(gas.tables()[0], WetGas):
+                keyword = "PVTG"
+            else:
+                raise NotImplementedError(
+                    f"Gas of type '{type(gas)}' is not supported yet."
+                )
             for table_index, table in enumerate(gas.tables()):
                 for outer_pair in table.get_values():
                     for inner_pair in outer_pair.y:
                         if isinstance(inner_pair, VariateAndValues):
                             column_pvtnum.append(table_index + 1)
-                            column_keyword.append("PVDG")
+                            column_keyword.append(keyword)
                             if isinstance(table, DryGas):
-                                column_oil_gas_ratio.append(0)
+                                column_oil_gas_ratio.append(0.0)
+                                column_pressure.append(inner_pair.x)
                             else:
-                                column_oil_gas_ratio.append(outer_pair.x)
-                            column_pressure.append(inner_pair.x)
+                                column_oil_gas_ratio.append(inner_pair.x)
+                                column_pressure.append(outer_pair.x)
                             column_volume_factor.append(
                                 1.0 / inner_pair.get_values_as_floats()[0]
                             )
@@ -216,7 +266,7 @@ def load_pvt_dataframe(
             {
                 "PVTNUM": column_pvtnum,
                 "KEYWORD": column_keyword,
-                "RS": column_oil_gas_ratio,
+                "R": column_oil_gas_ratio,
                 "PRESSURE": column_pressure,
                 "VOLUMEFACTOR": column_volume_factor,
                 "VISCOSITY": column_viscosity,
