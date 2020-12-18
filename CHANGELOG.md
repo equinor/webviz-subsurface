@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#526](https://github.com/equinor/webviz-subsurface/pull/526) - Fixes to `SurfaceViewerFMU`. User defined map units are now correctly displayed. Map height can now be set (useful for maps with elongated geometry). Added some missing documentation
 - [#531](https://github.com/equinor/webviz-subsurface/pull/531) - The change in [#505](https://github.com/equinor/webviz-subsurface/pull/505) resulted in potentially very large datasets when using `raw` sampling. Some users experienced `MemoryError`. `column_keys` filtering is therefore now used when loading and storing data if `sampling` is `raw` in plugins using `UNSMRY` data, most noticable in `BhpQc` which has `raw` as the default and only option.
 
+### Added
+- [#529](https://github.com/equinor/webviz-subsurface/pull/529) - Added support for PVDO and PVTG to PVT plot and to respective data modules.
+
 ## [0.1.6] - 2020-11-30
 ### Fixed
 - [#505](https://github.com/equinor/webviz-subsurface/pull/505) - Fixed recent performance regression issue for loading of UNSMRY data. Loading times when multiple plugins are using the same data is now significantly reduced. Note that all UNSMRY vectors are now stored in portable apps, independent of choice of column_keys in individual plugins.
