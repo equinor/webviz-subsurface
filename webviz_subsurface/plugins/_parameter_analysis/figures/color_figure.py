@@ -3,51 +3,44 @@ import plotly.graph_objs as go
 
 
 def color_figure(
-    px_colors: dict,
-    custom_colors: dict = None,
+    colors: list,
+    bargap: float = None,
     height: float = None,
 ):
     """
-    Create bar chart with colors, can be used as a color selector
+    Create bar chart with colors, can e.g. be used as a color selector
     by retrieving clickdata.
-    Input can either be a ditionary with plotly colors with the key
-    beeing the px colormodul to use and the value is a list of
-    colorscale names, or can be given in as a custom_color dictionary where
-    the key is a name and the value is a list of colors.
+    The color argument is a list of items where the individual items
+    are either a name of a built-in plotly colorscale, or a list of colors.
     """
-    custom_colors = custom_colors if custom_colors is not None else {}
-
-    for px_cmodule, px_cscales in px_colors.items():
-        if px_cmodule == "diverging":
-            custom_colors.update(get_px_colors(px.colors.diverging, px_cscales))
-        if px_cmodule == "sequential":
-            custom_colors.update(get_px_colors(px.colors.sequential, px_cscales))
-        if px_cmodule == "cyclical":
-            custom_colors.update(get_px_colors(px.colors.cyclical, px_cscales))
-        if px_cmodule == "qualitative":
-            custom_colors.update(get_px_colors(px.colors.qualitative, px_cscales))
+    color_lists = []
+    for item in colors:
+        if isinstance(item, list) and item:
+            color_lists.append(item)
+        if isinstance(item, str):
+            color_lists.append(get_px_colors(item))
 
     return go.Figure(
         data=[
             go.Bar(
                 orientation="h",
-                y=[name] * len(colors),
-                x=[1] * len(colors),
-                customdata=list(range(len(colors))),
-                marker=dict(color=colors),
+                y=[str(idx)] * len(clist),
+                x=[1] * len(clist),
+                customdata=list(range(len(clist))),
+                marker=dict(color=clist),
                 hovertemplate="%{marker.color}<extra></extra>",
             )
-            for name, colors in custom_colors.items()
+            for idx, clist in enumerate(reversed(color_lists))
         ],
         layout=dict(
             title=None,
             barmode="stack",
             barnorm="fraction",
-            bargap=0.5,
+            bargap=bargap if bargap is not None else 0.5,
             showlegend=False,
             xaxis=dict(range=[-0.02, 1.02], showticklabels=False, showgrid=False),
             yaxis_showticklabels=False,
-            height=height if height is not None else 20 * len(custom_colors),
+            height=height if height is not None else 20 * len(color_lists),
             margin=dict(l=0, r=0, t=0, b=0),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
@@ -55,5 +48,13 @@ def color_figure(
     )
 
 
-def get_px_colors(px_cmodule, cscales: list):
-    return {k: v for (k, v) in px_cmodule.__dict__.items() if k in cscales}
+def get_px_colors(px_cscale: str):
+    for cmodule in [
+        px.colors.diverging,
+        px.colors.sequential,
+        px.colors.cyclical,
+        px.colors.qualitative,
+    ]:
+        if px_cscale in cmodule.__dict__:
+            return cmodule.__dict__[px_cscale]
+    return []

@@ -68,14 +68,12 @@ def parameter_response_controller(parent, app):
             raise PreventUpdate
         ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
+        initial_run = timeseries_fig is None
         color = options["color"] if options["color"] is not None else "#007079"
         daterange = parent.vmodel.daterange_for_plot(vector=vector)
 
         # Make timeseries graph
-        if (
-            relevant_ctx_for_plot(parent, ctx, plot="timeseries_fig")
-            or timeseries_fig is None
-        ):
+        if relevant_ctx(parent, ctx, operation="timeseries_fig") or initial_run:
             timeseries_fig = update_timeseries_graph(
                 parent.vmodel,
                 ensemble,
@@ -84,20 +82,19 @@ def parameter_response_controller(parent, app):
                 real_filter=None,
             )
 
-        vectors_filtered = filter_vectors(
-            parent, vector_type_filter, vector_item_filters
-        )
-        if vector not in vectors_filtered:
-            vectors_filtered.append(vector)
-
-        merged_df = merge_parameter_and_vector_df(
-            parent, ensemble, vectors_filtered, date
-        )
+        if parent.uuid("plot-options") not in ctx or initial_run:
+            vectors_filtered = filter_vectors(
+                parent, vector_type_filter, vector_item_filters
+            )
+            if vector not in vectors_filtered:
+                vectors_filtered.append(vector)
+            merged_df = merge_parameter_and_vector_df(
+                parent, ensemble, vectors_filtered, date
+            )
 
         # Make correlation figure for vector
         if options["autocompute_corr"] and (
-            relevant_ctx_for_plot(parent, ctx, plot="vector_correlation")
-            or corr_v_fig is None
+            relevant_ctx(parent, ctx, operation="vector_correlation") or initial_run
         ):
             corr_v_fig = make_correlation_figure(
                 merged_df, response=vector, corrwith=parent.pmodel.parameters
@@ -111,8 +108,7 @@ def parameter_response_controller(parent, app):
 
         # Make correlation figure for parameter
         if options["autocompute_corr"] and (
-            relevant_ctx_for_plot(parent, ctx, plot="parameter_correlation")
-            or corr_p_fig is None
+            relevant_ctx(parent, ctx, operation="parameter_correlation") or initial_run
         ):
             corr_p_fig = make_correlation_figure(
                 merged_df, response=parameter, corrwith=vectors_filtered
@@ -121,7 +117,7 @@ def parameter_response_controller(parent, app):
         corr_p_fig = color_corr_bars(corr_p_fig, vector, color, options["opacity"])
 
         # Create scatter plot of vector vs parameter
-        if relevant_ctx_for_plot(parent, ctx, plot="scatter") or scatter_fig is None:
+        if relevant_ctx(parent, ctx, operation="scatter") or initial_run:
             scatter_fig = update_scatter_graph(merged_df, vector, parameter, color)
 
         scatter_fig = scatter_fig_color_update(scatter_fig, color, options["opacity"])
@@ -130,9 +126,10 @@ def parameter_response_controller(parent, app):
         df_value_norm = parent.pmodel.get_real_and_value_df(
             ensemble, parameter=parameter, normalize=True
         )
-        timeseries_fig = color_timeseries_graph(
-            timeseries_fig, ensemble, parameter, vector, df_value_norm
-        )
+        if relevant_ctx(parent, ctx, operation="color_timeseries_fig") or initial_run:
+            timeseries_fig = color_timeseries_graph(
+                timeseries_fig, ensemble, parameter, vector, df_value_norm
+            )
 
         # Draw date selected as line
         timeseries_fig = add_date_line(timeseries_fig, date, options["show_dateline"])
@@ -320,7 +317,7 @@ def parameter_response_controller(parent, app):
 
 
 # pylint: disable=inconsistent-return-statements
-def relevant_ctx_for_plot(parent, ctx: list, plot: str):
+def relevant_ctx(parent, ctx: list, operation: str):
     """Group relevant uuids for the different plots"""
     vector = parent.uuid("vector-select") in ctx
     date = parent.uuid("date-selected") in ctx
@@ -330,14 +327,16 @@ def relevant_ctx_for_plot(parent, ctx: list, plot: str):
         parent.uuid("vtype-filter") in ctx or parent.uuid("vitem-filter") in ctx
     )
 
-    if plot == "timeseries_fig":
+    if operation == "timeseries_fig":
         return any([vector, ensemble])
-    if plot == "scatter":
+    if operation == "scatter":
         return any([vector, date, parameter, ensemble])
-    if plot == "parameter_correlation":
+    if operation == "parameter_correlation":
         return any([filtered_vectors, date, parameter, ensemble])
-    if plot == "vector_correlation":
+    if operation == "vector_correlation":
         return any([vector, date, ensemble])
+    if operation == "color_timeseries_fig":
+        return any([parameter, ensemble, vector])
 
 
 def find_vector_type(parent, vector: str):
@@ -375,7 +374,7 @@ def update_timeseries_graph(
             ensemble=ensemble, vector=vector, real_filter=real_filter
         ),
         "layout": dict(
-            margin={"r": 20, "l": 20, "t": 60, "b": 20},
+            margin={"r": 40, "l": 20, "t": 60, "b": 20},
             yaxis={"automargin": True},
             xaxis={"range": xaxisrange},
             hovermode="closest",
@@ -425,13 +424,12 @@ def color_timeseries_graph(
 ):
     """Color timeseries lines by parameter value"""
     if df_norm is not None:
-
-        for trace_no, trace in enumerate(figure.get("data", [])):
+        for trace in figure.get("data", []):
             if trace["name"] == ensemble:
-                figure["data"][trace_no]["marker"]["color"] = set_real_color(
+                trace["marker"]["color"] = set_real_color(
                     real_no=trace["customdata"], df_norm=df_norm
                 )
-                figure["data"][trace_no]["hovertext"] = (
+                trace["hovertext"] = (
                     f"Real: {str(trace['customdata'])}, {selected_param}: "
                     f"{df_norm.loc[df_norm['REAL'] == trace['customdata']].iloc[0]['VALUE']}"
                 )
@@ -448,7 +446,7 @@ def set_real_color(df_norm, real_no: str):
     Midpoint for the colorscale is set on the average value
     """
     red = "rgba(255,18,67, 1)"
-    mid_color = "rgba(220,220,220,1"
+    mid_color = "rgba(220,220,220,1)"
     green = "rgba(62,208,62, 1)"
 
     mean = df_norm["VALUE_NORM"].mean()
@@ -460,7 +458,7 @@ def set_real_color(df_norm, real_no: str):
     if norm_value > mean:
         intermed = (norm_value - mean) / (1 - mean)
         return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
-    return "rgba(220,220,220, 0.2"
+    return "rgba(220,220,220, 0.2)"
 
 
 def merge_parameter_and_vector_df(parent, ensemble: str, vectors: list, date: str):

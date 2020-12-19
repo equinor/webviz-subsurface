@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 import dash_html_components as html
 import dash_core_components as dcc
@@ -205,6 +205,7 @@ def filter_parameter(
         children=[
             html.Span("Parameters:", style={"font-weight": "bold"}),
             html.Div(
+                id=parent.uuid("filter-parameter-container"),
                 children=[
                     wcc.Select(
                         id={
@@ -305,11 +306,13 @@ def filter_vector_selector(
     )
 
 
-def color_selector(parent, tab: str, px_colors: dict = None, height=None):
-    custom_colors = {
-        "theme": parent.theme.plotly_theme.get("layout", {}).get("colorway", {})[1:12]
-    }
-
+def color_selector(
+    parent,
+    tab: str,
+    colors: Optional[list] = None,
+    bargap: Optional[float] = None,
+    height: Optional[float] = None,
+):
     return html.Div(
         style={"width": "90%", "margin-top": "5px"},
         children=[
@@ -318,8 +321,8 @@ def color_selector(parent, tab: str, px_colors: dict = None, height=None):
                 id={"id": parent.uuid("color-selector"), "tab": tab},
                 config={"displayModeBar": False},
                 figure=color_figure(
-                    px_colors,
-                    custom_colors=custom_colors,
+                    colors=colors,
+                    bargap=bargap,
                     height=height,
                 ),
             ),
@@ -327,7 +330,7 @@ def color_selector(parent, tab: str, px_colors: dict = None, height=None):
     )
 
 
-def color_opacity_selector(parent, tab: str, value):
+def color_opacity_selector(parent, tab: str, value: float):
     return html.Div(
         style={"width": "90%", "margin-top": "5px"},
         children=[

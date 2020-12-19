@@ -207,38 +207,91 @@ class ParametersModel:
                         ),
                         20,
                     ),
+                    facet_row_spacing=max((0.08 - (0.00071 * len(parameters))), 0.03),
                     color="ENSEMBLE",
                     color_discrete_sequence=self.colorway,
+                    custom_data=["PARAMETER"],
                 )
                 .update_xaxes(
                     matches=None,
                     fixedrange=True,
                     title=None,
-                    showticklabels=(len(parameters) < 20),
+                    showticklabels=len(parameters) <= 100,
+                    tickangle=0,
+                    tickfont_size=max((18 - (0.4 * len(parameters))), 10),
                 )
+                .update_yaxes(showticklabels=False)
                 .for_each_trace(
                     lambda t: t.update(
+                        y0=0,
                         hoveron="violins",
-                        hoverinfo="name",
+                        hoverinfo="none",
                         meanline_visible=True,
                         orientation="h",
                         side="positive",
-                        width=3,
+                        width=2,
                         points=False,
                     )
                 )
                 .for_each_annotation(
                     lambda a: a.update(
-                        hovertext=a.text.split("=")[-1],
-                        text=(a.text.split("=")[-1]) if len(parameters) < 40 else "",
+                        text=(a.text.split("=")[-1]),
+                        visible=len(parameters) <= 42,
+                        font_size=max((18 - (0.4 * len(parameters))), 10),
                     )
                 )
             )
 
+        # Create invisible boxes used for hoverinfo on the violin plots
+        # Necessary due to https://github.com/plotly/plotly.js/issues/2145
+        ensembles = df["ENSEMBLE"].unique()
+        hovertraces = []
+        for trace in fig["data"]:
+            parameter = trace["customdata"][0][0]
+            # check of parameter value to determine print formatter
+            value = abs(self.get_stat_value(parameter, ensembles[0], stat_column="Avg"))
+            form = ".1f" if value > 10 else ".2g"
+            hovertraces.append(
+                go.Scatter(
+                    x=[min(trace.x), min(trace.x), max(trace.x), max(trace.x)],
+                    y=[0, 1, 1, 0],
+                    xaxis=trace.xaxis,
+                    yaxis=trace.yaxis,
+                    mode="lines",
+                    fill="toself",
+                    opacity=0,
+                    showlegend=False,
+                    text=(
+                        f"<b>{parameter}</b><br>"
+                        + "<br>".join(
+                            f"<b>{ens}:</b><br>"
+                            "Avg: "
+                            f"{self.get_stat_value(parameter, ens, stat_column='Avg'):{form}}<br>"
+                            "Std: "
+                            f"{self.get_stat_value(parameter, ens, stat_column='Stddev'):{form}}"
+                            for ens in ensembles
+                        )
+                    ),
+                    hoverinfo="text",
+                    hoverlabel=dict(
+                        bgcolor="#E6FAEC", font=dict(color="#243746", size=15)
+                    ),
+                )
+            )
         fig = fig.to_dict()
+        fig["data"].extend(hovertraces)
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
-
+        fig["layout"].update(paper_bgcolor="white", plot_bgcolor="white")
         return fig
+
+    def get_stat_value(self, parameter: str, ensemble: str, stat_column: str):
+        """
+        Retrive statistical value for a parameter in an ensamble.
+        """
+        return self.statframe.loc[
+            (self.statframe["PARAMETER"] == parameter)
+            & (self.statframe["ENSEMBLE"] == ensemble)
+        ].iloc[0][stat_column]
 
     def get_real_and_value_df(
         self, ensemble: str, parameter: str, normalize: bool = False
@@ -255,4 +308,4 @@ class ParametersModel:
             df["VALUE_NORM"] = (df["VALUE"] - df["VALUE"].min()) / (
                 df["VALUE"].max() - df["VALUE"].min()
             )
-        return df.reset_index()
+        return df.reset_index(drop=True)
