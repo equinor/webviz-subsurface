@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.6` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.1.7` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -197,7 +197,7 @@ Visualizes the quality of the history match.
 
 ```yaml
     - HistoryMatch:
-        ensembles:  # Required, type list.
+        ensembles:  # Required, type List[str].
         observation_file:  # Required, type str (corresponding to a path).
 ```
 
@@ -247,7 +247,7 @@ Polylines are drawn interactivly in map view.
 
 ```yaml
     - HorizonUncertaintyViewer:
-        basedir: null # Optional, type str (corresponding to a path).
+        basedir:  # Required, type str (corresponding to a path).
         planned_wells_dir: null # Optional, type str (corresponding to a path).
 ```
 
@@ -1033,7 +1033,7 @@ duplicate data of other ensembles will be dropped.
 * One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
     (e.g. `PVTO` and `PVDG`).
 * One column named `PVTNUM` with integer `PVTNUM` regions.
-* One column named `GOR` or `RS` with the gas-oil-ratio as the primary variate.
+* One column named `RATIO` or `R` with the gas-oil-ratio as the primary variate.
 * One column named `PRESSURE` with the fluids pressure as the secondary variate.
 * One column named `VOLUMEFACTOR` as the first covariate.
 * One column named `VISCOSITY` as the second covariate.
@@ -1270,7 +1270,7 @@ run with that sensitivity.
         csvfile_parameters: null # Optional, type str (corresponding to a path).
         ensembles: null # Optional, type list.
         column_keys: null # Optional, type list.
-        initial_vector: null # Optional.
+        initial_vector: null # Optional, type str.
         sampling: "monthly" # Optional, type str.
         line_shape_fallback: "linear" # Optional, type str.
 ```
@@ -1475,7 +1475,7 @@ https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.
     - RftPlotter:
         csvfile_rft: null # Optional, type str (corresponding to a path).
         csvfile_rft_ert: null # Optional, type str (corresponding to a path).
-        ensembles: null # Optional, type list.
+        ensembles: null # Optional, type Union[typing.List[str], NoneType].
         formations: null # Optional, type str (corresponding to a path).
         obsdata: null # Optional, type str (corresponding to a path).
         faultlines: null # Optional, type str (corresponding to a path).
@@ -1592,7 +1592,7 @@ The plots are linked and updates are done by clicking in the plots.
 ```yaml
     - SegyViewer:
         segyfiles:  # Required, type List[str (corresponding to a path)].
-        zunit: "depth (m)" # Optional.
+        zunit: "depth (m)" # Optional, type str.
         colors: null # Optional, type list.
 ```
 
@@ -1653,7 +1653,7 @@ a FMU ensemble.
         ensemble: null # Optional, type str.
         map_value: null # Optional, type str.
         flow_value: null # Optional, type str.
-        time_step: null # Optional.
+        time_step: null # Optional, type int.
 ```
 
    
@@ -1713,10 +1713,11 @@ and available for instant viewing.
     Available settings are:
     * `min`: Truncate colorscale (lower limit).
     * `max`: Truncate colorscale (upper limit).
-    * `color`: Set the colormap (default is viridis).
+    * `color`: List of hexadecimal colors.
     * `unit`: Text to display as unit in label.
 * **`wellfolder`:** Folder with RMS wells.
 * **`wellsuffix`:** File suffix for wells in well folder.
+* **`map_height`:** Set the height in pixels for the map views.
 
 
 
@@ -1727,6 +1728,7 @@ and available for instant viewing.
         attribute_settings: null # Optional, type dict.
         wellfolder: null # Optional, type str (corresponding to a path).
         wellsuffix: ".w" # Optional, type str.
+        map_height: 600 # Optional, type int.
 ```
 
    
@@ -1738,7 +1740,7 @@ for each realization. Subfolders are not supported.
 
 The filenames need to follow a fairly strict convention, as the filenames are used as metadata:
 `horizon_name--attribute--date` (`--date` is optional). The files should be on `irap binary`
-format (typically `.gri` or `.irapbin`) The date is of the form `YYYYMMDD` or
+format with the suffix `.gri`. The date is of the form `YYYYMMDD` or
 `YYYYMMDD_YYYYMMDD`, the latter would be for a delta surface between two dates.
 See [this folder](https://github.com/equinor/webviz-subsurface-testdata/tree/master/reek_history_match/realization-0/iter-0/share/results/maps) for examples of file naming conventions.
 
@@ -1752,9 +1754,12 @@ attribute_settings:
     max: 10
     unit: m
   atr_b:
-    color: rainbow
+    color:
+    - "#000004"
+    - "#1b0c41"
+    - "#4a0c6b"
+    - "#781c6d"
 ```
-Valid options for `color` are `viridis` (default), `inferno`, `warm`, `cool` and `rainbow`.
 
  
 
@@ -1926,7 +1931,7 @@ and optionally seismic cubes.
         segyfiles: null # Optional, type List[str (corresponding to a path)].
         surfacenames: null # Optional, type list.
         zonelog: null # Optional, type str.
-        zunit: "depth (m)" # Optional.
+        zunit: "depth (m)" # Optional, type str.
         zmin: null # Optional, type float.
         zmax: null # Optional, type float.
         zonemin: 1 # Optional, type int.
@@ -2011,7 +2016,7 @@ per realization.
         segyfiles: null # Optional, type List[str (corresponding to a path)].
         zonelog: null # Optional, type str.
         marginal_logs: null # Optional, type list.
-        zunit: "depth (m)" # Optional.
+        zunit: "depth (m)" # Optional, type str.
         zmin: null # Optional, type float.
         zmax: null # Optional, type float.
         zonemin: 1 # Optional, type int.
