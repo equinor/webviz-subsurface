@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2
-import dash
 import dash_html_components as html
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.history_match import extract_mismatch
 
@@ -33,7 +33,12 @@ be made manually. [An example of the format can be found here]\
 observations/observations.yml).
 """
 
-    def __init__(self, app: dash.Dash, ensembles: List[str], observation_file: Path):
+    def __init__(
+        self,
+        webviz_settings: WebvizSettings,
+        ensembles: List[str],
+        observation_file: Path,
+    ):
 
         super().__init__()
 
@@ -41,7 +46,7 @@ observations/observations.yml).
 
         self.ensembles = ensembles
         self.ens_paths = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 

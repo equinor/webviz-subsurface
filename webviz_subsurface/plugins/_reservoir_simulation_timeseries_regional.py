@@ -19,6 +19,8 @@ from dash.exceptions import PreventUpdate
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizConfigTheme
+from webviz_config import WebvizSettings
 
 from webviz_subsurface._models import EnsembleSetModel
 from .._abbreviations.reservoir_simulation import (
@@ -113,10 +115,11 @@ folder, to avoid risk of not extracting the right data.
     TABLE_STATISTICS: List[Tuple[str, dict]] = [("Group", {})] + table_statistics_base()
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    # pylint: disable=dangerous-default-value
+    # pylint: disable=dangerous-default-value, too-many-arguments
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         fipfile: Path = None,
         initial_vector: str = "ROIP",
@@ -136,7 +139,7 @@ folder, to avoid risk of not extracting the right data.
             )
         self.emodel = EnsembleSetModel(
             ensemble_paths={
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
         )
@@ -219,7 +222,7 @@ folder, to avoid risk of not extracting the right data.
         self.fipdesc = (
             None if self.fipfile is None else get_fipdesc(self.fipfile, self.smry_cols)
         )
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
@@ -885,7 +888,7 @@ def render_single_date_graph(
     mode: str,
     groupby: str,
     date: str,
-    theme: dict,
+    theme: WebvizConfigTheme,
     title: str,
     colors: dict,
 ) -> wcc.Graph:
@@ -1000,9 +1003,6 @@ def render_single_date_graph(
                 }
             )
 
-    # TODO(Sigurd) What is the type for theme variable here?
-    # Probably the assumption is that theme is of type WebvizConfigTheme but how should this
-    # type be propagated to the plugins?
     return wcc.Graph(
         figure={"data": traces, "layout": theme.create_themed_layout(layout)}  # type: ignore
     )

@@ -11,6 +11,7 @@ import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.utils import calculate_slider_step
 
 from webviz_subsurface._models import EnsembleSetModel
@@ -120,6 +121,7 @@ folder, to avoid risk of not extracting the right data.
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         parameter_csv: Path = None,
         response_csv: Path = None,
         ensembles: list = None,
@@ -160,7 +162,7 @@ folder, to avoid risk of not extracting the right data.
 
         elif ensembles:
             self.ens_paths = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
             self.parameterdf = load_parameters(
@@ -202,7 +204,7 @@ folder, to avoid risk of not extracting the right data.
                 inplace=True,
             )
 
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.uid = uuid4()
         self.set_callbacks(app)
 

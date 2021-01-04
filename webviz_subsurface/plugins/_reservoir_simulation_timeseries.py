@@ -13,6 +13,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, EncodedFile
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
@@ -126,6 +127,7 @@ folder, to avoid risk of not extracting the right data.
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         csvfile: Path = None,
         ensembles: list = None,
         obsfile: Path = None,
@@ -166,9 +168,7 @@ folder, to avoid risk of not extracting the right data.
         elif ensembles:
             self.emodel = EnsembleSetModel(
                 ensemble_paths={
-                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ens
-                    ]
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 }
             )
@@ -224,7 +224,7 @@ folder, to avoid risk of not extracting the right data.
                 )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.plot_options = options if options else {}
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))

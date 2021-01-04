@@ -11,6 +11,7 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 import webviz_core_components as wcc
@@ -39,12 +40,12 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
     """
 
-    def __init__(self, app, input_dir: Path):
+    def __init__(self, app, webviz_settings: WebvizSettings, input_dir: Path):
 
         super().__init__()
 
         self.input_dir = input_dir
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
 
         self.set_callbacks(app)
 

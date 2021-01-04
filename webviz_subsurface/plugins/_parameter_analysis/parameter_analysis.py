@@ -3,6 +3,7 @@ from typing import Optional
 
 import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
@@ -73,6 +74,7 @@ slow for large models.
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         csvfile_parameters: pathlib.Path = None,
         csvfile_smry: pathlib.Path = None,
@@ -87,7 +89,7 @@ slow for large models.
             / "css"
             / "container.css"
         )
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.time_index = time_index
         self.column_keys = column_keys
         self.ensembles = ensembles
@@ -97,9 +99,7 @@ slow for large models.
         if ensembles is not None:
             self.emodel = EnsembleSetModel(
                 ensemble_paths={
-                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ens
-                    ]
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 }
             )

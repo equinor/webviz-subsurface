@@ -11,6 +11,7 @@ from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.fmu_input import load_ensemble_set, load_parameters
 
@@ -64,6 +65,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         filter_shorter: Union[int, float] = 10,
         status_file: str = "status.json",
@@ -72,10 +74,10 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         super().__init__()
         self.filter_shorter = filter_shorter
         self.ens_paths = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.ensembles = ensembles
         self.status_file = status_file
         self.parameter_df = load_parameters(
