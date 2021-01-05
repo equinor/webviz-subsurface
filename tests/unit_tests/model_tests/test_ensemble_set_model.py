@@ -19,7 +19,7 @@ def test_single_ensemble(testdata_folder):
         }
     )
     assert emodel.ens_folders == {
-        "iter-0": Path("webviz-subsurface-testdata") / "reek_history_match"
+        "iter-0": Path(testdata_folder) / "reek_history_match"
     }
     assert len(emodel.ensembles) == 1
     smry = emodel.load_smry()
