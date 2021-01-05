@@ -1401,7 +1401,7 @@ def add_fanchart_traces(
     ]
 
 
-def get_fip_array_nodes(fip: str, smry_cols: list) -> List[str]:
+def get_fip_array_nodes(fip: str, smry_cols: list) -> List[int]:
     """Sorted list of all available nodes for a given fip array (e.g FIPNUM)"""
     sorted_int_list = sorted(
         list(
@@ -1416,7 +1416,7 @@ def get_fip_array_nodes(fip: str, smry_cols: list) -> List[str]:
             }
         )
     )
-    return [str(i) for i in sorted_int_list]
+    return sorted_int_list
 
 
 @webvizstore
