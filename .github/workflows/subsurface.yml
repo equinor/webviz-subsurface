@@ -23,11 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.6', '3.7', '3.8']
-        pandas-version: ['0.24.2', '1.*']  # Necessary as long as RHEL6 is used internally
-        exclude:
-          # Skip Python 3.8 and Pandas 0.24.2 combination due to missing 3.8 wheel for that specific pandas version
-          - python-version: '3.8'
-            pandas-version: '0.24.2'
 
     steps:
 
@@ -54,7 +49,6 @@ jobs:
         if [[ $(pip freeze) ]]; then
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
-        pip install 'pandas==${{ matrix.pandas-version }}'
         pip install .
         # There are dependencies which we can't have in setup.py yet due to limitations in internal deployment system ("komodo"):
         pip install libecl ecl2df opm
@@ -71,7 +65,6 @@ jobs:
       run: pip freeze
 
     - name: 🕵️ Check code style & linting
-      if: matrix.pandas-version == '1.*'
       run: |
         black --check webviz_subsurface tests setup.py
         pylint webviz_subsurface tests setup.py
@@ -106,13 +99,13 @@ jobs:
         popd
 
     - name: 🐳 Update Docker Hub example image
-      if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.6'
       run: |
         echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
         docker push webviz/example_subsurface_image:equinor-theme
 
     - name: 🐳 Update review/test Docker example image
-      if: github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      if: github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.6'
       run: |
         docker tag webviz/example_subsurface_image:equinor-theme ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
@@ -120,7 +113,7 @@ jobs:
         docker push ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
     - name: 🚢 Build and deploy Python package
-      if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      if: github.event_name == 'release' && matrix.python-version == '3.6'
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
@@ -130,7 +123,7 @@ jobs:
         twine upload dist/*
 
     - name: 📚 Update GitHub pages
-      if: github.event_name == 'release' && matrix.python-version == '3.6' && matrix.pandas-version == '1.*'
+      if: github.event_name == 'release' && matrix.python-version == '3.6'
       run: |
         cp -R ./docs_build ../docs_build
 

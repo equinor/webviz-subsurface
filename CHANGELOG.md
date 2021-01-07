@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Fixed
+- [#536](https://github.com/equinor/webviz-subsurface/pull/536) - Fixed issue and bumped dependencies related to Pandas version 1.2.0. Bumped dependency to webviz-config to support mypy typechecks.
+
+## [0.1.7] - 2020-12-19
+### Fixed
 - [#526](https://github.com/equinor/webviz-subsurface/pull/526) - Fixes to `SurfaceViewerFMU`. User defined map units are now correctly displayed. Map height can now be set (useful for maps with elongated geometry). Added some missing documentation
 - [#531](https://github.com/equinor/webviz-subsurface/pull/531) - The change in [#505](https://github.com/equinor/webviz-subsurface/pull/505) resulted in potentially very large datasets when using `raw` sampling. Some users experienced `MemoryError`. `column_keys` filtering is therefore now used when loading and storing data if `sampling` is `raw` in plugins using `UNSMRY` data, most noticable in `BhpQc` which has `raw` as the default and only option.
 
