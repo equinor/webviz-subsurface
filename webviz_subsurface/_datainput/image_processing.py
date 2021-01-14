@@ -52,7 +52,6 @@ def array_to_png(tensor: np.ndarray, shift: bool = True, colormap: bool = False)
                     "Can not shift a colormap which is not utilizing alpha channel"
                 )
             tensor[0][0][3] = 0.0  # Make first color channel transparent
-
     if tensor.ndim == 2:
         image = Image.fromarray(np.uint8(tensor), "L")
     elif tensor.ndim == 3:
@@ -73,4 +72,40 @@ def array_to_png(tensor: np.ndarray, shift: bool = True, colormap: bool = False)
 
     base64_data = base64.b64encode(byte_io.read()).decode("ascii")
 
+    return f"data:image/png;base64,{base64_data}"
+
+
+def array2d_to_png(tensor: np.ndarray) -> str:
+    """The leaflet map dash component takes in pictures as base64 data
+    (or as a link to an existing hosted image). I.e. for containers wanting
+    to create pictures on-the-fly from numpy arrays, they have to be converted
+    to base64. This is an example function of how that can be done.
+
+    This function encodes the numpy array to a RGBA png.
+    The array is encoded as a heightmap, in Mapbox Terrain RGB format
+    (https://docs.mapbox.com/help/troubleshooting/access-elevation-data/).
+    The undefined values are set as having alpha = 0. The height values are
+    shifted to start from 0.
+    """
+
+    shape = tensor.shape
+    tensor = np.repeat(tensor, 4)  # This will flatten the array
+
+    tensor[0::4][np.isnan(tensor[0::4])] = 0  # Red
+    tensor[1::4][np.isnan(tensor[1::4])] = 0  # Green
+    tensor[2::4][np.isnan(tensor[2::4])] = 0  # Blue
+
+    tensor[0::4] = np.floor((tensor[0::4] / (256 * 256)) % 256)  # Red
+    tensor[1::4] = np.floor((tensor[1::4] / 256) % 256)  # Green
+    tensor[2::4] = np.floor(tensor[2::4] % 256)  # Blue
+    tensor[3::4] = np.where(np.isnan(tensor[3::4]), 0, 255)  # Alpha
+
+    # Back to 2d shape + 1 dimension for the rgba values.
+    tensor = tensor.reshape((shape[0], shape[1], 4))
+    image = Image.fromarray(np.uint8(tensor), "RGBA")
+
+    byte_io = io.BytesIO()
+    image.save(byte_io, format="png")
+    byte_io.seek(0)
+    base64_data = base64.b64encode(byte_io.read()).decode("ascii")
     return f"data:image/png;base64,{base64_data}"

@@ -6,13 +6,11 @@ from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import dash
 
+from webviz_subsurface._models import SurfaceLeafletModel
 from ..utils.colors import find_intermediate_color_rgba
 from ..figures.correlation_figure import CorrelationFigure
 from ..utils.surface import surface_from_zone_prop
 from ..models import SimulationTimeSeriesModel
-from ..models.surface_leaflet_model import (
-    SurfaceLeafletModel,
-)
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
