@@ -11,6 +11,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
@@ -52,9 +53,11 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         segyfiles: List[Path],
         surfacefiles: List[Path],
         surfacenames: list = None,
@@ -83,7 +86,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             self.segynames = segynames
         else:
             self.segynames = [Path(segyfile).stem for segyfile in segyfiles]
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.initial_colors = (
             colors
             if colors is not None

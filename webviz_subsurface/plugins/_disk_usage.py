@@ -5,12 +5,12 @@ import pathlib
 import datetime
 
 import pandas as pd
-import dash
 import dash_html_components as html
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 
 class DiskUsage(WebvizPluginABC):
@@ -34,7 +34,10 @@ class DiskUsage(WebvizPluginABC):
     """
 
     def __init__(
-        self, app: dash.Dash, scratch_dir: pathlib.Path, date: Optional["str"] = None
+        self,
+        webviz_settings: WebvizSettings,
+        scratch_dir: pathlib.Path,
+        date: Optional["str"] = None,
     ):
 
         super().__init__()
@@ -45,7 +48,7 @@ class DiskUsage(WebvizPluginABC):
         self.date = str(self.disk_usage["date"].unique()[0])
         self.users = self.disk_usage["userid"]
         self.usage_gib = self.disk_usage["usageKB"] / (1024 ** 2)
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
 
     @property
     def layout(self) -> html.Div:

@@ -19,6 +19,7 @@ import webviz_subsurface_components
 
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface
@@ -45,12 +46,13 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         basedir: Path,
         planned_wells_dir: Path = None,
     ):
 
         super().__init__()
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.uid = uuid4()
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"

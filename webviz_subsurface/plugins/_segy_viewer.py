@@ -10,6 +10,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 import numpy as np
@@ -43,6 +44,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         segyfiles: List[Path],
         zunit: str = "depth (m)",
         colors: list = None,
@@ -74,7 +76,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
         self.uid = uuid4()
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element: str) -> str:

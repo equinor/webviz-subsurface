@@ -11,6 +11,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
@@ -58,6 +59,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         gridfile: Path,
         gridparameterfiles: List[Path],
         surfacefiles: List[Path],
@@ -91,7 +93,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             self.gridparanames = [
                 Path(gridfile).stem for gridfile in gridparameterfiles
             ]
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.initial_colors = (
             colors
             if colors is not None

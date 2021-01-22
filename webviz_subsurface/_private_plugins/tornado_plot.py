@@ -10,6 +10,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
+from webviz_config import WebvizSettings
 
 from .._abbreviations.number_formatting import si_prefixed
 
@@ -52,6 +53,7 @@ class TornadoPlot:
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         realizations: pd.DataFrame,
         reference: str = "rms_seed",
         allow_click: bool = False,
@@ -71,7 +73,7 @@ class TornadoPlot:
         )
         self.allow_click = allow_click
         self.uid = uuid4()
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element: str) -> str:

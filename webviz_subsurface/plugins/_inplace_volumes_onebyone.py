@@ -13,6 +13,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -114,6 +115,7 @@ aggregated_data/parameters.csv)
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
         ensembles: list = None,
@@ -141,7 +143,7 @@ aggregated_data/parameters.csv)
 
         elif ensembles and volfiles:
             self.ens_paths = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
             self.volfiles = volfiles
@@ -165,10 +167,12 @@ aggregated_data/parameters.csv)
         self.volumes = pd.merge(volumes, parameters, on=["ENSEMBLE", "REAL"])
 
         # Initialize a tornado plot. Data is added in callback
-        self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
+        self.tornadoplot = TornadoPlot(
+            app, webviz_settings, parameters, allow_click=True
+        )
         self.uid = uuid4()
         self.selectors_id = {x: self.uuid(x) for x in self.selectors}
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

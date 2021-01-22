@@ -17,6 +17,7 @@ import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
 from webviz_subsurface._datainput.surface import make_surface_layer, load_surface
@@ -86,9 +87,11 @@ attribute_settings:
 
 """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         attributes: list = None,
         attribute_settings: dict = None,
@@ -99,7 +102,7 @@ attribute_settings:
 
         super().__init__()
         self.ens_paths = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 

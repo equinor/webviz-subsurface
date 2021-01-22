@@ -9,6 +9,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from webviz_subsurface._models import EnsembleSetModel
 from .._utils.unique_theming import unique_colors
@@ -37,6 +38,7 @@ class BhpQc(WebvizPluginABC):
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         wells: Optional[List[str]] = None,
     ):
@@ -48,14 +50,14 @@ class BhpQc(WebvizPluginABC):
 
         self.emodel = EnsembleSetModel(
             ensemble_paths={
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
         )
         self.smry = self.emodel.load_smry(
             time_index="raw", column_keys=self.column_keys
         )
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
     @property

@@ -13,6 +13,7 @@ import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.inplace_volumes import extract_volumes
 from .._abbreviations.volume_terminology import volume_description, volume_unit
@@ -86,6 +87,7 @@ but the following responses are given more descriptive names automatically:
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         csvfile: Path = None,
         ensembles: list = None,
         volfiles: dict = None,
@@ -105,7 +107,7 @@ but the following responses are given more descriptive names automatically:
 
         elif ensembles and volfiles:
             self.ens_paths = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
             self.volfiles = volfiles
@@ -122,7 +124,7 @@ but the following responses are given more descriptive names automatically:
         self.initial_response = response
         self.uid = uuid4()
         self.selectors_id = {x: str(uuid4()) for x in self.selectors}
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.initial_group: Union[str, None] = None
         if len(self.volumes["ENSEMBLE"].unique()) > 1:
             self.initial_plot = "Box plot"

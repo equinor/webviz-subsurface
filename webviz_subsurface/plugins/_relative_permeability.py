@@ -11,6 +11,7 @@ from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
@@ -86,6 +87,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         relpermfile: str = None,
         scalfile: Path = None,
@@ -94,10 +96,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
 
         super().__init__()
         self.ens_paths = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.relpermfile = relpermfile
         if self.relpermfile is not None:
             self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)

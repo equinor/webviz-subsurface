@@ -4,6 +4,7 @@ import pathlib
 import dash
 import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
@@ -82,6 +83,7 @@ folder, to avoid risk of not extracting the right data.
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         statistics_file: str = "share/results/tables/gridpropstatistics.csv",
         csvfile_statistics: pathlib.Path = None,
@@ -97,8 +99,7 @@ folder, to avoid risk of not extracting the right data.
             / "css"
             / "container.css"
         )
-        # TODO(Sigurd) fix this once we get a separate webviz_settings parameter
-        self.theme: WebvizConfigTheme = app.webviz_settings["theme"]
+        self.theme: WebvizConfigTheme = webviz_settings.theme
         self.time_index = time_index
         self.column_keys = column_keys
         self.statistics_file = statistics_file
@@ -110,9 +111,7 @@ folder, to avoid risk of not extracting the right data.
         if ensembles is not None:
             self.emodel = EnsembleSetModel(
                 ensemble_paths={
-                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ens
-                    ]
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 }
             )

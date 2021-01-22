@@ -7,6 +7,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -132,6 +133,7 @@ folder, to avoid risk of not extracting the right data.
     def __init__(
         self,
         app,
+        webviz_settings: WebvizSettings,
         ensembles: list = None,
         parameter_csv: Path = None,
         response_csv: Path = None,
@@ -185,9 +187,7 @@ folder, to avoid risk of not extracting the right data.
                 )
             self.emodel = EnsembleSetModel(
                 ensemble_paths={
-                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ens
-                    ]
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 }
             )
@@ -236,7 +236,7 @@ folder, to avoid risk of not extracting the right data.
             lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
         )
 
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
     @property

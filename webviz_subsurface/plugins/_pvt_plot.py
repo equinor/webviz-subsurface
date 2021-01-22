@@ -15,6 +15,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.pvt_data import load_pvt_dataframe, load_pvt_csv
 
@@ -69,6 +70,7 @@ class PvtPlot(WebvizPluginABC):
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: List[str],
         pvt_relative_file_path: str = None,
         read_from_init_file: bool = False,
@@ -78,13 +80,11 @@ class PvtPlot(WebvizPluginABC):
         super().__init__()
 
         self.ensemble_paths = {
-            ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                ensemble
-            ]
+            ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
             for ensemble in ensembles
         }
 
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
 
         self.pvt_relative_file_path = pvt_relative_file_path
 

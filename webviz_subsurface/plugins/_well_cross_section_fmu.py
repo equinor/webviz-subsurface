@@ -16,6 +16,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
@@ -80,6 +81,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         ensembles: list,
         surfacefiles: list,
         surfacenames: list = None,
@@ -126,7 +128,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             self.surfacenames = surfacefiles
 
         self.ensembles = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 
@@ -159,7 +161,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 "#17becf",  # blue-teal
             ]
         )
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.colors = self.plotly_theme["layout"]["colorway"]
         self.uid = uuid4()
         self.set_callbacks(app)

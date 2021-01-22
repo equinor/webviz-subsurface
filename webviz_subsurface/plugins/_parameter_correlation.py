@@ -12,6 +12,7 @@ from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.fmu_input import scratch_ensemble
 
@@ -42,16 +43,22 @@ class ParameterCorrelation(WebvizPluginABC):
     Parameter values are extracted automatically from the `parameters.txt` files in the individual
     realizations of your defined `ensembles`, using the `fmu-ensemble` library."""
 
-    def __init__(self, app: dash.Dash, ensembles: list, drop_constants: bool = True):
+    def __init__(
+        self,
+        app: dash.Dash,
+        webviz_settings: WebvizSettings,
+        ensembles: list,
+        drop_constants: bool = True,
+    ):
 
         super().__init__()
 
         self.ensembles = {
-            ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
         self.drop_constants = drop_constants
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
 
         self.uid = uuid4()
         self.set_callbacks(app)

@@ -10,6 +10,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -42,7 +43,13 @@ When using an aggregated `csvfile`, you need to have the columns `REAL`, `ENSEMB
 and the parameter columns.
 """
 
-    def __init__(self, app: dash.Dash, csvfile: Path = None, ensembles: list = None):
+    def __init__(
+        self,
+        app: dash.Dash,
+        webviz_settings: WebvizSettings,
+        csvfile: Path = None,
+        ensembles: list = None,
+    ):
 
         super().__init__()
 
@@ -56,7 +63,7 @@ and the parameter columns.
             self.parameters = read_csv(csvfile)
         elif ensembles:
             self.ensembles = {
-                ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][ens]
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
             self.parameters = load_parameters(
@@ -73,7 +80,7 @@ and the parameter columns.
             if col not in ["REAL", "ENSEMBLE"]
         ]
         self.uid = uuid4()
-        self.plotly_theme = app.webviz_settings["theme"].plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.set_callbacks(app)
 
     def ids(self, element: str) -> str:

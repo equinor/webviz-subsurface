@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -100,9 +101,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
 """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
         ensembles: Optional[List[str]] = None,
@@ -133,9 +136,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         if ensembles:
             self.ens_paths = (
                 {
-                    ens: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                        ens
-                    ]
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 }
                 if ensembles is not None

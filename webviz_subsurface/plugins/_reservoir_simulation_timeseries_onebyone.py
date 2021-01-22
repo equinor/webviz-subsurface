@@ -14,6 +14,7 @@ import dash_core_components as dcc
 from dash_table import DataTable
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -123,6 +124,7 @@ folder, to avoid risk of not extracting the right data.
     def __init__(
         self,
         app: dash.Dash,
+        webviz_settings: WebvizSettings,
         csvfile_smry: Path = None,
         csvfile_parameters: Path = None,
         ensembles: list = None,
@@ -154,9 +156,7 @@ folder, to avoid risk of not extracting the right data.
 
         elif ensembles:
             self.ens_paths = {
-                ensemble: app.webviz_settings["shared_settings"]["scratch_ensembles"][
-                    ensemble
-                ]
+                ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
                 for ensemble in ensembles
             }
             self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
@@ -191,9 +191,11 @@ folder, to avoid risk of not extracting the right data.
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
-        self.tornadoplot = TornadoPlot(app, parameters, allow_click=True)
+        self.tornadoplot = TornadoPlot(
+            app, webviz_settings, parameters, allow_click=True
+        )
         self.uid = uuid4()
-        self.theme = app.webviz_settings["theme"]
+        self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
     def ids(self, element: str) -> str:

@@ -4,12 +4,12 @@ from uuid import uuid4
 from pathlib import Path
 
 import pandas as pd
-import dash
 import dash_html_components as html
 from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
+from webviz_config import WebvizSettings
 
 from .._datainput.fmu_input import scratch_ensemble
 
@@ -56,7 +56,7 @@ that you are reading the correct data.
 
     def __init__(
         self,
-        app: dash.Dash,
+        webviz_settings: WebvizSettings,
         jsonfile: Path = None,
         ensemble: str = None,
         map_value: str = None,
@@ -81,9 +81,9 @@ that you are reading the correct data.
             self.map_value = map_value
             self.flow_value = flow_value
             self.time_step = time_step
-            self.ensemble_path = app.webviz_settings["shared_settings"][
-                "scratch_ensembles"
-            ][ensemble]
+            self.ensemble_path = webviz_settings.shared_settings["scratch_ensembles"][
+                ensemble
+            ]
             self.map_data = get_map_data(
                 self.ensemble_path, self.map_value, self.flow_value, self.time_step
             )
