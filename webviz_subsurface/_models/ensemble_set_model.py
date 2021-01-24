@@ -36,7 +36,7 @@ class EnsembleSetModel:
             for ens, ens_path in self.ensemble_paths.items()
         }
 
-    def _get_ensembles_data(self, func: str, **kwargs: Any) -> pd.DataFrame:
+    def _get_ensemble_dframes(self, func: str, **kwargs: Any) -> pd.DataFrame:
         """Runs the provided function for each ensemble and concats dataframes"""
         dfs = []
         for ensemble in self.ensembles:
@@ -52,16 +52,44 @@ class EnsembleSetModel:
             return pd.concat(dfs, sort=False)
         raise KeyError(f"No data found for {func} with arguments: {kwargs}")
 
+    def _get_ensemble_lists(self, func: str, **kwargs: Any) -> pd.DataFrame:
+        """Runs the provided function for each ensemble and concats dataframes"""
+        all_columns = []
+
+        for ensemble in self.ensembles:
+            try:
+                all_columns.extend(getattr(ensemble, func)(**kwargs))
+            except (KeyError, ValueError):
+                # Happens if an ensemble is missing some data
+                # Warning has already been issued at initialization
+                pass
+        if all_columns is not None:
+            return list(set(all_columns))
+        raise KeyError(f"No data found for {func} with arguments: {kwargs}")
+
     def load_parameters(self) -> pd.DataFrame:
-        return self._get_ensembles_data("load_parameters")
+        return self._get_ensemble_dframes("load_parameters")
 
     def load_smry(
         self,
         time_index: Optional[Union[list, str]] = None,
         column_keys: Optional[list] = None,
+        current_keys: Optional[list] = None,
     ) -> pd.DataFrame:
-        return self._get_ensembles_data(
-            "load_smry", time_index=time_index, column_keys=column_keys
+        return self._get_ensemble_dframes(
+            "load_smry",
+            time_index=time_index,
+            column_keys=column_keys,
+            current_keys=current_keys,
+        )
+
+    def load_smry_columns(
+        self,
+        time_index: Optional[Union[list, str]] = None,
+        column_keys: Optional[list] = None,
+    ) -> pd.DataFrame:
+        return self._get_ensemble_lists(
+            "load_smry_columns", time_index=time_index, column_keys=column_keys
         )
 
     def load_smry_meta(
@@ -81,7 +109,7 @@ class EnsembleSetModel:
         return pd.DataFrame(smry_meta).transpose()
 
     def load_csv(self, csv_file: pathlib.Path) -> pd.DataFrame:
-        return self._get_ensembles_data("load_csv", csv_file=csv_file)
+        return self._get_ensemble_dframes("load_csv", csv_file=csv_file)
 
     @property
     def webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:

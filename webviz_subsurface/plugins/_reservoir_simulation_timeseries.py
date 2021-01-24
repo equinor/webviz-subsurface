@@ -172,9 +172,6 @@ folder, to avoid risk of not extracting the right data.
                     for ens in ensembles
                 }
             )
-            self.smry = self.emodel.load_smry(
-                time_index=self.time_index, column_keys=self.column_keys
-            )
 
             self.smry_meta = self.emodel.load_smry_meta(
                 column_keys=self.column_keys,
@@ -183,18 +180,23 @@ folder, to avoid risk of not extracting the right data.
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
             )
-        if any([col.startswith(("AVG_", "INTVL_")) for col in self.smry.columns]):
+        self.smry_cols = [
+            c
+            for c in self.emodel.load_smry_columns(
+                time_index=self.time_index, column_keys=self.column_keys
+            )
+            if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
+            and not historical_vector(c, self.smry_meta, False)
+            in self.emodel.load_smry_columns(
+                time_index=self.time_index, column_keys=self.column_keys
+            )
+        ]
+        if any([col.startswith(("AVG_", "INTVL_")) for col in self.smry_cols]):
             raise ValueError(
                 "Your data set includes time series vectors which have names starting with"
                 "'AVG_' and/or 'INTVL_'. These prefixes are not allowed, as they are used"
                 "internally in the plugin."
             )
-        self.smry_cols = [
-            c
-            for c in self.smry.columns
-            if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
-            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
-        ]
 
         self.dropdown_options = []
         for vec in self.smry_cols:
@@ -223,7 +225,8 @@ folder, to avoid risk of not extracting the right data.
                     }
                 )
 
-        self.ensembles = list(self.smry["ENSEMBLE"].unique())
+        self.ensembles = list(self.get_vectors()["ENSEMBLE"].unique())
+
         self.theme = webviz_settings.theme
         self.plot_options = options if options else {}
         self.plot_options["date"] = (
@@ -249,6 +252,16 @@ folder, to avoid risk of not extracting the right data.
             )
         self.allow_delta = len(self.ensembles) > 1
         self.set_callbacks(app)
+
+    def get_vectors(self, vectors: Union[list, None] = None) -> pd.DataFrame:
+        current_keys = ["DATE", "REAL"]
+        if vectors is not None:
+            current_keys.extend(vectors)
+        return self.emodel.load_smry(
+            time_index=self.time_index,
+            column_keys=self.column_keys,
+            current_keys=current_keys,
+        )
 
     @property
     def ens_colors(self) -> dict:
@@ -611,7 +624,6 @@ folder, to avoid risk of not extracting the right data.
             stored_date: str,
         ) -> dict:
             """Callback to update all graphs based on selections"""
-
             if not isinstance(ensembles, list):
                 raise TypeError("ensembles should always be of type list")
 
@@ -659,7 +671,6 @@ folder, to avoid risk of not extracting the right data.
                             date=date, vector=vec, interval=cum_interval, as_date=False
                         )
                     )
-
             # Make a plotly subplot figure
             fig = make_subplots(
                 rows=len(vectors),
@@ -671,8 +682,9 @@ folder, to avoid risk of not extracting the right data.
 
             # Loop through each vector and calculate relevant plot
             legends = []
+            smrydf = self.get_vectors(vectors=vectors)
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                smry=smrydf,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
@@ -797,7 +809,6 @@ folder, to avoid risk of not extracting the right data.
             cum_interval: str,
         ) -> Union[EncodedFile, str]:
             """Callback to download data based on selections"""
-
             # Combine selected vectors
             vectors = [vector1]
             if vector2:
@@ -812,9 +823,9 @@ folder, to avoid risk of not extracting the right data.
                     raise TypeError("ensembles should always be of type list")
             else:
                 raise PreventUpdate
-
+            smrydf = self.get_vectors(vectors=vectors)
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                smry=smrydf,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
@@ -863,7 +874,6 @@ folder, to avoid risk of not extracting the right data.
                             interval=cum_interval,
                             as_date=False,
                         )
-
             # : is replaced with _ in filenames to stay within POSIX portable pathnames
             # (e.g. : is not valid in a Windows path)
             return (

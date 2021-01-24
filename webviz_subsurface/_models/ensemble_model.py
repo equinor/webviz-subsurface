@@ -57,10 +57,51 @@ class EnsembleModel:
         )
         return self._load_parameters()
 
+    def load_smry_columns(
+        self,
+        time_index: Optional[Union[list, str]] = None,
+        column_keys: Optional[list] = None,
+    ) -> List:
+        # Limit saved columns if time_index = 'raw' or None, as the data density might
+        # be very high, and increases risk of `MemoryError`
+        if time_index == "raw" or time_index is None:
+            self._webviz_store.append(
+                (
+                    self._load_smry_columns,
+                    [
+                        {
+                            "self": self,
+                            "time_index": time_index,
+                            "column_keys": column_keys,
+                        }
+                    ],
+                )
+            )
+            return self._load_smry_columns(
+                time_index=time_index,
+                column_keys=column_keys,
+            )
+
+        # Otherwise store all columns to reduce risk of duplicates
+        self._webviz_store.append(
+            (
+                self._load_smry_columns,
+                [{"self": self, "time_index": time_index, "column_keys": None}],
+            )
+        )
+
+        if column_keys is None:
+            return self._load_smry_columns(time_index=time_index)
+        columns = self._load_smry_columns(time_index=time_index)
+        return [
+            col for col in columns if col in column_keys + ["REAL", "ENSEMBLE", "DATE"]
+        ]
+
     def load_smry(
         self,
         time_index: Optional[Union[list, str]] = None,
         column_keys: Optional[list] = None,
+        current_keys: Optional[list] = None,
     ) -> pd.DataFrame:
         # Limit saved columns if time_index = 'raw' or None, as the data density might
         # be very high, and increases risk of `MemoryError`
@@ -77,7 +118,11 @@ class EnsembleModel:
                     ],
                 )
             )
-            return self._load_smry(time_index=time_index, column_keys=column_keys)
+            return self._load_smry(
+                time_index=time_index,
+                column_keys=column_keys,
+                webviz_load={"parquet_columns": current_keys},
+            )
 
         # Otherwise store all columns to reduce risk of duplicates
         self._webviz_store.append(
@@ -88,11 +133,13 @@ class EnsembleModel:
         )
 
         if column_keys is None:
-            return self._load_smry(time_index=time_index)
-        df = self._load_smry(time_index=time_index)
-        return df[
-            df.columns[_match_column_keys(df_index=df.columns, column_keys=column_keys)]
-        ]
+            return self._load_smry(
+                time_index=time_index, webviz_load={"parquet_columns": current_keys}
+            )
+        df = self._load_smry(
+            time_index=time_index, webviz_load={"parquet_columns": current_keys}
+        )
+        return df[df.columns[_match_column_keys(df_index=df.columns)]]
 
     def load_smry_meta(
         self,
@@ -127,9 +174,23 @@ class EnsembleModel:
         self,
         time_index: Optional[Union[list, str]] = None,
         column_keys: Optional[list] = None,
+        webviz_load: Optional[Dict] = None,
     ) -> pd.DataFrame:
         return self.load_ensemble().get_smry(
             time_index=time_index, column_keys=column_keys
+        )
+
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @webvizstore
+    def _load_smry_columns(
+        self,
+        time_index: Optional[Union[list, str]] = None,
+        column_keys: Optional[list] = None,
+    ) -> List:
+        return list(
+            self.load_ensemble()
+            .get_smry(time_index=time_index, column_keys=column_keys)
+            .columns
         )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
