@@ -26,17 +26,10 @@ except ImportError:
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .opm_init_io import (
-    Oil,
-    Gas,
-    Water,
-    DryGas,
-    WetGas,
-    LiveOil,
-    DeadOil,
-    VariateAndValues,
-)
 from .fmu_input import load_ensemble_set, load_csv
+from .eclipse_init_io.pvt_oil import Oil
+from .eclipse_init_io.pvt_gas import Gas
+from .eclipse_init_io.pvt_water import Water
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -44,7 +37,7 @@ from .fmu_input import load_ensemble_set, load_csv
 def filter_pvt_data_frame(
     data_frame: pd.DataFrame, drop_ensemble_duplicates: bool = False
 ) -> pd.DataFrame:
-
+    # pylint: disable=too-many-branches
     data_frame = data_frame.rename(str.upper, axis="columns").rename(
         columns={
             "TYPE": "KEYWORD",
@@ -69,14 +62,23 @@ def filter_pvt_data_frame(
         "KEYWORD",
         "RATIO",
         "PRESSURE",
+        "PRESSURE_UNIT",
         "VOLUMEFACTOR",
+        "VOLUMEFACTOR_UNIT",
         "VISCOSITY",
+        "VISCOSITY_UNIT",
     ]
 
     if not "RATIO" in data_frame.columns:
         raise ValueError(
             "The dataframe must contain a column for the ratio (OGR, GOR, R, RV, RS)."
         )
+    if not "VOLUMEFACTOR_UNIT" in data_frame.columns:
+        data_frame["VOLUMEFACTOR_UNIT"] = "rm^3/sm^3"
+    if not "PRESSURE_UNIT" in data_frame.columns:
+        data_frame["PRESSURE_UNIT"] = "bar"
+    if not "VISCOSITY_UNIT" in data_frame.columns:
+        data_frame["VISCOSITY_UNIT"] = "cP"
 
     data_frame = data_frame[columns]
 
@@ -152,124 +154,181 @@ def load_pvt_dataframe(
     drop_ensemble_duplicates: bool = False,
 ) -> pd.DataFrame:
     # pylint: disable=too-many-statements
-    # If ecl2df is not loaded, this machine is probably not
-    # running Linux and the modules are not available.
-    # To avoid a crash, return an empty DataFrame here.
-    if "ecl2df" not in sys.modules:
-        print(
-            "Your operating system does not support opening and reading"
-            " Eclipse files. An empty data frame will be returned and your"
-            " plot will therefore not show any data points. Please specify"
-            " a relative path to a PVT CSV file in your PvtPlot settings"
-            " to display PVT data anyways."
-        )
-        return pd.DataFrame({})
+
+    def check_if_ecl2df_is_installed() -> None:
+        # If ecl2df is not loaded, this machine is probably not
+        # running Linux and the modules are not available.
+        if "ecl2df" not in sys.modules:
+            raise ModuleNotFoundError(
+                "Your operating system does not support opening and reading"
+                " Eclipse files. An empty data frame will be returned and your"
+                " plot will therefore not show any data points. Please specify"
+                " a relative path to a PVT CSV file in your PvtPlot settings"
+                " to display PVT data anyways."
+            )
 
     def ecl2df_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
+        check_if_ecl2df_is_installed()
         return ecl2df.pvt.df(kwargs["realization"].get_eclfiles())
 
     def init_to_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
         # pylint: disable-msg=too-many-locals
         # pylint: disable=too-many-nested-blocks
         # pylint: disable=too-many-branches
+        check_if_ecl2df_is_installed()
         ecl_init_file = EclFile(
             kwargs["realization"].get_eclfiles().get_initfile().get_filename()
         )
 
-        oil = Oil.from_ecl_init_file(ecl_init_file)
-        gas = Gas.from_ecl_init_file(ecl_init_file)
-        water = Water.from_ecl_init_file(ecl_init_file)
+        # Keep the original unit system
+        oil = Oil.from_ecl_init_file(ecl_init_file, True)
+        gas = Gas.from_ecl_init_file(ecl_init_file, True)
+        water = Water.from_ecl_init_file(ecl_init_file, True)
 
         column_pvtnum = []
-        column_oil_gas_ratio = []
+        column_ratio = []
         column_volume_factor = []
+        column_volume_factor_unit = []
         column_pressure = []
+        column_pressure_unit = []
         column_viscosity = []
+        column_viscosity_unit = []
         column_keyword = []
 
+        ratios: List[float] = []
+        pressures: List[float] = []
+        (pressure_min, pressure_max) = (0.0, 0.0)
+
+        if oil and not oil.is_dead_oil_const_compr():
+            (pressure_min, pressure_max) = oil.range_independent(0)
+        elif gas:
+            (pressure_min, pressure_max) = gas.range_independent(0)
+        else:
+            raise NotImplementedError("Missing PVT data")
+
+        for pressure_step in range(0, 20 + 1):
+            pressures.append(
+                pressure_min + pressure_step / 20.0 * (pressure_max - pressure_min)
+            )
+            ratios.append(0.0)
+
         if oil:
-            if len(oil.tables()) > 0 and isinstance(oil.tables()[0], LiveOil):
+            if oil.is_live_oil():
                 keyword = "PVTO"
-            elif len(oil.tables()) > 0 and isinstance(oil.tables()[0], DeadOil):
+            elif oil.is_dead_oil():
                 keyword = "PVDO"
+            elif oil.is_dead_oil_const_compr():
+                keyword = "PVCDO"
             else:
                 raise NotImplementedError(
-                    f"Oil of type '{type(oil)}' is not supported yet."
+                    "The PVT property type of oil is not implemented."
                 )
 
-            for table_index, table in enumerate(oil.tables()):
-                for outer_pair in table.get_values():
-                    for inner_pair in outer_pair.y:
-                        if isinstance(inner_pair, VariateAndValues):
-                            column_pvtnum.append(table_index + 1)
-                            column_keyword.append(keyword)
-                            if isinstance(table, DeadOil):
-                                column_oil_gas_ratio.append(0.0)
-                            else:
-                                column_oil_gas_ratio.append(outer_pair.x)
-                            column_pressure.append(inner_pair.x)
-                            column_volume_factor.append(
-                                1.0 / inner_pair.get_values_as_floats()[0]
-                            )
-                            column_viscosity.append(
-                                inner_pair.get_values_as_floats()[0]
-                                / inner_pair.get_values_as_floats()[1]
-                            )
+            for region_index, region in enumerate(oil.regions()):
+                if oil.is_dead_oil_const_compr():
+                    column_pvtnum.extend([region_index + 1 for _ in pressures])
+                    column_keyword.extend([keyword for _ in pressures])
+                    column_ratio.extend(ratios)
+                    column_pressure.extend(pressures)
+                    column_pressure_unit.extend(
+                        [oil.pressure_unit() for _ in pressures]
+                    )
+                    column_volume_factor.extend(
+                        region.formation_volume_factor(ratios, pressures)
+                    )
+                    column_volume_factor_unit.extend(
+                        [oil.formation_volume_factor_unit() for _ in pressures]
+                    )
+                    column_viscosity.extend(region.viscosity(ratios, pressures))
+                    column_viscosity_unit.extend(
+                        [oil.viscosity_unit() for _ in pressures]
+                    )
+
+                else:
+                    (ratio, pressure) = (
+                        region.get_keys(),
+                        region.get_independents(),
+                    )
+                    column_pvtnum.extend([region_index + 1 for _ in pressure])
+                    column_keyword.extend([keyword for _ in pressure])
+                    column_ratio.extend(ratio)
+                    column_pressure.extend(pressure)
+                    column_pressure_unit.extend([oil.pressure_unit() for _ in pressure])
+                    column_volume_factor.extend(
+                        region.formation_volume_factor(ratio, pressure)
+                    )
+                    column_volume_factor_unit.extend(
+                        [oil.formation_volume_factor_unit() for _ in pressure]
+                    )
+                    column_viscosity.extend(region.viscosity(ratio, pressure))
+                    column_viscosity_unit.extend(
+                        [oil.viscosity_unit() for _ in pressure]
+                    )
 
         if gas:
-            if len(gas.tables()) > 0 and isinstance(gas.tables()[0], DryGas):
-                keyword = "PVDG"
-            elif len(gas.tables()) > 0 and isinstance(gas.tables()[0], WetGas):
+            if gas.is_wet_gas():
                 keyword = "PVTG"
+            elif gas.is_dry_gas():
+                keyword = "PVDG"
             else:
                 raise NotImplementedError(
-                    f"Gas of type '{type(gas)}' is not supported yet."
+                    "The PVT property type of gas is not implemented."
                 )
-            for table_index, table in enumerate(gas.tables()):
-                for outer_pair in table.get_values():
-                    for inner_pair in outer_pair.y:
-                        if isinstance(inner_pair, VariateAndValues):
-                            column_pvtnum.append(table_index + 1)
-                            column_keyword.append(keyword)
-                            if isinstance(table, DryGas):
-                                column_oil_gas_ratio.append(0.0)
-                                column_pressure.append(inner_pair.x)
-                            else:
-                                column_oil_gas_ratio.append(inner_pair.x)
-                                column_pressure.append(outer_pair.x)
-                            column_volume_factor.append(
-                                1.0 / inner_pair.get_values_as_floats()[0]
-                            )
-                            column_viscosity.append(
-                                inner_pair.get_values_as_floats()[0]
-                                / inner_pair.get_values_as_floats()[1]
-                            )
+
+            for region_index, region in enumerate(gas.regions()):
+                if gas.is_wet_gas():
+                    (pressure, ratio) = (
+                        region.get_keys(),
+                        region.get_independents(),
+                    )
+                else:
+                    (ratio, pressure) = (
+                        region.get_keys(),
+                        region.get_independents(),
+                    )
+                column_pvtnum.extend([region_index + 1 for _ in pressure])
+                column_keyword.extend([keyword for _ in pressure])
+                column_ratio.extend(ratio)
+                column_pressure.extend(pressure)
+                column_pressure_unit.extend([gas.pressure_unit() for _ in pressure])
+                column_volume_factor.extend(
+                    region.formation_volume_factor(ratio, pressure)
+                )
+                column_volume_factor_unit.extend(
+                    [gas.formation_volume_factor_unit() for _ in pressure]
+                )
+                column_viscosity.extend(region.viscosity(ratio, pressure))
+                column_viscosity_unit.extend([gas.viscosity_unit() for _ in pressure])
+
         if water:
-            for table_index, table in enumerate(water.tables()):
-                for outer_pair in table.get_values():
-                    for inner_pair in outer_pair.y:
-                        if isinstance(inner_pair, VariateAndValues):
-                            column_pvtnum.append(table_index + 1)
-                            column_keyword.append("PVTW")
-                            column_oil_gas_ratio.append(outer_pair.x)
-                            column_pressure.append(inner_pair.x)
-                            column_volume_factor.append(
-                                1.0 / inner_pair.get_values_as_floats()[0]
-                            )
-                            column_viscosity.append(
-                                1.0
-                                / inner_pair.get_values_as_floats()[2]
-                                * inner_pair.get_values_as_floats()[0]
-                            )
+            for region_index, region in enumerate(water.regions()):
+                column_pvtnum.extend([region_index + 1 for _ in pressures])
+                column_keyword.extend(["PVTW" for _ in pressures])
+                column_ratio.extend(ratios)
+                column_pressure.extend(pressures)
+                column_pressure_unit.extend([water.pressure_unit() for _ in pressures])
+                column_volume_factor.extend(
+                    region.formation_volume_factor(ratios, pressures)
+                )
+                column_volume_factor_unit.extend(
+                    [water.formation_volume_factor_unit() for _ in pressures]
+                )
+                column_viscosity.extend(region.viscosity(ratios, pressures))
+                column_viscosity_unit.extend(
+                    [water.viscosity_unit() for _ in pressures]
+                )
 
         data_frame = pd.DataFrame(
             {
                 "PVTNUM": column_pvtnum,
                 "KEYWORD": column_keyword,
-                "R": column_oil_gas_ratio,
+                "R": column_ratio,
                 "PRESSURE": column_pressure,
+                "PRESSURE_UNIT": column_pressure_unit,
                 "VOLUMEFACTOR": column_volume_factor,
+                "VOLUMEFACTOR_UNIT": column_volume_factor_unit,
                 "VISCOSITY": column_viscosity,
+                "VISCOSITY_UNIT": column_viscosity_unit,
             }
         )
 
