@@ -23,7 +23,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface
-from webviz_subsurface._datainput.surface import get_surface_layers
+from webviz_subsurface._models import SurfaceLeafletModel
 from webviz_subsurface._datainput.well import get_well_layers
 from ._huv_xsection import HuvXsection
 from ._huv_table import FilterTable
@@ -118,6 +118,17 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
 
     def ids(self, element: str) -> str:
         return f"{element}-id-{self.uid}"
+
+    @property
+    def surface_types(self) -> List[str]:
+        return [
+            "Depth",
+            "Depth uncertainty",
+            "Depth residual",
+            "Depth residual uncertainty",
+            "Depth trend",
+            "Depth trend uncertainty",
+        ]
 
     @property
     def cross_section_graph_layout(self) -> html.Div:
@@ -494,7 +505,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                                 "position": "topright",
                             },
                             switch={
-                                "value": self.state["switch"],
+                                "value": False,
                                 "disabled": False,
                                 "label": "Hillshading",
                             },
@@ -572,17 +583,6 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             """Renders map view for one surface with de, dt, dte, dr, dre and depth
             Wells marked with circles, trajectory and hillshading toggle
             """
-            # Store layers when switching to hillshading
-            if self.state["switch"] is not switch["value"]:
-                hillshade_layers = self.layers_state.copy()
-                for layer in hillshade_layers:
-                    if "shader" in layer["data"][0]:
-                        layer["data"][0]["shader"]["type"] = (
-                            "hillshading" if switch["value"] is True else None
-                        )
-                        layer["action"] = "update"
-                self.state["switch"] = switch["value"]
-                return hillshade_layers
 
             surfaces = [
                 self.surface_attributes[surface_name]["surface"],
@@ -598,7 +598,16 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                 surfaces[0],
                 wellfile,
             )
-            layers = get_surface_layers(switch, surface_name, surfaces)
+            layers = []
+            for i, surface in enumerate(surfaces):
+                layers.append(
+                    SurfaceLeafletModel(
+                        surface,
+                        name=self.surface_types[i],
+                        apply_shading=switch["value"],
+                        updatemode="add",
+                    ).layer
+                )
             layers.extend(well_layers)
             # Deletes old layers when switching surface in dropdown
             old_layers = self.layers_state

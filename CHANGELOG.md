@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
 - [#544](https://github.com/equinor/webviz-subsurface/pull/544) - All plugins now use new special `webviz_settings` argument to plugin's `__init__` method for common settings in favor of piggybacking dictionary onto the to the Dash applicaton object.
+- [#541](https://github.com/equinor/webviz-subsurface/pull/541) - Implemented new onepass shader for all surface plugins.
 
 ### Fixed
 - [#536](https://github.com/equinor/webviz-subsurface/pull/536) - Fixed issue and bumped dependencies related to Pandas version 1.2.0. Bumped dependency to webviz-config to support mypy typechecks.

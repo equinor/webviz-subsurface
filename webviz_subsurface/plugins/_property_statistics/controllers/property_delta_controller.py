@@ -5,11 +5,9 @@ from dash.dependencies import Input, Output, ALL
 import dash_html_components as html
 import plotly.graph_objects as go
 
+from webviz_subsurface._models import SurfaceLeafletModel
 from ..views.property_delta_view import table_view, surface_views
 from ..utils.surface import surface_from_zone_prop
-from ..models.surface_leaflet_model import (
-    SurfaceLeafletModel,
-)
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import

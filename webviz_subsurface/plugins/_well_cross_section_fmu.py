@@ -20,11 +20,11 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
+from webviz_subsurface._models import SurfaceLeafletModel
 from .._datainput.fmu_input import get_realizations
 from .._datainput.xsection import XSectionFigure
 from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well
-from .._datainput.surface import make_surface_layer
 
 # pylint: disable=too-many-instance-attributes
 class WellCrossSectionFMU(WebvizPluginABC):
@@ -592,7 +592,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 self.surfacefolder,
             )[surfacetype]
 
-            surface_layer = make_surface_layer(surface, name=surfacename)
+            surface_layer = SurfaceLeafletModel(surface, name=surfacename).layer
             return [surface_layer, intersect_layer]
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

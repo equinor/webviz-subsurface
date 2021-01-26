@@ -20,9 +20,10 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
-from webviz_subsurface._datainput.surface import make_surface_layer, load_surface
+from webviz_subsurface._datainput.surface import load_surface
 from webviz_subsurface._datainput.well import make_well_layers
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
+from webviz_subsurface._models import SurfaceLeafletModel
 
 
 class SurfaceViewerFMU(WebvizPluginABC):
@@ -395,38 +396,11 @@ attribute_settings:
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
-                                ),
-                                html.Div(
-                                    children=[
-                                        dcc.RadioItems(
-                                            id=self.uuid("hillshade"),
-                                            labelStyle={
-                                                "display": "inline-block",
-                                                "text-align": "justify",
-                                            },
-                                            options=[
-                                                {
-                                                    "value": None,
-                                                    "label": "No hillshading",
-                                                },
-                                                {
-                                                    "value": "soft-hillshading",
-                                                    "label": "Soft hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading",
-                                                    "label": "Hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading_shadows",
-                                                    "label": "Hillshading with shadows",
-                                                },
-                                            ],
-                                            value=None,
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                    switch={
+                                        "value": False,
+                                        "disabled": False,
+                                        "label": "Hillshading",
+                                    },
                                 ),
                             ],
                         ),
@@ -443,39 +417,12 @@ attribute_settings:
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
-                                ),
-                                html.Div(
-                                    children=[
-                                        dcc.RadioItems(
-                                            id=self.uuid("hillshade2"),
-                                            labelStyle={
-                                                "display": "inline-block",
-                                                "text-align": "justify",
-                                            },
-                                            options=[
-                                                {
-                                                    "value": None,
-                                                    "label": "No hillshading",
-                                                },
-                                                {
-                                                    "value": "soft-hillshading",
-                                                    "label": "Soft hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading",
-                                                    "label": "Hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading_shadows",
-                                                    "label": "Hillshading with shadows",
-                                                },
-                                            ],
-                                            value=None,
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
-                                ),
+                                    switch={
+                                        "value": False,
+                                        "disabled": False,
+                                        "label": "Hillshading",
+                                    },
+                                )
                             ],
                         ),
                         html.Div(
@@ -491,39 +438,12 @@ attribute_settings:
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
-                                ),
-                                html.Div(
-                                    children=[
-                                        dcc.RadioItems(
-                                            id=self.uuid("hillshade3"),
-                                            labelStyle={
-                                                "display": "inline-block",
-                                                "text-align": "justify",
-                                            },
-                                            options=[
-                                                {
-                                                    "value": None,
-                                                    "label": "No hillshading",
-                                                },
-                                                {
-                                                    "value": "soft-hillshading",
-                                                    "label": "Soft hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading",
-                                                    "label": "Hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading_shadows",
-                                                    "label": "Hillshading with shadows",
-                                                },
-                                            ],
-                                            value=None,
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
-                                ),
+                                    switch={
+                                        "value": False,
+                                        "disabled": False,
+                                        "label": "Hillshading",
+                                    },
+                                )
                             ],
                         ),
                         dcc.Store(
@@ -575,9 +495,9 @@ attribute_settings:
                 Input(self.uuid("attribute-settings"), "data"),
                 Input(self.uuid("truncate-diff-min"), "value"),
                 Input(self.uuid("truncate-diff-max"), "value"),
-                Input(self.uuid("hillshade"), "value"),
-                Input(self.uuid("hillshade2"), "value"),
-                Input(self.uuid("hillshade3"), "value"),
+                Input(self.uuid("map"), "switch"),
+                Input(self.uuid("map2"), "switch"),
+                Input(self.uuid("map3"), "switch"),
             ],
         )
         # pylint: disable=too-many-arguments, too-many-locals
@@ -592,11 +512,12 @@ attribute_settings:
             stored_attribute_settings: str,
             diff_min: Union[int, float, None],
             diff_max: Union[int, float, None],
-            hillshade: Union[str, None],
-            hillshade2: Union[str, None],
-            hillshade3: Union[str, None],
+            hillshade: dict,
+            hillshade2: dict,
+            hillshade3: dict,
         ) -> Tuple[List[dict], List[dict], List[dict], str]:
-            if not stored_selector_data or not stored_selector2_data:
+            ctx = dash.callback_context.triggered
+            if not ctx or not stored_selector_data or not stored_selector2_data:
                 raise PreventUpdate
 
             # TODO(Sigurd)
@@ -629,26 +550,26 @@ attribute_settings:
                 surface2 = load_surface(self.get_real_runpath(data2, ensemble2, real2))
 
             surface_layers: List[dict] = [
-                make_surface_layer(
+                SurfaceLeafletModel(
                     surface,
                     name="surface",
-                    color=attribute_settings.get(data["attr"], {}).get("color"),
-                    shader_type=hillshade,
-                    min_val=attribute_settings.get(data["attr"], {}).get("min", None),
-                    max_val=attribute_settings.get(data["attr"], {}).get("max", None),
+                    colors=attribute_settings.get(data["attr"], {}).get("color"),
+                    apply_shading=hillshade.get("value", False),
+                    clip_min=attribute_settings.get(data["attr"], {}).get("min", None),
+                    clip_max=attribute_settings.get(data["attr"], {}).get("max", None),
                     unit=attribute_settings.get(data["attr"], {}).get("unit", " "),
-                )
+                ).layer
             ]
             surface_layers2: List[dict] = [
-                make_surface_layer(
+                SurfaceLeafletModel(
                     surface2,
                     name="surface2",
-                    color=attribute_settings.get(data2["attr"], {}).get("color"),
-                    shader_type=hillshade2,
-                    min_val=attribute_settings.get(data2["attr"], {}).get("min", None),
-                    max_val=attribute_settings.get(data2["attr"], {}).get("max", None),
+                    colors=attribute_settings.get(data2["attr"], {}).get("color"),
+                    apply_shading=hillshade2.get("value", False),
+                    clip_min=attribute_settings.get(data2["attr"], {}).get("min", None),
+                    clip_max=attribute_settings.get(data2["attr"], {}).get("max", None),
                     unit=attribute_settings.get(data2["attr"], {}).get("unit", " "),
-                )
+                ).layer
             ]
 
             try:
@@ -659,12 +580,12 @@ attribute_settings:
                     surface3.values[surface3.values >= diff_max] = diff_max
                 diff_layers: List[dict] = []
                 diff_layers.append(
-                    make_surface_layer(
+                    SurfaceLeafletModel(
                         surface3,
                         name="surface3",
-                        color=attribute_settings.get(data["attr"], {}).get("color"),
-                        shader_type=hillshade3,
-                    )
+                        colors=attribute_settings.get(data["attr"], {}).get("color"),
+                        apply_shading=hillshade3.get("value", False),
+                    ).layer
                 )
                 error_label = ""
             except ValueError:

@@ -15,8 +15,9 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
+from webviz_subsurface._models import SurfaceLeafletModel
 from .._datainput.grid import load_grid, load_grid_parameter
-from .._datainput.surface import make_surface_layer, get_surface_fence
+from .._datainput.surface import get_surface_fence
 
 
 class SurfaceWithGridCrossSection(WebvizPluginABC):
@@ -246,38 +247,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     },
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
-                                ),
-                                html.Div(
-                                    children=[
-                                        dcc.RadioItems(
-                                            id=self.uuid("hillshade"),
-                                            labelStyle={
-                                                "display": "inline-block",
-                                                "text-align": "justify",
-                                            },
-                                            options=[
-                                                {
-                                                    "value": None,
-                                                    "label": "No hillshading",
-                                                },
-                                                {
-                                                    "value": "soft-hillshading",
-                                                    "label": "Soft hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading",
-                                                    "label": "Hillshading",
-                                                },
-                                                {
-                                                    "value": "hillshading_shadows",
-                                                    "label": "Hillshading with shadows",
-                                                },
-                                            ],
-                                            value=None,
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                    switch={
+                                        "value": False,
+                                        "disabled": False,
+                                        "label": "Hillshading",
+                                    },
                                 ),
                             ],
                         )
@@ -397,7 +371,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("gridparameter"), "value"),
                 Input(self.ids("color-values"), "value"),
                 Input(self.ids("color-scale"), "colorscale"),
-                Input(self.uuid("hillshade"), "value"),
+                Input(self.ids("map-view"), "switch"),
             ],
         )
         def _render_surface(
@@ -422,15 +396,15 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 gridparameter = load_grid_parameter(grid, get_path(gridparameter))
                 surface.slice_grid3d(grid, gridparameter)
 
-            s_layer = make_surface_layer(
-                surface,
-                name="surface",
-                min_val=min_val,
-                max_val=max_val,
-                color=color,
-                shader_type=hillshade,
-            )
-            return [s_layer]
+            return [
+                SurfaceLeafletModel(
+                    surface,
+                    name="surface",
+                    clip_min=min_val,
+                    clip_max=max_val,
+                    apply_shading=hillshade.get("value", False),
+                ).layer
+            ]
 
         @app.callback(
             Output(self.ids("fence-view"), "figure"),

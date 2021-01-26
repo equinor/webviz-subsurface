@@ -12,10 +12,11 @@ from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
 
+from webviz_subsurface._models import SurfaceLeafletModel
 from .._datainput.xsection import XSectionFigure
 from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well, make_well_layer
-from .._datainput.surface import load_surface, make_surface_layer
+from .._datainput.surface import load_surface
 
 
 class WellCrossSection(WebvizPluginABC):
@@ -341,10 +342,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             wellfile = get_path(wellfile)
             surface = load_surface(get_path(self.surfacefiles[0]))
             well = load_well(wellfile)
-            s_layer = make_surface_layer(
-                surface,
-                name=self.surfacenames[0],
-            )
+            s_layer = SurfaceLeafletModel(surface, name=self.surfacenames[0]).layer
             well_layer = make_well_layer(well, wellname)
             return [s_layer, well_layer]
 

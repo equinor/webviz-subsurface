@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 import xtgeo
 
-from webviz_subsurface._datainput.image_processing import array_to_png
+from webviz_subsurface._datainput.image_processing import array2d_to_png
 
 
 class SurfaceLeafletModel:
@@ -20,31 +20,43 @@ class SurfaceLeafletModel:
         clip_min: Optional[float] = None,
         clip_max: Optional[float] = None,
         unit: str = " ",
-        shader_type: str = "soft-hillshading",
-        shadows: bool = False,
+        apply_shading: bool = False,
         colors: Optional[list] = None,
         updatemode: str = "update",
     ):
         self.name = name if name is not None else surface.name
         self.surface = surface
-        self.shadows = True if shader_type == "hillshading_shadows" else shadows
-        self.shader_type = (
-            "hillshading" if shader_type == "hillshading_shadows" else shader_type
-        )
+        self.apply_shading = apply_shading
         self.updatemode = updatemode
         self.bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
-        self.zvalues = self.filled_z(clip_min=clip_min, clip_max=clip_max)
+        self.zvalues = self.get_zvalues(clip_min=clip_min, clip_max=clip_max)
         self.unit = unit
         self.colors = self.set_colors(colors)
 
     @property
     def img_url(self) -> str:
-        return array_to_png(self.zvalues.copy())
+        return array2d_to_png(self.scaled_zvalues.copy())
 
     @property
-    def img_scale(self) -> float:
+    def min_val(self) -> float:
+        return np.nanmin(self.zvalues)
+
+    @property
+    def max_val(self) -> float:
+        return np.nanmax(self.zvalues)
+
+    @property
+    def scale_factor(self) -> float:
+        if self.min_val == 0.0 and self.max_val == 0.0:
+            return 1.0
+        return (256 * 256 * 256 - 1) / (self.max_val - self.min_val)
+
+    @property
+    def map_scale(self) -> float:
         img = Image.open(
-            io.BytesIO(base64.b64decode(array_to_png(self.zvalues.copy())[22:]))
+            io.BytesIO(
+                base64.b64decode(array2d_to_png(self.scaled_zvalues.copy())[22:])
+            )
         )
         width, height = img.size
         if width * height >= 300 * 300:
@@ -52,15 +64,7 @@ class SurfaceLeafletModel:
         ratio = (1000 ** 2) / (width * height)
         return np.sqrt(ratio).round(2)
 
-    @property
-    def min_val(self) -> float:
-        return round(np.nanmin(self.zvalues), 4)
-
-    @property
-    def max_val(self) -> float:
-        return round(np.nanmax(self.zvalues), 4)
-
-    def filled_z(
+    def get_zvalues(
         self,
         unrotate: bool = True,
         flip: bool = True,
@@ -72,13 +76,15 @@ class SurfaceLeafletModel:
             np.ma.clip(surface.values, clip_min, clip_max, out=surface.values)
         if unrotate:
             surface.unrotate()
-
-        x, y, z = surface.get_xyz_values()
+        surface.fill(np.nan)
+        values = surface.values
         if flip:
-            x = np.flip(x.transpose(), axis=0)
-            y = np.flip(y.transpose(), axis=0)
-            z = np.flip(z.transpose(), axis=0)
-        return z.filled(np.nan)
+            values = np.flip(values.transpose(), axis=0)
+        return values
+
+    @property
+    def scaled_zvalues(self) -> np.ndarray:
+        return (self.zvalues - self.min_val) * self.scale_factor
 
     @staticmethod
     def set_colors(colors: list = None) -> list:
@@ -113,22 +119,16 @@ class SurfaceLeafletModel:
                     "url": self.img_url,
                     "colorScale": {
                         "colors": self.colors,
-                        "prefixZeroAlpha": False,
                         "scaleType": "linear",
                     },
                     "shader": {
-                        "type": self.shader_type,
-                        "shadows": self.shadows,
-                        "shadowIterations": 128,
-                        "elevationScale": -1.0,
-                        "pixelScale": 11000,
-                        "setBlackToAlpha": True,
+                        "applyHillshading": self.apply_shading,
                     },
                     "bounds": self.bounds,
                     "minvalue": self.min_val,
                     "maxvalue": self.max_val,
                     "unit": self.unit,
-                    "imageScale": self.img_scale,
+                    "imageScale": self.map_scale,
                 }
             ],
         }
