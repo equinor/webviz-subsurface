@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Tuple, Union, Any
 import pandas as pd
 import dash
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -112,17 +112,22 @@ class PvtPlot(WebvizPluginABC):
                 columns={"TYPE": "KEYWORD", "RS": "RATIO", "R": "RATIO", "GOR": "RATIO"}
             )
 
-            # Ensure that the identifier string "KEYWORD" is contained in the header columns
-            if "KEYWORD" not in self.pvt_data_frame.columns:
-                raise ValueError(
+        # Ensure that the identifier string "KEYWORD" is contained in the header columns
+        if "KEYWORD" not in self.pvt_data_frame.columns:
+            raise ValueError(
+                (
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
+                    "When not providing a csv file, make sure ecl2df is installed."
                 )
+            )
 
         self.phases_additional_info: List[str] = []
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTO").any():
             self.phases_additional_info.append("PVTO")
         elif self.pvt_data_frame["KEYWORD"].str.contains("PVDO").any():
             self.phases_additional_info.append("PVDO")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVCDO").any():
+            self.phases_additional_info.append("PVCDO")
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTG").any():
             self.phases_additional_info.append("PVTG")
         elif self.pvt_data_frame["KEYWORD"].str.contains("PVDG").any():
@@ -319,7 +324,6 @@ class PvtPlot(WebvizPluginABC):
         @app.callback(
             [
                 Output(self.uuid("graph"), "figure"),
-                Output(self.uuid("init_callback"), "data"),
             ],
             [
                 Input(self.uuid("phase"), "value"),
@@ -327,20 +331,13 @@ class PvtPlot(WebvizPluginABC):
                 Input(self.uuid("pvtnum"), "value"),
                 Input(self.uuid("color_by"), "value"),
             ],
-            [State(self.uuid("init_callback"), "data")],
         )
         def _update_graph(
             phase: str,
             ensembles: Union[List[str], str],
             pvtnums: Union[List[str], str],
             color_by: str,
-            init_callback: bool,
         ) -> List[Union[Dict[str, Union[dict, List[dict]]], bool]]:
-            if (
-                not init_callback
-                and not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
-            ):
-                raise PreventUpdate
             if not phase:
                 raise PreventUpdate
             if ensembles is None:
@@ -357,11 +354,13 @@ class PvtPlot(WebvizPluginABC):
             elif color_by == "PVTNUM":
                 colors = self.pvtnum_colors
 
-            layout = plot_layout(phase, color_by, self.plotly_theme["layout"])
+            layout = plot_layout(
+                phase, color_by, self.plotly_theme["layout"], data_frame
+            )
 
             traces = add_realization_traces(data_frame, color_by, colors, phase)
 
-            return [{"data": traces, "layout": layout}, False]
+            return [{"data": traces, "layout": layout}]
 
         @app.callback(
             [
@@ -465,10 +464,11 @@ def add_realization_traces(
 ) -> List[dict]:
     """Renders line traces for individual realizations"""
     # pylint: disable-msg=too-many-locals
+    # pylint: disable=too-many-branches
 
     traces = []
 
-    dim1_column_name = "RATIO"
+    dim_column_name = "RATIO"
 
     if phase == "OIL":
         data_frame = data_frame.loc[
@@ -478,9 +478,15 @@ def add_realization_traces(
         data_frame = data_frame.loc[
             (data_frame["KEYWORD"] == "PVTG") | (data_frame["KEYWORD"] == "PVDG")
         ]
-        dim1_column_name = "PRESSURE"
+        dim_column_name = "PRESSURE"
     else:
         data_frame = data_frame.loc[data_frame["KEYWORD"] == "PVTW"]
+        dim_column_name = "PRESSURE"
+
+    data_frame = data_frame.sort_values(
+        ["PRESSURE", "VOLUMEFACTOR", "VISCOSITY"],
+        ascending=[True, True, True],
+    )
 
     border_value_pressure: Dict[str, list] = {}
     border_value_viscosity: Dict[str, list] = {}
@@ -493,7 +499,7 @@ def add_realization_traces(
 
     for (group, grouped_data_frame) in data_frame.groupby(color_by):
         for set_no, set_value in enumerate(
-            grouped_data_frame[dim1_column_name].unique()
+            grouped_data_frame[dim_column_name].unique()
         ):
             for realization_no, (realization, realization_data_frame) in enumerate(
                 grouped_data_frame.groupby("REAL")
@@ -505,19 +511,26 @@ def add_realization_traces(
                 try:
                     border_value_pressure[group].append(
                         realization_data_frame.loc[
-                            realization_data_frame[dim1_column_name] == set_value
+                            realization_data_frame[dim_column_name] == set_value
                         ]["PRESSURE"].iloc[0]
                     )
                     border_value_volumefactor[group].append(
                         realization_data_frame.loc[
-                            realization_data_frame[dim1_column_name] == set_value
+                            realization_data_frame[dim_column_name] == set_value
                         ]["VOLUMEFACTOR"].iloc[0]
                     )
-                    border_value_viscosity[group].append(
-                        realization_data_frame.loc[
-                            realization_data_frame[dim1_column_name] == set_value
-                        ]["VISCOSITY"].iloc[0]
-                    )
+                    if phase == "OIL":
+                        border_value_viscosity[group].append(
+                            realization_data_frame[
+                                (realization_data_frame[dim_column_name] == set_value)
+                            ]["VISCOSITY"].iloc[0]
+                        )
+                    else:
+                        border_value_viscosity[group].append(
+                            realization_data_frame[
+                                (realization_data_frame[dim_column_name] == set_value)
+                            ]["VISCOSITY"].max()
+                        )
                 except IndexError as exc:
                     raise IndexError(
                         "This error is most likely due to PVT differences between "
@@ -581,10 +594,10 @@ def add_realization_traces(
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[dim1_column_name] == set_value
+                                realization_data_frame[dim_column_name] == set_value
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[dim1_column_name] == set_value
+                                realization_data_frame[dim_column_name] == set_value
                             ]["VOLUMEFACTOR"],
                             "xaxis": "x",
                             "yaxis": "y",
@@ -633,10 +646,10 @@ def add_realization_traces(
                         {
                             "type": "scatter",
                             "x": realization_data_frame.loc[
-                                realization_data_frame[dim1_column_name] == set_value
+                                realization_data_frame[dim_column_name] == set_value
                             ]["PRESSURE"],
                             "y": realization_data_frame.loc[
-                                realization_data_frame[dim1_column_name] == set_value
+                                realization_data_frame[dim_column_name] == set_value
                             ]["VISCOSITY"],
                             "xaxis": "x2",
                             "yaxis": "y2",
@@ -692,7 +705,9 @@ def add_realization_traces(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def plot_layout(phase: str, color_by: str, theme: dict) -> dict:
+def plot_layout(
+    phase: str, color_by: str, theme: dict, data_frame: pd.DataFrame
+) -> dict:
     """
     Constructing plot layout from scratch as it is more responsive than plotly subplots package.
     """
@@ -753,7 +768,10 @@ def plot_layout(phase: str, color_by: str, theme: dict) -> dict:
                 "zeroline": False,
                 "anchor": "y2",
                 "domain": [0.0, 1.0],
-                "title": {"text": "Pressure [barsa]", "standoff": 15},
+                "title": {
+                    "text": fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                    "standoff": 15,
+                },
                 "showgrid": True,
             },
             "yaxis": {
@@ -763,8 +781,9 @@ def plot_layout(phase: str, color_by: str, theme: dict) -> dict:
                 "anchor": "x",
                 "domain": [0.525, 1.0],
                 "title": {
-                    "text": "{} Formation Volume Factor [rm3/sm3]".format(
-                        phase.lower().capitalize()
+                    "text": (
+                        fr"{phase.lower().capitalize()} Formation Volume Factor "
+                        fr"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]"
                     )
                 },
                 "type": "linear",
@@ -777,7 +796,10 @@ def plot_layout(phase: str, color_by: str, theme: dict) -> dict:
                 "anchor": "x2",
                 "domain": [0.0, 0.475],
                 "title": {
-                    "text": "{} Viscosity [cP]".format(phase.lower().capitalize())
+                    "text": (
+                        fr"{phase.lower().capitalize()} Viscosity "
+                        fr"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]"
+                    )
                 },
                 "type": "linear",
                 "showgrid": True,
