@@ -82,14 +82,32 @@ webviz build ./examples/basic_example.yaml
 and then modify `./examples/basic_example.yaml` while the Webviz application is
 still running, a hot reload will occur.
 
-#### Localhost certificate
+#### Localhost HSTS
 
-For quick local analysis, `webviz-config` uses `https` and runs on `localhost`.
-In order to create your personal :lock: `https` certificate (only valid for `localhost`), run
-```bash
-webviz certificate --auto-install
-```
-Certificate installation guidelines will be given when running the command.
+Previous versions of webviz generated a local certificate to force localhost
+connections to go through HTTPS. This is no longer the case and localhost
+connections use HTTP. As such, the `webviz certificate` command has been
+deprecated.
+
+Some browsers will force HTTPS and require extra steps to remove this security.
+Note that this is safe as no external computer may connect to a localhost
+server.
+
+If you're having issues connecting to a localhost server running Webviz due to
+security issues, perform the following steps:
+
+##### Google Chrome and Chromium
+
+These are the steps to remove HSTS, a security feature that forces HTTPS
+connections even though the user has specified HTTP:
+
+1. Navigate to chrome://net-internals/#hsts
+2. In the **Delete domain security policies**, type in "localhost" and click
+   delete
+
+##### Firefox
+
+Firefox does not have issues connecting to localhost addresses over HTTP.
 
 #### User preferences
 
