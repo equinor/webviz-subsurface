@@ -147,9 +147,9 @@ folder, to avoid risk of not extracting the right data.
                 '"ensembles"'
             )
         if csvfile_smry and csvfile_parameters:
-            smry = read_csv(csvfile_smry)
-            parameters = read_csv(csvfile_parameters)
-            parameters["SENSTYPE"] = parameters.apply(
+            self.smry = read_csv(csvfile_smry)
+            self.parameters = read_csv(csvfile_parameters)
+            self.parameters["SENSTYPE"] = self.parameters.apply(
                 lambda row: find_sens_type(row.SENSCASE), axis=1
             )
             self.smry_meta = None
@@ -160,7 +160,7 @@ folder, to avoid risk of not extracting the right data.
                 for ensemble in ensembles
             }
             self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
-            smry = self.emodel.load_smry(
+            self.smry = self.emodel.load_smry(
                 time_index=self.time_index, column_keys=self.column_keys
             )
 
@@ -168,7 +168,7 @@ folder, to avoid risk of not extracting the right data.
                 column_keys=self.column_keys,
             )
             # Extract realizations and sensitivity information
-            parameters = get_realizations(
+            self.parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
         else:
@@ -176,23 +176,23 @@ folder, to avoid risk of not extracting the right data.
                 'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_parameters" or '
                 '"ensembles"'
             )
-        self.data = pd.merge(smry, parameters, on=["ENSEMBLE", "REAL"])
         self.smry_cols = [
             c
-            for c in self.data.columns
+            for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeriesOneByOne.ENSEMBLE_COLUMNS
-            and not historical_vector(c, self.smry_meta, False) in self.data.columns
+            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
         ]
         self.initial_vector = (
             initial_vector
             if initial_vector and initial_vector in self.smry_cols
             else self.smry_cols[0]
         )
+        self.ensembles = list(self.parameters["ENSEMBLE"].unique())
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
         self.tornadoplot = TornadoPlot(
-            app, webviz_settings, parameters, allow_click=True
+            app, webviz_settings, self.parameters, allow_click=True
         )
         self.uid = uuid4()
         self.theme = webviz_settings.theme
@@ -241,12 +241,9 @@ folder, to avoid risk of not extracting the right data.
                     html.Span("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("ensemble"),
-                        options=[
-                            {"label": i, "value": i}
-                            for i in list(self.data["ENSEMBLE"].unique())
-                        ],
+                        options=[{"label": i, "value": i} for i in self.ensembles],
                         clearable=False,
-                        value=list(self.data["ENSEMBLE"].unique())[0],
+                        value=self.ensembles[0],
                         persistence=True,
                         persistence_type="session",
                     ),
@@ -282,8 +279,9 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def initial_date(self) -> datetime.date:
-        df = self.data[self.data["ENSEMBLE"] == self.data["ENSEMBLE"].unique()[0]]
-        return df["DATE"].max()
+        return self.smry[self.smry["ENSEMBLE"] == self.smry["ENSEMBLE"].unique()[0]][
+            "DATE"
+        ].max()
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
@@ -398,7 +396,7 @@ folder, to avoid risk of not extracting the right data.
                 date = clickdata["points"][0]["x"]
             except TypeError as exc:
                 raise PreventUpdate from exc
-            data = filter_ensemble(self.data, ensemble, [vector])
+            data = filter_ensemble(self.smry, self.parameters, ensemble, [vector])
             data = data.loc[data["DATE"].astype(str) == date]
             table_rows, table_columns = calculate_table(data, vector)
             return (
@@ -463,14 +461,21 @@ folder, to avoid risk of not extracting the right data.
 
             # Draw initial figure and redraw if ensemble/vector changes
             if ctx in ["", self.tornadoplot.high_low_storage_id] or reset_click:
-                if historical_vector(vector, self.smry_meta, True) in self.data.columns:
-                    data = filter_ensemble(
-                        self.data,
-                        ensemble,
-                        [vector, historical_vector(vector, self.smry_meta, True)],
-                    )
-                else:
-                    data = filter_ensemble(self.data, ensemble, [vector])
+                vectors = [vector]
+                historical_vector_name = historical_vector(vector, self.smry_meta, True)
+
+                if (
+                    historical_vector_name is not None
+                    and historical_vector_name in self.smry.columns
+                ):
+                    vectors.append(historical_vector_name)
+                data = filter_ensemble(
+                    self.smry,
+                    self.parameters,
+                    ensemble,
+                    vectors,
+                )
+
                 line_shape = get_simulation_line_shape(
                     line_shape_fallback=self.line_shape_fallback,
                     vector=vector,
@@ -652,13 +657,20 @@ def calculate_table(df: pd.DataFrame, vector: str) -> Tuple[List[dict], List[dic
     return table, columns
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_ensemble(
-    data: pd.DataFrame, ensemble: str, vector: List[str]
+    smry: pd.DataFrame, parameters: pd.DataFrame, ensemble: str, vector: List[str]
 ) -> pd.DataFrame:
-    return data.loc[data["ENSEMBLE"] == ensemble][
-        ["DATE", "REAL", "SENSCASE", "SENSNAME", "SENSTYPE"] + vector
-    ]
+    smry_columns = ["DATE", "REAL"] + vector
+    parameter_columns = ["REAL", "SENSCASE", "SENSNAME", "SENSTYPE"]
+    return pd.merge(
+        smry[smry_columns + ["ENSEMBLE"]].loc[smry["ENSEMBLE"] == ensemble][
+            smry_columns
+        ],
+        parameters[parameter_columns + ["ENSEMBLE"]].loc[
+            parameters["ENSEMBLE"] == ensemble
+        ][parameter_columns],
+        on=["REAL"],
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
