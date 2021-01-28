@@ -144,25 +144,27 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.zonemin = zonemin
         self.segyfiles = [] if segyfiles is None else [str(segy) for segy in segyfiles]
         self.zonelog = zonelog
-
+        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.colors = (
             colors
-            if colors
-            else [
-                "#1f77b4",  # muted blue
-                "#ff7f0e",  # safety orange
-                "#2ca02c",  # cooked asparagus green
-                "#d62728",  # brick red
-                "#9467bd",  # muted purple
-                "#8c564b",  # chestnut brown
-                "#e377c2",  # raspberry yogurt pink
-                "#7f7f7f",  # middle gray
-                "#bcbd22",  # curry yellow-green
-                "#17becf",  # blue-teal
-            ]
+            if colors is not None
+            else self.plotly_theme.get("layout", {}).get(
+                "colorway",
+                [
+                    "#1f77b4",  # muted blue
+                    "#ff7f0e",  # safety orange
+                    "#2ca02c",  # cooked asparagus green
+                    "#d62728",  # brick red
+                    "#9467bd",  # muted purple
+                    "#8c564b",  # chestnut brown
+                    "#e377c2",  # raspberry yogurt pink
+                    "#7f7f7f",  # middle gray
+                    "#bcbd22",  # curry yellow-green
+                    "#17becf",  # blue-teal
+                ],
+            )
         )
-        self.plotly_theme = webviz_settings.theme.plotly_theme
-        self.colors = self.plotly_theme["layout"]["colorway"]
+
         self.uid = uuid4()
         self.set_callbacks(app)
 
