@@ -36,8 +36,9 @@
 #
 ########################################
 
-from typing import Tuple, Callable, List, Union, Optional
+from typing import Tuple, Callable, Union, Optional
 
+import numpy as np
 from opm.io.ecl import EclFile
 
 from ..eclipse_unit import ConvertUnits, EclUnits, CreateUnitConverter, EclUnitEnum
@@ -89,8 +90,8 @@ class WetGas(PvxOBase):
         self.interpolant = PVTx(index_table, raw, convert)
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Computes a list of formation volume factor values
         for the given ratio and pressure values.
 
@@ -108,7 +109,7 @@ class WetGas(PvxOBase):
         #        :       :      :          :            :
         return self.interpolant.formation_volume_factor(pressure, ratio)
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Computes a list of viscosity values for the given ratio and pressure values.
 
         Args:
@@ -125,11 +126,11 @@ class WetGas(PvxOBase):
         #        :       :      :          :            :
         return self.interpolant.viscosity(pressure, ratio)
 
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary pressure values (Pg)"""
         return self.interpolant.get_keys()
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all gas ratio values (Rv)"""
         return self.interpolant.get_independents()
 
@@ -162,8 +163,8 @@ class DryGas(PvxOBase):
         self.interpolant = PVDx(table_index, raw, convert)
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Computes a list of formation volume factor values
         for the given pressure values.
 
@@ -177,7 +178,7 @@ class DryGas(PvxOBase):
         """
         return self.interpolant.formation_volume_factor(pressure)
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Computes a list of viscosity values for the given pressure values.
 
         Args:
@@ -190,7 +191,7 @@ class DryGas(PvxOBase):
         """
         return self.interpolant.viscosity(pressure)
 
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary keys.
 
         Since this is dry gas, there is no dependency on Rv.
@@ -200,7 +201,7 @@ class DryGas(PvxOBase):
         """
         return self.interpolant.get_keys()
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all independent pressure values (Pg)"""
         return self.interpolant.get_independents()
 
@@ -220,7 +221,7 @@ class Gas(FluidImplementation):
         self,
         raw: EclPropertyTableRawData,
         unit_system: int,
-        surface_mass_densities: List[float],
+        surface_mass_densities: np.ndarray,
         keep_unit_system: bool = False,
     ) -> None:
         """Initializes a Gas object.

@@ -8,6 +8,7 @@ import sys
 from typing import Dict, List, Any
 import warnings
 
+import numpy as np
 import pandas as pd
 
 # opm and ecl2df are only available for Linux,
@@ -185,18 +186,18 @@ def load_pvt_dataframe(
         gas = Gas.from_ecl_init_file(ecl_init_file, True)
         water = Water.from_ecl_init_file(ecl_init_file, True)
 
-        column_pvtnum = []
-        column_ratio = []
-        column_volume_factor = []
-        column_volume_factor_unit = []
-        column_pressure = []
-        column_pressure_unit = []
-        column_viscosity = []
-        column_viscosity_unit = []
-        column_keyword = []
+        column_pvtnum: List[int] = []
+        column_ratio: List[float] = []
+        column_volume_factor: List[float] = []
+        column_volume_factor_unit: List[str] = []
+        column_pressure: List[float] = []
+        column_pressure_unit: List[str] = []
+        column_viscosity: List[float] = []
+        column_viscosity_unit: List[str] = []
+        column_keyword: List[str] = []
 
-        ratios: List[float] = []
-        pressures: List[float] = []
+        ratios: np.ndarray = np.zeros(21)
+        pressures: np.ndarray = np.zeros(21)
         (pressure_min, pressure_max) = (0.0, 0.0)
 
         if oil and not oil.is_dead_oil_const_compr():
@@ -207,10 +208,10 @@ def load_pvt_dataframe(
             raise NotImplementedError("Missing PVT data")
 
         for pressure_step in range(0, 20 + 1):
-            pressures.append(
-                pressure_min + pressure_step / 20.0 * (pressure_max - pressure_min)
+            pressures[pressure_step] = pressure_min + pressure_step / 20.0 * (
+                pressure_max - pressure_min
             )
-            ratios.append(0.0)
+            ratios[pressure_step] = 0.0
 
         if oil:
             if oil.is_live_oil():

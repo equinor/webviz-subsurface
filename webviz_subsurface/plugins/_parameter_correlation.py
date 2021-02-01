@@ -418,7 +418,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
 def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) -> dict:
     corrdf = get_corr_data(ensemble_path, drop_constants)
     # pylint: disable=no-member
-    corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool))
+    corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool_))
 
     data = {
         "type": "heatmap",

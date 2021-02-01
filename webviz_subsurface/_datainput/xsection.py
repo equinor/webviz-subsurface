@@ -123,7 +123,7 @@ class XSectionFigure:
         return _layout
 
     @property
-    def fence(self) -> np.ndarray:
+    def fence(self) -> Optional[np.ndarray]:
         """Set or get the fence spesification"""
         if self._fence is None:
             if self._well is not None:
