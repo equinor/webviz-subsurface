@@ -1,7 +1,5 @@
-from uuid import uuid4
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 from dash.dependencies import Input, Output
@@ -15,7 +13,8 @@ from webviz_config import WebvizSettings
 from webviz_config.utils import calculate_slider_step
 
 from webviz_subsurface._models import EnsembleSetModel
-from .._datainput.fmu_input import load_parameters, load_csv
+from webviz_subsurface._datainput.fmu_input import load_parameters, load_csv
+import webviz_subsurface._utils.parameter_response as parresp
 
 
 class ParameterResponseCorrelation(WebvizPluginABC):
@@ -141,7 +140,6 @@ folder, to avoid risk of not extracting the right data.
         self.response_csv = response_csv if response_csv else None
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
-        self.response_ignore = response_ignore if response_ignore else None
         self.column_keys = column_keys
         self.time_index = sampling
         self.corr_method = corr_method
@@ -185,45 +183,35 @@ folder, to avoid risk of not extracting the right data.
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
             )
-        self.check_runs()
-        self.check_response_filters()
-        if response_ignore:
-            self.responsedf.drop(response_ignore, errors="ignore", axis=1, inplace=True)
-        if response_include:
-            self.responsedf.drop(
-                self.responsedf.columns.difference(
-                    [
-                        "REAL",
-                        "ENSEMBLE",
-                        *response_include,
-                        *list(response_filters.keys()),
-                    ]
-                ),
-                errors="ignore",
-                axis=1,
-                inplace=True,
-            )
+        parresp.check_runs(self.parameterdf, self.responsedf)
+        parresp.check_response_filters(self.responsedf, self.response_filters)
+
+        # Only select numerical responses
+        self.response_columns = parresp.filter_numerical_columns(
+            df=self.responsedf,
+            column_ignore=response_ignore,
+            column_include=response_include,
+            filter_columns=self.response_filters.keys(),
+        )
+
+        # Only select numerical parameters
+        self.parameter_columns = parresp.filter_numerical_columns(df=self.parameterdf)
 
         self.plotly_theme = webviz_settings.theme.plotly_theme
-        self.uid = uuid4()
         self.set_callbacks(app)
-
-    def ids(self, element):
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
 
     @property
     def tour_steps(self):
         steps = [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": (
                     "Dashboard displaying correlation between selected "
                     "response and input parameters."
                 ),
             },
             {
-                "id": self.ids("correlation-graph"),
+                "id": self.uuid("correlation-graph"),
                 "content": (
                     "Visualization of the correlations between currently selected "
                     "response and input parameters ranked by the absolute correlation "
@@ -232,18 +220,18 @@ folder, to avoid risk of not extracting the right data.
                 ),
             },
             {
-                "id": self.ids("distribution-graph"),
+                "id": self.uuid("distribution-graph"),
                 "content": (
                     "Visualized the distribution of the response and the selected input parameter "
                     "in the correlation chart."
                 ),
             },
             {
-                "id": self.ids("ensemble"),
+                "id": self.uuid("ensemble"),
                 "content": ("Select the active ensemble."),
             },
             {
-                "id": self.ids("responses"),
+                "id": self.uuid("responses"),
                 "content": ("Select the active response."),
             },
         ]
@@ -251,59 +239,16 @@ folder, to avoid risk of not extracting the right data.
         return steps
 
     @property
-    def responses(self):
-        """Returns valid responses. Filters out non numerical columns,
-        and filterable columns"""
-        responses = list(
-            self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
-            .apply(pd.to_numeric, errors="coerce")
-            .dropna(how="all", axis="columns")
-            .columns
-        )
-        return [p for p in responses if p not in self.response_filters.keys()]
-
-    @property
-    def parameters(self):
-        """Returns numerical input parameters"""
-        parameters = list(
-            self.parameterdf.drop(["ENSEMBLE", "REAL"], axis=1)
-            .apply(pd.to_numeric, errors="coerce")
-            .dropna(how="all", axis="columns")
-            .columns
-        )
-        return parameters
-
-    @property
     def ensembles(self):
         """Returns list of ensembles"""
         return list(self.parameterdf["ENSEMBLE"].unique())
-
-    def check_runs(self):
-        """Check that input parameters and response files have
-        the same number of runs"""
-        for col in ["ENSEMBLE", "REAL"]:
-            if sorted(list(self.parameterdf[col].unique())) != sorted(
-                list(self.responsedf[col].unique())
-            ):
-                raise ValueError("Parameter and response files have different runs")
-
-    def check_response_filters(self):
-        """'Check that provided response filters are valid"""
-        if self.response_filters:
-            for col_name, col_type in self.response_filters.items():
-                if col_name not in self.responsedf.columns:
-                    raise ValueError(f"{col_name} is not in response file")
-                if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(
-                        f"Filter type {col_type} for {col_name} is not valid."
-                    )
 
     @property
     def filter_layout(self):
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
-            domid = self.ids(f"filter-{col_name}")
+            domid = self.uuid(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
                 selector = wcc.Select(
@@ -348,7 +293,7 @@ folder, to avoid risk of not extracting the right data.
                 [
                     html.Label("Ensemble"),
                     dcc.Dropdown(
-                        id=self.ids("ensemble"),
+                        id=self.uuid("ensemble"),
                         options=[
                             {"label": ens, "value": ens} for ens in self.ensembles
                         ],
@@ -363,12 +308,13 @@ folder, to avoid risk of not extracting the right data.
                 [
                     html.Label("Response"),
                     dcc.Dropdown(
-                        id=self.ids("responses"),
+                        id=self.uuid("responses"),
                         options=[
-                            {"label": ens, "value": ens} for ens in self.responses
+                            {"label": ens, "value": ens}
+                            for ens in self.response_columns
                         ],
                         clearable=False,
-                        value=self.responses[0],
+                        value=self.response_columns[0],
                         persistence=True,
                         persistence_type="session",
                     ),
@@ -380,20 +326,20 @@ folder, to avoid risk of not extracting the right data.
     def layout(self):
         """Main layout"""
         return wcc.FlexBox(
-            id=self.ids("layout"),
+            id=self.uuid("layout"),
             children=[
                 html.Div(
                     style={"flex": 3},
                     children=[
-                        wcc.Graph(self.ids("correlation-graph")),
+                        wcc.Graph(self.uuid("correlation-graph")),
                         dcc.Store(
-                            id=self.ids("initial-parameter"), storage_type="session"
+                            id=self.uuid("initial-parameter"), storage_type="session"
                         ),
                     ],
                 ),
                 html.Div(
                     style={"flex": 3},
-                    children=wcc.Graph(self.ids("distribution-graph")),
+                    children=wcc.Graph(self.uuid("distribution-graph")),
                 ),
                 html.Div(
                     style={"flex": 1},
@@ -408,43 +354,33 @@ folder, to avoid risk of not extracting the right data.
     def correlation_input_callbacks(self):
         """List of Inputs for correlation callback"""
         callbacks = [
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
+            Input(self.uuid("ensemble"), "value"),
+            Input(self.uuid("responses"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return callbacks
 
     @property
     def distribution_input_callbacks(self):
         """List of Inputs for distribution callback"""
         callbacks = [
-            Input(self.ids("correlation-graph"), "clickData"),
-            Input(self.ids("initial-parameter"), "data"),
-            Input(self.ids("ensemble"), "value"),
-            Input(self.ids("responses"), "value"),
+            Input(self.uuid("correlation-graph"), "clickData"),
+            Input(self.uuid("initial-parameter"), "data"),
+            Input(self.uuid("ensemble"), "value"),
+            Input(self.uuid("responses"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
-                callbacks.append(Input(self.ids(f"filter-{col_name}"), "value"))
+                callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return callbacks
-
-    def make_response_filters(self, filters):
-        """Returns a list of active response filters"""
-        filteroptions = []
-        if filters:
-            for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append(
-                    {"name": col_name, "type": col_type, "values": filters[i]}
-                )
-        return filteroptions
 
     def set_callbacks(self, app):
         @app.callback(
             [
-                Output(self.ids("correlation-graph"), "figure"),
-                Output(self.ids("initial-parameter"), "data"),
+                Output(self.uuid("correlation-graph"), "figure"),
+                Output(self.uuid("initial-parameter"), "data"),
             ],
             self.correlation_input_callbacks,
         )
@@ -459,8 +395,11 @@ folder, to avoid risk of not extracting the right data.
             6. Remove nan values return correlation graph
             """
 
-            filteroptions = self.make_response_filters(filters)
-            responsedf = filter_and_sum_responses(
+            filteroptions = parresp.make_response_filters(
+                response_filters=self.response_filters,
+                response_filter_values=filters,
+            )
+            responsedf = parresp.filter_and_sum_responses(
                 self.responsedf,
                 ensemble,
                 response,
@@ -493,7 +432,7 @@ folder, to avoid risk of not extracting the right data.
                 )
 
         @app.callback(
-            Output(self.ids("distribution-graph"), "figure"),
+            Output(self.uuid("distribution-graph"), "figure"),
             self.distribution_input_callbacks,
         )
         def _update_distribution_graph(
@@ -512,8 +451,11 @@ folder, to avoid risk of not extracting the right data.
                 parameter = initial_parameter
             else:
                 return {}
-            filteroptions = self.make_response_filters(filters)
-            responsedf = filter_and_sum_responses(
+            filteroptions = parresp.make_response_filters(
+                response_filters=self.response_filters,
+                response_filter_values=filters,
+            )
+            responsedf = parresp.filter_and_sum_responses(
                 self.responsedf,
                 ensemble,
                 response,
@@ -576,65 +518,7 @@ folder, to avoid risk of not extracting the right data.
         return functions
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def filter_and_sum_responses(
-    dframe, ensemble, response, filteroptions=None, aggregation="sum"
-):
-    """Cached wrapper for _filter_and_sum_responses"""
-    return _filter_and_sum_responses(
-        dframe=dframe,
-        ensemble=ensemble,
-        response=response,
-        filteroptions=filteroptions,
-        aggregation=aggregation,
-    )
-
-
-def _filter_and_sum_responses(
-    dframe,
-    ensemble,
-    response,
-    filteroptions=None,
-    aggregation="sum",
-):
-    """Filter response dataframe for the given ensemble
-    and optional filter columns. Returns dataframe grouped and
-    aggregated per realization."""
-
-    df = dframe.copy()
-    df = df.loc[df["ENSEMBLE"] == ensemble]
-    if filteroptions:
-        for opt in filteroptions:
-            if opt["type"] == "multi" or opt["type"] == "single":
-                if isinstance(opt["values"], list):
-                    df = df.loc[df[opt["name"]].isin(opt["values"])]
-                else:
-                    if opt["name"] == "DATE" and isinstance(opt["values"], str):
-                        df = df.loc[df["DATE"].astype(str) == opt["values"]]
-                    else:
-                        df = df.loc[df[opt["name"]] == opt["values"]]
-
-            elif opt["type"] == "range":
-                df = df.loc[
-                    (df[opt["name"]] >= np.min(opt["values"]))
-                    & (df[opt["name"]] <= np.max(opt["values"]))
-                ]
-    if aggregation == "sum":
-        return df.groupby("REAL").sum().reset_index()[["REAL", response]]
-    if aggregation == "mean":
-        return df.groupby("REAL").mean().reset_index()[["REAL", response]]
-    raise ValueError(
-        f"Aggregation of response file specified as '{aggregation}'' is invalid. "
-    )
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def correlate(inputdf, response, method="pearson"):
-    """Cached wrapper for _correlate"""
-    return _correlate(inputdf=inputdf, response=response, method=method)
-
-
-def _correlate(inputdf, response, method="pearson"):
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
         corrdf = inputdf.corr(method=method)

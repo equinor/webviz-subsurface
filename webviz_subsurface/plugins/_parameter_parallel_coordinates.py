@@ -12,7 +12,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._models import EnsembleSetModel
-from .._utils.parameter_response import filter_and_sum_responses
+import webviz_subsurface._utils.parameter_response as parresp
 
 
 class ParameterParallelCoordinates(WebvizPluginABC):
@@ -154,12 +154,11 @@ folder, to avoid risk of not extracting the right data.
         self.response_csv = response_csv if response_csv else None
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
-        self.response_ignore = response_ignore if response_ignore else None
-        self.parameter_ignore = parameter_ignore if parameter_ignore else None
         self.column_keys = column_keys
         self.time_index = sampling
         self.aggregation = aggregation
         self.no_responses = no_responses
+        self.response_columns = []
 
         if response_ignore and response_include:
             raise ValueError(
@@ -205,61 +204,27 @@ folder, to avoid risk of not extracting the right data.
                 "Incorrect arguments."
                 'You have to define at least "ensembles" or "parameter_csv".'
             )
-        if not self.no_responses:
-            self.check_runs()
-            self.check_response_filters()
-            if response_ignore:
-                self.responsedf.drop(
-                    response_ignore, errors="ignore", axis=1, inplace=True
-                )
-            if response_include:
-                self.responsedf.drop(
-                    self.responsedf.columns.difference(
-                        [
-                            "REAL",
-                            "ENSEMBLE",
-                            *response_include,
-                            *list(response_filters.keys()),
-                        ]
-                    ),
-                    errors="ignore",
-                    axis=1,
-                    inplace=True,
-                )
-        if parameter_ignore:
-            self.parameterdf.drop(parameter_ignore, axis=1, inplace=True)
 
-        # Integer value for each ensemble to be used for ensemble colormap
-        # self.uuid("COLOR") used to mitigate risk of already having a column named "COLOR" in the
-        # DataFrame.
-        self.parameterdf[self.uuid("COLOR")] = self.parameterdf.apply(
-            lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
+        if not self.no_responses:
+            parresp.check_runs(parameterdf=self.parameterdf, responsedf=self.responsedf)
+            parresp.check_response_filters(
+                responsedf=self.responsedf, response_filters=self.response_filters
+            )
+            # only select numerical responses
+            self.response_columns = parresp.filter_numerical_columns(
+                df=self.responsedf,
+                column_ignore=response_ignore,
+                column_include=response_include,
+                filter_columns=self.response_filters.keys(),
+            )
+
+        # Only select numerical parameters
+        self.parameter_columns = parresp.filter_numerical_columns(
+            df=self.parameterdf, column_ignore=parameter_ignore
         )
 
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
-
-    @property
-    def parameters(self):
-        """Returns numerical input parameters"""
-        return list(
-            self.parameterdf.drop(["ENSEMBLE", "REAL", self.uuid("COLOR")], axis=1)
-            .apply(pd.to_numeric, errors="coerce")
-            .dropna(how="all", axis="columns")
-            .columns
-        )
-
-    @property
-    def responses(self):
-        """Returns valid responses. Filters out non numerical columns,
-        and filterable columns."""
-        responses = list(
-            self.responsedf.drop(["ENSEMBLE", "REAL"], axis=1)
-            .apply(pd.to_numeric, errors="coerce")
-            .dropna(how="all", axis="columns")
-            .columns
-        )
-        return [p for p in responses if p not in self.response_filters.keys()]
 
     @property
     def ensembles(self):
@@ -277,36 +242,6 @@ folder, to avoid risk of not extracting the right data.
 
         return colormap
 
-    def check_runs(self):
-        """Check that input parameters and response files have
-        the same number of runs"""
-        for col in ["ENSEMBLE", "REAL"]:
-            if sorted(list(self.parameterdf[col].unique())) != sorted(
-                list(self.responsedf[col].unique())
-            ):
-                raise ValueError("Parameter and response files have different runs")
-
-    def check_response_filters(self):
-        """Check that provided response filters are valid"""
-        if self.response_filters:
-            for col_name, col_type in self.response_filters.items():
-                if col_name not in self.responsedf.columns:
-                    raise ValueError(f"{col_name} is not in response file")
-                if col_type not in ["single", "multi", "range"]:
-                    raise ValueError(
-                        f"Filter type {col_type} for {col_name} is not valid."
-                    )
-
-    def make_response_filters(self, filters):
-        """Returns a list of active response filters"""
-        filteroptions = []
-        if filters:
-            for i, (col_name, col_type) in enumerate(self.response_filters.items()):
-                filteroptions.append(
-                    {"name": col_name, "type": col_type, "values": filters[i]}
-                )
-        return filteroptions
-
     @property
     def response_layout(self):
         """Layout to display selectors for response filters"""
@@ -317,9 +252,9 @@ folder, to avoid risk of not extracting the right data.
             html.Span("Response:", style={"font-weight": "bold"}),
             dcc.Dropdown(
                 id=self.uuid("responses"),
-                options=[{"label": ens, "value": ens} for ens in self.responses],
+                options=[{"label": ens, "value": ens} for ens in self.response_columns],
                 clearable=False,
-                value=self.responses[0],
+                value=self.response_columns[0],
                 style={"marginBottom": "20px"},
                 persistence=True,
                 persistence_type="session",
@@ -427,9 +362,11 @@ folder, to avoid risk of not extracting the right data.
             ),
             wcc.Select(
                 id=self.uuid("parameter-list"),
-                options=[{"label": ens, "value": ens} for ens in self.parameters],
+                options=[
+                    {"label": ens, "value": ens} for ens in self.parameter_columns
+                ],
                 multi=True,
-                size=min(len(self.parameters), 15),
+                size=min(len(self.parameter_columns), 15),
                 value=[],
                 style={
                     "marginBottom": "20px",
@@ -508,7 +445,7 @@ folder, to avoid risk of not extracting the right data.
             parameter_list = (
                 parameter_list if isinstance(parameter_list, list) else [parameter_list]
             )
-            special_columns = ["ENSEMBLE", "REAL", self.uuid("COLOR")]
+            special_columns = ["ENSEMBLE", "REAL"]
             if exc_inc == "exc":
                 parameterdf = self.parameterdf.drop(parameter_list, axis=1)
             elif exc_inc == "inc":
@@ -516,7 +453,7 @@ folder, to avoid risk of not extracting the right data.
             params = [
                 param
                 for param in parameterdf.columns
-                if param not in special_columns and param in self.parameters
+                if param not in special_columns and param in self.parameter_columns
             ]
 
             mode = opt_args[0] if opt_args else "ensemble"
@@ -529,9 +466,12 @@ folder, to avoid risk of not extracting the right data.
                     raise PreventUpdate
                 df = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ens[0]]
                 response = opt_args[1]
-                response_filters = opt_args[2:] if len(opt_args) > 2 else {}
-                filteroptions = self.make_response_filters(response_filters)
-                responsedf = filter_and_sum_responses(
+                response_filter_values = opt_args[2:] if len(opt_args) > 2 else {}
+                filteroptions = parresp.make_response_filters(
+                    response_filters=self.response_filters,
+                    response_filter_values=response_filter_values,
+                )
+                responsedf = parresp.filter_and_sum_responses(
                     self.responsedf,
                     ens[0],
                     response,
@@ -544,12 +484,18 @@ folder, to avoid risk of not extracting the right data.
                     columns={response: f"Response: {response}"}, inplace=True
                 )
                 df = pd.merge(responsedf, df, on=["REAL"]).drop(columns=special_columns)
+                df[self.uuid("COLOR")] = df.apply(
+                    lambda row: self.ensembles.index(ens[0]), axis=1
+                )
             else:
                 # Filter on ensembles (ens) and active parameters (params),
                 # adding the COLOR column to the columns to keep
                 df = self.parameterdf[self.parameterdf["ENSEMBLE"].isin(ens)][
-                    params + [self.uuid("COLOR")]
+                    params + ["ENSEMBLE"]
                 ]
+                df[self.uuid("COLOR")] = df.apply(
+                    lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
+                )
             return render_parcoord(
                 df,
                 self.theme,
