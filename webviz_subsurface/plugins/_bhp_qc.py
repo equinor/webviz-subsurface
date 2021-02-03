@@ -364,13 +364,13 @@ def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     refaxis is used if another column than DATE should be used to groupby.
     """
     # Invert p10 and p90 due to oil industry convention.
-    def p10(x: np.array) -> float:
+    def p10(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=90)
 
-    def p50(x: np.array) -> float:
+    def p50(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=50)
 
-    def p90(x: np.array) -> float:
+    def p90(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=10)
 
     # Calculate statistics, ignoring NaNs.

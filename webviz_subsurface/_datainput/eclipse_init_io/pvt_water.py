@@ -38,6 +38,7 @@
 
 from typing import Callable, List, Any, Union, Optional
 
+import numpy as np
 from opm.io.ecl import EclFile
 
 from ..eclipse_unit import ConvertUnits, EclUnits, CreateUnitConverter, EclUnitEnum
@@ -132,8 +133,8 @@ class WaterImpl(PvxOBase):
 
     @staticmethod
     def __evaluate(
-        pressures: List[float], calculate: Callable[[Any], Any]
-    ) -> List[float]:
+        pressures: np.ndarray, calculate: Callable[[Any], Any]
+    ) -> np.ndarray:
         """Calls the calculate method with each of the values
         in the pressures list and returns the results.
 
@@ -145,12 +146,7 @@ class WaterImpl(PvxOBase):
             List of result values
 
         """
-        quantities: List[float] = []
-
-        for pressure in pressures:
-            quantities.append(calculate(pressure))
-
-        return quantities
+        return np.array([calculate(pressure) for pressure in pressures])
 
     @staticmethod
     def __exp(x: float) -> float:
@@ -169,8 +165,8 @@ class WaterImpl(PvxOBase):
         return 1.0 + x * (1.0 + x / 2.0)
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Computes a list of formation volume factor values
         for the given pressure values.
 
@@ -184,7 +180,7 @@ class WaterImpl(PvxOBase):
         """
         return self.__evaluate(pressure, lambda p: 1.0 / self.__recip_fvf(p))
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Computes a list of viscosity values for the given pressure values.
 
         Args:
@@ -200,26 +196,26 @@ class WaterImpl(PvxOBase):
             pressure, lambda p: self.__recip_fvf(p) / self.__recip_fvf_visc(p)
         )
 
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary keys.
 
         Since this is water, there is no dependency on any ratio.
         Hence, this method returns a list holding a single float of value 0.0.
 
         """
-        return [
-            0.0,
-        ]
+        return np.zeros(1)
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all independent pressure values (Pw).
 
         Since this is water, this does return with only one single pressure value,
         the reference pressure.
         """
-        return [
-            self.__pw_ref,
-        ]
+        return np.array(
+            [
+                self.__pw_ref,
+            ]
+        )
 
 
 class Water(FluidImplementation):
@@ -237,7 +233,7 @@ class Water(FluidImplementation):
         self,
         raw: EclPropertyTableRawData,
         unit_system: int,
-        surface_mass_densities: List[float],
+        surface_mass_densities: np.ndarray,
         keep_unit_system: bool = True,
     ):
         """Initializes a Water object.
@@ -333,7 +329,7 @@ class Water(FluidImplementation):
         self,
         raw: EclPropertyTableRawData,
         unit_system: int,
-        surface_mass_densities: List[float],
+        surface_mass_densities: np.ndarray,
     ) -> None:
         """Creates interpolants for water from the given raw Eclipse data and uses
         a water unit converter based on the given unit system.

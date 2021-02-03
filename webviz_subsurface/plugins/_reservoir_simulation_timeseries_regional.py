@@ -1270,10 +1270,10 @@ def per_real_calculations(
 
 def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     # Switched P10 and P90 due to convention in petroleum industry
-    def p10(x: np.array) -> float:
+    def p10(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=90)
 
-    def p90(x: np.array) -> float:
+    def p90(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=10)
 
     stat_dfs = []

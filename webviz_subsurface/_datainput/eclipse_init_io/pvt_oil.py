@@ -36,8 +36,9 @@
 #
 ########################################
 
-from typing import Tuple, Callable, List, Any, Union, Optional
+from typing import Tuple, Callable, Any, Union, Optional
 
+import numpy as np
 from opm.io.ecl import EclFile
 
 from ..eclipse_unit import ConvertUnits, EclUnits, CreateUnitConverter, EclUnitEnum
@@ -90,8 +91,8 @@ class LiveOil(PvxOBase):
         self.interpolant = PVTx(index_table, raw, convert)
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Args:
             ratio: List of ratio (key) values the volume factor values are requested for.
             pressure: List of pressure values the volume factor values are requested for.
@@ -102,7 +103,7 @@ class LiveOil(PvxOBase):
         """
         return self.interpolant.formation_volume_factor(ratio, pressure)
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Args:
             ratio: List of ratio (key) values the viscosity values are requested for.
             pressure: List of pressure values the viscosity values are requested for.
@@ -113,11 +114,11 @@ class LiveOil(PvxOBase):
         """
         return self.interpolant.viscosity(ratio, pressure)
 
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary key values (Rs)"""
         return self.interpolant.get_keys()
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all independent pressure values (Po)"""
         return self.interpolant.get_independents()
 
@@ -150,8 +151,8 @@ class DeadOil(PvxOBase):
         self.interpolant = PVDx(table_index, raw, convert)
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Args:
             ratio: Dummy argument, only to conform to interface of base class.
             pressure: List of pressure values the volume factor values are requested for.
@@ -162,7 +163,7 @@ class DeadOil(PvxOBase):
         """
         return self.interpolant.formation_volume_factor(pressure)
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Args:
             ratio: Dummy argument, only to conform to interface of base class.
             pressure: List of pressure values the viscosity values are requested for.
@@ -173,7 +174,7 @@ class DeadOil(PvxOBase):
         """
         return self.interpolant.viscosity(pressure)
 
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary keys.
 
         Since this is dead oil, there is no dependency on Rs.
@@ -183,7 +184,7 @@ class DeadOil(PvxOBase):
         """
         return self.interpolant.get_keys()
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all independent pressure values (Po)"""
         return self.interpolant.get_independents()
 
@@ -237,8 +238,8 @@ class DeadOilConstCompr(PvxOBase):
             raise ValueError("Invalid Input PVCDO Table")
 
     def formation_volume_factor(
-        self, ratio: List[float], pressure: List[float]
-    ) -> List[float]:
+        self, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
         """Computes a list of formation volume factor values
         for the given pressure values.
 
@@ -252,7 +253,7 @@ class DeadOilConstCompr(PvxOBase):
         """
         return self.__evaluate(pressure, lambda p: 1.0 / self.__recip_fvf(p))
 
-    def viscosity(self, ratio: List[float], pressure: List[float]) -> List[float]:
+    def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Computes a list of viscosity values for the given pressure values.
 
         Args:
@@ -328,8 +329,8 @@ class DeadOilConstCompr(PvxOBase):
 
     @staticmethod
     def __evaluate(
-        pressures: List[float], calculate: Callable[[Any], Any]
-    ) -> List[float]:
+        pressures: np.ndarray, calculate: Callable[[Any], Any]
+    ) -> np.ndarray:
         """Calls the calculate method with each of the values
         in the pressures list and returns the results.
 
@@ -341,33 +342,28 @@ class DeadOilConstCompr(PvxOBase):
             List of result values
 
         """
-        quantities: List[float] = []
+        return np.array([calculate(pressure) for pressure in pressures])
 
-        for pressure in pressures:
-            quantities.append(calculate(pressure))
-
-        return quantities
-
-    def get_keys(self) -> List[float]:
+    def get_keys(self) -> np.ndarray:
         """Returns a list of all primary keys.
 
         Since this is dead oil, there is no dependency on any ratio.
         Hence, this method returns a list holding a single float of value 0.0.
 
         """
-        return [
-            0.0,
-        ]
+        return np.zeros(1)
 
-    def get_independents(self) -> List[float]:
+    def get_independents(self) -> np.ndarray:
         """Returns a list of all independent pressure values (Po).
 
         Since this is water, this does return with only one single pressure value,
         the reference pressure.
         """
-        return [
-            self.__p_o_ref,
-        ]
+        return np.array(
+            [
+                self.__p_o_ref,
+            ]
+        )
 
 
 class Oil(FluidImplementation):
@@ -386,7 +382,7 @@ class Oil(FluidImplementation):
         raw: EclPropertyTableRawData,
         unit_system: int,
         is_const_compr: bool,
-        surface_mass_densities: List[float],
+        surface_mass_densities: np.ndarray,
         keep_unit_system: bool = True,
     ):
         """Initializes an Oil object.
