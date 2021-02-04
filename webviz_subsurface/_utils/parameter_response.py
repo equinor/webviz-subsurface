@@ -72,7 +72,7 @@ def filter_numerical_columns(
     """Filter to numerical columns, and respect ignore/include and filters.
     Also remove ENSEMBLE and REAL. Return list of column labels."""
     cols: List[str] = []
-    for col in df.select_dtypes(include=np.number).columns.tolist():
+    for col in df.columns[[np.issubdtype(dtype, np.number) for dtype in df.dtypes]]:
         if (
             (column_ignore and col in column_ignore)
             or (col in ["ENSEMBLE", "REAL"])
