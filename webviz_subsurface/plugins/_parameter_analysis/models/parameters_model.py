@@ -95,8 +95,13 @@ class ParametersModel:
         # Drop columns if duplicate names
         self._dataframe = self._dataframe.loc[:, ~self._dataframe.columns.duplicated()]
 
+        # Only use numeric columns and filter away REQUIRED_COLUMNS
         self._parameters = [
-            x for x in self._dataframe.columns if x not in self.REQUIRED_COLUMNS
+            x
+            for x in self._dataframe.columns[
+                [np.issubdtype(dtype, np.number) for dtype in self._dataframe.dtypes]
+            ]
+            if x not in self.REQUIRED_COLUMNS
         ]
 
     @staticmethod
