@@ -157,10 +157,8 @@ folder, to avoid risk of not extracting the right data.
         if self.field_totals:
             smry_init_prod = pd.concat(
                 [
-                    df[["ENSEMBLE", "DATE"] + self.field_totals][
-                        df["DATE"] == min(df["DATE"])
-                    ]
-                    for _, df in self.smry.groupby("ENSEMBLE")
+                    df[df["DATE"] == min(df["DATE"])]
+                    for _, df in self.smry[["ENSEMBLE", "DATE"] + self.field_totals].groupby("ENSEMBLE")
                 ]
             )
             for col in smry_init_prod.columns:
