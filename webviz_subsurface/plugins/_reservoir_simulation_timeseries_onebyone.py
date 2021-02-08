@@ -279,9 +279,8 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def initial_date(self) -> datetime.date:
-        return self.smry[self.smry["ENSEMBLE"] == self.smry["ENSEMBLE"].unique()[0]][
-            "DATE"
-        ].max()
+        df = self.smry[["ENSEMBLE", "DATE"]]
+        return df.loc[df["ENSEMBLE"] == df["ENSEMBLE"].unique()[0]]["DATE"].max()
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
