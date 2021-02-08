@@ -153,43 +153,41 @@ folder, to avoid risk of not extracting the right data.
         self.field_totals = [
             col for col in self.smry.columns if fnmatch.fnmatch(col, "F[OWG]PT")
         ]
+        self.rec_ensembles = set()
         if self.field_totals:
-            self.smry_init_prod = pd.concat(
-                [
-                    df[["ENSEMBLE", "DATE"] + self.field_totals][
-                        df["DATE"] == min(df["DATE"])
-                    ]
-                    for _, df in self.smry.groupby("ENSEMBLE")
-                ]
-            )
-        else:
-            total_smry = self.emodel.load_smry(
-                time_index=self.time_index,
-                column_keys=["F[OWG]PT"],
-            )
-            self.smry_init_prod = pd.concat(
+            smry_init_prod = pd.concat(
                 [
                     df[df["DATE"] == min(df["DATE"])]
-                    for _, df in total_smry.groupby("ENSEMBLE")
+                    for _, df in self.smry[
+                        ["ENSEMBLE", "DATE"] + self.field_totals
+                    ].groupby("ENSEMBLE")
                 ]
             )
-        self.rec_ensembles = set(self.smry["ENSEMBLE"].unique())
-        for col in self.smry_init_prod.columns:
-            if col not in ReservoirSimulationTimeSeriesRegional.ENSEMBLE_COLUMNS:
-                for ens in self.smry_init_prod["ENSEMBLE"].unique():
-                    if any(
-                        self.smry_init_prod[self.smry_init_prod["ENSEMBLE"] == ens][col]
-                        > 0.0001
-                    ):
-                        warnings.warn(
-                            f"Ensemble '{ens}' has initial production above 0, can therefore not"
-                            " calculate recovery for this ensemble (FOPT, FGPT and/or FWPT > 0)."
-                            " This ensemble probably includes restarts where we were not able to"
-                            " identify the filepaths to the original cases. Note that RESTART"
-                            " paths with more than 72 characters are not supported due to a"
-                            " simulator metadata file format limitation."
-                        )
-                        self.rec_ensembles.discard(ens)
+            for col in smry_init_prod.columns:
+                if col not in ReservoirSimulationTimeSeriesRegional.ENSEMBLE_COLUMNS:
+                    for ens in smry_init_prod["ENSEMBLE"].unique():
+                        if any(
+                            smry_init_prod[smry_init_prod["ENSEMBLE"] == ens][col]
+                            > 0.0001
+                        ):
+                            warnings.warn(
+                                f"Ensemble '{ens}' has initial production above 0, can"
+                                " therefore not calculate recovery for this ensemble"
+                                " (FOPT, FGPT and/or FWPT > 0)."
+                                " This ensemble probably includes restarts where we were"
+                                " not able to identify the filepaths to the original cases."
+                                " Note that RESTART paths with more than 72 characters are"
+                                " not supported due to a simulator metadata file format"
+                                " limitation."
+                            )
+                        else:
+                            self.rec_ensembles.add(ens)
+        else:
+            warnings.warn(
+                "No production vectors (FOPT, FGPT or FWPT) found for the provided"
+                " ensembles. Recoveries can not be calculated from inplace volumes."
+            )
+
         self.smry_cols: List[str] = []
         for col in self.smry.columns:
             if (
