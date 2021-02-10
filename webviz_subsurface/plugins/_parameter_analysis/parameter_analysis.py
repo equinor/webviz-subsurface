@@ -112,7 +112,6 @@ slow for large models.
                 dataframe=self.emodel.load_smry(
                     time_index=self.time_index, column_keys=self.column_keys
                 ),
-                theme=self.theme,
             )
 
         elif self.csvfile_parameters is None:
@@ -125,7 +124,7 @@ slow for large models.
             )
             if self.csvfile_smry is not None:
                 self.vmodel = SimulationTimeSeriesModel(
-                    dataframe=read_csv(csvfile_smry), theme=self.theme.plotly_theme
+                    dataframe=read_csv(csvfile_smry)
                 )
             else:
                 self.vmodel = None
