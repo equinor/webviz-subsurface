@@ -67,7 +67,7 @@ setup(
         # "ecl2df>=0.6.1; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         # "opm>=2020.10.1; sys_platform=='linux'",
-        "pandas>=1.1.5",
+        "pandas==1.2.1",
         "pillow>=6.1",
         "pyscal>=0.7.2",
         "scipy>=1.2",
