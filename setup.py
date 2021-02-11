@@ -69,7 +69,7 @@ setup(
         # "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
         "pillow>=6.1",
-        "pyscal>=0.7.2",
+        "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.2.7",
