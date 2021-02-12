@@ -22,11 +22,6 @@ pip install webviz-subsurface
 ```
 Add `--upgrade` if you have installed earlier, but want to upgrade to a newer version.
 
-> :warning: Due to limitations of internal software deployment system in Equinor,
-we currently can not include two useful dependencies in `setup.py`. You are therefore
-suggested to also run `pip install opm ecl2df` (note that `opm` binaries are only
-available on Linux at the moment, and you need a recent version of `pip`).
-
 If you want to install the latest, unreleased, code you can instead run
 ```bash
 pip install git+https://github.com/equinor/webviz-subsurface
