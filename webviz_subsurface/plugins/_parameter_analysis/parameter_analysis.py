@@ -8,6 +8,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .views import main_view
 from .models import ParametersModel, SimulationTimeSeriesModel
 from .controllers import (
@@ -97,11 +98,15 @@ slow for large models.
         self.csvfile_smry = csvfile_smry
 
         if ensembles is not None:
-            self.emodel = EnsembleSetModel(
-                ensemble_paths={
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                }
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths={
+                        ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                        for ens in ensembles
+                    },
+                    time_index=self.time_index,
+                    column_keys=self.column_keys,
+                )
             )
             self.pmodel = ParametersModel(
                 dataframe=self.emodel.load_parameters(),
@@ -109,9 +114,7 @@ slow for large models.
                 drop_constants=drop_constants,
             )
             self.vmodel = SimulationTimeSeriesModel(
-                dataframe=self.emodel.load_smry(
-                    time_index=self.time_index, column_keys=self.column_keys
-                ),
+                dataframe=self.emodel.get_or_load_smry_cached()
             )
 
         elif self.csvfile_parameters is None:

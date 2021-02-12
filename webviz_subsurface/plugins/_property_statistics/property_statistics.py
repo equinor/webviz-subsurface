@@ -10,6 +10,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .views.main_view import main_view
 from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
 from .controllers.property_qc_controller import property_qc_controller
@@ -109,11 +110,15 @@ folder, to avoid risk of not extracting the right data.
         self.surface_folders: Union[dict, None]
 
         if ensembles is not None:
-            self.emodel = EnsembleSetModel(
-                ensemble_paths={
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                }
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths={
+                        ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                        for ens in ensembles
+                    },
+                    time_index=self.time_index,
+                    column_keys=self.column_keys,
+                )
             )
             self.pmodel = PropertyStatisticsModel(
                 dataframe=self.emodel.load_csv(
@@ -122,9 +127,7 @@ folder, to avoid risk of not extracting the right data.
                 theme=self.theme,
             )
             self.vmodel = SimulationTimeSeriesModel(
-                dataframe=self.emodel.load_smry(
-                    time_index=self.time_index, column_keys=self.column_keys
-                ),
+                dataframe=self.emodel.get_or_load_smry_cached(),
                 theme=self.theme,
             )
             self.surface_folders = {

@@ -19,6 +19,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._private_plugins.tornado_plot import TornadoPlot
 from .._datainput.fmu_input import (
     get_realizations,
@@ -159,14 +160,16 @@ folder, to avoid risk of not extracting the right data.
                 ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
                 for ensemble in ensembles
             }
-            self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
-            self.smry = self.emodel.load_smry(
-                time_index=self.time_index, column_keys=self.column_keys
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths=self.ens_paths,
+                    time_index=self.time_index,
+                    column_keys=self.column_keys,
+                )
             )
+            self.smry = self.emodel.get_or_load_smry_cached()
+            self.smry_meta = self.emodel.load_smry_meta()
 
-            self.smry_meta = self.emodel.load_smry_meta(
-                column_keys=self.column_keys,
-            )
             # Extract realizations and sensitivity information
             self.parameters = get_realizations(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
