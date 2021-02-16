@@ -20,9 +20,9 @@ def get_or_create_model(
     column_keys: Optional[list] = None,
 ) -> EnsembleSetModel:
 
-    stack = inspect.stack()
-    dbg_calling_class = stack[1][0].f_locals["self"].__class__.__name__
-    dbg_calling_method = stack[1][0].f_code.co_name
+    dbg_stack = inspect.stack()
+    dbg_calling_class = dbg_stack[1][0].f_locals["self"].__class__.__name__
+    dbg_calling_method = dbg_stack[1][0].f_code.co_name
 
     tmp_dict = {
         "ensemble_paths": ensemble_paths,
@@ -35,7 +35,7 @@ def get_or_create_model(
         if modelkey in _ensemble_set_model_cache:
             # Just return existing model from cache
             print(
-                f"==== get_or_create_model() pid={os.getpid()} tid={threading.get_native_id()}"
+                f"==== get_or_create_model() pid={os.getpid()}"
                 f" -- returning cached EnsembleSetModel"
                 f" -- called by: {dbg_calling_class}.{dbg_calling_method}()"
             )
@@ -43,7 +43,7 @@ def get_or_create_model(
 
         # Nothing in cache -> create a new ensemble set model and insert in cache
         print(
-            f"==== get_or_create_model() pid={os.getpid()} tid={threading.get_native_id()}"
+            f"==== get_or_create_model() pid={os.getpid()}"
             f" -- creating NEW EnsembleSetModel"
             f" -- called by: {dbg_calling_class}.{dbg_calling_method}()"
         )
