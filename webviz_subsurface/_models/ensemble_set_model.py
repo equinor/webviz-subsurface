@@ -62,7 +62,7 @@ class EnsembleSetModel:
         return EnsembleSetModel._get_ensembles_data(self._ensembles, "load_parameters")
 
     def get_or_load_smry_cached(self) -> pd.DataFrame:
-        """Either loads smry data from file or retrieves a cached copy of DataFrame
+        """Either loads smry data from file or retrieves a cached copy of DataFrame.
         Note that it is imperative that the returned DataFrame be treated as read-only
         since it will probably be shared by multiple clients.
         """
@@ -73,14 +73,7 @@ class EnsembleSetModel:
             if not curr_hash.equals(self._hash_for_cached_smry_df):
                 raise KeyError("The cached SMRY DataFrame has been tampered with")
 
-            print(
-                "==== EnsembleSetModel.get_or_load_smry_cached() -- returning cached dataframe"
-            )
             return self._cached_smry_df
-
-        print(
-            "==== EnsembleSetModel.get_or_load_smry_cached() -- loading new data frame"
-        )
 
         self._cached_smry_df = EnsembleSetModel._get_ensembles_data(
             self._ensembles,
