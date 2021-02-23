@@ -27,8 +27,10 @@ class HistoryMatch(WebvizPluginABC):
 Parameter values are extracted automatically from the `parameters.txt` files
 of the individual realizations of your given `ensembles`, using the `fmu-ensemble` library.
 
-?> The `observation_file` is a common (optional) file for all ensembles, which currently has to \
-be made manually. [An example of the format can be found here]\
+?> The `observation_file` is a common (optional) file for all ensembles, which can be \
+converted from e.g. ERT and ResInsight formats using the [fmuobs]\
+(https://equinor.github.io/subscript/scripts/fmuobs.html) script. \
+[An example of the format can be found here]\
 (https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/\
 observations/observations.yml).
 """

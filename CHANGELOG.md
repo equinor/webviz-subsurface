@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 ### Fixed
 - [#569](https://github.com/equinor/webviz-subsurface/pull/569) - Allow sharing of ensemble smry datasets in memory between plugins instances. Note that currently sharing can only be accomplished between plugin instances that use the same ensembles, column_keys and time_index.
+- [#552](https://github.com/equinor/webviz-subsurface/pull/552) - Fixed an issue where webvizstore was not properly initialized in ParameterAnalysis plugin
 - [#549](https://github.com/equinor/webviz-subsurface/pull/549) - Fixed issue in WellCrossSectionFMU that prevented use of user provided colors.
 - [#561](https://github.com/equinor/webviz-subsurface/pull/561) - Fixed issue in ParameterAnalysis for non-numeric parameters (dropping them).
 
