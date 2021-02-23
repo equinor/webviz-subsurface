@@ -187,10 +187,10 @@ def get_uncompressed_data(
     properties = [map_value, f"{flow_value}I+", f"{flow_value}J+"]
     if "PERMX" not in properties:
         properties.append("PERMX")
-    
+
     with warnings.catch_warnings():
         # Grid support outside initial scope of fmu-ensemble v2. Need to consider options
-        warnings.filterwarnings("ignore", category=FutureWarning,module="fmu.ensemble")
+        warnings.filterwarnings("ignore", category=FutureWarning, module="fmu.ensemble")
         grid = ens.get_eclgrid(properties, report=time_step)
 
     grid = grid[grid["PERMX"] > 0]  # Remove inactive grid cells
