@@ -12,6 +12,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 import webviz_subsurface._utils.parameter_response as parresp
 
 
@@ -184,20 +185,22 @@ folder, to avoid risk of not extracting the right data.
                     'Incorrect arguments. Either provide "response_csv" or '
                     '"ensembles and/or response_file".'
                 )
-            self.emodel = EnsembleSetModel(
-                ensemble_paths={
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                }
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths={
+                        ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                        for ens in ensembles
+                    },
+                    time_index=self.time_index,
+                    column_keys=self.column_keys,
+                )
             )
             self.parameterdf = self.emodel.load_parameters()
             if not self.no_responses:
                 if self.response_file:
                     self.responsedf = self.emodel.load_csv(csv_file=response_file)
                 else:
-                    self.responsedf = self.emodel.load_smry(
-                        time_index=self.time_index, column_keys=self.column_keys
-                    )
+                    self.responsedf = self.emodel.get_or_load_smry_cached()
                     self.response_filters["DATE"] = "single"
         else:
             raise ValueError(

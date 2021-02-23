@@ -23,6 +23,7 @@ from webviz_config import WebvizConfigTheme
 from webviz_config import WebvizSettings
 
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._abbreviations.reservoir_simulation import (
     simulation_vector_base,
     simulation_vector_description,
@@ -137,19 +138,19 @@ folder, to avoid risk of not extracting the right data.
                 "'monthly' or 'yearly', as the statistics require the same dates throughout an"
                 "ensemble."
             )
-        self.emodel = EnsembleSetModel(
-            ensemble_paths={
-                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                for ens in ensembles
-            }
+        self.emodel: EnsembleSetModel = (
+            caching_ensemble_set_model_factory.get_or_create_model(
+                ensemble_paths={
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                    for ens in ensembles
+                },
+                time_index=self.time_index,
+                column_keys=self.column_keys,
+            )
         )
-        self.smry = self.emodel.load_smry(
-            time_index=self.time_index, column_keys=self.column_keys
-        )
+        self.smry = self.emodel.get_or_load_smry_cached()
+        self.smry_meta = self.emodel.load_smry_meta()
 
-        self.smry_meta = self.emodel.load_smry_meta(
-            column_keys=self.column_keys,
-        )
         self.field_totals = [
             col for col in self.smry.columns if fnmatch.fnmatch(col, "F[OWG]PT")
         ]

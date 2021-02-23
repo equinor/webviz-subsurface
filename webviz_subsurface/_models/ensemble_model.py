@@ -121,6 +121,12 @@ class EnsembleModel:
     def _load_parameters(self) -> pd.DataFrame:
         return self.load_ensemble().parameters
 
+    # What should we do with the memoize decorator here?
+    # If we leave it in place, we will spend memory storing the pickled version of the
+    # return value wich is a waste when we're running a portable app.
+    # On the other hand, if we remove it we will save the memory, but during build of
+    # a portable app we will end up loading the ensemble's smry data twice. Once during
+    # normal init of the plugins and once when saving to the webviz store.
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     @webvizstore
     def _load_smry(

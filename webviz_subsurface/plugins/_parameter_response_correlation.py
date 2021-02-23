@@ -13,6 +13,7 @@ from webviz_config import WebvizSettings
 from webviz_config.utils import calculate_slider_step
 
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from webviz_subsurface._datainput.fmu_input import load_parameters, load_csv
 import webviz_subsurface._utils.parameter_response as parresp
 
@@ -173,11 +174,14 @@ folder, to avoid risk of not extracting the right data.
                     ensemble_set_name="EnsembleSet",
                 )
             else:
-                self.emodel = EnsembleSetModel(ensemble_paths=self.ens_paths)
-                self.responsedf = self.emodel.load_smry(
-                    column_keys=self.column_keys,
-                    time_index=self.time_index,
+                self.emodel: EnsembleSetModel = (
+                    caching_ensemble_set_model_factory.get_or_create_model(
+                        ensemble_paths=self.ens_paths,
+                        column_keys=self.column_keys,
+                        time_index=self.time_index,
+                    )
                 )
+                self.responsedf = self.emodel.get_or_load_smry_cached()
                 self.response_filters["DATE"] = "single"
         else:
             raise ValueError(

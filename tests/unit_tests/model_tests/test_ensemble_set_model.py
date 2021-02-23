@@ -21,8 +21,7 @@ def test_single_ensemble(testdata_folder):
     assert emodel.ens_folders == {
         "iter-0": Path(testdata_folder) / "reek_history_match"
     }
-    assert len(emodel.ensembles) == 1
-    smry = emodel.load_smry()
+    smry = emodel.get_or_load_smry_cached()
     assert len(smry.columns) == 476
     assert len(smry["DATE"].unique()) == 480
     assert smry["ENSEMBLE"].unique() == ["iter-0"]
@@ -66,7 +65,7 @@ def test_smry_load_multiple_ensembles(testdata_folder):
             ),
         }
     )
-    smry = emodel.load_smry()
+    smry = emodel.get_or_load_smry_cached()
     assert len(smry.columns) == 476
     assert len(smry["DATE"].unique()) == 1141
     assert set(smry["ENSEMBLE"].unique()) == set(
@@ -134,7 +133,7 @@ def test_webvizstore(testdata_folder):
     )
     emodel.load_parameters()
     assert len(emodel.webvizstore) == 4
-    emodel.load_smry()
+    emodel.get_or_load_smry_cached()
     assert len(emodel.webvizstore) == 8
     emodel.load_smry_meta()
     assert len(emodel.webvizstore) == 12

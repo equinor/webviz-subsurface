@@ -12,6 +12,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from webviz_subsurface._models import EnsembleSetModel
+from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._utils.unique_theming import unique_colors
 from .._utils.colors import hex_to_rgba
 
@@ -48,15 +49,17 @@ class BhpQc(WebvizPluginABC):
         else:
             self.column_keys = [f"WBHP:{well}" for well in wells]
 
-        self.emodel = EnsembleSetModel(
-            ensemble_paths={
-                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                for ens in ensembles
-            }
+        self.emodel: EnsembleSetModel = (
+            caching_ensemble_set_model_factory.get_or_create_model(
+                ensemble_paths={
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                    for ens in ensembles
+                },
+                time_index="raw",
+                column_keys=self.column_keys,
+            )
         )
-        self.smry = self.emodel.load_smry(
-            time_index="raw", column_keys=self.column_keys
-        )
+        self.smry = self.emodel.get_or_load_smry_cached()
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
