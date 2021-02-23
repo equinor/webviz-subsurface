@@ -30,7 +30,7 @@ jobs:
       run: |
         # https://github.com/actions/virtual-environments/issues/751
         # https://github.com/actions/virtual-environments/issues/709
-        sudo apt-get purge p7zip* yarn ruby-full zulu-*-azure-jdk* ghc* php7*
+        sudo apt-get purge p7zip* yarn ruby-full ghc* php7*
         sudo apt-get autoremove
         sudo apt-get clean
         df -h
@@ -50,8 +50,6 @@ jobs:
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
         pip install .
-        # There are dependencies which we can't have in setup.py yet due to limitations in internal deployment system ("komodo"):
-        pip install libecl ecl2df opm
 
     - name: 📦 Install test dependencies
       run: |

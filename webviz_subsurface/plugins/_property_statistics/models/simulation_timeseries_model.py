@@ -25,8 +25,11 @@ class SimulationTimeSeriesModel:
         metadata: Optional[pd.DataFrame] = None,
         line_shape_fallback: str = "linear",
     ) -> None:
+        for column in ["ENSEMBLE", "REAL", "DATE"]:
+            if column not in dataframe.columns:
+                raise KeyError(f"{column} column is missing from UNSMRY data")
+
         self._dataframe = dataframe
-        self._prepare_and_validate_data()
         self.theme = theme
 
         self._metadata = metadata
@@ -34,11 +37,12 @@ class SimulationTimeSeriesModel:
             line_shape_fallback
         )
 
-    def _prepare_and_validate_data(self) -> None:
-        for column in ["ENSEMBLE", "REAL", "DATE"]:
-            if column not in self.dataframe.columns:
-                raise KeyError(f"{column} column is missing from UNSMRY data")
-        self.dataframe["DATE"] = self.dataframe["DATE"].astype(str)
+        # Currently we cannot be sure what data type the DATE column has.
+        # Apparently it will have datetime if the source is SMRY files, but
+        # may be of type str if the source is CSV files.
+        # Try and detect if the data type is string by sampling the first entry
+        sample_date = self._dataframe["DATE"].iloc[0]
+        self._date_column_is_str = isinstance(sample_date, str)
 
     @property
     def colors(self) -> dict:
@@ -111,12 +115,16 @@ class SimulationTimeSeriesModel:
     def get_ensemble_vector_for_date(
         self, ensemble: str, vector: str, date: str
     ) -> pd.DataFrame:
+        # If the data type of the DATE column is string, use the passed date argument
+        # directly. Otherwise convert to datetime before doing query
+        query_date = date if self._date_column_is_str else pd.to_datetime(date)
+
         df = self.dataframe[self.dataframe["ENSEMBLE"] == ensemble]
-        df = df.loc[df["DATE"] == date]
+        df = df.loc[df["DATE"] == query_date]
         return df[[vector, "REAL"]]
 
     def get_last_date(self, ensemble: str) -> str:
-        return self.dataframe[self.dataframe["ENSEMBLE"] == ensemble]["DATE"].max()
+        return str(self.dataframe[self.dataframe["ENSEMBLE"] == ensemble]["DATE"].max())
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def add_statistic_traces(self, ensembles: list, vector: str) -> list:
@@ -162,7 +170,7 @@ class SimulationTimeSeriesModel:
         ]
         return {
             "line": {"shape": self.get_line_shape(vector)},
-            "x": df["DATE"],
+            "x": df["DATE"].astype(str),
             "y": df[vector],
             "hovertext": "History",
             "hoverinfo": "y+x+text",
@@ -182,7 +190,7 @@ class SimulationTimeSeriesModel:
         traces = [
             {
                 "line": {"shape": self.get_line_shape(vector)},
-                "x": list(real_df["DATE"]),
+                "x": list(real_df["DATE"].astype(str)),
                 "y": list(real_df[vector]),
                 "hovertext": f"Realization: {real}, Ensemble: {ensemble}",
                 "name": ensemble,
@@ -219,7 +227,7 @@ class SimulationTimeSeriesModel:
         traces = [
             {
                 "line": {"shape": self.get_line_shape(vector)},
-                "x": list(real_df["DATE"]),
+                "x": list(real_df["DATE"].astype(str)),
                 "y": list(real_df[vector]),
                 "hoverinfo": "skip",
                 "name": ensemble,
