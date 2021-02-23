@@ -17,12 +17,13 @@ def get_or_create_model(
     column_keys: Optional[list] = None,
 ) -> EnsembleSetModel:
 
-    tmp_dict = {
-        "ensemble_paths": ensemble_paths,
-        "time_index": time_index,
-        "column_keys": column_keys,
-    }
-    modelkey = json.dumps(tmp_dict)
+    modelkey = json.dumps(
+        {
+            "ensemble_paths": ensemble_paths,
+            "time_index": time_index,
+            "column_keys": column_keys,
+        }
+    )
 
     with _cache_lock:
         if modelkey in _ensemble_set_model_cache:
