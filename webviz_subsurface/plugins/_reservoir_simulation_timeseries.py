@@ -87,10 +87,12 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
 be plotted together with their non-historical counterparts as reference lines, and they are \
 therefore not selectable as vectors to plot initially.
 
-?> The `obsfile` is a common (optional) file for all ensembles, which currently has to be made \
-manually. [An example of the format can be found here]\
-(https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-reek_history_match/share/observations/observations.yml).
+?> The `obsfile` is a common (optional) file for all ensembles, which can be \
+converted from e.g. ERT and ResInsight formats using the [fmuobs]\
+(https://equinor.github.io/subscript/scripts/fmuobs.html) script. \
+[An example of the format can be found here]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/\
+observations/observations.yml).
 
 !> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
 `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
