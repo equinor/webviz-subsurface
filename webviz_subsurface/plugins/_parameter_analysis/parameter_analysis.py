@@ -145,7 +145,7 @@ slow for large models.
         if self.ensembles is not None:
             store.extend(self.emodel.webvizstore)
         else:
-            store.extend(
+            store.append(
                 (
                     read_csv,
                     [
@@ -154,7 +154,7 @@ slow for large models.
                 )
             )
             if self.csvfile_smry is not None:
-                store.extend(
+                store.append(
                     (
                         read_csv,
                         [
