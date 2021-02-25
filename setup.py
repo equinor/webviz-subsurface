@@ -55,6 +55,7 @@ setup(
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
+            "TablePlotterFMU = webviz_subsurface.plugins:TablePlotterFMU",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
