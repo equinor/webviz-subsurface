@@ -4,9 +4,12 @@ import pandas as pd
 import pytest
 
 
+from webviz_subsurface._models import table_model_factory
 from webviz_subsurface._models.table_model import EnsembleTableModel
-from webviz_subsurface._models.table_model import EnsembleTableModel_dataFrameBacked
 from webviz_subsurface._models.table_model import EnsembleTableModelSet
+from webviz_subsurface._models.table_model_implementations import (
+    EnsembleTableModel_dataFrameBacked,
+)
 
 
 def test_create_EnsembleTableModel_dataFrameBacked(testdata_folder: Path) -> None:
@@ -19,15 +22,27 @@ def test_create_EnsembleTableModel_dataFrameBacked(testdata_folder: Path) -> Non
 
     assert len(model.realizations()) == 40
 
-    valdf = model.get_column_values("YEARS")
+    valdf = model.get_column_values_df("YEARS")
     assert len(valdf.columns) == 2
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 40
 
+    valarr = model.get_column_values_numpy("YEARS")
+    assert len(valarr) == 40
+
+    valarr = model.get_column_values_numpy("REAL", [0, 39, 10])
+    assert len(valarr) == 3
+    assert valarr[0][0] == 0
+    assert valarr[0][-1] == 0
+    assert valarr[1][0] == 39
+    assert valarr[1][-1] == 39
+    assert valarr[2][0] == 10
+    assert valarr[2][-1] == 10
+
 
 def test_create_EnsembleTableModelSet(testdata_folder: Path) -> None:
-    modelset = EnsembleTableModelSet.from_aggregated_csv_file(
+    modelset = table_model_factory.create_model_set_from_aggregated_csv_file(
         testdata_folder / "aggregated_data" / "smry_hm.csv"
     )
 
@@ -41,7 +56,7 @@ def test_create_EnsembleTableModelSet(testdata_folder: Path) -> None:
 
     assert len(model.realizations()) == 10
 
-    valdf = model.get_column_values("DATE")
+    valdf = model.get_column_values_df("DATE")
     assert len(valdf.columns) == 2
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "DATE"

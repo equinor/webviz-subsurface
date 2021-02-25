@@ -23,10 +23,10 @@ def main_controller(parent, app):
         if ensemble_name is None or x_column_name is None or y_column_name is None:
             raise PreventUpdate
         table = parent.tablemodel.ensemble(ensemble_name)
-        print(table.get_column_values(x_column_name))
+        print(table.get_column_values_df(x_column_name))
         return px.line(
-            x=table.get_column_values(x_column_name)[x_column_name],
-            y=table.get_column_values(y_column_name)[y_column_name],
+            x=table.get_column_values_df(x_column_name)[x_column_name],
+            y=table.get_column_values_df(y_column_name)[y_column_name],
         )
 
     @app.callback(
