@@ -1,69 +1,82 @@
+from typing import Callable
+
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 
+from webviz_subsurface._models import EnsembleTableModelSet
 
-def main_view(parent) -> html.Div:
+
+def main_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div:
     return wcc.FlexBox(
         children=[
-            html.Div(style={"flex": 1}, children=[sidebar_view(parent)]),
-            html.Div(style={"flex": 5}, children=[plot_view(parent)]),
+            html.Div(
+                style={"flex": 1},
+                children=[sidebar_view(get_uuid=get_uuid, tablemodel=tablemodel)],
+            ),
+            html.Div(style={"flex": 5}, children=[plot_view(get_uuid=get_uuid)]),
         ]
     )
 
 
-def sidebar_view(parent) -> wcc.FlexBox:
-    return html.Div([selectors(parent)])
+def sidebar_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> wcc.FlexBox:
+    return html.Div([selectors(get_uuid=get_uuid, tablemodel=tablemodel)])
 
 
-def plot_view(parent) -> html.Div:
-    return html.Div(dcc.Graph(id=parent.uuid("graph")))
+def plot_view(get_uuid: Callable) -> html.Div:
+    return html.Div(dcc.Graph(id=get_uuid("graph")))
 
 
-def selectors(parent) -> html.Div:
+def selectors(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div:
+    uuid: str = get_uuid("selectors")
     return html.Div(
-        children=[ensemble_selector(parent), x_selector(parent), y_selector(parent)]
+        children=[
+            ensemble_selector(uuid=uuid, tablemodel=tablemodel),
+            x_selector(uuid=uuid),
+            y_selector(uuid=uuid),
+        ]
     )
 
 
-def ensemble_selector(parent, flex=1) -> html.Div:
+def ensemble_selector(
+    uuid: str, tablemodel: EnsembleTableModelSet, flex: int = 1
+) -> html.Div:
     return html.Div(
         style={"flex": flex},
         children=[
             html.Label("Ensemble"),
             dcc.Dropdown(
-                id={"id": parent.uuid("selectors"), "attribute": "ensemble"},
+                id={"id": uuid, "attribute": "ensemble"},
                 options=[
-                    {"label": ens, "value": ens}
-                    for ens in parent.tablemodel.ensemble_names()
+                    {"label": ens, "value": ens} for ens in tablemodel.ensemble_names()
                 ],
-                value=parent.tablemodel.ensemble_names()[0],
+                value=tablemodel.ensemble_names()[0],
                 clearable=False,
             ),
         ],
     )
 
 
-def x_selector(parent, flex=1) -> html.Div:
+def x_selector(uuid: str, flex: int = 1) -> html.Div:
     return html.Div(
         style={"flex": flex},
         children=[
             html.Label("Data for x-axis"),
             dcc.Dropdown(
-                id={"id": parent.uuid("selectors"), "attribute": "x_selector"},
+                id={"id": uuid, "attribute": "x_selector"},
                 clearable=False,
             ),
         ],
     )
 
 
-def y_selector(parent, flex=1) -> html.Div:
+def y_selector(uuid: str, flex: int = 1) -> html.Div:
     return html.Div(
         style={"flex": flex},
         children=[
             html.Label("Data for y-axis"),
             dcc.Dropdown(
-                id={"id": parent.uuid("selectors"), "attribute": "y_selector"},
+                id={"id": uuid, "attribute": "y_selector"},
                 clearable=False,
             ),
         ],
