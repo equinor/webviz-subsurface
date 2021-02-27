@@ -13,7 +13,7 @@ def main_controller(
     app: dash.Dash, get_uuid: Callable, tablemodel: EnsembleTableModelSet
 ) -> None:
     @app.callback(
-        Output(get_uuid("graph-store"), "data"),
+        Output({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
         Input({"id": get_uuid("selectors"), "attribute": ALL}, "value"),
     )
     def _update_plot(_selectors: List) -> go.Figure:
@@ -40,9 +40,8 @@ def main_controller(
     app.clientside_callback(
         ClientsideFunction(namespace="clientside", function_name="update_figure"),
         Output(get_uuid("graph"), "figure"),
-        Input(get_uuid("graph-store"), "data"),
-        Input({"id": get_uuid("selectors"), "attribute": "x_scale"}, "value"),
-        Input({"id": get_uuid("selectors"), "attribute": "y_scale"}, "value"),
+        Input({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
+        Input({"id": get_uuid("clientside"), "plotly_attribute": ALL}, "value"),
     )
 
     @app.callback(
