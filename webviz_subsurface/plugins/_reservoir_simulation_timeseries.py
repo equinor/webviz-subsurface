@@ -3,7 +3,9 @@ from typing import List, Dict, Union, Tuple, Callable
 import sys
 from pathlib import Path
 import json
+import datetime
 
+import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 import dash
@@ -29,6 +31,7 @@ from .._utils.simulation_timeseries import (
     get_simulation_line_shape,
     calc_series_statistics,
     add_fanchart_traces,
+    add_statistics_traces,
     render_hovertemplate,
     date_to_interval_conversion,
     check_and_format_observations,
@@ -45,7 +48,7 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
 
 **Features**
 * Visualization of realization time series as line charts.
-* Visualization of ensemble time series statistics as fan charts.
+* Visualization of ensemble time series statistics as line or fan charts.
 * Visualization of single date ensemble statistics as histograms.
 * Calculation and visualization of delta ensembles.
 * Calculation and visualization of average rates and cumulatives over a specified time interval.
@@ -72,8 +75,8 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
     * `vector1` : First vector to display
     * `vector2` : Second vector to display
     * `vector3` : Third vector to display
-    * `visualization` : `realizations`, `statistics` or `statistics_hist`
-    * `date` : Date to show in histograms
+    * `visualization` : `realizations`, `statistics` or `fanchart`
+    * `date` : Date to show by default in histograms
 * **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are \
     always linearly interpolated. The rest use the fallback.
@@ -231,7 +234,7 @@ folder, to avoid risk of not extracting the right data.
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
-            else None
+            else str(max(self.smry["DATE"]))
         )
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
@@ -291,9 +294,16 @@ folder, to avoid risk of not extracting the right data.
                 "id": self.uuid("visualization"),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
-                    "individual lines per realization. 2. Show statistical fanchart per "
-                    "ensemble. 3. Show statistical fanchart per ensemble and histogram "
-                    "per date. Select a data by clicking in the plot."
+                    "individual lines per realization. 2. Show statistical lines per "
+                    "ensemble. 3. Show statistical fanchart per ensemble"
+                    "per date. Select a date by clicking in the plot."
+                ),
+            },
+            {
+                "id": self.uuid("options"),
+                "content": (
+                    "Various plot options: Whether to include history trace, add histogram, "
+                    "and which statistics to show if statistical lines is chosen as visualization."
                 ),
             },
             {
@@ -439,7 +449,7 @@ folder, to avoid risk of not extracting the right data.
     def from_cumulatives_layout(self) -> html.Div:
         return html.Div(
             style=(
-                {"marginTop": "25px", "display": "block"}
+                {"marginTop": "15px", "display": "block"}
                 if len(self.time_interval_options) > 0 and self.smry_meta is not None
                 else {"display": "none"}
             ),
@@ -482,7 +492,7 @@ folder, to avoid risk of not extracting the right data.
                         self.delta_layout,
                         html.Div(
                             id=self.uuid("vectors"),
-                            style={"marginTop": "25px"},
+                            style={"marginTop": "15px"},
                             children=[
                                 html.Span(
                                     "Time series:", style={"font-weight": "bold"}
@@ -530,11 +540,12 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                             ],
                         ),
-                        html.Div(
+                        html.Details(
                             id=self.uuid("visualization"),
-                            style={"marginTop": "25px"},
+                            style={"marginTop": "15px"},
+                            open=True,
                             children=[
-                                html.Span(
+                                html.Summary(
                                     "Visualization:", style={"font-weight": "bold"}
                                 ),
                                 dcc.RadioItems(
@@ -545,12 +556,12 @@ folder, to avoid risk of not extracting the right data.
                                             "value": "realizations",
                                         },
                                         {
-                                            "label": "Statistical fanchart",
+                                            "label": "Statistical lines",
                                             "value": "statistics",
                                         },
                                         {
-                                            "label": "Statistical fanchart and histogram",
-                                            "value": "statistics_hist",
+                                            "label": "Statistical fanchart",
+                                            "value": "fanchart",
                                         },
                                     ],
                                     value=self.plot_options.get(
@@ -558,6 +569,50 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     persistence=True,
                                     persistence_type="session",
+                                ),
+                            ],
+                        ),
+                        html.Details(
+                            id=self.uuid("options"),
+                            style={"marginTop": "15px"},
+                            open=False,
+                            children=[
+                                html.Summary("Options:", style={"font-weight": "bold"}),
+                                dcc.Checklist(
+                                    id=self.uuid("trace_options"),
+                                    options=[
+                                        {"label": val, "value": val}
+                                        for val in ["History", "Histogram"]
+                                    ],
+                                    value=["History"],
+                                    persistence=True,
+                                    persistence_type="session",
+                                ),
+                                html.Div(
+                                    id=self.uuid("view_stat_options"),
+                                    style={"display": "block"}
+                                    if "statistics"
+                                    in self.plot_options.get("visualization", "")
+                                    else {"display": "none"},
+                                    children=[
+                                        dcc.Checklist(
+                                            id=self.uuid("stat_options"),
+                                            options=[
+                                                {"label": val, "value": val}
+                                                for val in [
+                                                    "Mean",
+                                                    "P10 (high)",
+                                                    "P50 (median)",
+                                                    "P90 (low)",
+                                                    "Maximum",
+                                                    "Minimum",
+                                                ]
+                                            ],
+                                            value=["Mean", "P10 (high)", "P90 (low)"],
+                                            persistence=True,
+                                            persistence_type="session",
+                                        ),
+                                    ],
                                 ),
                             ],
                         ),
@@ -597,6 +652,8 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("statistics"), "value"),
                 Input(self.uuid("cum_interval"), "value"),
                 Input(self.uuid("date"), "data"),
+                Input(self.uuid("trace_options"), "value"),
+                Input(self.uuid("stat_options"), "value"),
             ],
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
@@ -611,6 +668,8 @@ folder, to avoid risk of not extracting the right data.
             visualization: str,
             cum_interval: str,
             stored_date: str,
+            trace_options: List[str],
+            stat_options: List[str],
         ) -> dict:
             """Callback to update all graphs based on selections"""
 
@@ -655,7 +714,7 @@ folder, to avoid risk of not extracting the right data.
                         f"{simulation_vector_description(vec)}"
                         f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
                     )
-                if visualization == "statistics_hist":
+                if "Histogram" in trace_options:
                     titles.append(
                         date_to_interval_conversion(
                             date=date, vector=vec, interval=cum_interval, as_date=False
@@ -665,7 +724,7 @@ folder, to avoid risk of not extracting the right data.
             # Make a plotly subplot figure
             fig = make_subplots(
                 rows=len(vectors),
-                cols=2 if visualization == "statistics_hist" else 1,
+                cols=2 if "Histogram" in trace_options else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
                 subplot_titles=titles,
@@ -691,24 +750,24 @@ folder, to avoid risk of not extracting the right data.
                     vector=vector,
                     smry_meta=self.smry_meta,
                 )
-                if visualization in ["statistics", "statistics_hist"]:
-                    traces = add_statistic_traces(
+                if visualization == "fanchart":
+                    traces = _add_fanchart_traces(
                         dfs[vector]["stat"],
                         vector,
                         colors=self.ens_colors,
                         line_shape=line_shape,
                         interval=cum_interval,
                     )
-                    if visualization == "statistics_hist":
-                        histdata = add_histogram_traces(
-                            dfs[vector]["data"],
-                            vector,
-                            date=date,
-                            colors=self.ens_colors,
-                            interval=cum_interval,
-                        )
-                        for trace in histdata:
-                            fig.add_trace(trace, i + 1, 2)
+                elif visualization == "statistics":
+                    traces = _add_statistics_traces(
+                        dfs[vector]["stat"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
+                        stat_options=stat_options,
+                    )
+
                 elif visualization == "realizations":
                     traces = add_realization_traces(
                         dfs[vector]["data"],
@@ -720,20 +779,32 @@ folder, to avoid risk of not extracting the right data.
                 else:
                     raise PreventUpdate
 
-                historical_vector_name = historical_vector(
-                    vector=vector, smry_meta=self.smry_meta
-                )
-                if (
-                    historical_vector_name
-                    and historical_vector_name in dfs[vector]["data"].columns
-                ):
-                    traces.append(
-                        add_history_trace(
-                            dfs[vector]["data"],
-                            historical_vector_name,
-                            line_shape,
-                        )
+                if "Histogram" in trace_options:
+                    histdata = add_histogram_traces(
+                        dfs[vector]["data"],
+                        vector,
+                        date=date,
+                        colors=self.ens_colors,
+                        interval=cum_interval,
                     )
+                    for trace in histdata:
+                        fig.add_trace(trace, i + 1, 2)
+                if "History" in trace_options:
+                    historical_vector_name = historical_vector(
+                        vector=vector, smry_meta=self.smry_meta
+                    )
+                    if (
+                        historical_vector_name
+                        and historical_vector_name in dfs[vector]["data"].columns
+                        and not calc_mode == "delta_ensembles"
+                    ):
+                        traces.append(
+                            add_history_trace(
+                                dfs[vector]["data"],
+                                historical_vector_name,
+                                line_shape,
+                            )
+                        )
 
                 # Remove unwanted legends(only keep one for each ensemble)
                 for trace in traces:
@@ -758,7 +829,7 @@ folder, to avoid risk of not extracting the right data.
             )
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
-            if visualization == "statistics_hist":
+            if "Histogram" in trace_options:
                 # Remove linked x-axis for histograms
                 if "xaxis2" in fig["layout"]:
                     fig["layout"]["xaxis2"]["matches"] = None
@@ -828,7 +899,7 @@ folder, to avoid risk of not extracting the right data.
                 cum_interval=cum_interval,
             )
             for vector, df in dfs.items():
-                if visualization in ["statistics", "statistics_hist"]:
+                if visualization in ["fanchart", "statistics"]:
                     dfs[vector]["stat"] = df["stat"].sort_values(
                         by=[("", "ENSEMBLE"), ("", "DATE")]
                     )
@@ -896,6 +967,18 @@ folder, to avoid risk of not extracting the right data.
             return style
 
         @app.callback(
+            Output(self.uuid("view_stat_options"), "style"),
+            [Input(self.uuid("statistics"), "value")],
+        )
+        def _update_view_stat_options(visualization: str) -> dict:
+            """Only show statistics picker if in statistics mode"""
+            return (
+                {"display": "block"}
+                if visualization == "statistics"
+                else {"display": "none"}
+            )
+
+        @app.callback(
             Output(self.uuid("date"), "data"),
             [Input(self.uuid("graph"), "clickData")],
             [State(self.uuid("date"), "data")],
@@ -958,7 +1041,7 @@ def calculate_vector_dataframes(
     for vector in vectors:
         if vector.startswith("AVG_"):
             total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
-            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
             data = calc_from_cumulatives(
                 data=data,
                 column_keys=total_vector,
@@ -969,7 +1052,7 @@ def calculate_vector_dataframes(
             vector = rename_vec_from_cum(vector=vector[4:], as_rate=True)
         elif vector.startswith("INTVL_"):
             total_vector = vector.lstrip("INTVL_")
-            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
             data = calc_from_cumulatives(
                 data=data,
                 column_keys=total_vector,
@@ -978,13 +1061,18 @@ def calculate_vector_dataframes(
                 as_rate=False,
             )
         else:
-            data = filter_df(smry, ensembles, vector, smry_meta)
+            data = filter_df(smry, ensembles, vector, smry_meta, calc_mode)
 
         if calc_mode == "delta_ensembles":
             data = calculate_delta(data, ensembles[0], ensembles[1])
 
         dfs[vector] = {"data": data}
-        if visualization in ["statistics", "statistics_hist"]:
+        if visualization in [
+            "statistics",
+            "statistics_hist",
+            "fanchart",
+            "fanchart_hist",
+        ]:
             dfs[vector]["stat"] = calc_series_statistics(data, [vector])
 
     return dfs
@@ -995,14 +1083,25 @@ def filter_df(
     ensembles: List[str],
     vector: str,
     smry_meta: Union[pd.DataFrame, None],
+    calc_mode: str,
 ) -> pd.DataFrame:
     """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", "DATE", vector]
     historical_vector_name = historical_vector(vector=vector, smry_meta=smry_meta)
-    if historical_vector_name and historical_vector_name in df.columns:
+    if (
+        historical_vector_name
+        and historical_vector_name in df.columns
+        and not "delta" in calc_mode
+    ):
         columns.append(historical_vector_name)
-    return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
+    fdf = df[columns].copy()
+    if historical_vector_name in fdf.columns:
+        fdf.loc[
+            fdf["DATE"].astype("str") > str(datetime.datetime.now()),
+            historical_vector_name,
+        ] = np.nan
+    return fdf.loc[fdf["ENSEMBLE"].isin(ensembles)]
 
 
 def calculate_delta(df: pd.DataFrame, base_ens: str, delta_ens: str) -> pd.DataFrame:
@@ -1047,6 +1146,7 @@ def add_histogram_traces(
                 "line": {"color": "black", "width": 1},
             },
             "showlegend": False,
+            "legendgroup": ensemble,
         }
         for ensemble, ens_df in data.groupby(("ENSEMBLE"))
     ]
@@ -1114,7 +1214,7 @@ def add_history_trace(dframe: pd.DataFrame, vector: str, line_shape: str) -> dic
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_statistic_traces(
+def _add_fanchart_traces(
     stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
 ) -> list:
     """Add fanchart traces for selected vector"""
@@ -1128,6 +1228,31 @@ def add_statistic_traces(
                 legend_group=ensemble,
                 line_shape=line_shape,
                 hovertemplate=render_hovertemplate(vector=vector, interval=interval),
+            )
+        )
+    return traces
+
+
+def _add_statistics_traces(
+    stat_df: pd.DataFrame,
+    vector: str,
+    colors: dict,
+    line_shape: str,
+    interval: str,
+    stat_options: List[str],
+) -> list:
+    """Add fanchart traces for selected vector"""
+    traces = []
+    for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
+        traces.extend(
+            add_statistics_traces(
+                ens_stat_df=ens_df,
+                vector=vector,
+                color=colors.get(ensemble, colors[list(colors.keys())[0]]),
+                legend_group=ensemble,
+                line_shape=line_shape,
+                hovertemplate=render_hovertemplate(vector=vector, interval=interval),
+                stat_options=stat_options,
             )
         )
     return traces
