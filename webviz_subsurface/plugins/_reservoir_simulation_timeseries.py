@@ -3,7 +3,9 @@ from typing import List, Dict, Union, Tuple, Callable
 import sys
 from pathlib import Path
 import json
+import datetime
 
+import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 import dash
@@ -29,6 +31,7 @@ from .._utils.simulation_timeseries import (
     get_simulation_line_shape,
     calc_series_statistics,
     add_fanchart_traces,
+    add_statistics_traces,
     render_hovertemplate,
     date_to_interval_conversion,
     check_and_format_observations,
@@ -545,12 +548,20 @@ folder, to avoid risk of not extracting the right data.
                                             "value": "realizations",
                                         },
                                         {
-                                            "label": "Statistical fanchart",
+                                            "label": "Statistical lines",
                                             "value": "statistics",
                                         },
                                         {
-                                            "label": "Statistical fanchart and histogram",
+                                            "label": "Statistical lines and histogram",
                                             "value": "statistics_hist",
+                                        },
+                                        {
+                                            "label": "Statistical fanchart",
+                                            "value": "fanchart",
+                                        },
+                                        {
+                                            "label": "Statistical fanchart and histogram",
+                                            "value": "fanchart_hist",
                                         },
                                     ],
                                     value=self.plot_options.get(
@@ -655,7 +666,7 @@ folder, to avoid risk of not extracting the right data.
                         f"{simulation_vector_description(vec)}"
                         f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
                     )
-                if visualization == "statistics_hist":
+                if "hist" in visualization:
                     titles.append(
                         date_to_interval_conversion(
                             date=date, vector=vec, interval=cum_interval, as_date=False
@@ -691,15 +702,29 @@ folder, to avoid risk of not extracting the right data.
                     vector=vector,
                     smry_meta=self.smry_meta,
                 )
-                if visualization in ["statistics", "statistics_hist"]:
-                    traces = add_statistic_traces(
-                        dfs[vector]["stat"],
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        interval=cum_interval,
-                    )
-                    if visualization == "statistics_hist":
+                if visualization in [
+                    "statistics",
+                    "statistics_hist",
+                    "fanchart",
+                    "fanchart_hist",
+                ]:
+                    if "fanchart" in visualization:
+                        traces = _add_fanchart_traces(
+                            dfs[vector]["stat"],
+                            vector,
+                            colors=self.ens_colors,
+                            line_shape=line_shape,
+                            interval=cum_interval,
+                        )
+                    else:
+                        traces = _add_statistics_traces(
+                            dfs[vector]["stat"],
+                            vector,
+                            colors=self.ens_colors,
+                            line_shape=line_shape,
+                            interval=cum_interval,
+                        )
+                    if "hist" in visualization:
                         histdata = add_histogram_traces(
                             dfs[vector]["data"],
                             vector,
@@ -726,6 +751,7 @@ folder, to avoid risk of not extracting the right data.
                 if (
                     historical_vector_name
                     and historical_vector_name in dfs[vector]["data"].columns
+                    and not calc_mode == "delta_ensembles"
                 ):
                     traces.append(
                         add_history_trace(
@@ -758,7 +784,7 @@ folder, to avoid risk of not extracting the right data.
             )
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
-            if visualization == "statistics_hist":
+            if "hist" in visualization:
                 # Remove linked x-axis for histograms
                 if "xaxis2" in fig["layout"]:
                     fig["layout"]["xaxis2"]["matches"] = None
@@ -828,7 +854,7 @@ folder, to avoid risk of not extracting the right data.
                 cum_interval=cum_interval,
             )
             for vector, df in dfs.items():
-                if visualization in ["statistics", "statistics_hist"]:
+                if "fanchart" in visualization or "statistics" in visualization:
                     dfs[vector]["stat"] = df["stat"].sort_values(
                         by=[("", "ENSEMBLE"), ("", "DATE")]
                     )
@@ -958,7 +984,7 @@ def calculate_vector_dataframes(
     for vector in vectors:
         if vector.startswith("AVG_"):
             total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
-            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
             data = calc_from_cumulatives(
                 data=data,
                 column_keys=total_vector,
@@ -969,7 +995,7 @@ def calculate_vector_dataframes(
             vector = rename_vec_from_cum(vector=vector[4:], as_rate=True)
         elif vector.startswith("INTVL_"):
             total_vector = vector.lstrip("INTVL_")
-            data = filter_df(smry, ensembles, total_vector, smry_meta)
+            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
             data = calc_from_cumulatives(
                 data=data,
                 column_keys=total_vector,
@@ -978,13 +1004,18 @@ def calculate_vector_dataframes(
                 as_rate=False,
             )
         else:
-            data = filter_df(smry, ensembles, vector, smry_meta)
+            data = filter_df(smry, ensembles, vector, smry_meta, calc_mode)
 
         if calc_mode == "delta_ensembles":
             data = calculate_delta(data, ensembles[0], ensembles[1])
 
         dfs[vector] = {"data": data}
-        if visualization in ["statistics", "statistics_hist"]:
+        if visualization in [
+            "statistics",
+            "statistics_hist",
+            "fanchart",
+            "fanchart_hist",
+        ]:
             dfs[vector]["stat"] = calc_series_statistics(data, [vector])
 
     return dfs
@@ -995,14 +1026,25 @@ def filter_df(
     ensembles: List[str],
     vector: str,
     smry_meta: Union[pd.DataFrame, None],
+    calc_mode: str,
 ) -> pd.DataFrame:
     """Filter dataframe for current vector. Include history
     vector if present"""
     columns = ["REAL", "ENSEMBLE", "DATE", vector]
     historical_vector_name = historical_vector(vector=vector, smry_meta=smry_meta)
-    if historical_vector_name and historical_vector_name in df.columns:
+    if (
+        historical_vector_name
+        and historical_vector_name in df.columns
+        and not "delta" in calc_mode
+    ):
         columns.append(historical_vector_name)
-    return df.loc[df["ENSEMBLE"].isin(ensembles)][columns]
+    fdf = df[columns]
+    if historical_vector_name in fdf.columns:
+        fdf.loc[
+            fdf["DATE"].astype("str") > str(datetime.datetime.now()),
+            historical_vector_name,
+        ] = np.nan
+    return fdf.loc[fdf["ENSEMBLE"].isin(ensembles)]
 
 
 def calculate_delta(df: pd.DataFrame, base_ens: str, delta_ens: str) -> pd.DataFrame:
@@ -1114,7 +1156,7 @@ def add_history_trace(dframe: pd.DataFrame, vector: str, line_shape: str) -> dic
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def add_statistic_traces(
+def _add_fanchart_traces(
     stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
 ) -> list:
     """Add fanchart traces for selected vector"""
@@ -1122,6 +1164,25 @@ def add_statistic_traces(
     for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
         traces.extend(
             add_fanchart_traces(
+                ens_stat_df=ens_df,
+                vector=vector,
+                color=colors.get(ensemble, colors[list(colors.keys())[0]]),
+                legend_group=ensemble,
+                line_shape=line_shape,
+                hovertemplate=render_hovertemplate(vector=vector, interval=interval),
+            )
+        )
+    return traces
+
+
+def _add_statistics_traces(
+    stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
+) -> list:
+    """Add fanchart traces for selected vector"""
+    traces = []
+    for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
+        traces.extend(
+            add_statistics_traces(
                 ens_stat_df=ens_df,
                 vector=vector,
                 color=colors.get(ensemble, colors[list(colors.keys())[0]]),

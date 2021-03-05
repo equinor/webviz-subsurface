@@ -156,6 +156,49 @@ def add_fanchart_traces(
     ]
 
 
+def add_statistics_traces(
+    ens_stat_df: pd.DataFrame,
+    vector: str,
+    color: str,
+    legend_group: str,
+    line_shape: str,
+    refaxis: str = "DATE",
+    hovertemplate: str = "(%{x}, %{y})<br>",
+) -> List[Dict[str, Any]]:
+    """Renders a statistical lines for each vector"""
+    return [
+        {
+            "name": legend_group,
+            "hovertemplate": hovertemplate + "P90",
+            "x": ens_stat_df[("", refaxis)],
+            "y": ens_stat_df[(vector, "low_p90")],
+            "mode": "lines",
+            "line": {"color": color, "shape": line_shape, "dash": "dash"},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            "name": legend_group,
+            "hovertemplate": hovertemplate + "P10",
+            "x": ens_stat_df[("", refaxis)],
+            "y": ens_stat_df[(vector, "high_p10")],
+            "line": {"color": color, "shape": line_shape, "dash": "dash"},
+            "legendgroup": legend_group,
+            "showlegend": False,
+        },
+        {
+            "name": legend_group,
+            "hovertemplate": hovertemplate + "Mean",
+            "x": ens_stat_df[("", refaxis)],
+            "y": ens_stat_df[(vector, "mean")],
+            "mode": "lines",
+            "line": {"color": color, "shape": line_shape},
+            "legendgroup": legend_group,
+            "showlegend": True,
+        },
+    ]
+
+
 def render_hovertemplate(vector: str, interval: Optional[str]) -> str:
     if vector.startswith(("AVG_", "INTVL_")) and interval is not None:
         if interval == "daily":
