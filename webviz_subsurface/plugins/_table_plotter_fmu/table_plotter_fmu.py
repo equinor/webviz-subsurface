@@ -5,8 +5,10 @@ import dash
 import dash_html_components as html
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
-
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_subsurface._models import table_model_factory, ObservationModel
+
+import webviz_subsurface
 from .views import main_view
 from .controllers import main_controller
 
@@ -44,6 +46,12 @@ class TablePlotterFMU(WebvizPluginABC):
             )
         self.observationmodel = (
             ObservationModel(observation_file) if observation_file is not None else None
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "plugins"
+            / "_table_plotter_fmu"
+            / "assets"
+            / "update_axis.js"
         )
         self.set_callbacks(app)
 

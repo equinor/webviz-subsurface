@@ -24,7 +24,12 @@ def sidebar_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> wcc.F
 
 
 def plot_view(get_uuid: Callable) -> html.Div:
-    return html.Div(dcc.Graph(id=get_uuid("graph")))
+    return html.Div(
+        [
+            dcc.Store(id={"id": get_uuid("clientside"), "plotly_attribute": "figure"}),
+            dcc.Graph(id=get_uuid("graph")),
+        ]
+    )
 
 
 def selectors(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div:
@@ -34,6 +39,8 @@ def selectors(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div
             ensemble_selector(uuid=uuid, tablemodel=tablemodel),
             x_selector(uuid=uuid),
             y_selector(uuid=uuid),
+            x_scale(uuid=get_uuid("clientside")),
+            y_scale(uuid=get_uuid("clientside")),
         ]
     )
 
@@ -78,6 +85,40 @@ def y_selector(uuid: str, flex: int = 1) -> html.Div:
             dcc.Dropdown(
                 id={"id": uuid, "attribute": "y_selector"},
                 clearable=False,
+            ),
+        ],
+    )
+
+
+def x_scale(uuid: str, flex: int = 1) -> html.Div:
+    return html.Div(
+        style={"flex": flex},
+        children=[
+            html.Label("X-axis scale (clientside)"),
+            dcc.RadioItems(
+                id={
+                    "id": uuid,
+                    "plotly_attribute": "layout.xaxis.type",
+                },
+                options=[{"label": val, "value": val} for val in ["linear", "log"]],
+                value="linear",
+            ),
+        ],
+    )
+
+
+def y_scale(uuid: str, flex: int = 1) -> html.Div:
+    return html.Div(
+        style={"flex": flex},
+        children=[
+            html.Label("Y-axis scale (clientside)"),
+            dcc.RadioItems(
+                id={
+                    "id": uuid,
+                    "plotly_attribute": "layout.yaxis.type",
+                },
+                options=[{"label": val, "value": val} for val in ["linear", "log"]],
+                value="linear",
             ),
         ],
     )

@@ -2,18 +2,18 @@ from typing import Optional, List, Dict, Callable, Tuple
 import plotly.graph_objects as go
 import plotly.express as px
 import dash
-from dash.dependencies import Input, Output, State, MATCH, ALL
+from dash.dependencies import Input, Output, State, MATCH, ALL, ClientsideFunction
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import EnsembleTableModelSet
-from ..figures.plotly_line_figure import PlotlyLineFigure
+from ..figures.plotly_line_plot import PlotlyLinePlot
 
 
 def main_controller(
     app: dash.Dash, get_uuid: Callable, tablemodel: EnsembleTableModelSet
 ) -> None:
     @app.callback(
-        Output(get_uuid("graph"), "figure"),
+        Output({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
         Input({"id": get_uuid("selectors"), "attribute": ALL}, "value"),
     )
     def _update_plot(_selectors: List) -> go.Figure:
@@ -23,18 +23,26 @@ def main_controller(
         x_column_name = get_value_for_callback_context(
             dash.callback_context.inputs_list, "x_selector"
         )
+
         y_column_name = get_value_for_callback_context(
             dash.callback_context.inputs_list, "y_selector"
         )
         if ensemble_name is None or x_column_name is None or y_column_name is None:
             raise PreventUpdate
         table = tablemodel.ensemble(ensemble_name)
-        figure = PlotlyLineFigure()
+        figure = PlotlyLinePlot()
         figure.add_line(
-            x_values=table.get_column_values_numpy(x_column_name)[0],
-            y_values=table.get_column_values_numpy(y_column_name)[0],
+            x=table.get_column_values_numpy(x_column_name)[0],
+            y=table.get_column_values_numpy(y_column_name)[0],
         )
         return figure.figure
+
+    app.clientside_callback(
+        ClientsideFunction(namespace="clientside", function_name="update_figure"),
+        Output(get_uuid("graph"), "figure"),
+        Input({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
+        Input({"id": get_uuid("clientside"), "plotly_attribute": ALL}, "value"),
+    )
 
     @app.callback(
         Output({"id": get_uuid("selectors"), "attribute": "x_selector"}, "options"),
