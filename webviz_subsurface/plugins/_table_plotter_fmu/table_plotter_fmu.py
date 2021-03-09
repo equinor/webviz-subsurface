@@ -6,7 +6,7 @@ import dash_html_components as html
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
-from webviz_subsurface._models import table_model_factory
+from webviz_subsurface._models import table_model_factory, ObservationModel
 from .views import main_view
 from .controllers import main_controller
 
@@ -19,6 +19,7 @@ class TablePlotterFMU(WebvizPluginABC):
         csvfile: str = None,
         ensembles: list = None,
         aggregated_csvfile: Path = None,
+        observation_file: Path = None,
     ):
         super().__init__()
         if ensembles is not None and csvfile is not None:
@@ -41,6 +42,9 @@ class TablePlotterFMU(WebvizPluginABC):
             raise ValueError(
                 "Specify either ensemble and csvfile or aggregated_csvfile"
             )
+        self.observationmodel = (
+            ObservationModel(observation_file) if observation_file is not None else None
+        )
         self.set_callbacks(app)
 
     @property

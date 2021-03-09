@@ -6,6 +6,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import EnsembleTableModelSet
+from ..figures.plotly_line_figure import PlotlyLineFigure
 
 
 def main_controller(
@@ -28,10 +29,12 @@ def main_controller(
         if ensemble_name is None or x_column_name is None or y_column_name is None:
             raise PreventUpdate
         table = tablemodel.ensemble(ensemble_name)
-        return px.line(
-            x=table.get_column_values_df(x_column_name)[x_column_name],
-            y=table.get_column_values_df(y_column_name)[y_column_name],
+        figure = PlotlyLineFigure()
+        figure.add_line(
+            x_values=table.get_column_values_numpy(x_column_name)[0],
+            y_values=table.get_column_values_numpy(y_column_name)[0],
         )
+        return figure.figure
 
     @app.callback(
         Output({"id": get_uuid("selectors"), "attribute": "x_selector"}, "options"),
