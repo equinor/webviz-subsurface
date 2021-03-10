@@ -8,11 +8,11 @@ class PlotlyLinePlot:
         self._traces: List = []
         self._layout: Dict = {}
 
-    def add_line(self, x: np.ndarray, y: np.ndarray) -> Dict:
+    def add_line(self, x: np.ndarray, y: np.ndarray) -> None:
         trace = {"type": "line", "x": x, "y": y}
         print(x)
         self._traces.append(trace)
 
     @property
-    def figure(self) -> str:
+    def figure(self) -> Dict:
         return dict(layout=self._layout, data=self._traces)
