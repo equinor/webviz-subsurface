@@ -38,7 +38,7 @@ class TablePlotterFMU(WebvizPluginABC):
             root_storage_folder=WEBVIZ_STORAGE.storage_folder,
             allow_storage_writes=not is_running_portable,
         )
-        model_factory = EnsembleTableModelFactorySimpleInMemory()
+        # model_factory = EnsembleTableModelFactorySimpleInMemory()
 
         if ensembles is not None and csvfile is not None:
             ensembles_dict: Dict[str, str] = {
