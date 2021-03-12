@@ -33,5 +33,5 @@ class PlotlyLinePlot:
         )
 
     @property
-    def figure(self) -> str:
+    def figure(self) -> Dict:
         return dict(layout=self._layout, data=self._traces)
