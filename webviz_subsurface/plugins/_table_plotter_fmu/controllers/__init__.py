@@ -5,18 +5,27 @@ import dash
 from dash.dependencies import Input, Output, State, MATCH, ALL, ClientsideFunction
 from dash.exceptions import PreventUpdate
 
-from webviz_subsurface._models import EnsembleTableModelSet
+from webviz_subsurface._models import EnsembleTableModelSet, ObservationModel
 from ..figures.plotly_line_plot import PlotlyLinePlot
 
 
 def main_controller(
-    app: dash.Dash, get_uuid: Callable, tablemodel: EnsembleTableModelSet
+    app: dash.Dash,
+    get_uuid: Callable,
+    tablemodel: EnsembleTableModelSet,
+    observationmodel: ObservationModel,
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
         Input({"id": get_uuid("selectors"), "attribute": ALL}, "value"),
     )
     def _update_plot(_selectors: List) -> go.Figure:
+        print(observationmodel.get_attributes()[0])
+        print(
+            observationmodel.get_observations_for_attribute(
+                observationmodel.get_attributes()[0]
+            )
+        )
         ensemble_name = get_value_for_callback_context(
             dash.callback_context.inputs_list, "ensemble"
         )
@@ -31,10 +40,15 @@ def main_controller(
             raise PreventUpdate
         table = tablemodel.ensemble(ensemble_name)
         figure = PlotlyLinePlot()
-        figure.add_line(
-            x=table.get_column_values_numpy(x_column_name)[0],
-            y=table.get_column_values_numpy(y_column_name)[0],
-        )
+        dates = table.get_column_values_numpy(x_column_name)[0]
+        for line in table.get_column_values_numpy(y_column_name):
+            figure.add_line(
+                x=dates,
+                y=line,
+            )
+        observations = observationmodel.get_observations_for_attribute(y_column_name)
+        if observations is not None:
+            figure.add_observations(observations, x_column_name)
         return figure.figure
 
     app.clientside_callback(

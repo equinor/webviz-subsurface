@@ -18,20 +18,20 @@ class TablePlotterFMU(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
-        csvfile: str = None,
+        csv_file: str = None,
         ensembles: list = None,
         aggregated_csvfile: Path = None,
         observation_file: Path = None,
     ):
         super().__init__()
-        if ensembles is not None and csvfile is not None:
+        if ensembles is not None and csv_file is not None:
             ensembles_dict: Dict[str, Path] = {
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
                 for ens_name in ensembles
             }
             self._tablemodel = (
                 table_model_factory.create_model_set_from_ensembles_layout(
-                    ensembles_dict, csvfile
+                    ensembles_dict, csv_file
                 )
             )
         elif aggregated_csvfile is not None:
@@ -44,8 +44,9 @@ class TablePlotterFMU(WebvizPluginABC):
             raise ValueError(
                 "Specify either ensemble and csvfile or aggregated_csvfile"
             )
-        self.observationmodel = (
+        self._observationmodel = (
             ObservationModel(observation_file) if observation_file is not None else None
+        )
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "plugins"
@@ -60,4 +61,9 @@ class TablePlotterFMU(WebvizPluginABC):
         return main_view(get_uuid=self.uuid, tablemodel=self._tablemodel)
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        return main_controller(app, get_uuid=self.uuid, tablemodel=self._tablemodel)
+        return main_controller(
+            app,
+            get_uuid=self.uuid,
+            tablemodel=self._tablemodel,
+            observationmodel=self._observationmodel,
+        )

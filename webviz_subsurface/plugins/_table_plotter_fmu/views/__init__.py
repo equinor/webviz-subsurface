@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union, List, Dict
 
 import dash_html_components as html
 import dash_core_components as dcc
@@ -39,8 +39,34 @@ def selectors(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div
             ensemble_selector(uuid=uuid, tablemodel=tablemodel),
             x_selector(uuid=uuid),
             y_selector(uuid=uuid),
-            x_scale(uuid=get_uuid("clientside")),
-            y_scale(uuid=get_uuid("clientside")),
+            make_plotly_clientside_radioitems(
+                uuid="clientside",
+                plotly_id="layout.xaxis.type",
+                label="X-axis type",
+                options=[{"label": val, "value": val} for val in ["linear", "log"]],
+                value="linear",
+            ),
+            make_plotly_clientside_radioitems(
+                uuid="clientside",
+                plotly_id="layout.yaxis.type",
+                label="Y-axis type",
+                options=[{"label": val, "value": val} for val in ["linear", "log"]],
+                value="linear",
+            ),
+            make_plotly_clientside_radioitems(
+                uuid="clientside",
+                plotly_id="layout.xaxis.autorange",
+                label="X-axis range",
+                options=[{"label": val, "value": val} for val in ["", "reversed"]],
+                value="",
+            ),
+            make_plotly_clientside_radioitems(
+                uuid="clientside",
+                plotly_id="layout.yaxis.autorange",
+                label="Y-axis range",
+                options=[{"label": val, "value": val} for val in ["", "reversed"]],
+                value="",
+            ),
         ]
     )
 
@@ -90,35 +116,22 @@ def y_selector(uuid: str, flex: int = 1) -> html.Div:
     )
 
 
-def x_scale(uuid: str, flex: int = 1) -> html.Div:
+def make_plotly_clientside_radioitems(
+    uuid: str,
+    plotly_id: str,
+    label: str,
+    options: List[Dict],
+    value: Union[List, str],
+    flex: int = 1,
+) -> html.Div:
     return html.Div(
         style={"flex": flex},
         children=[
-            html.Label("X-axis scale (clientside)"),
+            html.Label(label),
             dcc.RadioItems(
-                id={
-                    "id": uuid,
-                    "plotly_attribute": "layout.xaxis.type",
-                },
-                options=[{"label": val, "value": val} for val in ["linear", "log"]],
-                value="linear",
-            ),
-        ],
-    )
-
-
-def y_scale(uuid: str, flex: int = 1) -> html.Div:
-    return html.Div(
-        style={"flex": flex},
-        children=[
-            html.Label("Y-axis scale (clientside)"),
-            dcc.RadioItems(
-                id={
-                    "id": uuid,
-                    "plotly_attribute": "layout.yaxis.type",
-                },
-                options=[{"label": val, "value": val} for val in ["linear", "log"]],
-                value="linear",
+                id={"id": uuid, "plotly_attribute": plotly_id},
+                options=options,
+                value=value,
             ),
         ],
     )
