@@ -9,7 +9,7 @@ class PlotlyLinePlot:
         self._layout: Dict = {}
 
     def add_line(self, x: np.ndarray, y: np.ndarray) -> None:
-        trace = {"type": "line", "x": x, "y": y}
+        trace = {"type": "scatter", "x": x, "y": y}
         self._traces.append(trace)
 
     def add_observations(self, observations: dict, x_value: str) -> None:

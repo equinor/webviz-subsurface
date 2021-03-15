@@ -24,7 +24,7 @@ class TablePlotterFMU(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
-        csv_file: str = None,
+        csvfile: str = None,
         ensembles: list = None,
         aggregated_csvfile: Path = None,
         observation_file: Path = None,
@@ -60,9 +60,7 @@ class TablePlotterFMU(WebvizPluginABC):
             raise ValueError(
                 "Specify either ensemble and csvfile or aggregated_csvfile"
             )
-        self._observationmodel = (
-            ObservationModel(observation_file) if observation_file is not None else None
-        )
+        self._observationmodel = ObservationModel(observation_file)
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "plugins"
@@ -77,13 +75,9 @@ class TablePlotterFMU(WebvizPluginABC):
         return main_view(get_uuid=self.uuid, tablemodel=self._tablemodelset)
 
     def set_callbacks(self, app: dash.Dash) -> None:
-<<<<<<< HEAD
         return main_controller(
             app,
             get_uuid=self.uuid,
-            tablemodel=self._tablemodel,
+            tablemodel=self._tablemodelset,
             observationmodel=self._observationmodel,
         )
-=======
-        return main_controller(app, get_uuid=self.uuid, tablemodel=self._tablemodelset)
->>>>>>> 6961996e51e6e99b8a6554ceebdbebf6ca53f712
