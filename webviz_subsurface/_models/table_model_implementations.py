@@ -175,3 +175,24 @@ class EnsembleTableModelImplArrow(EnsembleTableModel):
             # df = table.to_pandas(split_blocks=True, self_destruct=True)
 
         return df
+
+    # -------------------------------------------------------------------------
+    def get_columns_values_df(
+        self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
+    ) -> pd.DataFrame:
+
+        source = pa.memory_map(self._arrow_file_name, "r")
+        table = (
+            pa.ipc.RecordBatchFileReader(source)
+            .read_all()
+            .select(["REAL", *column_names])
+        )
+
+        if realizations:
+            mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
+            df = table.filter(mask).to_pandas()
+        else:
+            df = table.to_pandas()
+            # df = table.to_pandas(split_blocks=True, self_destruct=True)
+
+        return df

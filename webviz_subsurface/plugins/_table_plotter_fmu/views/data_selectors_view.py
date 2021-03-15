@@ -15,7 +15,7 @@ def data_selectors_view(
         children=[
             html.H5("Data selectors"),
             dropdown_for_plotly_data(
-                uuid=get_uuid("plotly_data"),
+                uuid=get_uuid("data_selectors"),
                 data_attribute="ensemble",
                 title="Ensemble",
                 options=[
@@ -36,6 +36,14 @@ def data_selectors_view(
                 title="Y-value",
                 options=[],
             ),
+            dropdown_for_plotly_data(
+                uuid=get_uuid("plotly_data"),
+                data_attribute="color",
+                title="Color",
+                options=[],
+                value=None,
+                clearable=True,
+            ),
         ],
     )
 
@@ -49,6 +57,7 @@ def dropdown_for_plotly_data(
     flex: int = 1,
     placeholder: str = "Select...",
     multi=False,
+    clearable=False,
 ) -> html.Div:
     return html.Div(
         style={"flex": flex},
@@ -61,7 +70,7 @@ def dropdown_for_plotly_data(
                 },
                 options=options,
                 value=value,
-                clearable=False,
+                clearable=clearable,
                 placeholder=placeholder,
                 multi=multi,
             ),

@@ -21,132 +21,46 @@ def main_controller(
     @app.callback(
         Output({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
         Input({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "value"),
+        Input(
+            {"id": get_uuid("data_selectors"), "data_attribute": "ensemble"}, "value"
+        ),
     )
-    def _update_plot(_selectors: List) -> go.Figure:
+    def _update_plot(_selectors: List, ensemble_names: List) -> go.Figure:
+        attrs = {}
+        # Find attribute names and values
+        for ctx in dash.callback_context.inputs_list[0]:
+            if ctx["value"] is not None:
+                attrs[ctx["id"]["data_attribute"]] = ctx["value"]
 
-        ensemble_names = get_value_for_callback_context(
-            dash.callback_context.inputs_list, "ensemble"
-        )
-        x_column_name = get_value_for_callback_context(
-            dash.callback_context.inputs_list, "x"
-        )
-
-        y_column_name = get_value_for_callback_context(
-            dash.callback_context.inputs_list, "y"
-        )
-
-        if ensemble_names is None or x_column_name is None or y_column_name is None:
+        # Prevent update is no data is selected
+        if ensemble_names is None or any(list(attrs.values())) is None:
             raise PreventUpdate
         dfs = []
+
+        # Retrieve table data for each ensemble and aggregate
         for ens in ensemble_names:
             col_dfs = []
             table = tablemodel.ensemble(ens)
-            col_df = table.get_columns_values_df([x_column_name, y_column_name])
-
+            columns = list(set(attrs.values()))
+            columns = [col for col in columns if col != "REAL"]
+            print(columns)
+            col_df = table.get_columns_values_df(columns)
             col_df["ENSEMBLE"] = ens
             dfs.append(col_df)
         df = pd.concat(dfs)
-        figure = px.line(
-            df, x=x_column_name, y=y_column_name, color="ENSEMBLE", line_group="REAL"
-        )
-        # figure.update_layout(
-        #     updatemenus=[
-        #         dict(
-        #             buttons=list(
-        #                 [
-        #                     dict(
-        #                         args=[{"xaxis": {"autorange": True}}],
-        #                         label="Normal",
-        #                         method="relayout",
-        #                     ),
-        #                     dict(
-        #                         args=[{"xaxis": {"autorange": "reversed"}}],
-        #                         label="Reversed",
-        #                         method="relayout",
-        #                     ),
-        #                 ]
-        #             ),
-        #             direction="down",
-        #             pad={"r": 10, "t": 10},
-        #             showactive=True,
-        #             active=1,
-        #             x=0.1,
-        #             xanchor="left",
-        #             y=1.08,
-        #             yanchor="top",
-        #         ),
-        #         dict(
-        #             buttons=list(
-        #                 [
-        #                     dict(
-        #                         args=[{"yaxis": {"autorange": "True"}}],
-        #                         label="Normal",
-        #                         method="relayout",
-        #                     ),
-        #                     dict(
-        #                         args=[{"yaxis": {"autorange": "reversed"}}],
-        #                         label="Reversed",
-        #                         method="relayout",
-        #                     ),
-        #                 ]
-        #             ),
-        #             direction="down",
-        #             pad={"r": 10, "t": 10},
-        #             showactive=True,
-        #             x=0.37,
-        #             xanchor="left",
-        #             y=1.08,
-        #             yanchor="top",
-        #         ),
-        #         dict(
-        #             buttons=list(
-        #                 [
-        #                     dict(
-        #                         args=[{"contours.showlines": False, "type": "contour"}],
-        #                         label="Hide lines",
-        #                         method="restyle",
-        #                     ),
-        #                     dict(
-        #                         args=[{"contours.showlines": True, "type": "contour"}],
-        #                         label="Show lines",
-        #                         method="restyle",
-        #                     ),
-        #                 ]
-        #             ),
-        #             direction="down",
-        #             pad={"r": 10, "t": 10},
-        #             showactive=True,
-        #             x=0.58,
-        #             xanchor="left",
-        #             y=1.08,
-        #             yanchor="top",
-        #         ),
-        #     ]
-        # )
-        # figure.update_layout(
-        #     annotations=[
-        #         dict(
-        #             text="X-axis range",
-        #             x=0,
-        #             xref="paper",
-        #             y=1.07,
-        #             yref="paper",
-        #             align="left",
-        #             showarrow=False,
-        #         ),
-        #         dict(
-        #             text="Y-axis range",
-        #             x=0.25,
-        #             xref="paper",
-        #             y=1.07,
-        #             yref="paper",
-        #             showarrow=False,
-        #         ),
-        #     ]
-        # )
 
+        # Create plotly express figure from data and active attributes
+        figure = px.line(df, line_group="REAL", **attrs)
+
+        # Add observations
+        y_column_name = get_value_for_callback_context(
+            dash.callback_context.inputs_list, "y"
+        )
         observations = observationmodel.get_observations_for_attribute(y_column_name)
         if observations is not None:
+            x_column_name = get_value_for_callback_context(
+                dash.callback_context.inputs_list, "x"
+            )
             [
                 figure.add_trace(
                     {
@@ -167,7 +81,6 @@ def main_controller(
             ]
 
         return figure
-        # return figure.figure
 
     @app.callback(
         Output(
@@ -177,7 +90,7 @@ def main_controller(
     )
     def _update_layout(layout_attributes):
         """Store plotly layout options from user selections in a dcc.Store"""
-        print(layout_attributes)
+        # print(layout_attributes)
         if layout_attributes is None:
             return {}
         layout = {}
@@ -199,26 +112,25 @@ def main_controller(
         return fig
 
     @app.callback(
-        Output({"id": get_uuid("plotly_data"), "data_attribute": "x"}, "options"),
-        Output({"id": get_uuid("plotly_data"), "data_attribute": "x"}, "value"),
-        Output({"id": get_uuid("plotly_data"), "data_attribute": "y"}, "options"),
-        Output({"id": get_uuid("plotly_data"), "data_attribute": "y"}, "value"),
-        Input({"id": get_uuid("plotly_data"), "data_attribute": "ensemble"}, "value"),
-        State({"id": get_uuid("plotly_data"), "data_attribute": "x"}, "value"),
-        State({"id": get_uuid("plotly_data"), "data_attribute": "y"}, "value"),
+        Output({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "options"),
+        Output({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "value"),
+        Input(
+            {"id": get_uuid("data_selectors"), "data_attribute": "ensemble"}, "value"
+        ),
+        State({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "value"),
     )
     def _update_selectors(
-        ensemble_name: str, current_x: Optional[str], current_y: Optional[str]
+        ensemble_name: str, current_vals: List
     ) -> Tuple[List[dict], str, List[dict], str]:
         columns = tablemodel.ensemble(ensemble_name[0]).column_names()
-        current_x = current_x if current_x in columns else columns[0]
-        current_y = current_y if current_y in columns else columns[-1]
-        return (
-            [{"label": col, "value": col} for col in columns],
-            current_x,
-            [{"label": col, "value": col} for col in columns],
-            current_y,
-        )
+        outopts = []
+        outvals = []
+        outlist = dash.callback_context.outputs_list
+        statelist = dash.callback_context.states_list
+        for stateval in statelist[0]:
+            outopts.append([{"label": col, "value": col} for col in columns + ["REAL"]])
+            outvals.append(stateval if stateval in columns + [None] else columns[0])
+        return outopts, outvals
 
 
 def get_value_for_callback_context(
