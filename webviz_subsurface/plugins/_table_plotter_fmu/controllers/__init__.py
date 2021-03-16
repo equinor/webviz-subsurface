@@ -19,7 +19,12 @@ def main_controller(
     observationmodel: ObservationModel,
 ) -> None:
     @app.callback(
-        Output({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
+        Output(
+            {"id": get_uuid("clientside"), "plotly_attribute": "plotly_data"}, "data"
+        ),
+        Output(
+            {"id": get_uuid("clientside"), "plotly_attribute": "initial_layout"}, "data"
+        ),
         Input({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "value"),
         Input(
             {"id": get_uuid("data_selectors"), "data_attribute": "ensemble"}, "value"
@@ -80,11 +85,11 @@ def main_controller(
                 for value in observations
             ]
 
-        return figure
+        return figure["data"], figure["layout"]
 
     @app.callback(
         Output(
-            {"id": get_uuid("clientside"), "plotly_attribute": "plotly_layout"}, "data"
+            {"id": get_uuid("clientside"), "plotly_attribute": "update_layout"}, "data"
         ),
         Input({"id": get_uuid("plotly_layout"), "layout_attribute": ALL}, "value"),
     )
@@ -99,17 +104,37 @@ def main_controller(
         return layout
 
     @app.callback(
+        Output(
+            {"id": get_uuid("clientside"), "plotly_attribute": "plotly_layout"}, "data"
+        ),
+        Input(
+            {"id": get_uuid("clientside"), "plotly_attribute": "initial_layout"}, "data"
+        ),
+        Input(
+            {"id": get_uuid("clientside"), "plotly_attribute": "update_layout"}, "data"
+        ),
+    )
+    def _update_plot_layout(initial_layout: dict, update_layout: dict):
+        if initial_layout is None:
+            raise PreventUpdate
+        fig = go.Figure({"layout": initial_layout})
+        if update_layout is not None:
+            fig.update_layout(update_layout)
+        return fig["layout"]
+
+    app.clientside_callback(
+        ClientsideFunction(namespace="clientside", function_name="update_figure"),
         Output(get_uuid("graph"), "figure"),
-        Input({"id": get_uuid("clientside"), "plotly_attribute": "figure"}, "data"),
+        Input(
+            {"id": get_uuid("clientside"), "plotly_attribute": "plotly_data"}, "data"
+        ),
         Input(
             {"id": get_uuid("clientside"), "plotly_attribute": "plotly_layout"}, "data"
         ),
+        Input(
+            {"id": get_uuid("clientside"), "plotly_attribute": "plotly_graph"}, "data"
+        ),
     )
-    def _update_plot_layout(figure: dict, layout: dict):
-        fig = go.Figure(figure)
-        if layout is not None:
-            fig.update_layout(layout)
-        return fig
 
     @app.callback(
         Output({"id": get_uuid("plotly_data"), "data_attribute": ALL}, "options"),

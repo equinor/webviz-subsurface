@@ -21,15 +21,7 @@ def main_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div
             html.Div(
                 style={"flex": 1, "height": "89vh"},
                 children=[
-                    dcc.Store(
-                        id={"id": get_uuid("clientside"), "plotly_attribute": "figure"}
-                    ),
-                    dcc.Store(
-                        id={
-                            "id": get_uuid("clientside"),
-                            "plotly_attribute": "plotly_layout",
-                        }
-                    ),
+                    data_stores(get_uuid=get_uuid),
                     data_selectors_view(get_uuid=get_uuid, tablemodel=tablemodel),
                     plot_options_view(get_uuid=get_uuid),
                 ],
@@ -51,6 +43,38 @@ def plot_view(get_uuid: Callable) -> html.Div:
                 children=[
                     dcc.Graph(id=get_uuid("graph")),
                 ],
+            ),
+        ]
+    )
+
+
+def data_stores(get_uuid: Callable) -> html.Div:
+    return html.Div(
+        [
+            dcc.Store(
+                id={"id": get_uuid("clientside"), "plotly_attribute": "plotly_graph"},
+                data=get_uuid("graph"),
+            ),
+            dcc.Store(
+                id={"id": get_uuid("clientside"), "plotly_attribute": "plotly_data"}
+            ),
+            dcc.Store(
+                id={
+                    "id": get_uuid("clientside"),
+                    "plotly_attribute": "plotly_layout",
+                }
+            ),
+            dcc.Store(
+                id={
+                    "id": get_uuid("clientside"),
+                    "plotly_attribute": "initial_layout",
+                }
+            ),
+            dcc.Store(
+                id={
+                    "id": get_uuid("clientside"),
+                    "plotly_attribute": "update_layout",
+                }
             ),
         ]
     )
