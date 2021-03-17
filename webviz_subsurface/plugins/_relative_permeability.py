@@ -69,7 +69,7 @@ reek_history_match/realization-0/iter-0/share/results/tables/relperm.csv).
 webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.csv).
 """
 
-    SATURATIONS = ["SW", "SG", "SL"]
+    SATURATIONS = ["SW", "SO", "SG", "SL"]
     RELPERM_FAMILIES = {
         1: ["SWOF", "SGOF", "SLGOF"],
         2: ["SWFN", "SGFN", "SOF3"],
