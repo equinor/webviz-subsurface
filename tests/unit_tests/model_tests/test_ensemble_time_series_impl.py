@@ -22,14 +22,14 @@ from webviz_subsurface._models.ensemble_time_series_impl_naive_parquet import (
 def _create_synthetic_time_series_obj(storage_dir: Path) -> EnsembleTimeSeries:
     # fmt: off
     INPUT_DATA = [
-        ["DATE",                "REAL",  "A",   "B"], 
-        [datetime(2021, 12, 20), 0,      1.0, 11.0 ], 
-        [datetime(2021, 12, 21), 0,      2.0, 12.0 ], 
-        [datetime(2021, 12, 22), 0,      3.0, 13.0 ], 
-        [datetime(2021, 12, 20), 1,      4.0, 14.0 ], 
-        [datetime(2021, 12, 21), 1,      5.0, 15.0 ], 
-        [datetime(2021, 12, 22), 1,      6.0, 16.0 ], 
-        [datetime(2021, 12, 23), 1,      7.0, 17.0 ], 
+        ["DATE",                "REAL",  "A",   "B",  "C",   "Z"], 
+        [datetime(2021, 12, 20), 0,      1.0,  11.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 21), 0,      2.0,  12.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 22), 0,      3.0,  13.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 20), 1,      4.0,  14.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 21), 1,      5.0,  15.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 22), 1,      6.0,  16.0,  1.0,  0.0 ], 
+        [datetime(2021, 12, 23), 1,      7.0,  17.0,  1.0,  0.0 ], 
     ] 
     # fmt: on
 
@@ -67,8 +67,18 @@ def test_get_metadata(tmp_path: Path) -> None:
     ts = _create_synthetic_time_series_obj(tmp_path)
 
     all_vecnames = ts.vector_names()
-    assert len(all_vecnames) == 2
-    assert all_vecnames == ["A", "B"]
+    assert len(all_vecnames) == 4
+    assert all_vecnames == ["A", "B", "C", "Z"]
+
+    non_const_vec_names = ts.vector_names_filtered_by_value(
+        exclude_constant_values=True
+    )
+    assert len(non_const_vec_names) == 2
+    assert non_const_vec_names == ["A", "B"]
+
+    non_zero_vec_names = ts.vector_names_filtered_by_value(exclude_all_values_zero=True)
+    assert len(non_zero_vec_names) == 3
+    assert non_zero_vec_names == ["A", "B", "C"]
 
     all_realizations = ts.realizations()
     assert len(all_realizations) == 2
@@ -88,8 +98,7 @@ def test_get_vectors(tmp_path: Path) -> None:
     ts = _create_synthetic_time_series_obj(tmp_path)
 
     all_vecnames = ts.vector_names()
-    assert len(all_vecnames) == 2
-    assert all_vecnames == ["A", "B"]
+    assert len(all_vecnames) == 4
 
     valdf = ts.get_vectors_df(["A"])
     assert valdf.shape == (7, 3)

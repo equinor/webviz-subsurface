@@ -108,6 +108,28 @@ def _get_n_vectors_for_date_all_realizations(
 
 
 # -------------------------------------------------------------------------
+def _get_vector_names_filtered_by_value(ts: EnsembleTimeSeries) -> None:
+
+    print("## ------------------")
+    print("## entering _get_vector_names_filtered_by_value() ...")
+
+    start_tim = time.perf_counter()
+
+    filtered_vec_names = ts.vector_names_filtered_by_value(
+        exclude_all_values_zero=True, exclude_constant_values=True
+    )
+    print("## number of names returned:", len(filtered_vec_names))
+
+    elapsed_time_ms = 1000 * (time.perf_counter() - start_tim)
+
+    print(
+        "## finished _get_vector_names_filtered_by_value(), total time (ms)",
+        elapsed_time_ms,
+    )
+    print("## ------------------")
+
+
+# -------------------------------------------------------------------------
 def _run_perf_tests(factory: EnsembleTimeSeriesFactory) -> None:
 
     ensembles: Dict[str, str] = {
@@ -140,22 +162,32 @@ def _run_perf_tests(factory: EnsembleTimeSeriesFactory) -> None:
     print("## ts_set.ensemble_names()", ts_set.ensemble_names())
 
     ts = ts_set.ensemble("iter-0")
-    print("## len(ts.vector_names())", len(ts.vector_names()))
-    print("## len(ts.realizations())", len(ts.realizations()))
-    print("## len(ts.dates())", len(ts.dates()))
-
+    all_vector_names = ts.vector_names()
+    all_realizations = ts.realizations()
     all_dates = ts.dates()
+    num_vectors = len(all_vector_names)
+    num_realizations = len(all_realizations)
+    num_dates = len(all_dates)
+    print("## num_vectors:", num_vectors)
+    print("## num_realizations:", num_realizations)
+    print("## num_dates", num_dates)
 
     print()
     print()
 
+    _get_vector_names_filtered_by_value(ts)
+
+    _get_n_vectors_one_by_one_all_realizations(ts, 1)
     _get_n_vectors_one_by_one_all_realizations(ts, 50)
 
     _get_n_vectors_in_batch_all_realizations(ts, 50)
-    _get_n_vectors_in_batch_all_realizations(ts, 9999)
+    _get_n_vectors_in_batch_all_realizations(ts, 99999)
 
-    _get_n_vectors_for_date_all_realizations(ts, 9999, all_dates[0])
-    _get_n_vectors_for_date_all_realizations(ts, 9999, all_dates[-1])
+    n = 99999
+    _get_n_vectors_for_date_all_realizations(ts, n, all_dates[0])
+    _get_n_vectors_for_date_all_realizations(ts, n, all_dates[-1])
+    _get_n_vectors_for_date_all_realizations(ts, n, all_dates[int(num_dates / 2)])
+    _get_n_vectors_for_date_all_realizations(ts, n, all_dates[int(num_dates / 4)])
 
 
 # Running:

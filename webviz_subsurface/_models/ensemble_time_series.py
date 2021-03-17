@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Sequence
+from typing import List, Optional, Sequence
 import datetime
 import abc
 
@@ -10,6 +10,9 @@ import pandas as pd
 class EnsembleTimeSeries(abc.ABC):
     @abc.abstractmethod
     def vector_names(self) -> List[str]: ...
+
+    @abc.abstractmethod
+    def vector_names_filtered_by_value(self, exclude_all_values_zero: bool = False, exclude_constant_values: bool = False) -> List[str]: ...
 
     @abc.abstractmethod
     def realizations(self) -> List[int]: ...

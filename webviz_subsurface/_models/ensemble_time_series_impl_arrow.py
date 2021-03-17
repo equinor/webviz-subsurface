@@ -1,7 +1,8 @@
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Dict
 import datetime
 from pathlib import Path
 import time
+import json
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -9,6 +10,42 @@ import pandas as pd
 import numpy as np
 
 from .ensemble_time_series import EnsembleTimeSeries
+
+_MAIN_WEBVIZ_METADATA_KEY = b"webviz"
+_PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
+
+
+# -------------------------------------------------------------------------
+def _find_min_max_for_numeric_columns_in_df(
+    df: pd.DataFrame,
+) -> Dict[str, dict]:
+    desc_df = df.describe(percentiles=[])
+    ret_dict = {}
+    for vec_name in desc_df.columns:
+        minval = desc_df[vec_name]["min"]
+        maxval = desc_df[vec_name]["max"]
+
+        ret_dict[vec_name] = {"min": minval, "max": maxval}
+
+    return ret_dict
+
+
+# -------------------------------------------------------------------------
+def _add_per_vector_min_max_to_table_schema_metadata(
+    table: pa.Table, per_vector_min_max: Dict[str, dict]
+) -> pa.Table:
+    webviz_meta = {_PER_VECTOR_MIN_MAX_KEY: per_vector_min_max}
+    new_combined_meta = {}
+    new_combined_meta.update(table.schema.metadata)
+    new_combined_meta.update({_MAIN_WEBVIZ_METADATA_KEY: json.dumps(webviz_meta)})
+    table = table.replace_schema_metadata(new_combined_meta)
+    return table
+
+
+# -------------------------------------------------------------------------
+def _get_per_vector_min_max_from_schema(schema: pa.Schema) -> Dict[str, dict]:
+    webviz_meta = json.loads(schema.metadata[_MAIN_WEBVIZ_METADATA_KEY])
+    return webviz_meta[_PER_VECTOR_MIN_MAX_KEY]
 
 
 # =============================================================================
@@ -71,8 +108,23 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         table = pa.Table.from_pandas(
             ensemble_df, schema=schema_to_use, preserve_index=False
         )
-        del ensemble_df
         print(f"  time to convert from pandas (s): {(time.perf_counter() - lap_tim)}")
+
+        # Try and extract per column min/max values so we can store them in the arrow file
+        # For now, we do this on the Pandas dataframe
+        lap_tim = time.perf_counter()
+        per_vector_min_max = _find_min_max_for_numeric_columns_in_df(ensemble_df)
+        print(f"  time to find min/max values (s): {(time.perf_counter() - lap_tim)}")
+
+        # We're done with the dataframe
+        del ensemble_df
+
+        # Attach our calculated min/max as metadata on table's schema
+        lap_tim = time.perf_counter()
+        table = _add_per_vector_min_max_to_table_schema_metadata(
+            table, per_vector_min_max
+        )
+        print(f"  time add min/max to schema (s): {(time.perf_counter() - lap_tim)}")
 
         if do_sorting:
             lap_tim = time.perf_counter()
@@ -197,6 +249,49 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
     # -------------------------------------------------------------------------
     def vector_names(self) -> List[str]:
         return self._vector_names
+
+    # -------------------------------------------------------------------------
+    def vector_names_filtered_by_value(
+        self,
+        exclude_all_values_zero: bool = False,
+        exclude_constant_values: bool = False,
+    ) -> List[str]:
+
+        source = pa.memory_map(self._arrow_file_name, "r")
+        schema = pa.ipc.RecordBatchFileReader(source).schema
+        per_vector_min_max = _get_per_vector_min_max_from_schema(schema)
+
+        ret_vec_names: List[str] = []
+        for vec_name in self._vector_names:
+            minval = per_vector_min_max[vec_name]["min"]
+            maxval = per_vector_min_max[vec_name]["max"]
+
+            if minval == maxval:
+                if exclude_constant_values:
+                    continue
+
+                if exclude_all_values_zero and minval == 0:
+                    continue
+
+            ret_vec_names.append(vec_name)
+
+        return ret_vec_names
+
+        """
+        ret_vec_names: List[str] = []
+        for vec_name in self._vector_names:
+            minmax = pc.min_max(table[vec_name])
+            if minmax.get("min") == minmax.get("max"):
+                if exclude_constant_values:
+                    continue
+
+                if exclude_all_values_zero and minmax.get("min") == pa.scalar(0.0):
+                    continue
+
+            ret_vec_names.append(vec_name)
+
+        return ret_vec_names
+        """
 
     # -------------------------------------------------------------------------
     def realizations(self) -> List[int]:

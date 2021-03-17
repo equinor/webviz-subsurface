@@ -30,6 +30,33 @@ class EnsembleTimeSeriesImplInMemDataFrame(EnsembleTimeSeries):
         return self._vector_names
 
     # -------------------------------------------------------------------------
+    def vector_names_filtered_by_value(
+        self,
+        exclude_all_values_zero: bool = False,
+        exclude_constant_values: bool = False,
+    ) -> List[str]:
+
+        df = self._ensemble_df[self._vector_names]
+        desc_df = df.describe(percentiles=[])
+
+        ret_vec_names: List[str] = []
+
+        for vec_name in desc_df.columns:
+            minval = desc_df[vec_name]["min"]
+            maxval = desc_df[vec_name]["max"]
+
+            if minval == maxval:
+                if exclude_constant_values:
+                    continue
+
+                if exclude_all_values_zero and minval == 0:
+                    continue
+
+            ret_vec_names.append(vec_name)
+
+        return ret_vec_names
+
+    # -------------------------------------------------------------------------
     def realizations(self) -> List[int]:
         return self._realizations
 
