@@ -72,6 +72,39 @@ def _get_per_vector_min_max_from_schema(schema: pa.Schema) -> Dict[str, dict]:
     return webviz_meta[_PER_VECTOR_MIN_MAX_KEY]
 
 
+# -------------------------------------------------------------------------
+def _dbg_sum_all_numeric_columns_in_table(table: pa.Table) -> float:
+    lap_tim = time.perf_counter()
+
+    num_cols = 0
+    the_sum = 0
+    for col in table.itercolumns():
+        if col.type == pa.float64():
+            sum = pc.sum(col).as_py()
+            the_sum += sum
+            num_cols += 1
+
+    print(
+        f"DBG DONE SUMMING  num_cols={num_cols}  the_sum={the_sum}  time (ms): {1000*(time.perf_counter() - lap_tim)}"
+    )
+
+
+# -------------------------------------------------------------------------
+def _dbg_convert_all_numeric_columns_to_numpy(table: pa.Table) -> List[np.ndarray]:
+    lap_tim = time.perf_counter()
+
+    num_cols = 0
+    ret_arr: List[np.ndarray] = []
+    for col in table.itercolumns():
+        if col.type == pa.float64():
+            ret_arr.append(col.to_numpy())
+            num_cols += 1
+
+    print(
+        f"DBG DONE CONVERT TO NUMPY ARR  num_cols={num_cols}  time (ms): {1000*(time.perf_counter() - lap_tim)}"
+    )
+
+
 # =============================================================================
 class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
 
@@ -82,17 +115,26 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         print(f"init with arrow file: {self._arrow_file_name}")
         lap_tim = time.perf_counter()
 
-        # Discover columns and realizations that are present in the arrow file
-        with pa.memory_map(self._arrow_file_name, "r") as source:
-            reader = pa.ipc.RecordBatchFileReader(source)
-            column_names_on_file = reader.schema.names
-            unique_realizations_on_file = reader.read_all().column("REAL").unique()
+        # Discover columns and realizations that are present in the file
+        source = pa.memory_map(self._arrow_file_name, "r")
+        reader = pa.ipc.RecordBatchFileReader(source)
+
+        column_names_on_file = reader.schema.names
+        unique_realizations_on_file = reader.read_all().column("REAL").unique()
+
+        # For testing uncomment code below and we will be more
+        # aggressive and keep the "raw" table in memory
+        self._cached_reader = None
+        self._cached_full_table = None
+        # self._cached_reader = reader
+        # self._cached_full_table = reader.read_all()
 
         self._vector_names: List[str] = [
             colname
             for colname in column_names_on_file
             if colname not in ["DATE", "REAL", "ENSEMBLE"]
         ]
+
         self._realizations: List[int] = unique_realizations_on_file.to_pylist()
 
         print(f"time to init from arrow (s): {(time.perf_counter() - lap_tim)}")
@@ -101,6 +143,27 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
             raise ValueError("Init from backing store failed NO realizations")
         if not self._vector_names:
             raise ValueError("Init from backing store failed NO vector_names")
+
+    # -------------------------------------------------------------------------
+    def _get_or_read_schema(self) -> pa.Schema:
+        if self._cached_full_table:
+            return self._cached_full_table.schema
+        elif self._cached_reader:
+            return self._cached_reader.schema
+        else:
+            source = pa.memory_map(self._arrow_file_name, "r")
+            return pa.ipc.RecordBatchFileReader(source).schema
+
+    # -------------------------------------------------------------------------
+    def _get_or_read_table(self, columns: List[str]) -> pa.Table:
+        if self._cached_full_table:
+            return self._cached_full_table.select(columns)
+        elif self._cached_reader:
+            return self._cached_reader.read_all().select(columns)
+        else:
+            source = pa.memory_map(self._arrow_file_name, "r")
+            reader = pa.ipc.RecordBatchFileReader(source)
+            return reader.read_all().select(columns)
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -262,8 +325,7 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         exclude_constant_values: bool = False,
     ) -> List[str]:
 
-        source = pa.memory_map(self._arrow_file_name, "r")
-        schema = pa.ipc.RecordBatchFileReader(source).schema
+        schema = self._get_or_read_schema()
         per_vector_min_max = _get_per_vector_min_max_from_schema(schema)
 
         ret_vec_names: List[str] = []
@@ -283,6 +345,7 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         return ret_vec_names
 
         """
+        table = self._get_or_read_table(self._vector_names)
         ret_vec_names: List[str] = []
         for vec_name in self._vector_names:
             minmax = pc.min_max(table[vec_name])
@@ -306,10 +369,8 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
     def dates(
         self, realizations: Optional[Sequence[int]] = None
     ) -> List[datetime.datetime]:
-        source = pa.memory_map(self._arrow_file_name, "r")
-        table: pa.Table = (
-            pa.ipc.RecordBatchFileReader(source).read_all().select(["DATE", "REAL"])
-        )
+
+        table = self._get_or_read_table(["DATE", "REAL"])
 
         if realizations:
             mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
@@ -324,23 +385,20 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         self, vector_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
 
-        # Here we open the file each time we want to read data
-        # We can optimize this by keeping the file open, but should investigate andy downsides
-        source = pa.memory_map(self._arrow_file_name, "r")
-
         columns_to_get = ["DATE", "REAL"]
         columns_to_get.extend(vector_names)
-        table: pa.Table = (
-            pa.ipc.RecordBatchFileReader(source).read_all().select(columns_to_get)
-        )
+        table = self._get_or_read_table(columns_to_get)
 
         if realizations:
-            # mask = pc.equal(table["REAL"], pa.scalar(3))
             mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
-            df = table.filter(mask).to_pandas()
-        else:
-            df = table.to_pandas()
-            # df = table.to_pandas(split_blocks=True, self_destruct=True)
+            table = table.filter(mask)
+
+        # _dbg_sum_all_numeric_columns_in_table(table)
+        # _dbg_convert_all_numeric_columns_to_numpy(table)
+
+        # lap_tim = time.perf_counter()
+        df = table.to_pandas()
+        # print(f"  to pandas df (ms): {1000*(time.perf_counter() - lap_tim)}")
 
         # df = table.to_pandas(split_blocks=True, self_destruct=True)
         # del table  # not necessary, but a good practice
@@ -356,12 +414,9 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
     ) -> pd.DataFrame:
 
         lap_tim = time.perf_counter()
-        source = pa.memory_map(self._arrow_file_name, "r")
         columns_to_get = ["DATE", "REAL"]
         columns_to_get.extend(vector_names)
-        table: pa.Table = (
-            pa.ipc.RecordBatchFileReader(source).read_all().select(columns_to_get)
-        )
+        table = self._get_or_read_table(columns_to_get)
         print(f"  open and read (ms): {1000*(time.perf_counter() - lap_tim)}")
 
         lap_tim = time.perf_counter()
@@ -380,6 +435,9 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         # table = table.filter(mask).combine_chunks()
         table = table.filter(mask)
         print(f"  filter (ms): {1000*(time.perf_counter() - lap_tim)}")
+
+        # _dbg_sum_all_numeric_columns_in_table(table)
+        # _dbg_convert_all_numeric_columns_to_numpy(table)
 
         lap_tim = time.perf_counter()
         # df = table.to_pandas(split_blocks=True, zero_copy_only=True)
