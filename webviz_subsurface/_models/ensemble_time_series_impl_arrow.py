@@ -6,6 +6,7 @@ import json
 
 import pyarrow as pa
 import pyarrow.compute as pc
+import pyarrow.feather
 import pandas as pd
 import numpy as np
 
@@ -13,6 +14,29 @@ from .ensemble_time_series import EnsembleTimeSeries
 
 _MAIN_WEBVIZ_METADATA_KEY = b"webviz"
 _PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
+
+
+# -------------------------------------------------------------------------
+def _create_downcasting_schema(schema: pa.Schema) -> pa.Schema:
+    dt_float64 = pa.float64()
+    dt_float32 = pa.float32()
+    types = schema.types
+    for i, t in enumerate(types):
+        if t == dt_float64:
+            types[i] = dt_float32
+
+    field_list = zip(schema.names, types)
+    return pa.schema(field_list)
+
+
+# -------------------------------------------------------------------------
+# @profile
+def _sort_table_on_date_and_real(table: pa.Table) -> pa.Table:
+    indices = pc.sort_indices(
+        table, sort_keys=[("DATE", "ascending"), ("REAL", "ascending")]
+    )
+    sorted_table = table.take(indices)
+    return sorted_table
 
 
 # -------------------------------------------------------------------------
@@ -97,7 +121,7 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         schema_to_use: pa.Schema = None
         if do_convert_to_float32:
             lap_tim = time.perf_counter()
-            schema_to_use = EnsembleTimeSeriesImplArrow._create_downcasting_schema(
+            schema_to_use = _create_downcasting_schema(
                 pa.Schema.from_pandas(ensemble_df, preserve_index=None)
             )
             print(
@@ -128,13 +152,19 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
 
         if do_sorting:
             lap_tim = time.perf_counter()
-            table = EnsembleTimeSeriesImplArrow._sort_table_on_date_and_real(table)
+            table = _sort_table_on_date_and_real(table)
             print(f"  time spend sorting table (s): {(time.perf_counter() - lap_tim)}")
 
         lap_tim = time.perf_counter()
+
         with pa.OSFile(str(arrow_file_name), "wb") as sink:
             with pa.RecordBatchFileWriter(sink, table.schema) as writer:
                 writer.write_table(table)
+
+        # pa.feather.write_feather(
+        #    table, dest=arrow_file_name, compression="uncompressed"
+        # )
+
         print(
             f"  time writing arrow (s): {(time.perf_counter() - lap_tim)}   fn: {arrow_file_name}"
         )
@@ -165,9 +195,7 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         for real_idx, real_df in enumerate(per_real_dfs):
             if do_convert_to_float32:
                 org_schema = pa.Schema.from_pandas(real_df, preserve_index=False)
-                new_schema = EnsembleTimeSeriesImplArrow._create_downcasting_schema(
-                    org_schema
-                )
+                new_schema = _create_downcasting_schema(org_schema)
                 table = pa.Table.from_pandas(
                     real_df, schema=new_schema, preserve_index=False
                 )
@@ -196,7 +224,7 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
 
         if do_sorting:
             lap_tim = time.perf_counter()
-            table = EnsembleTimeSeriesImplArrow._sort_table_on_date_and_real(table)
+            table = _sort_table_on_date_and_real(table)
             print(f"  time spend sorting table (s): {(time.perf_counter() - lap_tim)}")
 
         lap_tim = time.perf_counter()
@@ -222,29 +250,6 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
             return EnsembleTimeSeriesImplArrow(arrow_file_name)
 
         return None
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def _create_downcasting_schema(schema: pa.Schema) -> pa.Schema:
-        dt_float64 = pa.float64()
-        dt_float32 = pa.float32()
-        types = schema.types
-        for i, t in enumerate(types):
-            if t == dt_float64:
-                types[i] = dt_float32
-
-        field_list = zip(schema.names, types)
-        return pa.schema(field_list)
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    # @profile
-    def _sort_table_on_date_and_real(table: pa.Table) -> pa.Table:
-        indices = pc.sort_indices(
-            table, sort_keys=[("DATE", "ascending"), ("REAL", "ascending")]
-        )
-        sorted_table = table.take(indices)
-        return sorted_table
 
     # -------------------------------------------------------------------------
     def vector_names(self) -> List[str]:
@@ -350,21 +355,35 @@ class EnsembleTimeSeriesImplArrow(EnsembleTimeSeries):
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
 
+        lap_tim = time.perf_counter()
         source = pa.memory_map(self._arrow_file_name, "r")
-
         columns_to_get = ["DATE", "REAL"]
         columns_to_get.extend(vector_names)
         table: pa.Table = (
             pa.ipc.RecordBatchFileReader(source).read_all().select(columns_to_get)
         )
+        print(f"  open and read (ms): {1000*(time.perf_counter() - lap_tim)}")
 
+        lap_tim = time.perf_counter()
         mask = pc.equal(table["DATE"], date)
+        print(f"  create mask (ms): {1000*(time.perf_counter() - lap_tim)}")
 
         if realizations:
             real_mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
             mask = pc.and_(mask, real_mask)
 
+        lap_tim = time.perf_counter()
         table = table.drop(["DATE"])
-        df = table.filter(mask).to_pandas()
+        print(f"  drop date (ms): {1000*(time.perf_counter() - lap_tim)}")
+
+        lap_tim = time.perf_counter()
+        # table = table.filter(mask).combine_chunks()
+        table = table.filter(mask)
+        print(f"  filter (ms): {1000*(time.perf_counter() - lap_tim)}")
+
+        lap_tim = time.perf_counter()
+        # df = table.to_pandas(split_blocks=True, zero_copy_only=True)
+        df = table.to_pandas()
+        print(f"  to pandas df (ms): {1000*(time.perf_counter() - lap_tim)}")
 
         return df
