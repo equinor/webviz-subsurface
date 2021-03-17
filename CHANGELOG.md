@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+
+## [0.1.9] - 2021-02-23
 ### Fixed
 - [#569](https://github.com/equinor/webviz-subsurface/pull/569) - Allow sharing of ensemble smry datasets in memory between plugins instances. Note that currently sharing can only be accomplished between plugin instances that use the same ensembles, column_keys and time_index.
 - [#552](https://github.com/equinor/webviz-subsurface/pull/552) - Fixed an issue where webvizstore was not properly initialized in ParameterAnalysis plugin
