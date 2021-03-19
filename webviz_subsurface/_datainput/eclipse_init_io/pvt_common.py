@@ -588,9 +588,9 @@ class EclPhaseIndex(Enum):
     """Enumerator holding the different phases according
     to Eclipse file conventions"""
 
-    Aqua = 0
-    Liquid = 1
-    Vapour = 2
+    AQUA = 0
+    LIQUID = 1
+    VAPOUR = 2
 
 
 def is_const_compr_index() -> int:
@@ -616,11 +616,11 @@ def surface_mass_density(
         List of surface mass density values.
 
     """
-    if phase is EclPhaseIndex.Liquid:
+    if phase is EclPhaseIndex.LIQUID:
         col = 0
-    elif phase is EclPhaseIndex.Aqua:
+    elif phase is EclPhaseIndex.AQUA:
         col = 1
-    elif phase is EclPhaseIndex.Vapour:
+    elif phase is EclPhaseIndex.VAPOUR:
         col = 2
     else:
         raise AttributeError("Phase must be Liquid, Water or Vapour.")

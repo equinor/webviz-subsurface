@@ -692,7 +692,7 @@ class Oil(FluidImplementation):
         raw.data = tab[start : start + num_tab_elements]
 
         surface_mass_densities = surface_mass_density(
-            ecl_init_file, EclPhaseIndex.Liquid, keep_unit_system
+            ecl_init_file, EclPhaseIndex.LIQUID, keep_unit_system
         )
 
         return Oil(
