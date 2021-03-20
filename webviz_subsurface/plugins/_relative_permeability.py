@@ -521,8 +521,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 colors = RelativePermeability.SCAL_COLORMAP
             nplots = (
                 2
-                if any([curve.startswith("PC") for curve in curves])
-                and any([curve.startswith("KR") for curve in curves])
+                if any(curve.startswith("PC") for curve in curves)
+                and any(curve.startswith("KR") for curve in curves)
                 else 1
             )
             layout = plot_layout(
@@ -917,7 +917,7 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
         ["Relative Permeability", "Capillary Pressure"]
         if nplots == 2
         else ["Relative Permeability"]
-        if any([curve.startswith("KR") for curve in curves])
+        if any(curve.startswith("KR") for curve in curves)
         else ["Capillary Pressure"]
     )
     layout = {}
@@ -1000,7 +1000,7 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
                 "margin": {"t": 20, "b": 0},
             }
         )
-        if any([curve.startswith("KR") for curve in curves]):
+        if any(curve.startswith("KR") for curve in curves):
             layout["yaxis"].update({"title": {"text": "kr"}})
         else:
             layout["yaxis"].update({"title": {"text": "Pc"}})

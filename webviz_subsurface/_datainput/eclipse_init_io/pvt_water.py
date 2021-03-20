@@ -401,7 +401,7 @@ class Water(FluidImplementation):
         raw.data = tab[start : start + num_tab_elements]
 
         surface_mass_densities = surface_mass_density(
-            ecl_init_file, EclPhaseIndex.Aqua, keep_unit_system
+            ecl_init_file, EclPhaseIndex.AQUA, keep_unit_system
         )
 
         return Water(

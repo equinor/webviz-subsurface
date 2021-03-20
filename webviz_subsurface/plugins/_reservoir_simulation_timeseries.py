@@ -185,7 +185,7 @@ folder, to avoid risk of not extracting the right data.
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
             )
-        if any([col.startswith(("AVG_", "INTVL_")) for col in self.smry.columns]):
+        if any(col.startswith(("AVG_", "INTVL_")) for col in self.smry.columns):
             raise ValueError(
                 "Your data set includes time series vectors which have names starting with"
                 "'AVG_' and/or 'INTVL_'. These prefixes are not allowed, as they are used"

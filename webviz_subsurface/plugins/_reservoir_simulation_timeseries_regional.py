@@ -210,10 +210,8 @@ folder, to avoid risk of not extracting the right data.
         self.initial_vector = (
             initial_vector
             if any(
-                [
-                    col.startswith((f"{initial_vector}:", f"{initial_vector}_"))
-                    for col in self.smry_cols
-                ]
+                col.startswith((f"{initial_vector}:", f"{initial_vector}_"))
+                for col in self.smry_cols
             )
             else simulation_vector_base(self.smry_cols[0])
         )
