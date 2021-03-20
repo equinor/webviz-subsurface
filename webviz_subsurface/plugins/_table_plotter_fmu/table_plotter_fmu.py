@@ -27,6 +27,7 @@ class TablePlotterFMU(WebvizPluginABC):
         csvfile: str = None,
         ensembles: list = None,
         aggregated_csvfile: Path = None,
+        aggregated_parameterfile: Path = None,
         observation_file: Path = None,
     ):
         super().__init__()
@@ -60,6 +61,40 @@ class TablePlotterFMU(WebvizPluginABC):
             raise ValueError(
                 "Specify either ensemble and csvfile or aggregated_csvfile"
             )
+        if aggregated_parameterfile is not None:
+            self._parametermodelset = (
+                model_factory.create_model_set_from_aggregated_csv_file(
+                    aggregated_parameterfile
+                )
+            )
+            self._ensemble_names = list(
+                set().union(
+                    *[
+                        ens
+                        for ens in [
+                            self._tablemodelset.ensemble_names(),
+                            self._parametermodelset.ensemble_names(),
+                        ]
+                    ]
+                )
+            )
+            self._parameter_names = list(
+                set().union(
+                    *[
+                        self._parametermodelset.ensemble(ens).column_names()
+                        for ens in self._ensemble_names
+                    ]
+                )
+            )
+            self._data_column_names = list(
+                set().union(
+                    *[
+                        self._tablemodelset.ensemble(ens).column_names()
+                        for ens in self._ensemble_names
+                    ]
+                )
+            )
+
         self._observationmodel = ObservationModel(observation_file)
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
@@ -72,7 +107,12 @@ class TablePlotterFMU(WebvizPluginABC):
 
     @property
     def layout(self) -> html.Div:
-        return main_view(get_uuid=self.uuid, tablemodel=self._tablemodelset)
+        return main_view(
+            get_uuid=self.uuid,
+            ensemble_names=self._ensemble_names,
+            data_column_names=self._data_column_names,
+            parameter_names=self._parameter_names,
+        )
 
     def set_callbacks(self, app: dash.Dash) -> None:
         return main_controller(
@@ -80,4 +120,5 @@ class TablePlotterFMU(WebvizPluginABC):
             get_uuid=self.uuid,
             tablemodel=self._tablemodelset,
             observationmodel=self._observationmodel,
+            parametermodel=self._parametermodelset,
         )

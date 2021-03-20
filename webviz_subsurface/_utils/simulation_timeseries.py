@@ -66,7 +66,7 @@ def calc_series_statistics(
     stat_df = (
         df[["ENSEMBLE", refaxis] + vectors]
         .groupby(["ENSEMBLE", refaxis])
-        .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
+        .agg([np.nanmean, np.nanmin, np.nanmax])
         .reset_index(level=["ENSEMBLE", refaxis], col_level=1)
     )
     # Rename nanmin, nanmax and nanmean to min, max and mean.
@@ -74,8 +74,8 @@ def calc_series_statistics(
         "nanmin": "min",
         "nanmax": "max",
         "nanmean": "mean",
-        "p10": "high_p10",
-        "p90": "low_p90",
+        # "p10": "high_p10",
+        # "p90": "low_p90",
     }
     stat_df.rename(columns=col_stat_label_map, level=1, inplace=True)
 

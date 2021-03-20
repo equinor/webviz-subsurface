@@ -7,7 +7,7 @@ import dash_html_components as html
 def plot_options_view(get_uuid) -> html.Div:
     return html.Div(
         className="framed",
-        style={"height": "600px", "fontSize": "0.9em"},
+        style={"height": "600px", "fontSize": "0.8em"},
         children=[
             html.H5("Plot options"),
             dropdown_for_plotly_layout(

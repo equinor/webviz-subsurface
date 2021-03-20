@@ -10,9 +10,15 @@ import webviz_subsurface
 from webviz_subsurface._models import EnsembleTableModelSet
 from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
+from .group_and_filter_selectors import group_by_view
 
 
-def main_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div:
+def main_view(
+    get_uuid: Callable,
+    ensemble_names=List[str],
+    data_column_names=List[str],
+    parameter_names=List[str],
+) -> html.Div:
     WEBVIZ_ASSETS.add(
         Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "container.css"
     )
@@ -22,7 +28,18 @@ def main_view(get_uuid: Callable, tablemodel: EnsembleTableModelSet) -> html.Div
                 style={"flex": 1, "height": "89vh"},
                 children=[
                     data_stores(get_uuid=get_uuid),
-                    data_selectors_view(get_uuid=get_uuid, tablemodel=tablemodel),
+                    data_selectors_view(
+                        get_uuid=get_uuid,
+                        ensemble_names=ensemble_names,
+                        data_column_names=data_column_names,
+                        parameter_names=parameter_names,
+                    ),
+                    group_by_view(
+                        get_uuid=get_uuid,
+                        ensemble_names=ensemble_names,
+                        data_column_names=data_column_names,
+                        parameter_names=parameter_names,
+                    ),
                     plot_options_view(get_uuid=get_uuid),
                 ],
             ),
