@@ -26,6 +26,7 @@ setup(
         "webviz_subsurface": [
             "_abbreviations/abbreviation_data/*.json",
             "_assets/css/*.css",
+            "_assets/js/*.js",
         ]
     },
     entry_points={

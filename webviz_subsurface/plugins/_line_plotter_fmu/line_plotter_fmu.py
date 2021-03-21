@@ -99,9 +99,8 @@ class LinePlotterFMU(WebvizPluginABC):
         self._observationmodel = ObservationModel(self._observationfile)
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
-            / "plugins"
-            / "_line_plotter_fmu"
-            / "assets"
+            / "_assets"
+            / "js"
             / "update_plotly_figure.js"
         )
         self.set_callbacks(app)
