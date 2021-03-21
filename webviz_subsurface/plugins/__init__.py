@@ -22,7 +22,7 @@ pages:
 
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
-from ._table_plotter_fmu.table_plotter_fmu import TablePlotterFMU
+from ._line_plotter_fmu.line_plotter_fmu import LinePlotterFMU
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 from ._inplace_volumes import InplaceVolumes

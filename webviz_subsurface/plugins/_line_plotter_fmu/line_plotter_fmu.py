@@ -1,9 +1,10 @@
-from typing import Dict
+from typing import Dict, List, Tuple, Callable
 from pathlib import Path
 
 import dash
 import dash_html_components as html
 
+from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -19,7 +20,7 @@ from .views import main_view
 from .controllers import main_controller
 
 
-class TablePlotterFMU(WebvizPluginABC):
+class LinePlotterFMU(WebvizPluginABC):
     def __init__(
         self,
         app: dash.Dash,
@@ -94,16 +95,19 @@ class TablePlotterFMU(WebvizPluginABC):
                     ]
                 )
             )
-
-        self._observationmodel = ObservationModel(observation_file)
+        self._observationfile = get_path(observation_file)
+        self._observationmodel = ObservationModel(self._observationfile)
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "plugins"
-            / "_table_plotter_fmu"
+            / "_line_plotter_fmu"
             / "assets"
-            / "update_axis.js"
+            / "update_plotly_figure.js"
         )
         self.set_callbacks(app)
+
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        return [(get_path, [{"path": self._observationfile}])]
 
     @property
     def layout(self) -> html.Div:
@@ -122,3 +126,8 @@ class TablePlotterFMU(WebvizPluginABC):
             observationmodel=self._observationmodel,
             parametermodel=self._parametermodelset,
         )
+
+
+@webvizstore
+def get_path(path: Path) -> Path:
+    return Path(path)
