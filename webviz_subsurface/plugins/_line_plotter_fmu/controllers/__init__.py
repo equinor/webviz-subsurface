@@ -127,7 +127,7 @@ def main_controller(
         figure = px.line(
             df,
             color="label",
-            line_group="label",
+            line_group="REAL",
             color_discrete_sequence=px.colors.sequential.Plasma_r,
             **data_attrs,
             **parameter_attrs,

@@ -18,6 +18,8 @@ def main_view(
     ensemble_names=List[str],
     data_column_names=List[str],
     parameter_names=List[str],
+    initial_data=Dict,
+    initial_layout=Dict,
 ) -> html.Div:
     WEBVIZ_ASSETS.add(
         Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "container.css"
@@ -33,6 +35,7 @@ def main_view(
                         ensemble_names=ensemble_names,
                         data_column_names=data_column_names,
                         parameter_names=parameter_names,
+                        initial_data=initial_data,
                     ),
                     group_by_view(
                         get_uuid=get_uuid,

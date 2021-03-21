@@ -10,9 +10,10 @@ from webviz_subsurface._models import EnsembleTableModelSet
 
 def data_selectors_view(
     get_uuid: Callable,
-    ensemble_names=List[str],
-    data_column_names=List[str],
-    parameter_names=List[str],
+    ensemble_names: List[str],
+    data_column_names: List[str],
+    parameter_names: List[str],
+    initial_data: Dict,
 ) -> html.Div:
     return html.Div(
         className="framed",
@@ -25,7 +26,7 @@ def data_selectors_view(
                 data_attribute="ensemble",
                 title="Ensemble",
                 options=[{"label": col, "value": col} for col in ensemble_names],
-                value=[ensemble_names[0]],
+                value=initial_data.get("ensembles", [ensemble_names[0]]),
                 multi=True,
             ),
             dropdown_for_plotly_data(
@@ -34,7 +35,7 @@ def data_selectors_view(
                 data_attribute="x",
                 title="X-value",
                 options=[{"label": col, "value": col} for col in data_column_names],
-                value=data_column_names[0],
+                value=initial_data.get("x", data_column_names[0]),
             ),
             dropdown_for_plotly_data(
                 uuid=get_uuid("plotly_data"),
@@ -42,7 +43,7 @@ def data_selectors_view(
                 data_attribute="y",
                 title="Y-value",
                 options=[{"label": col, "value": col} for col in data_column_names],
-                value=data_column_names[-1],
+                value=initial_data.get("y", data_column_names[-1]),
             ),
             # dropdown_for_plotly_data(
             #     uuid=get_uuid("plotly_data"),

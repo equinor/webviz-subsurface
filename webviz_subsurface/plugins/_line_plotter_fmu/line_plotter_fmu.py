@@ -30,6 +30,8 @@ class LinePlotterFMU(WebvizPluginABC):
         aggregated_csvfile: Path = None,
         aggregated_parameterfile: Path = None,
         observation_file: Path = None,
+        initial_data: Dict = None,
+        initial_layout: Dict = None,
     ):
         super().__init__()
 
@@ -41,7 +43,8 @@ class LinePlotterFMU(WebvizPluginABC):
             allow_storage_writes=not is_running_portable,
         )
         # model_factory = EnsembleTableModelFactorySimpleInMemory()
-
+        self._initial_data = initial_data if initial_data else {}
+        self._initial_layout = initial_layout if initial_layout else {}
         if ensembles is not None and csvfile is not None:
             ensembles_dict: Dict[str, str] = {
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
@@ -115,6 +118,8 @@ class LinePlotterFMU(WebvizPluginABC):
             ensemble_names=self._ensemble_names,
             data_column_names=self._data_column_names,
             parameter_names=self._parameter_names,
+            initial_data=self._initial_data,
+            initial_layout=self._initial_layout,
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
