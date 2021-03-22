@@ -91,8 +91,6 @@ jobs:
         pushd example_subsurface_app
         # Related to https://github.com/equinor/webviz-config/issues/150:
         echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
-        # There are dependencies which we can't have in setup.py yet due to limitations in internal deployment system ("komodo"):
-        echo "RUN pip install --user libecl ecl2df==0.8.2 opm" >> Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
