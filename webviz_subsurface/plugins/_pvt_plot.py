@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Tuple, Union, Any
 import pandas as pd
 import dash
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -137,6 +137,19 @@ class PvtPlot(WebvizPluginABC):
 
         self.set_callbacks(app)
 
+    @staticmethod
+    def plot_visibility_options(phase: str = "") -> Dict[str, str]:
+        options = {
+            "fvf": "Formation Volume Factor",
+            "viscosity": "Viscosity",
+            "density": "Density",
+        }
+        if phase == "PVTO":
+            options["ratio"] = "Gas/Oil Ratio (Rs)"
+        if phase == "PVTG":
+            options["ratio"] = "Vaporized Oil Ratio (Rv)"
+        return options
+
     @property
     def phases(self) -> Dict[str, str]:
         phase_descriptions: Dict[str, str] = {}
@@ -211,14 +224,14 @@ class PvtPlot(WebvizPluginABC):
         ]
 
     @staticmethod
-    def set_grid_layout(columns: int, padding: int = 0) -> Dict[str, str]:
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-            "padding": f"{padding}px",
-        }
+    def label(text: str, margin_top: bool = True) -> html.Span:
+        return html.Span(
+            text,
+            style={
+                "font-weight": "bold",
+                "margin-top": ("8px" if margin_top else "0"),
+            },
+        )
 
     @property
     def layout(self) -> wcc.FlexBox:
@@ -232,7 +245,7 @@ class PvtPlot(WebvizPluginABC):
                         html.Label(
                             id=self.uuid("color_by_selector"),
                             children=[
-                                html.Span("Color by:", style={"font-weight": "bold"}),
+                                self.label("Color by:"),
                                 dcc.Dropdown(
                                     id=self.uuid("color_by"),
                                     clearable=False,
@@ -248,11 +261,12 @@ class PvtPlot(WebvizPluginABC):
                                     persistence_type="session",
                                 ),
                             ],
+                            style={"margin-bottom": "8px", "display": "block"},
                         ),
                         html.Label(
                             id=self.uuid("ensemble_selector"),
                             children=[
-                                html.Span("Ensembles:", style={"font-weight": "bold"}),
+                                self.label("Ensembles:"),
                                 dcc.Dropdown(
                                     id=self.uuid("ensemble"),
                                     clearable=False,
@@ -265,14 +279,12 @@ class PvtPlot(WebvizPluginABC):
                                     persistence_type="session",
                                 ),
                             ],
+                            style={"margin-bottom": "8px", "display": "block"},
                         ),
                         html.Label(
                             id=self.uuid("phase_selector"),
                             children=[
-                                html.Span(
-                                    "Phase:",
-                                    style={"font-weight": "bold"},
-                                ),
+                                self.label("Phase:"),
                                 dcc.Dropdown(
                                     id=self.uuid("phase"),
                                     clearable=False,
@@ -289,11 +301,12 @@ class PvtPlot(WebvizPluginABC):
                                     persistence_type="session",
                                 ),
                             ],
+                            style={"margin-bottom": "8px", "display": "block"},
                         ),
                         html.Label(
                             id=self.uuid("pvtnum_selector"),
                             children=[
-                                html.Span("Pvtnum:", style={"font-weight": "bold"}),
+                                self.label("Pvtnum:"),
                                 dcc.Dropdown(
                                     id=self.uuid("pvtnum"),
                                     clearable=False,
@@ -306,14 +319,34 @@ class PvtPlot(WebvizPluginABC):
                                     persistence_type="session",
                                 ),
                             ],
+                            style={"margin-bottom": "8px", "display": "block"},
+                        ),
+                        html.Label(
+                            id=self.uuid("plot_visibility_selector"),
+                            children=[
+                                self.label("Show plots"),
+                                dcc.Checklist(
+                                    id=self.uuid("plots_visibility"),
+                                    options=[
+                                        {"label": l, "value": v}
+                                        for v, l in self.plot_visibility_options().items()
+                                    ],
+                                    value=[
+                                        "fvf",
+                                        "viscosity",
+                                        "density",
+                                        "ratio",
+                                    ],
+                                    labelStyle={"display": "block"},
+                                    persistence=True,
+                                    persistence_type="session",
+                                ),
+                            ],
+                            style={"margin-bottom": "8px", "display": "block"},
                         ),
                     ],
                 ),
-                html.Div(
-                    id=self.uuid("graphs"),
-                    style={"flex": "4"},
-                    children=wcc.Graph(id=self.uuid("graph")),
-                ),
+                html.Div(id=self.uuid("graphs"), style={"flex": "4", "height": "90vh"}),
                 dcc.Store(
                     id=self.uuid("init_callback"), storage_type="session", data=True
                 ),
@@ -322,14 +355,13 @@ class PvtPlot(WebvizPluginABC):
 
     def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
-            [
-                Output(self.uuid("graph"), "figure"),
-            ],
+            Output(self.uuid("graphs"), "children"),
             [
                 Input(self.uuid("phase"), "value"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("pvtnum"), "value"),
                 Input(self.uuid("color_by"), "value"),
+                Input(self.uuid("plots_visibility"), "value"),
             ],
         )
         def _update_graph(
@@ -337,7 +369,8 @@ class PvtPlot(WebvizPluginABC):
             ensembles: Union[List[str], str],
             pvtnums: Union[List[str], str],
             color_by: str,
-        ) -> List[Union[Dict[str, Union[dict, List[dict]]], bool]]:
+            plots_visibility: Union[List[str], str],
+        ) -> html.Div:
             if not phase:
                 raise PreventUpdate
             if ensembles is None:
@@ -354,13 +387,42 @@ class PvtPlot(WebvizPluginABC):
             elif color_by == "PVTNUM":
                 colors = self.pvtnum_colors
 
-            layout = plot_layout(
-                phase, color_by, self.plotly_theme["layout"], data_frame
+            return html.Div(
+                style={
+                    "display": "flex",
+                    "flex-wrap": "wrap",
+                },
+                children=[
+                    create_graph(
+                        data_frame,
+                        color_by,
+                        colors,
+                        phase,
+                        plot,
+                        self.plot_visibility_options(self.phases[phase])[plot],
+                        self.plotly_theme,
+                    )
+                    for plot in plots_visibility
+                ],
             )
 
-            traces = add_realization_traces(data_frame, color_by, colors, phase)
-
-            return [{"data": traces, "layout": layout}]
+        @app.callback(
+            [
+                Output(self.uuid("plots_visibility"), "options"),
+                Output(self.uuid("plots_visibility"), "value"),
+            ],
+            Input(self.uuid("phase"), "value"),
+            State(self.uuid("plots_visibility"), "value"),
+        )
+        def _set_available_plots(
+            phase: str,
+            values: List[str],
+        ) -> Tuple[List[dict], List[str]]:
+            visibility_options = self.plot_visibility_options(self.phases[phase])
+            return (
+                [{"label": l, "value": v} for v, l in visibility_options.items()],
+                [value for value in values if value in visibility_options.keys()],
+            )
 
         @app.callback(
             [
@@ -459,14 +521,141 @@ def filter_data_frame(
     return data_frame.fillna(0)
 
 
-def add_realization_traces(
-    data_frame: pd.DataFrame, color_by: str, colors: Dict[str, List[str]], phase: str
+def create_graph(
+    data_frame: pd.DataFrame,
+    color_by: str,
+    colors: Dict[str, List[str]],
+    phase: str,
+    plot: str,
+    plot_title: str,
+    theme: dict,
+) -> html.Div:
+    return html.Div(
+        style={
+            "min-width": "500px",
+            "min-height": "400px",
+            "text-align": "center",
+            "padding": "2%",
+            "flex": "1 1 46%",
+        },
+        children=(
+            [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                dcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            fr"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "VOLUMEFACTOR",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "fvf"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                dcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            fr"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "VISCOSITY",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "viscosity"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                dcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            fr"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "DENSITY",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "density"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                dcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            fr"[{data_frame['RATIO_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "RATIO",
+                            False,
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "ratio"
+            else []
+        ),
+    )
+
+
+def create_traces(
+    data_frame: pd.DataFrame,
+    color_by: str,
+    colors: Dict[str, List[str]],
+    phase: str,
+    column_name: str,
+    show_scatter_values: bool,
+    show_border_values: bool,
+    show_border_markers: bool = False,
 ) -> List[dict]:
     """Renders line traces for individual realizations"""
     # pylint: disable-msg=too-many-locals
+    # pylint: disable=too-many-nested-blocks
     # pylint: disable=too-many-branches
 
     traces = []
+    hovertext: Union[List[str], str]
+    border_value_pressure: Dict[str, list] = {}
+    border_value_dependent: Dict[str, list] = {}
 
     dim_column_name = "RATIO"
 
@@ -488,9 +677,6 @@ def add_realization_traces(
         ascending=[True, True, True],
     )
 
-    border_value_pressure: Dict[str, list] = {}
-    border_value_viscosity: Dict[str, list] = {}
-    border_value_volumefactor: Dict[str, list] = {}
     constant_group = (
         data_frame["PVTNUM"].iloc[0]
         if color_by == "ENSEMBLE"
@@ -506,30 +692,37 @@ def add_realization_traces(
             ):
                 if group not in border_value_pressure:
                     border_value_pressure[group] = []
-                    border_value_viscosity[group] = []
-                    border_value_volumefactor[group] = []
+                    border_value_dependent[group] = []
                 try:
                     border_value_pressure[group].append(
                         realization_data_frame.loc[
                             realization_data_frame[dim_column_name] == set_value
                         ]["PRESSURE"].iloc[0]
                     )
-                    border_value_volumefactor[group].append(
-                        realization_data_frame.loc[
-                            realization_data_frame[dim_column_name] == set_value
-                        ]["VOLUMEFACTOR"].iloc[0]
-                    )
-                    if phase == "OIL":
-                        border_value_viscosity[group].append(
-                            realization_data_frame[
-                                (realization_data_frame[dim_column_name] == set_value)
-                            ]["VISCOSITY"].iloc[0]
-                        )
+                    if column_name == "VISCOSITY":
+                        if phase == "OIL":
+                            border_value_dependent[group].append(
+                                realization_data_frame[
+                                    (
+                                        realization_data_frame[dim_column_name]
+                                        == set_value
+                                    )
+                                ]["VISCOSITY"].iloc[0]
+                            )
+                        else:
+                            border_value_dependent[group].append(
+                                realization_data_frame[
+                                    (
+                                        realization_data_frame[dim_column_name]
+                                        == set_value
+                                    )
+                                ]["VISCOSITY"].max()
+                            )
                     else:
-                        border_value_viscosity[group].append(
-                            realization_data_frame[
-                                (realization_data_frame[dim_column_name] == set_value)
-                            ]["VISCOSITY"].max()
+                        border_value_dependent[group].append(
+                            realization_data_frame.loc[
+                                realization_data_frame[dim_column_name] == set_value
+                            ][column_name].iloc[0]
                         )
                 except IndexError as exc:
                     raise IndexError(
@@ -538,218 +731,138 @@ def add_realization_traces(
                         "supported."
                     ) from exc
 
-                hovertext: Union[str, list] = ""
-                if phase == "OIL":
-                    hovertext = (
-                        "{} Pvtnum: {}<br />Realization: {}, Ensemble: {}".format(
-                            f"Rs = {set_value}"
-                            if realization_data_frame["KEYWORD"]
-                            .str.contains("PVTO")
-                            .any()
-                            else "",
-                            group if color_by == "PVTNUM" else constant_group,
-                            realization,
-                            group if color_by == "ENSEMBLE" else constant_group,
-                        )
-                    )
-                elif phase == "GAS":
-                    hovertext = [
-                        "{}"
-                        "Pvtnum: "
-                        "{}<br>"
-                        "Realization: {}, Ensemble: "
-                        "{}".format(
-                            "Rv = {}, ".format(
+                if show_scatter_values:
+                    if phase == "GAS":
+                        hovertext = [
+                            create_hovertext(
+                                phase,
+                                realization_data_frame["KEYWORD"].iloc[0],
+                                constant_group,
+                                group,
+                                color_by,
+                                realization,
                                 realization_data_frame.loc[
                                     (realization_data_frame["PRESSURE"] == y)
-                                    & (realization_data_frame["VOLUMEFACTOR"] == x)
-                                ]["RATIO"].iloc[0]
+                                    & (realization_data_frame[column_name] == x)
+                                ]["RATIO"].iloc[0],
                             )
-                            if realization_data_frame["KEYWORD"]
-                            .str.contains("PVTG")
-                            .any()
-                            else "",
-                            group if color_by == "PVTNUM" else constant_group,
-                            realization,
-                            group if color_by == "ENSEMBLE" else constant_group,
-                        )
-                        for x, y in zip(
-                            realization_data_frame.loc[
-                                realization_data_frame["PRESSURE"] == set_value
-                            ].VOLUMEFACTOR,
-                            realization_data_frame.loc[
-                                realization_data_frame["PRESSURE"] == set_value
-                            ].PRESSURE,
-                        )
-                    ]
-                else:
-                    hovertext = (
-                        f"Pvtnum: {group if color_by == 'PVTNUM' else constant_group}<br />"
-                        f"Realization: {realization}, "
-                        f"Ensemble: {group if color_by == 'ENSEMBLE' else constant_group}"
-                    )
-
-                traces.extend(
-                    [
-                        {
-                            "type": "scatter",
-                            "x": realization_data_frame.loc[
-                                realization_data_frame[dim_column_name] == set_value
-                            ]["PRESSURE"],
-                            "y": realization_data_frame.loc[
-                                realization_data_frame[dim_column_name] == set_value
-                            ]["VOLUMEFACTOR"],
-                            "xaxis": "x",
-                            "yaxis": "y",
-                            "hovertext": hovertext,
-                            "name": group,
-                            "legendgroup": group,
-                            "marker": {
-                                "color": colors.get(
-                                    group, colors[list(colors.keys())[-1]]
-                                )
-                            },
-                            "showlegend": realization_no == 0 and set_no == 0,
-                        }
-                    ]
-                )
-
-                if phase == "GAS":
-                    hovertext = [
-                        "{}Pvtnum: {}<br>Realization: {}, Ensemble: {}".format(
-                            "Rv = {}, ".format(
+                            for x, y in zip(
                                 realization_data_frame.loc[
-                                    (realization_data_frame["PRESSURE"] == y)
-                                    & (realization_data_frame["VISCOSITY"] == x)
-                                ]["RATIO"].iloc[0]
+                                    realization_data_frame["PRESSURE"] == set_value
+                                ][column_name],
+                                realization_data_frame.loc[
+                                    realization_data_frame["PRESSURE"] == set_value
+                                ].PRESSURE,
                             )
-                            if realization_data_frame["KEYWORD"]
-                            .str.contains("PVTG")
-                            .any()
-                            else "",
-                            group if color_by == "PVTNUM" else constant_group,
+                        ]
+                    else:
+                        hovertext = create_hovertext(
+                            phase,
+                            realization_data_frame["KEYWORD"].iloc[0],
+                            constant_group,
+                            group,
+                            color_by,
                             realization,
-                            group if color_by == "ENSEMBLE" else constant_group,
+                            set_value,
                         )
-                        for x, y in zip(
-                            realization_data_frame.loc[
-                                realization_data_frame["PRESSURE"] == set_value
-                            ].VISCOSITY,
-                            realization_data_frame.loc[
-                                realization_data_frame["PRESSURE"] == set_value
-                            ].PRESSURE,
-                        )
-                    ]
 
-                traces.extend(
-                    [
-                        {
-                            "type": "scatter",
-                            "x": realization_data_frame.loc[
-                                realization_data_frame[dim_column_name] == set_value
-                            ]["PRESSURE"],
-                            "y": realization_data_frame.loc[
-                                realization_data_frame[dim_column_name] == set_value
-                            ]["VISCOSITY"],
-                            "xaxis": "x2",
-                            "yaxis": "y2",
-                            "hovertext": hovertext,
-                            "name": group,
-                            "legendgroup": group,
-                            "marker": {
-                                "color": colors.get(
-                                    group, colors[list(colors.keys())[-1]]
-                                )
-                            },
-                            "showlegend": False,
-                        }
-                    ]
-                )
-
-    for group in border_value_pressure:
-        traces.extend(
-            [
-                {
-                    "type": "scatter",
-                    "mode": "lines",
-                    "x": border_value_pressure[group],
-                    "y": border_value_volumefactor[group],
-                    "xaxis": "x",
-                    "yaxis": "y",
-                    "line": {
-                        "width": 1,
-                        "color": colors.get(group, colors[list(colors.keys())[-1]]),
-                    },
-                    "showlegend": False,
-                }
-            ]
-        )
-        traces.extend(
-            [
-                {
-                    "type": "scatter",
-                    "mode": "lines",
-                    "x": border_value_pressure[group],
-                    "y": border_value_viscosity[group],
-                    "xaxis": "x2",
-                    "yaxis": "y2",
-                    "line": {
-                        "width": 1,
-                        "color": colors.get(group, colors[list(colors.keys())[-1]]),
-                    },
-                    "showlegend": False,
-                }
-            ]
-        )
+                    traces.extend(
+                        [
+                            {
+                                "type": "scatter",
+                                "x": realization_data_frame.loc[
+                                    realization_data_frame[dim_column_name] == set_value
+                                ]["PRESSURE"],
+                                "y": realization_data_frame.loc[
+                                    realization_data_frame[dim_column_name] == set_value
+                                ][column_name],
+                                "xaxis": "x",
+                                "yaxis": "y",
+                                "hovertext": hovertext,
+                                "name": group,
+                                "legendgroup": group,
+                                "marker": {
+                                    "color": colors.get(
+                                        group, colors[list(colors.keys())[-1]]
+                                    )
+                                },
+                                "showlegend": realization_no == 0 and set_no == 0,
+                            }
+                        ]
+                    )
+    if show_border_values:
+        for group in border_value_pressure:
+            traces.extend(
+                [
+                    {
+                        "type": "scatter",
+                        "mode": ("lines+markers" if show_border_markers else "lines"),
+                        "x": border_value_pressure[group],
+                        "y": border_value_dependent[group],
+                        "xaxis": "x",
+                        "yaxis": "y",
+                        "legendgroup": group,
+                        "line": {
+                            "width": 1,
+                            "color": colors.get(group, colors[list(colors.keys())[-1]]),
+                        },
+                        "showlegend": not show_scatter_values,
+                    }
+                ]
+            )
     return traces
+
+
+def create_hovertext(
+    phase: str,
+    keyword: str,
+    constant_group: str,
+    group: str,
+    color_by: str,
+    realization: str,
+    ratio_value: float,
+) -> str:
+    hovertext: Union[str, list] = ""
+    if phase == "OIL":
+        hovertext = "{} Pvtnum: {}<br />Realization: {}, Ensemble: {}".format(
+            f"Rs = {ratio_value}" if keyword == "PVTO" else "",
+            group if color_by == "PVTNUM" else constant_group,
+            realization,
+            group if color_by == "ENSEMBLE" else constant_group,
+        )
+    elif phase == "GAS":
+        hovertext = (
+            "{}"
+            "Pvtnum: "
+            "{}<br />"
+            "Realization: {}, Ensemble: "
+            "{}".format(
+                f"Rv = {ratio_value}, " if keyword == "PVTG" else "",
+                group if color_by == "PVTNUM" else constant_group,
+                realization,
+                group if color_by == "ENSEMBLE" else constant_group,
+            )
+        )
+    else:
+        hovertext = (
+            f"Pvtnum: {group if color_by == 'PVTNUM' else constant_group}<br />"
+            f"Realization: {realization}, "
+            f"Ensemble: {group if color_by == 'ENSEMBLE' else constant_group}"
+        )
+
+    return hovertext
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(
-    phase: str, color_by: str, theme: dict, data_frame: pd.DataFrame
+    color_by: str,
+    theme: dict,
+    x_unit: str,
+    y_unit: str,
 ) -> dict:
-    """
-    Constructing plot layout from scratch as it is more responsive than plotly subplots package.
-    """
-    titles = [
-        "{} Formation Volume Factor".format(phase.lower().capitalize()),
-        "{} Viscosity".format(phase.lower().capitalize()),
-    ]
     layout = {}
     layout.update(theme)
-    layout.update({"hovermode": "closest"})
-    # create subplots
-    layout.update(
-        {
-            "annotations": [
-                {
-                    "showarrow": False,
-                    "text": titles[0],
-                    "x": 0.5,
-                    "xanchor": "center",
-                    "xref": "paper",
-                    "y": 1.0,
-                    "yanchor": "bottom",
-                    "yref": "paper",
-                    "font": {"size": 16},
-                },
-                {
-                    "showarrow": False,
-                    "text": titles[1],
-                    "x": 0.5,
-                    "xanchor": "center",
-                    "xref": "paper",
-                    "y": 0.475,
-                    "yanchor": "bottom",
-                    "yref": "paper",
-                    "font": {"size": 16},
-                },
-            ],
-        }
-    )
-
     layout["legend"] = {"title": {"text": color_by.lower().capitalize()}}
-    # format axes
     layout.update(
         {
             "xaxis": {
@@ -757,21 +870,11 @@ def plot_layout(
                 "zeroline": False,
                 "anchor": "y",
                 "domain": [0.0, 1.0],
-                "matches": "x2",
-                "showticklabels": False,
-                "showgrid": True,
-            },
-            "xaxis2": {
-                "automargin": True,
-                "ticks": "",
-                "showticklabels": True,
-                "zeroline": False,
-                "anchor": "y2",
-                "domain": [0.0, 1.0],
                 "title": {
-                    "text": fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                    "text": x_unit,
                     "standoff": 15,
                 },
+                "showticklabels": True,
                 "showgrid": True,
             },
             "yaxis": {
@@ -779,34 +882,16 @@ def plot_layout(
                 "ticks": "",
                 "zeroline": False,
                 "anchor": "x",
-                "domain": [0.525, 1.0],
+                "domain": [0.0, 1.0],
                 "title": {
-                    "text": (
-                        fr"{phase.lower().capitalize()} Formation Volume Factor "
-                        fr"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]"
-                    )
+                    "text": y_unit,
                 },
                 "type": "linear",
                 "showgrid": True,
             },
-            "yaxis2": {
-                "automargin": True,
-                "ticks": "",
-                "zeroline": False,
-                "anchor": "x2",
-                "domain": [0.0, 0.475],
-                "title": {
-                    "text": (
-                        fr"{phase.lower().capitalize()} Viscosity "
-                        fr"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]"
-                    )
-                },
-                "type": "linear",
-                "showgrid": True,
-            },
-            "height": 800,
             "margin": {"t": 20, "b": 0},
             "plot_bgcolor": "rgba(0,0,0,0)",
+            "hovermode": "closest",
         }
     )
     return layout
