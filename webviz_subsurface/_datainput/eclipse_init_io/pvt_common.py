@@ -39,6 +39,7 @@
 from typing import List, Callable, Tuple, Any, Optional, Union
 from enum import Enum
 import warnings
+import abc
 
 from scipy import interpolate
 import numpy as np
@@ -63,81 +64,85 @@ class EclPropertyTableRawData:  # pylint: disable=too-few-public-methods
         self.num_tables = 0
 
 
-class PvxOBase:
+class PvxOBase(abc.ABC):
     """A common base class for all fluids.
 
     Should be inherited by any new fluid in order to have
     a common interface.
     """
 
-    def __init__(self) -> None:
-        """Base implementation, raises a NotImplementedError."""
-        raise NotImplementedError("You must not create objects of this base class.")
-
+    @abc.abstractmethod
     def get_keys(self) -> np.ndarray:
-        """Returns a numpy.ndarray of all primary keys.
+        """Returns all primary keys.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
 
+    @abc.abstractmethod
     def get_independents(self) -> np.ndarray:
-        """Returns a numpy.ndarray of all independents.
+        """Returns all independents.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
 
+    @abc.abstractmethod
     # pylint: disable=R0201
     def formation_volume_factor(
         self, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
         """Args:
-            ratio: np.ndarray of ratio (key) values the volume factor values are requested for.
-            pressure: np.ndarray of pressure values the volume factor values are requested for.
+            ratio: Ratio (key) values the volume factor values are requested for.
+            pressure: Pressure values the volume factor values are requested for.
 
         Returns:
-            A list of all volume factor values for the given ratio and pressure values.
+            All volume factor values for the given ratio and pressure values.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
 
+    @abc.abstractmethod
     def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
         """Args:
-            ratio: np.ndarray of ratio (key) values the viscosity values are requested for.
-            pressure: np.ndarray of pressure values the viscosity values are requested for.
+            ratio: Ratio (key) values the viscosity values are requested for.
+            pressure: Pressure values the viscosity values are requested for.
 
         Returns:
-            A list of all viscosity values for the given ratio and pressure values.
+            All viscosity values for the given ratio and pressure values.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
+
+    @abc.abstractmethod
+    def density(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
+        """Args:
+            ratio: Ratio (key) values the density values are requested for.
+            pressure: Pressure values the density values are requested for.
+
+        Returns:
+            All density values for the given ratio and pressure values.
+
+        Base implementation, raises a NotImplementedError.
+        """
 
 
-class PVxx:
+class PVxx(abc.ABC):
     """A base class for PVDx and PVTx"""
 
-    def __init__(self) -> None:
-        """Base implementation, raises a NotImplementedError."""
-        raise NotImplementedError("You must not create objects of this base class.")
-
+    @abc.abstractmethod
     def get_keys(self) -> np.ndarray:
         """Returns:
-            A numpy.ndarray of all primary keys.
+            All primary keys.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
 
+    @abc.abstractmethod
     def get_independents(self) -> np.ndarray:
         """Returns:
-            A np.ndarray of all independents.
+            All independents.
 
         Base implementation, raises a NotImplementedError.
         """
-        raise NotImplementedError("You must not call any methods of this base class.")
 
     @staticmethod
     def entry_valid(x: float) -> bool:
@@ -151,7 +156,7 @@ class PVDx(PVxx):
     """A base class for dead and dry gas/oil respectively.
 
     Attributes:
-        x: A numpy array holding the independent values.
+        x: The independent values.
         y: A two-dimensional numpy array holding the dependent values.
         interpolation: A scipy interp1d object for interpolating the dependent values.
         inter_extrapolation: An extrap1d object for inter- and extrapolating the dependent values.
@@ -231,7 +236,7 @@ class PVDx(PVxx):
         self.__interpolation = interpolate.interp1d(self.x, self.y, axis=1)
 
     def get_keys(self) -> np.ndarray:
-        """Returns a np.ndarray of all primary keys.
+        """Returns all primary keys.
 
         Since this is dry/dead gas/oil, there is no dependency on Rv/Rs.
         Hence, this method returns a list holding floats of value 0.0
@@ -241,41 +246,37 @@ class PVDx(PVxx):
         return np.zeros(len(self.x))
 
     def get_independents(self) -> np.ndarray:
-        """Returns a list of all independents.
+        """Returns all independents.
 
-        In case of gas/oil this returns a list of pressure values.
+        In case of gas/oil this returns pressure values.
 
         """
         return self.x
 
     def formation_volume_factor(self, pressure: np.ndarray) -> np.ndarray:
-        """Computes a list of formation volume factor values
+        """Computes all formation volume factor values
         for the given pressure values.
 
         Args:
-            pressure: List of pressure values the volume factors are requested for.
+            pressure: Pressure values the volume factors are requested for.
 
         Returns:
-            A list of formation volume factor values corresponding
-            to the given list of pressure values.
-
-        Base implementation, raises a NotImplementedError.
+            All formation volume factor values corresponding
+            to the given pressure values.
 
         """
         # 1 / (1 / B)
         return self.__compute_quantity(pressure, lambda p: 1.0 / self.__fvf_recip(p))
 
     def viscosity(self, pressure: np.ndarray) -> np.ndarray:
-        """Computes a list of viscosity values for the given pressure values.
+        """Computes all viscosity values for the given pressure values.
 
         Args:
-            pressure: List of pressure values the viscosity values are requested for.
+            pressure: Pressure values the viscosity values are requested for.
 
         Returns:
-            A list of viscosity values corresponding
-            to the given list of pressure values.
-
-        Base implementation, raises a NotImplementedError.
+            All viscosity values corresponding
+            to the given of pressure values.
 
         """
         # (1 / B) / (1 / (B * mu)
@@ -287,15 +288,15 @@ class PVDx(PVxx):
     def __compute_quantity(
         pressures: np.ndarray, evaluate: Callable[[Any], Any]
     ) -> np.ndarray:
-        """Calls the given evaluate function with each of the values
-        in the given pressure list and returns a list of results.
+        """Calls the given evaluate function with each of the
+        given pressure values and returns the results.
 
         Args:
-            pressures: List of pressure values
+            pressures: Pressure values
             evaluate: Evaluation function
 
         Returns:
-            List of values resulting from evaluating the pressure values.
+            Values resulting from evaluating the pressure values.
 
         """
         result = np.zeros(len(pressures))
@@ -441,11 +442,11 @@ class PVTx(PVxx):
         warnings.filterwarnings("default")
 
     def get_keys(self) -> np.ndarray:
-        """Returns a list of all primary keys."""
+        """Returns all primary keys."""
         return self.keys
 
     def get_independents(self) -> np.ndarray:
-        """Returns a list of all independents."""
+        """Returns all independents."""
         return self.x
 
     def key_valid(self, key: np.ndarray) -> None:
@@ -455,16 +456,16 @@ class PVTx(PVxx):
             )
 
     def formation_volume_factor(self, key: np.ndarray, x: np.ndarray) -> np.ndarray:
-        """Computes a list of formation volume factor values
+        """Computes formation volume factor values
         for the given ratio and pressure values.
 
         Args:
-            key: List of primary key values the volume factors are requested for.
-            x: List of independents the volume factors are requested for.
+            key: Primary key values the volume factors are requested for.
+            x: Independents the volume factors are requested for.
 
         Returns:
-            A list of formation volume factor values corresponding
-            to the given lists of primary key and independent values.
+            Formation volume factor values corresponding
+            to the given primary key and independent values.
 
         Base implementation, raises a NotImplementedError.
 
@@ -483,15 +484,15 @@ class PVTx(PVxx):
         )
 
     def viscosity(self, key: np.ndarray, x: np.ndarray) -> np.ndarray:
-        """Computes a list of viscosity values for the given ratio and pressure values.
+        """Computes viscosity values for the given ratio and pressure values.
 
         Args:
-            key: List of primary key values the viscosity values are requested for.
-            x: List of independents the viscosity values are requested for.
+            key: Primary key values the viscosity values are requested for.
+            x: Independents the viscosity values are requested for.
 
         Returns:
-            A list of viscosity values corresponding
-            to the given lists of primary key and independent values.
+            Viscosity values corresponding
+            to the given primary key and independent values.
 
         Base implementation, raises a NotImplementedError.
 
@@ -522,20 +523,20 @@ class PVTx(PVxx):
         outer_function: Callable,
     ) -> np.ndarray:
         """Calls the evaluate method with each of the values
-        in the given primary key list and the given inner_function
-        and returns a list of the results after the outer_function
+        in the given primary keys and the given inner_function
+        and returns the results after the outer_function
         has been applied on each them.
 
         Args:
-            key: List of primary key values the viscosity values are requested for.
-            x: List of independents the viscosity values are requested for.
+            key: Primary key values the viscosity values are requested for.
+            x: Independents the viscosity values are requested for.
             inner_function: Callable for extracting a dense vector.
             outer_function:
                 Callable that uses the dense vector to compute
                 the requested quantity.
 
         Returns:
-            List of result values
+            Result values
 
         """
 
@@ -613,7 +614,7 @@ def surface_mass_density(
         phase: Fluid phase to extract data for
 
     Returns:
-        List of surface mass density values.
+        Surface mass density values.
 
     """
     if phase is EclPhaseIndex.LIQUID:
@@ -644,7 +645,7 @@ def surface_mass_density(
     return rho
 
 
-class FluidImplementation:
+class FluidImplementation(abc.ABC):
     """Base class for fluid implementations
 
     Holds a list of regions (one per PVT table).
@@ -667,10 +668,11 @@ class FluidImplementation:
         def __init__(self) -> None:
             super().__init__("Invalid type. Only live oil/wet gas/water supported.")
 
-    def __init__(self, keep_unit_system: bool = True) -> None:
+    def __init__(self, unit_system: int, keep_unit_system: bool = True) -> None:
         """Initializes a fluid object.
 
         Args:
+            unit_system: The original unit system
             keep_unit_system:
                 True if the original unit system shall be kept,
                 False if units shall be converted to SI units.
@@ -678,7 +680,7 @@ class FluidImplementation:
         """
         self._regions: List[PvxOBase] = []
         self.keep_unit_system = keep_unit_system
-        self.original_unit_system = EclUnitEnum.ECL_SI_UNITS
+        self.original_unit_system = unit_system
 
     def pvdx_unit_converter(self) -> Optional[ConvertUnits]:
         """Creates a pseudo ConvertUnits object for PVDx interpolants
@@ -771,39 +773,39 @@ class FluidImplementation:
     ) -> np.ndarray:
         """Args:
             region_index: Index of the requested PVT region
-            ratio: numpy.ndarray of ratio values the data is requested for
-            pressure: A numpy.ndarray of pressure values the data is requested for
+            ratio: Ratio values the data is requested for
+            pressure: Pressure values the data is requested for
 
         Returns:
-            A list of the formation volume factor values according to the given values.
+            Formation volume factor values according to the given values.
 
         """
         self.validate_region_index(region_index)
 
         return self._regions[region_index].formation_volume_factor(ratio, pressure)
 
+    @abc.abstractmethod
     def formation_volume_factor_unit(self, latex: bool = False) -> str:
         """Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the formation volume factor.
+            The unit symbol of the formation volume factor.
 
         Raises a NotImplementedError when called on a base class object.
 
         """
-        raise NotImplementedError("This method cannot be called from the base class.")
 
     def viscosity(
         self, region_index: int, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
         """Args:
             region_index: Index of the requested PVT region
-            ratio: A list of ratio values the data is requested for
-            pressure: A list of pressure values the data is requested for
+            ratio: Ratio values the data is requested for
+            pressure: Pressure values the data is requested for
 
         Returns:
-            A list of the viscosity values according to the given values.
+            Viscosity values according to the given values.
 
         """
         self.validate_region_index(region_index)
@@ -811,16 +813,70 @@ class FluidImplementation:
         return self._regions[region_index].viscosity(ratio, pressure)
 
     def viscosity_unit(self, latex: bool = False) -> str:
+        """Creates and returns the unit symbol of the viscosity.
+
+        Args:
+            latex: True if the unit symbol shall be returned as LaTeX, False if not.
+
+        Returns:
+            The unit symbol of the viscosity.
+
+        """
+        unit_system = EclUnits.create_unit_system(
+            self.original_unit_system
+            if self.keep_unit_system
+            else EclUnitEnum.ECL_SI_UNITS
+        )
+
+        if latex:
+            return fr"${unit_system.viscosity().symbol}$"
+        return unit_system.viscosity().symbol
+
+    def density(
+        self, region_index: int, ratio: np.ndarray, pressure: np.ndarray
+    ) -> np.ndarray:
+        """Args:
+            region_index: Index of the requested PVT region
+            ratio: Ratio values the data is requested for
+            pressure: Pressure values the data is requested for
+
+        Returns:
+            Density values according to the given values.
+
+        """
+        self.validate_region_index(region_index)
+
+        return self._regions[region_index].density(ratio, pressure)
+
+    def density_unit(self, latex: bool = False) -> str:
         """Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the viscosity.
+            The unit symbol of the density.
+
+        """
+        unit_system = EclUnits.create_unit_system(
+            self.original_unit_system
+            if self.keep_unit_system
+            else EclUnitEnum.ECL_SI_UNITS
+        )
+
+        if latex:
+            return fr"${unit_system.density().symbol}$"
+        return unit_system.density().symbol
+
+    @abc.abstractmethod
+    def ratio_unit(self, latex: bool = False) -> str:
+        """Args:
+            latex: True if the unit symbol shall be returned as LaTeX, False if not.
+
+        Returns:
+            A string containing the unit symbol of the phase ratio (e.g. Sm³/Sm³).
 
         Raises a NotImplementedError when called on a base class object.
 
         """
-        raise NotImplementedError("This method cannot be called from the base class.")
 
     def get_region(self, region_index: int) -> PvxOBase:
         """Validates and returns the region at the given region_index.
@@ -859,7 +915,7 @@ class FluidImplementation:
 
     def regions(self) -> List[PvxOBase]:
         """Returns:
-        A list containing all interpolants (one interpolant per region)
+        All interpolants (one interpolant per region)
 
         """
         return self._regions
