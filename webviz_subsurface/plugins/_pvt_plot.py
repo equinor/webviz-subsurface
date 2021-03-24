@@ -541,7 +541,7 @@ def create_graph(
         children=(
             [
                 html.Span(plot_title, style={"font-weight": "bold"}),
-                dcc.Graph(
+                wcc.Graph(
                     figure={
                         "layout": plot_layout(
                             color_by,
@@ -564,7 +564,7 @@ def create_graph(
             if plot == "fvf"
             else [
                 html.Span(plot_title, style={"font-weight": "bold"}),
-                dcc.Graph(
+                wcc.Graph(
                     figure={
                         "layout": plot_layout(
                             color_by,
@@ -587,7 +587,7 @@ def create_graph(
             if plot == "viscosity"
             else [
                 html.Span(plot_title, style={"font-weight": "bold"}),
-                dcc.Graph(
+                wcc.Graph(
                     figure={
                         "layout": plot_layout(
                             color_by,
@@ -610,7 +610,7 @@ def create_graph(
             if plot == "density"
             else [
                 html.Span(plot_title, style={"font-weight": "bold"}),
-                dcc.Graph(
+                wcc.Graph(
                     figure={
                         "layout": plot_layout(
                             color_by,
