@@ -7,10 +7,10 @@ import json
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from .table_model import EnsembleTableModelSet
 from .table_model import EnsembleTableModel
-from .table_model_implementations import EnsembleTableModelImplInMemDataFrame
+from .table_model import EnsembleTableModelSet
 from .table_model_implementations import EnsembleTableModelImplArrow
+from .table_model_implementations import EnsembleTableModelImplInMemDataFrame
 
 
 # =============================================================================

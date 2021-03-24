@@ -50,36 +50,18 @@ def _create_synthetic_table_model_obj(
 
 
 # -------------------------------------------------------------------------
-def test_synthetic_get_values_df(testdata_folder: Path) -> None:
+def test_synthetic_get_column_data(testdata_folder: Path) -> None:
     model = _create_synthetic_table_model_obj(testdata_folder)
     assert model.column_names() == ["A", "B", "STR"]
     assert model.realizations() == [0, 1]
 
-    df = model.get_column_values_df("A")
+    df = model.get_column_data(["A"])
     assert df.shape == (7, 2)
     assert df.columns.tolist() == ["REAL", "A"]
 
-    df = model.get_column_values_df("STR", [1])
+    df = model.get_column_data(["STR"], [1])
     assert df.shape == (4, 2)
     assert df.columns.tolist() == ["REAL", "STR"]
-
-
-# -------------------------------------------------------------------------
-def test_synthetic_get_values_numpy(testdata_folder: Path) -> None:
-    model = _create_synthetic_table_model_obj(testdata_folder)
-    assert model.column_names() == ["A", "B", "STR"]
-    assert model.realizations() == [0, 1]
-
-    arrlist: List[np.ndarray] = model.get_column_values_numpy("A")
-    assert len(arrlist) == 2
-    assert len(arrlist[0]) == 3
-    assert len(arrlist[1]) == 4
-
-    arrlist = model.get_column_values_numpy("STR", [0])
-    assert len(arrlist) == 1
-    arr = arrlist[0]
-    assert arr[0] == "aa"
-    assert arr[2] == "cc"
 
 
 # -------------------------------------------------------------------------
@@ -100,23 +82,17 @@ def test_create_from_aggregated_csv_file_smry_csv(
 
     assert len(model.realizations()) == 40
 
-    valdf = model.get_column_values_df("YEARS")
+    valdf = model.get_column_data(["YEARS"])
     assert len(valdf.columns) == 2
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 40
 
-    arrlist: List[np.ndarray] = model.get_column_values_numpy("YEARS")
-    assert len(arrlist) == 40
-
-    arrlist = model.get_column_values_numpy("REAL", [0, 39, 10])
-    assert len(arrlist) == 3
-    assert arrlist[0][0] == 0
-    assert arrlist[0][-1] == 0
-    assert arrlist[1][0] == 39
-    assert arrlist[1][-1] == 39
-    assert arrlist[2][0] == 10
-    assert arrlist[2][-1] == 10
+    valdf = model.get_column_data(["YEARS"], [0, 39, 10])
+    assert len(valdf.columns) == 2
+    assert valdf.columns[0] == "REAL"
+    assert valdf.columns[1] == "YEARS"
+    assert valdf["REAL"].nunique() == 3
 
 
 # -------------------------------------------------------------------------
@@ -138,7 +114,7 @@ def test_create_from_aggregated_csv_file_smry_hm(
 
     assert len(model.realizations()) == 10
 
-    valdf = model.get_column_values_df("DATE")
+    valdf = model.get_column_data(["DATE"])
     assert len(valdf.columns) == 2
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "DATE"
@@ -179,19 +155,10 @@ def test_create_from_per_realization_csv_file(
 
     assert len(model.realizations()) == 10
 
-    # Access as dataframe
-    valdf = model.get_column_values_df("CONIDX", [2])
+    valdf = model.get_column_data(["CONIDX"], [2])
     assert valdf.shape == (49, 2)
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "CONIDX"
     assert valdf["REAL"].unique() == [2]
     assert valdf["CONIDX"].nunique() == 9
     assert sorted(valdf["CONIDX"].unique()) == [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-    # Access as numpy array
-    arrlist: List[np.ndarray] = model.get_column_values_numpy("CONIDX", [2])
-    assert len(arrlist) == 1
-    arr = arrlist[0]
-    assert len(arr) == 49
-    assert len(np.unique(arr)) == 9
-    assert np.unique(arr).tolist() == [1, 2, 3, 4, 5, 6, 7, 8, 9]

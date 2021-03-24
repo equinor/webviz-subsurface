@@ -170,7 +170,7 @@ def merge_parameter_and_csv_data(
         table = tablemodel.ensemble(ens)
         columns = table_column_names
         columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_columns_values_df(columns)
+        col_df = table.get_column_data(columns)
         col_df["ENSEMBLE"] = ens
         dfs.append(col_df)
     data_df = pd.concat(dfs)
@@ -181,7 +181,7 @@ def merge_parameter_and_csv_data(
         columns = [parameter_column_name]
         print(columns)
         columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_columns_values_df(columns)
+        col_df = table.get_column_data(columns)
         col_df["ENSEMBLE"] = ens
         dfs.append(col_df)
     parameter_df = pd.concat(dfs)

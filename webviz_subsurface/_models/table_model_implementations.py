@@ -4,69 +4,8 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.compute as pc
 import pandas as pd
-import numpy as np
 
 from .table_model import EnsembleTableModel
-
-# =============================================================================
-class EnsembleTableModelImplInMemDataFrame(EnsembleTableModel):
-
-    # -------------------------------------------------------------------------
-    def __init__(self, ensemble_df: pd.DataFrame) -> None:
-        # The input DF may contain an ENSEMBLE column, but it is probably an error if
-        # There is more than one unique value in it
-        if "ENSEMBLE" in ensemble_df:
-            if ensemble_df["ENSEMBLE"].nunique() > 1:
-                raise KeyError("Input data contains more than one unique ensemble name")
-
-        self._ensemble_df = ensemble_df
-        self._realizations = list(self._ensemble_df["REAL"].unique())
-        self._column_names: List[str] = [
-            col
-            for col in list(self._ensemble_df.columns)
-            if col not in ["REAL", "ENSEMBLE"]
-        ]
-
-    # -------------------------------------------------------------------------
-    def column_names(self) -> List[str]:
-        return self._column_names
-
-    # -------------------------------------------------------------------------
-    def realizations(self) -> List[int]:
-        return self._realizations
-
-    # -------------------------------------------------------------------------
-    def get_column_values_numpy(
-        self, column_name: str, realizations: Optional[Sequence[int]] = None
-    ) -> List[np.ndarray]:
-
-        if not realizations:
-            realizations = self._realizations
-
-        ret_list: List[np.ndarray] = []
-        for real in realizations:
-            series = self._ensemble_df.loc[
-                self._ensemble_df["REAL"] == real, column_name
-            ]
-            arr = series.to_numpy()
-            ret_list.append(arr)
-
-        return ret_list
-
-    # -------------------------------------------------------------------------
-    def get_column_values_df(
-        self, column_name: str, realizations: Optional[Sequence[int]] = None
-    ) -> pd.DataFrame:
-
-        if realizations:
-            df = self._ensemble_df.loc[
-                self._ensemble_df["REAL"].isin(realizations), ["REAL", column_name]
-            ]
-        else:
-            df = self._ensemble_df.loc[:, ["REAL", column_name]]
-
-        return df
-
 
 # =============================================================================
 class EnsembleTableModelImplArrow(EnsembleTableModel):
@@ -130,54 +69,7 @@ class EnsembleTableModelImplArrow(EnsembleTableModel):
         return self._realizations
 
     # -------------------------------------------------------------------------
-    def get_column_values_numpy(
-        self, column_name: str, realizations: Optional[Sequence[int]] = None
-    ) -> List[np.ndarray]:
-
-        if not realizations:
-            realizations = self._realizations
-
-        source = pa.memory_map(self._arrow_file_name, "r")
-        table = (
-            pa.ipc.RecordBatchFileReader(source)
-            .read_all()
-            .select(["REAL", column_name])
-        )
-
-        real_column = table[0]
-        val_column = table[1]
-
-        ret_list: List[np.ndarray] = []
-        for real in realizations:
-            mask = pc.equal(real_column, pa.scalar(real))
-            numpyarr = val_column.filter(mask).to_numpy()
-            ret_list.append(numpyarr)
-
-        return ret_list
-
-    # -------------------------------------------------------------------------
-    def get_column_values_df(
-        self, column_name: str, realizations: Optional[Sequence[int]] = None
-    ) -> pd.DataFrame:
-
-        source = pa.memory_map(self._arrow_file_name, "r")
-        table = (
-            pa.ipc.RecordBatchFileReader(source)
-            .read_all()
-            .select(["REAL", column_name])
-        )
-
-        if realizations:
-            mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
-            df = table.filter(mask).to_pandas()
-        else:
-            df = table.to_pandas()
-            # df = table.to_pandas(split_blocks=True, self_destruct=True)
-
-        return df
-
-    # -------------------------------------------------------------------------
-    def get_columns_values_df(
+    def get_column_data(
         self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
 
@@ -190,9 +82,49 @@ class EnsembleTableModelImplArrow(EnsembleTableModel):
 
         if realizations:
             mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
-            df = table.filter(mask).to_pandas()
+            table = table.filter(mask)
+
+        df = table.to_pandas()
+        return df
+
+
+# =============================================================================
+class EnsembleTableModelImplInMemDataFrame(EnsembleTableModel):
+
+    # -------------------------------------------------------------------------
+    def __init__(self, ensemble_df: pd.DataFrame) -> None:
+        # The input DF may contain an ENSEMBLE column, but it is probably an error if
+        # There is more than one unique value in it
+        if "ENSEMBLE" in ensemble_df:
+            if ensemble_df["ENSEMBLE"].nunique() > 1:
+                raise KeyError("Input data contains more than one unique ensemble name")
+
+        self._ensemble_df = ensemble_df
+        self._realizations = list(self._ensemble_df["REAL"].unique())
+        self._column_names: List[str] = [
+            col
+            for col in list(self._ensemble_df.columns)
+            if col not in ["REAL", "ENSEMBLE"]
+        ]
+
+    # -------------------------------------------------------------------------
+    def column_names(self) -> List[str]:
+        return self._column_names
+
+    # -------------------------------------------------------------------------
+    def realizations(self) -> List[int]:
+        return self._realizations
+
+    # -------------------------------------------------------------------------
+    def get_column_data(
+        self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
+    ) -> pd.DataFrame:
+
+        if realizations:
+            df = self._ensemble_df.loc[
+                self._ensemble_df["REAL"].isin(realizations), ["REAL", *column_names]
+            ]
         else:
-            df = table.to_pandas()
-            # df = table.to_pandas(split_blocks=True, self_destruct=True)
+            df = self._ensemble_df.loc[:, ["REAL", *column_names]]
 
         return df
