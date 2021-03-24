@@ -39,9 +39,6 @@ def main_view(
                     ),
                     group_by_view(
                         get_uuid=get_uuid,
-                        ensemble_names=ensemble_names,
-                        data_column_names=data_column_names,
-                        parameter_names=parameter_names,
                     ),
                     plot_options_view(get_uuid=get_uuid),
                 ],
@@ -61,7 +58,7 @@ def plot_view(get_uuid: Callable) -> html.Div:
             wcc.FlexBox(
                 style={"height": "88vh"},
                 children=[
-                    dcc.Graph(id=get_uuid("graph")),
+                    wcc.Graph(id=get_uuid("graph")),
                 ],
             ),
         ]
@@ -96,5 +93,6 @@ def data_stores(get_uuid: Callable) -> html.Div:
                     "plotly_attribute": "update_layout",
                 }
             ),
+            dcc.Store(id={"id": get_uuid("clientside"), "attribute": "single_real"}),
         ]
     )

@@ -17,7 +17,7 @@ from webviz_subsurface._models.table_model_factory import (
 
 import webviz_subsurface
 from .views import main_view
-from .controllers import main_controller
+from .controllers import build_figure, update_figure_clientside, set_single_real_mode
 
 
 class LinePlotterFMU(WebvizPluginABC):
@@ -30,6 +30,9 @@ class LinePlotterFMU(WebvizPluginABC):
         aggregated_csvfile: Path = None,
         aggregated_parameterfile: Path = None,
         observation_file: Path = None,
+        observation_group: str = "general",
+        remap_observation_keys: Dict[str, str] = None,
+        remap_observation_values: Dict[str, str] = None,
         initial_data: Dict = None,
         initial_layout: Dict = None,
     ):
@@ -99,7 +102,12 @@ class LinePlotterFMU(WebvizPluginABC):
                 )
             )
         self._observationfile = get_path(observation_file)
-        self._observationmodel = ObservationModel(self._observationfile)
+        self._observationmodel = ObservationModel(
+            self._observationfile,
+            observation_group,
+            remap_observation_keys,
+            remap_observation_values,
+        )
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "_assets"
@@ -123,12 +131,17 @@ class LinePlotterFMU(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        return main_controller(
+        build_figure(
             app,
             get_uuid=self.uuid,
             tablemodel=self._tablemodelset,
             observationmodel=self._observationmodel,
             parametermodel=self._parametermodelset,
+        )
+        update_figure_clientside(app, get_uuid=self.uuid)
+        set_single_real_mode(
+            app,
+            get_uuid=self.uuid,
         )
 
 

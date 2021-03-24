@@ -10,35 +10,23 @@ from webviz_subsurface._models import EnsembleTableModelSet
 
 def group_by_view(
     get_uuid: Callable,
-    ensemble_names=List[str],
-    data_column_names=List[str],
-    parameter_names=List[str],
 ) -> html.Div:
-    group_options = ["ENSEMBLE"]
-    for col in ["SENSCASE", "SENSTYPE", "SENSNAME"]:
-        if col in parameter_names:
-            group_options.add(col)
+
     return html.Div(
         className="framed",
         style={"fontSize": "0.8em"},
         children=[
-            html.H5("Group/aggregate by"),
-            dcc.Dropdown(
-                id=get_uuid("aggregate"),
+            html.H5("Plot lines"),
+            dcc.Checklist(
+                id=get_uuid("traces"),
                 options=[
-                    {"value": "mean", "label": "Mean"},
+                    {"label": val, "value": val}
+                    for val in ["Realizations", "Mean", "P10/P90", "Low/High"]
                 ],
-                placeholder="No aggregation",
-                value=None,
+                value=["Realizations"],
+                labelStyle={"display": "block"},
+                persistence=True,
+                persistence_type="session",
             ),
-            html.Label("Group on"),
-            dcc.Dropdown(
-                id=get_uuid("group_level1"),
-                options=[{"value": col, "label": col} for col in group_options],
-                placeholder="Add group",
-                value=None,
-                multi=True,
-            ),
-            html.Div(id=get_uuid("group_wrapper")),
         ],
     )

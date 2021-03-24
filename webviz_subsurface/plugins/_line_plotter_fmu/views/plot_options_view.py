@@ -7,9 +7,16 @@ import dash_html_components as html
 def plot_options_view(get_uuid) -> html.Div:
     return html.Div(
         className="framed",
-        style={"height": "600px", "fontSize": "0.8em"},
+        style={"fontSize": "0.8em"},
         children=[
             html.H5("Plot options"),
+            dcc.Checklist(
+                id=get_uuid("plotly_uirevision"),
+                options=[{"label": "Keep plot range and zoom", "value": "keep"}],
+                labelStyle={"display": "block"},
+                persistence=True,
+                persistence_type="session",
+            ),
             dropdown_for_plotly_layout(
                 uuid=get_uuid("plotly_layout"),
                 layout_attribute="xaxis_type",
@@ -78,6 +85,7 @@ def dropdown_for_plotly_layout(
         children=[
             html.Label(title),
             dcc.Dropdown(
+                style={"backgroundColor": "transparent"},
                 id={
                     "id": uuid,
                     "layout_attribute": layout_attribute,

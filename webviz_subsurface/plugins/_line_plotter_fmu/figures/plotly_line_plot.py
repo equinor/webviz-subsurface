@@ -2,116 +2,184 @@ from typing import List, Dict, Optional
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 
 
 class PlotlyLinePlot:
-    def __init__(self) -> None:
-        self._traces: List = []
-        self._layout: Dict = {}
-
-    def add_line(self, x: np.ndarray, y: np.ndarray) -> None:
-        trace = {"type": "scatter", "x": x, "y": y}
-        self._traces.append(trace)
+    def __init__(self, active_x_value: Optional[str]) -> None:
+        self._active_x_value = active_x_value
+        self._realization_traces: List = []
+        self._statistical_traces: List = []
+        self._observation_traces: List = []
+        self._layout: go.Layout = go.Layout(paper_bgcolor="rgba(0,0,0,0)")
 
     def add_realization_traces(
         self,
         dframe: pd.DataFrame,
         x_column: str,
         y_column: str,
-        groupby: List = ["ENSEMBLE"],
-        aggregation: Optional[str] = None,
+        color_column: str,
+        realization_slider: bool = False,
+        color: str = "Realizations",
     ) -> List[dict]:
         """Renders line trace for each realization, includes history line if present"""
-        dframe["label"] = dframe.agg(
-            lambda x: " | ".join([f"{x[sel]}" for sel in groupby]), axis=1
-        )
-        if aggregation is None:
-            for idx, (label, label_df) in enumerate(dframe.groupby("label")):
+        colors = ["red", "blue", "green"]
 
-                for real_no, (real, real_df) in enumerate(label_df.groupby("REAL")):
-                    self._traces.append(
-                        self._add_line_trace(
-                            real_df[x_column], real_df[y_column], label, label
-                        )
-                    )
-        else:
-            df = self.calc_series_statistics(dframe, [y_column], x_column)
-            print(df)
-            for idx, (label, label_df) in enumerate(df.groupby("label")):
-                self._traces.append(
-                    self._add_line_trace(
-                        label_df[x_column], label_df[(y_column, "mean")], label, label
-                    )
+        for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
+            if (
+                self._active_x_value
+                and self._active_x_value in ens_df[x_column].unique()
+            ):
+                parameter_order = ens_df.loc[
+                    ens_df[x_column] == self._active_x_value
+                ].sort_values(by=color_column)
+            else:
+                parameter_order = ens_df.loc[
+                    ens_df[x_column] == ens_df[x_column].max()
+                ].sort_values(by=color_column)
+
+            for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL")):
+                self._realization_traces.append(
+                    {
+                        "x": real_df[x_column],
+                        "y": real_df[y_column],
+                        "hovertemplate": f"Realization: {real}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "marker": {
+                            "color": "rgba(128,128,128,0.2)"
+                            if color == "Realizations"
+                            else "black"
+                        },
+                        "showlegend": real_no == 0,
+                    }
+                )
+        self._layout["sliders"] = (
+            self._realization_slider() if realization_slider is True else []
+        )
+
+    def _realization_slider(self):
+        steps = []
+        for trace_no, _ in enumerate(self._realization_traces):
+            step: Dict = {
+                "method": "update",
+                "label": str(trace_no),
+                "args": [
+                    {
+                        "marker.color": [
+                            "rgba(128,128,128,0.2)"
+                            for idx, _ in enumerate(self._realization_traces)
+                        ]
+                    },
+                ],
+            }
+            step["args"][0]["marker.color"][trace_no] = "black"
+            steps.append(step)
+        return [
+            dict(
+                steps=steps,
+                active=0,
+                currentvalue={"prefix": "Realization: ", "visible": True},
+                pad={"t": 50},
+                y=0,
+            )
+        ]
+
+    def add_statistical_lines(
+        self, dframe: pd.DataFrame, x_column: str, y_column: str, traces: List
+    ):
+        colors = ["red", "blue", "green"]
+        for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
+            if "Low/High" in traces:
+                self._statistical_traces.append(
+                    {
+                        "line": {"dash": "dot", "width": 1},
+                        "x": ens_df[x_column],
+                        "y": ens_df[(y_column, "max")],
+                        "hovertemplate": f"Calculation: {'mac'}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": False,
+                        "marker": {"color": colors[idx]},
+                    }
+                )
+            if "P10/P90" in traces:
+                self._statistical_traces.append(
+                    {
+                        "line": {"dash": "dash"},
+                        "x": ens_df[x_column],
+                        "y": ens_df[(y_column, "high_p10")],
+                        "hovertemplate": f"Calculation: {'high_p10'}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": False,
+                        "marker": {"color": colors[idx]},
+                    }
+                )
+            if "Mean" in traces:
+                self._statistical_traces.append(
+                    {
+                        "x": ens_df[x_column],
+                        "y": ens_df[(y_column, "mean")],
+                        "hovertemplate": f"Calculation: {'mean'}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        # "fill": "tonexty",
+                        "marker": {"color": colors[idx]},
+                    }
+                )
+            if "P10/P90" in traces:
+                self._statistical_traces.append(
+                    {
+                        "line": {"dash": "dash"},
+                        "x": ens_df[x_column],
+                        "y": ens_df[(y_column, "low_p90")],
+                        "hovertemplate": f"Calculation: {'low_p90'}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": False,
+                        # "fill": "tonexty",
+                        "marker": {"color": colors[idx]},
+                    }
+                )
+            if "Low/High" in traces:
+                self._statistical_traces.append(
+                    {
+                        "line": {"dash": "dot", "width": 1},
+                        "x": ens_df[x_column],
+                        "y": ens_df[(y_column, "min")],
+                        "hovertemplate": f"Calculation: {'min'}, Ensemble: {ensemble}",
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": False,
+                        "marker": {"color": colors[idx]},
+                    }
                 )
 
-    @staticmethod
-    def calc_series_statistics(
-        df: pd.DataFrame, vectors: list, refaxis: str = "DATE"
-    ) -> pd.DataFrame:
-        """Calculate statistics for given vectors over the ensembles
-        refaxis is used if another column than DATE should be used to groupby.
-        """
-        # Invert p10 and p90 due to oil industry convention.
-        def p10(x: List[float]) -> List[float]:
-            return np.nanpercentile(x, q=90)
-
-        def p90(x: List[float]) -> List[float]:
-            return np.nanpercentile(x, q=10)
-
-        # Calculate statistics, ignoring NaNs.
-        stat_df = (
-            df[["label", refaxis] + vectors]
-            .groupby(["label", refaxis])
-            .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
-            .reset_index()  # (level=["label", refaxis], col_level=1)
-        )
-        # Rename nanmin, nanmax and nanmean to min, max and mean.
-        col_stat_label_map = {
-            "nanmin": "min",
-            "nanmax": "max",
-            "nanmean": "mean",
-            "p10": "high_p10",
-            "p90": "low_p90",
-        }
-        stat_df.rename(columns=col_stat_label_map, level=1, inplace=True)
-
-        return stat_df
-
-    def _add_line_trace(self, x, y, name, legendgroup):
-        print(x, y)
-        return {
-            # "line": {"shape": line_shape},
-            "x": list(x),
-            "y": list(y),
-            # "hovertemplate": f"Realization: {real}, Ensemble: {ensemble}",
-            "name": name,
-            "legendgroup": legendgroup,
-            # "marker": {
-            #     "color": colors.get(ensemble, colors[list(colors.keys())[0]])
-            # },
-            # "showlegend": real_no == 0,
-        }
-
     def add_observations(self, observations: dict, x_value: str) -> None:
-        self._traces.extend(
+        self._observation_traces.append(
             [
                 {
-                    "x": [value.get(x_value), []],
-                    "y": [value.get("value"), []],
+                    "x": obs.get(x_value, []),
+                    "y": obs.get("value", []),
                     "marker": {"color": "black"},
-                    "text": value.get("comment", None),
+                    "text": obs.get("comment", None),
                     "hoverinfo": "y+x+text",
                     "showlegend": False,
                     "error_y": {
                         "type": "data",
-                        "array": [value.get("error"), []],
+                        "array": [obs.get("error"), []],
                         "visible": True,
                     },
                 }
-                for value in observations
+                for obs in observations
             ]
         )
 
-    @property
-    def figure(self) -> Dict:
-        return dict(layout=self._layout, data=self._traces)
+    def get_figure(self) -> Dict:
+        traces = (
+            self._realization_traces
+            + self._statistical_traces
+            + self._observation_traces
+        )
+        return dict(layout=self._layout, data=traces)
