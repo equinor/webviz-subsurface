@@ -39,6 +39,7 @@
 ########################################
 
 from typing import Union, Dict, Any
+import re
 
 
 class UnitBase:
@@ -54,6 +55,10 @@ class UnitBase:
 
     @property
     def value(self) -> float:
+        raise NotImplementedError("This pseudo-class must not be used directly.")
+
+    @property
+    def raw_symbol(self) -> str:
         raise NotImplementedError("This pseudo-class must not be used directly.")
 
     @property
@@ -187,10 +192,19 @@ class Unit:
             return self.__value
 
         @property
+        def raw_symbol(self) -> str:
+            """
+            Returns:
+                The raw symbol of the unit.
+
+            """
+            return self.__symbol
+
+        @property
         def symbol(self) -> str:
             """
             Returns:
-                The symbol of the unit.
+                The formatted symbol of the unit.
 
             """
             return self.__formatted_symbol()
@@ -198,6 +212,7 @@ class Unit:
         def __formatted_symbol(self) -> str:
             powers = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
             symbol = self.__symbol.replace("^", "").translate(powers)
+            symbol = re.sub(r"\(([^*+\-\/]+)\)", r"\1", symbol)
             return symbol
 
         def __tidy_symbol(self) -> None:
@@ -324,12 +339,12 @@ class Unit:
             """
             if issubclass(other.__class__, UnitBase):
                 return self.__class__(
-                    self.value * other.value, f"{self.symbol}*{other.symbol}"
+                    self.value * other.value, f"{self.raw_symbol}*{other.raw_symbol}"
                 )
             if isinstance(other, float):
-                return self.__class__(self.value * other, self.symbol)
+                return self.__class__(self.value * other, self.raw_symbol)
             if isinstance(other, int):
-                return self.__class__(self.value * float(other), self.symbol)
+                return self.__class__(self.value * float(other), self.raw_symbol)
 
             raise TypeError(
                 "You can only multiply this unit with another unit, a float or an integer."
@@ -352,12 +367,12 @@ class Unit:
             """
             if issubclass(other.__class__, UnitBase):
                 return self.__class__(
-                    self.value / other.value, f"{self.symbol}/({other.symbol})"
+                    self.value / other.value, f"{self.raw_symbol}/({other.raw_symbol})"
                 )
             if isinstance(other, float):
-                return self.__class__(self.value / other, self.symbol)
+                return self.__class__(self.value / other, self.raw_symbol)
             if isinstance(other, int):
-                return self.__class__(self.value / float(other), self.symbol)
+                return self.__class__(self.value / float(other), self.raw_symbol)
 
             raise TypeError(
                 "You can only divide this unit by another unit, a float or an integer."

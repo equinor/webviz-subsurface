@@ -59,6 +59,7 @@ class WaterImpl(PvxOBase):
         self,
         index_table: int,
         raw: EclPropertyTableRawData,
+        surface_mass_density_water: float,
         convert: ConvertUnits,
     ) -> None:
         # pylint: disable=super-init-not-called
@@ -70,6 +71,7 @@ class WaterImpl(PvxOBase):
         Args:
             index_table: Index of the PVT table
             raw: Eclipse raw data
+            surface_mass_density_water: Surface mass density of water
             convert: Tuple holding a callable and a ConvertUnits object for unit conversions
 
         """
@@ -89,6 +91,8 @@ class WaterImpl(PvxOBase):
         self.__diff_cw_cv_ref = convert.column[3](
             raw.data[current_stride + 4 * column_stride]
         )
+
+        self.__surface_mass_density_water = surface_mass_density_water
 
     def __recip_fvf(self, p_w: float) -> float:
         """Computes the reciprocal of the formation volume factor for the given water pressure.
@@ -135,15 +139,15 @@ class WaterImpl(PvxOBase):
     def __evaluate(
         pressures: np.ndarray, calculate: Callable[[Any], Any]
     ) -> np.ndarray:
-        """Calls the calculate method with each of the values
-        in the pressures list and returns the results.
+        """Calls the calculate method with each of the pressure values
+        and returns the results.
 
         Args:
-            pressures: List of pressure values
+            pressures: Pressure values
             calculate: Method to be called with each of the pressure values
 
         Returns:
-            List of result values
+            Result values
 
         """
         return np.array([calculate(pressure) for pressure in pressures])
@@ -167,37 +171,54 @@ class WaterImpl(PvxOBase):
     def formation_volume_factor(
         self, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
-        """Computes a list of formation volume factor values
+        """Computes formation volume factor values
         for the given pressure values.
 
         Args:
             ratio: Dummy argument, only to conform to interface of base class
-            pressure: List of pressure values
+            pressure: Pressure values
 
         Returns:
-            A list of all formation volume factor values for the given pressure values.
+            Formation volume factor values for the given pressure values.
 
         """
         return self.__evaluate(pressure, lambda p: 1.0 / self.__recip_fvf(p))
 
     def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
-        """Computes a list of viscosity values for the given pressure values.
+        """Computes viscosity values for the given pressure values.
 
         Args:
             ratio: Dummy argument, only to conform to interface of base class
-            pressure: List of pressure values
+            pressure: Pressure values
 
         Returns:
-            A list of viscosity values corresponding
-            to the given list of pressure values.
+            Viscosity values for the given pressure values.
 
         """
         return self.__evaluate(
             pressure, lambda p: self.__recip_fvf(p) / self.__recip_fvf_visc(p)
         )
 
+    def density(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
+        """Args:
+            ratio: Dummy argument, only to conform to interface of base class.
+            pressure: Pressure values the density values are requested for.
+
+        Returns:
+            Density values for the given ratio and pressure values.
+
+        """
+        # rho_w = rho_w,sc / B_w
+        fvf_water = self.formation_volume_factor(ratio, pressure)
+        return np.array(
+            [
+                self.__surface_mass_density_water / fvf_water_sample
+                for fvf_water_sample in fvf_water
+            ]
+        )
+
     def get_keys(self) -> np.ndarray:
-        """Returns a list of all primary keys.
+        """Returns all primary keys.
 
         Since this is water, there is no dependency on any ratio.
         Hence, this method returns a list holding a single float of value 0.0.
@@ -206,7 +227,7 @@ class WaterImpl(PvxOBase):
         return np.zeros(1)
 
     def get_independents(self) -> np.ndarray:
-        """Returns a list of all independent pressure values (Pw).
+        """Returns all independent pressure values (Pw).
 
         Since this is water, this does return with only one single pressure value,
         the reference pressure.
@@ -224,7 +245,7 @@ class Water(FluidImplementation):
     Holds a list of regions (one per PVT table).
 
     Attributes:
-        surface_mass_densities: List of surface mass densities
+        surface_mass_densities: Surface mass densities
         keep_unit_system: True if the original unit system was kept
         original_unit_system: An ErtEclUnitEnum representing the original unit system
     """
@@ -241,7 +262,7 @@ class Water(FluidImplementation):
         Args:
             raw: Eclipse raw data object
             unit_system: The original unit system
-            surface_mass_densities: List of surface mass densities
+            surface_mass_densities: Surface mass densities
             keep_unit_system:
                 True if the original unit system shall be kept,
                 False if units shall be converted to SI units.
@@ -250,16 +271,16 @@ class Water(FluidImplementation):
         super().__init__(keep_unit_system)
         self.surface_mass_densities = surface_mass_densities
         self.original_unit_system = EclUnitEnum(unit_system)
-        self.create_water(raw, unit_system, surface_mass_densities)
+        self.create_water(raw, unit_system)
 
     def formation_volume_factor_unit(self, latex: bool = False) -> str:
-        """Creates and returns a string containing the unit symbol of the formation volume factor.
+        """Creates and returns the unit symbol of the formation volume factor.
 
         Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the formation volume factor.
+            The unit symbol of the formation volume factor.
 
         """
         unit_system = EclUnits.create_unit_system(
@@ -278,25 +299,17 @@ class Water(FluidImplementation):
             f"/{unit_system.surface_volume_liquid().symbol}"
         )
 
-    def viscosity_unit(self, latex: bool = False) -> str:
-        """Creates and returns a string containing the unit symbol of the viscosity.
+    def ratio_unit(self, latex: bool = False) -> str:
+        """Creates and returns the unit symbol of the phase ratio.
 
         Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the viscosity.
+            The unit symbol of the phase ratio.
 
         """
-        unit_system = EclUnits.create_unit_system(
-            self.original_unit_system
-            if self.keep_unit_system
-            else EclUnitEnum.ECL_SI_UNITS
-        )
-
-        if latex:
-            return fr"${unit_system.viscosity().symbol}$"
-        return f"{unit_system.viscosity().symbol}"
+        raise NotImplementedError("Water does not have a phase ratio unit.")
 
     def water_unit_converter(
         self, unit_system: Union[int, EclUnits.UnitSystem]
@@ -325,12 +338,7 @@ class Water(FluidImplementation):
             ],
         )
 
-    def create_water(
-        self,
-        raw: EclPropertyTableRawData,
-        unit_system: int,
-        surface_mass_densities: np.ndarray,
-    ) -> None:
+    def create_water(self, raw: EclPropertyTableRawData, unit_system: int) -> None:
         """Creates interpolants for water from the given raw Eclipse data and uses
         a water unit converter based on the given unit system.
 
@@ -346,10 +354,12 @@ class Water(FluidImplementation):
 
         ret = self.make_interpolants_from_raw_data(
             raw,
-            lambda table_index, raw: WaterImpl(table_index, raw, cvrt),
+            lambda table_index, raw: WaterImpl(
+                table_index, raw, self.surface_mass_densities[table_index], cvrt
+            ),
         )
 
-        if len(surface_mass_densities) != len(ret):
+        if len(self.surface_mass_densities) != len(ret):
             raise ValueError(
                 (
                     "The given Eclipse INIT file seems to be broken"
