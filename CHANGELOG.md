@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#594](https://github.com/equinor/webviz-subsurface/pull/594) - Fixed bug in SurfaceViewerFMU where surfaces with only undefined values was not handled properly.
 - [#584](https://github.com/equinor/webviz-subsurface/pull/584) - Fixed bug for in RelativePermeability plugin where it was not possible to plot against oil saturation axis when using relperm data of "family 2".
+- [#595](https://github.com/equinor/webviz-subsurface/pull/595) - Raise a descriptive error in SurfaceViewerFMU plugin if no surfaces are available.
 
 ## [0.1.9] - 2021-02-23
 ### Fixed
