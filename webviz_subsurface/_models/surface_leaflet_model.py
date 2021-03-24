@@ -80,6 +80,9 @@ class SurfaceLeafletModel:
         values = surface.values
         if flip:
             values = np.flip(values.transpose(), axis=0)
+        # If all values are masked set to zero
+        if values.mask.all():
+            values = np.zeros(values.shape)
         return values
 
     @property
