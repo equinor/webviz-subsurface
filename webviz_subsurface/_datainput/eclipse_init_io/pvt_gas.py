@@ -65,6 +65,8 @@ class WetGas(PvxOBase):
         self,
         index_table: int,
         raw: EclPropertyTableRawData,
+        surface_mass_density_oil: float,
+        surface_mass_density_gas: float,
         convert: Tuple[
             Callable[
                 [
@@ -84,55 +86,81 @@ class WetGas(PvxOBase):
         Args:
             index_table: Index of the PVT table
             raw: Eclipse raw data object
+            surface_mass_density_oil: Surface mass density of oil
+            surface_mass_density_gas: Surface mass density of gas
             convert: Tuple holding a callable and a ConvertUnits object for unit conversions
 
         """
-        self.interpolant = PVTx(index_table, raw, convert)
+        self.__interpolant = PVTx(index_table, raw, convert)
+        self.__surface_mass_density_oil = surface_mass_density_oil
+        self.__surface_mass_density_gas = surface_mass_density_gas
 
     def formation_volume_factor(
         self, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
-        """Computes a list of formation volume factor values
+        """Computes formation volume factor values
         for the given ratio and pressure values.
 
         Args:
-            ratio: List of ratio (key) values the volume factor values are requested for.
-            pressure: List of pressure values the volume factor values are requested for.
+            ratio: Ratio (key) values the volume factor values are requested for.
+            pressure: Pressure values the volume factor values are requested for.
 
         Returns:
-            A list of all volume factor values for the given ratio and pressure values.
+            Volume factor values for the given ratio and pressure values.
 
         """
         # Remember:
         # PKey   Inner   C0     C1         C2           C3
         # Pg     Rv      1/B    1/(B*mu)   d(1/B)/dRv   d(1/(B*mu))/dRv
         #        :       :      :          :            :
-        return self.interpolant.formation_volume_factor(pressure, ratio)
+        return self.__interpolant.formation_volume_factor(pressure, ratio)
 
     def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
-        """Computes a list of viscosity values for the given ratio and pressure values.
+        """Computes viscosity values for the given ratio and pressure values.
 
         Args:
-            ratio: List of ratio (key) values the viscosity values are requested for.
-            pressure: List of pressure values the viscosity values are requested for.
+            ratio: Ratio (key) values the viscosity values are requested for.
+            pressure: Pressure values the viscosity values are requested for.
 
         Returns:
-            A list of all viscosity values for the given ratio and pressure values.
+            Viscosity values for the given ratio and pressure values.
 
         """
         # Remember:
         # PKey   Inner   C0     C1         C2           C3
         # Pg     Rv      1/B    1/(B*mu)   d(1/B)/dRv   d(1/(B*mu))/dRv
         #        :       :      :          :            :
-        return self.interpolant.viscosity(pressure, ratio)
+        return self.__interpolant.viscosity(pressure, ratio)
+
+    def density(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
+        """Args:
+            ratio: Ratio (key) values the density values are requested for.
+            pressure: Pressure values the density values are requested for.
+
+        Returns:
+            Density values for the given ratio and pressure values.
+
+        """
+        # rho_g = (rho_g,sc + Rv * rho_o,sc) / B_g
+        fvf_gas = self.formation_volume_factor(ratio, pressure)
+        return np.array(
+            [
+                (
+                    self.__surface_mass_density_gas
+                    + ratio_sample * self.__surface_mass_density_oil
+                )
+                / fvf_gas_sample
+                for ratio_sample, fvf_gas_sample in zip(ratio, fvf_gas)
+            ]
+        )
 
     def get_keys(self) -> np.ndarray:
-        """Returns a list of all primary pressure values (Pg)"""
-        return self.interpolant.get_keys()
+        """Returns all primary pressure values (Pg)"""
+        return self.__interpolant.get_keys()
 
     def get_independents(self) -> np.ndarray:
-        """Returns a list of all gas ratio values (Rv)"""
-        return self.interpolant.get_independents()
+        """Returns all gas ratio values (Rv)"""
+        return self.__interpolant.get_independents()
 
 
 class DryGas(PvxOBase):
@@ -146,6 +174,7 @@ class DryGas(PvxOBase):
         self,
         table_index: int,
         raw: EclPropertyTableRawData,
+        surface_mass_density_gas: float,
         convert: ConvertUnits,
     ) -> None:
         # pylint: disable=super-init-not-called
@@ -157,53 +186,73 @@ class DryGas(PvxOBase):
         Args:
             index_table: Index of the PVT table
             raw: Eclipse raw data object
+            surface_mass_density_gas: Surface mass density of gas
             convert: ConvertUnits object for unit conversions
 
         """
-        self.interpolant = PVDx(table_index, raw, convert)
+        self.__interpolant = PVDx(table_index, raw, convert)
+        self.__surface_mass_density_gas = surface_mass_density_gas
 
     def formation_volume_factor(
         self, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
-        """Computes a list of formation volume factor values
+        """Computes formation volume factor values
         for the given pressure values.
 
         Args:
             ratio: Dummy argument, only to conform to interface of base class.
-            pressure: List of pressure values the volume factor values are requested for.
+            pressure: Pressure values the volume factor values are requested for.
 
         Returns:
-            A list of all volume factor values for the given pressure values.
+            Volume factor values for the given pressure values.
 
         """
-        return self.interpolant.formation_volume_factor(pressure)
+        return self.__interpolant.formation_volume_factor(pressure)
 
     def viscosity(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
-        """Computes a list of viscosity values for the given pressure values.
+        """Computes viscosity values for the given pressure values.
 
         Args:
             ratio: Dummy argument, only to conform to interface of base class.
-            pressure: List of pressure values the viscosity values are requested for.
+            pressure: Pressure values the viscosity values are requested for.
 
         Returns:
-            A list of all viscosity values for the given pressure values.
+            Viscosity values for the given pressure values.
 
         """
-        return self.interpolant.viscosity(pressure)
+        return self.__interpolant.viscosity(pressure)
+
+    def density(self, ratio: np.ndarray, pressure: np.ndarray) -> np.ndarray:
+        """Args:
+            ratio: Dummy argument, only to conform to interface of base class.
+            pressure: Pressure values the density values are requested for.
+
+        Returns:
+            Density values for the given ratio and pressure values.
+
+        """
+        # rho_g = rho_g,sc / B_g
+        fvf_gas = self.formation_volume_factor(ratio, pressure)
+        return np.array(
+            [
+                self.__surface_mass_density_gas / fvf_gas_sample
+                for fvf_gas_sample in fvf_gas
+            ]
+        )
 
     def get_keys(self) -> np.ndarray:
-        """Returns a list of all primary keys.
+        """Returns all primary keys.
 
         Since this is dry gas, there is no dependency on Rv.
         Hence, this method returns a list holding floats of value 0.0
         for each independent value.
 
         """
-        return self.interpolant.get_keys()
+        return self.__interpolant.get_keys()
 
     def get_independents(self) -> np.ndarray:
-        """Returns a list of all independent pressure values (Pg)"""
-        return self.interpolant.get_independents()
+        """Returns all independent pressure values (Pg)"""
+        return self.__interpolant.get_independents()
 
 
 class Gas(FluidImplementation):
@@ -212,7 +261,7 @@ class Gas(FluidImplementation):
     Holds a list of regions (one per PVT table).
 
     Attributes:
-        surface_mass_densities: List of surface mass densities
+        surface_mass_densities: Surface mass densities
         keep_unit_system: True if the original unit system was kept
         original_unit_system: An ErtEclUnitEnum representing the original unit system
     """
@@ -221,7 +270,7 @@ class Gas(FluidImplementation):
         self,
         raw: EclPropertyTableRawData,
         unit_system: int,
-        surface_mass_densities: np.ndarray,
+        surface_mass_densities: Tuple[np.ndarray, np.ndarray],
         keep_unit_system: bool = False,
     ) -> None:
         """Initializes a Gas object.
@@ -229,7 +278,7 @@ class Gas(FluidImplementation):
         Args:
             raw: Eclipse raw data object
             unit_system: The original unit system
-            surface_mass_densities: List of surface mass densities
+            surface_mass_densities: Surface mass densities
             keep_unit_system:
                 True if the original unit system shall be kept,
                 False if units shall be converted to SI units.
@@ -241,13 +290,13 @@ class Gas(FluidImplementation):
         self.create_pvt_interpolants(raw, unit_system)
 
     def formation_volume_factor_unit(self, latex: bool = False) -> str:
-        """Creates and returns a string containing the unit symbol of the formation volume factor.
+        """Creates and returns the unit symbol of the formation volume factor.
 
         Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the formation volume factor.
+            The unit symbol of the formation volume factor.
 
         """
         unit_system = EclUnits.create_unit_system(
@@ -266,14 +315,14 @@ class Gas(FluidImplementation):
             f"/{unit_system.surface_volume_gas().symbol}"
         )
 
-    def viscosity_unit(self, latex: bool = False) -> str:
-        """Creates and returns a string containing the unit symbol of the viscosity.
+    def ratio_unit(self, latex: bool = False) -> str:
+        """Creates and returns the unit symbol of the phase ratio.
 
         Args:
             latex: True if the unit symbol shall be returned as LaTeX, False if not.
 
         Returns:
-            A string containing the unit symbol of the viscosity.
+            The unit symbol of the phase ratio.
 
         """
         unit_system = EclUnits.create_unit_system(
@@ -283,8 +332,14 @@ class Gas(FluidImplementation):
         )
 
         if latex:
-            return fr"${unit_system.viscosity().symbol}$"
-        return f"{unit_system.viscosity().symbol}"
+            return (
+                fr"${{{unit_system.surface_volume_liquid().symbol}}}/"
+                fr"{{{unit_system.surface_volume_gas().symbol}}}$"
+            )
+        return (
+            f"{unit_system.surface_volume_liquid().symbol}/"
+            f"{unit_system.surface_volume_gas().symbol}"
+        )
 
     def create_pvt_interpolants(
         self, raw: EclPropertyTableRawData, unit_system: int
@@ -396,7 +451,9 @@ class Gas(FluidImplementation):
             # Pg      1/B    1/(B*mu)   d(1/B)/dRv   d(1/(B*mu))/dRv
             #         :       :         :            :
             raw,
-            lambda table_index, raw: DryGas(table_index, raw, cvrt),
+            lambda table_index, raw: DryGas(
+                table_index, raw, self.surface_mass_densities[1][table_index], cvrt
+            ),
         )
 
     def create_wet_gas(self, raw: EclPropertyTableRawData, unit_system: int) -> None:
@@ -415,7 +472,13 @@ class Gas(FluidImplementation):
             # Pg     Rv      1/B    1/(B*mu)   d(1/B)/dRv   d(1/(B*mu))/dRv
             #        :       :      :          :            :
             raw,
-            lambda table_index, raw: WetGas(table_index, raw, cvrt),
+            lambda table_index, raw: WetGas(
+                table_index,
+                raw,
+                self.surface_mass_densities[0][table_index],
+                self.surface_mass_densities[1][table_index],
+                cvrt,
+            ),
         )
 
     def is_wet_gas(self) -> bool:
@@ -496,8 +559,9 @@ class Gas(FluidImplementation):
         start = tab_dims[InitFileDefinitions.TABDIMS_IBPVTG_OFFSET_ITEM] - 1
         raw.data = tab[start : start + num_tab_elements]
 
-        surface_mass_densities = surface_mass_density(
-            ecl_init_file, EclPhaseIndex.VAPOUR, keep_unit_system
+        surface_mass_densities = (
+            surface_mass_density(ecl_init_file, EclPhaseIndex.LIQUID, keep_unit_system),
+            surface_mass_density(ecl_init_file, EclPhaseIndex.VAPOUR, keep_unit_system),
         )
 
         return Gas(

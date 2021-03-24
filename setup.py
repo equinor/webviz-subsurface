@@ -76,7 +76,6 @@ setup(
         "webviz-subsurface-components>=0.3.0",
         "xtgeo>=2.8",
     ],
-    tests_require=TESTS_REQUIRE,
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
     python_requires="~=3.6",
