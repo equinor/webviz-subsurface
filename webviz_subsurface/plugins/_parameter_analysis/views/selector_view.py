@@ -1,14 +1,16 @@
-from typing import Union, Optional
+from typing import Union, Optional, Callable
 
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 
 from ..figures.color_figure import color_figure
+from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
 def ensemble_selector(
-    parent,
+    get_uuid: Callable,
+    parametermodel: ParametersModel,
     tab: str,
     id_string: str,
     multi: bool = False,
@@ -20,10 +22,10 @@ def ensemble_selector(
         children.append(html.Span(heading, style={"font-weight": "bold"}))
     children.append(
         dcc.Dropdown(
-            id={"id": parent.uuid(id_string), "tab": tab},
-            options=[{"label": ens, "value": ens} for ens in parent.pmodel.ensembles],
+            id={"id": get_uuid(id_string), "tab": tab},
+            options=[{"label": ens, "value": ens} for ens in parametermodel.ensembles],
             multi=multi,
-            value=value if value is not None else parent.pmodel.ensembles[0],
+            value=value if value is not None else parametermodel.ensembles[0],
             clearable=False,
             persistence=True,
             persistence_type="session",
@@ -32,21 +34,27 @@ def ensemble_selector(
     return html.Div(style={"width": "90%"}, children=children)
 
 
-def vector_selector(parent) -> html.Div:
+def vector_selector(
+    get_uuid: Callable, vectormodel: SimulationTimeSeriesModel
+) -> html.Div:
+    first_vector_group: str = (
+        "Field"
+        if "Field" in list(vectormodel.vector_groups.keys())
+        else list(vectormodel.vector_groups.keys())[0]
+    )
     return html.Div(
         style={"width": "90%", "margin-top": "15px"},
         children=[
             html.Span("Vector type:", style={"font-weight": "bold"}),
             html.Div(
-                id=parent.uuid("vtype-container"),
+                id=get_uuid("vtype-container"),
                 children=[
                     dcc.RadioItems(
-                        id={"id": parent.uuid("vtype-select"), "state": "initial"},
+                        id={"id": get_uuid("vtype-select"), "state": "initial"},
                         options=[
-                            {"label": i, "value": i}
-                            for i in parent.vmodel.vector_groups
+                            {"label": i, "value": i} for i in vectormodel.vector_groups
                         ],
-                        value="Field",
+                        value=first_vector_group,
                         labelStyle={"display": "inline-block", "margin-right": "10px"},
                     )
                 ],
@@ -56,17 +64,17 @@ def vector_selector(parent) -> html.Div:
                 children=[
                     html.Span("Vector:", style={"font-weight": "bold"}),
                     html.Div(
-                        id=parent.uuid("vshort-container"),
+                        id=get_uuid("vshort-container"),
                         children=[
                             dcc.Dropdown(
-                                id=parent.uuid("vshort-select"),
+                                id=get_uuid("vshort-select"),
                                 options=[
                                     {"label": i, "value": i}
-                                    for i in parent.vmodel.vector_groups["Field"][
-                                        "shortnames"
-                                    ]
+                                    for i in vectormodel.vector_groups[
+                                        first_vector_group
+                                    ]["shortnames"]
                                 ],
-                                value=parent.vmodel.vector_groups["Field"][
+                                value=vectormodel.vector_groups[first_vector_group][
                                     "shortnames"
                                 ][0],
                                 placeholder="Select a vector...",
@@ -78,21 +86,23 @@ def vector_selector(parent) -> html.Div:
                     ),
                 ],
             ),
-            html.Div(id=parent.uuid("vitems-container"), children=[]),
-            html.Div(id=parent.uuid("vector-select"), style={"display": "none"}),
-            html.Div(id=parent.uuid("clickdata-store"), style={"display": "none"}),
+            html.Div(id=get_uuid("vitems-container"), children=[]),
+            html.Div(id=get_uuid("vector-select"), style={"display": "none"}),
+            html.Div(id=get_uuid("clickdata-store"), style={"display": "none"}),
         ],
     )
 
 
-def parameter_selector(parent, tab: str) -> html.Div:
+def parameter_selector(
+    get_uuid: Callable, parametermodel: ParametersModel, tab: str
+) -> html.Div:
     return html.Div(
         style={"width": "90%", "margin-top": "15px"},
         children=[
             html.Span("Parameter:", style={"font-weight": "bold"}),
             dcc.Dropdown(
-                id={"id": parent.uuid("parameter-select"), "tab": tab},
-                options=[{"label": i, "value": i} for i in parent.pmodel.parameters],
+                id={"id": get_uuid("parameter-select"), "tab": tab},
+                options=[{"label": i, "value": i} for i in parametermodel.parameters],
                 placeholder="Select a parameter...",
                 clearable=False,
                 persistence=True,
@@ -103,7 +113,7 @@ def parameter_selector(parent, tab: str) -> html.Div:
 
 
 def sortby_selector(
-    parent,
+    get_uuid: Callable,
     value: str = None,
 ) -> html.Div:
     return html.Div(
@@ -114,7 +124,7 @@ def sortby_selector(
                 style={"font-weight": "bold"},
             ),
             dcc.RadioItems(
-                id=parent.uuid("delta-sort"),
+                id=get_uuid("delta-sort"),
                 options=[
                     {"label": "Name", "value": "Name"},
                     {
@@ -138,12 +148,12 @@ def sortby_selector(
     )
 
 
-def plot_options(parent, tab: str) -> html.Div:
+def plot_options(get_uuid: Callable, tab: str) -> html.Div:
     return html.Div(
         style={"width": "90%", "margin-top": "15px"},
         children=[
             dcc.Checklist(
-                id={"id": parent.uuid("checkbox-options"), "tab": tab},
+                id={"id": get_uuid("checkbox-options"), "tab": tab},
                 options=[
                     {"label": "Dateline visible", "value": "DateLine"},
                     {"label": "Auto compute correlations", "value": "AutoCompute"},
@@ -151,15 +161,17 @@ def plot_options(parent, tab: str) -> html.Div:
                 value=["DateLine", "AutoCompute"],
             ),
             html.Div(
-                id={"id": parent.uuid("plot-options"), "tab": tab},
+                id={"id": get_uuid("plot-options"), "tab": tab},
                 style={"display": "none"},
             ),
         ],
     )
 
 
-def date_selector(parent) -> html.Div:
-    dates = parent.vmodel.dates
+def date_selector(
+    get_uuid: Callable, vectormodel: SimulationTimeSeriesModel
+) -> html.Div:
+    dates = vectormodel.dates
     return html.Div(
         style={"width": "90%", "margin-top": "15px"},
         children=[
@@ -169,13 +181,13 @@ def date_selector(parent) -> html.Div:
                     html.Span("Date:", style={"font-weight": "bold"}),
                     html.Span(
                         "date",
-                        id=parent.uuid("date-selected"),
+                        id=get_uuid("date-selected"),
                         style={"margin-left": "10px"},
                     ),
                 ],
             ),
             dcc.Slider(
-                id=parent.uuid("date-slider"),
+                id=get_uuid("date-slider"),
                 value=len(dates) - 1,
                 min=0,
                 max=len(dates) - 1,
@@ -195,7 +207,8 @@ def date_selector(parent) -> html.Div:
 
 
 def filter_parameter(
-    parent,
+    get_uuid: Callable,
+    parametermodel: ParametersModel,
     tab: str,
     multi: bool = True,
     value: Union[str, float] = None,
@@ -205,19 +218,19 @@ def filter_parameter(
         children=[
             html.Span("Parameters:", style={"font-weight": "bold"}),
             html.Div(
-                id=parent.uuid("filter-parameter-container"),
+                id=get_uuid("filter-parameter-container"),
                 children=[
                     wcc.Select(
                         id={
-                            "id": parent.uuid("filter-parameter"),
+                            "id": get_uuid("filter-parameter"),
                             "tab": tab,
                         },
                         options=[
-                            {"label": i, "value": i} for i in parent.pmodel.parameters
+                            {"label": i, "value": i} for i in parametermodel.parameters
                         ],
                         value=value,
                         multi=multi,
-                        size=min(40, len(parent.pmodel.parameters)),
+                        size=min(40, len(parametermodel.parameters)),
                         persistence=True,
                         persistence_type="session",
                     ),
@@ -228,7 +241,7 @@ def filter_parameter(
 
 
 def make_filter(
-    parent,
+    get_uuid: Callable,
     tab: str,
     vtype: str,
     column_values: list,
@@ -243,7 +256,7 @@ def make_filter(
                 html.Summary(vtype),
                 wcc.Select(
                     id={
-                        "id": parent.uuid("vitem-filter"),
+                        "id": get_uuid("vitem-filter"),
                         "tab": tab,
                         "vtype": vtype,
                     },
@@ -260,7 +273,8 @@ def make_filter(
 
 
 def filter_vector_selector(
-    parent,
+    get_uuid: Callable,
+    vectormodel: SimulationTimeSeriesModel,
     tab: str,
     multi: bool = True,
     value: Union[str, float] = None,
@@ -272,11 +286,11 @@ def filter_vector_selector(
             html.Span("Vector type:", style={"font-weight": "bold"}),
             dcc.Dropdown(
                 id={
-                    "id": parent.uuid("vtype-filter"),
+                    "id": get_uuid("vtype-filter"),
                     "tab": tab,
                 },
-                options=[{"label": i, "value": i} for i in parent.vmodel.vector_groups],
-                value=list(parent.vmodel.vector_groups),
+                options=[{"label": i, "value": i} for i in vectormodel.vector_groups],
+                value=list(vectormodel.vector_groups),
                 clearable=False,
                 style={"background-color": "white"},
                 multi=True,
@@ -286,7 +300,7 @@ def filter_vector_selector(
             html.Div(
                 children=[
                     make_filter(
-                        parent=parent,
+                        get_uuid=get_uuid,
                         tab=tab,
                         vtype=f"{vtype}s",
                         column_values=vlist["items"],
@@ -294,12 +308,12 @@ def filter_vector_selector(
                         value=value,
                         open_details=open_details,
                     )
-                    for vtype, vlist in parent.vmodel.vector_groups.items()
+                    for vtype, vlist in vectormodel.vector_groups.items()
                     if vlist["items"]
                 ],
             ),
             html.Div(
-                id={"id": parent.uuid("filter-select"), "tab": tab},
+                id={"id": get_uuid("filter-select"), "tab": tab},
                 style={"display": "none"},
             ),
         ],
@@ -307,7 +321,7 @@ def filter_vector_selector(
 
 
 def color_selector(
-    parent,
+    get_uuid: Callable,
     tab: str,
     colors: Optional[list] = None,
     bargap: Optional[float] = None,
@@ -318,7 +332,7 @@ def color_selector(
         children=[
             html.Span("Colors:", style={"font-weight": "bold"}),
             wcc.Graph(
-                id={"id": parent.uuid("color-selector"), "tab": tab},
+                id={"id": get_uuid("color-selector"), "tab": tab},
                 config={"displayModeBar": False},
                 figure=color_figure(
                     colors=colors,
@@ -330,13 +344,13 @@ def color_selector(
     )
 
 
-def color_opacity_selector(parent, tab: str, value: float):
+def color_opacity_selector(get_uuid: Callable, tab: str, value: float):
     return html.Div(
         style={"width": "90%", "margin-top": "5px"},
         children=[
             "Opacity:",
             dcc.Input(
-                id={"id": parent.uuid("opacity-selector"), "tab": tab},
+                id={"id": get_uuid("opacity-selector"), "tab": tab},
                 type="number",
                 min=0,
                 max=1,

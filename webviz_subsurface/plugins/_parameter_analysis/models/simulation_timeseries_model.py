@@ -99,9 +99,10 @@ class SimulationTimeSeriesModel:
                 chain.from_iterable([vgroups[vtype]["vectors"] for vtype in vgroups])
             )
         ]
-        vgroups["Others"] = dict(
-            vectors=other_vectors, shortnames=other_vectors, items=[]
-        )
+        if other_vectors:
+            vgroups["Others"] = dict(
+                vectors=other_vectors, shortnames=other_vectors, items=[]
+            )
         return vgroups
 
     @staticmethod

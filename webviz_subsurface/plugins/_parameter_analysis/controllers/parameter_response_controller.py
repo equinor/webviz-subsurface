@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Callable
 from itertools import chain
 
 import numpy as np
@@ -13,33 +13,38 @@ import plotly.graph_objects as go
 from ..utils.colors import find_intermediate_color
 from ..figures.correlation_figure import CorrelationFigure
 from ..utils.colors import hex_to_rgb, rgb_to_hex
-
+from ..models import SimulationTimeSeriesModel, ParametersModel
 
 # pylint: disable=too-many-statements,
-def parameter_response_controller(parent, app):
+def parameter_response_controller(
+    app: dash.Dash,
+    get_uuid: Callable,
+    vectormodel: SimulationTimeSeriesModel,
+    parametermodel: ParametersModel,
+):
     @app.callback(
-        Output(parent.uuid("vector-vs-time-graph"), "figure"),
-        Output(parent.uuid("vector-vs-param-scatter"), "figure"),
-        Output(parent.uuid("vector-corr-graph"), "figure"),
-        Output(parent.uuid("param-corr-graph"), "figure"),
-        Input({"id": parent.uuid("ensemble-selector"), "tab": "response"}, "value"),
-        Input(parent.uuid("vector-select"), "children"),
-        Input({"id": parent.uuid("parameter-select"), "tab": "response"}, "value"),
-        Input(parent.uuid("date-selected"), "children"),
-        Input({"id": parent.uuid("vtype-filter"), "tab": "response"}, "value"),
+        Output(get_uuid("vector-vs-time-graph"), "figure"),
+        Output(get_uuid("vector-vs-param-scatter"), "figure"),
+        Output(get_uuid("vector-corr-graph"), "figure"),
+        Output(get_uuid("param-corr-graph"), "figure"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
+        Input(get_uuid("vector-select"), "children"),
+        Input({"id": get_uuid("parameter-select"), "tab": "response"}, "value"),
+        Input(get_uuid("date-selected"), "children"),
+        Input({"id": get_uuid("vtype-filter"), "tab": "response"}, "value"),
         Input(
             {
-                "id": parent.uuid("vitem-filter"),
+                "id": get_uuid("vitem-filter"),
                 "tab": "response",
                 "vtype": ALL,
             },
             "value",
         ),
-        Input({"id": parent.uuid("plot-options"), "tab": "response"}, "value"),
-        State(parent.uuid("vector-vs-time-graph"), "figure"),
-        State(parent.uuid("param-corr-graph"), "figure"),
-        State(parent.uuid("vector-corr-graph"), "figure"),
-        State(parent.uuid("vector-vs-param-scatter"), "figure"),
+        Input({"id": get_uuid("plot-options"), "tab": "response"}, "value"),
+        State(get_uuid("vector-vs-time-graph"), "figure"),
+        State(get_uuid("param-corr-graph"), "figure"),
+        State(get_uuid("vector-corr-graph"), "figure"),
+        State(get_uuid("vector-vs-param-scatter"), "figure"),
     )
     # pylint: disable=too-many-locals, too-many-arguments
     def _update_graphs(
@@ -70,34 +75,38 @@ def parameter_response_controller(parent, app):
 
         initial_run = timeseries_fig is None
         color = options["color"] if options["color"] is not None else "#007079"
-        daterange = parent.vmodel.daterange_for_plot(vector=vector)
+        daterange = vectormodel.daterange_for_plot(vector=vector)
 
         # Make timeseries graph
-        if relevant_ctx(parent, ctx, operation="timeseries_fig") or initial_run:
+        if relevant_ctx(get_uuid, ctx, operation="timeseries_fig") or initial_run:
             timeseries_fig = update_timeseries_graph(
-                parent.vmodel,
+                vectormodel,
                 ensemble,
                 vector,
                 xaxisrange=[min(daterange[0], date), max(daterange[1], date)],
                 real_filter=None,
             )
 
-        if parent.uuid("plot-options") not in ctx or initial_run:
+        if get_uuid("plot-options") not in ctx or initial_run:
             vectors_filtered = filter_vectors(
-                parent, vector_type_filter, vector_item_filters
+                vectormodel, vector_type_filter, vector_item_filters
             )
             if vector not in vectors_filtered:
                 vectors_filtered.append(vector)
             merged_df = merge_parameter_and_vector_df(
-                parent, ensemble, vectors_filtered, date
+                vectormodel=vectormodel,
+                parametermodel=parametermodel,
+                ensemble=ensemble,
+                vectors=vectors_filtered,
+                date=date,
             )
 
         # Make correlation figure for vector
         if options["autocompute_corr"] and (
-            relevant_ctx(parent, ctx, operation="vector_correlation") or initial_run
+            relevant_ctx(get_uuid, ctx, operation="vector_correlation") or initial_run
         ):
             corr_v_fig = make_correlation_figure(
-                merged_df, response=vector, corrwith=parent.pmodel.parameters
+                merged_df, response=vector, corrwith=parametermodel.parameters
             ).figure
 
         # Get clicked parameter correlation bar or largest bar initially
@@ -108,7 +117,8 @@ def parameter_response_controller(parent, app):
 
         # Make correlation figure for parameter
         if options["autocompute_corr"] and (
-            relevant_ctx(parent, ctx, operation="parameter_correlation") or initial_run
+            relevant_ctx(get_uuid, ctx, operation="parameter_correlation")
+            or initial_run
         ):
             corr_p_fig = make_correlation_figure(
                 merged_df, response=parameter, corrwith=vectors_filtered
@@ -117,16 +127,16 @@ def parameter_response_controller(parent, app):
         corr_p_fig = color_corr_bars(corr_p_fig, vector, color, options["opacity"])
 
         # Create scatter plot of vector vs parameter
-        if relevant_ctx(parent, ctx, operation="scatter") or initial_run:
+        if relevant_ctx(get_uuid, ctx, operation="scatter") or initial_run:
             scatter_fig = update_scatter_graph(merged_df, vector, parameter, color)
 
         scatter_fig = scatter_fig_color_update(scatter_fig, color, options["opacity"])
 
         # Order realizations sorted on value of parameter and color traces
-        df_value_norm = parent.pmodel.get_real_and_value_df(
+        df_value_norm = parametermodel.get_real_and_value_df(
             ensemble, parameter=parameter, normalize=True
         )
-        if relevant_ctx(parent, ctx, operation="color_timeseries_fig") or initial_run:
+        if relevant_ctx(get_uuid, ctx, operation="color_timeseries_fig") or initial_run:
             timeseries_fig = color_timeseries_graph(
                 timeseries_fig, ensemble, parameter, vector, df_value_norm
             )
@@ -135,7 +145,7 @@ def parameter_response_controller(parent, app):
         timeseries_fig = add_date_line(timeseries_fig, date, options["show_dateline"])
 
         # Ensure xaxis covers selected date
-        if parent.uuid("date-selected") in ctx:
+        if get_uuid("date-selected") in ctx:
             timeseries_fig["layout"]["xaxis"].update(
                 range=[min(daterange[0], date), max(daterange[1], date)]
             )
@@ -143,12 +153,12 @@ def parameter_response_controller(parent, app):
         return timeseries_fig, scatter_fig, corr_v_fig, corr_p_fig
 
     @app.callback(
-        Output(parent.uuid("date-slider"), "value"),
-        Input(parent.uuid("vector-vs-time-graph"), "clickData"),
+        Output(get_uuid("date-slider"), "value"),
+        Input(get_uuid("vector-vs-time-graph"), "clickData"),
     )
     def _update_date_from_clickdata(timeseries_clickdata: Union[None, dict]):
         """Update date-slider from clickdata"""
-        dates = parent.vmodel.dates
+        dates = vectormodel.dates
         return (
             dates.index(timeseries_clickdata.get("points", [{}])[0]["x"])
             if timeseries_clickdata is not None
@@ -156,18 +166,18 @@ def parameter_response_controller(parent, app):
         )
 
     @app.callback(
-        Output(parent.uuid("date-selected"), "children"),
-        Input(parent.uuid("date-slider"), "value"),
+        Output(get_uuid("date-selected"), "children"),
+        Input(get_uuid("date-slider"), "value"),
     )
     def _update_date(dateidx: int):
         """Update selected date from date-slider"""
-        return parent.vmodel.dates[dateidx]
+        return vectormodel.dates[dateidx]
 
     @app.callback(
-        Output({"id": parent.uuid("plot-options"), "tab": "response"}, "value"),
-        Input({"id": parent.uuid("checkbox-options"), "tab": "response"}, "value"),
-        Input({"id": parent.uuid("color-selector"), "tab": "response"}, "clickData"),
-        Input({"id": parent.uuid("opacity-selector"), "tab": "response"}, "value"),
+        Output({"id": get_uuid("plot-options"), "tab": "response"}, "value"),
+        Input({"id": get_uuid("checkbox-options"), "tab": "response"}, "value"),
+        Input({"id": get_uuid("color-selector"), "tab": "response"}, "clickData"),
+        Input({"id": get_uuid("opacity-selector"), "tab": "response"}, "value"),
     )
     def _update_plot_options(
         checkbox_options: list,
@@ -190,24 +200,24 @@ def parameter_response_controller(parent, app):
         )
 
     @app.callback(
-        Output(parent.uuid("vector-select"), "children"),
-        Input(parent.uuid("vshort-select"), "value"),
-        Input({"id": parent.uuid("vitem-select"), "shortname": ALL}, "value"),
+        Output(get_uuid("vector-select"), "children"),
+        Input(get_uuid("vshort-select"), "value"),
+        Input({"id": get_uuid("vitem-select"), "shortname": ALL}, "value"),
     )
     def _combine_substrings_to_vector(shortname: str, item: list):
         """Combine vector shortname and item to full vector name"""
         vector = shortname if not item or item[0] is None else f"{shortname}:{item[0]}"
 
-        if vector not in parent.vmodel.vectors:
+        if vector not in vectormodel.vectors:
             raise PreventUpdate
         return vector
 
     @app.callback(
-        Output(parent.uuid("vshort-select"), "options"),
-        Output(parent.uuid("vshort-select"), "value"),
-        Output(parent.uuid("clickdata-store"), "data"),
-        Input({"id": parent.uuid("vtype-select"), "state": ALL}, "value"),
-        Input(parent.uuid("param-corr-graph"), "clickData"),
+        Output(get_uuid("vshort-select"), "options"),
+        Output(get_uuid("vshort-select"), "value"),
+        Output(get_uuid("clickdata-store"), "data"),
+        Input({"id": get_uuid("vtype-select"), "state": ALL}, "value"),
+        Input(get_uuid("param-corr-graph"), "clickData"),
     )
     def _update_vectorlist(vtype: list, corr_param_clickdata: dict):
         """
@@ -215,24 +225,24 @@ def parameter_response_controller(parent, app):
         selected vector type or clickdata
         """
         ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
-        click_data = parent.uuid("param-corr-graph") in ctx
+        click_data = get_uuid("param-corr-graph") in ctx
 
         vtype = vtype[0]
 
         if click_data:
             vector_selected = corr_param_clickdata.get("points", [{}])[0].get("y")
-            vtype = find_vector_type(parent, vector_selected)
+            vtype = find_vector_type(vectormodel, vector_selected)
 
         shortname = (
             vector_selected.split(":")[0]
             if click_data
-            else parent.vmodel.vector_groups[vtype]["shortnames"][0]
+            else vectormodel.vector_groups[vtype]["shortnames"][0]
         )
 
         return (
             [
                 {"label": i, "value": i}
-                for i in parent.vmodel.vector_groups[vtype]["shortnames"]
+                for i in vectormodel.vector_groups[vtype]["shortnames"]
             ],
             shortname,
             dict(
@@ -245,12 +255,12 @@ def parameter_response_controller(parent, app):
         )
 
     @app.callback(
-        Output(parent.uuid("vitems-container"), "children"),
-        Output(parent.uuid("vtype-container"), "children"),
-        Input(parent.uuid("vshort-select"), "value"),
-        State({"id": parent.uuid("vtype-select"), "state": ALL}, "value"),
-        State(parent.uuid("clickdata-store"), "data"),
-        State({"id": parent.uuid("vitem-select"), "shortname": ALL}, "value"),
+        Output(get_uuid("vitems-container"), "children"),
+        Output(get_uuid("vtype-container"), "children"),
+        Input(get_uuid("vshort-select"), "value"),
+        State({"id": get_uuid("vtype-select"), "state": ALL}, "value"),
+        State(get_uuid("clickdata-store"), "data"),
+        State({"id": get_uuid("vitem-select"), "shortname": ALL}, "value"),
     )
     def _update_vector_items(
         shortname: str,
@@ -268,18 +278,21 @@ def parameter_response_controller(parent, app):
 
         items = [
             v
-            for v in parent.vmodel.vector_groups[vtype]["items"]
-            if f"{shortname}:{v}" in parent.vmodel.vectors
+            for v in vectormodel.vector_groups[vtype]["items"]
+            if f"{shortname}:{v}" in vectormodel.vectors
         ]
         if items and not clickdata_vector:
-            item = previous_item[0] if previous_item[0] in items else items[0]
+            if previous_item:
+                item = previous_item[0] if previous_item[0] in items else items[0]
+            else:
+                item = items[0]
         if items and clickdata_vector:
             item = clickdata_vector["vector"].replace(f"{shortname}:", "")
 
         return (
             [
                 dcc.Dropdown(
-                    id={"id": parent.uuid("vitem-select"), "shortname": shortname},
+                    id={"id": get_uuid("vitem-select"), "shortname": shortname},
                     options=[{"label": i, "value": i} for i in items],
                     value=item if items else None,
                     disabled=not items,
@@ -291,9 +304,9 @@ def parameter_response_controller(parent, app):
             ],
             [
                 dcc.RadioItems(
-                    id={"id": parent.uuid("vtype-select"), "state": "update"},
+                    id={"id": get_uuid("vtype-select"), "state": "update"},
                     options=[
-                        {"label": i, "value": i} for i in parent.vmodel.vector_groups
+                        {"label": i, "value": i} for i in vectormodel.vector_groups
                     ],
                     value=vtype,
                     labelStyle={"display": "inline-block", "margin-right": "10px"},
@@ -304,8 +317,8 @@ def parameter_response_controller(parent, app):
         )
 
     @app.callback(
-        Output({"id": parent.uuid("parameter-select"), "tab": "response"}, "value"),
-        Input(parent.uuid("vector-corr-graph"), "clickData"),
+        Output({"id": get_uuid("parameter-select"), "tab": "response"}, "value"),
+        Input(get_uuid("vector-corr-graph"), "clickData"),
     )
     def _update_parameter_selected(
         corr_vector_clickdata: Union[None, dict],
@@ -317,14 +330,14 @@ def parameter_response_controller(parent, app):
 
 
 # pylint: disable=inconsistent-return-statements
-def relevant_ctx(parent, ctx: list, operation: str):
+def relevant_ctx(get_uuid: Callable, ctx: list, operation: str):
     """Group relevant uuids for the different plots"""
-    vector = parent.uuid("vector-select") in ctx
-    date = parent.uuid("date-selected") in ctx
-    parameter = parent.uuid("parameter-select") in ctx
-    ensemble = parent.uuid("ensemble-selector") in ctx
+    vector = get_uuid("vector-select") in ctx
+    date = get_uuid("date-selected") in ctx
+    parameter = get_uuid("parameter-select") in ctx
+    ensemble = get_uuid("ensemble-selector") in ctx
     filtered_vectors = (
-        parent.uuid("vtype-filter") in ctx or parent.uuid("vitem-filter") in ctx
+        get_uuid("vtype-filter") in ctx or get_uuid("vitem-filter") in ctx
     )
 
     if operation == "timeseries_fig":
@@ -339,19 +352,21 @@ def relevant_ctx(parent, ctx: list, operation: str):
         return any([parameter, ensemble, vector])
 
 
-def find_vector_type(parent, vector: str):
+def find_vector_type(vectormodel: SimulationTimeSeriesModel, vector: str):
     """Get vector type from vector"""
-    for vgroup, values in parent.vmodel.vector_groups.items():
+    for vgroup, values in vectormodel.vector_groups.items():
         if vector in values["vectors"]:
             return vgroup
     return None
 
 
-def filter_vectors(parent, vector_types: list, vector_items: list):
+def filter_vectors(
+    vectormodel: SimulationTimeSeriesModel, vector_types: list, vector_items: list
+):
     """Filter vector list used for correlation"""
     vectors = list(
         chain.from_iterable(
-            [parent.vmodel.vector_groups[vtype]["vectors"] for vtype in vector_types]
+            [vectormodel.vector_groups[vtype]["vectors"] for vtype in vector_types]
         )
     )
     items = list(chain.from_iterable(vector_items))
@@ -461,17 +476,23 @@ def set_real_color(df_norm, real_no: str):
     return "rgba(220,220,220, 0.2)"
 
 
-def merge_parameter_and_vector_df(parent, ensemble: str, vectors: list, date: str):
+def merge_parameter_and_vector_df(
+    vectormodel: SimulationTimeSeriesModel,
+    parametermodel: ParametersModel,
+    ensemble: str,
+    vectors: list,
+    date: str,
+):
     """Merge parameter dataframe with vector dataframe on given date """
     # Get dataframe with vector and REAL
-    vector_df = parent.vmodel.get_ensemble_vectors_for_date(
+    vector_df = vectormodel.get_ensemble_vectors_for_date(
         ensemble=ensemble,
         vectors=vectors,
         date=date,
     ).copy()
     vector_df["REAL"] = vector_df["REAL"].astype(int)
     # Get dataframe with parameters
-    param_df = parent.pmodel.dataframe.copy()
+    param_df = parametermodel.dataframe.copy()
     param_df = param_df[param_df["ENSEMBLE"] == ensemble]
     param_df["REAL"] = param_df["REAL"].astype(int)
     # Return merged dataframe
