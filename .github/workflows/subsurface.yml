@@ -78,7 +78,6 @@ jobs:
         # change the value her from "master" to the relevant branch name.
         TESTDATA_REPO_BRANCH: master
       run: |
-        webviz certificate
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
         webviz docs --portable ./docs_build --skip-open
