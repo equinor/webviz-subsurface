@@ -1,8 +1,9 @@
-from typing import Dict
+from typing import Dict, TypeVar, Type, Optional
 from pathlib import Path
 import os
 import hashlib
 import json
+from enum import Enum
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -11,6 +12,100 @@ from .table_model import EnsembleTableModel
 from .table_model import EnsembleTableModelSet
 from .table_model_implementations import EnsembleTableModelImplArrow
 from .table_model_implementations import EnsembleTableModelImplInMemDataFrame
+
+
+###############################################################################
+###############################################################################
+"""
+
+class WebvizRunMode(Enum):
+    NON_PORTABLE = 1
+    PORTABLE = 2
+    BUILDING_PORTABLE = 3
+
+
+# Class containing global information regarding the running webviz app instance
+# For now, just referenced by WebvizFactoryRegistry, but could also be present
+# in WebvizSettings if we need/want it.
+# This class will be part of webviz-config
+# # =============================================================================
+class WebvizInstanceInfo:
+    def __init__(self, run_mode: WebvizRunMode, storage_folder: Path):
+        ...
+
+    @property
+    def run_mode(self) -> WebvizRunMode:
+        ...
+
+    @property
+    def storage_folder(self) -> Path:
+        ...
+
+
+# Global registry/hub for factories that allows them to be shared between plugins
+# This class is part of webviz-config is exposed through WEBVIZ_FACTORY_REGISTRY
+# =============================================================================
+T = TypeVar("T")
+
+
+class WebvizFactoryRegistry:
+    # This function will be called as part of the webviz_app.py / jinja2 template
+    # factory_settings is straight from the factory_settings key in the YAML file
+    def initialize(
+        app_instance_info: WebvizInstanceInfo, factory_settings_dict: Dict[str, any]
+    ):
+        ...
+
+    def get_factory(self, class_reference: Type[T]) -> Optional[T]:
+        return None
+
+    def set_factory(self, class_reference: Type[T], factory: T):
+        ...
+
+    def all_factory_settings() -> Dict[str, any]:
+        return ""
+
+    def app_instance_info() -> WebvizInstanceInfo:
+        ...
+
+
+WEBVIZ_FACTORY_REGISTRY = WebvizFactoryRegistry()
+
+# !!!!!
+# !!!!!
+# Factory settings could look something like this in the YAML file:
+#
+# shared_settings:
+#   scratch_ensembles:
+#     iter-0: ../realization-*/iter-0
+#     iter-1: ../realization-*/iter-1
+#     iter-2: ../realization-*/iter-2
+#     iter-3: ../realization-*/iter-3
+#
+# factory_settings:
+#   EnsembleTableModelFactory:
+#     backing_implementation: arrow
+#     arrow_options:
+#       keep_files_open: yes
+#   EnsembleTimeSeriesFactory:
+#     backing_implementation: parquet
+#     parquet_options:
+#       keep_files_open: yes
+#     downcast_to_float: true
+#
+# pages:
+#   - title: Front page
+#     content:
+#       - BannerImage:
+#           image: ./content/reek_image.jpg
+#           title: Reek FMU Webviz example
+#       - Markdown:
+#           markdown_file: ./content/front_page.md
+#
+
+"""
+###############################################################################
+###############################################################################
 
 
 # =============================================================================
@@ -27,6 +122,33 @@ class EnsembleTableModelFactory:
         if self._allow_storage_writes:
             # For now, just make sure the storage folder exists
             os.makedirs(self._storage_dir, exist_ok=True)
+
+    ###############################################################################
+    ###############################################################################
+    """
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def instance() -> "EnsembleTableModelFactory":
+        factory = WEBVIZ_FACTORY_REGISTRY.getFactory(EnsembleTableModelFactory)
+        if not factory:
+            app_instance_info = WEBVIZ_FACTORY_REGISTRY.app_instance_info()
+            storage_folder = app_instance_info.storage_folder()
+            allow_writes = app_instance_info.run_mode() != WebvizRunMode.PORTABLE
+
+            # Can get settings for our factory and possibly use them when creating the factory object
+            factory_options: dict = WEBVIZ_FACTORY_REGISTRY.all_factory_settings()[
+                "EnsembleTableModelFactory"
+            ]
+
+            factory = EnsembleTableModelFactory(storage_folder, allow_writes)
+
+            # Store the factory object in the registry
+            WEBVIZ_FACTORY_REGISTRY.setFactory(EnsembleTableModelFactory, factory)
+
+        return factory
+    """
+    ###############################################################################
+    ###############################################################################
 
     # -------------------------------------------------------------------------
     def create_model_set_from_aggregated_csv_file(

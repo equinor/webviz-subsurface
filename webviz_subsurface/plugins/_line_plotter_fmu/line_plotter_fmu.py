@@ -45,7 +45,10 @@ class LinePlotterFMU(WebvizPluginABC):
             root_storage_folder=WEBVIZ_STORAGE.storage_folder,
             allow_storage_writes=not is_running_portable,
         )
-        # model_factory = EnsembleTableModelFactorySimpleInMemory()
+
+        # We should instead be able to do something lik this:
+        # model_factory = EnsembleTableModelFactory.instance()
+
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
         if ensembles is not None and csvfile is not None:
