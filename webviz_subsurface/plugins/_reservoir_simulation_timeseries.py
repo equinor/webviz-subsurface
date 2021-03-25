@@ -799,6 +799,8 @@ folder, to avoid risk of not extracting the right data.
             cum_interval: str,
         ) -> Union[EncodedFile, str]:
             """Callback to download data based on selections"""
+            if data_requested is None:
+                raise PreventUpdate
 
             # Combine selected vectors
             vectors = [vector1]
@@ -868,18 +870,14 @@ folder, to avoid risk of not extracting the right data.
 
             # : is replaced with _ in filenames to stay within POSIX portable pathnames
             # (e.g. : is not valid in a Windows path)
-            return (
-                WebvizPluginABC.plugin_data_compress(
-                    [
-                        {
-                            "filename": f"{vector.replace(':', '_')}.csv",
-                            "content": df.get("stat", df["data"]).to_csv(index=False),
-                        }
-                        for vector, df in dfs.items()
-                    ]
-                )
-                if data_requested
-                else ""
+            return WebvizPluginABC.plugin_data_compress(
+                [
+                    {
+                        "filename": f"{vector.replace(':', '_')}.csv",
+                        "content": df.get("stat", df["data"]).to_csv(index=False),
+                    }
+                    for vector, df in dfs.items()
+                ]
             )
 
         @app.callback(
