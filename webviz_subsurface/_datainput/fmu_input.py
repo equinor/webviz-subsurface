@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 import glob
 from typing import Union, Optional
 
@@ -142,19 +143,32 @@ def find_surfaces(
     """
     # Create list of all files in all realizations in all ensembles
     files = []
-    for path in ensemble_paths.values():
+    for ens, path in ensemble_paths.items():
         path = Path(path)
+        ens_files = []
         for realpath in glob.glob(str(path / "share" / "results" / "maps" / suffix)):
             stem = Path(realpath).stem.split(delimiter)
+
             if len(stem) >= 2:
-                files.append(
+                ens_files.append(
                     {
+                        "ENSEMBLE": ens,
                         "path": realpath,
                         "name": stem[0],
                         "attribute": stem[1],
                         "date": stem[2] if len(stem) >= 3 else None,
                     }
                 )
+        if not ens_files:
+            warnings.warn(f"No surfaces found for ensemble located at {path}.")
+        else:
+            files.extend(ens_files)
 
     # Store surface name, attribute and date as Pandas dataframe
+    if not files:
+        raise ValueError(
+            "No surfaces found! Ensure that surfaces file are stored "
+            "at share/results/maps in each ensemble and is following "
+            "the FMU naming standard (name--attribute[--date].gri)"
+        )
     return pd.DataFrame(files)

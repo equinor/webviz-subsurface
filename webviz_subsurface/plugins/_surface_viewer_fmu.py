@@ -109,6 +109,17 @@ attribute_settings:
 
         # Find surfaces
         self.surfacedf = find_surfaces(self.ens_paths)
+        # Extract realizations and sensitivity information
+        self.ens_df = get_realizations(
+            ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+        )
+
+        # Drop any ensembles that does not have surfaces
+        self.ens_df = self.ens_df.loc[
+            self.ens_df["ENSEMBLE"].isin(self.surfacedf["ENSEMBLE"].unique())
+        ]
+        self.surfacedf.drop("ENSEMBLE", axis=1, inplace=True)
+
         if attributes is not None:
             self.surfacedf = self.surfacedf[
                 self.surfacedf["attribute"].isin(attributes)
@@ -130,10 +141,7 @@ attribute_settings:
             if self.wellfiles
             else None
         )
-        # Extract realizations and sensitivity information
-        self.ens_df = get_realizations(
-            ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-        )
+
         self.selector = SurfaceSelector(app, self.surfaceconfig, ensembles)
         self.selector2 = SurfaceSelector(app, self.surfaceconfig, ensembles)
 

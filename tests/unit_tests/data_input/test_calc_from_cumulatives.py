@@ -130,6 +130,31 @@ def test_calc_from_cumulatives(testdata_folder: Path) -> None:
         - real_data[real_data.DATE == "2002-02-01"]["GWPT:OP"].values
     )
 
+    # Resample the data to yearly datapoints:
+    data_df = data_df[
+        data_df["DATE"].isin(["2000-01-01", "2001-01-01", "2002-01-01", "2003-01-01"])
+    ]
+    calc_df = from_cum.calc_from_cumulatives(
+        data=data_df,
+        column_keys=["WGPT:OP_2", "GWPT:OP"],
+        time_index="yearly",
+        time_index_input="yearly",
+        as_rate=False,
+    )
+    # Test real 9, iter-0
+    real_data = data_df[(data_df["REAL"] == 9) & (data_df["ENSEMBLE"] == "iter-0")]
+    real_calc = calc_df[(calc_df["REAL"] == 9) & (calc_df["ENSEMBLE"] == "iter-0")]
+
+    assert real_calc[real_calc.DATE == "2000-01-01"]["INTVL_WGPT:OP_2"].values == (
+        real_data[real_data.DATE == "2001-01-01"]["WGPT:OP_2"].values
+        - real_data[real_data.DATE == "2000-01-01"]["WGPT:OP_2"].values
+    )
+
+    assert real_calc[real_calc.DATE == "2002-01-01"]["INTVL_GWPT:OP"].values == (
+        real_data[real_data.DATE == "2003-01-01"]["GWPT:OP"].values
+        - real_data[real_data.DATE == "2002-01-01"]["GWPT:OP"].values
+    )
+
 
 @pytest.mark.parametrize(
     "column_keys,time_index,time_index_input,as_rate",

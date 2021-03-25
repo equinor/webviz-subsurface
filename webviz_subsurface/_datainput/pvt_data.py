@@ -78,7 +78,7 @@ def filter_pvt_data_frame(
             "The dataframe must contain a column for the ratio (OGR, GOR, R, RV, RS)."
         )
     if not "VOLUMEFACTOR_UNIT" in data_frame.columns:
-        data_frame["VOLUMEFACTOR_UNIT"] = "rm^3/sm^3"
+        data_frame["VOLUMEFACTOR_UNIT"] = "rm³/sm³"
     if not "PRESSURE_UNIT" in data_frame.columns:
         data_frame["PRESSURE_UNIT"] = "bar"
     if not "VISCOSITY_UNIT" in data_frame.columns:
