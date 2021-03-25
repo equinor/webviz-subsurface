@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#586](https://github.com/equinor/webviz-subsurface/pull/586) - Added phase ratio vs pressure and density vs pressure plots. Added unit and density functions to PVT library. Refactored code and added checklist for plots to be viewed in PVT plot plugin. Improved the layout.
 
 ### Fixed
+- [#602](https://github.com/equinor/webviz-subsurface/pull/602) - Prevent calculation of data for download at initialisation of ReservoirSimulationTimeSeries.
 - [#592](https://github.com/equinor/webviz-subsurface/pull/592) - Fixed bug for inferred frequency of yearly summary data.
 - [#594](https://github.com/equinor/webviz-subsurface/pull/594) - Fixed bug in SurfaceViewerFMU where surfaces with only undefined values was not handled properly.
 - [#584](https://github.com/equinor/webviz-subsurface/pull/584) - Fixed bug for in RelativePermeability plugin where it was not possible to plot against oil saturation axis when using relperm data of "family 2".
