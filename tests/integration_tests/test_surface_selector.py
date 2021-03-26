@@ -28,7 +28,7 @@ surface_context = {
 
 return_value = {
     "name": "lowerreek",
-    "attr": "oilthickness",
+    "attribute": "oilthickness",
     "date": "20030101_20010601",
 }
 

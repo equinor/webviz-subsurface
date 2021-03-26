@@ -330,7 +330,7 @@ class SurfaceSelector:
             dates_in_attr = self._dates_in_attr(attr)
             if dates_in_attr and date and not date in dates_in_attr:
                 raise PreventUpdate
-            return json.dumps({"name": name, "attr": attr, "date": date})
+            return json.dumps({"name": name, "attribute": attr, "date": date})
 
 
 def prev_value(current_value: str, options: List[str]) -> str:

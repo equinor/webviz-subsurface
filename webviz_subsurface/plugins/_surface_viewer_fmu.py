@@ -2,9 +2,7 @@ from typing import List, Union, Tuple, Callable
 from pathlib import Path
 import json
 import io
-import warnings
 
-import numpy as np
 import pandas as pd
 import xtgeo
 import dash
@@ -15,15 +13,13 @@ import dash_core_components as dcc
 from webviz_subsurface_components import LeafletMap
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
-from webviz_subsurface._datainput.surface import load_surface
 from webviz_subsurface._datainput.well import make_well_layers
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
-from webviz_subsurface._models import SurfaceLeafletModel
+from webviz_subsurface._models import SurfaceLeafletModel, SurfaceSetModel
 
 
 class SurfaceViewerFMU(WebvizPluginABC):
@@ -108,7 +104,7 @@ attribute_settings:
         }
 
         # Find surfaces
-        self.surfacedf = find_surfaces(self.ens_paths)
+        self._surface_table = find_surfaces(self.ens_paths)
         # Extract realizations and sensitivity information
         self.ens_df = get_realizations(
             ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
@@ -116,19 +112,22 @@ attribute_settings:
 
         # Drop any ensembles that does not have surfaces
         self.ens_df = self.ens_df.loc[
-            self.ens_df["ENSEMBLE"].isin(self.surfacedf["ENSEMBLE"].unique())
+            self.ens_df["ENSEMBLE"].isin(self._surface_table["ENSEMBLE"].unique())
         ]
-        self.surfacedf.drop("ENSEMBLE", axis=1, inplace=True)
 
         if attributes is not None:
-            self.surfacedf = self.surfacedf[
-                self.surfacedf["attribute"].isin(attributes)
+            self._surface_table = self._surface_table[
+                self._surface_table["attribute"].isin(attributes)
             ]
-            if self.surfacedf.empty:
+            if self._surface_table.empty:
                 raise ValueError("No surfaces found with the given attributes")
+        self._surface_ensemble_set_model = {
+            ens: SurfaceSetModel(surf_ens_df)
+            for ens, surf_ens_df in self._surface_table.groupby("ENSEMBLE")
+        }
         self.attribute_settings: dict = attribute_settings if attribute_settings else {}
         self.map_height = map_height
-        self.surfaceconfig = surfacedf_to_dict(self.surfacedf)
+        self.surfaceconfig = surfacedf_to_dict(self._surface_table)
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
         self.wellfiles: Union[List[str], None] = (
@@ -464,26 +463,6 @@ attribute_settings:
             ],
         )
 
-    def get_real_runpath(self, data: dict, ensemble: str, real: str) -> Path:
-        filename = make_fmu_filename(data)
-        runpath = Path(
-            self.ens_df.loc[
-                (self.ens_df["ENSEMBLE"] == ensemble) & (self.ens_df["REAL"] == real)
-            ]["RUNPATH"].unique()[0]
-        )
-
-        return get_path(runpath / "share" / "results" / "maps" / f"{filename}.gri")
-
-    def get_ens_runpath(self, data: dict, ensemble: str) -> List[Path]:
-        filename = make_fmu_filename(data)
-        runpaths = self.ens_df.loc[(self.ens_df["ENSEMBLE"] == ensemble)][
-            "RUNPATH"
-        ].unique()
-        return [
-            Path(runpath) / "share" / "results" / "maps" / f"{filename}.gri"
-            for runpath in runpaths
-        ]
-
     def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             [
@@ -539,44 +518,60 @@ attribute_settings:
             data2: dict = json.loads(stored_selector2_data)
             if not isinstance(data, dict) or not isinstance(data2, dict):
                 raise TypeError("Selector data payload must be of type dict")
-
             attribute_settings: dict = json.loads(stored_attribute_settings)
             if not isinstance(attribute_settings, dict):
                 raise TypeError("Expected stored attribute_settings to be of type dict")
 
             if real in ["Mean", "StdDev", "Min", "Max"]:
-                surface = calculate_surface(self.get_ens_runpath(data, ensemble), real)
+                surface = self._surface_ensemble_set_model[
+                    ensemble
+                ].calculate_statistical_surface(**data, calculation=real)
 
             else:
-                surface = load_surface(self.get_real_runpath(data, ensemble, real))
+                surface = self._surface_ensemble_set_model[
+                    ensemble
+                ].get_realization_surface(**data, realization=int(real))
+
             if real2 in ["Mean", "StdDev", "Min", "Max"]:
-                surface2 = calculate_surface(
-                    self.get_ens_runpath(data2, ensemble2), real2
-                )
+                surface2 = self._surface_ensemble_set_model[
+                    ensemble2
+                ].calculate_statistical_surface(**data2, calculation=real2)
 
             else:
-                surface2 = load_surface(self.get_real_runpath(data2, ensemble2, real2))
+                surface2 = self._surface_ensemble_set_model[
+                    ensemble2
+                ].get_realization_surface(**data2, realization=int(real2))
 
             surface_layers: List[dict] = [
                 SurfaceLeafletModel(
                     surface,
                     name="surface",
-                    colors=attribute_settings.get(data["attr"], {}).get("color"),
+                    colors=attribute_settings.get(data["attribute"], {}).get("color"),
                     apply_shading=hillshade.get("value", False),
-                    clip_min=attribute_settings.get(data["attr"], {}).get("min", None),
-                    clip_max=attribute_settings.get(data["attr"], {}).get("max", None),
-                    unit=attribute_settings.get(data["attr"], {}).get("unit", " "),
+                    clip_min=attribute_settings.get(data["attribute"], {}).get(
+                        "min", None
+                    ),
+                    clip_max=attribute_settings.get(data["attribute"], {}).get(
+                        "max", None
+                    ),
+                    unit=attribute_settings.get(data["attribute"], {}).get("unit", " "),
                 ).layer
             ]
             surface_layers2: List[dict] = [
                 SurfaceLeafletModel(
                     surface2,
                     name="surface2",
-                    colors=attribute_settings.get(data2["attr"], {}).get("color"),
+                    colors=attribute_settings.get(data2["attribute"], {}).get("color"),
                     apply_shading=hillshade2.get("value", False),
-                    clip_min=attribute_settings.get(data2["attr"], {}).get("min", None),
-                    clip_max=attribute_settings.get(data2["attr"], {}).get("max", None),
-                    unit=attribute_settings.get(data2["attr"], {}).get("unit", " "),
+                    clip_min=attribute_settings.get(data2["attribute"], {}).get(
+                        "min", None
+                    ),
+                    clip_max=attribute_settings.get(data2["attribute"], {}).get(
+                        "max", None
+                    ),
+                    unit=attribute_settings.get(data2["attribute"], {}).get(
+                        "unit", " "
+                    ),
                 ).layer
             ]
 
@@ -591,7 +586,9 @@ attribute_settings:
                     SurfaceLeafletModel(
                         surface3,
                         name="surface3",
-                        colors=attribute_settings.get(data["attr"], {}).get("color"),
+                        colors=attribute_settings.get(data["attribute"], {}).get(
+                            "color"
+                        ),
                         apply_shading=hillshade3.get("value", False),
                     ).layer
                 )
@@ -651,37 +648,19 @@ attribute_settings:
                 ],
             )
         ]
+        for ens in list(self.ens_df["ENSEMBLE"].unique()):
+            for calculation in ["Mean", "StdDev", "Min", "Max"]:
+                store_functions.append(
+                    self._surface_ensemble_set_model[
+                        ens
+                    ].webviz_store_statistical_calculation(calculation=calculation)
+                )
+            store_functions.append(
+                self._surface_ensemble_set_model[
+                    ens
+                ].webviz_store_realization_surfaces()
+            )
 
-        filenames = []
-        # Generate all file names
-        for attr, values in self.surfaceconfig.items():
-            for name in values["names"]:
-                for date in values["dates"]:
-                    filename = f"{name}--{attr}"
-                    if date is not None:
-                        filename += f"--{date}"
-                    filename += ".gri"
-                    filenames.append(filename)
-
-        # Copy all realization files
-        for runpath in self.ens_df["RUNPATH"].unique():
-            for filename in filenames:
-                path = Path(runpath) / "share" / "results" / "maps" / filename
-                if path.exists():
-                    store_functions.append((get_path, [{"path": path}]))
-
-        # Calculate and store statistics
-        for _, ens_df in self.ens_df.groupby("ENSEMBLE"):
-            runpaths = list(ens_df["RUNPATH"].unique())
-            for filename in filenames:
-                paths = [
-                    Path(runpath) / "share" / "results" / "maps" / filename
-                    for runpath in runpaths
-                ]
-                for statistic in ["Mean", "StdDev", "Min", "Max"]:
-                    store_functions.append(
-                        (save_surface, [{"fns": paths, "statistic": statistic}])
-                    )
         if self.wellfolder is not None:
             store_functions.append(
                 (find_files, [{"folder": self.wellfolder, "suffix": self.wellsuffix}])
@@ -702,74 +681,6 @@ attribute_settings:
             )
         )
         return store_functions
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def calculate_surface(fns: List[str], statistic: str) -> xtgeo.RegularSurface:
-    return surface_from_json(json.load(save_surface(fns, statistic)))
-
-
-@webvizstore
-def save_surface(fns: List[str], statistic: str) -> io.BytesIO:
-    surfaces = xtgeo.Surfaces(fns)
-    if len(surfaces.surfaces) == 0:
-        surface = xtgeo.RegularSurface()
-    elif statistic in ["Mean", "StdDev", "Min", "Max", "P10", "P90"]:
-        # Suppress numpy warnings when surfaces have undefined z-values
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", "All-NaN slice encountered")
-            warnings.filterwarnings("ignore", "Mean of empty slice")
-            warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
-            surface = calculate_statistic(surfaces, statistic)
-    else:
-        surface = xtgeo.RegularSurface()
-    return io.BytesIO(surface_to_json(surface).encode())
-
-
-# pylint: disable=too-many-return-statements
-def calculate_statistic(
-    surfaces: xtgeo.Surfaces, statistic: str
-) -> xtgeo.RegularSurface:
-    if statistic == "Mean":
-        return surfaces.apply(np.nanmean, axis=0)
-    if statistic == "StdDev":
-        return surfaces.apply(np.nanstd, axis=0)
-    if statistic == "Min":
-        return surfaces.apply(np.nanmin, axis=0)
-    if statistic == "Max":
-        return surfaces.apply(np.nanmax, axis=0)
-    if statistic == "P10":
-        return surfaces.apply(np.nanpercentile, 10, axis=0)
-    if statistic == "P90":
-        return surfaces.apply(np.nanpercentile, 90, axis=0)
-    return xtgeo.RegularSurface()
-
-
-def surface_to_json(surface: xtgeo.RegularSurface) -> str:
-    return json.dumps(
-        {
-            "ncol": surface.ncol,
-            "nrow": surface.nrow,
-            "xori": surface.xori,
-            "yori": surface.yori,
-            "rotation": surface.rotation,
-            "xinc": surface.xinc,
-            "yinc": surface.yinc,
-            "values": surface.values.copy().filled(np.nan).tolist(),
-        }
-    )
-
-
-def surface_from_json(surfaceobj: dict) -> xtgeo.RegularSurface:
-    # See https://github.com/equinor/xtgeo/issues/405
-    surface = xtgeo.RegularSurface(**surfaceobj)
-    surface.values = np.array(surfaceobj["values"])
-    return surface
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_surfaces(fns: List[str]) -> xtgeo.Surfaces:
-    return xtgeo.Surfaces(fns)
 
 
 @webvizstore
@@ -813,13 +724,6 @@ def find_files(folder: Path, suffix: str) -> io.BytesIO:
             sorted([str(filename) for filename in folder.glob(f"*{suffix}")])
         ).encode()
     )
-
-
-def make_fmu_filename(data: dict) -> str:
-    filename = f"{data['name']}--{data['attr']}"
-    if data["date"] is not None:
-        filename += f"--{data['date']}"
-    return filename
 
 
 def calculate_surface_difference(
