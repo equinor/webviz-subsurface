@@ -1,3 +1,6 @@
+from typing import Callable
+
+from webviz_config import WebvizConfigTheme
 import dash_html_components as html
 import webviz_core_components as wcc
 
@@ -12,13 +15,14 @@ from .selector_view import (
     color_selector,
     color_opacity_selector,
 )
+from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
-def timeseries_view(parent) -> html.Div:
+def timeseries_view(get_uuid: Callable) -> html.Div:
     return html.Div(
         children=[
             wcc.Graph(
-                id=parent.uuid("vector-vs-time-graph"),
+                id=get_uuid("vector-vs-time-graph"),
                 config={"displayModeBar": False},
                 style={"height": "38vh"},
             ),
@@ -26,9 +30,14 @@ def timeseries_view(parent) -> html.Div:
     )
 
 
-def selector_view(parent) -> html.Div:
+def selector_view(
+    get_uuid: Callable,
+    vectormodel: SimulationTimeSeriesModel,
+    parametermodel: ParametersModel,
+    theme: WebvizConfigTheme,
+) -> html.Div:
 
-    theme_colors = parent.theme.plotly_theme.get("layout", {}).get("colorway", [])
+    theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
     theme_colors = (
         theme_colors[1:12] if theme_colors and len(theme_colors) >= 12 else theme_colors
     )
@@ -45,15 +54,18 @@ def selector_view(parent) -> html.Div:
                 summary="Selections",
                 children=[
                     ensemble_selector(
-                        parent=parent,
+                        get_uuid=get_uuid,
+                        parametermodel=parametermodel,
                         tab="response",
                         id_string="ensemble-selector",
                         heading="Ensemble:",
-                        value=parent.pmodel.ensembles[0],
+                        value=parametermodel.ensembles[0],
                     ),
-                    vector_selector(parent=parent),
-                    date_selector(parent=parent),
-                    parameter_selector(parent=parent, tab="response"),
+                    vector_selector(get_uuid=get_uuid, vectormodel=vectormodel),
+                    date_selector(get_uuid=get_uuid, vectormodel=vectormodel),
+                    parameter_selector(
+                        get_uuid=get_uuid, parametermodel=parametermodel, tab="response"
+                    ),
                 ],
                 open_details=True,
             ),
@@ -70,21 +82,27 @@ def selector_view(parent) -> html.Div:
                         },
                     ),
                 ],
-                children=[filter_vector_selector(parent=parent, tab="response")],
+                children=[
+                    filter_vector_selector(
+                        get_uuid=get_uuid, vectormodel=vectormodel, tab="response"
+                    )
+                ],
                 open_details=False,
             ),
             html_details(
                 summary="Options",
                 children=[
-                    plot_options(parent=parent, tab="response"),
+                    plot_options(get_uuid=get_uuid, tab="response"),
                     color_selector(
-                        parent=parent,
+                        get_uuid=get_uuid,
                         tab="response",
                         colors=[theme_colors, "Greys", "BrBG"],
                         bargap=0.2,
                         height=50,
                     ),
-                    color_opacity_selector(parent=parent, tab="response", value=0.5),
+                    color_opacity_selector(
+                        get_uuid=get_uuid, tab="response", value=0.5
+                    ),
                 ],
                 open_details=False,
             ),
@@ -92,13 +110,23 @@ def selector_view(parent) -> html.Div:
     )
 
 
-def parameter_response_view(parent) -> wcc.FlexBox:
+def parameter_response_view(
+    get_uuid: Callable,
+    parametermodel: ParametersModel,
+    vectormodel: SimulationTimeSeriesModel,
+    theme: WebvizConfigTheme,
+) -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
             html.Div(
                 style={"flex": 1, "width": "90%"},
-                children=selector_view(parent=parent),
+                children=selector_view(
+                    get_uuid=get_uuid,
+                    parametermodel=parametermodel,
+                    vectormodel=vectormodel,
+                    theme=theme,
+                ),
             ),
             html.Div(
                 style={"flex": 2, "height": "80vh"},
@@ -106,14 +134,14 @@ def parameter_response_view(parent) -> wcc.FlexBox:
                     html.Div(
                         className="framed",
                         style={"height": "37.5vh"},
-                        children=timeseries_view(parent=parent),
+                        children=timeseries_view(get_uuid=get_uuid),
                     ),
                     html.Div(
                         className="framed",
                         style={"height": "37.5vh"},
                         children=[
                             wcc.Graph(
-                                id=parent.uuid("vector-vs-param-scatter"),
+                                id=get_uuid("vector-vs-param-scatter"),
                                 config={"displayModeBar": False},
                                 style={"height": "38vh"},
                             )
@@ -131,7 +159,7 @@ def parameter_response_view(parent) -> wcc.FlexBox:
                             wcc.Graph(
                                 config={"displayModeBar": False},
                                 style={"height": "38vh"},
-                                id=parent.uuid("vector-corr-graph"),
+                                id=get_uuid("vector-corr-graph"),
                             ),
                         ],
                     ),
@@ -142,7 +170,7 @@ def parameter_response_view(parent) -> wcc.FlexBox:
                             wcc.Graph(
                                 config={"displayModeBar": False},
                                 style={"height": "38vh"},
-                                id=parent.uuid("param-corr-graph"),
+                                id=get_uuid("param-corr-graph"),
                             ),
                         ],
                     ),

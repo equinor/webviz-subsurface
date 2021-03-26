@@ -136,12 +136,22 @@ slow for large models.
 
     @property
     def layout(self) -> dcc.Tabs:
-        return main_view(parent=self)
+        return main_view(
+            get_uuid=self.uuid,
+            vectormodel=self.vmodel,
+            parametermodel=self.pmodel,
+            theme=self.theme,
+        )
 
     def set_callbacks(self, app) -> None:
-        parameter_qc_controller(self, app)
+        parameter_qc_controller(app=app, get_uuid=self.uuid, parametermodel=self.pmodel)
         if self.vmodel is not None:
-            parameter_response_controller(self, app)
+            parameter_response_controller(
+                app=app,
+                get_uuid=self.uuid,
+                parametermodel=self.pmodel,
+                vectormodel=self.vmodel,
+            )
 
     def add_webvizstore(self):
         store = []
