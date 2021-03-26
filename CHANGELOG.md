@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
+- [#604](https://github.com/equinor/webviz-subsurface/pull/604) - Consolidates surface loading and statistical calculation of surfaces by introducing a shared
+SurfaceSetModel. Refactored SurfaceViewerFMU to use SurfaceSetModel.
 - [#586](https://github.com/equinor/webviz-subsurface/pull/586) - Added phase ratio vs pressure and density vs pressure plots. Added unit and density functions to PVT library. Refactored code and added checklist for plots to be viewed in PVT plot plugin. Improved the layout.
 - [#599](https://github.com/equinor/webviz-subsurface/pull/599) - Fixed an issue in ParameterAnalysis where the plugin did not initialize without FIELD vectors 
 

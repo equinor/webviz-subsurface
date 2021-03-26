@@ -1,7 +1,7 @@
 from pathlib import Path
 import warnings
 import glob
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble, EnsembleSet
@@ -129,7 +129,11 @@ def find_sens_type(senscase: str) -> Optional[str]:
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def find_surfaces(
-    ensemble_paths: dict, suffix: str = "*.gri", delimiter: str = "--"
+    ensemble_paths: dict,
+    surface_folder: str = "share/results/maps",
+    surface_files: Optional[List] = None,
+    suffix: str = "*.gri",
+    delimiter: str = "--",
 ) -> pd.DataFrame:
     """Reads surface file names stored in standard FMU format, and returns a dictionary
     on the following format:
@@ -143,24 +147,27 @@ def find_surfaces(
     """
     # Create list of all files in all realizations in all ensembles
     files = []
-    for ens, path in ensemble_paths.items():
-        path = Path(path)
+    for _, ensdf in get_realizations(ensemble_paths=ensemble_paths).groupby("ENSEMBLE"):
         ens_files = []
-        for realpath in glob.glob(str(path / "share" / "results" / "maps" / suffix)):
-            stem = Path(realpath).stem.split(delimiter)
-
-            if len(stem) >= 2:
-                ens_files.append(
-                    {
-                        "ENSEMBLE": ens,
-                        "path": realpath,
-                        "name": stem[0],
-                        "attribute": stem[1],
-                        "date": stem[2] if len(stem) >= 3 else None,
-                    }
-                )
+        for _real_no, realdf in ensdf.groupby("REAL"):
+            runpath = realdf.iloc[0]["RUNPATH"]
+            for realpath in glob.glob(str(Path(runpath) / surface_folder / suffix)):
+                filename = Path(realpath)
+                if surface_files and filename.name not in surface_files:
+                    continue
+                stem = filename.stem.split(delimiter)
+                if len(stem) >= 2:
+                    ens_files.append(
+                        {
+                            "path": realpath,
+                            "name": stem[0],
+                            "attribute": stem[1],
+                            "date": stem[2] if len(stem) >= 3 else None,
+                            **realdf.iloc[0],
+                        }
+                    )
         if not ens_files:
-            warnings.warn(f"No surfaces found for ensemble located at {path}.")
+            warnings.warn(f"No surfaces found for ensemble located at {runpath}.")
         else:
             files.extend(ens_files)
 
