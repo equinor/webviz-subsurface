@@ -58,6 +58,7 @@ setup(
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
+            "WellCompletions = webviz_subsurface.plugins:WellCompletions",
         ]
     },
     install_requires=[
