@@ -52,3 +52,4 @@ from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
+from ._well_completions import WellCompletions
