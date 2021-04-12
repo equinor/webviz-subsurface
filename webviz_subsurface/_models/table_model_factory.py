@@ -261,6 +261,65 @@ class EnsembleTableModelFactory:
 
         return EnsembleTableModelSet(loaded_models)
 
+    # Function to load the parameters.txt/json file using fmu.ensemble.
+    # Should this be a separate Factory class? Typically both csv files and
+    # the parameter file will be loaded from the same ensemble. Currently the ensembles
+    # will be loaded and deleted twice if that is the case...
+    # -------------------------------------------------------------------------
+    def create_model_set_from_per_parameter_file(
+        self, ensembles: Dict[str, str]
+    ) -> EnsembleTableModelSet:
+
+        print("EnsembleTableModelFactory.create_model_set_from_per_parameter_file()")
+
+        storage_keys_to_load: Dict[str, str] = {}
+        for ens_name, ens_path in ensembles.items():
+            hashval = hashlib.md5((ens_path + "parameters").encode()).hexdigest()
+            storage_keys_to_load[ens_name] = f"parameters__{hashval}"
+
+        # We'll add all the models for the model set to this dictionary as we go
+        loaded_models: Dict[str, EnsembleTableModel] = {}
+
+        # First, try and load models from backing store
+        for ens_name, ens_storage_key in dict(storage_keys_to_load).items():
+            model = EnsembleTableModelImplArrow.from_backing_store(
+                self._storage_dir, ens_storage_key
+            )
+            if model:
+                loaded_models[ens_name] = model
+                del storage_keys_to_load[ens_name]
+                print(f"  loaded {ens_name} from backing store")
+
+        # If there are remaining keys to load and we're allowed to write to storage,
+        # we'll load the parameters file, write data to storage and then try and load again
+        if storage_keys_to_load and self._allow_storage_writes:
+            for ens_name, ens_storage_key in dict(storage_keys_to_load).items():
+                ens_path = ensembles[ens_name]
+                scratch_ensemble = ScratchEnsemble(
+                    ens_name, ens_path, autodiscovery=True
+                )
+                ensemble_df = scratch_ensemble.parameters
+                del scratch_ensemble
+
+                EnsembleTableModelImplArrow.write_backing_store_from_ensemble_dataframe(
+                    self._storage_dir, ens_storage_key, ensemble_df
+                )
+                model = EnsembleTableModelImplArrow.from_backing_store(
+                    self._storage_dir, ens_storage_key
+                )
+                if model:
+                    loaded_models[ens_name] = model
+                    del storage_keys_to_load[ens_name]
+                    print(f"  created and wrote {ens_name} to backing store")
+
+        # Should not be any remaining keys
+        if storage_keys_to_load:
+            raise ValueError(
+                f"Failed to load data for {len(storage_keys_to_load)} ensembles"
+            )
+
+        return EnsembleTableModelSet(loaded_models)
+
 
 # =============================================================================
 class EnsembleTableModelFactorySimpleInMemory:

@@ -56,60 +56,67 @@ class LinePlotterFMU(WebvizPluginABC):
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
                 for ens_name in ensembles
             }
+            self._parametermodelset = (
+                model_factory.create_model_set_from_per_parameter_file(ensembles_dict)
+            )
             self._tablemodelset = (
                 model_factory.create_model_set_from_per_realization_csv_file(
                     ensembles_dict, csvfile
                 )
             )
-        elif aggregated_csvfile is not None:
+        elif aggregated_csvfile and aggregated_parameterfile is not None:
             self._tablemodelset = (
                 model_factory.create_model_set_from_aggregated_csv_file(
                     aggregated_csvfile
                 )
             )
-        else:
-            raise ValueError(
-                "Specify either ensemble and csvfile or aggregated_csvfile"
-            )
-        if aggregated_parameterfile is not None:
             self._parametermodelset = (
                 model_factory.create_model_set_from_aggregated_csv_file(
                     aggregated_parameterfile
                 )
             )
-            self._ensemble_names = list(
-                set().union(
-                    *[
-                        ens
-                        for ens in [
-                            self._tablemodelset.ensemble_names(),
-                            self._parametermodelset.ensemble_names(),
-                        ]
-                    ]
-                )
+        else:
+            raise ValueError(
+                "Specify either ensemble and csvfile or aggregated_csvfile and aggregated_parameterfile"
             )
-            self._parameter_names = list(
-                set().union(
-                    *[
-                        self._parametermodelset.ensemble(ens).column_names()
-                        for ens in self._ensemble_names
+
+        self._ensemble_names = list(
+            set().union(
+                *[
+                    ens
+                    for ens in [
+                        self._tablemodelset.ensemble_names(),
+                        self._parametermodelset.ensemble_names(),
                     ]
-                )
+                ]
             )
-            self._data_column_names = list(
-                set().union(
-                    *[
-                        self._tablemodelset.ensemble(ens).column_names()
-                        for ens in self._ensemble_names
-                    ]
-                )
+        )
+        self._parameter_names = list(
+            set().union(
+                *[
+                    self._parametermodelset.ensemble(ens).column_names()
+                    for ens in self._ensemble_names
+                ]
             )
-        self._observationfile = get_path(observation_file)
-        self._observationmodel = ObservationModel(
-            self._observationfile,
-            observation_group,
-            remap_observation_keys,
-            remap_observation_values,
+        )
+        self._data_column_names = list(
+            set().union(
+                *[
+                    self._tablemodelset.ensemble(ens).column_names()
+                    for ens in self._ensemble_names
+                ]
+            )
+        )
+        self._observationfile = observation_file
+        self._observationmodel = (
+            ObservationModel(
+                get_path(self._observationfile),
+                observation_group,
+                remap_observation_keys,
+                remap_observation_values,
+            )
+            if self._observationfile
+            else None
         )
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
