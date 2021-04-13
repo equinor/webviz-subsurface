@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import numpy as np
-import random
+import itertools
 
 import dash
 from dash.dependencies import Input, Output
@@ -51,6 +51,10 @@ class WellCompletions(WebvizPluginABC):
         stratigraphy: str = None
     ):
         super().__init__()
+        self.theme = webviz_settings.theme
+        self.colors = [ls[1] for ls in self.theme.plotly_theme["layout"]["colorscale"]["sequential"]]
+        #self.colors = self.theme.plotly_theme["layout"]["colorway"]
+        #print(self.colors)
         self.compdatfile = compdatfile
         self.stratigraphy = stratigraphy
         self.ensembles = ensembles
@@ -60,16 +64,51 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        random.seed(1234) #to get the same colors
         self.stratigraphy = {
-            "Stoe":{
+            "Stoe4":{
                 "from_layer":1,
-                "to_layer":15
+                "to_layer":5
             },
-            "Nordmela":{
-                "from_layer":16,
+            "Stoe3.2":{
+                "from_layer":6,
+                "to_layer":6
+            },
+            "Stoe3.1":{
+                "from_layer":7,
+                "to_layer":12
+            },
+            "Stoe2":{
+                "from_layer":13,
+                "to_layer":19
+            },
+            "Stoe1":{
+                "from_layer":20,
+                "to_layer":25
+            },
+            "Nordmela3":{
+                "from_layer":26,
+                "to_layer":34
+            },
+            "Nordmela2":{
+                "from_layer":35,
+                "to_layer":54
+            },
+            "Nordmela1":{
+                "from_layer":55,
+                "to_layer":60
+            },
+            "Tubaaen3":{
+                "from_layer":61,
+                "to_layer":71
+            },
+            "Tubaaen2":{
+                "from_layer":72,
+                "to_layer":78
+            },
+            "Tubaaen1":{
+                "from_layer":79,
                 "to_layer":90
-            }
+            },
         }
         #qc stratigraphy (overlap etc) ?
 
@@ -141,8 +180,6 @@ class WellCompletions(WebvizPluginABC):
                 ),
                 html.Div(
                     id=self.uuid("well_completions_wrapper"),
-                    #style={"height": 600},
-                    style={"padding": "10px", "height":600},
                 ),
             ]
         )
@@ -151,6 +188,7 @@ class WellCompletions(WebvizPluginABC):
         @app.callback(
             [
                 Output(self.uuid("well_completions_wrapper"), "children"),
+                Output(self.uuid("well_completions_wrapper"), "style"),
             ],
             [
                 Input(self.uuid("ensemble_dropdown"), "value"),
@@ -159,11 +197,12 @@ class WellCompletions(WebvizPluginABC):
         def _render_well_completions(ensemble_name):
 
             data = self.create_ensemble_dataset(ensemble_name)
-
+            zones = len(data["stratigraphy"])
             return [
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
-                )
+                ),
+                {"padding":"10px", "height":zones*50}
             ]
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -181,15 +220,15 @@ class WellCompletions(WebvizPluginABC):
 
         result = {}
         result["version"] = "1.0.0"
-        result["stratigraphy"] = extract_stratigraphy(self.stratigraphy)
+        result["stratigraphy"] = extract_stratigraphy(self.stratigraphy, self.colors)
         result["timeSteps"] = time_steps
 
         zone_names = list(self.stratigraphy.keys()) # [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
             df, self.stratigraphy, zone_names, time_steps, realisations,
         )
-        #with open("/private/olind/webviz/result.json", "w") as f:
-        #    json.dump(result, f)
+        with open("/private/olind/webviz/result.json", "w") as f:
+           json.dump(result, f)
 
         return result
 
@@ -222,7 +261,7 @@ def get_time_series(df, time_steps):
     for t in time_steps:
         if t in df.DATE.unique():
             df_timestep = df[df.DATE==t]
-            df_timestep_open = df_timestep[df["OP/SH"]=="OPEN"]
+            df_timestep_open = df_timestep[df_timestep["OP/SH"]=="OPEN"]
 
             #if minimum one of the compdats for the zone is OPEN then the zone is considered open
             event_value = 1 if len(df_timestep_open)>0 else -1
@@ -318,26 +357,21 @@ def extract_wells(df, stratigraphy, zone_names, time_steps, realisations):
         )
     return well_list
 
-
-def random_color_str():
-    """
-    Returns a random colo
-    """
-    r = random.randint(8, 15)  # nosec - bandit B311
-    g = random.randint(8, 15)  # nosec - bandit B311
-    b = random.randint(8, 15)  # nosec - bandit B311
+def parse_rgb(rgbstr):
+    rgbstr = rgbstr.replace("rgb", "").replace("(","").replace(")", "")
+    (r, g, b) = (int(val) for val in rgbstr.split(","))
     s = hex((r << 8) + (g << 4) + b)
     return "#" + s[-3:]
 
-
-def extract_stratigraphy(stratigraphy):
+def extract_stratigraphy(stratigraphy, colors):
     """
     Returns the stratigraphy part of the data set
     """
+    color_iterator = itertools.cycle(colors)
     result = []
     for zone_name, zone_attr in stratigraphy.items():
         zdict = {}
         zdict["name"] = zone_name
-        zdict["color"] = random_color_str()
+        zdict["color"] = parse_rgb(next(color_iterator))
         result.append(zdict)
     return result
