@@ -470,10 +470,9 @@ def set_real_color(df_norm, real_no: str):
     if norm_value <= mean:
         intermed = norm_value / mean
         return find_intermediate_color(red, mid_color, intermed, colortype="rgba")
-    if norm_value > mean:
-        intermed = (norm_value - mean) / (1 - mean)
-        return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
-    return "rgba(220,220,220, 0.2)"
+
+    intermed = (norm_value - mean) / (1 - mean)
+    return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
 
 
 def merge_parameter_and_vector_df(
