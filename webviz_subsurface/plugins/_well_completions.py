@@ -286,32 +286,35 @@ def get_completions(df, stratigraphy, time_steps, realisations):
     return completions
 
 
-def format_time_series(time_series):
+def format_time_series(open_frac, shut_frac):
     """
-    The function compresses the fraction of completed realisation into a more compact form:
-    [0, 0, 0, 0.25, 0.25, 1.0, 1.0] -> { t: [3, 5], f: [0.25, 1.0] }
-    t is a list of list of time steps where the fraction changes,
-    f is the corresponding open fraction.
+    The functions takes in two lists
+    * list with fractions of realisations open in this zone, for each timestep
+    * list with fractions of realisations shut in this zone, for each timestep
+
+    Returns the data in compact form:
+    * {t: [3, 5], open: [0.25, 1.0], shut: [0.75, 0.0]}
     """
-    time_steps = []
-    values = []
-    n = len(time_series)
-    v0 = time_series[0]
-    if v0 > 0.0:
-        time_steps.append(0)
-        values.append(v0)
-    for i in range(1, n):
-        v = time_series[i]
-        if v != v0:
+    print(open_frac)
+    print(shut_frac)
+
+    time_steps, open_values, shut_values = [], [], []
+    prev_open_value, prev_shut_value = 0, 0
+
+    for i, (open_value, shut_value) in enumerate(zip(open_frac, shut_frac)):
+        if open_value != prev_open_value or shut_value != prev_shut_value:
             time_steps.append(i)
-            values.append(v)
-            v0 = v
+            open_values.append(open_value)
+            shut_values.append(shut_value)
+        prev_open_value = open_value
+        prev_shut_value = shut_value
 
     if len(time_steps) == 0:
         return None
     r = {}
     r["t"] = time_steps
-    r["f"] = values
+    r["open"] = open_values
+    r["shut"] = shut_values
     return r
 
 
@@ -323,18 +326,24 @@ def extract_well(df, well, stratigraphy, zone_names, time_steps, realisations):
     well_dict["name"] = well
 
     completions = get_completions(df, stratigraphy, time_steps, realisations)
-    # get rid of negative "shut" values
-    open_count = np.maximum(np.asarray(completions), 0)
-    # sum over realisations
-    open_count_reduced = open_count.sum(axis=0)
-    # calculate fraction of open realisations
+
+    # calculate fraction of open realizations
+    open_count = np.maximum(np.asarray(completions), 0)     # remove -1
+    open_count_reduced = open_count.sum(axis=0)             # sum over realizations
     open_frac = np.asarray(open_count_reduced, dtype=np.float64) / float(
         len(realisations)
     )
 
+    # calculate fraction of shut realizations
+    shut_count = np.minimum(np.asarray(completions), 0)*-1  # remove 1 and convert -1 to 1
+    shut_count_reduced = shut_count.sum(axis=0)             # sum over realizations
+    shut_frac = np.asarray(shut_count_reduced, dtype=np.float64) / float(
+        len(realisations)
+    )
+
     result = {}
-    for zone_name, time_series in zip(zone_names, open_frac):
-        r = format_time_series(time_series)
+    for zone_name, open_frac_zone, shut_frac_zone in zip(zone_names, open_frac, shut_frac):
+        r = format_time_series(open_frac_zone, shut_frac_zone)
         if r is not None:
             result[zone_name] = r
     well_dict["completions"] = result
