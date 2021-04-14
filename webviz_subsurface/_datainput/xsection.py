@@ -470,14 +470,11 @@ class XSectionFigure:
             name: Name of surface (e.g. horizon name)
             fill: Toggles fill between surfaces
         """
-        if self._surfacecolors and self._surfacenames:
-            color = self._surfacecolors[
-                self._surfacenames.index(name) % len(self._surfacecolors)
-            ]
-        else:
-            color = "rgba(0, 0, 0, 1.0)"
-            # Either self._surfacecolors or self._surfacenames not set.
-            assert False
+
+        color = self._surfacecolors[
+            self._surfacenames.index(name) % len(self._surfacecolors)  # type: ignore[union-attr]
+        ]
+
         fill_color = hex_to_rgba(color, 0.3)
         line_color = hex_to_rgba(color, 1)
 
