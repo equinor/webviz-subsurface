@@ -246,17 +246,18 @@ def get_layer_to_zone_map(layers, stratigraphy):
 
 def get_time_series(df, time_steps):
     """
-    Creates a time series with a value for each time step in the form
-    [0,0,0,1,1,1,1,-1,-1,-1]
-    '0' means no event, '1' is open, '-1' is shut.
+    Create two lists with values for each time step
+    * the first one is on the form [0,0,0,1,1,1,1,-1,-1,-1] where '0' means no event, '1' is open, '-1' is shut.
+    * the second is with sum of kh values for the open compdats in each zone
+
     The input data frame is assumed to contain data for single well,
-    single zone, single realisation.
+    single zone and single realisation.
     """
     if df.shape[0] == 0:
-        return [0] * len(time_steps)
+        return [0] * len(time_steps), [0] * len(time_steps)
 
-    result = []
-    event_value = 0
+    events, kh = [], []
+    event_value, kh_value = 0, 0
 
     for t in time_steps:
         if t in df.DATE.unique():
@@ -265,28 +266,36 @@ def get_time_series(df, time_steps):
 
             #if minimum one of the compdats for the zone is OPEN then the zone is considered open
             event_value = 1 if len(df_timestep_open)>0 else -1
+            kh_value = df_timestep_open.KH.sum()
 
-        result.append(event_value)
-    return result
+        events.append(event_value)
+        kh.append(kh_value)
+    return events, kh
 
 
-def get_completions(df, stratigraphy, time_steps, realisations):
+def get_completion_events_and_kh(df, stratigraphy, time_steps, realisations):
     """
-    Extracts completions into a lists of list
-    Full matrix - every time step and realisation
+    Extracts completion events ad kh values into two lists of lists of lists,
+    one with completions events and one with kh values
+    * Axis 0 is realization
+    * Axis 1 is zone
+    * Axis 2 is time step
     """
-    completions = []
+    compl_events, kh = [], []
     for rname, realdata in df.groupby("REAL"):
-        real = []
+        compl_events_real, kh_real = [], []
         for zone_name, zone_attr in stratigraphy.items():
             data = realdata.loc[(realdata.K1>=zone_attr["from_layer"]) & (realdata.K1<=zone_attr["to_layer"])]
-            real.append(get_time_series(data, time_steps))
+            compl_events_real_zone, kh_real_zone = get_time_series(data, time_steps)
+            compl_events_real.append(compl_events_real_zone)
+            kh_real.append(kh_real_zone)
 
-        completions.append(real)
-    return completions
+        compl_events.append(compl_events_real)
+        kh.append(kh_real)
+    return compl_events, kh
 
 
-def format_time_series(open_frac, shut_frac):
+def format_time_series(open_frac, shut_frac, ls_khmean, ls_khmin, ls_khmax):
     """
     The functions takes in two lists
     * list with fractions of realisations open in this zone, for each timestep
@@ -295,26 +304,38 @@ def format_time_series(open_frac, shut_frac):
     Returns the data in compact form:
     * {t: [3, 5], open: [0.25, 1.0], shut: [0.75, 0.0]}
     """
-    print(open_frac)
-    print(shut_frac)
+    time_steps, open_values, shut_values, khmean_values, khmin_values, khmax_values = [], [], [], [], [], []
+    prev_open_value, prev_shut_value, prev_khmean, prev_khmin, prev_khmax = 0, 0, 0, 0, 0
 
-    time_steps, open_values, shut_values = [], [], []
-    prev_open_value, prev_shut_value = 0, 0
-
-    for i, (open_value, shut_value) in enumerate(zip(open_frac, shut_frac)):
-        if open_value != prev_open_value or shut_value != prev_shut_value:
+    for i, (open_value, shut_value, khmean, khmin, khmax) in enumerate(zip(open_frac, shut_frac, ls_khmean, ls_khmin, ls_khmax)):
+        conditions = [
+            open_value != prev_open_value,
+            shut_value != prev_shut_value,
+            khmean != prev_khmean,
+            khmin != prev_khmin,
+            khmax != prev_khmax
+        ]
+        if any(conditions):
             time_steps.append(i)
             open_values.append(open_value)
             shut_values.append(shut_value)
+            khmean_values.append(khmean)
+            khmin_values.append(khmin)
+            khmax_values.append(khmax)
         prev_open_value = open_value
         prev_shut_value = shut_value
-
+        prev_khmean = khmean
+        prev_khmin = khmin
+        prev_khmax = khmax
     if len(time_steps) == 0:
         return None
     r = {}
     r["t"] = time_steps
     r["open"] = open_values
     r["shut"] = shut_values
+    r["khMean"] = khmean_values
+    r["khMin"] = khmin_values
+    r["khMax"] = khmax_values
     return r
 
 
@@ -325,25 +346,32 @@ def extract_well(df, well, stratigraphy, zone_names, time_steps, realisations):
     well_dict = {}
     well_dict["name"] = well
 
-    completions = get_completions(df, stratigraphy, time_steps, realisations)
+    compl_events, kh = get_completion_events_and_kh(df, stratigraphy, time_steps, realisations)
 
     # calculate fraction of open realizations
-    open_count = np.maximum(np.asarray(completions), 0)     # remove -1
+    open_count = np.maximum(np.asarray(compl_events), 0)     # remove -1
     open_count_reduced = open_count.sum(axis=0)             # sum over realizations
     open_frac = np.asarray(open_count_reduced, dtype=np.float64) / float(
         len(realisations)
     )
 
     # calculate fraction of shut realizations
-    shut_count = np.minimum(np.asarray(completions), 0)*-1  # remove 1 and convert -1 to 1
+    shut_count = np.minimum(np.asarray(compl_events), 0)*-1  # remove 1 and convert -1 to 1
     shut_count_reduced = shut_count.sum(axis=0)             # sum over realizations
     shut_frac = np.asarray(shut_count_reduced, dtype=np.float64) / float(
         len(realisations)
     )
 
+    # calculate khMean, khMin and khMax
+    kh_mean = np.asarray(kh).sum(axis=0) / float(
+        len(realisations)
+    )
+    kh_min = kh_mean #must be implemented
+    kh_max = kh_mean #must be implemented
+
     result = {}
-    for zone_name, open_frac_zone, shut_frac_zone in zip(zone_names, open_frac, shut_frac):
-        r = format_time_series(open_frac_zone, shut_frac_zone)
+    for zone_name, open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
+        r = format_time_series(open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone)
         if r is not None:
             result[zone_name] = r
     well_dict["completions"] = result
