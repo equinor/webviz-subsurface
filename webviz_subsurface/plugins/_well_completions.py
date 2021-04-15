@@ -19,27 +19,41 @@ from .._datainput.fmu_input import load_csv
 
 
 class WellCompletions(WebvizPluginABC):
-    """Visualizes well completions from Eclipse compdat data
+    """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
+    Data is grouped per well and zone and can be filtered accoring to flexible well categories.
 
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **'compdatfile:** compdatfile
-    * **`layer_to_zone_map`:** A file specifying the zone->layer mapping
+    * **`compdatfile`:** csvfile with compdat data per realization
+    * **`layer_to_zone_mapping_file`:** lyr file specifying the zone->layer mapping (also per realization)
+    * **`well_attributes_file`:** Optional json file specifying generic well categorical attributes
 
     ---
     The minimum requirement is to define `ensembles`.
 
-    If no `layer_to_zone_map` is defined then ...
+    **COMPDAT input**
 
     `compdatfile` is a path to a file stored per realization (e.g. in \
-    `share/results/wells/compdat.csv`).
+    `share/results/wells/compdat.csv`.
 
-    The `compdatfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
+    The `compdatfile` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
+    ** Layer to zone mapping **
+
+    `layer_to_zone_mapping_file` file can be dumped to disk per realization by an internal \
+    RMS script as part of the FMU workflow. A sample python script should be available in the \
+    Drogon project:  export_zone_layer_mapping.py
+
+    The file needs to be on the lyr format used in Resinsight.
+    [Link to description of lyr format.](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
+
+    ** Well Attributes file **
+
+    Description and example needed
     """
 
     def __init__(
@@ -49,10 +63,10 @@ class WellCompletions(WebvizPluginABC):
         ensembles: list,
         compdatfile: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
+        well_attributes_file: str = None,
     ):
         super().__init__()
         self.theme = webviz_settings.theme
-        # self.colors = [ls[1] for ls in self.theme.plotly_theme["layout"]["colorscale"]["sequential"]]
         self.colors = self.theme.plotly_theme["layout"]["colorway"]
         self.compdatfile = compdatfile
         self.ensembles = ensembles
@@ -62,9 +76,12 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        self.zone_layer_mappings = self.load_zone_layer_mappings(
+        self.zone_layer_mappings = self.read_zone_layer_mappings(
             zone_layer_mapping_file
         )
+
+        self.well_attributes = self.read_well_attributes(well_attributes_file)
+        print(self.well_attributes)
 
         # CACHE data at start-up
         for ens in self.ensembles:
@@ -80,9 +97,27 @@ class WellCompletions(WebvizPluginABC):
             )
         ]
 
-    def load_zone_layer_mappings(self, zone_layer_mapping_file):
+    def read_well_attributes(self, well_attributes_file):
+        """
+        Reads the well attributes json file and converts it into a dictionary \
+        with eclipse_name as key
+        """
+        with open(well_attributes_file, "r") as handle:
+            well_list = json.load(handle)
+
+        output = {}
+        for well_data in well_list:
+            output[well_data["eclipse_name"]] = {
+                key: item
+                for key, item in well_data.items()
+                if key not in ["eclipse_name", "rms_name"]
+            }
+        return output
+
+    def read_zone_layer_mappings(self, zone_layer_mapping_file):
         """
         THIS SHOULD BE REWRITTEN TO BE MORE ROBUST IN CASE THERE IS NO FILE IN r-0
+        moved to _datainput
         """
 
         def lyr_to_dict(lyr_lines):
@@ -282,25 +317,24 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
         0,
     )
 
-    for (
-        i,
-        (open_frac_val, shut_frac_val, kh_mean_val, kh_min_val, kh_max_val),
-    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
+    for (i, (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),) in enumerate(
+        zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)
+    ):
         conditions = [
             open_val != prev_open_val,
             shut_val != prev_shut_val,
         ]
         if any(conditions):
             output["t"].append(i)
-            output["open"].append(open_frac_val)
-            output["shut"].append(shut_frac_val)
+            output["open"].append(open_val)
+            output["shut"].append(shut_val)
             output["khMean"].append(kh_mean_val)
             output["khMin"].append(kh_min_val)
             output["khMax"].append(kh_max_val)
-        prev_open_value = open_value
-        prev_shut_value = shut_value
+        prev_open_val = open_val
+        prev_shut_val = shut_val
 
-    if len(time_steps) == 0:
+    if len(output["t"]) == 0:
         return None
     return output
 
