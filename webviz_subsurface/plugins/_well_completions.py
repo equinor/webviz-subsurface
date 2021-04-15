@@ -48,13 +48,12 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdatfile: str = "share/results/wells/compdat.csv",
-        zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr"
+        zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
     ):
         super().__init__()
         self.theme = webviz_settings.theme
-        self.colors = [ls[1] for ls in self.theme.plotly_theme["layout"]["colorscale"]["sequential"]]
-        #self.colors = self.theme.plotly_theme["layout"]["colorway"]
-        #print(self.colors)
+        # self.colors = [ls[1] for ls in self.theme.plotly_theme["layout"]["colorscale"]["sequential"]]
+        self.colors = self.theme.plotly_theme["layout"]["colorway"]
         self.compdatfile = compdatfile
         self.ensembles = ensembles
         self.ens_paths = {
@@ -63,44 +62,39 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        self.zone_layer_mappings = self.load_zone_layer_mappings(zone_layer_mapping_file)
+        self.zone_layer_mappings = self.load_zone_layer_mappings(
+            zone_layer_mapping_file
+        )
 
-        #CACHE data at start-up
+        # CACHE data at start-up
         for ens in self.ensembles:
             output = self.create_ensemble_dataset(ens)
 
         self.set_callbacks(app)
 
     def add_webvizstore(self):
-        return (
-            [
-                (
-                    load_csv,
-                    [
-                        {"ensemble_paths":self.ens_paths},
-                        {"csv_file":self.compdatfile}
-                    ],
-                )
-            ]
-        )
+        return [
+            (
+                load_csv,
+                [{"ensemble_paths": self.ens_paths}, {"csv_file": self.compdatfile}],
+            )
+        ]
 
     def load_zone_layer_mappings(self, zone_layer_mapping_file):
         """
         THIS SHOULD BE REWRITTEN TO BE MORE ROBUST IN CASE THERE IS NO FILE IN r-0
         """
+
         def lyr_to_dict(lyr_lines):
             output = {}
             for line in lyr_lines:
                 if line.startswith("--"):
                     continue
                 linesplit = line.split()
-                zone_name = linesplit[0].replace("\'", "")
+                zone_name = linesplit[0].replace("'", "")
                 from_layer = int(linesplit[1])
                 to_layer = int(linesplit[3])
-                output[zone_name] = {
-                    "from_layer":from_layer,
-                    "to_layer":to_layer
-                }
+                output[zone_name] = {"from_layer": from_layer, "to_layer": to_layer}
             return output
 
         output = {}
@@ -125,7 +119,6 @@ class WellCompletions(WebvizPluginABC):
                     """
                 )
 
-
     @property
     def layout(self) -> html.Div:
         return html.Div(
@@ -133,7 +126,7 @@ class WellCompletions(WebvizPluginABC):
                 wcc.FlexBox(
                     children=[
                         html.Div(
-                            style={"flex": "1", "padding":"10px"},
+                            style={"flex": "1", "padding": "10px"},
                             children=html.Label(
                                 children=[
                                     html.Span(
@@ -153,14 +146,10 @@ class WellCompletions(WebvizPluginABC):
                                 ]
                             ),
                         ),
-                        html.Div(
-                            style={"flex":4}
-                        )
+                        html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(
-                    id=self.uuid("well_completions_wrapper"),
-                ),
+                html.Div(id=self.uuid("well_completions_wrapper"),),
             ]
         )
 
@@ -170,9 +159,7 @@ class WellCompletions(WebvizPluginABC):
                 Output(self.uuid("well_completions_wrapper"), "children"),
                 Output(self.uuid("well_completions_wrapper"), "style"),
             ],
-            [
-                Input(self.uuid("ensemble_dropdown"), "value"),
-            ],
+            [Input(self.uuid("ensemble_dropdown"), "value"),],
         )
         def _render_well_completions(ensemble_name):
 
@@ -182,7 +169,7 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding":"10px", "height":zones*50}
+                {"padding": "10px", "height": zones * 50},
             ]
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -196,34 +183,25 @@ class WellCompletions(WebvizPluginABC):
         time_steps = sorted(df.DATE.unique())
         realisations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
         layers = np.sort(df.K1.unique())
-        zone_layer_mapping = self.zone_layer_mappings[ensemble]
+        ensemble_zone_layer_mapping = self.zone_layer_mappings[ensemble]
 
         result = {}
         result["version"] = "1.0.0"
-        result["stratigraphy"] = extract_stratigraphy(zone_layer_mapping, self.colors)
+        result["stratigraphy"] = extract_stratigraphy(
+            ensemble_zone_layer_mapping, self.colors
+        )
         result["timeSteps"] = time_steps
 
         zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, zone_layer_mapping, zone_names, time_steps, realisations,
+            df, ensemble_zone_layer_mapping, zone_names, time_steps, realisations,
         )
         with open("/private/olind/webviz/result.json", "w") as f:
-           json.dump(result, f)
-           print("output exported")
+            json.dump(result, f)
+            print("output exported")
 
         return result
 
-def get_zone_for_layer(layer, stratigraphy):
-    for zone_attr in stratigraphy:
-        if zone_attr["from_layer"] <= layer <= zone_attr["to_layer"]:
-            return zone_attr["name"]
-    raise ValueError(f"No zone found for layer {layer}")
-
-def get_layer_to_zone_map(layers, stratigraphy):
-    layer_to_zone_map = {}
-    for layer in layers:
-        layer_to_zone_map[layer] = get_zone_for_layer(layer, stratigraphy)
-    return layer_to_zone_map
 
 def get_time_series(df, time_steps):
     """
@@ -242,11 +220,11 @@ def get_time_series(df, time_steps):
 
     for t in time_steps:
         if t in df.DATE.unique():
-            df_timestep = df[df.DATE==t]
-            df_timestep_open = df_timestep[df_timestep["OP/SH"]=="OPEN"]
+            df_timestep = df[df.DATE == t]
+            df_timestep_open = df_timestep[df_timestep["OP/SH"] == "OPEN"]
 
-            #if minimum one of the compdats for the zone is OPEN then the zone is considered open
-            event_value = 1 if len(df_timestep_open)>0 else -1
+            # if minimum one of the compdats for the zone is OPEN then the zone is considered open
+            event_value = 1 if len(df_timestep_open) > 0 else -1
             kh_value = df_timestep_open.KH.sum()
 
         events.append(event_value)
@@ -266,7 +244,10 @@ def get_completion_events_and_kh(df, zone_layer_mapping, time_steps, realisation
     for rname, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
         for zone_name, zone_attr in zone_layer_mapping.items():
-            data = realdata.loc[(realdata.K1>=zone_attr["from_layer"]) & (realdata.K1<=zone_attr["to_layer"])]
+            data = realdata.loc[
+                (realdata.K1 >= zone_attr["from_layer"])
+                & (realdata.K1 <= zone_attr["to_layer"])
+            ]
             compl_events_real_zone, kh_real_zone = get_time_series(data, time_steps)
             compl_events_real.append(compl_events_real_zone)
             kh_real.append(kh_real_zone)
@@ -276,83 +257,98 @@ def get_completion_events_and_kh(df, zone_layer_mapping, time_steps, realisation
     return compl_events, kh
 
 
-def format_time_series(open_frac, shut_frac, ls_khmean, ls_khmin, ls_khmax):
+def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     """
-    The functions takes in two lists
-    * list with fractions of realisations open in this zone, for each timestep
-    * list with fractions of realisations shut in this zone, for each timestep
+    The functions takes in five lists with values per timestep
+    * fractions of realisations open in this zone
+    * fractions of realisations shut in this zone
+    * kh mean over open realisations
+    * kh min over open realisations
+    * kh max over open realisations
 
     Returns the data in compact form:
-    * {t: [3, 5], open: [0.25, 1.0], shut: [0.75, 0.0]}
+    {
+        t: [3, 5],
+        open: [0.25, 1.0],
+        shut: [0.75, 0.0],
+        khMean: [500, 1000],
+        khMin: [200, 800],
+        khMean: [600, 1500]
+    }
     """
-    time_steps, open_values, shut_values, khmean_values, khmin_values, khmax_values = [], [], [], [], [], []
-    prev_open_value, prev_shut_value, prev_khmean, prev_khmin, prev_khmax = 0, 0, 0, 0, 0
+    output = {"t": [], "open": [], "shut": [], "khMean": [], "khMin": [], "khMax": []}
+    prev_open_val, prev_shut_val = (
+        0,
+        0,
+    )
 
-    for i, (open_value, shut_value, khmean, khmin, khmax) in enumerate(zip(open_frac, shut_frac, ls_khmean, ls_khmin, ls_khmax)):
+    for (
+        i,
+        (open_frac_val, shut_frac_val, kh_mean_val, kh_min_val, kh_max_val),
+    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
         conditions = [
-            open_value != prev_open_value,
-            shut_value != prev_shut_value,
-            khmean != prev_khmean,
-            khmin != prev_khmin,
-            khmax != prev_khmax
+            open_val != prev_open_val,
+            shut_val != prev_shut_val,
         ]
         if any(conditions):
-            time_steps.append(i)
-            open_values.append(open_value)
-            shut_values.append(shut_value)
-            khmean_values.append(khmean)
-            khmin_values.append(khmin)
-            khmax_values.append(khmax)
+            output["t"].append(i)
+            output["open"].append(open_frac_val)
+            output["shut"].append(shut_frac_val)
+            output["khMean"].append(kh_mean_val)
+            output["khMin"].append(kh_min_val)
+            output["khMax"].append(kh_max_val)
         prev_open_value = open_value
         prev_shut_value = shut_value
-        prev_khmean = khmean
-        prev_khmin = khmin
-        prev_khmax = khmax
+
     if len(time_steps) == 0:
         return None
-    r = {}
-    r["t"] = time_steps
-    r["open"] = open_values
-    r["shut"] = shut_values
-    r["khMean"] = khmean_values
-    r["khMin"] = khmin_values
-    r["khMax"] = khmax_values
-    return r
+    return output
 
 
-def extract_well(df, well, stratigraphy, zone_names, time_steps, realisations):
+def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisations):
     """
     Extract completion data for a single well
     """
     well_dict = {}
     well_dict["name"] = well
 
-    compl_events, kh = get_completion_events_and_kh(df, stratigraphy, time_steps, realisations)
+    compl_events, kh = get_completion_events_and_kh(
+        df, zone_layer_mapping, time_steps, realisations
+    )
 
     # calculate fraction of open realizations
-    open_count = np.maximum(np.asarray(compl_events), 0)     # remove -1
-    open_count_reduced = open_count.sum(axis=0)             # sum over realizations
+    open_count = np.maximum(np.asarray(compl_events), 0)  # remove -1
+    open_count_reduced = open_count.sum(axis=0)  # sum over realizations
     open_frac = np.asarray(open_count_reduced, dtype=np.float64) / float(
         len(realisations)
     )
 
     # calculate fraction of shut realizations
-    shut_count = np.minimum(np.asarray(compl_events), 0)*-1  # remove 1 and convert -1 to 1
-    shut_count_reduced = shut_count.sum(axis=0)             # sum over realizations
+    shut_count = (
+        np.minimum(np.asarray(compl_events), 0) * -1
+    )  # remove +1 and convert -1 to 1
+    shut_count_reduced = shut_count.sum(axis=0)  # sum over realizations
     shut_frac = np.asarray(shut_count_reduced, dtype=np.float64) / float(
         len(realisations)
     )
 
     # calculate khMean, khMin and khMax
-    kh_mean = np.asarray(kh).sum(axis=0) / float(
-        len(realisations)
-    )
-    kh_min = kh_mean #must be implemented
-    kh_max = kh_mean #must be implemented
+    kh_mean = np.asarray(kh).sum(axis=0) / float(len(realisations))
+    kh_min = np.asarray(kh).min(axis=0)
+    kh_max = np.asarray(kh).max(axis=0)
 
     result = {}
-    for zone_name, open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
-        r = format_time_series(open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone)
+    for (
+        zone_name,
+        open_frac_zone,
+        shut_frac_zone,
+        kh_mean_zone,
+        kh_min_zone,
+        kh_max_zone,
+    ) in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
+        r = format_time_series(
+            open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone
+        )
         if r is not None:
             result[zone_name] = r
     well_dict["completions"] = result
@@ -364,22 +360,24 @@ def extract_well(df, well, stratigraphy, zone_names, time_steps, realisations):
     return well_dict
 
 
-def extract_wells(df, stratigraphy, zone_names, time_steps, realisations):
+def extract_wells(df, zone_layer_mapping, zone_names, time_steps, realisations):
     """
     Generates the wells part of the input dictionary to the WellCompletions component
     """
     well_list = []
     for name, well_group in df.groupby("WELL"):
         well_list.append(
-            extract_well(well_group, name, stratigraphy, zone_names, time_steps, realisations)
+            extract_well(
+                well_group,
+                name,
+                zone_layer_mapping,
+                zone_names,
+                time_steps,
+                realisations,
+            )
         )
     return well_list
 
-def parse_rgb(rgbstr):
-    rgbstr = rgbstr.replace("rgb", "").replace("(","").replace(")", "")
-    (r, g, b) = (int(val) for val in rgbstr.split(","))
-    s = hex((r << 8) + (g << 4) + b)
-    return "#" + s[-3:]
 
 def extract_stratigraphy(stratigraphy, colors):
     """
@@ -390,6 +388,6 @@ def extract_stratigraphy(stratigraphy, colors):
     for zone_name, zone_attr in stratigraphy.items():
         zdict = {}
         zdict["name"] = zone_name
-        zdict["color"] = parse_rgb(next(color_iterator))
+        zdict["color"] = next(color_iterator)
         result.append(zdict)
     return result
