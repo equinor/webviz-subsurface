@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import numpy as np
 import itertools
+import ecl2df
 
 import dash
 from dash.dependencies import Input, Output
@@ -81,7 +82,6 @@ class WellCompletions(WebvizPluginABC):
         )
 
         self.well_attributes = self.read_well_attributes(well_attributes_file)
-        print(self.well_attributes)
 
         # CACHE data at start-up
         for ens in self.ensembles:
@@ -119,25 +119,29 @@ class WellCompletions(WebvizPluginABC):
         THIS SHOULD BE REWRITTEN TO BE MORE ROBUST IN CASE THERE IS NO FILE IN r-0
         moved to _datainput
         """
-
-        def lyr_to_dict(lyr_lines):
+        def reshape_layer_zone_mapping(layer_zone_mapping):
+            """
+            Dette er ikke saerlig elegant, må fikses
+            """
+            data = {}
+            for layer, zone in layer_zone_mapping.items():
+                if zone not in data:
+                    data[zone] = [layer]
+                else:
+                    data[zone].append(layer)
             output = {}
-            for line in lyr_lines:
-                if line.startswith("--"):
-                    continue
-                linesplit = line.split()
-                zone_name = linesplit[0].replace("'", "")
-                from_layer = int(linesplit[1])
-                to_layer = int(linesplit[3])
-                output[zone_name] = {"from_layer": from_layer, "to_layer": to_layer}
+            for zone, layers in data.items():
+                output[zone] = {
+                    "from_layer":layers[0],
+                    "to_layer":layers[-1]
+                }
             return output
 
         output = {}
         for ens_name, ens_path in self.ens_paths.items():
             fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
-            with open(fn, "r") as handle:
-                lyr_lines = handle.readlines()
-                output[ens_name] = lyr_to_dict(lyr_lines)
+            data = read_lyr_file(fn)
+            output[ens_name] = reshape_layer_zone_mapping(data)
         return output
 
     def qc_compdat(self):
@@ -426,3 +430,19 @@ def extract_stratigraphy(stratigraphy, colors):
         zdict["color"] = next(color_iterator)
         result.append(zdict)
     return result
+
+def read_lyr_file(fn):
+    eclfile = ecl2df.EclFiles("")
+    return eclfile.get_zonemap(filename=fn)
+
+# def lyr_to_dict(lyr_lines):
+#     output = {}
+#     for line in lyr_lines:
+#         if line.startswith("--"):
+#             continue
+#         linesplit = line.split()
+#         zone_name = linesplit[0].replace("'", "")
+#         from_layer = int(linesplit[1])
+#         to_layer = int(linesplit[3])
+#         output[zone_name] = {"from_layer": from_layer, "to_layer": to_layer}
+#     return output
