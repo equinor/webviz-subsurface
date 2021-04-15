@@ -25,7 +25,7 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **'compdatfile:** compdatfile
-    * **`layer_to_zone_map`:** A file specifying the stratigraphy
+    * **`layer_to_zone_map`:** A file specifying the zone->layer mapping
 
     ---
     The minimum requirement is to define `ensembles`.
@@ -48,7 +48,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdatfile: str = "share/results/wells/compdat.csv",
-        stratigraphy: str = None
+        zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr"
     ):
         super().__init__()
         self.theme = webviz_settings.theme
@@ -56,7 +56,6 @@ class WellCompletions(WebvizPluginABC):
         #self.colors = self.theme.plotly_theme["layout"]["colorway"]
         #print(self.colors)
         self.compdatfile = compdatfile
-        self.stratigraphy = stratigraphy
         self.ensembles = ensembles
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
@@ -64,53 +63,7 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        self.stratigraphy = {
-            "Stoe4":{
-                "from_layer":1,
-                "to_layer":5
-            },
-            "Stoe3.2":{
-                "from_layer":6,
-                "to_layer":6
-            },
-            "Stoe3.1":{
-                "from_layer":7,
-                "to_layer":12
-            },
-            "Stoe2":{
-                "from_layer":13,
-                "to_layer":19
-            },
-            "Stoe1":{
-                "from_layer":20,
-                "to_layer":25
-            },
-            "Nordmela3":{
-                "from_layer":26,
-                "to_layer":34
-            },
-            "Nordmela2":{
-                "from_layer":35,
-                "to_layer":54
-            },
-            "Nordmela1":{
-                "from_layer":55,
-                "to_layer":60
-            },
-            "Tubaaen3":{
-                "from_layer":61,
-                "to_layer":71
-            },
-            "Tubaaen2":{
-                "from_layer":72,
-                "to_layer":78
-            },
-            "Tubaaen1":{
-                "from_layer":79,
-                "to_layer":90
-            },
-        }
-        #qc stratigraphy (overlap etc) ?
+        self.zone_layer_mappings = self.load_zone_layer_mappings(zone_layer_mapping_file)
 
         #CACHE data at start-up
         for ens in self.ensembles:
@@ -130,6 +83,33 @@ class WellCompletions(WebvizPluginABC):
                 )
             ]
         )
+
+    def load_zone_layer_mappings(self, zone_layer_mapping_file):
+        """
+        THIS SHOULD BE REWRITTEN TO BE MORE ROBUST IN CASE THERE IS NO FILE IN r-0
+        """
+        def lyr_to_dict(lyr_lines):
+            output = {}
+            for line in lyr_lines:
+                if line.startswith("--"):
+                    continue
+                linesplit = line.split()
+                zone_name = linesplit[0].replace("\'", "")
+                from_layer = int(linesplit[1])
+                to_layer = int(linesplit[3])
+                output[zone_name] = {
+                    "from_layer":from_layer,
+                    "to_layer":to_layer
+                }
+            return output
+
+        output = {}
+        for ens_name, ens_path in self.ens_paths.items():
+            fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
+            with open(fn, "r") as handle:
+                lyr_lines = handle.readlines()
+                output[ens_name] = lyr_to_dict(lyr_lines)
+        return output
 
     def qc_compdat(self):
         """
@@ -216,19 +196,20 @@ class WellCompletions(WebvizPluginABC):
         time_steps = sorted(df.DATE.unique())
         realisations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
         layers = np.sort(df.K1.unique())
-        #layer_to_zone_map = get_layer_to_zone_map(layers, self.stratigraphy)
+        zone_layer_mapping = self.zone_layer_mappings[ensemble]
 
         result = {}
         result["version"] = "1.0.0"
-        result["stratigraphy"] = extract_stratigraphy(self.stratigraphy, self.colors)
+        result["stratigraphy"] = extract_stratigraphy(zone_layer_mapping, self.colors)
         result["timeSteps"] = time_steps
 
-        zone_names = list(self.stratigraphy.keys()) # [a["name"] for a in result["stratigraphy"]]
+        zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, self.stratigraphy, zone_names, time_steps, realisations,
+            df, zone_layer_mapping, zone_names, time_steps, realisations,
         )
         with open("/private/olind/webviz/result.json", "w") as f:
            json.dump(result, f)
+           print("output exported")
 
         return result
 
@@ -273,7 +254,7 @@ def get_time_series(df, time_steps):
     return events, kh
 
 
-def get_completion_events_and_kh(df, stratigraphy, time_steps, realisations):
+def get_completion_events_and_kh(df, zone_layer_mapping, time_steps, realisations):
     """
     Extracts completion events ad kh values into two lists of lists of lists,
     one with completions events and one with kh values
@@ -284,7 +265,7 @@ def get_completion_events_and_kh(df, stratigraphy, time_steps, realisations):
     compl_events, kh = [], []
     for rname, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
-        for zone_name, zone_attr in stratigraphy.items():
+        for zone_name, zone_attr in zone_layer_mapping.items():
             data = realdata.loc[(realdata.K1>=zone_attr["from_layer"]) & (realdata.K1<=zone_attr["to_layer"])]
             compl_events_real_zone, kh_real_zone = get_time_series(data, time_steps)
             compl_events_real.append(compl_events_real_zone)
