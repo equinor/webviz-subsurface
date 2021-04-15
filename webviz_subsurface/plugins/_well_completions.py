@@ -229,7 +229,7 @@ class WellCompletions(WebvizPluginABC):
 
         zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, ensemble_zone_layer_mapping, zone_names, time_steps, realisations,
+            df, ensemble_zone_layer_mapping, zone_names, time_steps, realisations, self.well_attributes
         )
         with open("/private/olind/webviz/result.json", "w") as f:
             json.dump(result, f)
@@ -339,7 +339,7 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     return output
 
 
-def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisations):
+def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisations, attributes):
     """
     Extract completion data for a single well
     """
@@ -386,28 +386,29 @@ def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisati
         if r is not None:
             result[zone_name] = r
     well_dict["completions"] = result
-
-    attributes = {}
-    attributes["type"] = "Producer"
-    attributes["region"] = "SomeRegion"
-    well_dict["attributes"] = attributes
+    if attributes is not None:
+        well_dict["attributes"] = attributes
     return well_dict
 
 
-def extract_wells(df, zone_layer_mapping, zone_names, time_steps, realisations):
+def extract_wells(df, zone_layer_mapping, zone_names, time_steps, realisations, well_attributes):
     """
     Generates the wells part of the input dictionary to the WellCompletions component
     """
     well_list = []
-    for name, well_group in df.groupby("WELL"):
+    for well_name, well_group in df.groupby("WELL"):
+        attributes = None
+        if well_name in well_attributes:
+            attributes = well_attributes[well_name]
         well_list.append(
             extract_well(
                 well_group,
-                name,
+                well_name,
                 zone_layer_mapping,
                 zone_names,
                 time_steps,
                 realisations,
+                attributes
             )
         )
     return well_list
