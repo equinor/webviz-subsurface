@@ -264,7 +264,7 @@ def get_completion_events_and_kh(df, zone_names, time_steps, realisations):
     for rname, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
         for zone_name in zone_names:
-            zone_data = df[df.ZONE == zone_name]
+            zone_data = realdata[realdata.ZONE == zone_name]
             compl_events_real_zone, kh_real_zone = get_time_series(
                 zone_data, time_steps
             )
