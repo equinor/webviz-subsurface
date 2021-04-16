@@ -2,7 +2,8 @@ import json
 import pandas as pd
 import numpy as np
 import itertools
-import ecl2df
+import io
+
 
 import dash
 from dash.dependencies import Input, Output
@@ -11,12 +12,11 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
 import webviz_subsurface_components
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
-
 from .._datainput.fmu_input import load_csv
+import ecl2df
 
 
 class WellCompletions(WebvizPluginABC):
@@ -77,8 +77,11 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        self.zone_layer_mappings = self.read_zone_layer_mappings(
-            zone_layer_mapping_file
+        self.layer_zone_mappings = json.load(
+            read_zone_layer_mappings(
+                ensemble_paths=self.ens_paths,
+                zone_layer_mapping_file=zone_layer_mapping_file,
+            )
         )
 
         self.well_attributes = self.read_well_attributes(well_attributes_file)
@@ -94,7 +97,14 @@ class WellCompletions(WebvizPluginABC):
             (
                 load_csv,
                 [{"ensemble_paths": self.ens_paths}, {"csv_file": self.compdatfile}],
-            )
+            ),
+            (
+                read_zone_layer_mappings,
+                [
+                    {"ensemble_paths": self.ens_paths},
+                    {"csv_file": self.zone_layer_mapping_file},
+                ],
+            ),
         ]
 
     def read_well_attributes(self, well_attributes_file):
@@ -112,36 +122,6 @@ class WellCompletions(WebvizPluginABC):
                 for key, item in well_data.items()
                 if key not in ["eclipse_name", "rms_name"]
             }
-        return output
-
-    def read_zone_layer_mappings(self, zone_layer_mapping_file):
-        """
-        THIS SHOULD BE REWRITTEN TO BE MORE ROBUST IN CASE THERE IS NO FILE IN r-0
-        moved to _datainput
-        """
-        def reshape_layer_zone_mapping(layer_zone_mapping):
-            """
-            Dette er ikke saerlig elegant, må fikses
-            """
-            data = {}
-            for layer, zone in layer_zone_mapping.items():
-                if zone not in data:
-                    data[zone] = [layer]
-                else:
-                    data[zone].append(layer)
-            output = {}
-            for zone, layers in data.items():
-                output[zone] = {
-                    "from_layer":layers[0],
-                    "to_layer":layers[-1]
-                }
-            return output
-
-        output = {}
-        for ens_name, ens_path in self.ens_paths.items():
-            fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
-            data = read_lyr_file(fn)
-            output[ens_name] = reshape_layer_zone_mapping(data)
         return output
 
     def qc_compdat(self):
@@ -217,23 +197,24 @@ class WellCompletions(WebvizPluginABC):
         Creates the well completion data set for the WellCompletions component
         Returns a dictionary with given format
         """
-        df = self.compdat[self.compdat.ENSEMBLE == ensemble]
+        df = self.compdat[self.compdat.ENSEMBLE == ensemble].copy()
+        ensemble_layer_zone_mapping = self.layer_zone_mappings[ensemble]
+        df["ZONE"] = df.K1.astype(str).map(ensemble_layer_zone_mapping)
 
         time_steps = sorted(df.DATE.unique())
         realisations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
         layers = np.sort(df.K1.unique())
-        ensemble_zone_layer_mapping = self.zone_layer_mappings[ensemble]
 
         result = {}
         result["version"] = "1.0.0"
         result["stratigraphy"] = extract_stratigraphy(
-            ensemble_zone_layer_mapping, self.colors
+            ensemble_layer_zone_mapping, self.colors
         )
         result["timeSteps"] = time_steps
 
         zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, ensemble_zone_layer_mapping, zone_names, time_steps, realisations, self.well_attributes
+            df, zone_names, time_steps, realisations, self.well_attributes
         )
         with open("/private/olind/webviz/result.json", "w") as f:
             json.dump(result, f)
@@ -271,7 +252,7 @@ def get_time_series(df, time_steps):
     return events, kh
 
 
-def get_completion_events_and_kh(df, zone_layer_mapping, time_steps, realisations):
+def get_completion_events_and_kh(df, zone_names, time_steps, realisations):
     """
     Extracts completion events ad kh values into two lists of lists of lists,
     one with completions events and one with kh values
@@ -282,12 +263,11 @@ def get_completion_events_and_kh(df, zone_layer_mapping, time_steps, realisation
     compl_events, kh = [], []
     for rname, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
-        for zone_name, zone_attr in zone_layer_mapping.items():
-            data = realdata.loc[
-                (realdata.K1 >= zone_attr["from_layer"])
-                & (realdata.K1 <= zone_attr["to_layer"])
-            ]
-            compl_events_real_zone, kh_real_zone = get_time_series(data, time_steps)
+        for zone_name in zone_names:
+            zone_data = df[df.ZONE == zone_name]
+            compl_events_real_zone, kh_real_zone = get_time_series(
+                zone_data, time_steps
+            )
             compl_events_real.append(compl_events_real_zone)
             kh_real.append(kh_real_zone)
 
@@ -343,7 +323,7 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     return output
 
 
-def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisations, attributes):
+def extract_well(df, well, zone_names, time_steps, realisations, attributes):
     """
     Extract completion data for a single well
     """
@@ -351,7 +331,7 @@ def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisati
     well_dict["name"] = well
 
     compl_events, kh = get_completion_events_and_kh(
-        df, zone_layer_mapping, time_steps, realisations
+        df, zone_names, time_steps, realisations
     )
 
     # calculate fraction of open realizations
@@ -395,7 +375,7 @@ def extract_well(df, well, zone_layer_mapping, zone_names, time_steps, realisati
     return well_dict
 
 
-def extract_wells(df, zone_layer_mapping, zone_names, time_steps, realisations, well_attributes):
+def extract_wells(df, zone_names, time_steps, realisations, well_attributes):
     """
     Generates the wells part of the input dictionary to the WellCompletions component
     """
@@ -406,43 +386,44 @@ def extract_wells(df, zone_layer_mapping, zone_names, time_steps, realisations, 
             attributes = well_attributes[well_name]
         well_list.append(
             extract_well(
-                well_group,
-                well_name,
-                zone_layer_mapping,
-                zone_names,
-                time_steps,
-                realisations,
-                attributes
+                well_group, well_name, zone_names, time_steps, realisations, attributes
             )
         )
     return well_list
 
 
-def extract_stratigraphy(stratigraphy, colors):
+def extract_stratigraphy(layer_zone_mapping, colors):
     """
     Returns the stratigraphy part of the data set
     """
     color_iterator = itertools.cycle(colors)
     result = []
-    for zone_name, zone_attr in stratigraphy.items():
-        zdict = {}
-        zdict["name"] = zone_name
-        zdict["color"] = next(color_iterator)
-        result.append(zdict)
+    zones = []
+    for layer, zone in layer_zone_mapping.items():
+        if zone not in zones:
+            zones.append(zone)
+            zdict = {}
+            zdict["name"] = zone
+            zdict["color"] = next(color_iterator)
+            result.append(zdict)
     return result
 
-def read_lyr_file(fn):
-    eclfile = ecl2df.EclFiles("")
-    return eclfile.get_zonemap(filename=fn)
 
-# def lyr_to_dict(lyr_lines):
-#     output = {}
-#     for line in lyr_lines:
-#         if line.startswith("--"):
-#             continue
-#         linesplit = line.split()
-#         zone_name = linesplit[0].replace("'", "")
-#         from_layer = int(linesplit[1])
-#         to_layer = int(linesplit[3])
-#         output[zone_name] = {"from_layer": from_layer, "to_layer": to_layer}
-#     return output
+@webvizstore
+def read_zone_layer_mappings(ensemble_paths=None, zone_layer_mapping_file=None) -> io.BytesIO:
+    """
+    Reads the zone layer mappings for all ensembles using functionality \
+    from the ecl2df library
+
+    Should be rewritten to be more robust in case data is missing in r-0
+    """
+    if ensemble_paths == None or zone_layer_mapping_file == None:
+        return {}
+    output = {}
+    eclfile = ecl2df.EclFiles("")
+    for ens_name, ens_path in ensemble_paths.items():
+        fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
+        output[ens_name] = eclfile.get_zonemap(filename=fn)
+    return io.BytesIO(
+        json.dumps(output).encode()
+    )
