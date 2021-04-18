@@ -64,7 +64,7 @@ class WellCompletions(WebvizPluginABC):
         ensembles: list,
         compdatfile: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
-        well_attributes_file: str = None,
+        well_attributes_file: str = "share/results/wells/well_attributes.json"
     ):
         super().__init__()
         self.theme = webviz_settings.theme
@@ -83,8 +83,12 @@ class WellCompletions(WebvizPluginABC):
                 zone_layer_mapping_file=zone_layer_mapping_file,
             )
         )
-
-        self.well_attributes = self.read_well_attributes(well_attributes_file)
+        self.well_attributes = json.load(
+            read_well_attributes(
+                ensemble_paths=self.ens_paths,
+                well_attributes_file=well_attributes_file,
+            )
+        )
 
         # CACHE data at start-up
         for ens in self.ensembles:
@@ -102,27 +106,17 @@ class WellCompletions(WebvizPluginABC):
                 read_zone_layer_mappings,
                 [
                     {"ensemble_paths": self.ens_paths},
-                    {"csv_file": self.zone_layer_mapping_file},
+                    {"zone_layer_mapping_file": self.zone_layer_mapping_file},
+                ],
+            ),
+            (
+                read_well_attributes,
+                [
+                    {"ensemble_paths": self.ens_paths},
+                    {"well_attributes_files": self.well_attributes_file},
                 ],
             ),
         ]
-
-    def read_well_attributes(self, well_attributes_file):
-        """
-        Reads the well attributes json file and converts it into a dictionary \
-        with eclipse_name as key
-        """
-        with open(well_attributes_file, "r") as handle:
-            well_list = json.load(handle)
-
-        output = {}
-        for well_data in well_list:
-            output[well_data["eclipse_name"]] = {
-                key: item
-                for key, item in well_data.items()
-                if key not in ["eclipse_name", "rms_name"]
-            }
-        return output
 
     def qc_compdat(self):
         """
@@ -418,12 +412,44 @@ def read_zone_layer_mappings(ensemble_paths=None, zone_layer_mapping_file=None) 
     Should be rewritten to be more robust in case data is missing in r-0
     """
     if ensemble_paths == None or zone_layer_mapping_file == None:
-        return {}
+        return io.BytesIO(json.dumps({}).encode())
     output = {}
     eclfile = ecl2df.EclFiles("")
     for ens_name, ens_path in ensemble_paths.items():
         fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
         output[ens_name] = eclfile.get_zonemap(filename=fn)
+    return io.BytesIO(
+        json.dumps(output).encode()
+    )
+
+@webvizstore
+def read_well_attributes(ensemble_paths=None, well_attributes_file=None) -> io.BytesIO:
+    """
+    Reads the well attributes json files for all ensembles
+
+    The output is a dictionary of dictionaries, where ensemble is the first \
+    level and eclipse well name is the second level
+    """
+    def read_well_attributes_file(fn):
+        try:
+            with open(fn, "r") as handle:
+                well_list = json.load(handle)
+        except FileNotFoundError:
+            return {}
+        ens_output = {}
+        for well_data in well_list:
+            ens_output[well_data["eclipse_name"]] = {
+                key: item
+                for key, item in well_data.items()
+                if key not in ["eclipse_name", "rms_name"]
+            }
+        return ens_output
+    if ensemble_paths == None or well_attributes_file == None:
+        return io.BytesIO(json.dumps({}).encode())
+    output = {}
+    for ens_name, ens_path in ensemble_paths.items():
+        fn = f"{ens_path}/{well_attributes_file}".replace("*", "0")
+        output[ens_name] = read_well_attributes_file(fn)
     return io.BytesIO(
         json.dumps(output).encode()
     )
