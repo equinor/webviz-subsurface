@@ -28,8 +28,8 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdatfile`:** csvfile with compdat data per realization
-    * **`layer_to_zone_mapping_file`:** lyr file specifying the zone->layer mapping \
-    * **`well_attributes_file`:** Optional json file specifying generic well categorical attributes \
+    * **`layer_to_zone_mapping_file`:** Optional lyr file specifying the zone->layer mapping \
+    * **`well_attributes_file`:** Optional json file with categorical well attributes \
 
     The latter two files are intended to be exported from RMS and there will therefore \
     be one file per realization, but the files should be identical.
@@ -55,6 +55,8 @@ class WellCompletions(WebvizPluginABC):
     The file needs to be on the lyr format used in Resinsight.
     [Link to description of lyr format.]\
     (https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
+
+    If no file exists, layers will be used as zones.
 
     ** Well Attributes file **
 
@@ -98,7 +100,7 @@ class WellCompletions(WebvizPluginABC):
 
         # CACHE data at start-up
         for ens in self.ensembles:
-            output = self.create_ensemble_dataset(ens)
+            self.create_ensemble_dataset(ens)
 
         self.set_callbacks(app)
 
@@ -207,7 +209,7 @@ class WellCompletions(WebvizPluginABC):
         """
         df = self.compdat[self.compdat.ENSEMBLE == ensemble].copy()
         time_steps = sorted(df.DATE.unique())
-        realisations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
+        realizations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
         layers = np.sort(df.K1.unique())
 
         if ensemble in self.layer_zone_mappings:
@@ -232,7 +234,7 @@ class WellCompletions(WebvizPluginABC):
 
         zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, zone_names, time_steps, realisations, ensemble_well_attributes
+            df, zone_names, time_steps, realizations, ensemble_well_attributes
         )
         with open("/private/olind/webviz/result.json", "w") as handle:
             json.dump(result, handle)
@@ -249,7 +251,7 @@ def get_time_series(df, time_steps):
     * the second is with sum of kh values for the open compdats in each zone
 
     The input data frame is assumed to contain data for single well,
-    single zone and single realisation.
+    single zone and single realization.
     """
     if df.empty:
         return [0] * len(time_steps), [0] * len(time_steps)
@@ -298,11 +300,11 @@ def get_completion_events_and_kh(df, zone_names, time_steps):
 def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     """
     The functions takes in five lists with values per timestep
-    * fractions of realisations open in this zone
-    * fractions of realisations shut in this zone
-    * kh mean over open realisations
-    * kh min over open realisations
-    * kh max over open realisations
+    * fractions of realizations open in this zone
+    * fractions of realizations shut in this zone
+    * kh mean over open realizations
+    * kh min over open realizations
+    * kh max over open realizations
 
     Returns the data in compact form:
     {
@@ -343,35 +345,44 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     return output
 
 
-def extract_well(df, well, zone_names, time_steps, realisations, attributes):
-    """
-    Extract completion data for a single well
-    """
-    well_dict = {}
-    well_dict["name"] = well
-
-    compl_events, kh_values = get_completion_events_and_kh(df, zone_names, time_steps)
-
+def calculate_over_realizations(compl_events, kh_values, realizations):
     # calculate fraction of open realizations
     open_count = np.maximum(np.asarray(compl_events), 0)  # remove -1
     open_count_reduced = open_count.sum(axis=0)  # sum over realizations
-    open_frac = np.asarray(open_count_reduced, dtype=np.float64) / float(
-        len(realisations)
-    )
+    open_frac = (
+        np.asarray(open_count_reduced, dtype=np.float64) / float(len(realizations))
+    ).round(decimals=3)
 
     # calculate fraction of shut realizations
     shut_count = (
         np.minimum(np.asarray(compl_events), 0) * -1
     )  # remove +1 and convert -1 to 1
     shut_count_reduced = shut_count.sum(axis=0)  # sum over realizations
-    shut_frac = np.asarray(shut_count_reduced, dtype=np.float64) / float(
-        len(realisations)
-    )
+    shut_frac = (
+        np.asarray(shut_count_reduced, dtype=np.float64) / float(len(realizations))
+    ).round(decimals=3)
 
     # calculate khMean, khMin and khMax
-    kh_mean = np.asarray(kh_values).sum(axis=0) / float(len(realisations))
-    kh_min = np.asarray(kh_values).min(axis=0)
-    kh_max = np.asarray(kh_values).max(axis=0)
+    kh_mean = (np.asarray(kh_values).sum(axis=0) / float(len(realizations))).round(
+        decimals=2
+    )
+    kh_min = np.asarray(kh_values).min(axis=0).round(decimals=2)
+    kh_max = np.asarray(kh_values).max(axis=0).round(decimals=2)
+
+    return open_frac, shut_frac, kh_mean, kh_min, kh_max
+
+
+def extract_well(df, well, zone_names, time_steps, realizations, attributes):
+    """
+    Extract completion events and kh values for a single well
+    """
+    well_dict = {}
+    well_dict["name"] = well
+
+    compl_events, kh_values = get_completion_events_and_kh(df, zone_names, time_steps)
+    open_frac, shut_frac, kh_mean, kh_min, kh_max = calculate_over_realizations(
+        compl_events, kh_values, realizations
+    )
 
     result = {}
     for (
@@ -393,7 +404,7 @@ def extract_well(df, well, zone_names, time_steps, realisations, attributes):
     return well_dict
 
 
-def extract_wells(df, zone_names, time_steps, realisations, well_attributes):
+def extract_wells(df, zone_names, time_steps, realizations, well_attributes):
     """
     Generates the wells part of the input dictionary to the WellCompletions component
     """
@@ -404,7 +415,7 @@ def extract_wells(df, zone_names, time_steps, realisations, well_attributes):
             attributes = well_attributes[well_name]
         well_list.append(
             extract_well(
-                well_group, well_name, zone_names, time_steps, realisations, attributes
+                well_group, well_name, zone_names, time_steps, realizations, attributes
             )
         )
     return well_list
