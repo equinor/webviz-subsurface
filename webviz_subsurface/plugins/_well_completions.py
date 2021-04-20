@@ -1,22 +1,23 @@
 import json
-import pandas as pd
-import numpy as np
 import itertools
 import io
+from pathlib import Path
 
-
+import numpy as np
 import dash
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
+
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-import webviz_subsurface_components
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
-from .._datainput.fmu_input import load_csv
+import webviz_subsurface_components
 import ecl2df
+
+from .._datainput.fmu_input import load_csv
 
 
 class WellCompletions(WebvizPluginABC):
@@ -27,9 +28,11 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdatfile`:** csvfile with compdat data per realization
-    * **`layer_to_zone_mapping_file`:** lyr file specifying the zone->layer mapping (also per realization)
-    * **`well_attributes_file`:** Optional json file specifying generic well categorical attributes
+    * **`layer_to_zone_mapping_file`:** lyr file specifying the zone->layer mapping \
+    * **`well_attributes_file`:** Optional json file specifying generic well categorical attributes \
 
+    The latter two files are intended to be exported from RMS and there will therefore \
+    be one file per realization, but the files should be identical.
     ---
     The minimum requirement is to define `ensembles`.
 
@@ -50,7 +53,8 @@ class WellCompletions(WebvizPluginABC):
     Drogon project:  export_zone_layer_mapping.py
 
     The file needs to be on the lyr format used in Resinsight.
-    [Link to description of lyr format.](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
+    [Link to description of lyr format.]\
+    (https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
 
     ** Well Attributes file **
 
@@ -64,12 +68,14 @@ class WellCompletions(WebvizPluginABC):
         ensembles: list,
         compdatfile: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
-        well_attributes_file: str = "share/results/wells/well_attributes.json"
+        well_attributes_file: str = "share/results/wells/well_attributes.json",
     ):
         super().__init__()
         self.theme = webviz_settings.theme
         self.colors = self.theme.plotly_theme["layout"]["colorway"]
         self.compdatfile = compdatfile
+        self.zone_layer_mapping_file = zone_layer_mapping_file
+        self.well_attributes_file = well_attributes_file
         self.ensembles = ensembles
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
@@ -80,13 +86,13 @@ class WellCompletions(WebvizPluginABC):
         self.layer_zone_mappings = json.load(
             read_zone_layer_mappings(
                 ensemble_paths=self.ens_paths,
-                zone_layer_mapping_file=zone_layer_mapping_file,
+                zone_layer_mapping_file=self.zone_layer_mapping_file,
             )
         )
         self.well_attributes = json.load(
             read_well_attributes(
                 ensemble_paths=self.ens_paths,
-                well_attributes_file=well_attributes_file,
+                well_attributes_file=self.well_attributes_file,
             )
         )
 
@@ -100,20 +106,24 @@ class WellCompletions(WebvizPluginABC):
         return [
             (
                 load_csv,
-                [{"ensemble_paths": self.ens_paths}, {"csv_file": self.compdatfile}],
+                [{"ensemble_paths": self.ens_paths, "csv_file": self.compdatfile}],
             ),
             (
                 read_zone_layer_mappings,
                 [
-                    {"ensemble_paths": self.ens_paths},
-                    {"zone_layer_mapping_file": self.zone_layer_mapping_file},
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "zone_layer_mapping_file": self.zone_layer_mapping_file,
+                    },
                 ],
             ),
             (
                 read_well_attributes,
                 [
-                    {"ensemble_paths": self.ens_paths},
-                    {"well_attributes_files": self.well_attributes_file},
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "well_attributes_file": self.well_attributes_file,
+                    },
                 ],
             ),
         ]
@@ -162,7 +172,9 @@ class WellCompletions(WebvizPluginABC):
                         html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(id=self.uuid("well_completions_wrapper"),),
+                html.Div(
+                    id=self.uuid("well_completions_wrapper"),
+                ),
             ]
         )
 
@@ -172,7 +184,9 @@ class WellCompletions(WebvizPluginABC):
                 Output(self.uuid("well_completions_wrapper"), "children"),
                 Output(self.uuid("well_completions_wrapper"), "style"),
             ],
-            [Input(self.uuid("ensemble_dropdown"), "value"),],
+            [
+                Input(self.uuid("ensemble_dropdown"), "value"),
+            ],
         )
         def _render_well_completions(ensemble_name):
 
@@ -192,12 +206,22 @@ class WellCompletions(WebvizPluginABC):
         Returns a dictionary with given format
         """
         df = self.compdat[self.compdat.ENSEMBLE == ensemble].copy()
-        ensemble_layer_zone_mapping = self.layer_zone_mappings[ensemble]
-        df["ZONE"] = df.K1.astype(str).map(ensemble_layer_zone_mapping)
-
         time_steps = sorted(df.DATE.unique())
         realisations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
         layers = np.sort(df.K1.unique())
+
+        if ensemble in self.layer_zone_mappings:
+            ensemble_layer_zone_mapping = self.layer_zone_mappings[ensemble]
+        else:
+            # use layers as zones
+            ensemble_layer_zone_mapping = {
+                str(layer): f"Layer{layer}" for layer in layers
+            }
+
+        ensemble_well_attributes = (
+            self.well_attributes[ensemble] if ensemble in self.well_attributes else None
+        )
+        df["ZONE"] = df.K1.astype(str).map(ensemble_layer_zone_mapping)
 
         result = {}
         result["version"] = "1.0.0"
@@ -208,10 +232,10 @@ class WellCompletions(WebvizPluginABC):
 
         zone_names = [a["name"] for a in result["stratigraphy"]]
         result["wells"] = extract_wells(
-            df, zone_names, time_steps, realisations, self.well_attributes
+            df, zone_names, time_steps, realisations, ensemble_well_attributes
         )
-        with open("/private/olind/webviz/result.json", "w") as f:
-            json.dump(result, f)
+        with open("/private/olind/webviz/result.json", "w") as handle:
+            json.dump(result, handle)
             print("output exported")
 
         return result
@@ -220,33 +244,34 @@ class WellCompletions(WebvizPluginABC):
 def get_time_series(df, time_steps):
     """
     Create two lists with values for each time step
-    * the first one is on the form [0,0,0,1,1,1,1,-1,-1,-1] where '0' means no event, '1' is open, '-1' is shut.
+    * the first one is on the form [0,0,0,1,1,1,1,-1,-1,-1] where '0' means no event,\
+    '1' is open, '-1' is shut.
     * the second is with sum of kh values for the open compdats in each zone
 
     The input data frame is assumed to contain data for single well,
     single zone and single realisation.
     """
-    if df.shape[0] == 0:
+    if df.empty:
         return [0] * len(time_steps), [0] * len(time_steps)
 
-    events, kh = [], []
+    events, kh_values = [], []
     event_value, kh_value = 0, 0
 
-    for t in time_steps:
-        if t in df.DATE.unique():
-            df_timestep = df[df.DATE == t]
+    for timestep in time_steps:
+        if timestep in df.DATE.unique():
+            df_timestep = df[df.DATE == timestep]
             df_timestep_open = df_timestep[df_timestep["OP/SH"] == "OPEN"]
 
             # if minimum one of the compdats for the zone is OPEN then the zone is considered open
-            event_value = 1 if len(df_timestep_open) > 0 else -1
+            event_value = 1 if not df_timestep_open.empty else -1
             kh_value = df_timestep_open.KH.sum()
 
         events.append(event_value)
-        kh.append(kh_value)
-    return events, kh
+        kh_values.append(kh_value)
+    return events, kh_values
 
 
-def get_completion_events_and_kh(df, zone_names, time_steps, realisations):
+def get_completion_events_and_kh(df, zone_names, time_steps):
     """
     Extracts completion events ad kh values into two lists of lists of lists,
     one with completions events and one with kh values
@@ -254,7 +279,7 @@ def get_completion_events_and_kh(df, zone_names, time_steps, realisations):
     * Axis 1 is zone
     * Axis 2 is time step
     """
-    compl_events, kh = [], []
+    compl_events, kh_values = [], []
     for rname, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
         for zone_name in zone_names:
@@ -266,8 +291,8 @@ def get_completion_events_and_kh(df, zone_names, time_steps, realisations):
             kh_real.append(kh_real_zone)
 
         compl_events.append(compl_events_real)
-        kh.append(kh_real)
-    return compl_events, kh
+        kh_values.append(kh_real)
+    return compl_events, kh_values
 
 
 def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
@@ -295,9 +320,10 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
         0,
     )
 
-    for (i, (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),) in enumerate(
-        zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)
-    ):
+    for (
+        i,
+        (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),
+    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
         conditions = [
             open_val != prev_open_val,
             shut_val != prev_shut_val,
@@ -312,7 +338,7 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
         prev_open_val = open_val
         prev_shut_val = shut_val
 
-    if len(output["t"]) == 0:
+    if not output["t"]:
         return None
     return output
 
@@ -324,9 +350,7 @@ def extract_well(df, well, zone_names, time_steps, realisations, attributes):
     well_dict = {}
     well_dict["name"] = well
 
-    compl_events, kh = get_completion_events_and_kh(
-        df, zone_names, time_steps, realisations
-    )
+    compl_events, kh_values = get_completion_events_and_kh(df, zone_names, time_steps)
 
     # calculate fraction of open realizations
     open_count = np.maximum(np.asarray(compl_events), 0)  # remove -1
@@ -345,9 +369,9 @@ def extract_well(df, well, zone_names, time_steps, realisations, attributes):
     )
 
     # calculate khMean, khMin and khMax
-    kh_mean = np.asarray(kh).sum(axis=0) / float(len(realisations))
-    kh_min = np.asarray(kh).min(axis=0)
-    kh_max = np.asarray(kh).max(axis=0)
+    kh_mean = np.asarray(kh_values).sum(axis=0) / float(len(realisations))
+    kh_min = np.asarray(kh_values).min(axis=0)
+    kh_max = np.asarray(kh_values).max(axis=0)
 
     result = {}
     for (
@@ -358,11 +382,11 @@ def extract_well(df, well, zone_names, time_steps, realisations, attributes):
         kh_min_zone,
         kh_max_zone,
     ) in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
-        r = format_time_series(
+        result_zone = format_time_series(
             open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone
         )
-        if r is not None:
-            result[zone_name] = r
+        if result_zone is not None:
+            result[zone_name] = result_zone
     well_dict["completions"] = result
     if attributes is not None:
         well_dict["attributes"] = attributes
@@ -376,7 +400,7 @@ def extract_wells(df, zone_names, time_steps, realisations, well_attributes):
     well_list = []
     for well_name, well_group in df.groupby("WELL"):
         attributes = None
-        if well_name in well_attributes:
+        if not well_attributes is None and well_name in well_attributes:
             attributes = well_attributes[well_name]
         well_list.append(
             extract_well(
@@ -393,7 +417,7 @@ def extract_stratigraphy(layer_zone_mapping, colors):
     color_iterator = itertools.cycle(colors)
     result = []
     zones = []
-    for layer, zone in layer_zone_mapping.items():
+    for zone in layer_zone_mapping.values():
         if zone not in zones:
             zones.append(zone)
             zdict = {}
@@ -404,38 +428,38 @@ def extract_stratigraphy(layer_zone_mapping, colors):
 
 
 @webvizstore
-def read_zone_layer_mappings(ensemble_paths=None, zone_layer_mapping_file=None) -> io.BytesIO:
+def read_zone_layer_mappings(
+    ensemble_paths=None, zone_layer_mapping_file=None
+) -> io.BytesIO:
     """
     Reads the zone layer mappings for all ensembles using functionality \
     from the ecl2df library
 
-    Should be rewritten to be more robust in case data is missing in r-0
+    Returns a dictionary if dictionaries, where ensemble is the first \
+    level and the layer->zone mapping is on the second level
     """
-    if ensemble_paths == None or zone_layer_mapping_file == None:
+    if ensemble_paths is None or zone_layer_mapping_file is None:
         return io.BytesIO(json.dumps({}).encode())
     output = {}
     eclfile = ecl2df.EclFiles("")
     for ens_name, ens_path in ensemble_paths.items():
-        fn = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
-        output[ens_name] = eclfile.get_zonemap(filename=fn)
-    return io.BytesIO(
-        json.dumps(output).encode()
-    )
+        filename = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
+        if Path(filename).exists():
+            output[ens_name] = eclfile.get_zonemap(filename=filename)
+    return io.BytesIO(json.dumps(output).encode())
+
 
 @webvizstore
 def read_well_attributes(ensemble_paths=None, well_attributes_file=None) -> io.BytesIO:
     """
     Reads the well attributes json files for all ensembles
 
-    The output is a dictionary of dictionaries, where ensemble is the first \
+    Returns a dictionary of dictionaries, where ensemble is the first \
     level and eclipse well name is the second level
     """
-    def read_well_attributes_file(fn):
-        try:
-            with open(fn, "r") as handle:
-                well_list = json.load(handle)
-        except FileNotFoundError:
-            return {}
+
+    def read_well_attributes_file(filepath):
+        well_list = json.loads(filepath.read_text())
         ens_output = {}
         for well_data in well_list:
             ens_output[well_data["eclipse_name"]] = {
@@ -444,12 +468,12 @@ def read_well_attributes(ensemble_paths=None, well_attributes_file=None) -> io.B
                 if key not in ["eclipse_name", "rms_name"]
             }
         return ens_output
-    if ensemble_paths == None or well_attributes_file == None:
+
+    if ensemble_paths is None or well_attributes_file is None:
         return io.BytesIO(json.dumps({}).encode())
     output = {}
     for ens_name, ens_path in ensemble_paths.items():
-        fn = f"{ens_path}/{well_attributes_file}".replace("*", "0")
-        output[ens_name] = read_well_attributes_file(fn)
-    return io.BytesIO(
-        json.dumps(output).encode()
-    )
+        filepath = Path(f"{ens_path}/{well_attributes_file}".replace("*", "0"))
+        if filepath.is_file():
+            output[ens_name] = read_well_attributes_file(filepath)
+    return io.BytesIO(json.dumps(output).encode())
