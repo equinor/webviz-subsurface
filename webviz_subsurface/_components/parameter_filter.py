@@ -35,6 +35,10 @@ class ParameterFilter:
                 raise KeyError(f"Required columns {col} not found in dataframe")
 
     @property
+    def _ensembles(self) -> List[str]:
+        return list(self._dframe["ENSEMBLE"].unique())
+
+    @property
     def is_sensitivity_run(self):
         if "SENSCASE" and "SENSNAME" in self._dframe.columns:
             return True
@@ -98,9 +102,19 @@ class ParameterFilter:
                     children=[self._range_sliders, self._discrete_selectors],
                 ),
                 self.buttons,
-                dcc.Store(id={"id": self._uuid, "type": "data-store"}),
+                dcc.Store(
+                    id={"id": self._uuid, "type": "data-store"},
+                    data=self._initial_store,
+                ),
             ]
         )
+
+    @property
+    def _initial_store(self) -> Dict[str, List]:
+        data = {}
+        for ens_name, ens_df in self._dframe.groupby("ENSEMBLE"):
+            data[ens_name] = sorted(list(ens_df["REAL"].unique()))
+        return data
 
     @property
     def buttons(self) -> html.Div:
@@ -144,6 +158,10 @@ class ParameterFilter:
                 dframe = dframe[dframe[name].isin(values)]
             for ens, ens_df in dframe.groupby("ENSEMBLE"):
                 real_dict[ens] = list(ens_df["REAL"].unique())
+
+            for ens in self._ensembles:
+                if ens not in real_dict.keys():
+                    real_dict[ens] = []
             return real_dict
 
         @app.callback(

@@ -45,6 +45,7 @@ class PlotlyLinePlot:
                         "y": real_df[y_column],
                         "hovertemplate": f"Realization: {real}, Ensemble: {ensemble}",
                         "name": ensemble,
+                        "text": real,
                         "legendgroup": ensemble,
                         "marker": {
                             "color": "rgba(128,128,128,0.2)"
@@ -60,10 +61,10 @@ class PlotlyLinePlot:
 
     def _realization_slider(self):
         steps = []
-        for trace_no, _ in enumerate(self._realization_traces):
+        for trace_no, trace in enumerate(self._realization_traces):
             step: Dict = {
                 "method": "update",
-                "label": str(trace_no),
+                "label": str(trace.get("text")),
                 "args": [
                     {
                         "marker.color": [

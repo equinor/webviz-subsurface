@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, Callable
 from pathlib import Path
 
+import pandas as pd
 import dash
 import dash_html_components as html
 
@@ -14,7 +15,8 @@ from webviz_subsurface._models.table_model_factory import EnsembleTableModelFact
 from webviz_subsurface._models.table_model_factory import (
     EnsembleTableModelFactorySimpleInMemory,
 )
-
+import webviz_core_components as wcc
+from webviz_subsurface._components.parameter_filter import ParameterFilter
 import webviz_subsurface
 from .views import main_view
 from .controllers import build_figure, update_figure_clientside, set_single_real_mode
@@ -107,6 +109,17 @@ class LinePlotterFMU(WebvizPluginABC):
                 ]
             )
         )
+        dfs = []
+        for ens in self._ensemble_names:
+            df = self._parametermodelset.ensemble(ens).get_column_data(
+                column_names=self._parametermodelset.ensemble(ens).column_names()
+            )
+            df["ENSEMBLE"] = ens
+            dfs.append(df)
+        parameterdf = pd.concat(dfs)
+        self._parameter_filter = ParameterFilter(
+            app, self.uuid("parameter-filter"), parameterdf
+        )
         self._observationfile = observation_file
         self._observationmodel = (
             ObservationModel(
@@ -131,13 +144,25 @@ class LinePlotterFMU(WebvizPluginABC):
 
     @property
     def layout(self) -> html.Div:
-        return main_view(
-            get_uuid=self.uuid,
-            ensemble_names=self._ensemble_names,
-            data_column_names=self._data_column_names,
-            parameter_names=self._parameter_names,
-            initial_data=self._initial_data,
-            initial_layout=self._initial_layout,
+        return wcc.FlexBox(
+            children=[
+                html.Div(
+                    style={"flex": 5},
+                    children=main_view(
+                        get_uuid=self.uuid,
+                        ensemble_names=self._ensemble_names,
+                        data_column_names=self._data_column_names,
+                        parameter_names=self._parameter_names,
+                        initial_data=self._initial_data,
+                        initial_layout=self._initial_layout,
+                    ),
+                ),
+                html.Div(
+                    className="framed",
+                    style={"flex": 2, "height": "89vh"},
+                    children=self._parameter_filter.layout,
+                ),
+            ]
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:

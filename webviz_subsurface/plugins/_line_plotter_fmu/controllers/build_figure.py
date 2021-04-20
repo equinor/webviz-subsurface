@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple, Union, Optional
+from typing import List, Callable, Tuple, Union, Optional, Dict
 import json
 
 import numpy as np
@@ -71,6 +71,7 @@ def build_figure(
             "data",
         ),
         Input(get_uuid("graph"), "clickData"),
+        Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
     )
     def _update_plot(
         x_column_name: str,
@@ -80,22 +81,29 @@ def build_figure(
         traces: List,
         single_real_mode,
         click_data: Optional[None],
+        parameter_filter,
     ) -> Union[Tuple]:
-        print("real", single_real_mode)
-        print(click_data)
 
         if not ensemble_names:
             return [], dash.no_update
         ensemble_names = (
             [ensemble_names] if not isinstance(ensemble_names, list) else ensemble_names
         )
-        df = merge_parameter_and_csv_data(
+        real_filter = {} if parameter_filter is None else parameter_filter
+
+        csv_dframe = get_table_data(
             tablemodel=tablemodel,
-            parametermodel=parametermodel,
             ensemble_names=ensemble_names,
             table_column_names=[x_column_name, y_column_name],
-            parameter_column_name=parameter_name,
+            realization_filter=real_filter,
         )
+        parameter_dframe = get_table_data(
+            tablemodel=parametermodel,
+            ensemble_names=ensemble_names,
+            table_column_names=[parameter_name],
+            realization_filter=real_filter,
+        )
+        df = pd.merge(csv_dframe, parameter_dframe, on=["ENSEMBLE", "REAL"])
         active_x_value: str = click_data["points"][0]["x"] if click_data else None
         figure = PlotlyLinePlot(active_x_value=active_x_value)
         if "Realizations" in traces:
@@ -158,6 +166,29 @@ def calc_series_statistics(
     return stat_df
 
 
+def get_table_data(
+    tablemodel: EnsembleTableModelSet,
+    ensemble_names: List,
+    table_column_names: List,
+    realization_filter: Dict[str, List],
+) -> pd.DataFrame:
+
+    dfs = []
+    for ens_name in ensemble_names:
+        if not realization_filter.get(ens_name):
+            dframe = pd.DataFrame(columns=["ENSEMBLE", "REAL"] + table_column_names)
+        else:
+            table = tablemodel.ensemble(ens_name)
+            dframe = table.get_column_data(
+                table_column_names, realizations=realization_filter.get(ens_name)
+            )
+            dframe["ENSEMBLE"] = ens_name
+        dfs.append(dframe)
+    if len(dfs) > 0:
+        return pd.concat(dfs)
+    return pd.DataFrame()
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def merge_parameter_and_csv_data(
     tablemodel: EnsembleTableModelSet,
@@ -165,26 +196,31 @@ def merge_parameter_and_csv_data(
     ensemble_names: List,
     table_column_names: List,
     parameter_column_name: str,
+    real_filter,
 ) -> pd.DataFrame:
     dfs = []
+
     # Retrieve table data for each ensemble and aggregate
     for ens in ensemble_names:
-
+        if real_filter.get(ens) is None:
+            continue
         table = tablemodel.ensemble(ens)
         columns = table_column_names
         columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_column_data(columns)
+        col_df = table.get_column_data(columns, realizations=real_filter.get(ens))
         col_df["ENSEMBLE"] = ens
         dfs.append(col_df)
     data_df = pd.concat(dfs)
     dfs = []
+
     # Retrieve parameter data for each ensemble and aggregate
     for ens in ensemble_names:
+        if real_filter.get(ens) is None:
+            continue
         table = parametermodel.ensemble(ens)
         columns = [parameter_column_name]
-        print(columns)
         columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_column_data(columns)
+        col_df = table.get_column_data(columns, realizations=real_filter.get(ens))
         col_df["ENSEMBLE"] = ens
         dfs.append(col_df)
     parameter_df = pd.concat(dfs)
