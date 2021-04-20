@@ -60,7 +60,28 @@ class WellCompletions(WebvizPluginABC):
 
     ** Well Attributes file **
 
-    Description and example needed
+    `well_attributes_file` file is intended to be generated per realization by an internal \
+    RMS script as part of the FMU workflow. That script is not yet ready ready, but it is \
+    possible to manually set up the file and copy it to the correct folder on the scratch disk.\
+
+    The file should be a json file at the following format:
+
+    [
+        {
+            "rms_name":"A1",
+            "eclipse_name":"A1",
+            "welltype":"producer",
+            "mlt_singlebranch":"mlt",
+            "some category":"Some Value"
+        },
+        {
+            "rms_name":"A2",
+            "eclipse_name":"A2",
+            "welltype":"gas injector",
+            "mlt_singlebranch":"singlebranch",
+            "some category":"Another Value"
+        },
+    ]
     """
 
     def __init__(
@@ -174,9 +195,7 @@ class WellCompletions(WebvizPluginABC):
                         html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(
-                    id=self.uuid("well_completions_wrapper"),
-                ),
+                html.Div(id=self.uuid("well_completions_wrapper"),),
             ]
         )
 
@@ -186,9 +205,7 @@ class WellCompletions(WebvizPluginABC):
                 Output(self.uuid("well_completions_wrapper"), "children"),
                 Output(self.uuid("well_completions_wrapper"), "style"),
             ],
-            [
-                Input(self.uuid("ensemble_dropdown"), "value"),
-            ],
+            [Input(self.uuid("ensemble_dropdown"), "value"),],
         )
         def _render_well_completions(ensemble_name):
 
@@ -322,10 +339,9 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
         0,
     )
 
-    for (
-        i,
-        (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),
-    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
+    for (i, (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),) in enumerate(
+        zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)
+    ):
         conditions = [
             open_val != prev_open_val,
             shut_val != prev_shut_val,
@@ -346,6 +362,13 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
 
 
 def calculate_over_realizations(compl_events, kh_values, realizations):
+    """
+    Takes in two three dimensional lists where the levels are: 1. realization \
+    2. zones and 3. timesteps
+
+    Returns two dimensional lists where calculations have been done over the \
+    realization level.
+    """
     # calculate fraction of open realizations
     open_count = np.maximum(np.asarray(compl_events), 0)  # remove -1
     open_count_reduced = open_count.sum(axis=0)  # sum over realizations
@@ -372,7 +395,7 @@ def calculate_over_realizations(compl_events, kh_values, realizations):
     return open_frac, shut_frac, kh_mean, kh_min, kh_max
 
 
-def extract_well(df, well, zone_names, time_steps, realizations, attributes):
+def extract_well(df, well, zone_names, time_steps, realizations):
     """
     Extract completion events and kh values for a single well
     """
@@ -399,8 +422,6 @@ def extract_well(df, well, zone_names, time_steps, realizations, attributes):
         if result_zone is not None:
             result[zone_name] = result_zone
     well_dict["completions"] = result
-    if attributes is not None:
-        well_dict["attributes"] = attributes
     return well_dict
 
 
@@ -410,15 +431,26 @@ def extract_wells(df, zone_names, time_steps, realizations, well_attributes):
     """
     well_list = []
     for well_name, well_group in df.groupby("WELL"):
-        attributes = None
-        if not well_attributes is None and well_name in well_attributes:
-            attributes = well_attributes[well_name]
-        well_list.append(
-            extract_well(
-                well_group, well_name, zone_names, time_steps, realizations, attributes
-            )
+
+        well_data = extract_well(
+            well_group, well_name, zone_names, time_steps, realizations
         )
+        if not well_attributes is None and well_name in well_attributes:
+            well_data["attributes"] = well_attributes[well_name]
+        else:
+            well_data["attributes"] = {}
+        well_list.append(well_data)
     return well_list
+
+
+def random_color_str():
+    import random
+
+    r = random.randint(8, 15)  # nosec - bandit B311
+    g = random.randint(8, 15)  # nosec - bandit B311
+    b = random.randint(8, 15)  # nosec - bandit B311
+    s = hex((r << 8) + (g << 4) + b)
+    return "#" + s[-3:]
 
 
 def extract_stratigraphy(layer_zone_mapping, colors):
@@ -433,6 +465,7 @@ def extract_stratigraphy(layer_zone_mapping, colors):
             zones.append(zone)
             zdict = {}
             zdict["name"] = zone
+            # zdict["color"] = random_color_str()
             zdict["color"] = next(color_iterator)
             result.append(zdict)
     return result
