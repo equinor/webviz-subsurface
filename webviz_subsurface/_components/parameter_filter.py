@@ -97,6 +97,7 @@ class ParameterFilter:
     def layout(self) -> html.Div:
         return html.Div(
             children=[
+                html.H4(style={"textAlign": "center"}, children="Parameter filter"),
                 html.Div(
                     style={"fontSize": "0.8em", "height": "80vh", "overflowY": "auto"},
                     children=[self._range_sliders, self._discrete_selectors],
@@ -119,10 +120,11 @@ class ParameterFilter:
     @property
     def buttons(self) -> html.Div:
         return html.Div(
+            style={"marginTop": "20px"},
             children=[
                 dbc.Button(
                     "Reset",
-                    style={"padding": "0 20px"},
+                    style={"marginLeft": "10px", "float": "right"},
                     className="mr-1",
                     id={"id": self._uuid, "type": "button", "element": "reset"},
                 ),
@@ -130,11 +132,11 @@ class ParameterFilter:
                     "Apply",
                     # style={"padding": "0 20px", "visibility": "hidden"}
                     # if apply_disabled
-                    style={"padding": "0 20px"},
+                    style={"marginLeft": "10px", "float": "right"},
                     className="mr-1",
                     id={"id": self._uuid, "type": "button", "element": "apply"},
                 ),
-            ]
+            ],
         )
 
     def set_callbacks(self, app) -> None:

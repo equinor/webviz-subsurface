@@ -166,6 +166,7 @@ def calc_series_statistics(
     return stat_df
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_table_data(
     tablemodel: EnsembleTableModelSet,
     ensemble_names: List,
@@ -187,42 +188,3 @@ def get_table_data(
     if len(dfs) > 0:
         return pd.concat(dfs)
     return pd.DataFrame()
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def merge_parameter_and_csv_data(
-    tablemodel: EnsembleTableModelSet,
-    parametermodel: ParametersModel,
-    ensemble_names: List,
-    table_column_names: List,
-    parameter_column_name: str,
-    real_filter,
-) -> pd.DataFrame:
-    dfs = []
-
-    # Retrieve table data for each ensemble and aggregate
-    for ens in ensemble_names:
-        if real_filter.get(ens) is None:
-            continue
-        table = tablemodel.ensemble(ens)
-        columns = table_column_names
-        columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_column_data(columns, realizations=real_filter.get(ens))
-        col_df["ENSEMBLE"] = ens
-        dfs.append(col_df)
-    data_df = pd.concat(dfs)
-    dfs = []
-
-    # Retrieve parameter data for each ensemble and aggregate
-    for ens in ensemble_names:
-        if real_filter.get(ens) is None:
-            continue
-        table = parametermodel.ensemble(ens)
-        columns = [parameter_column_name]
-        columns = [col for col in columns if col != "REAL"]
-        col_df = table.get_column_data(columns, realizations=real_filter.get(ens))
-        col_df["ENSEMBLE"] = ens
-        dfs.append(col_df)
-    parameter_df = pd.concat(dfs)
-
-    return pd.merge(data_df, parameter_df, on=["ENSEMBLE", "REAL"])
