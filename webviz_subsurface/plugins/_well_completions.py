@@ -106,50 +106,42 @@ class WellCompletions(WebvizPluginABC):
         }
         self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
         self.qc_compdat()
-        self.layer_zone_mappings = json.load(
-            read_zone_layer_mappings(
-                ensemble_paths=self.ens_paths,
-                zone_layer_mapping_file=self.zone_layer_mapping_file,
-            )
+        self.layer_zone_mappings = read_zone_layer_mappings(
+            ensemble_paths=self.ens_paths,
+            zone_layer_mapping_file=self.zone_layer_mapping_file,
         )
-        self.well_attributes = json.load(
-            read_well_attributes(
-                ensemble_paths=self.ens_paths,
-                well_attributes_file=self.well_attributes_file,
-            )
+        self.well_attributes = read_well_attributes(
+            ensemble_paths=self.ens_paths,
+            well_attributes_file=self.well_attributes_file,
         )
-
-        # CACHE data at start-up
-        for ens in self.ensembles:
-            self.create_ensemble_dataset(ens)
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self):
-        return [
-            (
-                load_csv,
-                [{"ensemble_paths": self.ens_paths, "csv_file": self.compdatfile}],
-            ),
-            (
-                read_zone_layer_mappings,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "zone_layer_mapping_file": self.zone_layer_mapping_file,
-                    },
-                ],
-            ),
-            (
-                read_well_attributes,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "well_attributes_file": self.well_attributes_file,
-                    },
-                ],
-            ),
-        ]
+    # def add_webvizstore(self):
+    #     return [
+    #         (
+    #             load_csv,
+    #             [{"ensemble_paths": self.ens_paths, "csv_file": self.compdatfile}],
+    #         ),
+    #         (
+    #             read_zone_layer_mappings,
+    #             [
+    #                 {
+    #                     "ensemble_paths": self.ens_paths,
+    #                     "zone_layer_mapping_file": self.zone_layer_mapping_file,
+    #                 },
+    #             ],
+    #         ),
+    #         (
+    #             read_well_attributes,
+    #             [
+    #                 {
+    #                     "ensemble_paths": self.ens_paths,
+    #                     "well_attributes_file": self.well_attributes_file,
+    #                 },
+    #             ],
+    #         ),
+    #     ]
 
     def qc_compdat(self):
         """
@@ -209,55 +201,65 @@ class WellCompletions(WebvizPluginABC):
         )
         def _render_well_completions(ensemble_name):
 
-            data = self.create_ensemble_dataset(ensemble_name)
+            data =  json.load(
+                create_ensemble_dataset(
+                    ensemble_name,
+                    self.compdat,
+                    self.layer_zone_mappings,
+                    self.well_attributes,
+                    self.colors
+                )
+            )
             zones = len(data["stratigraphy"])
             return [
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 50},
+                {"padding": "10px", "height": zones * 50+200},
             ]
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def create_ensemble_dataset(self, ensemble):
-        """
-        Creates the well completion data set for the WellCompletions component
-        Returns a dictionary with given format
-        """
-        df = self.compdat[self.compdat.ENSEMBLE == ensemble].copy()
-        time_steps = sorted(df.DATE.unique())
-        realizations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
-        layers = np.sort(df.K1.unique())
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def create_ensemble_dataset(ensemble, compdat, layer_zone_mappings, well_attributes, colors) -> io.BytesIO:
+    """
+    Creates the well completion data set for the WellCompletions component
+    Returns a dictionary with given format
+    """
+    df = compdat[compdat.ENSEMBLE == ensemble].copy()
+    time_steps = sorted(df.DATE.unique())
+    realizations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
+    layers = np.sort(df.K1.unique())
 
-        if ensemble in self.layer_zone_mappings:
-            ensemble_layer_zone_mapping = self.layer_zone_mappings[ensemble]
-        else:
-            # use layers as zones
-            ensemble_layer_zone_mapping = {
-                str(layer): f"Layer{layer}" for layer in layers
-            }
+    if ensemble in layer_zone_mappings:
+        ensemble_layer_zone_mapping = layer_zone_mappings[ensemble]
+    else:
+        # use layers as zones
+        ensemble_layer_zone_mapping = {
+            str(layer): f"Layer{layer}" for layer in layers
+        }
 
-        ensemble_well_attributes = (
-            self.well_attributes[ensemble] if ensemble in self.well_attributes else None
-        )
-        df["ZONE"] = df.K1.astype(str).map(ensemble_layer_zone_mapping)
+    ensemble_well_attributes = (
+        well_attributes[ensemble] if ensemble in well_attributes else None
+    )
+    df["ZONE"] = df.K1.map(ensemble_layer_zone_mapping)
 
-        result = {}
-        result["version"] = "1.0.0"
-        result["stratigraphy"] = extract_stratigraphy(
-            ensemble_layer_zone_mapping, self.colors
-        )
-        result["timeSteps"] = time_steps
+    result = {}
+    result["version"] = "1.0.0"
+    result["stratigraphy"] = extract_stratigraphy(
+        ensemble_layer_zone_mapping, colors
+    )
+    result["timeSteps"] = time_steps
 
-        zone_names = [a["name"] for a in result["stratigraphy"]]
-        result["wells"] = extract_wells(
-            df, zone_names, time_steps, realizations, ensemble_well_attributes
-        )
+    zone_names = [a["name"] for a in result["stratigraphy"]]
+    result["wells"] = extract_wells(
+        df, zone_names, time_steps, realizations, ensemble_well_attributes
+    )
+
+    if False:
         with open("/private/olind/webviz/result.json", "w") as handle:
             json.dump(result, handle)
             print("output exported")
 
-        return result
+    return io.BytesIO(json.dumps(result).encode())
 
 
 def get_time_series(df, time_steps):
@@ -406,7 +408,6 @@ def extract_well(df, well, zone_names, time_steps, realizations):
     open_frac, shut_frac, kh_mean, kh_min, kh_max = calculate_over_realizations(
         compl_events, kh_values, realizations
     )
-
     result = {}
     for (
         zone_name,
@@ -431,7 +432,6 @@ def extract_wells(df, zone_names, time_steps, realizations, well_attributes):
     """
     well_list = []
     for well_name, well_group in df.groupby("WELL"):
-
         well_data = extract_well(
             well_group, well_name, zone_names, time_steps, realizations
         )
@@ -470,11 +470,9 @@ def extract_stratigraphy(layer_zone_mapping, colors):
             result.append(zdict)
     return result
 
-
-@webvizstore
 def read_zone_layer_mappings(
     ensemble_paths=None, zone_layer_mapping_file=None
-) -> io.BytesIO:
+):
     """
     Reads the zone layer mappings for all ensembles using functionality \
     from the ecl2df library
@@ -483,18 +481,16 @@ def read_zone_layer_mappings(
     level and the layer->zone mapping is on the second level
     """
     if ensemble_paths is None or zone_layer_mapping_file is None:
-        return io.BytesIO(json.dumps({}).encode())
+        return {}
     output = {}
     eclfile = ecl2df.EclFiles("")
     for ens_name, ens_path in ensemble_paths.items():
         filename = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
         if Path(filename).exists():
             output[ens_name] = eclfile.get_zonemap(filename=filename)
-    return io.BytesIO(json.dumps(output).encode())
+    return output
 
-
-@webvizstore
-def read_well_attributes(ensemble_paths=None, well_attributes_file=None) -> io.BytesIO:
+def read_well_attributes(ensemble_paths=None, well_attributes_file=None):
     """
     Reads the well attributes json files for all ensembles
 
@@ -514,10 +510,10 @@ def read_well_attributes(ensemble_paths=None, well_attributes_file=None) -> io.B
         return ens_output
 
     if ensemble_paths is None or well_attributes_file is None:
-        return io.BytesIO(json.dumps({}).encode())
+        return {}
     output = {}
     for ens_name, ens_path in ensemble_paths.items():
         filepath = Path(f"{ens_path}/{well_attributes_file}".replace("*", "0"))
         if filepath.is_file():
             output[ens_name] = read_well_attributes_file(filepath)
-    return io.BytesIO(json.dumps(output).encode())
+    return output
