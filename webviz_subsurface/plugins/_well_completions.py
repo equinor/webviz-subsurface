@@ -27,7 +27,7 @@ class WellCompletions(WebvizPluginABC):
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **`compdatfile`:** csvfile with compdat data per realization
+    * **`compdat_file`:** csvfile with compdat data per realization
     * **`layer_to_zone_mapping_file`:** Optional lyr file specifying the zone->layer mapping \
     * **`well_attributes_file`:** Optional json file with categorical well attributes \
 
@@ -38,10 +38,10 @@ class WellCompletions(WebvizPluginABC):
 
     **COMPDAT input**
 
-    `compdatfile` is a path to a file stored per realization (e.g. in \
+    `compdat_file` is a path to a file stored per realization (e.g. in \
     `share/results/wells/compdat.csv`.
 
-    The `compdatfile` file can be dumped to disk per realization by a forward model in ERT that
+    The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
@@ -89,14 +89,14 @@ class WellCompletions(WebvizPluginABC):
         app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
-        compdatfile: str = "share/results/wells/compdat.csv",
+        compdat_file: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
         well_attributes_file: str = "share/results/wells/well_attributes.json",
     ):
         super().__init__()
         self.theme = webviz_settings.theme
         self.colors = self.theme.plotly_theme["layout"]["colorway"]
-        self.compdatfile = compdatfile
+        self.compdat_file = compdat_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
         self.well_attributes_file = well_attributes_file
         self.ensembles = ensembles
@@ -104,58 +104,27 @@ class WellCompletions(WebvizPluginABC):
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        self.compdat = load_csv(ensemble_paths=self.ens_paths, csv_file=compdatfile)
-        self.qc_compdat()
-        self.layer_zone_mappings = read_zone_layer_mappings(
-            ensemble_paths=self.ens_paths,
-            zone_layer_mapping_file=self.zone_layer_mapping_file,
-        )
-        self.well_attributes = read_well_attributes(
-            ensemble_paths=self.ens_paths,
-            well_attributes_file=self.well_attributes_file,
-        )
 
         self.set_callbacks(app)
 
-    # def add_webvizstore(self):
-    #     return [
-    #         (
-    #             load_csv,
-    #             [{"ensemble_paths": self.ens_paths, "csv_file": self.compdatfile}],
-    #         ),
-    #         (
-    #             read_zone_layer_mappings,
-    #             [
-    #                 {
-    #                     "ensemble_paths": self.ens_paths,
-    #                     "zone_layer_mapping_file": self.zone_layer_mapping_file,
-    #                 },
-    #             ],
-    #         ),
-    #         (
-    #             read_well_attributes,
-    #             [
-    #                 {
-    #                     "ensemble_paths": self.ens_paths,
-    #                     "well_attributes_file": self.well_attributes_file,
-    #                 },
-    #             ],
-    #         ),
-    #     ]
+    def add_webvizstore(self):
+        return [
+            (
+                create_ensemble_dataset,
+                [
+                    {
+                        "ensemble": ensemble,
+                        "ensemble_path": self.ens_paths[ensemble],
+                        "compdat_file":self.compdat_file,
+                        "zone_layer_mapping_file":self.zone_layer_mapping_file,
+                        "well_attributes_file":self.well_attributes_file,
+                        "colors":self.colors
+                    }
+                    for ensemble in self.ensembles
+                ]
+            ),
 
-    def qc_compdat(self):
-        """
-        QCs that the compdat data has the required format
-        """
-        needed_columns = ["WELL", "K1", "OP/SH", "KH"]
-        for column in needed_columns:
-            if column not in self.compdat:
-                raise ValueError(
-                    f"""
-                    Column {column} not found in compdat dataframe.
-                    This should not occur unless there has been changes to ecl2df.
-                    """
-                )
+        ]
 
     @property
     def layout(self) -> html.Div:
@@ -204,9 +173,10 @@ class WellCompletions(WebvizPluginABC):
             data = json.load(
                 create_ensemble_dataset(
                     ensemble_name,
-                    self.compdat,
-                    self.layer_zone_mappings,
-                    self.well_attributes,
+                    self.ens_paths[ensemble_name],
+                    self.compdat_file,
+                    self.zone_layer_mapping_file,
+                    self.well_attributes_file,
                     self.colors,
                 )
             )
@@ -220,37 +190,44 @@ class WellCompletions(WebvizPluginABC):
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
 def create_ensemble_dataset(
-    ensemble, compdat, layer_zone_mappings, well_attributes, colors
+    ensemble, ensemble_path, compdat_file, zone_layer_mapping_file, well_attributes_file, colors
 ) -> io.BytesIO:
     """
     Creates the well completion data set for the WellCompletions component
     Returns a dictionary with given format
     """
-    df = compdat[compdat.ENSEMBLE == ensemble].copy()
+
+    df = load_csv(ensemble_paths={ensemble:ensemble_path}, csv_file=compdat_file)
+    qc_compdat(df)
+    layer_zone_mapping = read_zone_layer_mapping(
+        ensemble_path=ensemble_path,
+        zone_layer_mapping_file=zone_layer_mapping_file,
+    )
+    well_attributes = read_well_attributes(
+        ensemble_path=ensemble_path,
+        well_attributes_file=well_attributes_file,
+    )
+
     time_steps = sorted(df.DATE.unique())
     realizations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
     layers = np.sort(df.K1.unique())
 
-    if ensemble in layer_zone_mappings:
-        ensemble_layer_zone_mapping = layer_zone_mappings[ensemble]
-    else:
+    if layer_zone_mapping is None:
         # use layers as zones
-        ensemble_layer_zone_mapping = {str(layer): f"Layer{layer}" for layer in layers}
+        layer_zone_mapping = {str(layer): f"Layer{layer}" for layer in layers}
 
-    ensemble_well_attributes = (
-        well_attributes[ensemble] if ensemble in well_attributes else None
-    )
-    df["ZONE"] = df.K1.map(ensemble_layer_zone_mapping)
+    df["ZONE"] = df.K1.map(layer_zone_mapping)
 
     result = {}
     result["version"] = "1.0.0"
-    result["stratigraphy"] = extract_stratigraphy(ensemble_layer_zone_mapping, colors)
+    result["stratigraphy"] = extract_stratigraphy(layer_zone_mapping, colors)
     result["timeSteps"] = time_steps
 
     zone_names = [a["name"] for a in result["stratigraphy"]]
     result["wells"] = extract_wells(
-        df, zone_names, time_steps, realizations, ensemble_well_attributes
+        df, zone_names, time_steps, realizations, well_attributes
     )
 
     if False:
@@ -260,6 +237,19 @@ def create_ensemble_dataset(
 
     return io.BytesIO(json.dumps(result).encode())
 
+def qc_compdat(compdat):
+    """
+    QCs that the compdat data has the required format
+    """
+    needed_columns = ["WELL", "K1", "OP/SH", "KH"]
+    for column in needed_columns:
+        if column not in compdat:
+            raise ValueError(
+                f"""
+                Column {column} not found in compdat dataframe.
+                This should not occur unless there has been changes to ecl2df.
+                """
+            )
 
 def get_time_series(df, time_steps):
     """
@@ -362,7 +352,7 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
     return output
 
 
-def calculate_over_realizations(compl_events, kh_values, realizations):
+def calc_over_realizations(compl_events, kh_values, realizations):
     """
     Takes in two three dimensional lists where the levels are: 1. realization \
     2. zones and 3. timesteps
@@ -404,7 +394,7 @@ def extract_well(df, well, zone_names, time_steps, realizations):
     well_dict["name"] = well
 
     compl_events, kh_values = get_completion_events_and_kh(df, zone_names, time_steps)
-    open_frac, shut_frac, kh_mean, kh_min, kh_max = calculate_over_realizations(
+    open_frac, shut_frac, kh_mean, kh_min, kh_max = calc_over_realizations(
         compl_events, kh_values, realizations
     )
     result = {}
@@ -441,17 +431,6 @@ def extract_wells(df, zone_names, time_steps, realizations, well_attributes):
         well_list.append(well_data)
     return well_list
 
-
-def random_color_str():
-    import random
-
-    r = random.randint(8, 15)  # nosec - bandit B311
-    g = random.randint(8, 15)  # nosec - bandit B311
-    b = random.randint(8, 15)  # nosec - bandit B311
-    s = hex((r << 8) + (g << 4) + b)
-    return "#" + s[-3:]
-
-
 def extract_stratigraphy(layer_zone_mapping, colors):
     """
     Returns the stratigraphy part of the data set
@@ -464,39 +443,27 @@ def extract_stratigraphy(layer_zone_mapping, colors):
             zones.append(zone)
             zdict = {}
             zdict["name"] = zone
-            # zdict["color"] = random_color_str()
             zdict["color"] = next(color_iterator)
             result.append(zdict)
     return result
 
 
-def read_zone_layer_mappings(ensemble_paths=None, zone_layer_mapping_file=None):
+def read_zone_layer_mapping(ensemble_path:str, zone_layer_mapping_file:str):
     """
-    Reads the zone layer mappings for all ensembles using functionality \
+    Reads the zone layer mapping for using functionality \
     from the ecl2df library
-
-    Returns a dictionary if dictionaries, where ensemble is the first \
-    level and the layer->zone mapping is on the second level
     """
-    if ensemble_paths is None or zone_layer_mapping_file is None:
-        return {}
-    output = {}
     eclfile = ecl2df.EclFiles("")
-    for ens_name, ens_path in ensemble_paths.items():
-        filename = f"{ens_path}/{zone_layer_mapping_file}".replace("*", "0")
-        if Path(filename).exists():
-            output[ens_name] = eclfile.get_zonemap(filename=filename)
-    return output
+    filename = f"{ensemble_path}/{zone_layer_mapping_file}".replace("*", "0")
+    if Path(filename).exists():
+        return eclfile.get_zonemap(filename=filename)
+    return None
 
 
-def read_well_attributes(ensemble_paths=None, well_attributes_file=None):
+def read_well_attributes(ensemble_path: str, well_attributes_file: str):
     """
-    Reads the well attributes json files for all ensembles
-
-    Returns a dictionary of dictionaries, where ensemble is the first \
-    level and eclipse well name is the second level
+    Reads the well attributes json file
     """
-
     def read_well_attributes_file(filepath):
         well_list = json.loads(filepath.read_text())
         ens_output = {}
@@ -508,11 +475,7 @@ def read_well_attributes(ensemble_paths=None, well_attributes_file=None):
             }
         return ens_output
 
-    if ensemble_paths is None or well_attributes_file is None:
-        return {}
-    output = {}
-    for ens_name, ens_path in ensemble_paths.items():
-        filepath = Path(f"{ens_path}/{well_attributes_file}".replace("*", "0"))
-        if filepath.is_file():
-            output[ens_name] = read_well_attributes_file(filepath)
-    return output
+    filepath = Path(f"{ensemble_path}/{well_attributes_file}".replace("*", "0"))
+    if filepath.is_file():
+        return read_well_attributes_file(filepath)
+    return None
