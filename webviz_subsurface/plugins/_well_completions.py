@@ -201,13 +201,13 @@ class WellCompletions(WebvizPluginABC):
         )
         def _render_well_completions(ensemble_name):
 
-            data =  json.load(
+            data = json.load(
                 create_ensemble_dataset(
                     ensemble_name,
                     self.compdat,
                     self.layer_zone_mappings,
                     self.well_attributes,
-                    self.colors
+                    self.colors,
                 )
             )
             zones = len(data["stratigraphy"])
@@ -215,11 +215,14 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 50+200},
+                {"padding": "10px", "height": zones * 50 + 200},
             ]
 
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def create_ensemble_dataset(ensemble, compdat, layer_zone_mappings, well_attributes, colors) -> io.BytesIO:
+def create_ensemble_dataset(
+    ensemble, compdat, layer_zone_mappings, well_attributes, colors
+) -> io.BytesIO:
     """
     Creates the well completion data set for the WellCompletions component
     Returns a dictionary with given format
@@ -233,9 +236,7 @@ def create_ensemble_dataset(ensemble, compdat, layer_zone_mappings, well_attribu
         ensemble_layer_zone_mapping = layer_zone_mappings[ensemble]
     else:
         # use layers as zones
-        ensemble_layer_zone_mapping = {
-            str(layer): f"Layer{layer}" for layer in layers
-        }
+        ensemble_layer_zone_mapping = {str(layer): f"Layer{layer}" for layer in layers}
 
     ensemble_well_attributes = (
         well_attributes[ensemble] if ensemble in well_attributes else None
@@ -244,9 +245,7 @@ def create_ensemble_dataset(ensemble, compdat, layer_zone_mappings, well_attribu
 
     result = {}
     result["version"] = "1.0.0"
-    result["stratigraphy"] = extract_stratigraphy(
-        ensemble_layer_zone_mapping, colors
-    )
+    result["stratigraphy"] = extract_stratigraphy(ensemble_layer_zone_mapping, colors)
     result["timeSteps"] = time_steps
 
     zone_names = [a["name"] for a in result["stratigraphy"]]
@@ -470,9 +469,8 @@ def extract_stratigraphy(layer_zone_mapping, colors):
             result.append(zdict)
     return result
 
-def read_zone_layer_mappings(
-    ensemble_paths=None, zone_layer_mapping_file=None
-):
+
+def read_zone_layer_mappings(ensemble_paths=None, zone_layer_mapping_file=None):
     """
     Reads the zone layer mappings for all ensembles using functionality \
     from the ecl2df library
@@ -489,6 +487,7 @@ def read_zone_layer_mappings(
         if Path(filename).exists():
             output[ens_name] = eclfile.get_zonemap(filename=filename)
     return output
+
 
 def read_well_attributes(ensemble_paths=None, well_attributes_file=None):
     """
