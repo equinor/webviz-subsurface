@@ -48,8 +48,7 @@ class WellCompletions(WebvizPluginABC):
     ** Layer to zone mapping **
 
     `layer_to_zone_mapping_file` file can be dumped to disk per realization by an internal \
-    RMS script as part of the FMU workflow. A sample python script should be available in the \
-    Drogon project:  export_zone_layer_mapping.py
+    RMS script as part of the FMU workflow. A sample python script will be made available.
 
     The file needs to be on the lyr format used in Resinsight.
     [Link to description of lyr format.]\
@@ -60,11 +59,11 @@ class WellCompletions(WebvizPluginABC):
     ** Well Attributes file **
 
     `well_attributes_file` file is intended to be generated per realization by an internal \
-    RMS script as part of the FMU workflow. That script is not yet ready ready, but it is \
+    RMS script as part of the FMU workflow. A sample script will be made available, but it is \
     possible to manually set up the file and copy it to the correct folder on the scratch disk.\
-    The well attributes categories are completely flexible.
+    The categorical well attributes are completely flexible.
 
-    The file should be a json file at the following format:
+    The file should be a json file on the following format:
     {
         "version" : "0.1",
         "wells" : [
@@ -125,15 +124,14 @@ class WellCompletions(WebvizPluginABC):
                     {
                         "ensemble": ensemble,
                         "ensemble_path": self.ens_paths[ensemble],
-                        "compdat_file":self.compdat_file,
-                        "zone_layer_mapping_file":self.zone_layer_mapping_file,
-                        "well_attributes_file":self.well_attributes_file,
-                        "colors":self.colors
+                        "compdat_file": self.compdat_file,
+                        "zone_layer_mapping_file": self.zone_layer_mapping_file,
+                        "well_attributes_file": self.well_attributes_file,
+                        "colors": self.colors,
                     }
                     for ensemble in self.ensembles
-                ]
+                ],
             ),
-
         ]
 
     @property
@@ -195,29 +193,34 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 50+180, "min-height":500},
+                {"padding": "10px", "height": zones * 50 + 180, "min-height": 500},
             ]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def create_ensemble_dataset(
-    ensemble, ensemble_path, compdat_file, zone_layer_mapping_file, well_attributes_file, colors
+    ensemble,
+    ensemble_path,
+    compdat_file,
+    zone_layer_mapping_file,
+    well_attributes_file,
+    colors,
 ) -> io.BytesIO:
     """
     Creates the well completion data set for the WellCompletions component
-    Returns a dictionary with given format
+
+    Returns a dictionary on a given format specified here:
+    https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
     """
 
-    df = load_csv(ensemble_paths={ensemble:ensemble_path}, csv_file=compdat_file)
+    df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
     layer_zone_mapping = read_zone_layer_mapping(
-        ensemble_path=ensemble_path,
-        zone_layer_mapping_file=zone_layer_mapping_file,
+        ensemble_path=ensemble_path, zone_layer_mapping_file=zone_layer_mapping_file,
     )
     well_attributes = read_well_attributes(
-        ensemble_path=ensemble_path,
-        well_attributes_file=well_attributes_file,
+        ensemble_path=ensemble_path, well_attributes_file=well_attributes_file,
     )
 
     time_steps = sorted(df.DATE.unique())
@@ -240,12 +243,8 @@ def create_ensemble_dataset(
         df, zone_names, time_steps, realizations, well_attributes
     )
 
-    if False:
-        with open("/private/olind/webviz/result.json", "w") as handle:
-            json.dump(result, handle)
-            print("output exported")
-
     return io.BytesIO(json.dumps(result).encode())
+
 
 def qc_compdat(compdat):
     """
@@ -260,6 +259,7 @@ def qc_compdat(compdat):
                 This should not occur unless there has been changes to ecl2df.
                 """
             )
+
 
 def get_time_series(df, time_steps):
     """
@@ -292,6 +292,7 @@ def get_time_series(df, time_steps):
 
 
 def get_completion_events_and_kh(df, zone_names, time_steps):
+    # pylint: disable=unused-variable
     """
     Extracts completion events ad kh values into two lists of lists of lists,
     one with completions events and one with kh values
@@ -363,6 +364,7 @@ def format_time_series(open_frac, shut_frac, kh_mean, kh_min, kh_max):
 
 
 def calc_over_realizations(compl_events, kh_values, realizations):
+    # pylint: disable=assignment-from-no-return
     """
     Takes in two three dimensional lists where the levels are: 1. realization \
     2. zones and 3. timesteps
@@ -397,6 +399,7 @@ def calc_over_realizations(compl_events, kh_values, realizations):
 
 
 def extract_well(df, well, zone_names, time_steps, realizations):
+    # pylint: disable=too-many-locals
     """
     Extract completion events and kh values for a single well
     """
@@ -440,6 +443,7 @@ def extract_wells(df, zone_names, time_steps, realizations, well_attributes):
             well_data["attributes"] = {}
         well_list.append(well_data)
     return well_list
+
 
 def extract_stratigraphy(layer_zone_mapping, colors):
     """
