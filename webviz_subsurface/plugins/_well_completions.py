@@ -100,8 +100,8 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/wells/compdat.csv",
-        zone_layer_mapping_file: str = "share/results/grids/simgrid_zone_layer_mapping.lyr",
-        well_attributes_file: str = "share/results/wells/well_attributes.json",
+        zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
+        well_attributes_file: str = "rms/output/wells/well_attributes.json",
     ):
         super().__init__()
         self.theme = webviz_settings.theme
