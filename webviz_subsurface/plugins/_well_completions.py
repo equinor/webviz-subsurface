@@ -226,7 +226,7 @@ def create_ensemble_dataset(
 
     if layer_zone_mapping is None:
         # use layers as zones
-        layer_zone_mapping = {str(layer): f"Layer{layer}" for layer in layers}
+        layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
 
     df["ZONE"] = df.K1.map(layer_zone_mapping)
 
