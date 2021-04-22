@@ -195,7 +195,7 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 50 + 200},
+                {"padding": "10px", "height": zones * 50+180, "min-height":500},
             ]
 
 
