@@ -1,7 +1,6 @@
 import json
 import itertools
 import io
-from pathlib import Path
 
 import numpy as np
 import dash
@@ -15,9 +14,9 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 import webviz_subsurface_components
-import ecl2df
 
 from .._datainput.fmu_input import load_csv
+from .._datainput.well_completions import read_zone_layer_mapping, read_well_attributes
 
 
 class WellCompletions(WebvizPluginABC):
@@ -457,34 +456,3 @@ def extract_stratigraphy(layer_zone_mapping, colors):
             zdict["color"] = next(color_iterator)
             result.append(zdict)
     return result
-
-
-def read_zone_layer_mapping(ensemble_path:str, zone_layer_mapping_file:str):
-    """
-    Reads the zone layer mapping for using functionality \
-    from the ecl2df library
-    """
-    eclfile = ecl2df.EclFiles("")
-    filename = f"{ensemble_path}/{zone_layer_mapping_file}".replace("*", "0")
-    if Path(filename).exists():
-        return eclfile.get_zonemap(filename=filename)
-    return None
-
-
-def read_well_attributes(ensemble_path: str, well_attributes_file: str):
-    """
-    Reads the well attributes json file
-    """
-    def read_well_attributes_file(filepath):
-        file_content = json.loads(filepath.read_text())
-        well_list = file_content["wells"]
-        output = {}
-        for well_data in well_list:
-            eclipse_name = well_data["alias"]["eclipse"]
-            output[eclipse_name] = well_data["attributes"]
-        return output
-
-    filepath = Path(f"{ensemble_path}/{well_attributes_file}".replace("*", "0"))
-    if filepath.is_file():
-        return read_well_attributes_file(filepath)
-    return None
