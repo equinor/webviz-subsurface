@@ -63,25 +63,36 @@ class WellCompletions(WebvizPluginABC):
     `well_attributes_file` file is intended to be generated per realization by an internal \
     RMS script as part of the FMU workflow. That script is not yet ready ready, but it is \
     possible to manually set up the file and copy it to the correct folder on the scratch disk.\
+    The well attributes categories are completely flexible.
 
     The file should be a json file at the following format:
-
-    [
+    {
+        "version" : "0.1",
+        "wells" : [
         {
-            "rms_name":"A1",
-            "eclipse_name":"A1",
-            "welltype":"producer",
-            "mlt_singlebranch":"mlt",
-            "some category":"Some Value"
+            "alias" : {
+                "eclipse" : "OP_1"
+            },
+            "attributes" : {
+                "mlt_singlebranch" : "mlt",
+                "structure" : "East",
+                "welltype" : "producer"
+            },
+            "name" : "OP_1"
         },
         {
-            "rms_name":"A2",
-            "eclipse_name":"A2",
-            "welltype":"gas injector",
-            "mlt_singlebranch":"singlebranch",
-            "some category":"Another Value"
+            "alias" : {
+                "eclipse" : "GI_1"
+            },
+            "attributes" : {
+                "mlt_singlebranch" : "singlebranch",
+                "structure" : "West",
+                "welltype" : "gas injector"
+            },
+            "name" : "GI_1"
         },
-    ]
+        ]
+    }
     """
 
     def __init__(
@@ -465,15 +476,13 @@ def read_well_attributes(ensemble_path: str, well_attributes_file: str):
     Reads the well attributes json file
     """
     def read_well_attributes_file(filepath):
-        well_list = json.loads(filepath.read_text())
-        ens_output = {}
+        file_content = json.loads(filepath.read_text())
+        well_list = file_content["wells"]
+        output = {}
         for well_data in well_list:
-            ens_output[well_data["eclipse_name"]] = {
-                key: item
-                for key, item in well_data.items()
-                if key not in ["eclipse_name", "rms_name"]
-            }
-        return ens_output
+            eclipse_name = well_data["alias"]["eclipse"]
+            output[eclipse_name] = well_data["attributes"]
+        return output
 
     filepath = Path(f"{ensemble_path}/{well_attributes_file}".replace("*", "0"))
     if filepath.is_file():
