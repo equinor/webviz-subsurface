@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import glob
+
 import ecl2df
 
 
@@ -12,8 +13,7 @@ def read_zone_layer_mapping(ensemble_path: str, zone_layer_mapping_file: str):
     """
     eclfile = ecl2df.EclFiles("")
     for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
-        if Path(filename).exists():
-            return eclfile.get_zonemap(filename=filename)
+        return eclfile.get_zonemap(filename=filename)
     return None
 
 
@@ -63,7 +63,5 @@ def read_well_attributes(ensemble_path: str, well_attributes_file: str):
         return output
 
     for filename in glob.glob(f"{ensemble_path}/{well_attributes_file}"):
-        filepath = Path(filename)
-        if filepath.exists():
-            return read_well_attributes_file(filepath)
+        return read_well_attributes_file(Path(filename))
     return None
