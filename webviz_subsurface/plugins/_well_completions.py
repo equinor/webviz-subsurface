@@ -171,11 +171,9 @@ class WellCompletions(WebvizPluginABC):
 
     def set_callbacks(self, app):
         @app.callback(
-            [
-                Output(self.uuid("well_completions_wrapper"), "children"),
-                Output(self.uuid("well_completions_wrapper"), "style"),
-            ],
-            [Input(self.uuid("ensemble_dropdown"), "value"),],
+            Output(self.uuid("well_completions_wrapper"), "children"),
+            Output(self.uuid("well_completions_wrapper"), "style"),
+            Input(self.uuid("ensemble_dropdown"), "value"),
         )
         def _render_well_completions(ensemble_name: str):
 
