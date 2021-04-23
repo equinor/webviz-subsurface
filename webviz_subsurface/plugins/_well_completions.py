@@ -165,7 +165,9 @@ class WellCompletions(WebvizPluginABC):
                         html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(id=self.uuid("well_completions_wrapper"),),
+                html.Div(
+                    id=self.uuid("well_completions_wrapper"),
+                ),
             ]
         )
 
@@ -216,10 +218,12 @@ def create_ensemble_dataset(
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
     layer_zone_mapping = read_zone_layer_mapping(
-        ensemble_path=ensemble_path, zone_layer_mapping_file=zone_layer_mapping_file,
+        ensemble_path=ensemble_path,
+        zone_layer_mapping_file=zone_layer_mapping_file,
     )
     well_attributes = read_well_attributes(
-        ensemble_path=ensemble_path, well_attributes_file=well_attributes_file,
+        ensemble_path=ensemble_path,
+        well_attributes_file=well_attributes_file,
     )
 
     time_steps = sorted(df.DATE.unique())
@@ -337,9 +341,10 @@ def format_time_series(
     output = {"t": [], "open": [], "shut": [], "khMean": [], "khMin": [], "khMax": []}
     prev_open_val = prev_shut_val = 0
 
-    for (i, (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),) in enumerate(
-        zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)
-    ):
+    for (
+        i,
+        (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),
+    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
         if open_val != prev_open_val or shut_val != prev_shut_val:
             output["t"].append(i)
             output["open"].append(open_val)
