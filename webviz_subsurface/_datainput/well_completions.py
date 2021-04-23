@@ -1,3 +1,4 @@
+from typing import Optional
 import json
 from pathlib import Path
 import glob
@@ -5,7 +6,9 @@ import glob
 import ecl2df
 
 
-def read_zone_layer_mapping(ensemble_path: str, zone_layer_mapping_file: str):
+def read_zone_layer_mapping(
+    ensemble_path: str, zone_layer_mapping_file: str
+) -> Optional[dict]:
     """
     Searches for a zone layer mapping file (lyr format) on the scratch disk. \
     If one file is found it is parsed using functionality from the ecl2df \
@@ -17,7 +20,9 @@ def read_zone_layer_mapping(ensemble_path: str, zone_layer_mapping_file: str):
     return None
 
 
-def read_well_attributes(ensemble_path: str, well_attributes_file: str):
+def read_well_attributes(
+    ensemble_path: str, well_attributes_file: str
+) -> Optional[dict]:
     """
     Searches for a well attributes json file on the scratch disk. \
     if one file is found it is parsed and returned as a dictionary.
@@ -53,7 +58,7 @@ def read_well_attributes(ensemble_path: str, well_attributes_file: str):
     }
     """
 
-    def read_well_attributes_file(filepath):
+    def read_well_attributes_file(filepath: Path) -> dict:
         file_content = json.loads(filepath.read_text())
         well_list = file_content["wells"]
         output = {}

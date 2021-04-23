@@ -1,3 +1,4 @@
+from typing import Optional, List, Dict, Tuple, Callable, Any
 import json
 import itertools
 import io
@@ -117,7 +118,7 @@ class WellCompletions(WebvizPluginABC):
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (
                 create_ensemble_dataset,
@@ -171,13 +172,13 @@ class WellCompletions(WebvizPluginABC):
             ]
         )
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
             Output(self.uuid("well_completions_wrapper"), "children"),
             Output(self.uuid("well_completions_wrapper"), "style"),
             Input(self.uuid("ensemble_dropdown"), "value"),
         )
-        def _render_well_completions(ensemble_name: str):
+        def _render_well_completions(ensemble_name: str) -> list:
 
             data = json.load(
                 create_ensemble_dataset(
@@ -235,7 +236,7 @@ def create_ensemble_dataset(
         layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
 
     df["ZONE"] = df.K1.map(layer_zone_mapping)
-    zone_names = dict.fromkeys(layer_zone_mapping.values())
+    zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
 
     result = {
         "version": "1.0.0",
@@ -249,7 +250,7 @@ def create_ensemble_dataset(
     return io.BytesIO(json.dumps(result).encode())
 
 
-def qc_compdat(compdat: pd.DataFrame):
+def qc_compdat(compdat: pd.DataFrame) -> None:
     """
     QCs that the compdat data has the required format
     """
@@ -262,7 +263,7 @@ def qc_compdat(compdat: pd.DataFrame):
             )
 
 
-def get_time_series(df: pd.DataFrame, time_steps: list):
+def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
     """
     Create two lists with values for each time step
     * the first one is on the form [0,0,0,1,1,1,1,-1,-1,-1] where '0' means no event,\
@@ -292,7 +293,9 @@ def get_time_series(df: pd.DataFrame, time_steps: list):
     return events, kh_values
 
 
-def get_completion_events_and_kh(df: pd.DataFrame, zone_names: list, time_steps: list):
+def get_completion_events_and_kh(
+    df: pd.DataFrame, zone_names: list, time_steps: list
+) -> tuple:
     # pylint: disable=unused-variable
     """
     Extracts completion events ad kh values into two lists of lists of lists,
@@ -319,7 +322,7 @@ def get_completion_events_and_kh(df: pd.DataFrame, zone_names: list, time_steps:
 
 def format_time_series(
     open_frac: list, shut_frac: list, kh_mean: list, kh_min: list, kh_max: list
-):
+) -> Optional[Dict]:
     """
     The functions takes in five lists with values per timestep
     * fractions of realizations open in this zone
@@ -338,7 +341,14 @@ def format_time_series(
         khMean: [600, 1500]
     }
     """
-    output = {"t": [], "open": [], "shut": [], "khMean": [], "khMin": [], "khMax": []}
+    output: Dict[str, list] = {
+        "t": [],
+        "open": [],
+        "shut": [],
+        "khMean": [],
+        "khMin": [],
+        "khMax": [],
+    }
     prev_open_val = prev_shut_val = 0
 
     for (
@@ -360,7 +370,9 @@ def format_time_series(
     return output
 
 
-def calc_over_realizations(compl_events: list, kh_values: list, realizations: list):
+def calc_over_realizations(
+    compl_events: list, kh_values: list, realizations: list
+) -> tuple:
     # pylint: disable=assignment-from-no-return
     """
     Takes in two three dimensional lists where the levels are: 1. realization \
@@ -397,12 +409,12 @@ def calc_over_realizations(compl_events: list, kh_values: list, realizations: li
 
 def extract_well(
     df: pd.DataFrame, well: str, zone_names: list, time_steps: list, realizations: list
-):
+) -> Dict[str, Any]:
     # pylint: disable=too-many-locals
     """
     Extract completion events and kh values for a single well
     """
-    well_dict = {}
+    well_dict: Dict[str, Any] = {}
     well_dict["name"] = well
 
     compl_events, kh_values = get_completion_events_and_kh(df, zone_names, time_steps)
@@ -432,8 +444,8 @@ def extract_wells(
     zone_names: list,
     time_steps: list,
     realizations: list,
-    well_attributes: dict,
-):
+    well_attributes: Optional[dict],
+) -> list:
     """
     Generates the wells part of the input dictionary to the WellCompletions component
     """
@@ -450,7 +462,7 @@ def extract_wells(
     return well_list
 
 
-def extract_stratigraphy(layer_zone_mapping: dict, colors: list):
+def extract_stratigraphy(layer_zone_mapping: dict, colors: list) -> list:
     """
     Returns the stratigraphy part of the data set
     """
