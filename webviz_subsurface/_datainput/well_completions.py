@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 import json
 from pathlib import Path
 import glob
@@ -8,23 +8,20 @@ import ecl2df
 
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
-) -> Optional[dict]:
-    """
-    Searches for a zone layer mapping file (lyr format) on the scratch disk. \
+) -> Optional[Dict[int, str]]:
+    """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
     If one file is found it is parsed using functionality from the ecl2df \
     library.
     """
-    eclfile = ecl2df.EclFiles("")
     for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
-        return eclfile.get_zonemap(filename=filename)
+        return ecl2df.EclFiles("").get_zonemap(filename=filename)
     return None
 
 
 def read_well_attributes(
     ensemble_path: str, well_attributes_file: str
 ) -> Optional[dict]:
-    """
-    Searches for a well attributes json file on the scratch disk. \
+    """Searches for a well attributes json file on the scratch disk. \
     if one file is found it is parsed and returned as a dictionary.
 
     The file needs to follow the format below. The categorical attributes \
@@ -57,16 +54,10 @@ def read_well_attributes(
         ]
     }
     """
-
-    def read_well_attributes_file(filepath: Path) -> dict:
-        file_content = json.loads(filepath.read_text())
-        well_list = file_content["wells"]
-        output = {}
-        for well_data in well_list:
-            eclipse_name = well_data["alias"]["eclipse"]
-            output[eclipse_name] = well_data["attributes"]
-        return output
-
     for filename in glob.glob(f"{ensemble_path}/{well_attributes_file}"):
-        return read_well_attributes_file(Path(filename))
+        file_content = json.loads(Path(filename).read_text())
+        return {
+            well_data["alias"]["eclipse"]: well_data["attributes"]
+            for well_data in file_content["wells"]
+        }
     return None

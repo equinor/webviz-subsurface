@@ -103,14 +103,20 @@ class WellCompletions(WebvizPluginABC):
         compdat_file: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
+        kh_unit: str = "",
+        kh_decimal_places: int = 2,
     ):
+        # pylint: disable=too-many-arguments
         super().__init__()
         self.theme = webviz_settings.theme
-        self.colors = self.theme.plotly_theme["layout"]["colorway"]
         self.compdat_file = compdat_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
         self.well_attributes_file = well_attributes_file
         self.ensembles = ensembles
+        self.kh_unit = kh_unit
+        self.kh_decimal_places = kh_decimal_places
+
+        self.colors = self.theme.plotly_theme["layout"]["colorway"]
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -130,6 +136,8 @@ class WellCompletions(WebvizPluginABC):
                         "zone_layer_mapping_file": self.zone_layer_mapping_file,
                         "well_attributes_file": self.well_attributes_file,
                         "colors": self.colors,
+                        "kh_unit": self.kh_unit,
+                        "kh_decimal_places": self.kh_decimal_places,
                     }
                     for ensemble in self.ensembles
                 ],
@@ -188,6 +196,8 @@ class WellCompletions(WebvizPluginABC):
                     self.zone_layer_mapping_file,
                     self.well_attributes_file,
                     self.colors,
+                    self.kh_unit,
+                    self.kh_decimal_places,
                 )
             )
             zones = len(data["stratigraphy"])
@@ -208,14 +218,15 @@ def create_ensemble_dataset(
     zone_layer_mapping_file: str,
     well_attributes_file: str,
     colors: list,
+    kh_unit: str,
+    kh_decimal_places: int,
 ) -> io.BytesIO:
-    """
-    Creates the well completion data set for the WellCompletions component
+    # pylint: disable=too-many-locals
+    """Creates the well completion data set for the WellCompletions component
 
     Returns a dictionary on a given format specified here:
     https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
     """
-
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
     layer_zone_mapping = read_zone_layer_mapping(
@@ -240,6 +251,7 @@ def create_ensemble_dataset(
 
     result = {
         "version": "1.0.0",
+        "units": {"kh": {"unit": kh_unit, "decimal_places": kh_decimal_places}},
         "stratigraphy": extract_stratigraphy(layer_zone_mapping, colors),
         "timeSteps": time_steps,
         "wells": extract_wells(
@@ -251,9 +263,7 @@ def create_ensemble_dataset(
 
 
 def qc_compdat(compdat: pd.DataFrame) -> None:
-    """
-    QCs that the compdat data has the required format
-    """
+    """QCs that the compdat data has the required format"""
     needed_columns = ["WELL", "K1", "OP/SH", "KH"]
     for column in needed_columns:
         if column not in compdat:
@@ -264,8 +274,7 @@ def qc_compdat(compdat: pd.DataFrame) -> None:
 
 
 def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
-    """
-    Create two lists with values for each time step
+    """Create two lists with values for each time step
     * the first one is on the form [0,0,0,1,1,1,1,-1,-1,-1] where '0' means no event,\
     '1' is open, '-1' is shut.
     * the second is with sum of kh values for the open compdats in each zone
@@ -296,16 +305,14 @@ def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
 def get_completion_events_and_kh(
     df: pd.DataFrame, zone_names: list, time_steps: list
 ) -> tuple:
-    # pylint: disable=unused-variable
-    """
-    Extracts completion events ad kh values into two lists of lists of lists,
+    """Extracts completion events ad kh values into two lists of lists of lists,
     one with completions events and one with kh values
     * Axis 0 is realization
     * Axis 1 is zone
     * Axis 2 is time step
     """
     compl_events, kh_values = [], []
-    for rname, realdata in df.groupby("REAL"):
+    for _, realdata in df.groupby("REAL"):
         compl_events_real, kh_real = [], []
         for zone_name in zone_names:
             zone_data = realdata[realdata.ZONE == zone_name]
@@ -321,10 +328,13 @@ def get_completion_events_and_kh(
 
 
 def format_time_series(
-    open_frac: list, shut_frac: list, kh_mean: list, kh_min: list, kh_max: list
+    open_frac: List[float],
+    shut_frac: List[float],
+    kh_mean: List[float],
+    kh_min: List[float],
+    kh_max: List[float],
 ) -> Optional[Dict]:
-    """
-    The functions takes in five lists with values per timestep
+    """The functions takes in five lists with values per timestep
     * fractions of realizations open in this zone
     * fractions of realizations shut in this zone
     * kh mean over open realizations
@@ -349,24 +359,20 @@ def format_time_series(
         "khMin": [],
         "khMax": [],
     }
-    prev_open_val = prev_shut_val = 0
+    prev_open_val = prev_shut_val = 0.0
 
-    for (
-        i,
-        (open_val, shut_val, kh_mean_val, kh_min_val, kh_max_val),
-    ) in enumerate(zip(open_frac, shut_frac, kh_mean, kh_min, kh_max)):
+    for i, _ in enumerate(open_frac):
+        open_val = open_frac[i]
+        shut_val = shut_frac[i]
         if open_val != prev_open_val or shut_val != prev_shut_val:
             output["t"].append(i)
             output["open"].append(open_val)
             output["shut"].append(shut_val)
-            output["khMean"].append(kh_mean_val)
-            output["khMin"].append(kh_min_val)
-            output["khMax"].append(kh_max_val)
+            output["khMean"].append(kh_mean[i])
+            output["khMin"].append(kh_min[i])
+            output["khMax"].append(kh_max[i])
         prev_open_val = open_val
         prev_shut_val = shut_val
-
-    if not output["t"]:
-        return None
     return output
 
 
@@ -374,8 +380,7 @@ def calc_over_realizations(
     compl_events: list, kh_values: list, realizations: list
 ) -> tuple:
     # pylint: disable=assignment-from-no-return
-    """
-    Takes in two three dimensional lists where the levels are: 1. realization \
+    """Takes in two three dimensional lists where the levels are: 1. realization \
     2. zones and 3. timesteps
 
     Returns two dimensional lists where calculations have been done over the \
@@ -398,11 +403,10 @@ def calc_over_realizations(
     ).round(decimals=3)
 
     # calculate khMean, khMin and khMax
-    kh_mean = (np.asarray(kh_values).sum(axis=0) / float(len(realizations))).round(
-        decimals=2
-    )
-    kh_min = np.asarray(kh_values).min(axis=0).round(decimals=2)
-    kh_max = np.asarray(kh_values).max(axis=0).round(decimals=2)
+    np_kh_values = np.asarray(kh_values)
+    kh_mean = (np_kh_values.sum(axis=0) / float(len(realizations))).round(decimals=2)
+    kh_min = np_kh_values.min(axis=0).round(decimals=2)
+    kh_max = np_kh_values.max(axis=0).round(decimals=2)
 
     return open_frac, shut_frac, kh_mean, kh_min, kh_max
 
@@ -411,9 +415,7 @@ def extract_well(
     df: pd.DataFrame, well: str, zone_names: list, time_steps: list, realizations: list
 ) -> Dict[str, Any]:
     # pylint: disable=too-many-locals
-    """
-    Extract completion events and kh values for a single well
-    """
+    """Extract completion events and kh values for a single well"""
     well_dict: Dict[str, Any] = {}
     well_dict["name"] = well
 
@@ -430,11 +432,10 @@ def extract_well(
         kh_min_zone,
         kh_max_zone,
     ) in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
-        result_zone = format_time_series(
-            open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone
-        )
-        if result_zone is not None:
-            result[zone_name] = result_zone
+        if list(open_frac_zone):
+            result[zone_name] = format_time_series(
+                open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone
+            )
     well_dict["completions"] = result
     return well_dict
 
@@ -446,26 +447,23 @@ def extract_wells(
     realizations: list,
     well_attributes: Optional[dict],
 ) -> list:
-    """
-    Generates the wells part of the input dictionary to the WellCompletions component
-    """
+    """Generates the wells part of the input dictionary to the WellCompletions component"""
     well_list = []
     for well_name, well_group in df.groupby("WELL"):
         well_data = extract_well(
             well_group, well_name, zone_names, time_steps, realizations
         )
-        if not well_attributes is None and well_name in well_attributes:
-            well_data["attributes"] = well_attributes[well_name]
-        else:
-            well_data["attributes"] = {}
+        well_data["attributes"] = (
+            well_attributes[well_name]
+            if (well_attributes is not None and well_name in well_attributes)
+            else {}
+        )
         well_list.append(well_data)
     return well_list
 
 
 def extract_stratigraphy(layer_zone_mapping: dict, colors: list) -> list:
-    """
-    Returns the stratigraphy part of the data set
-    """
+    """Returns the stratigraphy part of the data set"""
     color_iterator = itertools.cycle(colors)
     return [
         {"name": zone, "color": next(color_iterator)}
