@@ -29,11 +29,13 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** csvfile with compdat data per realization
-    * **`layer_to_zone_mapping_file`:** Optional lyr file specifying the zone->layer mapping \
+    * **`zone_layer_mapping_file`:** Optional lyr file specifying the zone->layer mapping \
     * **`well_attributes_file`:** Optional json file with categorical well attributes \
+    * **`kh_unit`:** Optional (default empty)
+    * **`kh_decimal_places`: Optional (default 2)
 
-    The latter two files are intended to be exported from RMS and there will therefore \
-    be one file per realization, but the files should be identical.
+    The zone layer mapping and well attribute files are intended to be exported from RMS and \
+    there will therefore be one file per realization.
     ---
     The minimum requirement is to define `ensembles`.
 
@@ -47,9 +49,9 @@ class WellCompletions(WebvizPluginABC):
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
-    ** Layer to zone mapping **
+    ** Zone layer mapping **
 
-    `layer_to_zone_mapping_file` file can be dumped to disk per realization by an internal \
+    `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
     RMS script as part of the FMU workflow. A sample python script will be made available.
 
     The file needs to be on the lyr format used in Resinsight.
@@ -251,7 +253,7 @@ def create_ensemble_dataset(
 
     result = {
         "version": "1.0.0",
-        "units": {"kh": {"unit": kh_unit, "decimal_places": kh_decimal_places}},
+        "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
         "stratigraphy": extract_stratigraphy(layer_zone_mapping, colors),
         "timeSteps": time_steps,
         "wells": extract_wells(
