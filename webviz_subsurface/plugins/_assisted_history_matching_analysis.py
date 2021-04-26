@@ -33,8 +33,9 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         by the `AHM_ANALYSIS` ERT postprocess workflow are stored
     * **`ks_filter`:** optional argument to filter output to the data table based on ks value, \
         only values above entered value will be displayed in the data table. \
-        This can be used if needed to speed-up vizualization of cases with high number of parameters \
-        and/or observations group. Default value is 0.0.
+        This can be used if needed to speed-up vizualization of cases with \
+        high number of parameters  and/or observations group. Default value is 0.0.
+
 
     ---
 
