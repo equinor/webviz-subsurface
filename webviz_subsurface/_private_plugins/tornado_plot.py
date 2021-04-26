@@ -326,7 +326,7 @@ def scale_to_ref(value: float, ref: float, scale: str) -> float:
 
 def sort_by_max(tornadotable: pd.DataFrame) -> pd.DataFrame:
     # TODO(Ruben): This mypy error seems to be a false positive?
-    """ Sorts table based on max(abs('low', 'high')) """
+    """Sorts table based on max(abs('low', 'high'))"""
     tornadotable["max"] = (
         tornadotable[["low", "high"]]
         .apply(lambda x: max(x.min(), x.max(), key=abs), axis=1)  # type: ignore
@@ -338,7 +338,7 @@ def sort_by_max(tornadotable: pd.DataFrame) -> pd.DataFrame:
 
 
 def cut_by_ref(tornadotable: pd.DataFrame, refname: str) -> pd.DataFrame:
-    """ Removes sensitivities smaller than reference sensitivity from table """
+    """Removes sensitivities smaller than reference sensitivity from table"""
     maskref = tornadotable.sensname == refname
     reflow = tornadotable[maskref].low.abs()
     refhigh = tornadotable[maskref].high.abs()

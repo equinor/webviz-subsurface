@@ -417,7 +417,7 @@ class HuvXsection:
 
 
 def stratigraphic_sort(elem):
-    """ Sort surface lines in stratigraphic order"""
+    """Sort surface lines in stratigraphic order"""
     return elem[1]
 
 

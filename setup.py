@@ -8,7 +8,7 @@ TESTS_REQUIRE = [
     "pylint",
     "mypy",
     "mock",
-    "black>=20.8b1",
+    "black>=21.4b0",
     "bandit",
     "pytest-xdist",
 ]

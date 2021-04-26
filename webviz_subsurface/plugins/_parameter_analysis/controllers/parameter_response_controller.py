@@ -482,7 +482,7 @@ def merge_parameter_and_vector_df(
     vectors: list,
     date: str,
 ):
-    """Merge parameter dataframe with vector dataframe on given date """
+    """Merge parameter dataframe with vector dataframe on given date"""
     # Get dataframe with vector and REAL
     vector_df = vectormodel.get_ensemble_vectors_for_date(
         ensemble=ensemble,
