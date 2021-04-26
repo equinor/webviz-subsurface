@@ -62,11 +62,14 @@ def calc_series_statistics(
     def p90(x: List[float]) -> List[float]:
         return np.nanpercentile(x, q=10)
 
+    def p50(x: List[float]) -> List[float]:
+        return np.nanpercentile(x, q=50)
+
     # Calculate statistics, ignoring NaNs.
     stat_df = (
         df[["ENSEMBLE", refaxis] + vectors]
         .groupby(["ENSEMBLE", refaxis])
-        .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
+        .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90, p50])
         .reset_index(level=["ENSEMBLE", refaxis], col_level=1)
     )
     # Rename nanmin, nanmax and nanmean to min, max and mean.
@@ -76,6 +79,7 @@ def calc_series_statistics(
         "nanmean": "mean",
         "p10": "high_p10",
         "p90": "low_p90",
+        "p50": "p50",
     }
     stat_df.rename(columns=col_stat_label_map, level=1, inplace=True)
 
@@ -154,6 +158,115 @@ def add_fanchart_traces(
             "showlegend": False,
         },
     ]
+
+
+def add_statistics_traces(
+    ens_stat_df: pd.DataFrame,
+    vector: str,
+    stat_options: List[str],
+    color: str,
+    legend_group: str,
+    line_shape: str,
+    refaxis: str = "DATE",
+    hovertemplate: str = "(%{x}, %{y})<br>",
+) -> List[Dict[str, Any]]:
+    """Renders a statistical lines for each vector"""
+    traces = []
+    for i, opt in enumerate(stat_options):
+        if opt == "Mean":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "Mean",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "mean")],
+                    "mode": "lines",
+                    "line": {"color": color, "shape": line_shape, "width": 3},
+                    "legendgroup": legend_group,
+                    "showlegend": True,
+                }
+            )
+        if opt == "P10 (high)":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "P10",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "high_p10")],
+                    "mode": "lines",
+                    "line": {"color": color, "shape": line_shape, "dash": "dashdot"},
+                    "legendgroup": legend_group,
+                    "showlegend": False if "Mean" in stat_options else i == 0,
+                }
+            )
+        if opt == "P90 (low)":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "P90",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "low_p90")],
+                    "mode": "lines",
+                    "line": {"color": color, "shape": line_shape, "dash": "dashdot"},
+                    "legendgroup": legend_group,
+                    "showlegend": False if "Mean" in stat_options else i == 0,
+                }
+            )
+        if opt == "P50 (median)":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "P50",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "p50")],
+                    "mode": "lines",
+                    "line": {
+                        "color": color,
+                        "shape": line_shape,
+                        "dash": "dot",
+                        "width": 3,
+                    },
+                    "legendgroup": legend_group,
+                    "showlegend": False if "Mean" in stat_options else i == 0,
+                }
+            )
+        if opt == "Maximum":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "Maximum",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "max")],
+                    "mode": "lines",
+                    "line": {
+                        "color": color,
+                        "shape": line_shape,
+                        "dash": "longdash",
+                        "width": 1.5,
+                    },
+                    "legendgroup": legend_group,
+                    "showlegend": False if "Mean" in stat_options else i == 0,
+                }
+            )
+        if opt == "Minimum":
+            traces.append(
+                {
+                    "name": legend_group,
+                    "hovertemplate": hovertemplate + "Minimum",
+                    "x": ens_stat_df[("", refaxis)],
+                    "y": ens_stat_df[(vector, "min")],
+                    "mode": "lines",
+                    "line": {
+                        "color": color,
+                        "shape": line_shape,
+                        "dash": "longdash",
+                        "width": 1.5,
+                    },
+                    "legendgroup": legend_group,
+                    "showlegend": False if "Mean" in stat_options else i == 0,
+                }
+            )
+    return traces
 
 
 def render_hovertemplate(vector: str, interval: Optional[str]) -> str:
