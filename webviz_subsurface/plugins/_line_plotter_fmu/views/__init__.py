@@ -7,7 +7,6 @@ import webviz_core_components as wcc
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
-from webviz_subsurface._models import EnsembleTableModelSet
 from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
 from .group_and_filter_selectors import group_by_view

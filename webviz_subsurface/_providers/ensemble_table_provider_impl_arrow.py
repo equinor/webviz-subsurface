@@ -5,10 +5,10 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pandas as pd
 
-from .table_model import EnsembleTableModel
+from .ensemble_table_provider import EnsembleTableProvider
 
 # =============================================================================
-class EnsembleTableModelImplArrow(EnsembleTableModel):
+class EnsembleTableProviderImplArrow(EnsembleTableProvider):
 
     # -------------------------------------------------------------------------
     def __init__(self, arrow_file_name: Path) -> None:
@@ -52,11 +52,11 @@ class EnsembleTableModelImplArrow(EnsembleTableModel):
     @staticmethod
     def from_backing_store(
         storage_dir: Path, storage_key: str
-    ) -> Optional["EnsembleTableModelImplArrow"]:
+    ) -> Optional["EnsembleTableProviderImplArrow"]:
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
-            return EnsembleTableModelImplArrow(arrow_file_name)
+            return EnsembleTableProviderImplArrow(arrow_file_name)
 
         return None
 
@@ -85,46 +85,4 @@ class EnsembleTableModelImplArrow(EnsembleTableModel):
             table = table.filter(mask)
 
         df = table.to_pandas()
-        return df
-
-
-# =============================================================================
-class EnsembleTableModelImplInMemDataFrame(EnsembleTableModel):
-
-    # -------------------------------------------------------------------------
-    def __init__(self, ensemble_df: pd.DataFrame) -> None:
-        # The input DF may contain an ENSEMBLE column, but it is probably an error if
-        # There is more than one unique value in it
-        if "ENSEMBLE" in ensemble_df:
-            if ensemble_df["ENSEMBLE"].nunique() > 1:
-                raise KeyError("Input data contains more than one unique ensemble name")
-
-        self._ensemble_df = ensemble_df
-        self._realizations = list(self._ensemble_df["REAL"].unique())
-        self._column_names: List[str] = [
-            col
-            for col in list(self._ensemble_df.columns)
-            if col not in ["REAL", "ENSEMBLE"]
-        ]
-
-    # -------------------------------------------------------------------------
-    def column_names(self) -> List[str]:
-        return self._column_names
-
-    # -------------------------------------------------------------------------
-    def realizations(self) -> List[int]:
-        return self._realizations
-
-    # -------------------------------------------------------------------------
-    def get_column_data(
-        self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
-    ) -> pd.DataFrame:
-
-        if realizations:
-            df = self._ensemble_df.loc[
-                self._ensemble_df["REAL"].isin(realizations), ["REAL", *column_names]
-            ]
-        else:
-            df = self._ensemble_df.loc[:, ["REAL", *column_names]]
-
         return df

@@ -5,7 +5,6 @@ import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface._models import EnsembleTableModelSet
 
 
 def group_by_view(

@@ -8,20 +8,17 @@ from dash.dependencies import Input, Output, ALL
 
 from webviz_config.common_cache import CACHE
 
-from webviz_subsurface._models import (
-    EnsembleTableModelSet,
-    ObservationModel,
-    ParametersModel,
-)
+from webviz_subsurface._models import ObservationModel, ParametersModel
+from webviz_subsurface._providers import EnsembleTableProviderSet
 from ..figures.plotly_line_plot import PlotlyLinePlot
 
 
 def build_figure(
     app: dash.Dash,
     get_uuid: Callable,
-    tablemodel: EnsembleTableModelSet,
+    tableproviders: EnsembleTableProviderSet,
     observationmodel: ObservationModel,
-    parametermodel: ParametersModel,
+    parameterproviders: EnsembleTableProviderSet,
 ) -> None:
     @app.callback(
         Output(
@@ -92,13 +89,13 @@ def build_figure(
         real_filter = {} if parameter_filter is None else parameter_filter
 
         csv_dframe = get_table_data(
-            tablemodel=tablemodel,
+            tableproviders=tableproviders,
             ensemble_names=ensemble_names,
             table_column_names=[x_column_name, y_column_name],
             realization_filter=real_filter,
         )
         parameter_dframe = get_table_data(
-            tablemodel=parametermodel,
+            tableproviders=parameterproviders,
             ensemble_names=ensemble_names,
             table_column_names=[parameter_name],
             realization_filter=real_filter,
@@ -168,7 +165,7 @@ def calc_series_statistics(
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_table_data(
-    tablemodel: EnsembleTableModelSet,
+    tableproviders: EnsembleTableProviderSet,
     ensemble_names: List,
     table_column_names: List,
     realization_filter: Dict[str, List],
@@ -179,8 +176,8 @@ def get_table_data(
         if not realization_filter.get(ens_name):
             dframe = pd.DataFrame(columns=["ENSEMBLE", "REAL"] + table_column_names)
         else:
-            table = tablemodel.ensemble(ens_name)
-            dframe = table.get_column_data(
+            provider = tableproviders.ensemble_provider(ens_name)
+            dframe = provider.get_column_data(
                 table_column_names, realizations=realization_filter.get(ens_name)
             )
             dframe["ENSEMBLE"] = ens_name

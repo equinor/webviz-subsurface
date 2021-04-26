@@ -11,10 +11,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import WEBVIZ_STORAGE
 from webviz_subsurface._models import ObservationModel
-from webviz_subsurface._models.table_model_factory import EnsembleTableModelFactory
-from webviz_subsurface._models.table_model_factory import (
-    EnsembleTableModelFactorySimpleInMemory,
-)
+from webviz_subsurface._providers import EnsembleTableProviderFactory
 import webviz_core_components as wcc
 from webviz_subsurface._components.parameter_filter import ParameterFilter
 import webviz_subsurface
@@ -43,13 +40,13 @@ class LinePlotterFMU(WebvizPluginABC):
         # For now, use the storage folder from WEBVIZ_STORAGE
         # AND also deduce if we're running a portable version of the app
         is_running_portable = WEBVIZ_STORAGE.use_storage
-        model_factory = EnsembleTableModelFactory(
+        provider_factory = EnsembleTableProviderFactory(
             root_storage_folder=WEBVIZ_STORAGE.storage_folder,
             allow_storage_writes=not is_running_portable,
         )
 
         # We should instead be able to do something lik this:
-        # model_factory = EnsembleTableModelFactory.instance()
+        # provider_factory = EnsembleTableProviderFactory.instance()
 
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
@@ -58,22 +55,22 @@ class LinePlotterFMU(WebvizPluginABC):
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
                 for ens_name in ensembles
             }
-            self._parametermodelset = (
-                model_factory.create_model_set_from_per_parameter_file(ensembles_dict)
+            self._parameterproviderset = provider_factory.create_provider_set_from_per_realization_parameter_file(
+                ensembles_dict
             )
-            self._tablemodelset = (
-                model_factory.create_model_set_from_per_realization_csv_file(
+            self._tableproviderset = (
+                provider_factory.create_provider_set_from_per_realization_csv_file(
                     ensembles_dict, csvfile
                 )
             )
         elif aggregated_csvfile and aggregated_parameterfile is not None:
-            self._tablemodelset = (
-                model_factory.create_model_set_from_aggregated_csv_file(
+            self._tableproviderset = (
+                provider_factory.create_provider_set_from_aggregated_csv_file(
                     aggregated_csvfile
                 )
             )
-            self._parametermodelset = (
-                model_factory.create_model_set_from_aggregated_csv_file(
+            self._parameterproviderset = (
+                provider_factory.create_provider_set_from_aggregated_csv_file(
                     aggregated_parameterfile
                 )
             )
@@ -87,8 +84,8 @@ class LinePlotterFMU(WebvizPluginABC):
                 *[
                     ens
                     for ens in [
-                        self._tablemodelset.ensemble_names(),
-                        self._parametermodelset.ensemble_names(),
+                        self._tableproviderset.ensemble_names(),
+                        self._parameterproviderset.ensemble_names(),
                     ]
                 ]
             )
@@ -96,7 +93,7 @@ class LinePlotterFMU(WebvizPluginABC):
         self._parameter_names = list(
             set().union(
                 *[
-                    self._parametermodelset.ensemble(ens).column_names()
+                    self._parameterproviderset.ensemble_provider(ens).column_names()
                     for ens in self._ensemble_names
                 ]
             )
@@ -104,15 +101,17 @@ class LinePlotterFMU(WebvizPluginABC):
         self._data_column_names = list(
             set().union(
                 *[
-                    self._tablemodelset.ensemble(ens).column_names()
+                    self._tableproviderset.ensemble_provider(ens).column_names()
                     for ens in self._ensemble_names
                 ]
             )
         )
         dfs = []
         for ens in self._ensemble_names:
-            df = self._parametermodelset.ensemble(ens).get_column_data(
-                column_names=self._parametermodelset.ensemble(ens).column_names()
+            df = self._parameterproviderset.ensemble_provider(ens).get_column_data(
+                column_names=self._parameterproviderset.ensemble_provider(
+                    ens
+                ).column_names()
             )
             df["ENSEMBLE"] = ens
             dfs.append(df)
@@ -169,9 +168,9 @@ class LinePlotterFMU(WebvizPluginABC):
         build_figure(
             app,
             get_uuid=self.uuid,
-            tablemodel=self._tablemodelset,
+            tableproviders=self._tableproviderset,
             observationmodel=self._observationmodel,
-            parametermodel=self._parametermodelset,
+            parameterproviders=self._parameterproviderset,
         )
         update_figure_clientside(app, get_uuid=self.uuid)
         set_single_real_mode(
