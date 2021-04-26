@@ -239,7 +239,7 @@ def create_ensemble_dataset(
     )
 
     time_steps = sorted(df.DATE.unique())
-    realizations = np.asarray(sorted(df.REAL.unique()), dtype=np.int32)
+    realizations = list(sorted(df.REAL.unique()))
     layers = np.sort(df.K1.unique())
 
     if layer_zone_mapping is None:
