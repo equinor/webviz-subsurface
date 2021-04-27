@@ -19,10 +19,11 @@ import webviz_core_components as wcc
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     """Visualize parameter distribution change prior to posterior \
-    per observation in an assisted history matching process.
+    per observation group in an assisted history matching process.
     This is done by using a \
     [KS (Kolmogorov Smirnov) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) \
     matrix, and scatter plot/map for any given pair of parameter/observation. \
+    KS values are between 0 and 1. \
     The closer to zero the KS value is, the smaller the change in parameter distribution \
     between prior/posterior and vice-versa. \
     The top 10 biggest parameters change are also shown in a table.
@@ -30,22 +31,35 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     ---
 
     * **`input_dir`:** Path to the directory where the `csv` files created \
-        by the `ahm_analysis` ERT postprocess workflow are stored
+        by the `AHM_ANALYSIS` ERT postprocess workflow are stored
+    * **`ks_filter`:** optional argument to filter output to the data table based on ks value, \
+        only values above entered value will be displayed in the data table. \
+        This can be used if needed to speed-up vizualization of cases with \
+        high number of parameters and/or observations group. Default value is 0.0.
 
     ---
 
-    ?> The input_dir must have a subfolder structure \
-    `share/output_analysis/scalar_<a_case_name>` where the results (csv files) from \
-    the ERT `ahm_analysis` worflow are stored.
+
+    ?> The input_dir  \
+    is where the results (csv files) from \
+    the ERT `AHM_ANALYSIS` worflow are stored.
+    ?> The ks_filter value should typically be between 0 and 0.5.
 
     """
 
-    def __init__(self, app, webviz_settings: WebvizSettings, input_dir: Path):
+    def __init__(
+        self,
+        app,
+        webviz_settings: WebvizSettings,
+        input_dir: Path,
+        ks_filter: float = 0.0,
+    ):
 
         super().__init__()
 
         self.input_dir = input_dir
         self.theme = webviz_settings.theme
+        self.ks_filter = ks_filter
 
         self.set_callbacks(app)
 
@@ -318,23 +332,27 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             misfit_info = read_csv(
                 get_path(self.input_dir / "misfit_obs_info.csv"), index_col=0
             )
-            active_info = read_csv(
-                get_path(self.input_dir / "active_obs_info.csv"), index_col=0
-            )
-            joint_ks = read_csv(
-                get_path(self.input_dir / "ks.csv"), index_col=0
-            ).replace(np.nan, 0.0)
-            list_ok = list(joint_ks.filter(like="All_obs", axis=1).columns)
-            listtoplot = [ele for ele in joint_ks.columns if ele not in list_ok]
+            list_ok = list(misfit_info.filter(like="All_obs", axis=1).columns)
+            listtoplot = [ele for ele in misfit_info.columns if ele not in list_ok]
             if choiceplot == "ALL":
                 listtoplot = list_ok
+            active_info = read_csv(
+                get_path(self.input_dir / "active_obs_info.csv"),
+                index_col=0,
+            )
 
-            ks_filter = _get_ks_filter(listtoplot, active_info, misfit_info, joint_ks)
+            joint_ks = read_csv(
+                get_path(self.input_dir / "ks.csv"),
+                index_col=0,
+            ).replace(np.nan, 0.0)
+            ks_filtered = _get_ks_filtered(
+                listtoplot, active_info, misfit_info, joint_ks, self.ks_filter
+            )
 
-            ks_filter_ok = ks_filter.sort_values(by="Ks_value", ascending=False)
+            ks_filtered = ks_filtered.sort_values(by="Ks_value", ascending=False)
 
             return dash_table.DataTable(
-                columns=[{"name": i, "id": i} for i in ks_filter_ok.columns],
+                columns=[{"name": i, "id": i} for i in ks_filtered.columns],
                 editable=True,
                 style_data_conditional=[
                     {
@@ -346,7 +364,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                         "color": "white",
                     },
                 ],
-                data=ks_filter_ok.to_dict("records"),
+                data=ks_filtered.to_dict("records"),
                 sort_action="native",
                 filter_action="native",
                 page_action="native",
@@ -433,25 +451,21 @@ def _hovertext_list(xx_data, yy_data, zz_data, active_info):
     return hovertext
 
 
-def _get_ks_filter(listtoplot, active_info, misfit_info, joint_ks):
+def _get_ks_filtered(listtoplot, active_info, misfit_info, joint_ks, filter_value):
     """Generate filtered KS dataframe"""
-    ks_filter = pd.DataFrame(
-        columns=["Ks_value", "Obs", "Param", "Active Obs", "Avg Obs misfit"]
-    )
-    i = 0
-    for keyss in listtoplot:
-        for indk in joint_ks[keyss]:
-            active_obs_info = active_info.at["ratio", keyss].split(" ")
-            index_label = joint_ks[joint_ks[keyss] == indk].index.tolist()
-            ks_filter.loc[i] = [
-                indk,
-                keyss,
-                index_label,
-                int(active_obs_info[0]),
-                misfit_info.at["misfit", keyss],
-            ]
-            i = i + 1
-    return ks_filter
+    ks_filtered = pd.DataFrame()
+    for obs in listtoplot:
+        tmp_ks_filter = pd.DataFrame()
+        tmp_ks_filter["Ks_value"] = joint_ks[joint_ks[obs] >= filter_value][obs]
+        tmp_ks_filter["Observation"] = obs
+        tmp_ks_filter["Parameter"] = list(joint_ks[joint_ks[obs] >= filter_value].index)
+        tmp_ks_filter["Active Obs"] = active_info[obs].to_numpy()[0]
+        tmp_ks_filter["Avg Obs misfit"] = misfit_info[obs].to_numpy()[0]
+        tmp_ks_filter.reset_index(
+            level=None, drop=True, inplace=True, col_level=0, col_fill=""
+        )
+        ks_filtered = pd.concat([ks_filtered, tmp_ks_filter], ignore_index=True)
+    return ks_filtered
 
 
 def _get_listtoplot(joint_ks, choiceplot):
