@@ -131,3 +131,57 @@ If you are using Visual Studio Code, we recommend [Red Hat's YAML extension](htt
 }
 ```
 to your `settings.json` file, you will get help from the editor on YAML files following the namepatterns to the right (might have to restart the editor after updating the settings).
+
+#### Deployment
+
+When you have created a portable Webviz application, you are approximately one command away of either creating a new application in cloud (or updating an existing application). Note that all deploy workflows listed below require that you install the deployment dependencies first by running
+```bash
+pip install webviz-config[deployment]
+```
+
+##### Azure
+
+Automatic deployment to Azure Web app service is very much possible, and only a community PR away (most of the machinery and Azure CLI wrappers are already in place through the Radix deployment feature).
+
+##### Radix
+
+[Radix is an open source hosting framework](https://github.com/equinor/radix-platform/) by Equinor, built on top of Kubernetes. 
+
+###### Initial deploy
+
+For the initial deploy workflow, you will need to have the GitHub CLI binary `gh` and
+Radix CLI binary `rx` in your `$PATH`. You can download them from
+https://github.com/cli/cli/releases and https://github.com/equinor/radix-cli/releases
+respectively. Also make sure you have a somewhat recent `git` version available (`>=2.0`).
+
+When you execute
+```bash
+webviz deploy radix ./your_portable_app owner/reponame --initial-deploy
+```
+where `./your_portable_app` is a generated portable app, Webviz will do the following:
+
+* Guide you through Azure CLI, GitHub CLI and Radix CLI login procedure (if not already logged in).
+* Ask for your input on necessary Radix and Azure configuration settings.
+* Create Azure app registration (with necessary callback setting, client secret etc).
+* Create Azure blob storage account and container (if it doesn't already exist).
+* Upload static app resources (i.e. those coming from `webviz_storage`) to the blob container.
+* Create a private GitHub repository at `https://github.com/owner/reponame`.
+* Add the Python code to the repository, together with automatically generated Radix configuration file.
+* Turning on GitHub vulnerability alerts for the new repository.
+* Create the new Radix application, and configure a webhook from the GitHub repository to the Radix application.
+* Add Radix SSH deploy key to the GitHub private repository.
+* Set Radix secrets, as well as build and deploy the Radix application.
+
+When the Radix application is available online, it will open in your default browser.
+
+###### Redeploy
+
+Overwriting, or redeploying, an existing Radix Webviz application is easier. You do
+```bash
+webviz deploy radix ./your_portable_app owner/reponame
+```
+and Webviz will:
+* Guide you through Azure CLI login procedure (if not already logged in).
+* Upload the new static resources to the blob storage container.
+* Create a new commit in the GitHub repository `https://github.com/owner/reponame`.
+* The new commit automatically triggers a new Radix build and deploy.
