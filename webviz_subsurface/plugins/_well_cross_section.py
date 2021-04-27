@@ -11,6 +11,7 @@ import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
 from webviz_config.webviz_store import webvizstore
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 from webviz_subsurface._models import SurfaceLeafletModel
 from .._datainput.xsection import XSectionFigure
@@ -19,6 +20,9 @@ from .._datainput.well import load_well, make_well_layer
 from .._datainput.surface import load_surface
 
 
+@deprecated_plugin(
+    "Relevant functionality is implemented in the StructuralUncertainty plugin."
+)
 class WellCrossSection(WebvizPluginABC):
     """Displays a cross section along a well with intersected surfaces,
 and optionally seismic cubes.
