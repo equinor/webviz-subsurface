@@ -5,16 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+### Changed
+- [#612](https://github.com/equinor/webviz-subsurface/pull/612) - New features in ReservoirSimulationTimeSeries: Statistical lines, option to remove history trace, histogram available when plotting individual realizations.
 
 ### Fixed
 - [#615](https://github.com/equinor/webviz-subsurface/pull/615) - Improve table performance of AssistedHistoryMatchingAnalysis.
 
 ## [0.2.0] - 2021-03-28
-### Changed
 - [#604](https://github.com/equinor/webviz-subsurface/pull/604) - Consolidates surface loading and statistical calculation of surfaces by introducing a shared
 SurfaceSetModel. Refactored SurfaceViewerFMU to use SurfaceSetModel.
 - [#586](https://github.com/equinor/webviz-subsurface/pull/586) - Added phase ratio vs pressure and density vs pressure plots. Added unit and density functions to PVT library. Refactored code and added checklist for plots to be viewed in PVT plot plugin. Improved the layout.
-- [#599](https://github.com/equinor/webviz-subsurface/pull/599) - Fixed an issue in ParameterAnalysis where the plugin did not initialize without FIELD vectors 
+- [#599](https://github.com/equinor/webviz-subsurface/pull/599) - Fixed an issue in ParameterAnalysis where the plugin did not initialize without FIELD vectors
 
 ### Fixed
 - [#602](https://github.com/equinor/webviz-subsurface/pull/602) - Prevent calculation of data for download at initialisation of ReservoirSimulationTimeSeries.
