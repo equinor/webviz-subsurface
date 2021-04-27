@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable, Optional, Any
+from typing import List, Tuple, Callable, Optional, Any, Dict
 from pathlib import Path
 import warnings
 import json
@@ -16,6 +16,11 @@ class SurfaceSetModel:
 
     def __init__(self, surface_table: pd.DataFrame):
         self._surface_table = surface_table
+
+    @property
+    def realizations(self) -> list:
+        """Returns surface attributes"""
+        return sorted(list(self._surface_table["REAL"].unique()))
 
     @property
     def attributes(self) -> list:
@@ -38,6 +43,26 @@ class SurfaceSetModel:
             ].unique()
         )
 
+    def get_realization_surfaces(
+        self,
+        name: str,
+        attribute: str,
+        realizations: List[int],
+        date: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        return [
+            {
+                "REAL": realization,
+                "surface": self.get_realization_surface(
+                    name=name,
+                    attribute=attribute,
+                    realization=int(realization),
+                    date=date,
+                ),
+            }
+            for realization in realizations
+        ]
+
     def get_realization_surface(
         self, name: str, attribute: str, realization: int, date: Optional[str] = None
     ) -> xtgeo.RegularSurface:
@@ -50,7 +75,7 @@ class SurfaceSetModel:
             column_values.append(date)
 
         df = self._filter_surface_table(
-            name=name, attribute=attribute, date=date, realizations=[realization]
+            name=name, attribute=attribute, date=date, realizations=[int(realization)]
         )
         if len(df.index) == 0:
             warnings.warn(
@@ -102,9 +127,15 @@ class SurfaceSetModel:
         df = self._filter_surface_table(
             name=name, attribute=attribute, date=date, realizations=realizations
         )
-        return surface_from_json(
-            json.load(save_statistical_surface(sorted(list(df["path"])), calculation))
-        )
+        # When portable check if the surface has been stored
+        # if not calculate
+        try:
+            surface = save_statistical_surface(sorted(list(df["path"])), calculation)
+        except OSError:
+            surface = save_statistical_surface_no_store(
+                sorted(list(df["path"])), calculation
+            )
+        return surface_from_json(json.load(surface))
 
     def webviz_store_statistical_calculation(
         self,
@@ -151,11 +182,49 @@ class SurfaceSetModel:
             [{"runpath": path} for path in list(self._surface_table["path"])],
         )
 
+    @property
+    def first_surface_geometry(self) -> Dict:
+        surface = xtgeo.surface_from_file(
+            get_stored_surface_path(self._surface_table.iloc[0]["path"])
+        )
+        return {
+            "xmin": surface.xmin,
+            "xmax": surface.xmax,
+            "ymin": surface.ymin,
+            "ymax": surface.ymax,
+            "xori": surface.xori,
+            "yori": surface.yori,
+            "ncol": surface.ncol,
+            "nrow": surface.nrow,
+            "xinc": surface.xinc,
+            "yinc": surface.yinc,
+        }
+
 
 @webvizstore
 def get_stored_surface_path(runpath: Path) -> Path:
     """Returns path of a stored surface"""
     return Path(runpath)
+
+
+def save_statistical_surface_no_store(
+    fns: List[str], calculation: Optional[str] = "Mean"
+) -> io.BytesIO:
+    """Wrapper function to store a calculated surface as BytesIO"""
+
+    surfaces = xtgeo.Surfaces([get_stored_surface_path(fn) for fn in fns])
+    if len(surfaces.surfaces) == 0:
+        surface = xtgeo.RegularSurface()
+    elif calculation in ["Mean", "StdDev", "Min", "Max", "P10", "P90"]:
+        # Suppress numpy warnings when surfaces have undefined z-values
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "All-NaN slice encountered")
+            warnings.filterwarnings("ignore", "Mean of empty slice")
+            warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
+            surface = get_statistical_surface(surfaces, calculation)
+    else:
+        surface = xtgeo.RegularSurface()
+    return io.BytesIO(surface_to_json(surface).encode())
 
 
 @webvizstore
