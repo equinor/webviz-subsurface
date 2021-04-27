@@ -19,10 +19,11 @@ import webviz_core_components as wcc
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     """Visualize parameter distribution change prior to posterior \
-    per observation in an assisted history matching process.
+    per observation group in an assisted history matching process.
     This is done by using a \
-    [KS (Kolmogorov Smirnov) test](https://en.wikipedia.org/wiki/KolmogorovSmirnov_test) \
+    [KS (Kolmogorov Smirnov) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) \
     matrix, and scatter plot/map for any given pair of parameter/observation. \
+    KS values are between 0 and 1. \
     The closer to zero the KS value is, the smaller the change in parameter distribution \
     between prior/posterior and vice-versa. \
     The top 10 biggest parameters change are also shown in a table.
@@ -34,8 +35,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     * **`ks_filter`:** optional argument to filter output to the data table based on ks value, \
         only values above entered value will be displayed in the data table. \
         This can be used if needed to speed-up vizualization of cases with \
-        high number of parameters  and/or observations group. Default value is 0.0.
-
+        high number of parameters and/or observations group. Default value is 0.0.
 
     ---
 
