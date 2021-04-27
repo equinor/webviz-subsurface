@@ -60,6 +60,7 @@ def test_full_example(
         "parameterdistribution",
         "parametercorrelation",
         "reservoirsimulationtimeseries",
+        "wellcompletions",
     ]:
         dash_duo.wait_for_element(f"#{page}").click()
         logs = [

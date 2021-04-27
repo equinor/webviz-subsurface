@@ -60,6 +60,7 @@ setup(
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
+            "WellCompletions = webviz_subsurface.plugins:WellCompletions",
         ]
     },
     install_requires=[
@@ -76,7 +77,7 @@ setup(
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.2.7",
-        "webviz-subsurface-components>=0.3.0",
+        "webviz-subsurface-components>=0.4.2",
         "xtgeo>=2.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},

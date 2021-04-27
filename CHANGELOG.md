@@ -6,13 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
-- [#612](https://github.com/equinor/webviz-subsurface/pull/612) - New features in ReservoirSimulationTimeSeries: Statistical lines, option to remove history trace, histogram available when plotting individual realizations.
+- [#612](https://github.com/equinor/webviz-subsurface/pull/612) - New features in `ReservoirSimulationTimeSeries`: Statistical lines, option to remove history trace, histogram available when plotting individual realizations.
 
 ### Fixed
-- [#615](https://github.com/equinor/webviz-subsurface/pull/615) - Improve table performance of AssistedHistoryMatchingAnalysis.
+- [#615](https://github.com/equinor/webviz-subsurface/pull/615) - Improve table performance of `AssistedHistoryMatchingAnalysis`.
 
 ### Added
 - [#605](https://github.com/equinor/webviz-subsurface/pull/605) - New plugin to analyze structural uncertainty from FMU ensembles.
+- [#610](https://github.com/equinor/webviz-subsurface/pull/610) - New plugin `WellCompletions` to visualize completion data of simulation wells.
 
 ## [0.2.0] - 2021-03-28
 - [#604](https://github.com/equinor/webviz-subsurface/pull/604) - Consolidates surface loading and statistical calculation of surfaces by introducing a shared
