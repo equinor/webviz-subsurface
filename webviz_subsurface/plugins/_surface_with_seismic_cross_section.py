@@ -364,22 +364,19 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("surface-type"), "value"),
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
                 Input(self.ids("map-view"), "switch"),
             ],
         )
         def _render_surface(
-            surfacepath, surface_type, cubepath, color_values, colorscale, hillshade
+            surfacepath, surface_type, cubepath, color_values, hillshade
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             min_val = None
             max_val = None
-            color = None
             if surface_type == "attribute":
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
-                color = colorscale if colorscale else color
                 cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
             return [

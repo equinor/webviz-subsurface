@@ -370,7 +370,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("surface-type"), "value"),
                 Input(self.ids("gridparameter"), "value"),
                 Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
                 Input(self.ids("map-view"), "switch"),
             ],
         )
@@ -379,19 +378,16 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surface_type,
             gridparameter,
             color_values,
-            colorscale,
             hillshade,
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             min_val = None
             max_val = None
-            color = None
 
             if surface_type == "attribute":
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
-                color = colorscale if colorscale else color
                 grid = load_grid(get_path(self.gridfile))
                 gridparameter = load_grid_parameter(grid, get_path(gridparameter))
                 surface.slice_grid3d(grid, gridparameter)

@@ -91,15 +91,13 @@ class HuvXsection:
         else:
             fence = well.get_fence_polyline(nextend=100, sampling=5)
         for sfc_file in surfacefiles:
-            sfc_line = self.surface_attributes[sfc_file]["surface"].get_randomline(
-                fence
-            )
-            self.surface_attributes[sfc_file]["surface_line"] = sfc_line
+            self.surface_attributes[sfc_file]["surface_line"] = self.surface_attributes[
+                sfc_file
+            ]["surface"].get_randomline(fence)
             if sfc_file in de_keys:
                 de_line = self.surface_attributes[sfc_file][
                     "surface_de"
                 ].get_randomline(fence)
-                sfc_line = self.surface_attributes[sfc_file]["surface_line"]
                 self.surface_attributes[sfc_file]["de_line"] = de_line
 
     def get_xsec_layout(self, surfacefiles, well):
@@ -419,7 +417,7 @@ class HuvXsection:
 
 
 def stratigraphic_sort(elem):
-    """ Sort surface lines in stratigraphic order"""
+    """Sort surface lines in stratigraphic order"""
     return elem[1]
 
 

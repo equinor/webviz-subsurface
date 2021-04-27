@@ -79,17 +79,19 @@ jobs:
         TESTDATA_REPO_BRANCH: wellcompletions_testdata
       run: |
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+        # Copy any clientside script to the test folder before running tests
+        mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
         pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+        rm -rf ./tests/assets
         webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
       run: |
         pip install webviz-config-equinor
+        export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
         webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
-        # Related to https://github.com/equinor/webviz-config/issues/150:
-        echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 

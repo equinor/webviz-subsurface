@@ -8,7 +8,7 @@ TESTS_REQUIRE = [
     "pylint",
     "mypy",
     "mock",
-    "black>=20.8b1",
+    "black>=21.4b0",
     "bandit",
     "pytest-xdist",
 ]
@@ -26,6 +26,7 @@ setup(
         "webviz_subsurface": [
             "_abbreviations/abbreviation_data/*.json",
             "_assets/css/*.css",
+            "_assets/js/*.js",
         ]
     },
     entry_points={
@@ -51,6 +52,7 @@ setup(
             "RftPlotter = webviz_subsurface.plugins:RftPlotter",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
+            "StructuralUncertainty = webviz_subsurface.plugins:StructuralUncertainty",
             "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
@@ -64,6 +66,7 @@ setup(
     install_requires=[
         "dash>=1.11",
         "dash_bootstrap_components>=0.10.3",
+        "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
         "ecl2df>=0.6.1; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",

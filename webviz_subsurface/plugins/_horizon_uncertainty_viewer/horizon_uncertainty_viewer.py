@@ -642,7 +642,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             de_keys,
             well_settings,
         ):
-            """ Renders cross section view from wellfile or polyline drawn in map view """
+            """Renders cross section view from wellfile or polyline drawn in map view"""
             _ = n_apply_sfc, n_apply_well
             ctx = dash.callback_context
             if wellfile in self.wellfiles:
@@ -669,7 +669,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [Input(self.ids("layered-map"), "clicked_shape")],  # Clicked circle on map
         )
         def _update_render_map_and_xsection(clicked_shape):
-            """ Updates well dropdown value when choosing a new circle """
+            """Updates well dropdown value when choosing a new circle"""
             return (
                 clicked_shape["id"] if clicked_shape is not None else self.wellfiles[0]
             )
@@ -679,7 +679,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [Input(self.ids("all-surfaces-checkbox"), "value")],
         )
         def _update_surface_tickboxes(all_surfaces_checkbox):
-            """ Toggle on/off all surfaces in graph settings modal """
+            """Toggle on/off all surfaces in graph settings modal"""
             return self.surfacenames if all_surfaces_checkbox == ["True"] else []
 
         @app.callback(
@@ -692,7 +692,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [State(self.ids("modal-graph-settings"), "is_open")],
         )
         def _toggle_modal_graph_settings(n_open, n_close, disabled, is_open):
-            """ Open or close graph settings modal button """
+            """Open or close graph settings modal button"""
             if disabled:
                 switch = False
             elif n_open or n_close:
@@ -722,7 +722,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [Input(self.ids("all-well-settings-checkbox"), "value")],
         )
         def _update_well_settings_tickboxes(all_well_attributes_checkbox):
-            """ Toggle on/off all options in well settings modal """
+            """Toggle on/off all options in well settings modal"""
             return (
                 ["zonelog", "zonation_points", "conditional_points"]
                 if all_well_attributes_checkbox == ["True"]
@@ -738,7 +738,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [State(self.ids("modal-well-settings"), "is_open")],
         )
         def _toggle_modal_well_settings(n_open, n_close, is_open):
-            """ Open or close well settings modal button """
+            """Open or close well settings modal button"""
             if n_open or n_close:
                 return not is_open
             return is_open
@@ -754,7 +754,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
         # pylint: disable=unused-variable, unused-argument
         def display_output(n_clicks, column_list):
-            """ Renders wellpoints table from csv file """
+            """Renders wellpoints table from csv file"""
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
             return html.Div(
                 [
@@ -777,7 +777,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [State(self.ids("modal-table-settings"), "is_open")],
         )
         def _toggle_modal_table_settings(n_open, n_close, is_open):
-            """ Open or close table settings modal button """
+            """Open or close table settings modal button"""
             if n_open or n_close:
                 return not is_open
             return is_open
@@ -790,7 +790,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             [Input(self.ids("map-table-radioitems"), "value")],
         )
         def _toggle_left_flexbox_content(value):
-            """ Returns which left flexbox content is visible/hidden """
+            """Returns which left flexbox content is visible/hidden"""
             if value == "table-view":
                 switch = True, False
             else:

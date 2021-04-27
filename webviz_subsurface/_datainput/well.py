@@ -1,4 +1,5 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Union
+from pathlib import Path
 
 import xtgeo
 import numpy as np
@@ -7,8 +8,24 @@ from webviz_config.common_cache import CACHE
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def load_well(well_path: str) -> xtgeo.Well:
-    return xtgeo.Well(well_path)
+def load_well(
+    wfile: Union[str, Path],
+    zonelogname: Optional[str] = None,
+    mdlogname: Optional[str] = None,
+    lognames: Optional[List[str]] = None,
+) -> xtgeo.Well:
+    lognames = [] if not lognames else lognames
+    if zonelogname is not None and zonelogname not in lognames:
+        lognames.append(zonelogname)
+    if mdlogname is not None and mdlogname not in lognames:
+        lognames.append(mdlogname)
+    well = xtgeo.Well(
+        wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname, lognames=lognames
+    )
+
+    # Create a relative XYLENGTH vector (0.0 where well starts)
+    well.create_relative_hlen()
+    return well
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -19,16 +36,33 @@ def make_well_layer(
     well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] > zmin]
     positions = well.dataframe[["X_UTME", "Y_UTMN"]].values
     return {
-        "name": name,
+        "name": "Well",
+        "id": "Well",
         "checked": True,
-        "base_layer": False,
+        "baseLayer": False,
+        "action": "update",
         "data": [
             {
                 "type": "polyline",
                 "color": "black",
                 "positions": positions,
+                "id": name,
                 "tooltip": name,
-            }
+            },
+            {
+                "type": "circle",
+                "center": positions[0],
+                "radius": 60,
+                "color": "black",
+                "tooltip": "A",
+            },
+            {
+                "type": "circle",
+                "center": positions[-1],
+                "radius": 60,
+                "color": "black",
+                "tooltip": "A'",
+            },
         ],
     }
 
@@ -149,3 +183,40 @@ def append_well_to_data(
                     "id": wellfile,
                 }
             )
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def create_leaflet_well_marker_layer(
+    wells: List[xtgeo.Well],
+    surface: xtgeo.RegularSurface,
+    color: str = "red",
+    size: int = 100,
+) -> Dict:
+    data = []
+    for well in wells:
+
+        with np.errstate(invalid="ignore"):
+            surface_picks = well.get_surface_picks(surface)
+        if surface_picks is None:
+            continue
+        surface_picks_df = surface_picks.dataframe
+        coordinates = surface_picks_df[["X_UTME", "Y_UTMN", "Z_TVDSS"]].values
+        for coord in coordinates:
+            data.append(
+                {
+                    "type": "circle",
+                    "center": [coord[0], coord[1]],
+                    "color": color,
+                    "radius": size,
+                    "tooltip": f"<b>{well.name} <br> TVDSS:</b> {round(coord[2],2)}",
+                    "id": well.name,
+                }
+            )
+    return {
+        "id": "WellTops",
+        "name": "WellTops",
+        "baseLayer": False,
+        "checked": True,
+        "action": "update",
+        "data": data,
+    }

@@ -247,7 +247,6 @@ def load_pvt_dataframe(
 
         ratios: np.ndarray = np.zeros(21)
         pressures: np.ndarray = np.zeros(21)
-        (pressure_min, pressure_max) = (0.0, 0.0)
 
         if oil and not oil.is_dead_oil_const_compr():
             (pressure_min, pressure_max) = oil.range_independent(0)
