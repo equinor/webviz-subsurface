@@ -88,11 +88,10 @@ jobs:
     - name: 🐳 Build Docker example image
       run: |
         pip install webviz-config-equinor
+        export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
         webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
-        # Related to https://github.com/equinor/webviz-config/issues/150:
-        echo "RUN pip install --user git+https://github.com/${{ github.repository }}.git@${{ github.ref }}" >> Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
