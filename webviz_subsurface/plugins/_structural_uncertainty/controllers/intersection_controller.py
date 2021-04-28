@@ -201,7 +201,7 @@ def update_intersection(
         State(get_uuid("leaflet-map1"), "polyline_points"),
         State({"id": get_uuid("intersection-data"), "element": "well"}, "value"),
     )
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-branches
     def _store_intersection_layout(
         data: List,
         initial_layout: Optional[dict],
@@ -319,7 +319,8 @@ def update_intersection(
             layout.get("yaxis", {}).update(range=user_range)
         # Else autocalculate range if not intersecting a well
         elif intersection_source != "well":
-            del layout.get("yaxis", {})["range"]
+            if "range" in layout.get("yaxis", {}):
+                del layout["yaxis"]["range"]
             layout.get("yaxis", {}).update({"autorange": "reversed"})
 
         # Remove xaxis zero line

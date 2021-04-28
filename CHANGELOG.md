@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+- [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load 
+correctly from persisted user settings.
 
 ### Added
 
