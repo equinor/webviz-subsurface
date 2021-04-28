@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
+
+### Fixed
+
+### Added
+
+## [0.2.1] - 2021-04-27
+### Changed
 - [#612](https://github.com/equinor/webviz-subsurface/pull/612) - New features in `ReservoirSimulationTimeSeries`: Statistical lines, option to remove history trace, histogram available when plotting individual realizations.
 
 ### Fixed
