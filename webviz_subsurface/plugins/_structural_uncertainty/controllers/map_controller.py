@@ -138,7 +138,6 @@ def update_maps(
         """Generate Leaflet layers for the three map views"""
         realizations = [int(real) for real in real_list]
         ctx = dash.callback_context.triggered[0]
-
         if "compute_diff" in ctx["prop_id"]:
             if not compute_diff:
                 return (
@@ -159,7 +158,6 @@ def update_maps(
                 or "stored_xline" in ctx["prop_id"]
             )
         )
-
         if polyline is not None:
             poly_layer = create_leaflet_polyline_layer(
                 polyline, name="Polyline", poly_id="random_line"
@@ -240,7 +238,10 @@ def update_maps(
 
         # Generate Leaflet layers
         update_controls = check_if_update_needed(
-            ctx, current_map, compute_diff, color_range_settings
+            ctx=ctx,
+            current_maps=[current_map, current_map2],
+            compute_diff=compute_diff,
+            color_range_settings=color_range_settings,
         )
 
         surface_layers = create_or_return_base_layer(
@@ -468,11 +469,14 @@ def replace_or_add_map_layer(
 
 
 def check_if_update_needed(
-    ctx: Dict, current_map: List[Dict], compute_diff: List, color_range_settings: Dict
+    ctx: Dict,
+    current_maps: List[List[Dict]],
+    compute_diff: List,
+    color_range_settings: Dict,
 ) -> Dict[str, Any]:
 
     update_controls = {}
-    for map_id in ["map1", "map2"]:
+    for map_id, current_map in zip(["map1", "map2"], current_maps):
         map_controllers_clicked = f'"map_id":"{map_id}"' in ctx["prop_id"]
         change_calculate_well_intersections = (
             map_controllers_clicked and "options" in ctx["prop_id"]
@@ -484,12 +488,15 @@ def check_if_update_needed(
             "map-color-ranges" in ctx["prop_id"]
             and color_range_settings[map_id]["update"]
         )
+        initial_loading = not current_map or all(
+            layer.get("id") != map_id for layer in current_map
+        )
         update_controls[map_id] = {
             "update": (
                 map_controllers_clicked
                 or change_shade_map
                 or change_color_clip
-                or not current_map
+                or initial_loading
             ),
             "use_base_layer": (change_shade_map or change_calculate_well_intersections),
         }
