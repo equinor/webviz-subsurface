@@ -5,6 +5,7 @@ import hashlib
 import json
 from enum import Enum
 import logging
+import time
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -21,8 +22,11 @@ from .ensemble_table_provider_impl_arrow import EnsembleTableProviderImplArrow
 #    EnsembleTableProviderImplInMemParquet,
 # )
 
-LOGGER = logging.getLogger(__name__)
-
+# !!!!!!!!!!!!!
+# Temporary hack uniti we get logging sorted
+LOGGER = lambda: None
+LOGGER.info = print
+# LOGGER = logging.getLogger(__name__)
 
 # =============================================================================
 class EnsembleTableProviderFactory:
@@ -127,6 +131,7 @@ class EnsembleTableProviderFactory:
         LOGGER.info(
             "EnsembleTableProviderFactory.create_provider_set_from_per_realization_csv_file()..."
         )
+        start_tim = time.perf_counter()
 
         # Try and create/load providers from backing store
         created_providers: Dict[str, EnsembleTableProvider] = {}
@@ -147,28 +152,40 @@ class EnsembleTableProviderFactory:
         # we'll load the csv, write data to storage and then try and load again
         if missing_storage_keys and self._allow_storage_writes:
             for ens_name, storage_key in dict(missing_storage_keys).items():
+                lap_tim = time.perf_counter()
                 ens_path = ensembles[ens_name]
                 scratch_ensemble = ScratchEnsemble(
                     ens_name, ens_path, autodiscovery=True
                 )
+                elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
+
+                lap_tim = time.perf_counter()
                 ensemble_df = scratch_ensemble.load_csv(csv_file_rel_path)
                 del scratch_ensemble
+                elapsed_load_csv_s = time.perf_counter() - lap_tim
 
+                lap_tim = time.perf_counter()
                 self._write_data_to_backing_store(storage_key, ensemble_df)
                 provider = self._create_provider_instance_from_backing_store(
                     storage_key
                 )
+                elapsed_write_s = time.perf_counter() - lap_tim
+
                 if provider:
                     created_providers[ens_name] = provider
                     del missing_storage_keys[ens_name]
                     LOGGER.info(
-                        f"EnsembleTableProviderFactory: wrote/created provider for {ens_name} to backing store"
+                        f"EnsembleTableProviderFactory: wrote/created provider for {ens_name} to backing store (create_scratch_ens={elapsed_create_scratch_ens_s:.2f}s load_csv={elapsed_load_csv_s:.2f}s write={elapsed_write_s:.2f}s)"
                     )
 
         if missing_storage_keys:
             raise ValueError(
                 f"Failed to create provider(s) for {len(missing_storage_keys)} ensembles"
             )
+
+        LOGGER.info(
+            f"EnsembleTableProviderFactory.create_provider_set_from_per_realization_csv_file() total time: {(time.perf_counter() - start_tim):.2f}s"
+        )
 
         return EnsembleTableProviderSet(created_providers)
 
@@ -181,9 +198,11 @@ class EnsembleTableProviderFactory:
         self, ensembles: Dict[str, str]
     ) -> EnsembleTableProviderSet:
 
-        print(
+        LOGGER.info(
             "EnsembleTableProviderFactory.create_provider_set_from_per_realization_parameter_file()"
         )
+
+        start_tim = time.perf_counter()
 
         storage_keys_to_load: Dict[str, str] = {}
         for ens_name, ens_path in ensembles.items():
@@ -199,33 +218,47 @@ class EnsembleTableProviderFactory:
             if provider:
                 created_providers[ens_name] = provider
                 del storage_keys_to_load[ens_name]
-                print(f"  loaded {ens_name} from backing store")
+                LOGGER.info(
+                    f"EnsembleTableProviderFactory: created/loaded provider for {ens_name} from backing store"
+                )
 
         # If there are remaining keys to load and we're allowed to write to storage,
         # we'll load the parameters file, write data to storage and then try and load again
         if storage_keys_to_load and self._allow_storage_writes:
             for ens_name, storage_key in dict(storage_keys_to_load).items():
+                lap_tim = time.perf_counter()
                 ens_path = ensembles[ens_name]
-                scratch_ensemble = ScratchEnsemble(
-                    ens_name, ens_path, autodiscovery=True
-                )
+                scratch_ensemble = ScratchEnsemble(ens_name, ens_path)
+                elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
+
+                lap_tim = time.perf_counter()
                 ensemble_df = scratch_ensemble.parameters
                 del scratch_ensemble
+                elapsed_load_parameters_s = time.perf_counter() - lap_tim
 
+                lap_tim = time.perf_counter()
                 self._write_data_to_backing_store(storage_key, ensemble_df)
                 provider = self._create_provider_instance_from_backing_store(
                     storage_key
                 )
+                elapsed_write_s = time.perf_counter() - lap_tim
+
                 if provider:
                     created_providers[ens_name] = provider
                     del storage_keys_to_load[ens_name]
-                    print(f"  created and wrote {ens_name} to backing store")
+                    LOGGER.info(
+                        f"EnsembleTableProviderFactory: wrote/created provider for {ens_name} to backing store (create_scratch_ens={elapsed_create_scratch_ens_s:.2f}s load_parameters={elapsed_load_parameters_s:.2f}s write={elapsed_write_s:.2f}s)"
+                    )
 
         # Should not be any remaining keys
         if storage_keys_to_load:
             raise ValueError(
                 f"Failed to load data for {len(storage_keys_to_load)} ensembles"
             )
+
+        LOGGER.info(
+            f"EnsembleTableProviderFactory.create_provider_set_from_per_realization_parameter_file() total time: {(time.perf_counter() - start_tim):.2f}s"
+        )
 
         return EnsembleTableProviderSet(created_providers)
 
