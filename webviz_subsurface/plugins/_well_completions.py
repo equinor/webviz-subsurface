@@ -194,7 +194,9 @@ class WellCompletions(WebvizPluginABC):
                         html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(id=self.uuid("well_completions_wrapper"),),
+                html.Div(
+                    id=self.uuid("well_completions_wrapper"),
+                ),
             ],
         )
 
@@ -248,10 +250,12 @@ def create_ensemble_dataset(
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
     layer_zone_mapping = read_zone_layer_mapping(
-        ensemble_path=ensemble_path, zone_layer_mapping_file=zone_layer_mapping_file,
+        ensemble_path=ensemble_path,
+        zone_layer_mapping_file=zone_layer_mapping_file,
     )
     well_attributes = read_well_attributes(
-        ensemble_path=ensemble_path, well_attributes_file=well_attributes_file,
+        ensemble_path=ensemble_path,
+        well_attributes_file=well_attributes_file,
     )
 
     time_steps = sorted(df.DATE.unique())
