@@ -19,6 +19,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 from webviz_subsurface._models import SurfaceLeafletModel
 from .._datainput.fmu_input import get_realizations
@@ -27,6 +28,9 @@ from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well
 
 # pylint: disable=too-many-instance-attributes
+@deprecated_plugin(
+    "Relevant functionality is implemented in the StructuralUncertainty plugin."
+)
 class WellCrossSectionFMU(WebvizPluginABC):
     """Well cross-section displaying statistical surfaces from a FMU ensemble.
 

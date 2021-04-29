@@ -21,6 +21,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 import webviz_subsurface
 from webviz_subsurface._models import SurfaceLeafletModel
@@ -29,6 +30,9 @@ from ._huv_xsection import HuvXsection
 from ._huv_table import FilterTable
 
 
+@deprecated_plugin(
+    "Relevant functionality is implemented in the StructuralUncertainty plugin."
+)
 class HorizonUncertaintyViewer(WebvizPluginABC):
     """Visualizes depth uncertainty for surfaces in map view and cross section view.
 

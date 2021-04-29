@@ -76,7 +76,7 @@ setup(
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
-        "webviz-config>=0.2.7",
+        "webviz-config>=0.3.1",
         "webviz-subsurface-components>=0.4.2",
         "xtgeo>=2.14",
     ],
