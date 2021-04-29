@@ -29,13 +29,11 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** csvfile with compdat data per realization
-    * **`zone_layer_mapping_file`:** Optional lyr file specifying the zone->layer mapping \
-    * **`well_attributes_file`:** Optional json file with categorical well attributes \
-    * **`kh_unit`:** Optional (default empty)
-    * **`kh_decimal_places`: Optional (default 2)
+    * **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping \
+    * **`well_attributes_file`:** Json file with categorical well attributes \
+    * **`kh_unit`:** Will normally be mDm
+    * **`kh_decimal_places`:**
 
-    The zone layer mapping and well attribute files are intended to be exported from RMS and \
-    there will therefore be one file per realization.
     ---
     The minimum requirement is to define `ensembles`.
 
@@ -49,7 +47,7 @@ class WellCompletions(WebvizPluginABC):
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
-    ** Zone layer mapping **
+    **Zone layer mapping**
 
     `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
     RMS script as part of the FMU workflow. A sample python script will be made available.
@@ -60,7 +58,7 @@ class WellCompletions(WebvizPluginABC):
 
     If no file exists, layers will be used as zones.
 
-    ** Well Attributes file **
+    **Well Attributes file**
 
     `well_attributes_file` file is intended to be generated per realization by an internal \
     RMS script as part of the FMU workflow. A sample script will be made available, but it is \
@@ -147,8 +145,28 @@ class WellCompletions(WebvizPluginABC):
         ]
 
     @property
+    def tour_steps(self) -> list:
+        return [
+            {
+                "id": self.uuid("layout"),
+                "content": "Dashboard vizualizing Eclipse well completion output.",
+            },
+            {"id": self.uuid("ensemble_dropdown"), "content": "Select ensemble."},
+            {
+                "id": self.uuid("well_completions_wrapper"),
+                "content": (
+                    "Visualization of the well completions. "
+                    "Time slider for selecting which time steps to display. "
+                    "Different vizualisation and filtering alternatives are available "
+                    "in the upper right corner."
+                ),
+            },
+        ]
+
+    @property
     def layout(self) -> html.Div:
         return html.Div(
+            id=self.uuid("layout"),
             children=[
                 wcc.FlexBox(
                     children=[
@@ -176,10 +194,8 @@ class WellCompletions(WebvizPluginABC):
                         html.Div(style={"flex": 4}),
                     ],
                 ),
-                html.Div(
-                    id=self.uuid("well_completions_wrapper"),
-                ),
-            ]
+                html.Div(id=self.uuid("well_completions_wrapper"),),
+            ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
@@ -232,12 +248,10 @@ def create_ensemble_dataset(
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
     layer_zone_mapping = read_zone_layer_mapping(
-        ensemble_path=ensemble_path,
-        zone_layer_mapping_file=zone_layer_mapping_file,
+        ensemble_path=ensemble_path, zone_layer_mapping_file=zone_layer_mapping_file,
     )
     well_attributes = read_well_attributes(
-        ensemble_path=ensemble_path,
-        well_attributes_file=well_attributes_file,
+        ensemble_path=ensemble_path, well_attributes_file=well_attributes_file,
     )
 
     time_steps = sorted(df.DATE.unique())
