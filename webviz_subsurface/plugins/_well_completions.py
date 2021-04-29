@@ -52,9 +52,8 @@ class WellCompletions(WebvizPluginABC):
     `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
     RMS script as part of the FMU workflow. A sample python script will be made available.
 
-    The file needs to be on the lyr format used in Resinsight.
-    [Link to description of lyr format.]\
-    (https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
+    The file needs to be on the lyr format used in ResInsight.
+    [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
 
     If no file exists, layers will be used as zones.
 
@@ -66,6 +65,7 @@ class WellCompletions(WebvizPluginABC):
     The categorical well attributes are completely flexible.
 
     The file should be a json file on the following format:
+    ```json
     {
         "version" : "0.1",
         "wells" : [
@@ -93,7 +93,8 @@ class WellCompletions(WebvizPluginABC):
         },
         ]
     }
-    """
+    ```
+    """  # pylint: disable=line-too-long
 
     def __init__(
         self,
