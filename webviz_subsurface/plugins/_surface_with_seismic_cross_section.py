@@ -9,13 +9,13 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_subsurface_components import LeafletMap
+from webviz_subsurface_components import LeafletMap, DeckGLMap
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
-from webviz_subsurface._models import SurfaceLeafletModel
+from webviz_subsurface._models import SurfaceLeafletModel, DeckGlLayerModel
 from .._datainput.seismic import load_cube_data
 from .._datainput.surface import get_surface_fence
 
@@ -223,6 +223,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 html.Div(
                     children=[
                         html.Div(
+                            style={"height": "45vh"},
+                            id=self.uuid("deckgl-map-wrapper"),
+                        ),
+                        html.Div(
                             style={
                                 "marginTop": "20px",
                                 "height": "800px",
@@ -250,7 +254,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     },
                                 ),
                             ],
-                        )
+                        ),
                     ]
                 ),
             ]
@@ -358,7 +362,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
     def set_callbacks(self, app):
         @app.callback(
-            Output(self.ids("map-view"), "layers"),
+            # Output(self.ids("map-view"), "layers"),
+            Output(self.uuid("deckgl-map-wrapper"), "children"),
             [
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("surface-type"), "value"),
@@ -374,20 +379,43 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             min_val = None
             max_val = None
+            deckgl_model = DeckGlLayerModel(
+                surface,
+                name="surface",
+                clip_min=min_val,
+                clip_max=max_val,
+                apply_shading=hillshade.get("value", False),
+            )
             if surface_type == "attribute":
                 min_val = color_values[0] if color_values else None
                 max_val = color_values[1] if color_values else None
                 cube = load_cube_data(get_path(cubepath))
                 surface.slice_cube(cube)
-            return [
-                SurfaceLeafletModel(
-                    surface,
-                    name="surface",
-                    clip_min=min_val,
-                    clip_max=max_val,
-                    apply_shading=hillshade.get("value", False),
-                ).layer
-            ]
+            print(
+                {
+                    "initialViewState": {"target": deckgl_model.target},
+                    "layers": [deckgl_model.hillshading_layer],
+                }
+            )
+            return DeckGLMap(
+                id=self.uuid("deckgl-map-view"),
+                deckglSpec={
+                    "initialViewState": {"target": deckgl_model.bounds, "zoom": -3},
+                    "layers": [deckgl_model.hillshading_layer],
+                    "views": [
+                        {
+                            "@@type": "OrthographicView",
+                            "id": "main",
+                            "controller": True,
+                            "x": "0%",
+                            "y": "0%",
+                            "width": "100%",
+                            "height": "100%",
+                            "flipY": False,
+                        }
+                    ],
+                },
+            )
 
         @app.callback(
             Output(self.ids("fence-view"), "figure"),
