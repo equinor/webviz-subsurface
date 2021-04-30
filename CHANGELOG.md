@@ -6,13 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
-- [#618](https://github.com/equinor/webviz-subsurface/pull/618) - Added deprecation warning to `HorizonUncertaintyViewer`, 
+- [#618](https://github.com/equinor/webviz-subsurface/pull/618) - Added deprecation warning to `HorizonUncertaintyViewer`,
 `WellCrossSection` and `WellCrossSectionFMU`. These plugins will soon be removed. Relevant functionality is implememented
 in the new `StructuralUncertainty` plugin.
 
 ### Fixed
-- [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load 
+- [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load
 correctly from persisted user settings.
+- [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method
 
 ### Added
 
