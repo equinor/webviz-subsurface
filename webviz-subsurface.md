@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.1` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.2` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -274,6 +274,12 @@ of the individual realizations of your given `ensembles`, using the `fmu-ensembl
 <div class="plugin-doc">
 
 #### HorizonUncertaintyViewer
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'HorizonUncertaintyViewer' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
@@ -2713,21 +2719,21 @@ Visualizes well completions data per well coming from export of the Eclipse COMP
 
 ---
 
-* **`zone_layer_mapping_file`:** Optional lyr file specifying the zone->layer mapping
+* **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping
 
 *default = "rms/output/zone/simgrid_zone_layer_mapping.lyr", Optional, type str*
 
 
 ---
 
-* **`well_attributes_file`:** Optional json file with categorical well attributes
+* **`well_attributes_file`:** Json file with categorical well attributes
 
 *default = "rms/output/wells/well_attributes.json", Optional, type str*
 
 
 ---
 
-* **`kh_unit`:** Optional (default empty) * **`kh_decimal_places`: Optional (default 2) The zone layer mapping and well attribute files are intended to be exported from RMS and there will therefore be one file per realization.
+* **`kh_unit`:** Will normally be mDm
 
 *default = "", Optional, type str*
 
@@ -2769,20 +2775,21 @@ wraps the command `ecl2csv compdat input_file -o output_file` (requires that you
 installed).
 [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
-** Zone layer mapping **
+**Zone layer mapping**
 
 `zone_layer_mapping_file` file can be dumped to disk per realization by an internal     RMS script as part of the FMU workflow. A sample python script will be made available.
 
-The file needs to be on the lyr format used in Resinsight.
-[Link to description of lyr format.]    (https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_)
+The file needs to be on the lyr format used in ResInsight.
+[Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
 
 If no file exists, layers will be used as zones.
 
-** Well Attributes file **
+**Well Attributes file**
 
 `well_attributes_file` file is intended to be generated per realization by an internal     RMS script as part of the FMU workflow. A sample script will be made available, but it is     possible to manually set up the file and copy it to the correct folder on the scratch disk.    The categorical well attributes are completely flexible.
 
 The file should be a json file on the following format:
+```json
 {
     "version" : "0.1",
     "wells" : [
@@ -2810,6 +2817,7 @@ The file should be a json file on the following format:
     },
     ]
 }
+```
 
  
 
@@ -2822,6 +2830,12 @@ The file should be a json file on the following format:
 <div class="plugin-doc">
 
 #### WellCrossSection
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'WellCrossSection' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
@@ -2962,6 +2976,12 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 <div class="plugin-doc">
 
 #### WellCrossSectionFMU
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'WellCrossSectionFMU' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
