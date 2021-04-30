@@ -28,7 +28,7 @@ class DeckGlLayerModel:
         self.surface = surface
         self.apply_shading = apply_shading
         self.updatemode = updatemode
-        self._bounds = [[surface.xmin, surface.ymin], [surface.xmax, surface.ymax]]
+        self._bounds = [surface.xmin, surface.ymin, surface.xmax, surface.ymax]
         self.zvalues = self.get_zvalues(clip_min=clip_min, clip_max=clip_max)
         self.unit = unit
         # self.colors = self.set_colors(colors)

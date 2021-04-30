@@ -397,10 +397,15 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     "layers": [deckgl_model.hillshading_layer],
                 }
             )
+            width = deckgl_model.bounds[2] - deckgl_model.bounds[0]  # right - left
+            height = deckgl_model.bounds[3] - deckgl_model.bounds[1]  # top - bottom
             return DeckGLMap(
                 id=self.uuid("deckgl-map-view"),
                 deckglSpec={
-                    "initialViewState": {"target": deckgl_model.bounds, "zoom": -3},
+                    "initialViewState": {
+                        "target": [bounds[0] + width / 2, bounds[1] + height / 2, 0],
+                        "zoom": -3
+                    },
                     "layers": [deckgl_model.hillshading_layer],
                     "views": [
                         {
