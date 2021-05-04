@@ -3,7 +3,6 @@ from pathlib import Path
 import os
 import hashlib
 import json
-from enum import Enum
 import logging
 import time
 import pickle
@@ -11,10 +10,9 @@ import pickle
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-# Use this code when WEBVIZ_FACTORY_REGISTRY is merged into webviz-config
-# from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
-# from webviz_config.webviz_factory import WebvizFactory
-# from webviz_config.webviz_instance_info import WebvizRunMode
+from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
+from webviz_config.webviz_factory import WebvizFactory
+from webviz_config.webviz_instance_info import WebvizRunMode
 
 from .ensemble_table_provider import EnsembleTableProvider
 from .ensemble_table_provider import EnsembleTableProviderSet
@@ -31,8 +29,7 @@ LOGGER.info = print
 # LOGGER = logging.getLogger(__name__)
 
 # =============================================================================
-# class EnsembleTableProviderFactory(WebvizFactory):
-class EnsembleTableProviderFactory:
+class EnsembleTableProviderFactory(WebvizFactory):
 
     # -------------------------------------------------------------------------
     def __init__(self, root_storage_folder: Path, allow_storage_writes: bool) -> None:
@@ -50,7 +47,6 @@ class EnsembleTableProviderFactory:
             # For now, just make sure the storage folder exists
             os.makedirs(self._storage_dir, exist_ok=True)
 
-    """
     # -------------------------------------------------------------------------
     @staticmethod
     def instance() -> "EnsembleTableProviderFactory":
@@ -62,9 +58,9 @@ class EnsembleTableProviderFactory:
 
             # Could get optional settings for our factory and possibly use them
             # when creating the factory object
-            my_factory_settings = WEBVIZ_FACTORY_REGISTRY.all_factory_settings.get(
-                "EnsembleTableProviderFactory"
-            )
+            # my_factory_settings = WEBVIZ_FACTORY_REGISTRY.all_factory_settings.get(
+            #     "EnsembleTableProviderFactory"
+            # )
 
             factory = EnsembleTableProviderFactory(storage_folder, allow_writes)
             WEBVIZ_FACTORY_REGISTRY.set_factory(EnsembleTableProviderFactory, factory)
@@ -72,9 +68,8 @@ class EnsembleTableProviderFactory:
         return factory
 
     # -------------------------------------------------------------------------
-    def cleanup_resources_after_plugin_init(self):
+    def cleanup_resources_after_plugin_init(self) -> None:
         self._scratch_ensemble_cache.clear()
-    """
 
     # -------------------------------------------------------------------------
     def create_provider_set_from_aggregated_csv_file(
@@ -293,6 +288,10 @@ class EnsembleTableProviderFactory:
     def _get_or_create_scratch_ensemble(
         self, ens_name: str, ens_path: str
     ) -> ScratchEnsemble:
+        """Either creates a new ScratchEnsemble or retrieves a previously created one
+        from our internal cache. Note that we cache a pickled version of ScratchEnsembles
+        to avoid memory bloating as data is loaded and internalized by the ensemble
+        """
         key = json.dumps({"ens_name": ens_name, "ens_path": ens_path})
         if key in self._scratch_ensemble_cache:
             return pickle.loads(self._scratch_ensemble_cache[key])

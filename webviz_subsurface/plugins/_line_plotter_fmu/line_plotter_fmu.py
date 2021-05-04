@@ -9,7 +9,6 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
-from webviz_config.webviz_store import WEBVIZ_STORAGE
 from webviz_subsurface._models import ObservationModel
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 import webviz_core_components as wcc
@@ -37,16 +36,7 @@ class LinePlotterFMU(WebvizPluginABC):
     ):
         super().__init__()
 
-        # For now, use the storage folder from WEBVIZ_STORAGE
-        # AND also deduce if we're running a portable version of the app
-        is_running_portable = WEBVIZ_STORAGE.use_storage
-        provider_factory = EnsembleTableProviderFactory(
-            root_storage_folder=WEBVIZ_STORAGE.storage_folder,
-            allow_storage_writes=not is_running_portable,
-        )
-
-        # We should instead be able to do something lik this:
-        # provider_factory = EnsembleTableProviderFactory.instance()
+        provider_factory = EnsembleTableProviderFactory.instance()
 
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
