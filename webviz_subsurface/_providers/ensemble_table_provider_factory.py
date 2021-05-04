@@ -6,12 +6,14 @@ import json
 from enum import Enum
 import logging
 import time
+import pickle
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
 # Use this code when WEBVIZ_FACTORY_REGISTRY is merged into webviz-config
 # from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
+# from webviz_config.webviz_factory import WebvizFactory
 # from webviz_config.webviz_instance_info import WebvizRunMode
 
 from .ensemble_table_provider import EnsembleTableProvider
@@ -23,12 +25,13 @@ from .ensemble_table_provider_impl_arrow import EnsembleTableProviderImplArrow
 # )
 
 # !!!!!!!!!!!!!
-# Temporary hack uniti we get logging sorted
+# Temporary hack until we get logging sorted out
 LOGGER = lambda: None
 LOGGER.info = print
 # LOGGER = logging.getLogger(__name__)
 
 # =============================================================================
+# class EnsembleTableProviderFactory(WebvizFactory):
 class EnsembleTableProviderFactory:
 
     # -------------------------------------------------------------------------
@@ -36,6 +39,8 @@ class EnsembleTableProviderFactory:
 
         self._storage_dir = Path(root_storage_folder) / __name__
         self._allow_storage_writes = allow_storage_writes
+
+        self._scratch_ensemble_cache: Dict[str, bytes] = {}
 
         LOGGER.info(
             f"EnsembleTableProviderFactory init: storage_dir={self._storage_dir}"
@@ -45,26 +50,30 @@ class EnsembleTableProviderFactory:
             # For now, just make sure the storage folder exists
             os.makedirs(self._storage_dir, exist_ok=True)
 
-    # -------------------------------------------------------------------------
     """
+    # -------------------------------------------------------------------------
     @staticmethod
-    def instance() -> "EnsembleTableProvider":
-        factory = WEBVIZ_FACTORY_REGISTRY.get_factory(EnsembleTableProvider)
+    def instance() -> "EnsembleTableProviderFactory":
+        factory = WEBVIZ_FACTORY_REGISTRY.get_factory(EnsembleTableProviderFactory)
         if not factory:
             app_instance_info = WEBVIZ_FACTORY_REGISTRY.app_instance_info
             storage_folder = app_instance_info.storage_folder
             allow_writes = app_instance_info.run_mode != WebvizRunMode.PORTABLE
 
-            # Can get settings for our factory and possibly use them
+            # Could get optional settings for our factory and possibly use them
             # when creating the factory object
             my_factory_settings = WEBVIZ_FACTORY_REGISTRY.all_factory_settings.get(
-                "EnsembleTableProvider"
+                "EnsembleTableProviderFactory"
             )
 
             factory = EnsembleTableProviderFactory(storage_folder, allow_writes)
             WEBVIZ_FACTORY_REGISTRY.set_factory(EnsembleTableProviderFactory, factory)
 
         return factory
+
+    # -------------------------------------------------------------------------
+    def cleanup_resources_after_plugin_init(self):
+        self._scratch_ensemble_cache.clear()
     """
 
     # -------------------------------------------------------------------------
@@ -154,8 +163,8 @@ class EnsembleTableProviderFactory:
             for ens_name, storage_key in dict(missing_storage_keys).items():
                 lap_tim = time.perf_counter()
                 ens_path = ensembles[ens_name]
-                scratch_ensemble = ScratchEnsemble(
-                    ens_name, ens_path, autodiscovery=True
+                scratch_ensemble = self._get_or_create_scratch_ensemble(
+                    ens_name, ens_path
                 )
                 elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
 
@@ -228,7 +237,9 @@ class EnsembleTableProviderFactory:
             for ens_name, storage_key in dict(storage_keys_to_load).items():
                 lap_tim = time.perf_counter()
                 ens_path = ensembles[ens_name]
-                scratch_ensemble = ScratchEnsemble(ens_name, ens_path)
+                scratch_ensemble = self._get_or_create_scratch_ensemble(
+                    ens_name, ens_path
+                )
                 elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
 
                 lap_tim = time.perf_counter()
@@ -277,3 +288,18 @@ class EnsembleTableProviderFactory:
         EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
             self._storage_dir, storage_key, ensemble_df
         )
+
+    # -------------------------------------------------------------------------
+    def _get_or_create_scratch_ensemble(
+        self, ens_name: str, ens_path: str
+    ) -> ScratchEnsemble:
+        key = json.dumps({"ens_name": ens_name, "ens_path": ens_path})
+        if key in self._scratch_ensemble_cache:
+            return pickle.loads(self._scratch_ensemble_cache[key])
+
+        scratch_ensemble = ScratchEnsemble(ens_name, ens_path)
+        self._scratch_ensemble_cache[key] = pickle.dumps(
+            scratch_ensemble, pickle.HIGHEST_PROTOCOL
+        )
+
+        return scratch_ensemble
