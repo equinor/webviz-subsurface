@@ -221,41 +221,39 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     ],
                 ),
                 html.Div(
+                    style={
+                        "marginTop": "20px",
+                        "height": "800px",
+                        "zIndex": -9999,
+                    },
                     children=[
-                        html.Div(
-                            style={"height": "45vh"},
-                            id=self.uuid("deckgl-map-wrapper"),
-                        ),
-                        html.Div(
-                            style={
-                                "marginTop": "20px",
-                                "height": "800px",
-                                "zIndex": -9999,
+                        DeckGLMap(
+                            id=self.uuid("deckgl-map"),
+                            deckglSpec={
+                                "initialViewState": {
+                                    "target": [
+                                        0,
+                                        0,
+                                        0,
+                                    ],
+                                    "zoom": -3,
+                                },
+                                "layers": [],
+                                "views": [
+                                    {
+                                        "@@type": "OrthographicView",
+                                        "id": "main",
+                                        "controller": True,
+                                        "x": "0%",
+                                        "y": "0%",
+                                        "width": "100%",
+                                        "height": "100%",
+                                        "flipY": False,
+                                    }
+                                ],
                             },
-                            children=[
-                                LeafletMap(
-                                    id=self.ids("map-view"),
-                                    autoScaleMap=True,
-                                    minZoom=-5,
-                                    updateMode="update",
-                                    layers=[],
-                                    drawTools={
-                                        "drawMarker": False,
-                                        "drawPolygon": False,
-                                        "drawPolyline": True,
-                                        "position": "topright",
-                                    },
-                                    mouseCoords={"position": "bottomright"},
-                                    colorBar={"position": "bottomleft"},
-                                    switch={
-                                        "value": False,
-                                        "disabled": False,
-                                        "label": "Hillshading",
-                                    },
-                                ),
-                            ],
-                        ),
-                    ]
+                        )
+                    ],
                 ),
             ]
         )
@@ -363,17 +361,19 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def set_callbacks(self, app):
         @app.callback(
             # Output(self.ids("map-view"), "layers"),
-            Output(self.uuid("deckgl-map-wrapper"), "children"),
+            Output(self.uuid("deckgl-map"), "deckglSpec"),
             [
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("surface-type"), "value"),
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("color-values"), "value"),
-                Input(self.ids("map-view"), "switch"),
             ],
         )
         def _render_surface(
-            surfacepath, surface_type, cubepath, color_values, hillshade
+            surfacepath,
+            surface_type,
+            cubepath,
+            color_values,
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
@@ -384,7 +384,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 name="surface",
                 clip_min=min_val,
                 clip_max=max_val,
-                apply_shading=hillshade.get("value", False),
+                # apply_shading=hillshade.get("value", False),
             )
             if surface_type == "attribute":
                 min_val = color_values[0] if color_values else None
@@ -399,63 +399,67 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             )
             width = deckgl_model.bounds[2] - deckgl_model.bounds[0]  # right - left
             height = deckgl_model.bounds[3] - deckgl_model.bounds[1]  # top - bottom
-            return DeckGLMap(
-                id=self.uuid("deckgl-map-view"),
-                deckglSpec={
-                    "initialViewState": {
-                        "target": [bounds[0] + width / 2, bounds[1] + height / 2, 0],
-                        "zoom": -3
-                    },
-                    "layers": [deckgl_model.hillshading_layer],
-                    "views": [
-                        {
-                            "@@type": "OrthographicView",
-                            "id": "main",
-                            "controller": True,
-                            "x": "0%",
-                            "y": "0%",
-                            "width": "100%",
-                            "height": "100%",
-                            "flipY": False,
-                        }
+            return {
+                "viewState": {
+                    "target": [
+                        deckgl_model.bounds[0] + width / 2,
+                        deckgl_model.bounds[1] + height / 2,
+                        0,
                     ],
+                    "zoom": -3,
                 },
-            )
+                "layers": [
+                    deckgl_model.hillshading_layer,
+                    deckgl_model.colormap_layer,
+                ],
+                "views": [
+                    {
+                        "@@type": "OrthographicView",
+                        "id": "main",
+                        "controller": True,
+                        "x": "0%",
+                        "y": "0%",
+                        "width": "100%",
+                        "height": "100%",
+                        "flipY": False,
+                    }
+                ],
+            }
 
-        @app.callback(
-            Output(self.ids("fence-view"), "figure"),
-            [
-                Input(self.ids("map-view"), "polyline_points"),
-                Input(self.ids("cube"), "value"),
-                Input(self.ids("surface"), "value"),
-                Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
-            ],
-        )
-        def _render_fence(coords, cubepath, surfacepath, color_values, colorscale):
-            if not coords:
-                raise PreventUpdate
-            cube = load_cube_data(get_path(cubepath))
-            fence = get_fencespec(coords)
-            hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
+        # @app.callback(
+        #     Output(self.ids("fence-view"), "figure"),
+        #     [
+        #         Input(self.ids("map-view"), "polyline_points"),
+        #         Input(self.ids("cube"), "value"),
+        #         Input(self.ids("surface"), "value"),
+        #         Input(self.ids("color-values"), "value"),
+        #         Input(self.ids("color-scale"), "colorscale"),
+        #     ],
+        # )
+        # def _render_fence(coords, cubepath, surfacepath, color_values, colorscale):
+        #     if not coords:
+        #         raise PreventUpdate
+        #     cube = load_cube_data(get_path(cubepath))
+        #     fence = get_fencespec(coords)
+        #     hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
 
-            surface = xtgeo.RegularSurface(get_path(surfacepath))
-            s_arr = get_surface_fence(fence, surface)
-            return make_heatmap(
-                values,
-                s_arr=s_arr,
-                theme=self.plotly_theme,
-                s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
-                colorscale=colorscale,
-                xmin=hmin,
-                xmax=hmax,
-                ymin=vmin,
-                ymax=vmax,
-                zmin=color_values[0],
-                zmax=color_values[1],
-                xaxis_title="Distance along polyline",
-                yaxis_title=self.zunit,
-            )
+        #     surface = xtgeo.RegularSurface(get_path(surfacepath))
+        #     s_arr = get_surface_fence(fence, surface)
+        #     return make_heatmap(
+        #         values,
+        #         s_arr=s_arr,
+        #         theme=self.plotly_theme,
+        #         s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
+        #         colorscale=colorscale,
+        #         xmin=hmin,
+        #         xmax=hmax,
+        #         ymin=vmin,
+        #         ymax=vmax,
+        #         zmin=color_values[0],
+        #         zmax=color_values[1],
+        #         xaxis_title="Distance along polyline",
+        #         yaxis_title=self.zunit,
+        #     )
 
         @app.callback(
             [

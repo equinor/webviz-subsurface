@@ -91,13 +91,27 @@ class DeckGlLayerModel:
     @property
     def hillshading_layer(self) -> dict:
         return {
-            "@@type": "BitmapLayer",
+            "@@type": "Hillshading2DLayer",
             "id": "hillshading-layer",
             "bounds": self.bounds,
             "opacity": 1.0,
             "valueRange": [self.min_val, self.max_val],
             "image": self.img_url,
         }
+
+    @property
+    def colormap_layer(self) -> dict:
+        return (
+            {
+                "@@type": "ColormapLayer",
+                "id": "colormap-layer",
+                "bounds": self.bounds,
+                "image": self.img_url,
+                "colormap": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAAKCAYAAABbnoC0AAAA8UlEQVR42u2UUW4DIQxE3ziV+tNz59hxPwLGS0gO0M6TEGYG22i1sn6+7/mFuGUQiNtYgYgc+2kll7MQwdLUfLHF+byryh9x0uqsWHnQRk2VTvXftdrVzgKRY6ftiTTvPuOpRYDUtZG/aYoW797Mq1qzztVXzHe88z6sWH0/+/vi4nPM5YOXsPXk8B6OPRj5p1xKJ1592rt549H6rXj17P7SuJ5bTVoe47v0My/3ml/x0rJ+4KwfNi/x+pGza3VW3clQ6XWnvFn3QcaDwBjzb/EAMMYDwBjjAWCM8QAwxngAGGM8AIwxHgDGGA8AY8zf4RdE8p8bK5sxUgAAAABJRU5ErkJggg==",
+                "valueRange": [self.min_val, self.max_val],
+                "pickable": True,
+            },
+        )
 
 
 def array2d_to_png(z_array):
