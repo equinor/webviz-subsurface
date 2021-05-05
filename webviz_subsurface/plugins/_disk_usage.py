@@ -58,16 +58,8 @@ class DiskUsage(WebvizPluginABC):
                     f"Disk usage on {self.scratch_dir} per user as of {self.date}",
                     style={"text-align": "center"},
                 ),
-                wcc.FlexBox(
-                    children=[
-                        wcc.Graph(
-                            style={"flex": 1},
-                            figure=self.pie_chart,
-                            config={"displayModeBar": False},
-                        ),
-                        wcc.Graph(style={"flex": 2}, figure=self.bar_chart),
-                    ]
-                ),
+                wcc.Graph(figure=self.pie_chart),
+                wcc.Graph(figure=self.bar_chart),
             ]
         )
 
