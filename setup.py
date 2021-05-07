@@ -68,12 +68,17 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
+<<<<<<< HEAD
         ],
         "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
         "console_scripts": [
             "well_connection_status=webviz_subsurface.ert_jobs.well_connection_status:main",
             "smry2arrow=webviz_subsurface.ert_jobs.smry2arrow:main",
         ],
+=======
+            "NetworkControlModes = webviz_subsurface.plugins:NetworkControlModes",
+        ]
+>>>>>>> network control modes initial commit
     },
     install_requires=[
         "dash>=1.20.0",
