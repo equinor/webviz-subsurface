@@ -5,12 +5,15 @@ import pandas as pd
 
 from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._providers import EnsembleTableProviderFactory
+from webviz_subsurface._providers.ensemble_table_provider_factory import BackingType
 from webviz_subsurface._providers.ensemble_table_provider_impl_arrow import (
     EnsembleTableProviderImplArrow,
 )
 from webviz_subsurface._providers.ensemble_table_provider_impl_inmem_parquet import (
     EnsembleTableProviderImplInMemParquet,
 )
+
+BACKING_TYPE_TO_TEST: BackingType = BackingType.ARROW
 
 
 # -------------------------------------------------------------------------
@@ -75,7 +78,9 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
 def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    factory = EnsembleTableProviderFactory(
+        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+    )
     providerset = factory.create_provider_set_from_aggregated_csv_file(
         testdata_folder / "aggregated_data" / "smry.csv"
     )
@@ -106,7 +111,9 @@ def test_create_from_aggregated_csv_file_smry_csv(
 def test_create_from_aggregated_csv_file_smry_hm(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    factory = EnsembleTableProviderFactory(
+        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+    )
     providerset = factory.create_provider_set_from_aggregated_csv_file(
         testdata_folder / "aggregated_data" / "smry_hm.csv"
     )
@@ -142,7 +149,9 @@ def test_create_from_per_realization_csv_file(
 
     csvfile = "share/results/tables/rft.csv"
 
-    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    factory = EnsembleTableProviderFactory(
+        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+    )
     providerset = factory.create_provider_set_from_per_realization_csv_file(
         ensembles, csvfile
     )
