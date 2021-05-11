@@ -117,6 +117,7 @@ def build_figure(
             stat_df = calc_series_statistics(df, [y_column_name], x_column_name)
             figure.add_statistical_lines(stat_df, x_column_name, y_column_name, traces)
         if observationmodel is not None:
+
             observations = observationmodel.get_observations_for_attribute(
                 attribute=y_column_name, value=x_column_name
             )

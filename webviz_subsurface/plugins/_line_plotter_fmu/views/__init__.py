@@ -39,7 +39,7 @@ def main_view(
                     group_by_view(
                         get_uuid=get_uuid,
                     ),
-                    plot_options_view(get_uuid=get_uuid),
+                    plot_options_view(get_uuid=get_uuid, initial_layout=initial_layout),
                 ],
             ),
             html.Div(

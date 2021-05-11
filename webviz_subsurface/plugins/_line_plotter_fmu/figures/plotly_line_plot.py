@@ -158,11 +158,11 @@ class PlotlyLinePlot:
                 )
 
     def add_observations(self, observations: dict, x_value: str) -> None:
-        self._observation_traces.append(
-            [
+        for obs in observations:
+            self._observation_traces.append(
                 {
-                    "x": obs.get(x_value, []),
-                    "y": obs.get("value", []),
+                    "x": [obs.get(x_value, [])],
+                    "y": [obs.get("value", [])],
                     "marker": {"color": "black"},
                     "text": obs.get("comment", None),
                     "hoverinfo": "y+x+text",
@@ -173,14 +173,15 @@ class PlotlyLinePlot:
                         "visible": True,
                     },
                 }
-                for obs in observations
-            ]
-        )
+            )
+    
 
     def get_figure(self) -> Dict:
-        traces = (
-            self._realization_traces
-            + self._statistical_traces
-            + self._observation_traces
-        )
+        traces = []
+        if self._realization_traces:
+            traces.extend(self._realization_traces)
+        if self._statistical_traces:
+            traces.extend(self._statistical_traces)
+        if self._observation_traces:
+            traces.extend(self._observation_traces)
         return dict(layout=self._layout, data=traces)

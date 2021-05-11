@@ -4,7 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 
-def plot_options_view(get_uuid) -> html.Div:
+def plot_options_view(get_uuid, initial_layout:Dict) -> html.Div:
     return html.Div(
         className="framed",
         style={"fontSize": "0.8em"},
@@ -30,7 +30,7 @@ def plot_options_view(get_uuid) -> html.Div:
                     {"value": "multicategory", "label": "Multicategory"},
                 ],
                 placeholder="automatic",
-                value=None,
+                value=initial_layout.get("xaxis",{}).get("type", None),
             ),
             dropdown_for_plotly_layout(
                 uuid=get_uuid("plotly_layout"),
@@ -40,7 +40,7 @@ def plot_options_view(get_uuid) -> html.Div:
                     {"value": True, "label": "normal"},
                     {"value": "reversed", "label": "reversed"},
                 ],
-                value=True,
+                value=initial_layout.get("xaxis",{}).get("autorange", True),
             ),
             dropdown_for_plotly_layout(
                 uuid=get_uuid("plotly_layout"),
@@ -55,7 +55,7 @@ def plot_options_view(get_uuid) -> html.Div:
                     {"value": "multicategory", "label": "Multicategory"},
                 ],
                 placeholder="automatic",
-                value=None,
+                value=initial_layout.get("yaxis",{}).get("type", None),
             ),
             dropdown_for_plotly_layout(
                 uuid=get_uuid("plotly_layout"),
@@ -65,7 +65,7 @@ def plot_options_view(get_uuid) -> html.Div:
                     {"value": True, "label": "normal"},
                     {"value": "reversed", "label": "reversed"},
                 ],
-                value=True,
+                value=initial_layout.get("yaxis",{}).get("autorange", True),
             ),
         ],
     )
