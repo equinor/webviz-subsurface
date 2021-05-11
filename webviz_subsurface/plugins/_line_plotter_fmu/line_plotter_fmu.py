@@ -129,7 +129,7 @@ class LinePlotterFMU(WebvizPluginABC):
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return [(get_path, [{"path": self._observationfile}])]
+        return [(get_path, [{"path": self._observationfile}])] if self._observationfile is not None else []
 
     @property
     def layout(self) -> html.Div:
