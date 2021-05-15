@@ -55,6 +55,8 @@ class WellCompletions(WebvizPluginABC):
     The file needs to be on the lyr format used in ResInsight.
     [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
 
+    Zone colors can be specified in the lyr file, but only 6 digit hexadecimal codes will be used.
+
     If no file exists, layers will be used as zones.
 
     **Well Attributes file**
@@ -117,7 +119,7 @@ class WellCompletions(WebvizPluginABC):
         self.kh_unit = kh_unit
         self.kh_decimal_places = kh_decimal_places
 
-        self.colors = self.theme.plotly_theme["layout"]["colorway"]
+        self.theme_colors = self.theme.plotly_theme["layout"]["colorway"]
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -216,7 +218,7 @@ class WellCompletions(WebvizPluginABC):
                     self.compdat_file,
                     self.zone_layer_mapping_file,
                     self.well_attributes_file,
-                    self.colors,
+                    self.theme_colors,
                     self.kh_unit,
                     self.kh_decimal_places,
                 )
@@ -238,7 +240,7 @@ def create_ensemble_dataset(
     compdat_file: str,
     zone_layer_mapping_file: str,
     well_attributes_file: str,
-    colors: list,
+    theme_colors: list,
     kh_unit: str,
     kh_decimal_places: int,
 ) -> io.BytesIO:
@@ -250,7 +252,7 @@ def create_ensemble_dataset(
     """
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     qc_compdat(df)
-    layer_zone_mapping = read_zone_layer_mapping(
+    layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
         ensemble_path=ensemble_path,
         zone_layer_mapping_file=zone_layer_mapping_file,
     )
@@ -273,7 +275,7 @@ def create_ensemble_dataset(
     result = {
         "version": "1.0.0",
         "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
-        "stratigraphy": extract_stratigraphy(layer_zone_mapping, colors),
+        "stratigraphy": extract_stratigraphy(layer_zone_mapping, zone_color_mapping, theme_colors),
         "timeSteps": time_steps,
         "wells": extract_wells(
             df, zone_names, time_steps, realizations, well_attributes
@@ -483,10 +485,13 @@ def extract_wells(
     return well_list
 
 
-def extract_stratigraphy(layer_zone_mapping: dict, colors: list) -> list:
+def extract_stratigraphy(layer_zone_mapping: dict, zone_color_mapping: dict, colors: list) -> list:
     """Returns the stratigraphy part of the data set"""
     color_iterator = itertools.cycle(colors)
     return [
-        {"name": zone, "color": next(color_iterator)}
+        {
+            "name": zone,
+            "color": zone_color_mapping[zone] if zone in zone_color_mapping else next(color_iterator)
+        }
         for zone in dict.fromkeys(layer_zone_mapping.values())
     ]

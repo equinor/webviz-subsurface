@@ -1,10 +1,10 @@
 from typing import Optional, Dict
 import json
+import re
 from pathlib import Path
 import glob
 
-import ecl2df
-
+from ecl2df import common
 
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
@@ -14,8 +14,14 @@ def read_zone_layer_mapping(
     library.
     """
     for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
-        return ecl2df.EclFiles("").get_zonemap(filename=filename)
-    return None
+        zonelist = common.parse_lyrfile(filename=filename)
+        layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
+        zone_color_mapping = {
+            zonedict["name"]:zonedict["color"] for zonedict in zonelist
+            if "color" in zonedict and re.match("^#([A-Fa-f0-9]{6})", zonedict["color"])
+        }
+        return layer_zone_mapping, zone_color_mapping
+    return None, None
 
 
 def read_well_attributes(
