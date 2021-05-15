@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import json
 import re
 from pathlib import Path
@@ -66,4 +66,14 @@ def read_well_attributes(
             well_data["alias"]["eclipse"]: well_data["attributes"]
             for well_data in file_content["wells"]
         }
+    return None
+
+def read_stratigraphy(
+    ensemble_path: str, stratigraphy_file: str
+) -> Optional[List[Dict]]:
+    """Searches for a stratigraphy json file on the scratch disk. \
+    If a file is found the content is returned as a list of dicts.
+    """
+    for filename in glob.glob(f"{ensemble_path}/{stratigraphy_file}"):
+        return json.loads(Path(filename).read_text())
     return None

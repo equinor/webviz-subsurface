@@ -18,7 +18,7 @@ from webviz_config import WebvizSettings
 import webviz_subsurface_components
 
 from .._datainput.fmu_input import load_csv
-from .._datainput.well_completions import read_zone_layer_mapping, read_well_attributes
+from .._datainput.well_completions import read_zone_layer_mapping, read_well_attributes, read_stratigraphy
 
 
 class WellCompletions(WebvizPluginABC):
@@ -30,6 +30,7 @@ class WellCompletions(WebvizPluginABC):
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** csvfile with compdat data per realization
     * **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping \
+    * **`stratigraphy_file`:** Json file defining the stratigraphic levels \
     * **`well_attributes_file`:** Json file with categorical well attributes \
     * **`kh_unit`:** Will normally be mDm
     * **`kh_decimal_places`:**
@@ -58,6 +59,10 @@ class WellCompletions(WebvizPluginABC):
     Zone colors can be specified in the lyr file, but only 6 digit hexadecimal codes will be used.
 
     If no file exists, layers will be used as zones.
+
+    **Stratigraphy file **
+
+    Description of the stratigraphy file
 
     **Well Attributes file**
 
@@ -105,6 +110,7 @@ class WellCompletions(WebvizPluginABC):
         ensembles: list,
         compdat_file: str = "share/results/wells/compdat.csv",
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
+        stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
         kh_unit: str = "",
         kh_decimal_places: int = 2,
@@ -114,6 +120,7 @@ class WellCompletions(WebvizPluginABC):
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
+        self.stratigraphy_file = stratigraphy_file
         self.well_attributes_file = well_attributes_file
         self.ensembles = ensembles
         self.kh_unit = kh_unit
@@ -137,6 +144,7 @@ class WellCompletions(WebvizPluginABC):
                         "ensemble_path": self.ens_paths[ensemble],
                         "compdat_file": self.compdat_file,
                         "zone_layer_mapping_file": self.zone_layer_mapping_file,
+                        "stratigraphy_file": self.stratigraphy_file,
                         "well_attributes_file": self.well_attributes_file,
                         "colors": self.colors,
                         "kh_unit": self.kh_unit,
@@ -217,6 +225,7 @@ class WellCompletions(WebvizPluginABC):
                     self.ens_paths[ensemble_name],
                     self.compdat_file,
                     self.zone_layer_mapping_file,
+                    self.stratigraphy_file,
                     self.well_attributes_file,
                     self.theme_colors,
                     self.kh_unit,
@@ -239,6 +248,7 @@ def create_ensemble_dataset(
     ensemble_path: str,
     compdat_file: str,
     zone_layer_mapping_file: str,
+    stratigraphy_file: str,
     well_attributes_file: str,
     theme_colors: list,
     kh_unit: str,
@@ -256,6 +266,11 @@ def create_ensemble_dataset(
         ensemble_path=ensemble_path,
         zone_layer_mapping_file=zone_layer_mapping_file,
     )
+    stratigraphy = read_stratigraphy(
+        ensemble_path=ensemble_path,
+        stratigraphy_file=stratigraphy_file
+    )
+    print(stratigraphy)
     well_attributes = read_well_attributes(
         ensemble_path=ensemble_path,
         well_attributes_file=well_attributes_file,
