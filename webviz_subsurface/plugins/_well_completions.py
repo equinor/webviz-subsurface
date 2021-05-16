@@ -18,7 +18,11 @@ from webviz_config import WebvizSettings
 import webviz_subsurface_components
 
 from .._datainput.fmu_input import load_csv
-from .._datainput.well_completions import read_zone_layer_mapping, read_well_attributes, read_stratigraphy
+from .._datainput.well_completions import (
+    read_zone_layer_mapping,
+    read_well_attributes,
+    read_stratigraphy,
+)
 
 
 class WellCompletions(WebvizPluginABC):
@@ -267,10 +271,8 @@ def create_ensemble_dataset(
         zone_layer_mapping_file=zone_layer_mapping_file,
     )
     stratigraphy = read_stratigraphy(
-        ensemble_path=ensemble_path,
-        stratigraphy_file=stratigraphy_file
+        ensemble_path=ensemble_path, stratigraphy_file=stratigraphy_file
     )
-    print(stratigraphy)
     well_attributes = read_well_attributes(
         ensemble_path=ensemble_path,
         well_attributes_file=well_attributes_file,
@@ -290,7 +292,9 @@ def create_ensemble_dataset(
     result = {
         "version": "1.0.0",
         "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
-        "stratigraphy": extract_stratigraphy(layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors),
+        "stratigraphy": extract_stratigraphy(
+            layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
+        ),
         "timeSteps": time_steps,
         "wells": extract_wells(
             df, zone_names, time_steps, realizations, well_attributes
@@ -499,19 +503,59 @@ def extract_wells(
         well_list.append(well_data)
     return well_list
 
-def get_valid_elements(stratigraphy: List[Dict], valid_zone_names: list):
-    """
 
+def add_colors_to_stratigraphy(
+    stratigraphy: List[Dict], zone_color_mapping: dict, color_iterator
+):
+    """Add colors to the stratigraphy tree. The function will recursively parse the tree.
+
+    There are tree sources of color:
+    1. The color is given in the stratigraphy list, in which case nothing is done to the node
+    2. The color is given in the lyr file, and passed to this function in the zone->color map
+    3. If none of the above applies, the color will be taken from the theme color iterable, but\
+    only for the leaves.
+    """
+    for zonedict in stratigraphy:
+        if "color" not in zonedict:
+            if zonedict["name"] in zone_color_mapping:
+                zonedict["color"] = zone_color_mapping[zonedict["name"]]
+            elif "subzones" not in zonedict:
+                zonedict["color"] = next(
+                    color_iterator
+                )  # theme colors only applied on leaves
+        if "subzones" in zonedict:
+            zonedict["subzones"] = add_colors_to_stratigraphy(
+                zonedict["subzones"], zone_color_mapping, color_iterator
+            )
+    return stratigraphy
+
+
+def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list):
+    """Returns the stratigraphy tree with only valid nodes.
+    A node is considered valid if it self or one of it's subzones are in the
+    valid zone names list (passed from the lyr file)
+
+    The function recursively parses the tree to add valid nodes.
     """
     output = []
     for zonedict in stratigraphy:
         if "subzones" in zonedict:
-            zonedict["subzones"] = get_valid_elements(zonedict["subzones"], valid_zone_names)
-        if zonedict["name"] in valid_zone_names or ("subzones" in zonedict and zonedict["subzones"]):
+            zonedict["subzones"] = filter_valid_nodes(
+                zonedict["subzones"], valid_zone_names
+            )
+        if zonedict["name"] in valid_zone_names or (
+            "subzones" in zonedict and zonedict["subzones"]
+        ):
             output.append(zonedict)
     return output
 
-def extract_stratigraphy(layer_zone_mapping: dict, stratigraphy: Optional[List[Dict]], zone_color_mapping: dict, theme_colors: list) -> list:
+
+def extract_stratigraphy(
+    layer_zone_mapping: dict,
+    stratigraphy: Optional[List[Dict]],
+    zone_color_mapping: dict,
+    theme_colors: list,
+) -> list:
     """Returns the stratigraphy part of the data set"""
     color_iterator = itertools.cycle(theme_colors)
 
@@ -519,9 +563,17 @@ def extract_stratigraphy(layer_zone_mapping: dict, stratigraphy: Optional[List[D
         return [
             {
                 "name": zone,
-                "color": zone_color_mapping[zone] if zone in zone_color_mapping else next(color_iterator)
+                "color": zone_color_mapping[zone]
+                if zone in zone_color_mapping
+                else next(color_iterator),
             }
             for zone in dict.fromkeys(layer_zone_mapping.values())
         ]
     else:
-        return get_valid_elements(stratigraphy, set(layer_zone_mapping.values()))
+
+        stratigraphy = filter_valid_nodes(
+            stratigraphy, set(layer_zone_mapping.values())
+        )
+        return add_colors_to_stratigraphy(
+            stratigraphy, zone_color_mapping, color_iterator
+        )

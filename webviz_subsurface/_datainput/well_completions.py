@@ -6,6 +6,7 @@ import glob
 
 from ecl2df import common
 
+
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
 ) -> Optional[Dict[int, str]]:
@@ -17,7 +18,8 @@ def read_zone_layer_mapping(
         zonelist = common.parse_lyrfile(filename=filename)
         layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
         zone_color_mapping = {
-            zonedict["name"]:zonedict["color"] for zonedict in zonelist
+            zonedict["name"]: zonedict["color"]
+            for zonedict in zonelist
             if "color" in zonedict and re.match("^#([A-Fa-f0-9]{6})", zonedict["color"])
         }
         return layer_zone_mapping, zone_color_mapping
@@ -67,6 +69,7 @@ def read_well_attributes(
             for well_data in file_content["wells"]
         }
     return None
+
 
 def read_stratigraphy(
     ensemble_path: str, stratigraphy_file: str
