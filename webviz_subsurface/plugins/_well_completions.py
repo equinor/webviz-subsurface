@@ -290,7 +290,7 @@ def create_ensemble_dataset(
     result = {
         "version": "1.0.0",
         "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
-        "stratigraphy": extract_stratigraphy(layer_zone_mapping, zone_color_mapping, theme_colors),
+        "stratigraphy": extract_stratigraphy(layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors),
         "timeSteps": time_steps,
         "wells": extract_wells(
             df, zone_names, time_steps, realizations, well_attributes
@@ -499,14 +499,29 @@ def extract_wells(
         well_list.append(well_data)
     return well_list
 
+def get_valid_elements(stratigraphy: List[Dict], valid_zone_names: list):
+    """
 
-def extract_stratigraphy(layer_zone_mapping: dict, zone_color_mapping: dict, colors: list) -> list:
+    """
+    output = []
+    for zonedict in stratigraphy:
+        if "subzones" in zonedict:
+            zonedict["subzones"] = get_valid_elements(zonedict["subzones"], valid_zone_names)
+        if zonedict["name"] in valid_zone_names or ("subzones" in zonedict and zonedict["subzones"]):
+            output.append(zonedict)
+    return output
+
+def extract_stratigraphy(layer_zone_mapping: dict, stratigraphy: Optional[List[Dict]], zone_color_mapping: dict, theme_colors: list) -> list:
     """Returns the stratigraphy part of the data set"""
-    color_iterator = itertools.cycle(colors)
-    return [
-        {
-            "name": zone,
-            "color": zone_color_mapping[zone] if zone in zone_color_mapping else next(color_iterator)
-        }
-        for zone in dict.fromkeys(layer_zone_mapping.values())
-    ]
+    color_iterator = itertools.cycle(theme_colors)
+
+    if stratigraphy is None:
+        return [
+            {
+                "name": zone,
+                "color": zone_color_mapping[zone] if zone in zone_color_mapping else next(color_iterator)
+            }
+            for zone in dict.fromkeys(layer_zone_mapping.values())
+        ]
+    else:
+        return get_valid_elements(stratigraphy, set(layer_zone_mapping.values()))
