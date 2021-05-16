@@ -530,7 +530,7 @@ def add_colors_to_stratigraphy(
     return stratigraphy
 
 
-def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list):
+def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list) -> List[Dict]:
     """Returns the stratigraphy tree with only valid nodes.
     A node is considered valid if it self or one of it's subzones are in the
     valid zone names list (passed from the lyr file)
@@ -547,6 +547,13 @@ def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list):
             "subzones" in zonedict and zonedict["subzones"]
         ):
             output.append(zonedict)
+            valid_zone_names = [
+                zone for zone in valid_zone_names if zone != zonedict["name"]
+            ]  # remove zone name from valid zones if it is found in the stratigraphy
+
+    # if any zones are left in the valid zone names they will be added to the end of the list
+    for zone_name in valid_zone_names:
+        output.append({"name": zone_name})
     return output
 
 
