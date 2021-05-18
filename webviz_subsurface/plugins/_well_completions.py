@@ -538,23 +538,23 @@ def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list) -> List
     The function recursively parses the tree to add valid nodes.
     """
     output = []
+    remaining_valid_zones = valid_zone_names
     for zonedict in stratigraphy:
         if "subzones" in zonedict:
-            zonedict["subzones"] = filter_valid_nodes(
-                zonedict["subzones"], valid_zone_names
+            zonedict["subzones"], remaining_valid_zones = filter_valid_nodes(
+                zonedict["subzones"], remaining_valid_zones
             )
-        if zonedict["name"] in valid_zone_names or (
-            "subzones" in zonedict and zonedict["subzones"]
-        ):
+        if zonedict["name"] in remaining_valid_zones:
+            if "subzones" in zonedict and not zonedict["subzones"]:
+                zonedict.pop("subzones")
             output.append(zonedict)
-            valid_zone_names = [
-                zone for zone in valid_zone_names if zone != zonedict["name"]
+            remaining_valid_zones = [
+                zone for zone in remaining_valid_zones if zone != zonedict["name"]
             ]  # remove zone name from valid zones if it is found in the stratigraphy
+        elif "subzones" in zonedict and zonedict["subzones"]:
+            output.append(zonedict)
 
-    # if any zones are left in the valid zone names they will be added to the end of the list
-    for zone_name in valid_zone_names:
-        output.append({"name": zone_name})
-    return output
+    return output, remaining_valid_zones
 
 
 def extract_stratigraphy(
@@ -578,9 +578,13 @@ def extract_stratigraphy(
         ]
     else:
 
-        stratigraphy = filter_valid_nodes(
+        stratigraphy, remaining_valid_zones = filter_valid_nodes(
             stratigraphy, set(layer_zone_mapping.values())
         )
+        # Zones not found in the stratigraphy is added to the end.
+        for zone_name in remaining_valid_zones:
+            stratigraphy.append({"name": zone_name})
+
         return add_colors_to_stratigraphy(
             stratigraphy, zone_color_mapping, color_iterator
         )
