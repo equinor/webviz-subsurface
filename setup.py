@@ -7,7 +7,6 @@ TESTS_REQUIRE = [
     "selenium>=3.141",
     "pylint",
     "mypy",
-    "mock",
     "black>=21.4b0",
     "bandit",
     "pytest-xdist",
