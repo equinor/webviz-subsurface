@@ -118,7 +118,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 + [
                     key
                     for key in RelativePermeability.SCAL_COLORMAP
-                    if key is not "Missing"
+                    if key != "Missing"
                 ]
             )
             self.satfunc = self.satfunc[
