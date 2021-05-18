@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 import dash
 import pandas as pd
 from webviz_config.common_cache import CACHE
