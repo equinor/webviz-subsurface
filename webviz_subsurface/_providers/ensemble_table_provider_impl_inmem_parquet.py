@@ -1,10 +1,14 @@
 from typing import List, Optional, Sequence
 from pathlib import Path
+import logging
 
 import pandas as pd
 
 from .ensemble_table_provider import EnsembleTableProvider
+from .._utils.perf_timer import PerfTimer
 
+
+LOGGER = logging.getLogger(__name__)
 
 # =============================================================================
 class EnsembleTableProviderImplInMemParquet(EnsembleTableProvider):
@@ -61,11 +65,15 @@ class EnsembleTableProviderImplInMemParquet(EnsembleTableProvider):
         self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
 
+        timer = PerfTimer()
+
         if realizations:
             df = self._ensemble_df.loc[
                 self._ensemble_df["REAL"].isin(realizations), ["REAL", *column_names]
             ]
         else:
             df = self._ensemble_df.loc[:, ["REAL", *column_names]]
+
+        LOGGER.debug(f"get_column_data() took: {timer.elapsed_ms()}ms")
 
         return df

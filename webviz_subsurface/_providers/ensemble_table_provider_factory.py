@@ -4,7 +4,6 @@ import os
 import hashlib
 import json
 import logging
-import time
 import pickle
 from enum import Enum
 
@@ -21,6 +20,7 @@ from .ensemble_table_provider_impl_arrow import EnsembleTableProviderImplArrow
 from .ensemble_table_provider_impl_inmem_parquet import (
     EnsembleTableProviderImplInMemParquet,
 )
+from .._utils.perf_timer import PerfTimer
 
 
 class BackingType(Enum):
@@ -29,9 +29,6 @@ class BackingType(Enum):
 
 
 LOGGER = logging.getLogger(__name__)
-
-# Hack until we get logging properly sorted out
-LOGGER.setLevel(logging.INFO)
 
 
 # =============================================================================
@@ -153,7 +150,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(
             f"create_provider_set_from_per_realization_csv_file() - {csv_file_rel_path}"
         )
-        start_tim = time.perf_counter()
+        timer = PerfTimer()
 
         # Try and create/load providers from backing store
         created_providers: Dict[str, EnsembleTableProvider] = {}
@@ -172,24 +169,22 @@ class EnsembleTableProviderFactory(WebvizFactory):
         # we'll load the csv, write data to storage and then try and load again
         if missing_storage_keys and self._allow_storage_writes:
             for ens_name, storage_key in dict(missing_storage_keys).items():
-                lap_tim = time.perf_counter()
+                timer.lap_s()
                 ens_path = ensembles[ens_name]
                 scratch_ensemble = self._get_or_create_scratch_ensemble(
                     ens_name, ens_path
                 )
-                elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
+                elapsed_create_scratch_ens_s = timer.lap_s()
 
-                lap_tim = time.perf_counter()
                 ensemble_df = scratch_ensemble.load_csv(csv_file_rel_path)
                 del scratch_ensemble
-                elapsed_load_csv_s = time.perf_counter() - lap_tim
+                elapsed_load_csv_s = timer.lap_s()
 
-                lap_tim = time.perf_counter()
                 self._write_data_to_backing_store(storage_key, ensemble_df)
                 provider = self._create_provider_instance_from_backing_store(
                     storage_key
                 )
-                elapsed_write_s = time.perf_counter() - lap_tim
+                elapsed_write_s = timer.lap_s()
 
                 if provider:
                     created_providers[ens_name] = provider
@@ -208,7 +203,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
 
         LOGGER.info(
             f"create_provider_set_from_per_realization_csv_file() "
-            f"- total time: {(time.perf_counter() - start_tim):.2f}s"
+            f"- total time: {timer.elapsed_s():.2f}s"
         )
 
         return EnsembleTableProviderSet(created_providers)
@@ -224,7 +219,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
 
         LOGGER.info("create_provider_set_from_per_realization_parameter_file() ...")
 
-        start_tim = time.perf_counter()
+        timer = PerfTimer()
 
         storage_keys_to_load: Dict[str, str] = {}
         for ens_name, ens_path in ensembles.items():
@@ -246,24 +241,22 @@ class EnsembleTableProviderFactory(WebvizFactory):
         # we'll load the parameters file, write data to storage and then try and load again
         if storage_keys_to_load and self._allow_storage_writes:
             for ens_name, storage_key in dict(storage_keys_to_load).items():
-                lap_tim = time.perf_counter()
+                timer.lap_s()
                 ens_path = ensembles[ens_name]
                 scratch_ensemble = self._get_or_create_scratch_ensemble(
                     ens_name, ens_path
                 )
-                elapsed_create_scratch_ens_s = time.perf_counter() - lap_tim
+                elapsed_create_scratch_ens_s = timer.lap_s()
 
-                lap_tim = time.perf_counter()
                 ensemble_df = scratch_ensemble.parameters
                 del scratch_ensemble
-                elapsed_load_parameters_s = time.perf_counter() - lap_tim
+                elapsed_load_parameters_s = timer.lap_s()
 
-                lap_tim = time.perf_counter()
                 self._write_data_to_backing_store(storage_key, ensemble_df)
                 provider = self._create_provider_instance_from_backing_store(
                     storage_key
                 )
-                elapsed_write_s = time.perf_counter() - lap_tim
+                elapsed_write_s = timer.lap_s()
 
                 if provider:
                     created_providers[ens_name] = provider
@@ -283,7 +276,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
 
         LOGGER.info(
             f"create_provider_set_from_per_realization_parameter_file() "
-            f"- total time: {(time.perf_counter() - start_tim):.2f}s"
+            f"- total time: {timer.elapsed_s():.2f}s"
         )
 
         return EnsembleTableProviderSet(created_providers)

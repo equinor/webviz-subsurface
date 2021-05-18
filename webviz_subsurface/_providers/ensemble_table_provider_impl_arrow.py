@@ -1,11 +1,17 @@
 from typing import List, Optional, Sequence
 from pathlib import Path
+import logging
 
 import pyarrow as pa
 import pyarrow.compute as pc
 import pandas as pd
 
 from .ensemble_table_provider import EnsembleTableProvider
+from .._utils.perf_timer import PerfTimer
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 # =============================================================================
 class EnsembleTableProviderImplArrow(EnsembleTableProvider):
@@ -73,6 +79,8 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
         self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
 
+        timer = PerfTimer()
+
         source = pa.memory_map(self._arrow_file_name, "r")
         table = (
             pa.ipc.RecordBatchFileReader(source)
@@ -85,4 +93,11 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
             table = table.filter(mask)
 
         df = table.to_pandas()
+
+        LOGGER.debug(
+            f"get_column_data() took: {timer.elapsed_ms()}ms "
+            f"(#columns={len(column_names)}, "
+            f"#realizations={len(realizations) if realizations else 'all'})"
+        )
+
         return df
