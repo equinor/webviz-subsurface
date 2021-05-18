@@ -66,7 +66,50 @@ class WellCompletions(WebvizPluginABC):
 
     **Stratigraphy file **
 
-    Description of the stratigraphy file
+    `stratigraphy_file` file is intended to be generated per realizaiont by an internal \
+    RMS script as part of the FMU workflow. The stratigraphy is a tree structure, where each node \
+    has a name, and optional `color` parameter, and an optional `subzones` parameter which itself \
+    needs to be a list of exactly the same format.
+    ```json
+    [
+        {
+            "name": "ZoneA",
+            "color": "#FFFFFF",
+            "subzones": [
+                {
+                    "name": "ZoneA.1
+                },
+                {
+                    "name": "ZoneA.2
+                }
+            ]
+        },
+        {
+            "name": "ZoneB",
+            "color": "#FFF000",
+            "subzones": [
+                {
+                    "name": "ZoneB.1",
+                    "color": "#FFF111"
+                },
+                {
+                    "name": "ZoneB.2,
+                    "subzones: {"name": "ZoneB.2.2"}
+                }
+            ]
+        },
+    ]
+    ```
+    The stratigraphy file and the zone_layer_mapping will be combined to create the final \
+    stratigraphy. A node will be removed if the name or any of the subnode names are not \
+    present in the zone_layer_mapping. Any zones in zone_layer_mapping that are not present \
+    in the stratigraphy will be added to the end of the stratigraphy.
+
+    Colors can be supplied both trough the stratigraphy and through the zone_layer_mapping. \
+    The following prioritization will be applied:
+    1. Colors specified in the stratigraphy
+    2. Colors specified in the zone layer mapping lyr file
+    3. If none of the above is specified, theme colors will be added, but only to the leaves.
 
     **Well Attributes file**
 
