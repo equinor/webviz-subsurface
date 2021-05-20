@@ -20,6 +20,9 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
     def __init__(self, arrow_file_name: Path) -> None:
         self._arrow_file_name = str(arrow_file_name)
 
+        LOGGER.debug(f"init with arrow file: {self._arrow_file_name}")
+        timer = PerfTimer()
+
         # Discover columns and realizations that are present in the arrow file
         with pa.memory_map(self._arrow_file_name, "r") as source:
             reader = pa.ipc.RecordBatchFileReader(source)
@@ -32,6 +35,12 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
             if colname not in ["REAL", "ENSEMBLE"]
         ]
         self._realizations: List[int] = unique_realizations_on_file.to_pylist()
+
+        LOGGER.debug(
+            f"init took: {timer.elapsed_s():.2f}s, "
+            f"#column_names={len(self._column_names)}, "
+            f"#realization={len(self._realizations)}"
+        )
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -81,23 +90,37 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
 
         timer = PerfTimer()
 
-        source = pa.memory_map(self._arrow_file_name, "r")
-        table = (
-            pa.ipc.RecordBatchFileReader(source)
-            .read_all()
-            .select(["REAL", *column_names])
+        # For now guard against requesting the same column multiple times since that
+        # will cause the conversion to pandas below to throw
+        # This should probably raise an exception instead?
+        if len(set(column_names)) != len(column_names):
+            LOGGER.warning("The column_names argument contains duplicate names")
+            column_names = list(dict.fromkeys(column_names))
+
+        # We always want to include the the REAL column but watch out in case it is
+        # already included in the column_names list
+        columns_to_get = (
+            ["REAL", *column_names] if "REAL" not in column_names else column_names
         )
+
+        source = pa.memory_map(self._arrow_file_name, "r")
+        table = pa.ipc.RecordBatchFileReader(source).read_all().select(columns_to_get)
+        read_ms = timer.lap_ms()
 
         if realizations:
             mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
             table = table.filter(mask)
+        filter_ms = timer.lap_ms()
 
-        df = table.to_pandas()
+        df = table.to_pandas(ignore_metadata=True)
+        to_pandas_ms = timer.lap_ms()
 
         LOGGER.debug(
             f"get_column_data() took: {timer.elapsed_ms()}ms "
-            f"(#columns={len(column_names)}, "
-            f"#realizations={len(realizations) if realizations else 'all'})"
+            f"(read={read_ms}ms, filter={filter_ms}ms, to_pandas={to_pandas_ms}ms), "
+            f"#cols={len(column_names)}, "
+            f"#real={len(realizations) if realizations else 'all'}, "
+            f"df.shape={df.shape}, file={Path(self._arrow_file_name).name}"
         )
 
         return df
