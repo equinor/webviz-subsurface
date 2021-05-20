@@ -20,7 +20,7 @@ from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import table_statistics_base
 
 
-class InplaceVolumes(WebvizPluginABC):
+class InplaceVolumesOld(WebvizPluginABC):
     """Visualizes inplace volumetric results from
 FMU ensembles.
 
@@ -452,7 +452,7 @@ but the following responses are given more descriptive names automatically:
             # Column specification
             columns = [
                 {**{"name": i[0], "id": i[0]}, **i[1]}
-                for i in InplaceVolumes.TABLE_STATISTICS
+                for i in InplaceVolumesOld.TABLE_STATISTICS
             ]
             # Make a graph object and return
             return (
