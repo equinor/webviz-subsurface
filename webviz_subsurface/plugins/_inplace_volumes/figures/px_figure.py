@@ -16,6 +16,8 @@ def create_figure(plot_type, **kwargs) -> go.Figure:
     fig = for_each_annotation(fig, **plotargs)
 
     fig.update_traces(marker_size=15, selector=dict(type="scatter"))
+    # fig.for_each_trace(lambda t: )
+    fig.update_traces(nbinsx=20, selector=dict(type="histogram"))
 
     if plot_type == "distribution":
         fig = convert_violin_to_distribution_plot(fig, **plotargs)
@@ -27,7 +29,7 @@ def set_default_args(**plotargs):
 
     plotargs["histnorm"] = plotargs.get("histnorm", "percent")
     plotargs["barmode"] = plotargs.get("barmode", "group")
-    plotargs["nbins"] = plotargs.get("nbins", 20)
+    #   plotargs["nbins"] = plotargs.get("nbins", 20)
     plotargs["opacity"] = plotargs.get("opacity", 0.85)
 
     if plotargs.get("facet_col") is not None:
@@ -74,7 +76,7 @@ def update_xaxes(figure, **kwargs):
         if facet_col is not None
         else None,
         tickangle=0,
-        tickfont_size=max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
+        tickfont_size=max((22 - (0.4 * data_frame[facet_col].nunique())), 10)
         if facet_col is not None
         else None,
     )

@@ -29,9 +29,14 @@
 .webviz-inplace-vol-plotselect {
     cursor: pointer;
     color: #555;
-    margin-top: 20px;
-    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: rgb(232, 232, 232);    
+    border-radius: 4px;
+    border: 1px solid #bbb;    
+
 }
+
 .webviz-inplace-vol-plotselect:hover {
     box-shadow: 0px 0px 3px 0.5px lightgrey;
 }
@@ -43,5 +48,4 @@
     padding: 15px;
     position: relative;
     box-shadow: 0px 0px 4px 0.5px lightgrey;
-  }
-  
+}
