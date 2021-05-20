@@ -23,17 +23,21 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
         LOGGER.debug(f"init with arrow file: {self._arrow_file_name}")
         timer = PerfTimer()
 
-        # Discover columns and realizations that are present in the arrow file
-        with pa.memory_map(self._arrow_file_name, "r") as source:
-            reader = pa.ipc.RecordBatchFileReader(source)
-            column_names_on_file = reader.schema.names
-            unique_realizations_on_file = reader.read_all().column("REAL").unique()
+        # We'll try and keep the file open for the life-span of the provider
+        source = pa.memory_map(self._arrow_file_name, "r")
+        self._cached_reader = pa.ipc.RecordBatchFileReader(source)
 
+        # Discover columns and realizations that are present in the arrow file
+        column_names_on_file = self._cached_reader.schema.names
         self._column_names: List[str] = [
             colname
             for colname in column_names_on_file
             if colname not in ["REAL", "ENSEMBLE"]
         ]
+
+        unique_realizations_on_file = (
+            self._cached_reader.read_all().column("REAL").unique()
+        )
         self._realizations: List[int] = unique_realizations_on_file.to_pylist()
 
         LOGGER.debug(
@@ -103,8 +107,7 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
             ["REAL", *column_names] if "REAL" not in column_names else column_names
         )
 
-        source = pa.memory_map(self._arrow_file_name, "r")
-        table = pa.ipc.RecordBatchFileReader(source).read_all().select(columns_to_get)
+        table = self._cached_reader.read_all().select(columns_to_get)
         read_ms = timer.lap_ms()
 
         if realizations:
