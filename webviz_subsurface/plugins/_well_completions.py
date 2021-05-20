@@ -160,7 +160,7 @@ class WellCompletions(WebvizPluginABC):
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
-        kh_unit: str = "",
+        kh_unit: Optional[str] = None,
         kh_decimal_places: int = 2,
     ):
         # pylint: disable=too-many-arguments
@@ -299,7 +299,7 @@ def create_ensemble_dataset(
     stratigraphy_file: str,
     well_attributes_file: str,
     theme_colors: list,
-    kh_unit: str,
+    kh_unit: Optional[str],
     kh_decimal_places: int,
 ) -> io.BytesIO:
     # pylint: disable=too-many-arguments
@@ -322,7 +322,7 @@ def create_ensemble_dataset(
         ensemble_path=ensemble_path,
         well_attributes_file=well_attributes_file,
     )
-    if kh_unit == "":
+    if kh_unit is None:
         kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
 
     time_steps = sorted(df.DATE.unique())
