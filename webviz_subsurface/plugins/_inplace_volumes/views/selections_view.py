@@ -1,13 +1,15 @@
-from typing import Callable, List
-
+from typing import Callable, List, Optional
+import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+from webviz_config import WebvizConfigTheme
 
 
 def selections_layout(
     uuid: Callable,
     volumemodel,
+    theme: WebvizConfigTheme,
 ) -> html.Div:
     """Layout for selecting intersection data"""
     return html.Div(
@@ -15,14 +17,9 @@ def selections_layout(
             button(uuid=uuid, title="1 plot / 1 table"),
             button(uuid=uuid, title="Plots per zone/region"),
             button(uuid=uuid, title="Custom plotting"),
-            html.Div(
-                className="webviz-inplace-vol-plotselect",
-                children=selector_dropdowns(
-                    uuid=uuid,
-                    volumemodel=volumemodel,
-                ),
-            ),
-            plot_settings_layout(uuid, volumemodel),
+            plot_selections_layout(uuid, volumemodel),
+            table_selections_layout(uuid, volumemodel),
+            settings_layout(uuid, volumemodel, theme),
         ]
     )
 
@@ -57,14 +54,65 @@ def source_selector(uuid: str, volumemodel) -> html.Div:
     )
 
 
-def selector_dropdowns(uuid: str, volumemodel):
+def plot_selections_layout(uuid: str, volumemodel) -> html.Div:
+    return html.Details(
+        className="webviz-inplace-vol-plotselect",
+        style={"margin-top": "20px"},
+        open=True,
+        children=[
+            html.Summary(
+                style={
+                    "font-size": "15px",
+                    "font-weight": "bold",
+                },
+                children="PLOT CONTROLS",
+            ),
+            html.Div(
+                style={"padding": "10px"},
+                children=plot_selector_dropdowns(
+                    uuid=uuid,
+                    volumemodel=volumemodel,
+                ),
+            ),
+        ],
+    )
+
+
+def table_selections_layout(uuid: str, volumemodel) -> html.Div:
+    return html.Details(
+        className="webviz-inplace-vol-plotselect",
+        open=True,
+        children=[
+            html.Summary(
+                style={
+                    "font-size": "15px",
+                    "font-weight": "bold",
+                },
+                children="TABLE CONTROLS",
+            ),
+            html.Div(
+                style={"padding": "10px"},
+                children=[
+                    table_sync_option(uuid),
+                    html.Div(
+                        table_selector_dropdowns(
+                            uuid=uuid,
+                            volumemodel=volumemodel,
+                        ),
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def plot_selector_dropdowns(uuid: str, volumemodel):
     """Makes dropdowns for each selector"""
 
     dropdowns: List[html.Div] = []
 
     for selector in [
         "Plot type",
-        "Table type",
         "X Response",
         "Y Response",
         "Subplots",
@@ -72,9 +120,6 @@ def selector_dropdowns(uuid: str, volumemodel):
     ]:
         if selector == "Plot type":
             elements = ["histogram", "scatter", "distribution", "bar", "box"]
-            value = elements[0]
-        if selector == "Table type":
-            elements = ["Statistics table", "Data table"]
             value = elements[0]
         if selector == "X Response":
             elements = volumemodel.responses
@@ -111,9 +156,44 @@ def selector_dropdowns(uuid: str, volumemodel):
     return dropdowns
 
 
-def plot_settings_layout(uuid: str, volumemodel) -> html.Div:
+def table_selector_dropdowns(uuid: str, volumemodel):
+    """Makes dropdowns for each selector"""
+
+    dropdowns: List[html.Div] = []
+
+    for selector in ["Table type", "Data type"]:
+        if selector == "Table type":
+            elements = ["Statistics table", "Data table"]
+            value = elements[0]
+        if selector == "Data type":
+            elements = ["Volumetrics columns", "Property columns"]
+            value = elements[0]
+
+        dropdowns.append(
+            html.Div(
+                html.Label(
+                    children=[
+                        html.Summary(selector, style={"font-weight": "bold"}),
+                        dcc.Dropdown(
+                            id={"id": uuid, "selector": selector},
+                            options=[{"label": elm, "value": elm} for elm in elements],
+                            value=value,
+                            persistence=True,
+                            persistence_type="session",
+                        ),
+                    ],
+                )
+            )
+        )
+    return dropdowns
+
+
+def settings_layout(uuid: str, volumemodel, theme: WebvizConfigTheme) -> html.Div:
+
+    theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
+    colors = px.colors.qualitative.T10
     return html.Details(
-        className="webviz-structunc-settings",
+        className="webviz-inplace-vol-plotselect",
         open=False,
         children=[
             html.Summary(
@@ -121,14 +201,21 @@ def plot_settings_layout(uuid: str, volumemodel) -> html.Div:
                     "font-size": "15px",
                     "font-weight": "bold",
                 },
-                children="⚙️ Settings",
+                children="⚙️ SETTINGS",
             ),
             html.Div(
                 style={"padding": "10px"},
                 children=[
-                    subplot_xaxis_range(
-                        uuid=uuid,
-                        volumemodel=volumemodel,
+                    subplot_xaxis_range(uuid=uuid),
+                    html.Span("Colors", style={"font-weight": "bold"}),
+                    wcc.ColorScales(
+                        id={
+                            "id": uuid,
+                            "settings": "Colorscale",
+                        },
+                        colorscale=theme_colors,
+                        fixSwatches=True,
+                        nSwatches=12,
                     ),
                 ],
             ),
@@ -138,18 +225,16 @@ def plot_settings_layout(uuid: str, volumemodel) -> html.Div:
 
 def subplot_xaxis_range(
     uuid: str,
-    volumemodel,
 ) -> html.Div:
 
     return html.Div(
         children=[
             html.Span("Subplot X axis option", style={"font-weight": "bold"}),
             html.Div(
-                style={"backgroumd-color": "white"},
                 children=dcc.RadioItems(
                     id={
                         "id": uuid,
-                        "settings": "xrange_subplots_matches",
+                        "selector": "xrange_subplots_matches",
                     },
                     options=[
                         {
@@ -162,11 +247,33 @@ def subplot_xaxis_range(
                         },
                     ],
                     labelStyle={
-                        #        "display": "inline-block",
+                        "display": "inline-block",
                         "margin-right": "5px",
                     },
                     value=True,
                 ),
             ),
         ]
+    )
+
+
+def table_sync_option(
+    uuid: str,
+) -> html.Div:
+
+    return html.Div(
+        style={"margin-bottom": "10px"},
+        children=dcc.Checklist(
+            id={
+                "id": uuid,
+                "settings": "sync_table",
+            },
+            options=[
+                {
+                    "label": "Sync table with plot",
+                    "value": "Sync",
+                },
+            ],
+            value=["Sync"],
+        ),
     )

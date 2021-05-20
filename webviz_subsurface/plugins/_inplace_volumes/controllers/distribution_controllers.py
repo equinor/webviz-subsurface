@@ -92,7 +92,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             if selections["Table type"] == "Statistics table"
             else make_table(dframe)
         )
-
+        print(selections)
         # pylint: disable=no-member
         figure = create_figure(
             plot_type=selections["Plot type"],
@@ -101,7 +101,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             y=selections["Y Response"],
             facet_col=selections["Subplots"],
             color=selections["Color by"],
-            color_discrete_sequence=px.colors.qualitative.G10_r,
+            color_discrete_sequence=selections["Colorscale"],
             layout=dict(
                 title=dict(
                     text=f"{volume_description(selections['X Response'])} [{volume_unit(selections['X Response'])}]",
@@ -195,9 +195,8 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     values=selections["X Response"],
                     names=selector,
                     title=f"{selections['X Response']} per {selector}",
-                    color_discrete_sequence=px.colors.qualitative.G10_r,
+                    color_discrete_sequence=selections["Colorscale"],
                     color=selector,
-                    opacity=0.85,
                 )
             )
             bar_figs.append(
@@ -206,9 +205,11 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     data_frame=df_merged,
                     x=selector,
                     y=selections["X Response"],
-                    color_discrete_sequence=px.colors.qualitative.G10_r,
+                    color_discrete_sequence=px.colors.diverging.BrBG_r,
                     color="ENSEMBLE",
-                ).update_xaxes(type="category")
+                )
+                .update_xaxes(type="category", tickangle=45, tickfont_size=17)
+                .update_traces(marker_line=dict(color="#000000", width=2))
             )
 
         return pie_figs[0], pie_figs[1], bar_figs[0], bar_figs[1]

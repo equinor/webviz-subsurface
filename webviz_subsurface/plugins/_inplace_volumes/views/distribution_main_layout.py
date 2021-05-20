@@ -49,7 +49,6 @@ def distributions_main_layout_1x1(uuid: str) -> html.Div:
                     id={"id": uuid, "element": "graph", "layout": "1x1"},
                     config={"displayModeBar": False},
                     style={"height": "85vh"},
-                    figure=[],
                 ),
             ),
             html.Div(
@@ -78,7 +77,6 @@ def distributions_main_layout_2x1(uuid: str) -> html.Div:
                             id={"id": uuid, "element": "graph", "layout": "2x1"},
                             config={"displayModeBar": False},
                             style={"height": "44vh"},
-                            figure=[],
                         ),
                     ),
                     html.Div(
@@ -96,7 +94,6 @@ def distributions_main_layout_2x1(uuid: str) -> html.Div:
                                         },
                                         config={"displayModeBar": False},
                                         style={"height": "44vh"},
-                                        figure=[],
                                     ),
                                 ),
                                 html.Div(
@@ -109,7 +106,6 @@ def distributions_main_layout_2x1(uuid: str) -> html.Div:
                                         },
                                         config={"displayModeBar": False},
                                         style={"height": "44vh"},
-                                        figure=[],
                                     ),
                                 ),
                             ]
@@ -149,7 +145,6 @@ def distributions_main_layout_2x1(uuid: str) -> html.Div:
                                         },
                                         config={"displayModeBar": False},
                                         style={"height": "44vh"},
-                                        figure=[],
                                     ),
                                 ),
                                 html.Div(
@@ -162,7 +157,6 @@ def distributions_main_layout_2x1(uuid: str) -> html.Div:
                                         },
                                         config={"displayModeBar": False},
                                         style={"height": "44vh"},
-                                        figure=[],
                                     ),
                                 ),
                             ]

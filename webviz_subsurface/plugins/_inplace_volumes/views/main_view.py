@@ -31,6 +31,7 @@ def main_view(
                             selections_layout(
                                 uuid=get_uuid("selections-inplace-dist"),
                                 volumemodel=volumemodel,
+                                theme=theme,
                             )
                         ],
                     },

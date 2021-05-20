@@ -9,22 +9,19 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
     @app.callback(
         Output(get_uuid("selections-inplace-dist"), "data"),
         Input({"id": get_uuid("selections-inplace-dist"), "selector": ALL}, "value"),
-        Input({"id": get_uuid("selections-inplace-dist"), "settings": ALL}, "value"),
+        Input(
+            {"id": get_uuid("selections-inplace-dist"), "settings": "Colorscale"},
+            "colorscale",
+        ),
         State({"id": get_uuid("selections-inplace-dist"), "selector": ALL}, "id"),
-        State({"id": get_uuid("selections-inplace-dist"), "settings": ALL}, "id"),
     )
-    def _update_selections(selectors, settings, selctor_ids, settings_ids):
+    def _update_selections(selectors, colorscale, selctor_ids):
         ctx = dash.callback_context.triggered[0]
         selections = {
             id_value["selector"]: values
             for id_value, values in zip(selctor_ids, selectors)
         }
-        selections.update(
-            {
-                id_value["settings"]: values
-                for id_value, values in zip(settings_ids, settings)
-            }
-        )
+        selections.update(Colorscale=colorscale)
         selections.update(ctx_clicked=ctx["prop_id"])
         return selections
 
