@@ -68,9 +68,9 @@ class WellCompletions(WebvizPluginABC):
     **Stratigraphy file **
 
     `stratigraphy_file` file is intended to be generated per realizaiont by an internal \
-    RMS script as part of the FMU workflow. The stratigraphy is a tree structure, where each node \
-    has a name, an optional `color` parameter, and an optional `subzones` parameter which itself \
-    is a list of exactly the same format.
+    RMS script as part of the FMU workflow, but can also be set up manually. The stratigraphy \
+    is a tree structure, where each node has a name, an optional `color` parameter, and an \
+    optional `subzones` parameter which itself is a list of exactly the same format.
     ```json
     [
         {
