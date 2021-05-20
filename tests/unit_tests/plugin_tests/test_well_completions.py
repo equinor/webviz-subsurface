@@ -39,7 +39,7 @@ def test_extract_stratigraphy():
         },
         {
             "name": "ZoneB",
-            # Color not specified for ZoneB, and it is not a leaf
+            "color": "#808080",  # Since it's not a leaf, color is set to grey
             "subzones": [
                 {
                     "name": "ZoneB.1",

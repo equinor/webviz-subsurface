@@ -110,7 +110,7 @@ class WellCompletions(WebvizPluginABC):
     The following prioritization will be applied:
     1. Colors specified in the stratigraphy
     2. Colors specified in the zone layer mapping lyr file
-    3. If none of the above is specified, theme colors will be added, but only to the leaves.
+    3. If none of the above is specified, theme colors will be added to the leaves.
 
     **Well Attributes file**
 
@@ -285,7 +285,7 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 50 + 180, "min-height": 500},
+                {"padding": "10px", "height": zones * 100 + 180, "min-height": 500},
             ]
 
 
@@ -337,7 +337,7 @@ def create_ensemble_dataset(
     zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
 
     result = {
-        "version": "1.0.0",
+        "version": "1.1.0",
         "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
         "stratigraphy": extract_stratigraphy(
             layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
@@ -347,6 +347,11 @@ def create_ensemble_dataset(
             df, zone_names, time_steps, realizations, well_attributes
         ),
     }
+
+    with open("/private/olind/webviz/result.json", "w") as handle:
+        json.dump(result, handle)
+        print("output exported")
+
     return io.BytesIO(json.dumps(result).encode())
 
 
@@ -534,7 +539,7 @@ def extract_well(
         kh_min_zone,
         kh_max_zone,
     ) in zip(zone_names, open_frac, shut_frac, kh_mean, kh_min, kh_max):
-        if list(open_frac_zone):
+        if sum(open_frac_zone) != 0.0 or sum(shut_frac_zone) != 0.0:
             result[zone_name] = format_time_series(
                 open_frac_zone, shut_frac_zone, kh_mean_zone, kh_min_zone, kh_max_zone
             )
@@ -574,8 +579,8 @@ def add_colors_to_stratigraphy(
     There are tree sources of color:
     1. The color is given in the stratigraphy list, in which case nothing is done to the node
     2. The color is given in the lyr file, and passed to this function in the zone->color map
-    3. If none of the above applies, the color will be taken from the theme color iterable, but\
-    only for the leaves.
+    3. If none of the above applies, the color will be taken from the theme color iterable for \
+    the leaves. For other levels, a dummy color grey is used
     """
     for zonedict in stratigraphy:
         if "color" not in zonedict:
@@ -588,6 +593,8 @@ def add_colors_to_stratigraphy(
                 zonedict["color"] = next(
                     color_iterator
                 )  # theme colors only applied on leaves
+            else:
+                zonedict["color"] = "#808080"  # grey
         if "subzones" in zonedict:
             zonedict["subzones"] = add_colors_to_stratigraphy(
                 zonedict["subzones"], zone_color_mapping, color_iterator
