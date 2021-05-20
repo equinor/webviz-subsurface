@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 import json
 import re
 from pathlib import Path
@@ -9,7 +9,7 @@ from ecl2df import common
 
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
-) -> Optional[Dict[int, str]]:
+) -> Tuple[Optional[Dict[int, str]], Optional[Dict[str, str]]]:
     """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
     If one file is found it is parsed using functionality from the ecl2df \
     library.
@@ -79,4 +79,31 @@ def read_stratigraphy(
     """
     for filename in glob.glob(f"{ensemble_path}/{stratigraphy_file}"):
         return json.loads(Path(filename).read_text())
+    return None
+
+
+def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
+    """Returns the unit system of an eclipse deck. The options are \
+    METRIC, FIELD, LAB and PVT-M.
+
+    If none of these are found, the function returns None, even though \
+    the default unit system is METRIC. This is because the unit system \
+    keyword could be in an include file.
+    """
+
+    def ecldata_has_unit_system(unit_system: str, lines: list) -> bool:
+        for line in lines:
+            if line.startswith(unit_system):
+                return True
+        return False
+
+    unit_systems = ["METRIC", "FIELD", "LAB", "PVT-M"]
+    for filename in glob.glob(f"{ensemble_path}/eclipse/model/*.DATA"):
+        with open(filename, "r") as handle:
+            ecl_data_lines = handle.readlines()
+
+        for unit_system in unit_systems:
+            if ecldata_has_unit_system(unit_system, ecl_data_lines):
+                return unit_system
+        return None
     return None

@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Tuple, Callable, Any
+from typing import Optional, List, Dict, Tuple, Callable, Any, Iterator
 import json
 import itertools
 import io
@@ -22,6 +22,7 @@ from .._datainput.well_completions import (
     read_zone_layer_mapping,
     read_well_attributes,
     read_stratigraphy,
+    get_ecl_unit_system,
 )
 
 
@@ -36,7 +37,7 @@ class WellCompletions(WebvizPluginABC):
     * **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping \
     * **`stratigraphy_file`:** Json file defining the stratigraphic levels \
     * **`well_attributes_file`:** Json file with categorical well attributes \
-    * **`kh_unit`:** Will normally be mDm
+    * **`kh_unit`:** Will normally be mD*m
     * **`kh_decimal_places`:**
 
     ---
@@ -68,8 +69,8 @@ class WellCompletions(WebvizPluginABC):
 
     `stratigraphy_file` file is intended to be generated per realizaiont by an internal \
     RMS script as part of the FMU workflow. The stratigraphy is a tree structure, where each node \
-    has a name, and optional `color` parameter, and an optional `subzones` parameter which itself \
-    needs to be a list of exactly the same format.
+    has a name, an optional `color` parameter, and an optional `subzones` parameter which itself \
+    is a list of exactly the same format.
     ```json
     [
         {
@@ -193,7 +194,7 @@ class WellCompletions(WebvizPluginABC):
                         "zone_layer_mapping_file": self.zone_layer_mapping_file,
                         "stratigraphy_file": self.stratigraphy_file,
                         "well_attributes_file": self.well_attributes_file,
-                        "colors": self.colors,
+                        "theme_colors": self.theme_colors,
                         "kh_unit": self.kh_unit,
                         "kh_decimal_places": self.kh_decimal_places,
                     }
@@ -301,6 +302,7 @@ def create_ensemble_dataset(
     kh_unit: str,
     kh_decimal_places: int,
 ) -> io.BytesIO:
+    # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
     """Creates the well completion data set for the WellCompletions component
 
@@ -320,6 +322,8 @@ def create_ensemble_dataset(
         ensemble_path=ensemble_path,
         well_attributes_file=well_attributes_file,
     )
+    if kh_unit == "":
+        kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
 
     time_steps = sorted(df.DATE.unique())
     realizations = list(sorted(df.REAL.unique()))
@@ -343,8 +347,21 @@ def create_ensemble_dataset(
             df, zone_names, time_steps, realizations, well_attributes
         ),
     }
-
     return io.BytesIO(json.dumps(result).encode())
+
+
+def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
+    """Returns kh unit and decimal places based on the unit system of the eclipse deck"""
+    units = {
+        "METRIC": ("mD*m", 2),
+        "FIELD": ("mD*ft", 2),
+        "LAB": ("mD*cm", 2),
+        "PVT-M": ("mD*m", 2),
+    }
+    unit_system = get_ecl_unit_system(ensemble_path=ensemble_path)
+    if unit_system is not None:
+        return units[unit_system]
+    return ("", 2)
 
 
 def qc_compdat(compdat: pd.DataFrame) -> None:
@@ -531,7 +548,7 @@ def extract_wells(
     time_steps: list,
     realizations: list,
     well_attributes: Optional[dict],
-) -> list:
+) -> List[Dict]:
     """Generates the wells part of the input dictionary to the WellCompletions component"""
     well_list = []
     for well_name, well_group in df.groupby("WELL"):
@@ -548,8 +565,10 @@ def extract_wells(
 
 
 def add_colors_to_stratigraphy(
-    stratigraphy: List[Dict], zone_color_mapping: dict, color_iterator
-):
+    stratigraphy: List[Dict[str, Any]],
+    zone_color_mapping: Optional[Dict[str, str]],
+    color_iterator: Iterator,
+) -> List[Dict[str, Any]]:
     """Add colors to the stratigraphy tree. The function will recursively parse the tree.
 
     There are tree sources of color:
@@ -560,7 +579,10 @@ def add_colors_to_stratigraphy(
     """
     for zonedict in stratigraphy:
         if "color" not in zonedict:
-            if zonedict["name"] in zone_color_mapping:
+            if (
+                zone_color_mapping is not None
+                and zonedict["name"] in zone_color_mapping
+            ):
                 zonedict["color"] = zone_color_mapping[zonedict["name"]]
             elif "subzones" not in zonedict:
                 zonedict["color"] = next(
@@ -573,7 +595,9 @@ def add_colors_to_stratigraphy(
     return stratigraphy
 
 
-def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list) -> List[Dict]:
+def filter_valid_nodes(
+    stratigraphy: List[Dict[str, Any]], valid_zone_names: list
+) -> Tuple[List, List]:
     """Returns the stratigraphy tree with only valid nodes.
     A node is considered valid if it self or one of it's subzones are in the
     valid zone names list (passed from the lyr file)
@@ -601,11 +625,11 @@ def filter_valid_nodes(stratigraphy: List[Dict], valid_zone_names: list) -> List
 
 
 def extract_stratigraphy(
-    layer_zone_mapping: dict,
-    stratigraphy: Optional[List[Dict]],
-    zone_color_mapping: dict,
+    layer_zone_mapping: Dict[int, str],
+    stratigraphy: Optional[List[Dict[str, Any]]],
+    zone_color_mapping: Optional[Dict[str, str]],
     theme_colors: list,
-) -> list:
+) -> List[Dict[str, Any]]:
     """Returns the stratigraphy part of the data set"""
     color_iterator = itertools.cycle(theme_colors)
 
@@ -614,20 +638,18 @@ def extract_stratigraphy(
             {
                 "name": zone,
                 "color": zone_color_mapping[zone]
-                if zone in zone_color_mapping
+                if zone_color_mapping is not None and zone in zone_color_mapping
                 else next(color_iterator),
             }
             for zone in dict.fromkeys(layer_zone_mapping.values())
         ]
-    else:
 
-        stratigraphy, remaining_valid_zones = filter_valid_nodes(
-            stratigraphy, set(layer_zone_mapping.values())
-        )
-        # Zones not found in the stratigraphy is added to the end.
-        for zone_name in remaining_valid_zones:
-            stratigraphy.append({"name": zone_name})
+    # If stratigraphy is not None the following is done:
+    stratigraphy, remaining_valid_zones = filter_valid_nodes(
+        stratigraphy, list(set(layer_zone_mapping.values()))
+    )
+    # Zones not found in the stratigraphy is added to the end.
+    for zone_name in remaining_valid_zones:
+        stratigraphy.append({"name": zone_name})
 
-        return add_colors_to_stratigraphy(
-            stratigraphy, zone_color_mapping, color_iterator
-        )
+    return add_colors_to_stratigraphy(stratigraphy, zone_color_mapping, color_iterator)
