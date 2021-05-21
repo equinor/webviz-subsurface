@@ -3,7 +3,7 @@ from webviz_subsurface.plugins._well_completions import extract_stratigraphy
 
 def test_extract_stratigraphy():
 
-    layer_zone_mapping = {1: "ZoneA.1", 2: "ZoneA.2", 3: "ZoneB.1", 4: "ZoneD"}
+    layer_zone_mapping = {1: "ZoneA.1", 2: "ZoneA.2", 3: "ZoneB.1"}
     stratigraphy = [
         {
             "name": "ZoneA",
@@ -49,5 +49,4 @@ def test_extract_stratigraphy():
             ],
         },
         # ZoneC is removed since it's not in the layer_zone_mapping
-        {"name": "ZoneD", "color": "#FFFFFF"},  # color from theme colors
     ]

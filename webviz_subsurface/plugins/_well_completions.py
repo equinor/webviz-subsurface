@@ -37,7 +37,7 @@ class WellCompletions(WebvizPluginABC):
     * **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping \
     * **`stratigraphy_file`:** Json file defining the stratigraphic levels \
     * **`well_attributes_file`:** Json file with categorical well attributes \
-    * **`kh_unit`:** Will normally be mD*m
+    * **`kh_unit`:** Will f.ex be mD·m if unit system is METRIC \
     * **`kh_decimal_places`:**
 
     ---
@@ -55,8 +55,9 @@ class WellCompletions(WebvizPluginABC):
 
     **Zone layer mapping**
 
-    `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
-    RMS script as part of the FMU workflow. A sample python script will be made available.
+    The `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
+    RMS script as part of the FMU workflow. A sample python script should be available in the \
+    Drogon project.
 
     The file needs to be on the lyr format used in ResInsight.
     [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
@@ -65,12 +66,12 @@ class WellCompletions(WebvizPluginABC):
 
     If no file exists, layers will be used as zones.
 
-    **Stratigraphy file **
+    **Stratigraphy file**
 
-    `stratigraphy_file` file is intended to be generated per realizaiont by an internal \
+    The `stratigraphy_file` file is intended to be generated per realization by an internal \
     RMS script as part of the FMU workflow, but can also be set up manually. The stratigraphy \
     is a tree structure, where each node has a name, an optional `color` parameter, and an \
-    optional `subzones` parameter which itself is a list of exactly the same format.
+    optional `subzones` parameter which itself is a list of the same format.
     ```json
     [
         {
@@ -101,20 +102,20 @@ class WellCompletions(WebvizPluginABC):
         },
     ]
     ```
-    The stratigraphy file and the zone_layer_mapping will be combined to create the final \
+    The `stratigraphy_file` and the `zone_layer_mapping_file` will be combined to create the final \
     stratigraphy. A node will be removed if the name or any of the subnode names are not \
-    present in the zone_layer_mapping. Any zones in zone_layer_mapping that are not present \
-    in the stratigraphy will be added to the end of the stratigraphy.
+    present in the zone_layer_mapping. If any zones are present in the zone_layer_mapping \
+    but not in the stratigraphy, a ValueError will be raised.
 
     Colors can be supplied both trough the stratigraphy and through the zone_layer_mapping. \
     The following prioritization will be applied:
     1. Colors specified in the stratigraphy
     2. Colors specified in the zone layer mapping lyr file
-    3. If none of the above is specified, theme colors will be added to the leaves.
+    3. If none of the above is specified, theme colors will be added to the leaves of the tree
 
     **Well Attributes file**
 
-    `well_attributes_file` file is intended to be generated per realization by an internal \
+    The `well_attributes_file` file is intended to be generated per realization by an internal \
     RMS script as part of the FMU workflow. A sample script will be made available, but it is \
     possible to manually set up the file and copy it to the correct folder on the scratch disk.\
     The categorical well attributes are completely flexible.
@@ -160,7 +161,7 @@ class WellCompletions(WebvizPluginABC):
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
-        kh_unit: Optional[str] = None,
+        kh_unit: str = None,
         kh_decimal_places: int = 2,
     ):
         # pylint: disable=too-many-arguments
@@ -358,10 +359,10 @@ def create_ensemble_dataset(
 def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
     """Returns kh unit and decimal places based on the unit system of the eclipse deck"""
     units = {
-        "METRIC": ("mD*m", 2),
-        "FIELD": ("mD*ft", 2),
-        "LAB": ("mD*cm", 2),
-        "PVT-M": ("mD*m", 2),
+        "METRIC": ("mD·m", 2),
+        "FIELD": ("mD·ft", 2),
+        "LAB": ("mD·cm", 2),
+        "PVT-M": ("mD·m", 2),
     }
     unit_system = get_ecl_unit_system(ensemble_path=ensemble_path)
     if unit_system is not None:
@@ -655,6 +656,15 @@ def extract_stratigraphy(
     stratigraphy, remaining_valid_zones = filter_valid_nodes(
         stratigraphy, list(set(layer_zone_mapping.values()))
     )
+
+    if remaining_valid_zones:
+        raise ValueError(
+            f"""
+            The following zones are defined in the zone->layer mapping, but not in the
+            stratigraphy: {remaining_valid_zones}
+            """
+        )
+
     # Zones not found in the stratigraphy is added to the end.
     for zone_name in remaining_valid_zones:
         stratigraphy.append({"name": zone_name})

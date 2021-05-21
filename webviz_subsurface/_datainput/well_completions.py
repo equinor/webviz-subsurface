@@ -14,6 +14,7 @@ def read_zone_layer_mapping(
     If one file is found it is parsed using functionality from the ecl2df \
     library.
     """
+    # pylint: disable=no-member
     for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
         zonelist = common.parse_lyrfile(filename=filename)
         layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
