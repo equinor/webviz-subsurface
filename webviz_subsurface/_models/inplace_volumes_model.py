@@ -28,6 +28,7 @@ class InplaceVolumesModel:
         "SOURCE",
         "ENSEMBLE",
         "REAL",
+        "FLUID",
         "ZONE",
         "REGION",
         "FACIES",
@@ -68,18 +69,24 @@ class InplaceVolumesModel:
             parameter_table[self.SENS_COLUMNS] if self._designrun else None
         )
 
+        dfs = []
+        for fluid in ["OIL", "GAS", "TOTAL"]:
+            selector_columns = [
+                x for x in volumes_table.columns if x in self.POSSIBLE_SELECTORS
+            ]
+            fluid_columns = [x for x in volumes_table.columns if x.endswith(fluid)]
+            if not fluid_columns:
+                continue
+            df = volumes_table[selector_columns + fluid_columns].copy()
+            df.columns = df.columns.str.replace(f"_{fluid}", "")
+            df["FLUID"] = fluid.lower()
+            dfs.append(df)
+
+        volumes_table = pd.concat(dfs)
+
         # Rename PORE to PORV (PORE will be deprecated..)
-        rename_mapping = {
-            f"PORE_{fluid}": f"PORV_{fluid}" for fluid in ["OIL", "GAS", "TOTAL"]
-        }
-        volumes_table.rename(
-            columns={
-                key: value
-                for key, value in rename_mapping.items()
-                if key in volumes_table
-            },
-            inplace=True,
-        )
+        if "PORE" in volumes_table:
+            volumes_table.rename(columns={"PORE": "PORV"}, inplace=True)
 
         # Merge into one dataframe
         self._dataframe = (
@@ -158,58 +165,57 @@ class InplaceVolumesModel:
         return self._parameters
 
     def compute_property_columns(self):
-
         self._property_columns = []
 
+        net_column = "NET"
+        bulk_column = "BULK"
+        pore_column = "PORV"
+        hcpv_column = "HCPV"
+
+        # if NTG not given Net is equal to bulk
+        if not net_column in self._dataframe.columns:
+            net_column = bulk_column
+
+        # compute NTG
+        if (
+            net_column in self._dataframe.columns
+            and bulk_column in self._dataframe.columns
+        ):
+            self._dataframe["NTG"] = (
+                self._dataframe[net_column] / self._dataframe[bulk_column]
+            )
+            self._property_columns.append("NTG")
+        # compute PORO
+        if (
+            net_column in self._dataframe.columns
+            and pore_column in self._dataframe.columns
+        ):
+            self._dataframe["PORO"] = (
+                self._dataframe[pore_column] / self._dataframe[net_column]
+            )
+            self._property_columns.append("PORO")
+        # compute SW
+        if (
+            hcpv_column in self._dataframe.columns
+            and pore_column in self._dataframe.columns
+        ):
+            self._dataframe["SW"] = (
+                1 - self._dataframe[hcpv_column] / self._dataframe[pore_column]
+            )
+            self._property_columns.append("SW")
+
         for voltype in ["OIL", "GAS"]:
-            vol_column = f"STOIIP_{voltype}" if voltype == "OIL" else f"GIIP_{voltype}"
-            net_column = f"NET_{voltype}"
-            bulk_column = f"BULK_{voltype}"
-            pore_column = f"PORV_{voltype}"
-            hcpv_column = f"HCPV_{voltype}"
-
-            # if NTG not given Net is equal to bulk
-            if not net_column in self._dataframe.columns:
-                net_column = bulk_column
-
-            # compute NTG
-            if (
-                net_column in self._dataframe.columns
-                and bulk_column in self._dataframe.columns
-            ):
-                self._dataframe[f"NTG_{voltype}"] = (
-                    self._dataframe[net_column] / self._dataframe[bulk_column]
-                )
-                self._property_columns.append(f"NTG_{voltype}")
-            # compute PORO
-            if (
-                net_column in self._dataframe.columns
-                and pore_column in self._dataframe.columns
-            ):
-                self._dataframe[f"PORO_{voltype}"] = (
-                    self._dataframe[pore_column] / self._dataframe[net_column]
-                )
-                self._property_columns.append(f"PORO_{voltype}")
-            # compute SW
-            if (
-                hcpv_column in self._dataframe.columns
-                and pore_column in self._dataframe.columns
-            ):
-                self._dataframe[f"SW_{voltype}"] = (
-                    1 - self._dataframe[hcpv_column] / self._dataframe[pore_column]
-                )
-                self._property_columns.append(f"SW_{voltype}")
-
+            vol_column = "STOIIP" if voltype == "OIL" else "GIIP"
             # compute Bo/Bg
             if (
                 hcpv_column in self._dataframe.columns
                 and vol_column in self._dataframe.columns
             ):
                 pvt = "BO" if voltype == "OIL" else "BG"
-                self._dataframe[f"{pvt}_{voltype}"] = (
+                self._dataframe[pvt] = (
                     self._dataframe[hcpv_column] / self._dataframe[vol_column]
                 )
-                self._property_columns.append(f"{pvt}_{voltype}")
+                self._property_columns.append(pvt)
 
     def _prepare_parameter_data(self, parameter_table, drop_constants):
         """
