@@ -349,10 +349,6 @@ def create_ensemble_dataset(
         ),
     }
 
-    with open("/private/olind/webviz/result.json", "w") as handle:
-        json.dump(result, handle)
-        print("output exported")
-
     return io.BytesIO(json.dumps(result).encode())
 
 

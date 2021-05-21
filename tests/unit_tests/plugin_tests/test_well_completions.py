@@ -1,8 +1,13 @@
+import pytest
+
 from webviz_subsurface.plugins._well_completions import extract_stratigraphy
 
 
 def test_extract_stratigraphy():
-
+    """Checks that the merging of the layer_zone_mapping and the stratigraphy is
+    correct and that the colors are added following the correct prioritization
+    rules
+    """
     layer_zone_mapping = {1: "ZoneA.1", 2: "ZoneA.2", 3: "ZoneB.1"}
     stratigraphy = [
         {
@@ -50,3 +55,20 @@ def test_extract_stratigraphy():
         },
         # ZoneC is removed since it's not in the layer_zone_mapping
     ]
+
+
+def test_extract_stratigraphy_errors():
+    """Checks that a ValueError is raised when a Zone is in the layer_zone_mapping, but
+    not in the stratigraphy.
+    """
+    layer_zone_mapping = {1: "ZoneA", 2: "ZoneB", 3: "ZoneD"}
+    stratigraphy = [
+        {
+            "name": "ZoneA",
+        },
+        {
+            "name": "ZoneB",
+        },
+    ]
+    with pytest.raises(ValueError):
+        extract_stratigraphy(layer_zone_mapping, stratigraphy, {}, [])
