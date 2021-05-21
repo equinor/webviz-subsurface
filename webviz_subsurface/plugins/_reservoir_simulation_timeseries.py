@@ -20,6 +20,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+import webviz_subsurface_components as wsc
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
@@ -219,7 +220,7 @@ folder, to avoid risk of not extracting the right data.
                 "'AVG_' and/or 'INTVL_'. These prefixes are not allowed, as they are used"
                 "internally in the plugin."
             )
-        self.smry_cols = [
+        self.smry_cols: List[str] = [
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
@@ -232,6 +233,34 @@ folder, to avoid risk of not extracting the right data.
             self._add_vector(
                 self.vector_data, vec, simulation_vector_description(split[0])
             )
+
+            if (
+                next((x for x in self.selector_data if x["name"] == split[0]), None)
+                == None
+            ):
+                self.selector_data.append(
+                    {
+                        "name": split[0],
+                        "description": simulation_vector_description(vec),
+                        "children": [],
+                    }
+                )
+            if len(split) == 2:
+                for x in self.selector_data:
+                    if x["name"] == split[0]:
+                        if (
+                            next(
+                                (y for y in x["children"] if y["name"] == split[1]),
+                                None,
+                            )
+                            == None
+                        ):
+                            x["children"].append(
+                                {
+                                    "name": split[1],
+                                }
+                            )
+                        break
 
             if (
                 self.smry_meta is not None
@@ -685,6 +714,81 @@ folder, to avoid risk of not extracting the right data.
                             storage_type="session",
                             data=json.dumps(self.plot_options.get("date", None)),
                         ),
+                    ],
+                ),
+                html.Div(
+                    id=self.uuid("vector_calculator_dialog"),
+                    children=[
+                        wsc.VectorCalculator(
+                            id="vector_calculator",
+                            vectors=self.selector_data,
+                            expressions=[
+                                {
+                                    "name": "Test",
+                                    "expression": "x+y",
+                                    "id": self.uuid("Test"),
+                                    "variableVectorMap": [
+                                        {
+                                            "variableName": "x",
+                                            "vectorName": ["WOPT:OP_1"],
+                                        },
+                                        {
+                                            "variableName": "y",
+                                            "vectorName": ["FGIR"],
+                                        },
+                                    ],
+                                },
+                                {
+                                    "name": "Test2",
+                                    "expression": "x-y",
+                                    "id": self.uuid("Test2"),
+                                    "variableVectorMap": [
+                                        {
+                                            "variableName": "x",
+                                            "vectorName": ["WOPT:OP_3"],
+                                        },
+                                        {
+                                            "variableName": "y",
+                                            "vectorName": ["FGIR"],
+                                        },
+                                    ],
+                                },
+                                {
+                                    "name": "Test3",
+                                    "expression": "x-2*y",
+                                    "id": self.uuid("Test3"),
+                                    "variableVectorMap": [
+                                        {
+                                            "variableName": "x",
+                                            "vectorName": ["WOPT:OP_1"],
+                                        },
+                                        {
+                                            "variableName": "y",
+                                            "vectorName": ["WBP4:OP_3"],
+                                        },
+                                    ],
+                                },
+                                {
+                                    "name": "Test4",
+                                    "expression": "x-2*y/z",
+                                    "id": self.uuid("Test4"),
+                                    "variableVectorMap": [
+                                        {
+                                            "variableName": "x",
+                                            "vectorName": ["WOPT:OP_4"],
+                                        },
+                                        {
+                                            "variableName": "y",
+                                            "vectorName": ["FGIR"],
+                                        },
+                                        {
+                                            "variableName": "z",
+                                            "vectorName": ["WBP4:OP_3"],
+                                        },
+                                    ],
+                                },
+                            ],
+                        )
                     ],
                 ),
             ],
