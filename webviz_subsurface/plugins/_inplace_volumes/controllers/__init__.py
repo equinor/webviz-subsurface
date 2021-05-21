@@ -1,4 +1,3 @@
-from .filter_controllers import filter_controllers
 from .distribution_controllers import distribution_controllers
 from .selections_controllers import selections_controllers
 from .layout_controllers import layout_controllers

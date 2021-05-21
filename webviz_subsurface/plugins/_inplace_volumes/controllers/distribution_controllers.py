@@ -32,7 +32,6 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {"id": get_uuid("main-inplace-dist"), "element": "table", "layout": ALL},
             "columns",
         ),
-        Input(get_uuid("filter-inplace-dist"), "data"),
         Input(get_uuid("selections-inplace-dist"), "data"),
         Input(get_uuid("page-selected-inplace-dist"), "data"),
         State(
@@ -40,18 +39,19 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             "figure",
         ),
     )
-    def _update_plots(filters, selections, page_selected, figure):
-        if (
-            selections is None
-            or filters is None
-            or page_selected == "Plots per zone/region"
+    def _update_plots(selections, page_selected, figure):
+        ctx = dash.callback_context.triggered[0]
+        initial_callback = figure is None
+        if not initial_callback and (
+            page_selected not in ["1 plot / 1 table", "Custom plotting"]
+            or "page-selected" in ctx["prop_id"]
         ):
             raise PreventUpdate
 
-        ctx = dash.callback_context.triggered[0]
+        print("updating", ctx["prop_id"])
 
         dframe = volumemodel.dataframe.copy()
-        dframe = filter_df(dframe, filters)
+        dframe = filter_df(dframe, selections["filters"])
 
         responses = {
             x
@@ -77,7 +77,12 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 dframe, volumemodel.parameter_df[columns], on=["REAL", "ENSEMBLE"]
             )
 
-        columns = volumemodel.volume_columns + volumemodel.property_columns
+        columns = (
+            volumemodel.volume_columns
+            + volumemodel.property_columns
+            + [x for x in responses if x not in dframe and x not in groups]
+        )
+
         # Need to sum volume columns and take the average of property columns
         aggregations = {x: "sum" for x in volumemodel.volume_columns}
         aggregations.update({x: "mean" for x in volumemodel.property_columns})
@@ -92,7 +97,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             if selections["Table type"] == "Statistics table"
             else make_table(dframe)
         )
-        print(selections)
+
         # pylint: disable=no-member
         figure = create_figure(
             plot_type=selections["Plot type"],
@@ -151,16 +156,15 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             },
             "figure",
         ),
-        Input(get_uuid("filter-inplace-dist"), "data"),
         Input(get_uuid("selections-inplace-dist"), "data"),
         Input(get_uuid("page-selected-inplace-dist"), "data"),
     )
-    def _update_plots_per_region_zone(filters, selections, page_selected):
+    def _update_plots_per_region_zone(selections, page_selected):
         if page_selected != "Plots per zone/region":
             raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
-        dframe = filter_df(dframe, filters)
+        dframe = filter_df(dframe, selections["filters"])
         pie_figs = []
         bar_figs = []
         for selector in ["REGION", "ZONE"]:
@@ -197,7 +201,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     title=f"{selections['X Response']} per {selector}",
                     color_discrete_sequence=selections["Colorscale"],
                     color=selector,
-                )
+                ).update_traces(marker_line=dict(color="#000000", width=1))
             )
             bar_figs.append(
                 create_figure(
@@ -209,7 +213,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     color="ENSEMBLE",
                 )
                 .update_xaxes(type="category", tickangle=45, tickfont_size=17)
-                .update_traces(marker_line=dict(color="#000000", width=2))
+                .update_traces(marker_line=dict(color="#000000", width=1))
             )
 
         return pie_figs[0], pie_figs[1], bar_figs[0], bar_figs[1]
@@ -263,11 +267,4 @@ def filter_df(dframe, filters):
     for filt, values in filters.items():
         dframe = dframe.loc[dframe[filt].isin(values)]
 
-    if dframe.empty:
-        return html.Span(
-            "No data left after filtering",
-            style={
-                "fontSize": "10em",
-            },
-        )
     return dframe

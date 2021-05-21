@@ -16,6 +16,7 @@ def selections_layout(
         children=[
             button(uuid=uuid, title="1 plot / 1 table"),
             button(uuid=uuid, title="Plots per zone/region"),
+            button(uuid=uuid, title="Cumulative mean/p10/p90"),
             button(uuid=uuid, title="Custom plotting"),
             plot_selections_layout(uuid, volumemodel),
             table_selections_layout(uuid, volumemodel),
@@ -79,6 +80,7 @@ def plot_selections_layout(uuid: str, volumemodel) -> html.Div:
 
 
 def table_selections_layout(uuid: str, volumemodel) -> html.Div:
+    responses = volumemodel.volume_columns + volumemodel.property_columns
     return html.Details(
         className="webviz-inplace-vol-plotselect",
         open=True,
@@ -95,10 +97,57 @@ def table_selections_layout(uuid: str, volumemodel) -> html.Div:
                 children=[
                     table_sync_option(uuid),
                     html.Div(
-                        table_selector_dropdowns(
-                            uuid=uuid,
-                            volumemodel=volumemodel,
-                        ),
+                        children=[
+                            html.Span("Table type", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id={"id": uuid, "selector": "Table type"},
+                                options=[
+                                    {"label": elm, "value": elm}
+                                    for elm in ["Statistics table", "Data table"]
+                                ],
+                                value="Statistics table",
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ]
+                    ),
+                    html.Div(
+                        id={
+                            "id": uuid,
+                            "element": "table_response_group_wrapper",
+                        },
+                        style={"display": "None"},
+                        children=[
+                            html.Span("Group by", style={"font-weight": "bold"}),
+                            dcc.Dropdown(
+                                id={
+                                    "id": uuid,
+                                    "selector": "Group by",
+                                },
+                                options=[
+                                    {"label": elm, "value": elm}
+                                    for elm in volumemodel.selectors
+                                ],
+                                value=None,
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                            html.Span("Responses", style={"font-weight": "bold"}),
+                            wcc.Select(
+                                id={"id": uuid, "selector": "table_responses"},
+                                options=[{"label": i, "value": i} for i in responses],
+                                value=responses,
+                                multi=True,
+                                size=min(
+                                    20,
+                                    len(responses),
+                                ),
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
                     ),
                 ],
             ),
@@ -123,61 +172,28 @@ def plot_selector_dropdowns(uuid: str, volumemodel):
             value = elements[0]
         if selector == "X Response":
             elements = volumemodel.responses
-            value = "STOIIP_OIL"
+            value = "STOIIP"
         if selector == "Y Response":
             elements = volumemodel.responses + volumemodel.selectors
-            value = "BULK_OIL"
+            value = None
         if selector == "Subplots":
             elements = volumemodel.selectors
             value = None
         if selector == "Color by":
-            elements = volumemodel.selectors + [
-                x for x in volumemodel.parameters if x not in volumemodel.selectors
-            ]
+            elements = volumemodel.selectors
             value = "ENSEMBLE"
 
         dropdowns.append(
             html.Div(
                 html.Label(
                     children=[
-                        html.Summary(selector, style={"font-weight": "bold"}),
+                        html.Span(selector, style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id={"id": uuid, "selector": selector},
                             options=[{"label": elm, "value": elm} for elm in elements],
                             value=value,
-                            clearable=selector in ["Subplots", "Color by"],
-                            persistence=True,
-                            persistence_type="session",
-                        ),
-                    ],
-                )
-            )
-        )
-    return dropdowns
-
-
-def table_selector_dropdowns(uuid: str, volumemodel):
-    """Makes dropdowns for each selector"""
-
-    dropdowns: List[html.Div] = []
-
-    for selector in ["Table type", "Data type"]:
-        if selector == "Table type":
-            elements = ["Statistics table", "Data table"]
-            value = elements[0]
-        if selector == "Data type":
-            elements = ["Volumetrics columns", "Property columns"]
-            value = elements[0]
-
-        dropdowns.append(
-            html.Div(
-                html.Label(
-                    children=[
-                        html.Summary(selector, style={"font-weight": "bold"}),
-                        dcc.Dropdown(
-                            id={"id": uuid, "selector": selector},
-                            options=[{"label": elm, "value": elm} for elm in elements],
-                            value=value,
+                            clearable=selector
+                            in ["Subplots", "Color by", "Y Response"],
                             persistence=True,
                             persistence_type="session",
                         ),
@@ -191,7 +207,6 @@ def table_selector_dropdowns(uuid: str, volumemodel):
 def settings_layout(uuid: str, volumemodel, theme: WebvizConfigTheme) -> html.Div:
 
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
-    colors = px.colors.qualitative.T10
     return html.Details(
         className="webviz-inplace-vol-plotselect",
         open=False,

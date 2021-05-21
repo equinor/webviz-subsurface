@@ -17,7 +17,6 @@ from webviz_subsurface._models.inplace_volumes_model import extract_volumes
 
 from .views import clientside_stores, main_view
 from .controllers import (
-    filter_controllers,
     distribution_controllers,
     selections_controllers,
     layout_controllers,
@@ -112,7 +111,6 @@ class InplaceVolumes(WebvizPluginABC):
 
     def set_callbacks(self, app: dash.Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
-        filter_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         distribution_controllers(
             app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
         )

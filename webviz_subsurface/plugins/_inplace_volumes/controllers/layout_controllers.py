@@ -67,3 +67,19 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
         if page_selected == "1 plot / 1 table":
             return ([{"display": "block"}] * 2, [{"display": "none"}] * 2)
         return ([{"display": "none"}] * 2, [{"display": "block"}] * 2)
+
+    @app.callback(
+        Output(
+            {
+                "id": get_uuid("selections-inplace-dist"),
+                "element": "table_response_group_wrapper",
+            },
+            "style",
+        ),
+        Input(
+            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
+            "value",
+        ),
+    )
+    def _show_hide_table_response_group_controls(sync_table):
+        return {"display": "none"} if sync_table else {"display": "block"}
