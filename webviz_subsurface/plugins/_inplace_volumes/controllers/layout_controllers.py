@@ -2,35 +2,49 @@ from typing import Callable
 
 import dash
 from dash.dependencies import Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
 
 
 def layout_controllers(app: dash.Dash, get_uuid: Callable):
     @app.callback(
-        Output({"id": get_uuid("main-inplace-dist"), "layout": "1x1"}, "style"),
-        Output({"id": get_uuid("main-inplace-dist"), "layout": "2x1"}, "style"),
+        Output({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "style"),
+        Output(get_uuid("page-selected-inplace-dist"), "data"),
         Input({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "n_clicks"),
+        State({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "id"),
     )
-    def _select_main_layout(_n_click):
+    def _update_clicked_button(_apply_click, id_all):
         ctx = dash.callback_context.triggered[0]
-        if "Custom plotting" not in ctx["prop_id"]:
-            return {"display": "none", "height": "91vh"}, {"display": "block"}
-        return {"display": "block", "height": "91vh"}, {"display": "none"}
+        page_selected = id_all[0]["button"]
+        styles = []
+        for button_id in id_all:
+            if button_id["button"] in ctx["prop_id"]:
+                styles.append({"background-color": "#7393B3", "color": "#fff"})
+                page_selected = button_id["button"]
+            else:
+                styles.append({"background-color": "#E8E8E8"})
+        if ctx["prop_id"] == ".":
+            styles[0] = {"background-color": "#7393B3", "color": "#fff"}
+        return styles, page_selected
+
+    @app.callback(
+        Output({"id": get_uuid("main-inplace-dist"), "page": ALL}, "style"),
+        Input(get_uuid("page-selected-inplace-dist"), "data"),
+        State({"id": get_uuid("main-inplace-dist"), "page": ALL}, "id"),
+    )
+    def _select_main_layout(page_selected, all_ids):
+        styles = []
+        for page_id in all_ids:
+            if page_id["page"] == page_selected:
+                styles.append({"display": "block"})
+            else:
+                styles.append({"display": "none"})
+        return styles
 
     @app.callback(
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "element": "table-wrapper",
-                "layout": "1x1",
-            },
-            "style",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "element": "graph-wrapper",
-                "layout": "1x1",
+                "wrapper": ALL,
+                "page": "Custom plotting",
             },
             "style",
         ),
@@ -38,35 +52,23 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
             {"id": get_uuid("main-inplace-dist"), "element": "plot-table-select"},
             "value",
         ),
-    )
-    def _show_hide_1x1(plot_table_select):
-        if plot_table_select == "table":
-            return {"display": "inline"}, {"display": "none"}
-        return {"display": "none"}, {"display": "inline"}
-
-    @app.callback(
-        Output(
+        State(
             {
                 "id": get_uuid("main-inplace-dist"),
                 "wrapper": ALL,
-                "layout": "2x1",
+                "page": "Custom plotting",
             },
-            "style",
+            "id",
         ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "wrapper": ALL,
-                "layout": "2x1_per",
-            },
-            "style",
-        ),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
     )
-    def _show_hide_2x1(page_selected):
-        if page_selected == "1 plot / 1 table":
-            return ([{"display": "block"}] * 2, [{"display": "none"}] * 2)
-        return ([{"display": "none"}] * 2, [{"display": "block"}] * 2)
+    def _show_hide_1x1(plot_table_select, all_ids):
+        styles = []
+        for input_id in all_ids:
+            if input_id["wrapper"] == plot_table_select:
+                styles.append({"display": "block"})
+            else:
+                styles.append({"display": "none"})
+        return styles
 
     @app.callback(
         Output(

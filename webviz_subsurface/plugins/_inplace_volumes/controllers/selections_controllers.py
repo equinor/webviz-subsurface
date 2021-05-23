@@ -24,12 +24,23 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             {"id": get_uuid("selections-inplace-dist"), "settings": "Colorscale"},
             "colorscale",
         ),
+        Input(
+            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
+            "value",
+        ),
         State({"id": get_uuid("selections-inplace-dist"), "selector": ALL}, "id"),
         State({"id": get_uuid("filter-inplace-dist"), "selector": ALL}, "id"),
         State({"id": get_uuid("filter-inplace-dist"), "selected_reals": ALL}, "id"),
     )
     def _update_selections(
-        selectors, filters, reals, colorscale, selctor_ids, filter_ids, real_ids
+        selectors,
+        filters,
+        reals,
+        colorscale,
+        sync_table,
+        selctor_ids,
+        filter_ids,
+        real_ids,
     ):
         ctx = dash.callback_context.triggered[0]
         if ctx["prop_id"] == ".":
@@ -52,6 +63,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             )
         )
         selections.update(Colorscale=colorscale)
+        selections.update(sync_table=sync_table)
         selections.update(ctx_clicked=ctx["prop_id"])
 
         string_selected_reals = (
@@ -63,40 +75,16 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
 
     @app.callback(
         Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
+            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
             "disabled",
         ),
         Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
+            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
             "value",
         ),
         Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
-            "disabled",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
+            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
             "options",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
-            "value",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Subplots"},
-            "disabled",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Subplots"},
-            "value",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Color by"},
-            "options",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Color by"},
-            "value",
         ),
         Input(
             {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
@@ -123,6 +111,10 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
             "options",
         ),
+        State(
+            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
+            "id",
+        ),
     )
     def _plot_options(
         plot_type,
@@ -132,11 +124,16 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         y_options,
         selected_y,
         plot_type_options,
+        ids,
     ):
         ctx = dash.callback_context.triggered[0]
         if "Color by" in ctx["prop_id"] and plot_type != "box":
             raise PreventUpdate
-        disable_plot_type = selected_page == "Plots per zone/region"
+
+        disable_plot_type = selected_page in [
+            "Plots per zone/region",
+            "Cumulative mean/p10/p90",
+        ]
         if disable_plot_type:
             plot_type_value = None
         else:
@@ -145,10 +142,13 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                 if plot_type is not None
                 else plot_type_options[0]["value"]
             )
-        plot_type_value = dash.no_update
 
         disable_y = (
-            selected_page == "Plots per zone/region"
+            selected_page
+            in [
+                "Plots per zone/region",
+                "Cumulative mean/p10/p90",
+            ]
             or plot_type_value
             in [
                 "distribution",
@@ -174,11 +174,31 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                 y_value = selected_color_by
             else:
                 y_value = dash.no_update if selected_y in y_elm else y_elm[0]
-        disable_subplot = selected_page != "Custom plotting"
-        subplot_value = None if disable_subplot else selected_subplot_value
-        if subplot_value == selected_subplot_value:
-            subplot_value = dash.no_update
 
+        subplot_elm = (
+            ["ENSEMBLE"]
+            if selected_page == "Cumulative mean/p10/p90"
+            else volumemodel.selectors
+        )
+        subplot_options = [{"label": elm, "value": elm} for elm in subplot_elm]
+
+        disable_subplot = selected_page not in [
+            "Custom plotting",
+            "Cumulative mean/p10/p90",
+        ]
+        subplot_value = (
+            None
+            if disable_subplot
+            and selected_subplot_value is not None
+            or "page-selected" in ctx["prop_id"]
+            and selected_page == "1 plot / 1 table"
+            else dash.no_update
+        )
+
+        disable_colorby = selected_page in [
+            "Plots per zone/region",
+            "Cumulative mean/p10/p90",
+        ]
         colorby_elm = (
             list(volumemodel.dataframe.columns) + volumemodel.parameters
             if plot_type == "scatter"
@@ -188,17 +208,48 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         colorby_value = (
             dash.no_update if selected_color_by in colorby_elm else colorby_elm[0]
         )
+        if disable_colorby:
+            colorby_value = None
+
+        settings = {
+            "Plot type": {
+                "disable": disable_plot_type,
+                "value": plot_type_value,
+                "options": dash.no_update,
+            },
+            "Y Response": {
+                "disable": disable_y,
+                "value": y_value,
+                "options": y_options,
+            },
+            "Color by": {
+                "disable": disable_colorby,
+                "value": colorby_value,
+                "options": colorby_options,
+            },
+            "Subplots": {
+                "disable": disable_subplot,
+                "value": subplot_value,
+                "options": subplot_options,
+            },
+        }
+        disable_list = []
+        value_list = []
+        options_list = []
+        for selector_id in ids:
+            if selector_id["selector"] in settings:
+                disable_list.append(settings[selector_id["selector"]]["disable"])
+                value_list.append(settings[selector_id["selector"]]["value"])
+                options_list.append(settings[selector_id["selector"]]["options"])
+            else:
+                disable_list.append(dash.no_update)
+                value_list.append(dash.no_update)
+                options_list.append(dash.no_update)
 
         return (
-            disable_plot_type,
-            plot_type_value,
-            disable_y,
-            y_options,
-            y_value,
-            disable_subplot,
-            subplot_value,
-            colorby_options,
-            colorby_value,
+            disable_list,
+            value_list,
+            options_list,
         )
 
     @app.callback(
@@ -267,13 +318,19 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             {"id": get_uuid("selections-inplace-dist"), "selector": "Subplots"},
             "value",
         ),
+        Input(
+            {"id": get_uuid("selections-inplace-dist"), "selector": "Group by"},
+            "value",
+        ),
         State({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "options"),
         State(
             {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "options"
         ),
     )
-    def _update_multi_option(colorby, subplot, source_values, ensemble_values):
+    def _update_multi_option(colorby, subplot, groupby, source_values, ensemble_values):
         data_groupers = [colorby, subplot]
+        if groupby is not None:
+            data_groupers.extend(groupby)
         return (
             "SOURCE" in data_groupers,
             [source_values[0]["value"]]
@@ -284,27 +341,6 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             if "ENSEMBLE" not in data_groupers
             else [x["value"] for x in ensemble_values],
         )
-
-    @app.callback(
-        Output({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "style"),
-        Output(get_uuid("page-selected-inplace-dist"), "data"),
-        Input({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "n_clicks"),
-        State({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "id"),
-    )
-    def _update_clicked_button(_apply_click, id_all):
-
-        ctx = dash.callback_context.triggered[0]
-        page_selected = id_all[0]["button"]
-        styles = []
-        for button_id in id_all:
-            if button_id["button"] in ctx["prop_id"]:
-                styles.append({"background-color": "#7393B3", "color": "#fff"})
-                page_selected = button_id["button"]
-            else:
-                styles.append({"background-color": "#E8E8E8"})
-        if ctx["prop_id"] == ".":
-            styles[0] = {"background-color": "#7393B3", "color": "#fff"}
-        return styles, page_selected
 
 
 def create_range_string(real_list):

@@ -8,22 +8,47 @@ def distributions_main_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
             html.Div(
-                className="framed",
-                id={"id": uuid, "layout": "1x1"},
+                id={"id": uuid, "page": "Custom plotting"},
                 style={"display": "block"},
-                children=distributions_main_layout_1x1(uuid),
+                children=custom_plotting_layout(uuid),
             ),
             html.Div(
-                id={"id": uuid, "layout": "2x1"},
+                id={"id": uuid, "page": "1 plot / 1 table"},
                 style={"display": "none"},
-                children=distributions_main_layout_2x1(uuid),
+                children=one_plot_one_table_layout(uuid),
+            ),
+            html.Div(
+                id={"id": uuid, "page": "Plots per zone/region"},
+                style={"display": "none"},
+                children=plots_per_zone_region_layout(uuid),
+            ),
+            html.Div(
+                id={"id": uuid, "page": "Cumulative mean/p10/p90"},
+                style={"display": "none"},
+                children=cumulative_plot_layout(uuid),
             ),
         ]
     )
 
 
-def distributions_main_layout_1x1(uuid: str) -> html.Div:
+def cumulative_plot_layout(uuid: str) -> html.Div:
     return html.Div(
+        className="framed",
+        style={"height": "91vh"},
+        children=[
+            wcc.Graph(
+                id={"id": uuid, "element": "plot", "page": "Cumulative mean/p10/p90"},
+                config={"displayModeBar": False},
+                style={"height": "85vh"},
+            )
+        ],
+    )
+
+
+def custom_plotting_layout(uuid: str) -> html.Div:
+    return html.Div(
+        className="framed",
+        style={"height": "91vh"},
         children=[
             html.Div(
                 children=dcc.RadioItems(
@@ -31,11 +56,11 @@ def distributions_main_layout_1x1(uuid: str) -> html.Div:
                     options=[
                         {
                             "label": "Plot",
-                            "value": "plot",
+                            "value": "graph",
                         },
                         {"label": "Table", "value": "table"},
                     ],
-                    value="plot",
+                    value="graph",
                     labelStyle={
                         "display": "inline-block",
                         "margin": "5px",
@@ -43,19 +68,53 @@ def distributions_main_layout_1x1(uuid: str) -> html.Div:
                 ),
             ),
             html.Div(
-                id={"id": uuid, "element": "graph-wrapper", "layout": "1x1"},
+                id={"id": uuid, "wrapper": "graph", "page": "Custom plotting"},
                 style={"display": "inline"},
                 children=wcc.Graph(
-                    id={"id": uuid, "element": "graph", "layout": "1x1"},
+                    id={"id": uuid, "element": "graph", "page": "Custom plotting"},
                     config={"displayModeBar": False},
                     style={"height": "85vh"},
                 ),
             ),
             html.Div(
-                id={"id": uuid, "element": "table-wrapper", "layout": "1x1"},
+                id={"id": uuid, "wrapper": "table", "page": "Custom plotting"},
                 style={"display": "none"},
                 children=dash_table.DataTable(
-                    id={"id": uuid, "element": "table", "layout": "1x1"},
+                    id={"id": uuid, "element": "table", "page": "Custom plotting"},
+                    sort_action="native",
+                    filter_action="native",
+                ),
+            ),
+        ],
+    )
+
+
+def one_plot_one_table_layout(uuid: str) -> html.Div:
+    return html.Div(
+        children=[
+            html.Div(
+                className="webviz-inplace-vol-framed",
+                style={"height": "44vh"},
+                children=wcc.Graph(
+                    id={
+                        "id": uuid,
+                        "element": "graph",
+                        "page": "1 plot / 1 table",
+                    },
+                    config={"displayModeBar": False},
+                    style={"height": "44vh"},
+                ),
+            ),
+            html.Div(
+                className="webviz-inplace-vol-framed",
+                style={"height": "44vh"},
+                children=dash_table.DataTable(
+                    id={
+                        "id": uuid,
+                        "element": "table",
+                        "page": "1 plot / 1 table",
+                    },
+                    page_size=16,
                     sort_action="native",
                     filter_action="native",
                 ),
@@ -64,105 +123,74 @@ def distributions_main_layout_1x1(uuid: str) -> html.Div:
     )
 
 
-def distributions_main_layout_2x1(uuid: str) -> html.Div:
+def plots_per_zone_region_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
             html.Div(
                 className="webviz-inplace-vol-framed",
                 style={"height": "44vh"},
                 children=[
-                    html.Div(
-                        id={"id": uuid, "wrapper": "graph", "layout": "2x1"},
-                        children=wcc.Graph(
-                            id={"id": uuid, "element": "graph", "layout": "2x1"},
-                            config={"displayModeBar": False},
-                            style={"height": "44vh"},
-                        ),
-                    ),
-                    html.Div(
-                        id={"id": uuid, "wrapper": "per-zone", "layout": "2x1_per"},
-                        style={"display": "none"},
-                        children=wcc.FlexBox(
-                            children=[
-                                html.Div(
-                                    style={"flex": 1},
-                                    children=wcc.Graph(
-                                        id={
-                                            "id": uuid,
-                                            "element": "pie_chart",
-                                            "layout": "per_zone",
-                                        },
-                                        config={"displayModeBar": False},
-                                        style={"height": "44vh"},
-                                    ),
+                    wcc.FlexBox(
+                        children=[
+                            html.Div(
+                                style={"flex": 1},
+                                children=wcc.Graph(
+                                    id={
+                                        "id": uuid,
+                                        "piechart": "per_zone",
+                                        "page": "Plots per zone/region",
+                                    },
+                                    config={"displayModeBar": False},
+                                    style={"height": "44vh"},
                                 ),
-                                html.Div(
-                                    style={"flex": 3},
-                                    children=wcc.Graph(
-                                        id={
-                                            "id": uuid,
-                                            "element": "bar_chart",
-                                            "layout": "per_zone",
-                                        },
-                                        config={"displayModeBar": False},
-                                        style={"height": "44vh"},
-                                    ),
+                            ),
+                            html.Div(
+                                style={"flex": 3},
+                                children=wcc.Graph(
+                                    id={
+                                        "id": uuid,
+                                        "barchart": "per_zone",
+                                        "page": "Plots per zone/region",
+                                    },
+                                    config={"displayModeBar": False},
+                                    style={"height": "44vh"},
                                 ),
-                            ]
-                        ),
+                            ),
+                        ]
                     ),
                 ],
             ),
             html.Div(
                 className="webviz-inplace-vol-framed",
                 style={"height": "44vh"},
-                children=[
-                    html.Div(
-                        id={"id": uuid, "wrapper": "table", "layout": "2x1"},
-                        children=dash_table.DataTable(
-                            id={"id": uuid, "element": "table", "layout": "2x1"},
-                            page_size=16,
-                            sort_action="native",
-                            filter_action="native",
+                children=wcc.FlexBox(
+                    children=[
+                        html.Div(
+                            style={"flex": 1},
+                            children=wcc.Graph(
+                                id={
+                                    "id": uuid,
+                                    "piechart": "per_region",
+                                    "page": "Plots per zone/region",
+                                },
+                                config={"displayModeBar": False},
+                                style={"height": "44vh"},
+                            ),
                         ),
-                    ),
-                    html.Div(
-                        id={
-                            "id": uuid,
-                            "wrapper": "per-region",
-                            "layout": "2x1_per",
-                        },
-                        style={"display": "none"},
-                        children=wcc.FlexBox(
-                            children=[
-                                html.Div(
-                                    style={"flex": 1},
-                                    children=wcc.Graph(
-                                        id={
-                                            "id": uuid,
-                                            "element": "pie_chart",
-                                            "layout": "per_region",
-                                        },
-                                        config={"displayModeBar": False},
-                                        style={"height": "44vh"},
-                                    ),
-                                ),
-                                html.Div(
-                                    style={"flex": 3},
-                                    children=wcc.Graph(
-                                        id={
-                                            "id": uuid,
-                                            "element": "bar_chart",
-                                            "layout": "per_region",
-                                        },
-                                        config={"displayModeBar": False},
-                                        style={"height": "44vh"},
-                                    ),
-                                ),
-                            ]
+                        html.Div(
+                            style={"flex": 3},
+                            children=wcc.Graph(
+                                id={
+                                    "id": uuid,
+                                    "barchart": "per_region",
+                                    "page": "Plots per zone/region",
+                                },
+                                config={"displayModeBar": False},
+                                style={"height": "44vh"},
+                            ),
                         ),
-                    ),
-                ],
+                    ]
+                ),
             ),
-        ]
+        ],
     )
