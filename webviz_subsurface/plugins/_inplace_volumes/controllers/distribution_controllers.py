@@ -21,21 +21,61 @@ from ..figures import create_figure
 def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, theme):
     @app.callback(
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "graph", "layout": ALL},
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "graph",
+                "page": "Custom plotting",
+            },
             "figure",
         ),
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "layout": ALL},
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "graph",
+                "page": "1 plot / 1 table",
+            },
+            "figure",
+        ),
+        Output(
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "table",
+                "page": "Custom plotting",
+            },
             "data",
         ),
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "layout": ALL},
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "table",
+                "page": "1 plot / 1 table",
+            },
+            "data",
+        ),
+        Output(
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "table",
+                "page": "Custom plotting",
+            },
+            "columns",
+        ),
+        Output(
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "table",
+                "page": "1 plot / 1 table",
+            },
             "columns",
         ),
         Input(get_uuid("selections-inplace-dist"), "data"),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
+        State(get_uuid("page-selected-inplace-dist"), "data"),
         State(
-            {"id": get_uuid("main-inplace-dist"), "element": "graph", "layout": "1x1"},
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "graph",
+                "page": "Custom plotting",
+            },
             "figure",
         ),
     )
@@ -50,58 +90,43 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
 
         print("updating", ctx["prop_id"])
 
-        dframe = volumemodel.dataframe.copy()
-        dframe = filter_df(dframe, selections["filters"])
+        plot_groups = ["ENSEMBLE", "REAL"]
+        for selection in ["Subplots", "Color by"]:
+            if (
+                selections[selection] is not None
+                and selections[selection] not in plot_groups
+            ):
+                plot_groups.append(selections[selection])
 
         responses = {
             x
             for x in [selections["X Response"], selections["Y Response"]]
             if x is not None
         }
-        groups = ["ENSEMBLE", "REAL"]
-
-        for selection in ["Subplots", "Color by"]:
-            if (
-                selections[selection] is not None
-                and selections[selection] not in groups
-            ):
-                groups.append(selections[selection])
         for response in responses:
-            if response not in groups and response in volumemodel.selectors:
-                groups.append(response)
+            if response not in plot_groups and response in volumemodel.selectors:
+                plot_groups.append(response)
 
-        parameters = [x for x in groups if x not in dframe]
+        dframe = volumemodel.dataframe.copy()
+        dframe = filter_df(dframe, selections["filters"])
+
+        parameters = [x for x in plot_groups if x not in dframe]
         if parameters:
             columns = parameters + ["REAL", "ENSEMBLE"]
             dframe = pd.merge(
                 dframe, volumemodel.parameter_df[columns], on=["REAL", "ENSEMBLE"]
             )
 
-        columns = (
-            volumemodel.volume_columns
-            + volumemodel.property_columns
-            + [x for x in responses if x not in dframe and x not in groups]
-        )
-
         # Need to sum volume columns and take the average of property columns
         aggregations = {x: "sum" for x in volumemodel.volume_columns}
         aggregations.update({x: "mean" for x in volumemodel.property_columns})
 
-        dframe = (
-            dframe[columns + groups].groupby(groups).agg(aggregations).reset_index()
-        )
-        dframe.sort_values(by=["ENSEMBLE", "REAL"])
-
-        columns, table_data = (
-            make_stattable(dframe, responses, groups + parameters, volumemodel)
-            if selections["Table type"] == "Statistics table"
-            else make_table(dframe)
-        )
+        df_for_figure = dframe.groupby(plot_groups).agg(aggregations).reset_index()
 
         # pylint: disable=no-member
         figure = create_figure(
             plot_type=selections["Plot type"],
-            data_frame=dframe,
+            data_frame=df_for_figure,
             x=selections["X Response"],
             y=selections["Y Response"],
             facet_col=selections["Subplots"],
@@ -121,43 +146,68 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         ):
             figure.update_xaxes(matches=None)
 
-        return ([figure] * 2, [table_data] * 2, [columns] * 2)
+        # Make tables
+        if selections["sync_table"]:
+            table_columns, table_data = (
+                make_stattable(
+                    df_for_figure, responses, plot_groups + parameters, volumemodel
+                )
+                if selections["Table type"] == "Statistics table"
+                else make_table(df_for_figure[plot_groups + list(responses)])
+            )
+        else:
+            table_groups = ["ENSEMBLE", "REAL"]
+            if selections["Group by"] is not None:
+                table_groups.extend(selections["Group by"])
+            df_for_table = dframe.groupby(table_groups).agg(aggregations).reset_index()
+            table_columns, table_data = (
+                make_stattable(
+                    df_for_table,
+                    selections["table_responses"],
+                    table_groups,
+                    volumemodel,
+                )
+                if selections["Table type"] == "Statistics table"
+                else make_table(dframe[table_groups + selections["table_responses"]])
+            )
+
+        return (figure, figure, table_data, table_data, table_columns, table_columns)
 
     @app.callback(
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "element": "pie_chart",
-                "layout": "per_region",
+                "piechart": "per_region",
+                "page": "Plots per zone/region",
             },
             "figure",
         ),
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "element": "pie_chart",
-                "layout": "per_zone",
+                "piechart": "per_zone",
+                "page": "Plots per zone/region",
             },
             "figure",
         ),
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "element": "bar_chart",
-                "layout": "per_region",
+                "barchart": "per_region",
+                "page": "Plots per zone/region",
             },
             "figure",
         ),
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "element": "bar_chart",
-                "layout": "per_zone",
+                "barchart": "per_zone",
+                "page": "Plots per zone/region",
             },
             "figure",
         ),
         Input(get_uuid("selections-inplace-dist"), "data"),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
+        State(get_uuid("page-selected-inplace-dist"), "data"),
     )
     def _update_plots_per_region_zone(selections, page_selected):
         if page_selected != "Plots per zone/region":
@@ -170,7 +220,6 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         for selector in ["REGION", "ZONE"]:
             groups = ["ENSEMBLE", "REAL"]
             groups.append(selector)
-            # Need to sum volume columns and take the average of property columns
 
             df_group = (
                 dframe[[selections["X Response"]] + groups]
@@ -191,6 +240,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 .mean()
                 .reset_index()
             )
+
             # pylint: disable=no-member
             pie_figs.append(
                 create_figure(
@@ -201,7 +251,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     title=f"{selections['X Response']} per {selector}",
                     color_discrete_sequence=selections["Colorscale"],
                     color=selector,
-                ).update_traces(marker_line=dict(color="#000000", width=1))
+                )
             )
             bar_figs.append(
                 create_figure(
@@ -210,13 +260,78 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     x=selector,
                     y=selections["X Response"],
                     color_discrete_sequence=px.colors.diverging.BrBG_r,
-                    color="ENSEMBLE",
-                )
-                .update_xaxes(type="category", tickangle=45, tickfont_size=17)
-                .update_traces(marker_line=dict(color="#000000", width=1))
+                    color=selections["Color by"],
+                ).update_xaxes(type="category", tickangle=45, tickfont_size=17)
             )
 
         return pie_figs[0], pie_figs[1], bar_figs[0], bar_figs[1]
+
+    @app.callback(
+        Output(
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "element": "plot",
+                "page": "Cumulative mean/p10/p90",
+            },
+            "figure",
+        ),
+        Input(get_uuid("selections-inplace-dist"), "data"),
+        State(get_uuid("page-selected-inplace-dist"), "data"),
+    )
+    def _update_plots_per_region_zone(selections, page_selected):
+        if page_selected != "Cumulative mean/p10/p90":
+            raise PreventUpdate
+
+        dframe = volumemodel.dataframe.copy()
+        dframe = filter_df(dframe, selections["filters"])
+
+        groups = ["ENSEMBLE", "REAL"]
+        dframe = (
+            dframe[groups + [selections["X Response"]]]
+            .groupby(groups)
+            .agg(
+                {
+                    selections["X Response"]: "sum"
+                    if selections["X Response"] in volumemodel.volume_columns
+                    else "mean"
+                }
+            )
+            .reset_index()
+        )
+        dframe.sort_values(by=["ENSEMBLE", "REAL"])
+        dfs = []
+        for calculation in ["mean", "p10", "p90"]:
+            df_stat = dframe.copy()
+            if calculation == "mean":
+                df_stat[selections["X Response"]] = (
+                    dframe[selections["X Response"]].expanding().mean()
+                )
+            if calculation == "p10":
+                df_stat[selections["X Response"]] = (
+                    dframe[selections["X Response"]].expanding().quantile(0.1)
+                )
+            if calculation == "p90":
+                df_stat[selections["X Response"]] = (
+                    dframe[selections["X Response"]].expanding().quantile(0.9)
+                )
+            df_stat["calculation"] = calculation
+            dfs.append(df_stat)
+        dframe = pd.concat(dfs)
+
+        figure = create_figure(
+            plot_type="line",
+            data_frame=dframe,
+            x="REAL",
+            y=selections["X Response"],
+            facet_col=selections["Subplots"],
+            color="calculation",
+            title=f"Cumulative mean/p10/p90 for {selections['X Response']} ",
+            color_discrete_sequence=selections["Colorscale"],
+        )
+        if selections["Subplots"] is None:
+            figure.update_xaxes(title="Realizations")
+
+        return figure
 
 
 def make_table(dframe: pd.DataFrame):

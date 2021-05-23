@@ -130,6 +130,7 @@ def table_selections_layout(uuid: str, volumemodel) -> html.Div:
                                     for elm in volumemodel.selectors
                                 ],
                                 value=None,
+                                multi=True,
                                 clearable=False,
                                 persistence=True,
                                 persistence_type="session",
@@ -168,7 +169,7 @@ def plot_selector_dropdowns(uuid: str, volumemodel):
         "Color by",
     ]:
         if selector == "Plot type":
-            elements = ["histogram", "scatter", "distribution", "bar", "box"]
+            elements = ["histogram", "scatter", "distribution", "box"]
             value = elements[0]
         if selector == "X Response":
             elements = volumemodel.responses
