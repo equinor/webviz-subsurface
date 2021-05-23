@@ -12,6 +12,7 @@ def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]
     """Removes colors in the zonelist from the lyr file that is not 6 digit
     hexadecimal.
     """
+    # pylint: disable=logging-fstring-interpolation
     for zonedict in zonelist:
         if "color" in zonedict and not re.match(
             "^#([A-Fa-f0-9]{6})", zonedict["color"]
