@@ -33,10 +33,10 @@ class WellCompletions(WebvizPluginABC):
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **`compdat_file`:** csvfile with compdat data per realization
-    * **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping \
-    * **`stratigraphy_file`:** Json file defining the stratigraphic levels \
-    * **`well_attributes_file`:** Json file with categorical well attributes \
+    * **`compdat_file`:** `.csv` file with compdat data per realization
+    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone->layer mapping \
+    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels \
+    * **`well_attributes_file`:** `.json` file with categorical well attributes \
     * **`kh_unit`:** Will f.ex be mD·m if unit system is METRIC \
     * **`kh_decimal_places`:**
 
@@ -59,7 +59,7 @@ class WellCompletions(WebvizPluginABC):
     RMS script as part of the FMU workflow. A sample python script should be available in the \
     Drogon project.
 
-    The file needs to be on the lyr format used in ResInsight.
+    The file needs to be on the lyr format used by ResInsight:
     [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
 
     Zone colors can be specified in the lyr file, but only 6 digit hexadecimal codes will be used.
@@ -69,9 +69,9 @@ class WellCompletions(WebvizPluginABC):
     **Stratigraphy file**
 
     The `stratigraphy_file` file is intended to be generated per realization by an internal \
-    RMS script as part of the FMU workflow, but can also be set up manually. The stratigraphy \
-    is a tree structure, where each node has a name, an optional `color` parameter, and an \
-    optional `subzones` parameter which itself is a list of the same format.
+    RMS script as part of the FMU workflow, but can also be set up manually and copied to each
+    realization. The stratigraphy is a tree structure, where each node has a name, an optional
+    `color` parameter, and an optional `subzones` parameter which itself is a list of the same format.
     ```json
     [
         {
@@ -104,8 +104,8 @@ class WellCompletions(WebvizPluginABC):
     ```
     The `stratigraphy_file` and the `zone_layer_mapping_file` will be combined to create the final \
     stratigraphy. A node will be removed if the name or any of the subnode names are not \
-    present in the zone_layer_mapping. If any zones are present in the zone_layer_mapping \
-    but not in the stratigraphy, a ValueError will be raised.
+    present in the zone layer mapping. A Value Error is raised if any zones are present in the
+    zone layer mapping but not in the stratigraphy.
 
     Colors can be supplied both trough the stratigraphy and through the zone_layer_mapping. \
     The following prioritization will be applied:
@@ -120,7 +120,7 @@ class WellCompletions(WebvizPluginABC):
     possible to manually set up the file and copy it to the correct folder on the scratch disk.\
     The categorical well attributes are completely flexible.
 
-    The file should be a json file on the following format:
+    The file should be a `.json` file on the following format:
     ```json
     {
         "version" : "0.1",
@@ -281,12 +281,12 @@ class WellCompletions(WebvizPluginABC):
                     self.kh_decimal_places,
                 )
             )
-            zones = len(data["stratigraphy"])
+            no_leaves = count_leaves(data["stratigraphy"])
             return [
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": zones * 100 + 180, "min-height": 500},
+                {"padding": "10px", "height": no_leaves * 50 + 180, "min-height": 500},
             ]
 
 
@@ -350,6 +350,17 @@ def create_ensemble_dataset(
     }
 
     return io.BytesIO(json.dumps(result).encode())
+
+
+def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
+    """Counts the number of leaves in the stratigraphy tree"""
+    count = 0
+    for zonedict in stratigraphy:
+        if "subzones" in zonedict:
+            count += count_leaves(zonedict["subzones"])
+        else:
+            count += 1
+    return count
 
 
 def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
@@ -655,10 +666,8 @@ def extract_stratigraphy(
 
     if remaining_valid_zones:
         raise ValueError(
-            f"""
-            The following zones are defined in the zone->layer mapping, but not in the
-            stratigraphy: {remaining_valid_zones}
-            """
+            "The following zones are defined in the zone ➔ layer mapping, "
+            f"but not in the stratigraphy: {remaining_valid_zones}"
         )
 
     # Zones not found in the stratigraphy is added to the end.

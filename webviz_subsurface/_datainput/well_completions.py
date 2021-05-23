@@ -1,10 +1,27 @@
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, Any
 import json
 import re
 from pathlib import Path
 import glob
+import logging
 
 from ecl2df import common
+
+
+def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Removes colors in the zonelist from the lyr file that is not 6 digit
+    hexadecimal.
+    """
+    for zonedict in zonelist:
+        if "color" in zonedict and not re.match(
+            "^#([A-Fa-f0-9]{6})", zonedict["color"]
+        ):
+            logging.warning(
+                f"""The zone color {zonedict["color"]} will be ignored. """
+                "Only 6 digit hexadecimal colors are accepted in the well completions plugin."
+            )
+            zonedict.pop("color")
+    return zonelist
 
 
 def read_zone_layer_mapping(
@@ -17,10 +34,11 @@ def read_zone_layer_mapping(
     for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
         zonelist = common.parse_lyrfile(filename=filename)
         layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
+        zonelist = remove_invalid_colors(zonelist)
         zone_color_mapping = {
             zonedict["name"]: zonedict["color"]
             for zonedict in zonelist
-            if "color" in zonedict and re.match("^#([A-Fa-f0-9]{6})", zonedict["color"])
+            if "color" in zonedict
         }
         return layer_zone_mapping, zone_color_mapping
     return None, None
@@ -90,20 +108,13 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     the default unit system is METRIC. This is because the unit system \
     keyword could be in an include file.
     """
-
-    def ecldata_has_unit_system(unit_system: str, lines: list) -> bool:
-        for line in lines:
-            if line.startswith(unit_system):
-                return True
-        return False
-
     unit_systems = ["METRIC", "FIELD", "LAB", "PVT-M"]
     for filename in glob.glob(f"{ensemble_path}/eclipse/model/*.DATA"):
         with open(filename, "r") as handle:
             ecl_data_lines = handle.readlines()
 
         for unit_system in unit_systems:
-            if ecldata_has_unit_system(unit_system, ecl_data_lines):
+            if any(line.startswith(unit_system) for line in ecl_data_lines):
                 return unit_system
         return None
     return None

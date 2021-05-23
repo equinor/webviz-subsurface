@@ -1,6 +1,23 @@
 import pytest
 
 from webviz_subsurface.plugins._well_completions import extract_stratigraphy
+from webviz_subsurface._datainput.well_completions import remove_invalid_colors
+
+
+def test_remove_invalid_colors():
+    """Tests that colors that are not 6 digit hexadecimal are removed from the lyr
+    parse zone list
+    """
+    zonelist = [
+        {"name": "ZoneA", "color": "#FFFFFF"},
+        {"name": "ZoneB", "color": "#FFF"},
+    ]
+    assert remove_invalid_colors(zonelist) == [
+        {"name": "ZoneA", "color": "#FFFFFF"},
+        {
+            "name": "ZoneB",
+        },
+    ]
 
 
 def test_extract_stratigraphy():
