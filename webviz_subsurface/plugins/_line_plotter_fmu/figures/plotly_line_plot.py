@@ -24,8 +24,15 @@ class PlotlyLinePlot:
     ) -> List[dict]:
         """Renders line trace for each realization, includes history line if present"""
         colors = ["red", "blue", "green"]
+   #     print(dframe)
+
+        dframe["VALUE_NORM"] = (dframe[color_column] - dframe[color_column].min()) / (
+            dframe[color_column].max() - dframe[color_column].min()
+        )
 
         for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
+
+        #    print(ens_df)
             if (
                 self._active_x_value
                 and self._active_x_value in ens_df[x_column].unique()
@@ -48,13 +55,12 @@ class PlotlyLinePlot:
                         "text": real,
                         "legendgroup": ensemble,
                         "marker": {
-                            "color": "rgba(128,128,128,0.2)"
-                            if color == "Realizations"
-                            else "black"
+                            "color": set_real_color(real_no=real, df_norm=dframe),
                         },
                         "showlegend": real_no == 0,
                     }
                 )
+
         self._layout["sliders"] = (
             self._realization_slider() if realization_slider is True else []
         )
@@ -185,3 +191,97 @@ class PlotlyLinePlot:
         if self._observation_traces:
             traces.extend(self._observation_traces)
         return dict(layout=self._layout, data=traces)
+
+
+
+def set_real_color(df_norm, real_no: str):
+    """
+    Return color for trace based on normalized parameter value.
+    Midpoint for the colorscale is set on the average value
+    """
+    red = "rgba(255,18,67, 1)"
+    mid_color = "rgba(220,220,220,1)"
+    green = "rgba(62,208,62, 1)"
+    df_norm= df_norm.reset_index(drop=True)
+    mean = df_norm["VALUE_NORM"].mean()
+    norm_value = df_norm.loc[df_norm["REAL"] == real_no].iloc[0]["VALUE_NORM"]
+    if norm_value <= mean:
+        intermed = norm_value / mean
+        return find_intermediate_color(red, mid_color, intermed, colortype="rgba")
+    if norm_value > mean:
+        intermed = (norm_value - mean) / (1 - mean)
+        return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
+    return "rgba(220,220,220, 0.8)"
+    
+
+
+def find_intermediate_color(
+    lowcolor: str, highcolor: str, intermed: float, colortype: str = "tuple"
+) -> str:
+    """
+    Returns the color at a given distance between two colors
+    This function takes two color tuples, where each element is between 0
+    and 1, along with a value 0 < intermed < 1 and returns a color that is
+    intermed-percent from lowcolor to highcolor. If colortype is set to 'rgb',
+    the function will automatically convert the rgb type to a tuple, find the
+    intermediate color and return it as an rgb color.
+    """
+
+    if colortype == "rgba":
+        # convert to tuple color, eg. (1, 0.45, 0.7)
+        lowcolor = unlabel_rgba(lowcolor)
+        highcolor = unlabel_rgba(highcolor)
+
+    diff_0 = float(highcolor[0] - lowcolor[0])
+    diff_1 = float(highcolor[1] - lowcolor[1])
+    diff_2 = float(highcolor[2] - lowcolor[2])
+    diff_3 = float(highcolor[3] - lowcolor[3])
+
+    inter_med_tuple = (
+        lowcolor[0] + intermed * diff_0,
+        lowcolor[1] + intermed * diff_1,
+        lowcolor[2] + intermed * diff_2,
+        lowcolor[3] + intermed * diff_3,
+    )
+
+    if colortype == "rgba":
+        # back to an rgba string, e.g. rgba(30, 20, 10)
+        inter_med_rgba = label_rgba(inter_med_tuple)
+        return inter_med_rgba
+
+    return inter_med_tuple
+
+
+
+def label_rgba(colors: str) -> str:
+    """
+    Takes tuple (a, b, c, d) and returns an rgba color 'rgba(a, b, c, d)'
+    """
+    return "rgba(%s, %s, %s, %s)" % (colors[0], colors[1], colors[2], colors[3])
+
+
+def unlabel_rgba(colors: str):
+    """
+    Takes rgba color(s) 'rgba(a, b, c, d)' and returns tuple(s) (a, b, c, d)
+    This function takes either an 'rgba(a, b, c, d)' color or a list of
+    such colors and returns the color tuples in tuple(s) (a, b, c, d)
+    """
+    str_vals = ""
+    for index, _col in enumerate(colors):
+        try:
+            float(colors[index])
+            str_vals = str_vals + colors[index]
+        except ValueError:
+            if colors[index] == "," or colors[index] == ".":
+                str_vals = str_vals + colors[index]
+
+    str_vals = str_vals + ","
+    numbers = []
+    str_num = ""
+    for char in str_vals:
+        if char != ",":
+            str_num = str_num + char
+        else:
+            numbers.append(float(str_num))
+            str_num = ""
+    return tuple(numbers)

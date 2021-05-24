@@ -27,12 +27,60 @@ class ParameterFilter:
         self._uuid = uuid
         self._dframe = dframe
         self._validate_dframe()
+        self._prepare_data()
         self.set_callbacks(app)
 
     def _validate_dframe(self) -> None:
         for col in ["REAL", "ENSEMBLE"]:
             if col not in self._dframe.columns:
                 raise KeyError(f"Required columns {col} not found in dataframe")
+
+
+    def _prepare_data(self, drop_constants:bool=True):
+        """
+        Different data preparations on the parameters, before storing them as an attribute.
+        Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
+        are removed, in addition parameters with LOG distribution will be kept while the
+        other is dropped.
+        """
+
+        if drop_constants:
+            constant_params = [
+                param
+                for param in [
+                    x for x in self._dframe.columns if x not in ["REAL", "ENSEMBLE"]
+                ]
+                if len(self._dframe[param].unique()) == 1
+            ]
+            self._dframe = self._dframe.drop(columns=constant_params)
+
+        # Keep only LOG parameters
+        log_params = [
+            param.replace("LOG10_", "")
+            for param in [
+                x for x in self._dframe.columns if x not in ["REAL", "ENSEMBLE"]
+            ]
+            if param.startswith("LOG10_")
+        ]
+        self._dframe = self._dframe.drop(columns=log_params)
+        self._dframe = self._dframe.rename(
+            columns={
+                col: f"{col} (log)"
+                for col in self._dframe.columns
+                if col.startswith("LOG10_")
+            }
+        )
+        # Remove prefix on parameter name added by GEN_KW
+        self._dframe = self._dframe.rename(
+            columns={
+                col: (col.split(":", 1)[1])
+                for col in self._dframe.columns
+                if (":" in col and col not in ["REAL", "ENSEMBLE"])
+            }
+        )
+        # Drop columns if duplicate names
+        self._dframe = self._dframe.loc[:, ~self._dframe.columns.duplicated()]
+
 
     @property
     def _ensembles(self) -> List[str]:
