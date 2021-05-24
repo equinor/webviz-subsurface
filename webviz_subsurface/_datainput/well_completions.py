@@ -17,7 +17,7 @@ def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]
         if "color" in zonedict and not re.match(
             "^#([A-Fa-f0-9]{6})", zonedict["color"]
         ):
-            logging.warning(
+            logging.getLogger(__name__).warning(
                 f"""The zone color {zonedict["color"]} will be ignored. """
                 "Only 6 digit hexadecimal colors are accepted in the well completions plugin."
             )
@@ -109,12 +109,11 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     the default unit system is METRIC. This is because the unit system \
     keyword could be in an include file.
     """
-    unit_systems = ["METRIC", "FIELD", "LAB", "PVT-M"]
     for filename in glob.glob(f"{ensemble_path}/eclipse/model/*.DATA"):
         with open(filename, "r") as handle:
             ecl_data_lines = handle.readlines()
 
-        for unit_system in unit_systems:
+        for unit_system in ["METRIC", "FIELD", "LAB", "PVT-M"]:
             if any(line.startswith(unit_system) for line in ecl_data_lines):
                 return unit_system
         return None

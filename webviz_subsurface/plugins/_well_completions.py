@@ -34,10 +34,10 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone->layer mapping \
+    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping \
     * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels \
     * **`well_attributes_file`:** `.json` file with categorical well attributes \
-    * **`kh_unit`:** Will f.ex be mD·m if unit system is METRIC \
+    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted \
     * **`kh_decimal_places`:**
 
     ---
@@ -150,6 +150,12 @@ class WellCompletions(WebvizPluginABC):
         ]
     }
     ```
+
+    **KH unit**
+
+    If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file. \
+    The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
+
     """  # pylint: disable=line-too-long
 
     def __init__(
@@ -354,13 +360,10 @@ def create_ensemble_dataset(
 
 def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
     """Counts the number of leaves in the stratigraphy tree"""
-    count = 0
-    for zonedict in stratigraphy:
-        if "subzones" in zonedict:
-            count += count_leaves(zonedict["subzones"])
-        else:
-            count += 1
-    return count
+    return sum(
+        count_leaves(zonedict["subzones"]) if "subzones" in zonedict else 1
+        for zonedict in stratigraphy
+    )
 
 
 def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
