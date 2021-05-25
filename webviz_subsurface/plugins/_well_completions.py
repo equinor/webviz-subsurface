@@ -30,6 +30,9 @@ class WellCompletions(WebvizPluginABC):
     """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
 
+    !> The plugin will not see lumps of completions that are shut using the WELOPEN keyword. \
+    This is being worked on and will be fixed in future relases.
+
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
@@ -292,7 +295,12 @@ class WellCompletions(WebvizPluginABC):
                 webviz_subsurface_components.WellCompletions(
                     id="well_completions", data=data
                 ),
-                {"padding": "10px", "height": no_leaves * 50 + 180, "min-height": 500},
+                {
+                    "padding": "10px",
+                    "height": no_leaves * 50 + 180,
+                    "min-height": 500,
+                    "width": "98%",
+                },
             ]
 
 
