@@ -59,6 +59,7 @@ class PlotlyLinePlot:
                             ),
                         },
                         "line": {"width": 3 if real in highlight_reals else 0.5},
+                        "mode": "lines",
                         "showlegend": real_no == 0 and color_column is None,
                     }
                 )
@@ -100,7 +101,7 @@ class PlotlyLinePlot:
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": 2},
+                        "line": {"dash": "dot", "width": 3},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "max")],
                         "hovertemplate": f"Calculation: {'mac'}, Ensemble: {ensemble}",
@@ -108,6 +109,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "mode": "lines",
                     }
                 )
             if "P10/P90" in traces:
@@ -121,6 +123,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "mode": "lines",
                     }
                 )
             if "Mean" in traces:
@@ -133,6 +136,8 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         # "fill": "tonexty",
                         "marker": {"color": color},
+                        "mode": "lines",
+                        "line": {"width": 3},
                     }
                 )
             if "P10/P90" in traces:
@@ -147,6 +152,7 @@ class PlotlyLinePlot:
                         "showlegend": False,
                         # "fill": "tonexty",
                         "marker": {"color": color},
+                        "mode": "lines",
                     }
                 )
             if "Low/High" in traces:
@@ -160,6 +166,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "mode": "lines",
                     }
                 )
 
