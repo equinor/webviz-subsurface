@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable
+from typing import List, Dict, Union, Tuple, Callable, Optional
 import sys
 from pathlib import Path
 import json
@@ -13,12 +13,18 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface_components as wsc
+
+import webviz_subsurface
+
+from uuid import uuid4
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
@@ -145,6 +151,11 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
+        )
+        # app.config.external_stylesheets.append(dbc.themes.BOOTSTRAP)
 
         self.csvfile = csvfile
         self.obsfile = obsfile
@@ -514,6 +525,114 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
+    def open_modal_vector_calculator_layout(self) -> html.Div:
+        return html.Details(
+            id=self.uuid("vector_calculator_detail"),
+            open=False,
+            children=[
+                html.Summary("Vector Calculator:", style={"font-weight": "bold"}),
+                dbc.Button(
+                    "Vector Calculator", id=self.uuid("vector_calculator_open_btn")
+                ),
+            ],
+        )
+
+    @property
+    def modal_vector_calculator_layout(self) -> html.Div:
+        return html.Details(
+            id=self.uuid("vector_calculator_modal"),
+            open=False,
+            children=[
+                dbc.Modal(
+                    style={"marginTop": "20vh", "width": "1300px"},
+                    children=[
+                        dbc.ModalHeader("Vector Calculator"),
+                        dbc.ModalBody(
+                            html.Div(
+                                id=self.uuid("vector_calculator_modal_body"),
+                                children=[
+                                    wsc.VectorCalculator(
+                                        id=self.uuid("vector_calculator"),
+                                        vectors=self.selector_data,
+                                        expressions=[
+                                            {
+                                                "name": "Test",
+                                                "expression": "x+y",
+                                                "id": f"{uuid4()}",
+                                                "variableVectorMap": [
+                                                    {
+                                                        "variableName": "x",
+                                                        "vectorName": ["WOPT:OP_1"],
+                                                    },
+                                                    {
+                                                        "variableName": "y",
+                                                        "vectorName": ["FGIR"],
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                "name": "Test2",
+                                                "expression": "x-y",
+                                                "id": f"{uuid4()}",
+                                                "variableVectorMap": [
+                                                    {
+                                                        "variableName": "x",
+                                                        "vectorName": ["WOPT:OP_3"],
+                                                    },
+                                                    {
+                                                        "variableName": "y",
+                                                        "vectorName": ["FGIR"],
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                "name": "Test3",
+                                                "expression": "x-2*y",
+                                                "id": f"{uuid4()}",
+                                                "variableVectorMap": [
+                                                    {
+                                                        "variableName": "x",
+                                                        "vectorName": ["WOPT:OP_1"],
+                                                    },
+                                                    {
+                                                        "variableName": "y",
+                                                        "vectorName": ["WBP4:OP_3"],
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                "name": "Test4",
+                                                "expression": "x-2*y/z",
+                                                "id": f"{uuid4()}",
+                                                "variableVectorMap": [
+                                                    {
+                                                        "variableName": "x",
+                                                        "vectorName": ["WOPT:OP_4"],
+                                                    },
+                                                    {
+                                                        "variableName": "y",
+                                                        "vectorName": ["FGIR"],
+                                                    },
+                                                    {
+                                                        "variableName": "z",
+                                                        "vectorName": ["WBP4:OP_3"],
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    )
+                                ],
+                            ),
+                        ),
+                    ],
+                    id=self.uuid("modal_vector_calculator"),
+                    size="lg",
+                    centered=True,
+                ),
+            ],
+        )
+
+    @property
     def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             id=self.uuid("layout"),
@@ -649,8 +768,10 @@ folder, to avoid risk of not extracting the right data.
                             ],
                         ),
                         self.from_cumulatives_layout,
+                        self.open_modal_vector_calculator_layout,
                     ],
                 ),
+                self.modal_vector_calculator_layout,
                 html.Div(
                     style={"flex": 3},
                     children=[
@@ -666,80 +787,9 @@ folder, to avoid risk of not extracting the right data.
                         ),
                     ],
                 ),
-                html.Div(
-                    id=self.uuid("vector_calculator_dialog"),
-                    children=[
-                        wsc.VectorCalculator(
-                            id="vector_calculator",
-                            vectors=self.selector_data,
-                            expressions=[
-                                {
-                                    "name": "Test",
-                                    "expression": "x+y",
-                                    "id": self.uuid("Test"),
-                                    "variableVectorMap": [
-                                        {
-                                            "variableName": "x",
-                                            "vectorName": ["WOPT:OP_1"],
-                                        },
-                                        {
-                                            "variableName": "y",
-                                            "vectorName": ["FGIR"],
-                                        },
-                                    ],
-                                },
-                                {
-                                    "name": "Test2",
-                                    "expression": "x-y",
-                                    "id": self.uuid("Test2"),
-                                    "variableVectorMap": [
-                                        {
-                                            "variableName": "x",
-                                            "vectorName": ["WOPT:OP_3"],
-                                        },
-                                        {
-                                            "variableName": "y",
-                                            "vectorName": ["FGIR"],
-                                        },
-                                    ],
-                                },
-                                {
-                                    "name": "Test3",
-                                    "expression": "x-2*y",
-                                    "id": self.uuid("Test3"),
-                                    "variableVectorMap": [
-                                        {
-                                            "variableName": "x",
-                                            "vectorName": ["WOPT:OP_1"],
-                                        },
-                                        {
-                                            "variableName": "y",
-                                            "vectorName": ["WBP4:OP_3"],
-                                        },
-                                    ],
-                                },
-                                {
-                                    "name": "Test4",
-                                    "expression": "x-2*y/z",
-                                    "id": self.uuid("Test4"),
-                                    "variableVectorMap": [
-                                        {
-                                            "variableName": "x",
-                                            "vectorName": ["WOPT:OP_4"],
-                                        },
-                                        {
-                                            "variableName": "y",
-                                            "vectorName": ["FGIR"],
-                                        },
-                                        {
-                                            "variableName": "z",
-                                            "vectorName": ["WBP4:OP_3"],
-                                        },
-                                    ],
-                                },
-                            ],
-                        )
-                    ],
+                dcc.Store(
+                    id=self.uuid("vector_calculator_output"),
+                    data=None,
                 ),
             ],
         )
@@ -1120,6 +1170,27 @@ folder, to avoid risk of not extracting the right data.
             if active:
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]
+
+        @app.callback(
+            Output(self.uuid("vector_calculator_output"), "data"),
+            Input(self.uuid("vector_calculator"), "expressions"),
+        )
+        def _update_vector_calculator_expressions(
+            expressions: List[dict],
+        ) -> List[dict]:
+            return expressions
+
+        @app.callback(
+            Output(self.uuid("modal_vector_calculator"), "is_open"),
+            [
+                Input(self.uuid("vector_calculator_open_btn"), "n_clicks"),
+            ],
+            [State(self.uuid("modal_vector_calculator"), "is_open")],
+        )
+        def _toggle_modal(n_open_clicks: int, is_open: bool) -> Optional[bool]:
+            if n_open_clicks:
+                return not is_open
+            raise PreventUpdate
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
