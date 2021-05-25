@@ -131,8 +131,8 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             raise PreventUpdate
 
         disable_plot_type = selected_page in [
-            "Plots per zone/region",
-            "Cumulative mean/p10/p90",
+            "per_zr",
+            "conv",
         ]
         if disable_plot_type:
             plot_type_value = None
@@ -144,11 +144,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             )
 
         disable_y = (
-            selected_page
-            in [
-                "Plots per zone/region",
-                "Cumulative mean/p10/p90",
-            ]
+            selected_page in ["per_zr", "conv"]
             or plot_type_value
             in [
                 "distribution",
@@ -175,41 +171,29 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             else:
                 y_value = dash.no_update if selected_y in y_elm else y_elm[0]
 
-        subplot_elm = (
-            ["ENSEMBLE"]
-            if selected_page == "Cumulative mean/p10/p90"
-            else volumemodel.selectors
-        )
-        subplot_options = [{"label": elm, "value": elm} for elm in subplot_elm]
-
-        disable_subplot = selected_page not in [
-            "Custom plotting",
-            "Cumulative mean/p10/p90",
-        ]
+        disable_subplot = selected_page not in ["custom", "conv"]
         subplot_value = (
             None
             if disable_subplot
             and selected_subplot_value is not None
             or "page-selected" in ctx["prop_id"]
-            and selected_page == "1 plot / 1 table"
+            and selected_page == "1p1t"
             else dash.no_update
         )
 
-        disable_colorby = selected_page in [
-            "Plots per zone/region",
-            "Cumulative mean/p10/p90",
-        ]
+        disable_colorby = selected_page in ["per_zr", "conv"]
         colorby_elm = (
             list(volumemodel.dataframe.columns) + volumemodel.parameters
             if plot_type == "scatter"
             else volumemodel.selectors
         )
-        colorby_options = [{"label": elm, "value": elm} for elm in colorby_elm]
         colorby_value = (
-            dash.no_update if selected_color_by in colorby_elm else colorby_elm[0]
+            None
+            if disable_colorby
+            and selected_color_by is not None
+            or selected_color_by not in colorby_elm
+            else dash.no_update
         )
-        if disable_colorby:
-            colorby_value = None
 
         settings = {
             "Plot type": {
@@ -225,12 +209,12 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             "Color by": {
                 "disable": disable_colorby,
                 "value": colorby_value,
-                "options": colorby_options,
+                "options": [{"label": elm, "value": elm} for elm in colorby_elm],
             },
             "Subplots": {
                 "disable": disable_subplot,
                 "value": subplot_value,
-                "options": subplot_options,
+                "options": dash.no_update,
             },
         }
         disable_list = []

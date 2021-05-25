@@ -44,7 +44,7 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
             {
                 "id": get_uuid("main-inplace-dist"),
                 "wrapper": ALL,
-                "page": "Custom plotting",
+                "page": "custom",
             },
             "style",
         ),
@@ -56,7 +56,7 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
             {
                 "id": get_uuid("main-inplace-dist"),
                 "wrapper": ALL,
-                "page": "Custom plotting",
+                "page": "custom",
             },
             "id",
         ),

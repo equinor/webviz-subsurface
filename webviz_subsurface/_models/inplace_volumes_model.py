@@ -69,8 +69,9 @@ class InplaceVolumesModel:
             parameter_table[self.SENS_COLUMNS] if self._designrun else None
         )
 
+        # TO-DO add code for computing water volumes if "TOTAL" is present
         dfs = []
-        for fluid in ["OIL", "GAS", "TOTAL"]:
+        for fluid in ["OIL", "GAS"]:
             selector_columns = [
                 x for x in volumes_table.columns if x in self.POSSIBLE_SELECTORS
             ]
