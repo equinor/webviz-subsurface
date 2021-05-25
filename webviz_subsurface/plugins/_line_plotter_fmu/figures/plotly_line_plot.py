@@ -50,7 +50,9 @@ class PlotlyLinePlot:
                         "text": real,
                         "legendgroup": ensemble,
                         "marker": {
-                            "color": set_real_color(real_no=real, df_norm=dframe)
+                            "color": "black"
+                            if real in highlight_reals
+                            else set_real_color(real_no=real, df_norm=dframe)
                             if color_column is not None
                             else self._ensemble_colors.get(
                                 ensemble, "rgba(128,128,128,0.2)"

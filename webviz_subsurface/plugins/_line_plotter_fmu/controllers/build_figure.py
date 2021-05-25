@@ -136,6 +136,13 @@ def build_figure(
         layout = fig["layout"]
         return data, layout
 
+    @app.callback(
+        Output(get_uuid("highlight-realizations"), "value"),
+        Input(get_uuid("clear-highlight-realizations"), "n_clicks"),
+    )
+    def _clear_real_highlight(_click) -> Optional[List]:
+        return []
+
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calc_series_statistics(

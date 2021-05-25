@@ -48,12 +48,20 @@ def highlight_realizations_view(
         style={"fontSize": "0.8em"},
         children=[
             html.H5("Highlight realizations"),
-            wcc.Select(
-                id=get_uuid("highlight-realizations"),
-                options=[{"label": val, "value": val} for val in realizations],
-                value=None,
-                persistence=True,
-                persistence_type="session",
+            html.Div(
+                children=[
+                    wcc.Select(
+                        style={"width": "25%"},
+                        id=get_uuid("highlight-realizations"),
+                        options=[{"label": val, "value": val} for val in realizations],
+                        value=None,
+                        persistence=True,
+                        persistence_type="session",
+                    ),
+                    html.Button(
+                        id=get_uuid("clear-highlight-realizations"), children="Clear"
+                    ),
+                ]
             ),
         ],
     )
