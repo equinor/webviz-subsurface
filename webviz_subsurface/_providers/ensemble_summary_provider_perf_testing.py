@@ -205,14 +205,15 @@ if __name__ == "__main__":
         level=logging.WARNING,
         format="%(asctime)s %(levelname)-3s [%(name)s]: %(message)s",
     )
-    logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
+    logging.getLogger("webviz_subsurface").setLevel(level=logging.INFO)
+    # logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
 
     ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/webviz_storage_dir")
     # ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
-    # BACKING_TYPE: BackingType = BackingType.ARROW
+    BACKING_TYPE: BackingType = BackingType.ARROW
     # BACKING_TYPE: BackingType = BackingType.ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL
-    BACKING_TYPE: BackingType = BackingType.PARQUET
+    # BACKING_TYPE: BackingType = BackingType.PARQUET
     # BACKING_TYPE: BackingType = BackingType.INMEM_PARQUET
 
     print()

@@ -9,7 +9,7 @@ import numpy as np
 
 from .ensemble_summary_provider import EnsembleSummaryProvider
 from .ensemble_summary_provider_dataframe_utils import (
-    ensure_date_column_is_datetime_object,
+    make_date_column_datetime_object,
 )
 from .._utils.perf_timer import PerfTimer
 
@@ -71,7 +71,7 @@ class EnsembleSummaryProviderImplParquet(EnsembleSummaryProvider):
         LOGGER.debug(f"Writing backing store to parquet file: {parquet_file_name}")
         timer = PerfTimer()
 
-        ensure_date_column_is_datetime_object(ensemble_df)
+        ensemble_df = make_date_column_datetime_object(ensemble_df)
 
         ensemble_df.to_parquet(path=parquet_file_name)
 

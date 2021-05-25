@@ -12,10 +12,10 @@ import numpy as np
 
 from .ensemble_summary_provider import EnsembleSummaryProvider
 from .ensemble_summary_provider_dataframe_utils import (
-    ensure_date_column_is_datetime_object,
+    make_date_column_datetime_object,
 )
 from .ensemble_summary_provider_dataframe_utils import (
-    find_min_max_for_numeric_columns_in_df,
+    find_min_max_for_numeric_columns,
 )
 from .._utils.perf_timer import PerfTimer
 
@@ -164,12 +164,12 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
 
         # Force data type in the incoming DataFrame's DATE column to datetime.datetime objects
         # This is the first step in coercing pyarrow to always store DATEs as timestamps
-        ensure_date_column_is_datetime_object(ensemble_df)
+        ensemble_df = make_date_column_datetime_object(ensemble_df)
+        et_convert_date_s = timer.lap_s()
 
         # Try and extract per column min/max values so we can store them in the arrow file
         # For now, we do this on the Pandas dataframe
-        timer.lap_s()
-        per_vector_min_max = find_min_max_for_numeric_columns_in_df(ensemble_df)
+        per_vector_min_max = find_min_max_for_numeric_columns(ensemble_df)
         et_find_min_max_s = timer.lap_s()
 
         # By default, we'll now end up with a schema that has timestamp[ns] for the DATE column
@@ -182,7 +182,7 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
         if do_convert_to_float32:
             timer.lap_s()
             schema_to_use = _create_float_downcasting_schema(schema_to_use)
-            LOGGER.debug(
+            LOGGER.info(
                 f"Created schema for float downcasting in : {timer.lap_s():.2f}s"
             )
 
@@ -214,6 +214,7 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
 
         LOGGER.debug(
             f"Wrote backing store to arrow file in: {timer.elapsed_s():.2f}s ("
+            f"convert_date={et_convert_date_s:.2f}s, "
             f"find_min_max={et_find_min_max_s:.2f}s, "
             f"table_from_pandas={et_table_from_pandas_s:.2f}s, "
             f"sorting={et_sorting_s:.2f}s, "
@@ -246,7 +247,7 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
 
         table_list: List[pa.Table] = []
         for real_idx, real_df in enumerate(per_real_dfs):
-            ensure_date_column_is_datetime_object(real_df)
+            real_df = make_date_column_datetime_object(real_df)
 
             default_schema = pa.Schema.from_pandas(real_df, preserve_index=False)
             schema_to_use = _set_date_column_type_to_timestamp_us(default_schema)

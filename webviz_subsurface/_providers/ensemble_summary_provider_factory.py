@@ -2,6 +2,7 @@ from typing import List, Dict, Optional
 from pathlib import Path
 import os
 import hashlib
+import json
 from enum import Enum
 import logging
 
@@ -71,23 +72,67 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         self,
         aggr_csv_file: Path,
     ) -> EnsembleSummaryProviderSet:
-        aggregated_df = pd.read_csv(aggr_csv_file)
-        ensemble_names = aggregated_df["ENSEMBLE"].unique()
 
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # TODO
-        # TODO
+        LOGGER.info(
+            f"create_provider_set_from_aggregated_csv_file() starting - {aggr_csv_file}"
+        )
+        timer = PerfTimer()
 
-        timeseries_obj_dict: Dict[str, EnsembleSummaryProvider] = {}
+        hashval = hashlib.md5(str(aggr_csv_file).encode()).hexdigest()
+        main_storage_key = f"aggr_csv__{hashval}"
 
-        for ens_name in ensemble_names:
-            ensemble_df = aggregated_df[aggregated_df["ENSEMBLE"] == ens_name]
-            ens_ts_obj = None  # EnsembleTimeSeriesImplInMemDataFrame(ensemble_df)
-            timeseries_obj_dict[ens_name] = ens_ts_obj
+        # Since our only input is the file name of a single aggregated CSV file, we rely
+        # on reading the dict which maps from ensemble names to the keys that need to
+        # be loaded from a JSON file on disk.
+        storage_keys_to_load: Dict[str, str] = {}
+        json_filename = self._storage_dir / (main_storage_key + ".json")
+        try:
+            with open(json_filename, "r") as file:
+                storage_keys_to_load = json.load(file)
+        except FileNotFoundError:
+            # No dict found on disk. We can only recover from this if we're allowed to
+            # write to storage. In that case we'll import the CSV file and write the
+            # resulting dict to JSON further down
+            if not self._allow_storage_writes:
+                raise
 
-        return EnsembleSummaryProviderSet(timeseries_obj_dict)
+        # Possibly do import of CSV and writing of provider data to backing store
+        if not storage_keys_to_load and self._allow_storage_writes:
+            aggregated_df = pd.read_csv(aggr_csv_file)
+            ensemble_names = aggregated_df["ENSEMBLE"].unique()
+
+            LOGGER.info(
+                f"Saving {len(ensemble_names)} "
+                f"summary providers from aggregated CSV to backing store"
+            )
+
+            for ens_name in ensemble_names:
+                storage_key = main_storage_key + "__" + ens_name
+                ensemble_df = aggregated_df[aggregated_df["ENSEMBLE"] == ens_name]
+                self._write_data_to_backing_store(storage_key, ensemble_df.copy())
+                storage_keys_to_load[ens_name] = storage_key
+
+            with open(json_filename, "w") as file:
+                json.dump(storage_keys_to_load, file)
+
+        created_providers: Dict[str, EnsembleSummaryProvider] = {}
+        for ens_name, storage_key in storage_keys_to_load.items():
+            provider = self._create_provider_instance_from_backing_store(storage_key)
+            if provider:
+                created_providers[ens_name] = provider
+
+        num_missing_models = len(storage_keys_to_load) - len(created_providers)
+        if num_missing_models > 0:
+            raise ValueError(f"Failed to load data for {num_missing_models} ensembles")
+
+        LOGGER.info(f"Loaded {len(created_providers)} providers from backing store")
+
+        LOGGER.info(
+            f"create_provider_set_from_aggregated_csv_file() finished "
+            f"- total time: {timer.elapsed_s():.2f}s"
+        )
+
+        return EnsembleSummaryProviderSet(created_providers)
 
     # -------------------------------------------------------------------------
     def create_provider_set_from_per_realization_csv_file(

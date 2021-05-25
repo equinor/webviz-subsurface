@@ -7,10 +7,14 @@ import dateutil.parser
 
 
 # -------------------------------------------------------------------------
-def ensure_date_column_is_datetime_object(df: pd.DataFrame) -> None:
+def make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
+
+    # Make a copy since it is likely we will modify the dataframe, and
+    # we don't know if it is a view on a larger DF or a copy
+    df = df.copy()
 
     if "DATE" not in df.columns:
-        return
+        return df
 
     sampled_date_value = df["DATE"].values[0]
 
@@ -34,9 +38,11 @@ def ensure_date_column_is_datetime_object(df: pd.DataFrame) -> None:
             dtype="object",
         )
 
+    return df
+
 
 # -------------------------------------------------------------------------
-def find_min_max_for_numeric_columns_in_df(
+def find_min_max_for_numeric_columns(
     df: pd.DataFrame,
 ) -> Dict[str, dict]:
 
