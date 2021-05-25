@@ -45,18 +45,11 @@ def data_selectors_view(
                 uuid=get_uuid("data_selectors"),
                 source="parameter",
                 data_attribute="parameter",
-                title="Parameter (color)",
+                title="Color by",
                 options=[{"label": col, "value": col} for col in parameter_names],
-                value=initial_data.get("parameter", parameter_names[0]),
-            ),
-            dcc.Checklist(
-                id=get_uuid("single_real_mode"),
-                options=[
-                    {"label": "Show individual realizations", "value": "single_real"}
-                ],
-                labelStyle={"display": "block"},
-                persistence=True,
-                persistence_type="session",
+                clearable=True,
+                placeholder="Default ensemble color",
+                value=initial_data.get("parameter"),
             ),
         ],
     )

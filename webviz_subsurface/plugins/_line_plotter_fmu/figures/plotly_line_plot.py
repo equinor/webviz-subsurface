@@ -6,97 +6,64 @@ import plotly.graph_objects as go
 
 
 class PlotlyLinePlot:
-    def __init__(self, active_x_value: Optional[str]) -> None:
-        self._active_x_value = active_x_value
+    def __init__(
+        self,
+        xaxis_title: str = None,
+        yaxis_title: str = None,
+        ensemble_colors: Dict = None,
+    ) -> None:
+        self._ensemble_colors = ensemble_colors if ensemble_colors else {}
         self._realization_traces: List = []
         self._statistical_traces: List = []
         self._observation_traces: List = []
-        self._layout: go.Layout = go.Layout(paper_bgcolor="rgba(0,0,0,0)")
+        self._layout: go.Layout = go.Layout(
+            xaxis={"title": xaxis_title},
+            yaxis={"title": yaxis_title},
+            paper_bgcolor="rgba(0,0,0,0)",
+        )
 
     def add_realization_traces(
         self,
         dframe: pd.DataFrame,
         x_column: str,
         y_column: str,
-        color_column: str,
-        realization_slider: bool = False,
-        color: str = "Realizations",
+        color_column: Optional[str],
     ) -> List[dict]:
-        """Renders line trace for each realization, includes history line if present"""
-        colors = ["red", "blue", "green"]
-   #     print(dframe)
-
-        dframe["VALUE_NORM"] = (dframe[color_column] - dframe[color_column].min()) / (
-            dframe[color_column].max() - dframe[color_column].min()
-        )
+        """Renders line trace for each realization"""
+        # If color parameter is given, normalize values for coloring
+        if color_column is not None:
+            dframe["VALUE_NORM"] = (
+                dframe[color_column] - dframe[color_column].min()
+            ) / (dframe[color_column].max() - dframe[color_column].min())
 
         for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
-
-        #    print(ens_df)
-            if (
-                self._active_x_value
-                and self._active_x_value in ens_df[x_column].unique()
-            ):
-                parameter_order = ens_df.loc[
-                    ens_df[x_column] == self._active_x_value
-                ].sort_values(by=color_column)
-            else:
-                parameter_order = ens_df.loc[
-                    ens_df[x_column] == ens_df[x_column].max()
-                ].sort_values(by=color_column)
-
             for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL")):
                 self._realization_traces.append(
                     {
                         "x": real_df[x_column],
                         "y": real_df[y_column],
-                        "hovertemplate": f"Realization: {real}, Ensemble: {ensemble}",
+                        "hovertemplate": f"Realization: {real}, Ensemble: {ensemble}, <br>{color_column}: {real_df[color_column].unique()[0]}"
+                        if color_column is not None
+                        else f"Realization {real}, Ensemble: {ensemble}",
                         "name": ensemble,
                         "text": real,
                         "legendgroup": ensemble,
                         "marker": {
-                            "color": set_real_color(real_no=real, df_norm=dframe),
+                            "color": set_real_color(real_no=real, df_norm=dframe)
+                            if color_column is not None
+                            else self._ensemble_colors.get(
+                                ensemble, "rgba(128,128,128,0.2)"
+                            ),
                         },
                         "showlegend": real_no == 0,
                     }
                 )
 
-        self._layout["sliders"] = (
-            self._realization_slider() if realization_slider is True else []
-        )
-
-    def _realization_slider(self):
-        steps = []
-        for trace_no, trace in enumerate(self._realization_traces):
-            step: Dict = {
-                "method": "update",
-                "label": str(trace.get("text")),
-                "args": [
-                    {
-                        "marker.color": [
-                            "rgba(128,128,128,0.2)"
-                            for idx, _ in enumerate(self._realization_traces)
-                        ]
-                    },
-                ],
-            }
-            step["args"][0]["marker.color"][trace_no] = "black"
-            steps.append(step)
-        return [
-            dict(
-                steps=steps,
-                active=0,
-                currentvalue={"prefix": "Realization: ", "visible": True},
-                pad={"t": 50},
-                y=0,
-            )
-        ]
-
     def add_statistical_lines(
         self, dframe: pd.DataFrame, x_column: str, y_column: str, traces: List
     ):
-        colors = ["red", "blue", "green"]
         for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
+            color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,0.2)")
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
@@ -107,7 +74,7 @@ class PlotlyLinePlot:
                         "name": ensemble,
                         "legendgroup": ensemble,
                         "showlegend": False,
-                        "marker": {"color": colors[idx]},
+                        "marker": {"color": color},
                     }
                 )
             if "P10/P90" in traces:
@@ -120,7 +87,7 @@ class PlotlyLinePlot:
                         "name": ensemble,
                         "legendgroup": ensemble,
                         "showlegend": False,
-                        "marker": {"color": colors[idx]},
+                        "marker": {"color": color},
                     }
                 )
             if "Mean" in traces:
@@ -132,7 +99,7 @@ class PlotlyLinePlot:
                         "name": ensemble,
                         "legendgroup": ensemble,
                         # "fill": "tonexty",
-                        "marker": {"color": colors[idx]},
+                        "marker": {"color": color},
                     }
                 )
             if "P10/P90" in traces:
@@ -146,7 +113,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         # "fill": "tonexty",
-                        "marker": {"color": colors[idx]},
+                        "marker": {"color": color},
                     }
                 )
             if "Low/High" in traces:
@@ -159,7 +126,7 @@ class PlotlyLinePlot:
                         "name": ensemble,
                         "legendgroup": ensemble,
                         "showlegend": False,
-                        "marker": {"color": colors[idx]},
+                        "marker": {"color": color},
                     }
                 )
 
@@ -180,7 +147,6 @@ class PlotlyLinePlot:
                     },
                 }
             )
-    
 
     def get_figure(self) -> Dict:
         traces = []
@@ -193,7 +159,6 @@ class PlotlyLinePlot:
         return dict(layout=self._layout, data=traces)
 
 
-
 def set_real_color(df_norm, real_no: str):
     """
     Return color for trace based on normalized parameter value.
@@ -202,7 +167,7 @@ def set_real_color(df_norm, real_no: str):
     red = "rgba(255,18,67, 1)"
     mid_color = "rgba(220,220,220,1)"
     green = "rgba(62,208,62, 1)"
-    df_norm= df_norm.reset_index(drop=True)
+    df_norm = df_norm.reset_index(drop=True)
     mean = df_norm["VALUE_NORM"].mean()
     norm_value = df_norm.loc[df_norm["REAL"] == real_no].iloc[0]["VALUE_NORM"]
     if norm_value <= mean:
@@ -212,7 +177,6 @@ def set_real_color(df_norm, real_no: str):
         intermed = (norm_value - mean) / (1 - mean)
         return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
     return "rgba(220,220,220, 0.8)"
-    
 
 
 def find_intermediate_color(
@@ -250,7 +214,6 @@ def find_intermediate_color(
         return inter_med_rgba
 
     return inter_med_tuple
-
 
 
 def label_rgba(colors: str) -> str:

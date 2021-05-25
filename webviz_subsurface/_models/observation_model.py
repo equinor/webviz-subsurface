@@ -26,11 +26,9 @@ class ObservationModel:
             attribute["key"]
             for attribute in self.observations.get(self.observation_group, [])
         ]
-        print(test)
         return test
 
     def get_observations_for_attribute(self, attribute, value) -> List:
-        print(self.observation_group)
         for attr in self.observations.get(self.observation_group, []):
             if str(attr["key"]) == self.remap_key.get(attribute, attribute):
                 observations = []

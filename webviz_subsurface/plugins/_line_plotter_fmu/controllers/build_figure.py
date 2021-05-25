@@ -19,6 +19,7 @@ def build_figure(
     tableproviders: EnsembleTableProviderSet,
     observationmodel: ObservationModel,
     parameterproviders: EnsembleTableProviderSet,
+    colors: Dict,
 ) -> None:
     @app.callback(
         Output(
@@ -60,14 +61,7 @@ def build_figure(
             "value",
         ),
         Input(get_uuid("traces"), "value"),
-        Input(
-            {
-                "id": get_uuid("clientside"),
-                "attribute": "single_real",
-            },
-            "data",
-        ),
-        Input(get_uuid("graph"), "clickData"),
+        Input(get_uuid("observations"), "value"),
         Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
     )
     def _update_plot(
@@ -76,8 +70,7 @@ def build_figure(
         ensemble_names: Union[List, str],
         parameter_name: str,
         traces: List,
-        single_real_mode,
-        click_data: Optional[None],
+        show_obs: List,
         parameter_filter,
     ) -> Union[Tuple]:
 
@@ -94,29 +87,33 @@ def build_figure(
             table_column_names=[x_column_name, y_column_name],
             realization_filter=real_filter,
         )
-        parameter_dframe = get_table_data(
-            tableproviders=parameterproviders,
-            ensemble_names=ensemble_names,
-            table_column_names=[parameter_name],
-            realization_filter=real_filter,
+        if parameter_name is not None:
+            parameter_dframe = get_table_data(
+                tableproviders=parameterproviders,
+                ensemble_names=ensemble_names,
+                table_column_names=[parameter_name],
+                realization_filter=real_filter,
+            )
+            df = pd.merge(csv_dframe, parameter_dframe, on=["ENSEMBLE", "REAL"])
+        else:
+            df = csv_dframe
+
+        figure = PlotlyLinePlot(
+            xaxis_title=x_column_name, yaxis_title=y_column_name, ensemble_colors=colors
         )
-        df = pd.merge(csv_dframe, parameter_dframe, on=["ENSEMBLE", "REAL"])
-        active_x_value: str = click_data["points"][0]["x"] if click_data else None
-        figure = PlotlyLinePlot(active_x_value=active_x_value)
         if "Realizations" in traces:
             figure.add_realization_traces(
                 df,
                 x_column_name,
                 y_column_name,
                 color_column=parameter_name,
-                realization_slider=single_real_mode,
             )
             traces.remove("Realizations")
 
         if traces:
             stat_df = calc_series_statistics(df, [y_column_name], x_column_name)
             figure.add_statistical_lines(stat_df, x_column_name, y_column_name, traces)
-        if observationmodel is not None:
+        if show_obs and observationmodel is not None:
 
             observations = observationmodel.get_observations_for_attribute(
                 attribute=y_column_name, value=x_column_name
@@ -127,7 +124,9 @@ def build_figure(
                 )
 
         fig = figure.get_figure()
-        return fig["data"], fig["layout"]
+        data = fig["data"]
+        layout = fig["layout"]
+        return data, layout
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

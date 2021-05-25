@@ -9,7 +9,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface
 from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
-from .group_and_filter_selectors import group_by_view
+from .plot_traces_view import line_traces_view
 
 
 def main_view(
@@ -36,7 +36,7 @@ def main_view(
                         parameter_names=parameter_names,
                         initial_data=initial_data,
                     ),
-                    group_by_view(
+                    line_traces_view(
                         get_uuid=get_uuid,
                     ),
                     plot_options_view(get_uuid=get_uuid, initial_layout=initial_layout),

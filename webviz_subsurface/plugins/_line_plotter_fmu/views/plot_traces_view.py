@@ -7,7 +7,7 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 
 
-def group_by_view(
+def line_traces_view(
     get_uuid: Callable,
 ) -> html.Div:
 
@@ -23,6 +23,14 @@ def group_by_view(
                     for val in ["Realizations", "Mean", "P10/P90", "Low/High"]
                 ],
                 value=["Realizations"],
+                labelStyle={"display": "block"},
+                persistence=True,
+                persistence_type="session",
+            ),
+            dcc.Checklist(
+                id=get_uuid("observations"),
+                options=[{"label": val, "value": val} for val in ["Observations"]],
+                value=["Observations"],
                 labelStyle={"display": "block"},
                 persistence=True,
                 persistence_type="session",

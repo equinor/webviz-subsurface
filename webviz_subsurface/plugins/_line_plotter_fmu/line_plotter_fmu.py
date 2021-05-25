@@ -15,7 +15,7 @@ import webviz_core_components as wcc
 from webviz_subsurface._components.parameter_filter import ParameterFilter
 import webviz_subsurface
 from .views import main_view
-from .controllers import build_figure, update_figure_clientside, set_single_real_mode
+from .controllers import build_figure, update_figure_clientside
 
 
 class LinePlotterFMU(WebvizPluginABC):
@@ -31,6 +31,7 @@ class LinePlotterFMU(WebvizPluginABC):
         observation_group: str = "general",
         remap_observation_keys: Dict[str, str] = None,
         remap_observation_values: Dict[str, str] = None,
+        colors: Dict = None,
         initial_data: Dict = None,
         initial_layout: Dict = None,
     ):
@@ -40,6 +41,7 @@ class LinePlotterFMU(WebvizPluginABC):
 
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
+        self._colors = colors if colors else {}
         if ensembles is not None and csvfile is not None:
             ensembles_dict: Dict[str, str] = {
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
@@ -53,6 +55,7 @@ class LinePlotterFMU(WebvizPluginABC):
                     ensembles_dict, csvfile
                 )
             )
+            self._ensemble_names = ensembles
         elif aggregated_csvfile and aggregated_parameterfile is not None:
             self._tableproviderset = (
                 provider_factory.create_provider_set_from_aggregated_csv_file(
@@ -64,22 +67,12 @@ class LinePlotterFMU(WebvizPluginABC):
                     aggregated_parameterfile
                 )
             )
+            self._ensemble_names = self._tableproviderset.ensemble_names()
         else:
             raise ValueError(
-                "Specify either ensemble and csvfile or aggregated_csvfile and aggregated_parameterfile"
+                "Specify either ensembles and csvfile or aggregated_csvfile and aggregated_parameterfile"
             )
 
-        self._ensemble_names = list(
-            set().union(
-                *[
-                    ens
-                    for ens in [
-                        self._tableproviderset.ensemble_names(),
-                        self._parameterproviderset.ensemble_names(),
-                    ]
-                ]
-            )
-        )
         self._parameter_names = list(
             set().union(
                 *[
@@ -129,7 +122,11 @@ class LinePlotterFMU(WebvizPluginABC):
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return [(get_path, [{"path": self._observationfile}])] if self._observationfile is not None else []
+        return (
+            [(get_path, [{"path": self._observationfile}])]
+            if self._observationfile is not None
+            else []
+        )
 
     @property
     def layout(self) -> html.Div:
@@ -161,12 +158,9 @@ class LinePlotterFMU(WebvizPluginABC):
             tableproviders=self._tableproviderset,
             observationmodel=self._observationmodel,
             parameterproviders=self._parameterproviderset,
+            colors=self._colors,
         )
         update_figure_clientside(app, get_uuid=self.uuid)
-        set_single_real_mode(
-            app,
-            get_uuid=self.uuid,
-        )
 
 
 @webvizstore
