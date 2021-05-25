@@ -171,7 +171,7 @@ def create_hover_boxes_for_violin_plots(figure, dframe, x, facet_col, color_col)
 
 
 def hover_box_text(trace, dframe, x, facet_col, color_col):
-    colors = list(dframe[color_col].unique())
+    colors = list(dframe[color_col].unique()) if color_col in dframe else []
     facet = trace["customdata"][0][0] if trace["customdata"] is not None else ""
     text = f"<b>{x}</b><br>" f"<b>{facet}</b><br>"
     if not colors:

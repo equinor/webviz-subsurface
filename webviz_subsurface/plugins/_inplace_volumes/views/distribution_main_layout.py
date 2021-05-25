@@ -8,22 +8,22 @@ def distributions_main_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
             html.Div(
-                id={"id": uuid, "page": "Custom plotting"},
+                id={"id": uuid, "page": "custom"},
                 style={"display": "block"},
                 children=custom_plotting_layout(uuid),
             ),
             html.Div(
-                id={"id": uuid, "page": "1 plot / 1 table"},
+                id={"id": uuid, "page": "1p1t"},
                 style={"display": "none"},
                 children=one_plot_one_table_layout(uuid),
             ),
             html.Div(
-                id={"id": uuid, "page": "Plots per zone/region"},
+                id={"id": uuid, "page": "per_zr"},
                 style={"display": "none"},
                 children=plots_per_zone_region_layout(uuid),
             ),
             html.Div(
-                id={"id": uuid, "page": "Cumulative mean/p10/p90"},
+                id={"id": uuid, "page": "conv"},
                 style={"display": "none"},
                 children=cumulative_plot_layout(uuid),
             ),
@@ -37,7 +37,7 @@ def cumulative_plot_layout(uuid: str) -> html.Div:
         style={"height": "91vh"},
         children=[
             wcc.Graph(
-                id={"id": uuid, "element": "plot", "page": "Cumulative mean/p10/p90"},
+                id={"id": uuid, "element": "plot", "page": "conv"},
                 config={"displayModeBar": False},
                 style={"height": "85vh"},
             )
@@ -68,19 +68,19 @@ def custom_plotting_layout(uuid: str) -> html.Div:
                 ),
             ),
             html.Div(
-                id={"id": uuid, "wrapper": "graph", "page": "Custom plotting"},
+                id={"id": uuid, "wrapper": "graph", "page": "custom"},
                 style={"display": "inline"},
                 children=wcc.Graph(
-                    id={"id": uuid, "element": "graph", "page": "Custom plotting"},
+                    id={"id": uuid, "element": "graph", "page": "custom"},
                     config={"displayModeBar": False},
                     style={"height": "85vh"},
                 ),
             ),
             html.Div(
-                id={"id": uuid, "wrapper": "table", "page": "Custom plotting"},
+                id={"id": uuid, "wrapper": "table", "page": "custom"},
                 style={"display": "none"},
                 children=dash_table.DataTable(
-                    id={"id": uuid, "element": "table", "page": "Custom plotting"},
+                    id={"id": uuid, "element": "table", "page": "custom"},
                     sort_action="native",
                     filter_action="native",
                 ),
@@ -99,7 +99,7 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
                     id={
                         "id": uuid,
                         "element": "graph",
-                        "page": "1 plot / 1 table",
+                        "page": "1p1t",
                     },
                     config={"displayModeBar": False},
                     style={"height": "44vh"},
@@ -112,7 +112,7 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
                     id={
                         "id": uuid,
                         "element": "table",
-                        "page": "1 plot / 1 table",
+                        "page": "1p1t",
                     },
                     page_size=16,
                     sort_action="native",
@@ -138,7 +138,7 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                     id={
                                         "id": uuid,
                                         "piechart": "per_zone",
-                                        "page": "Plots per zone/region",
+                                        "page": "per_zr",
                                     },
                                     config={"displayModeBar": False},
                                     style={"height": "44vh"},
@@ -150,7 +150,7 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                     id={
                                         "id": uuid,
                                         "barchart": "per_zone",
-                                        "page": "Plots per zone/region",
+                                        "page": "per_zr",
                                     },
                                     config={"displayModeBar": False},
                                     style={"height": "44vh"},
@@ -171,7 +171,7 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 id={
                                     "id": uuid,
                                     "piechart": "per_region",
-                                    "page": "Plots per zone/region",
+                                    "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
                                 style={"height": "44vh"},
@@ -183,7 +183,7 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 id={
                                     "id": uuid,
                                     "barchart": "per_region",
-                                    "page": "Plots per zone/region",
+                                    "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
                                 style={"height": "44vh"},

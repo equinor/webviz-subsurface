@@ -14,10 +14,14 @@ def selections_layout(
     """Layout for selecting intersection data"""
     return html.Div(
         children=[
-            button(uuid=uuid, title="1 plot / 1 table"),
-            button(uuid=uuid, title="Plots per zone/region"),
-            button(uuid=uuid, title="Cumulative mean/p10/p90"),
-            button(uuid=uuid, title="Custom plotting"),
+            button(uuid=uuid, title="1 plot / 1 table", page_id="1p1t"),
+            button(
+                uuid=uuid,
+                title="Plots per zone/region",
+                page_id="per_zr",
+            ),
+            button(uuid=uuid, title="Convergance plot mean/p10/p90", page_id="conv"),
+            button(uuid=uuid, title="Custom plotting", page_id="custom"),
             plot_selections_layout(uuid, volumemodel),
             table_selections_layout(uuid, volumemodel),
             settings_layout(uuid, volumemodel, theme),
@@ -25,11 +29,11 @@ def selections_layout(
     )
 
 
-def button(uuid: str, title: str) -> html.Div:
+def button(uuid: str, title: str, page_id: str) -> html.Div:
     return html.Button(
         title,
         className="webviz-inplace-vol-btn",
-        id={"id": uuid, "button": title},
+        id={"id": uuid, "button": page_id},
     )
 
 

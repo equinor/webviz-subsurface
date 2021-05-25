@@ -24,15 +24,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "element": "graph",
-                "page": "Custom plotting",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "element": "graph",
-                "page": "1 plot / 1 table",
+                "page": ALL,
             },
             "figure",
         ),
@@ -40,7 +32,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "element": "table",
-                "page": "Custom plotting",
+                "page": ALL,
             },
             "data",
         ),
@@ -48,23 +40,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "element": "table",
-                "page": "1 plot / 1 table",
-            },
-            "data",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "element": "table",
-                "page": "Custom plotting",
-            },
-            "columns",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "element": "table",
-                "page": "1 plot / 1 table",
+                "page": ALL,
             },
             "columns",
         ),
@@ -74,7 +50,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "element": "graph",
-                "page": "Custom plotting",
+                "page": "custom",
             },
             "figure",
         ),
@@ -83,8 +59,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         ctx = dash.callback_context.triggered[0]
         initial_callback = figure is None
         if not initial_callback and (
-            page_selected not in ["1 plot / 1 table", "Custom plotting"]
-            or "page-selected" in ctx["prop_id"]
+            page_selected not in ["1p1t", "custom"] or "page-selected" in ctx["prop_id"]
         ):
             raise PreventUpdate
 
@@ -171,14 +146,14 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 else make_table(dframe[table_groups + selections["table_responses"]])
             )
 
-        return (figure, figure, table_data, table_data, table_columns, table_columns)
+        return ([figure] * 2, [table_data] * 2, [table_columns] * 2)
 
     @app.callback(
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
                 "piechart": "per_region",
-                "page": "Plots per zone/region",
+                "page": "per_zr",
             },
             "figure",
         ),
@@ -186,7 +161,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "piechart": "per_zone",
-                "page": "Plots per zone/region",
+                "page": "per_zr",
             },
             "figure",
         ),
@@ -194,7 +169,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "barchart": "per_region",
-                "page": "Plots per zone/region",
+                "page": "per_zr",
             },
             "figure",
         ),
@@ -202,7 +177,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "barchart": "per_zone",
-                "page": "Plots per zone/region",
+                "page": "per_zr",
             },
             "figure",
         ),
@@ -210,7 +185,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         State(get_uuid("page-selected-inplace-dist"), "data"),
     )
     def _update_plots_per_region_zone(selections, page_selected):
-        if page_selected != "Plots per zone/region":
+        if page_selected != "per_zr":
             raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
@@ -261,7 +236,10 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     y=selections["X Response"],
                     color_discrete_sequence=px.colors.diverging.BrBG_r,
                     color=selections["Color by"],
-                ).update_xaxes(type="category", tickangle=45, tickfont_size=17)
+                    text=selections["X Response"],
+                )
+                .update_xaxes(type="category", tickangle=45, tickfont_size=17)
+                .update_traces(texttemplate="%{text:.2s}", textposition="auto")
             )
 
         return pie_figs[0], pie_figs[1], bar_figs[0], bar_figs[1]
@@ -271,21 +249,26 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             {
                 "id": get_uuid("main-inplace-dist"),
                 "element": "plot",
-                "page": "Cumulative mean/p10/p90",
+                "page": "conv",
             },
             "figure",
         ),
         Input(get_uuid("selections-inplace-dist"), "data"),
         State(get_uuid("page-selected-inplace-dist"), "data"),
     )
-    def _update_plots_per_region_zone(selections, page_selected):
-        if page_selected != "Cumulative mean/p10/p90":
+    def _update_convergence_plot(selections, page_selected):
+        if page_selected != "conv":
             raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
         dframe = filter_df(dframe, selections["filters"])
+        if dframe.empty:
+            return []
 
         groups = ["ENSEMBLE", "REAL"]
+        if selections["Subplots"] is not None and selections["Subplots"] not in groups:
+            groups.append(selections["Subplots"])
+
         dframe = (
             dframe[groups + [selections["X Response"]]]
             .groupby(groups)
@@ -297,41 +280,60 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 }
             )
             .reset_index()
+            .sort_values(by=["ENSEMBLE", "REAL"])
         )
-        dframe.sort_values(by=["ENSEMBLE", "REAL"])
+
         dfs = []
         for calculation in ["mean", "p10", "p90"]:
             df_stat = dframe.copy()
-            if calculation == "mean":
+
+            if selections["Subplots"] is not None:
+                df_group = df_stat.groupby([selections["Subplots"]])
+                df_groups = []
+                for _, df in df_group:
+                    df[selections["X Response"]] = (
+                        (df[selections["X Response"]].expanding().mean())
+                        if calculation == "mean"
+                        else df[selections["X Response"]]
+                        .expanding()
+                        .quantile(0.1 if calculation == "p10" else 0.9)
+                    )
+                    df_groups.append(df)
+                df_stat = pd.concat(df_groups)
+
+            else:
                 df_stat[selections["X Response"]] = (
-                    dframe[selections["X Response"]].expanding().mean()
+                    (df_stat[selections["X Response"]].expanding().mean())
+                    if calculation == "mean"
+                    else df_stat[selections["X Response"]]
+                    .expanding()
+                    .quantile(0.1 if calculation == "p10" else 0.9)
                 )
-            if calculation == "p10":
-                df_stat[selections["X Response"]] = (
-                    dframe[selections["X Response"]].expanding().quantile(0.1)
-                )
-            if calculation == "p90":
-                df_stat[selections["X Response"]] = (
-                    dframe[selections["X Response"]].expanding().quantile(0.9)
-                )
+
             df_stat["calculation"] = calculation
             dfs.append(df_stat)
         dframe = pd.concat(dfs)
 
-        figure = create_figure(
-            plot_type="line",
-            data_frame=dframe,
-            x="REAL",
-            y=selections["X Response"],
-            facet_col=selections["Subplots"],
-            color="calculation",
-            title=f"Cumulative mean/p10/p90 for {selections['X Response']} ",
-            color_discrete_sequence=selections["Colorscale"],
+        return (
+            create_figure(
+                plot_type="line",
+                data_frame=dframe,
+                x="REAL",
+                y=selections["X Response"],
+                facet_col=selections["Subplots"],
+                color="calculation",
+                title=f"Convergence plot of mean/p10/p90 for {selections['X Response']} ",
+            )
+            .update_traces(line_width=3.5)
+            .update_traces(line=dict(color="black"), selector={"name": "mean"})
+            .update_traces(
+                line=dict(color="firebrick", dash="dash"),
+                selector={"name": "p10"},
+            )
+            .update_traces(
+                line=dict(color="royalblue", dash="dash"), selector={"name": "p90"}
+            )
         )
-        if selections["Subplots"] is None:
-            figure.update_xaxes(title="Realizations")
-
-        return figure
 
 
 def make_table(dframe: pd.DataFrame):
