@@ -57,9 +57,38 @@ class PlotlyLinePlot:
                             ),
                         },
                         "line": {"width": 3 if real in highlight_reals else 0.5},
-                        "showlegend": real_no == 0,
+                        "showlegend": real_no == 0 and color_column is None,
                     }
                 )
+        # Add a colorbar if parameter is used for coloring
+        if color_column is not None:
+            self._realization_traces.append(
+                {
+                    "x": [None],
+                    "y": [None],
+                    "mode": "markers",
+                    "marker": {
+                        "colorscale": [
+                            ["0.0", "rgba(255,18,67, 1)"],
+                            ["0.5", "rgba(220,220,220,1)"],
+                            ["1.0", "rgba(62,208,62, 1)"],
+                        ],
+                        "cmin": dframe[color_column].min(),
+                        "cmax": dframe[color_column].max(),
+                        "colorbar": {
+                            "thickness": 10,
+                            "tickvals": [
+                                dframe[color_column].min(),
+                                dframe[color_column].max(),
+                            ],
+                            "tickmode": "array",
+                        },
+                        "showscale": True,
+                    },
+                    "hoverinfo": "none",
+                    "showlegend": False,
+                }
+            )
 
     def add_statistical_lines(
         self, dframe: pd.DataFrame, x_column: str, y_column: str, traces: List
