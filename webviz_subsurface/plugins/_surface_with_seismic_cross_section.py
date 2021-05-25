@@ -15,7 +15,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.utils import calculate_slider_step
 
-from webviz_subsurface._models import SurfaceLeafletModel, DeckGlLayerModel
+from webviz_subsurface._models import DeckGlLayerModel
 from .._datainput.seismic import load_cube_data
 from .._datainput.surface import get_surface_fence
 
@@ -227,32 +227,40 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         "zIndex": -9999,
                     },
                     children=[
+                        html.Button(
+                            id=self.uuid("toggle-drawing"),
+                            children="Toggle drawing mode",
+                        ),
                         DeckGLMap(
                             id=self.uuid("deckgl-map"),
-                            deckglSpec={
-                                "initialViewState": {
-                                    "target": [
-                                        0,
-                                        0,
-                                        0,
+                            deckglSpecPatch={
+                                "op": "replace",
+                                "path": "",
+                                "value": {
+                                    "initialViewState": {
+                                        "target": [
+                                            0,
+                                            0,
+                                            0,
+                                        ],
+                                        "zoom": -3,
+                                    },
+                                    "layers": [],
+                                    "views": [
+                                        {
+                                            "@@type": "OrthographicView",
+                                            "id": "main",
+                                            "controller": True,
+                                            "x": "0%",
+                                            "y": "0%",
+                                            "width": "100%",
+                                            "height": "100%",
+                                            "flipY": False,
+                                        }
                                     ],
-                                    "zoom": -3,
                                 },
-                                "layers": [],
-                                "views": [
-                                    {
-                                        "@@type": "OrthographicView",
-                                        "id": "main",
-                                        "controller": True,
-                                        "x": "0%",
-                                        "y": "0%",
-                                        "width": "100%",
-                                        "height": "100%",
-                                        "flipY": False,
-                                    }
-                                ],
                             },
-                        )
+                        ),
                     ],
                 ),
             ]
@@ -361,24 +369,28 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def set_callbacks(self, app):
         @app.callback(
             # Output(self.ids("map-view"), "layers"),
-            Output(self.uuid("deckgl-map"), "deckglSpec"),
+            Output(self.uuid("deckgl-map"), "deckglSpecPatch"),
             [
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("surface-type"), "value"),
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("color-values"), "value"),
+                Input(self.uuid("toggle-drawing"), "n_clicks"),
             ],
         )
         def _render_surface(
-            surfacepath,
-            surface_type,
-            cubepath,
-            color_values,
+            surfacepath, surface_type, cubepath, color_values, toggle_drawing
         ):
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             min_val = None
             max_val = None
+
+            if surface_type == "attribute":
+                min_val = color_values[0] if color_values else None
+                max_val = color_values[1] if color_values else None
+                cube = load_cube_data(get_path(cubepath))
+                surface.slice_cube(cube)
             deckgl_model = DeckGlLayerModel(
                 surface,
                 name="surface",
@@ -386,80 +398,91 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 clip_max=max_val,
                 # apply_shading=hillshade.get("value", False),
             )
-            if surface_type == "attribute":
-                min_val = color_values[0] if color_values else None
-                max_val = color_values[1] if color_values else None
-                cube = load_cube_data(get_path(cubepath))
-                surface.slice_cube(cube)
-            print(
-                {
-                    "initialViewState": {"target": deckgl_model.target},
-                    "layers": [deckgl_model.hillshading_layer],
-                }
-            )
             width = deckgl_model.bounds[2] - deckgl_model.bounds[0]  # right - left
             height = deckgl_model.bounds[3] - deckgl_model.bounds[1]  # top - bottom
-            return {
-                "viewState": {
-                    "target": [
-                        deckgl_model.bounds[0] + width / 2,
-                        deckgl_model.bounds[1] + height / 2,
-                        0,
-                    ],
-                    "zoom": -3,
-                },
-                "layers": [
-                    deckgl_model.hillshading_layer,
-                    deckgl_model.colormap_layer,
-                ],
-                "views": [
-                    {
-                        "@@type": "OrthographicView",
-                        "id": "main",
-                        "controller": True,
-                        "x": "0%",
-                        "y": "0%",
-                        "width": "100%",
-                        "height": "100%",
-                        "flipY": False,
-                    }
-                ],
-            }
+            return [
+                {
+                    "op": "replace",
+                    "path": "",
+                    "value": {
+                        "viewState": {
+                            "target": [
+                                deckgl_model.bounds[0] + width / 2,
+                                deckgl_model.bounds[1] + height / 2,
+                                0,
+                            ],
+                            "zoom": -3,
+                        },
+                        "layers": [
+                            deckgl_model.hillshading_layer,
+                            deckgl_model.colormap_layer,
+                            {
+                                "@@type": "DrawingLayer",
+                                "id": "drawing-layer",
+                                "mode": "view"
+                                if toggle_drawing is None or toggle_drawing % 2 == 0
+                                else "drawLineString",
+                                "data": {"type": "FeatureCollection", "features": []},
+                            },
+                        ],
+                        "views": [
+                            {
+                                "@@type": "OrthographicView",
+                                "id": "main",
+                                "controller": True,
+                                "x": "0%",
+                                "y": "0%",
+                                "width": "100%",
+                                "height": "100%",
+                                "flipY": False,
+                            }
+                        ],
+                    },
+                }
+            ]
 
-        # @app.callback(
-        #     Output(self.ids("fence-view"), "figure"),
-        #     [
-        #         Input(self.ids("map-view"), "polyline_points"),
-        #         Input(self.ids("cube"), "value"),
-        #         Input(self.ids("surface"), "value"),
-        #         Input(self.ids("color-values"), "value"),
-        #         Input(self.ids("color-scale"), "colorscale"),
-        #     ],
-        # )
-        # def _render_fence(coords, cubepath, surfacepath, color_values, colorscale):
-        #     if not coords:
-        #         raise PreventUpdate
-        #     cube = load_cube_data(get_path(cubepath))
-        #     fence = get_fencespec(coords)
-        #     hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
+        @app.callback(
+            Output(self.ids("fence-view"), "figure"),
+            Output(self.uuid("toggle-drawing"), "n_clicks"),
+            Input(self.uuid("deckgl-map"), "deckglSpecPatch"),
+            Input(self.ids("cube"), "value"),
+            Input(self.ids("surface"), "value"),
+            Input(self.ids("color-values"), "value"),
+            Input(self.ids("color-scale"), "colorscale"),
+            State(self.uuid("toggle-drawing"), "n_clicks"),
+        )
+        def _render_fence(
+            patch, cubepath, surfacepath, color_values, colorscale, toggle_drawing_btn
+        ):
+            if not patch:
+                raise PreventUpdate
+            coords = get_drawing_layer_coordinates(patch)
+            if not coords:
+                raise PreventUpdate
+            cube = load_cube_data(get_path(cubepath))
+            fence = get_fencespec(coords)
+            hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
 
-        #     surface = xtgeo.RegularSurface(get_path(surfacepath))
-        #     s_arr = get_surface_fence(fence, surface)
-        #     return make_heatmap(
-        #         values,
-        #         s_arr=s_arr,
-        #         theme=self.plotly_theme,
-        #         s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
-        #         colorscale=colorscale,
-        #         xmin=hmin,
-        #         xmax=hmax,
-        #         ymin=vmin,
-        #         ymax=vmax,
-        #         zmin=color_values[0],
-        #         zmax=color_values[1],
-        #         xaxis_title="Distance along polyline",
-        #         yaxis_title=self.zunit,
-        #     )
+            surface = xtgeo.RegularSurface(get_path(surfacepath))
+            s_arr = get_surface_fence(fence, surface)
+            return (
+                make_heatmap(
+                    values,
+                    s_arr=s_arr,
+                    theme=self.plotly_theme,
+                    s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
+                    colorscale=colorscale,
+                    xmin=hmin,
+                    xmax=hmax,
+                    ymin=vmin,
+                    ymax=vmax,
+                    zmin=color_values[0],
+                    zmax=color_values[1],
+                    xaxis_title="Distance along polyline",
+                    yaxis_title=self.zunit,
+                ),
+                toggle_drawing_btn + 1,
+            )
 
         @app.callback(
             [
@@ -482,6 +505,29 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
     def add_webvizstore(self):
         return [(get_path, [{"path": fn}]) for fn in self.segyfiles + self.surfacefiles]
+
+
+def get_drawing_layer_coordinates(patch):
+    if patch[0]["path"] == "/layers/[drawing-layer]/data/features/0":
+        return patch[0]["value"]["geometry"]["coordinates"]
+    return None
+    # [
+    #     {
+    #         "op": "add",
+    #         "path": "/layers/[drawing-layer]/data/features/1",
+    #         "value": {
+    #             "type": "Feature",
+    #             "properties": {},
+    #             "geometry": {
+    #                 "type": "LineString",
+    #                 "coordinates": [
+    #                     [462787.0413381237, 5934484.277574986],
+    #                     [462691.0413381237, 5932468.277574986],
+    #                 ],
+    #             },
+    #         },
+    #     }
+    # ]
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -573,8 +619,8 @@ def get_fencespec(coords):
     poly.dataframe = pd.DataFrame(
         [
             {
-                "X_UTME": c[1],
-                "Y_UTMN": c[0],
+                "X_UTME": c[0],
+                "Y_UTMN": c[1],
                 "Z_TVDSS": 0,
                 "POLY_ID": 1,
                 "NAME": "polyline",
