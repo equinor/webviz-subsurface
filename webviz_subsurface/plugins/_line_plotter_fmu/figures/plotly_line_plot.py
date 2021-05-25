@@ -28,6 +28,7 @@ class PlotlyLinePlot:
         x_column: str,
         y_column: str,
         color_column: Optional[str],
+        highlight_reals: List = None,
     ) -> List[dict]:
         """Renders line trace for each realization"""
         # If color parameter is given, normalize values for coloring
@@ -35,7 +36,7 @@ class PlotlyLinePlot:
             dframe["VALUE_NORM"] = (
                 dframe[color_column] - dframe[color_column].min()
             ) / (dframe[color_column].max() - dframe[color_column].min())
-
+        highlight_reals = highlight_reals if highlight_reals else []
         for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
             for real_no, (real, real_df) in enumerate(ens_df.groupby("REAL")):
                 self._realization_traces.append(
@@ -55,6 +56,7 @@ class PlotlyLinePlot:
                                 ensemble, "rgba(128,128,128,0.2)"
                             ),
                         },
+                        "line": {"width": 3 if real in highlight_reals else 0.5},
                         "showlegend": real_no == 0,
                     }
                 )
@@ -67,7 +69,7 @@ class PlotlyLinePlot:
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": 1},
+                        "line": {"dash": "dot", "width": 2},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "max")],
                         "hovertemplate": f"Calculation: {'mac'}, Ensemble: {ensemble}",

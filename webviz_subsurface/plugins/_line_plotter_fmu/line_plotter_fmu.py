@@ -99,6 +99,7 @@ class LinePlotterFMU(WebvizPluginABC):
             df["ENSEMBLE"] = ens
             dfs.append(df)
         parameterdf = pd.concat(dfs)
+        self._realizations = sorted(list(parameterdf["REAL"].unique()))
         self._parameter_filter = ParameterFilter(
             app, self.uuid("parameter-filter"), parameterdf
         )
@@ -139,6 +140,7 @@ class LinePlotterFMU(WebvizPluginABC):
                         ensemble_names=self._ensemble_names,
                         data_column_names=self._data_column_names,
                         parameter_names=self._parameter_names,
+                        realizations=self._realizations,
                         initial_data=self._initial_data,
                         initial_layout=self._initial_layout,
                     ),

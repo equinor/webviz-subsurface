@@ -37,3 +37,23 @@ def line_traces_view(
             ),
         ],
     )
+
+
+def highlight_realizations_view(
+    get_uuid: Callable, realizations: List[int]
+) -> html.Div:
+
+    return html.Div(
+        className="framed",
+        style={"fontSize": "0.8em"},
+        children=[
+            html.H5("Highlight realizations"),
+            wcc.Select(
+                id=get_uuid("highlight-realizations"),
+                options=[{"label": val, "value": val} for val in realizations],
+                value=None,
+                persistence=True,
+                persistence_type="session",
+            ),
+        ],
+    )

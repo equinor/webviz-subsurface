@@ -22,11 +22,10 @@ class ObservationModel:
             return yaml.safe_load(stream)
 
     def get_attributes(self) -> List:
-        test = [
+        return [
             attribute["key"]
             for attribute in self.observations.get(self.observation_group, [])
         ]
-        return test
 
     def get_observations_for_attribute(self, attribute, value) -> List:
         for attr in self.observations.get(self.observation_group, []):

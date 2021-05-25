@@ -62,6 +62,7 @@ def build_figure(
         ),
         Input(get_uuid("traces"), "value"),
         Input(get_uuid("observations"), "value"),
+        Input(get_uuid("highlight-realizations"), "value"),
         Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
     )
     def _update_plot(
@@ -71,9 +72,14 @@ def build_figure(
         parameter_name: str,
         traces: List,
         show_obs: List,
+        highlight_realizations,
         parameter_filter,
     ) -> Union[Tuple]:
-
+        highlight_realizations = (
+            [int(real) for real in highlight_realizations]
+            if highlight_realizations
+            else []
+        )
         if not ensemble_names:
             return [], dash.no_update
         ensemble_names = (
@@ -97,7 +103,8 @@ def build_figure(
             df = pd.merge(csv_dframe, parameter_dframe, on=["ENSEMBLE", "REAL"])
         else:
             df = csv_dframe
-
+        if df.empty:
+            return [], {"title": "No data found with current filter"}
         figure = PlotlyLinePlot(
             xaxis_title=x_column_name, yaxis_title=y_column_name, ensemble_colors=colors
         )
@@ -107,6 +114,7 @@ def build_figure(
                 x_column_name,
                 y_column_name,
                 color_column=parameter_name,
+                highlight_reals=highlight_realizations,
             )
             traces.remove("Realizations")
 

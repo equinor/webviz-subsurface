@@ -9,7 +9,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface
 from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
-from .plot_traces_view import line_traces_view
+from .plot_traces_view import line_traces_view, highlight_realizations_view
 
 
 def main_view(
@@ -17,6 +17,7 @@ def main_view(
     ensemble_names=List[str],
     data_column_names=List[str],
     parameter_names=List[str],
+    realizations=List[int],
     initial_data=Dict,
     initial_layout=Dict,
 ) -> html.Div:
@@ -38,6 +39,9 @@ def main_view(
                     ),
                     line_traces_view(
                         get_uuid=get_uuid,
+                    ),
+                    highlight_realizations_view(
+                        get_uuid=get_uuid, realizations=realizations
                     ),
                     plot_options_view(get_uuid=get_uuid, initial_layout=initial_layout),
                 ],
