@@ -115,6 +115,7 @@ def build_figure(
                 y_column_name,
                 color_column=parameter_name,
                 highlight_reals=highlight_realizations,
+                opacity=0.5 if len(traces) > 1 else None,
             )
             traces.remove("Realizations")
 

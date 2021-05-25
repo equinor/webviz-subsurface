@@ -29,6 +29,7 @@ class PlotlyLinePlot:
         y_column: str,
         color_column: Optional[str],
         highlight_reals: List = None,
+        opacity: float = None,
     ) -> List[dict]:
         """Renders line trace for each realization"""
         # If color parameter is given, normalize values for coloring
@@ -58,6 +59,7 @@ class PlotlyLinePlot:
                                 ensemble, "rgba(128,128,128,0.2)"
                             ),
                         },
+                        "opacity": opacity,
                         "line": {"width": 3 if real in highlight_reals else 0.5},
                         "mode": "lines",
                         "showlegend": real_no == 0 and color_column is None,
@@ -97,7 +99,7 @@ class PlotlyLinePlot:
         self, dframe: pd.DataFrame, x_column: str, y_column: str, traces: List
     ):
         for idx, (ensemble, ens_df) in enumerate(dframe.groupby("ENSEMBLE")):
-            color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,0.2)")
+            color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,1)")
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
