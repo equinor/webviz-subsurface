@@ -1,12 +1,18 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable, Optional
+from typing import List, Dict, Union, Tuple, Callable, Optional, NamedTuple
 import sys
 from pathlib import Path
 import json
 import datetime
+from webviz_subsurface._utils.vector_calculator import (
+    get_parser_eval_dict,
+    get_variable_vector_map_as_dict,
+    get_vector_calculator_parser,
+)
 
 import numpy as np
 import pandas as pd
+from py_expression_eval import Parser
 from plotly.subplots import make_subplots
 import dash
 from dash.exceptions import PreventUpdate
@@ -27,6 +33,7 @@ import webviz_subsurface_components as wsc
 import webviz_subsurface
 
 from uuid import uuid4
+
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
@@ -294,6 +301,102 @@ folder, to avoid risk of not extracting the right data.
                     interval_vec,
                     f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
+
+        class VariableVectorMapInfo(NamedTuple):
+            variableName: str
+            vectorName: List[str]
+
+        class ExpressionInfo(NamedTuple):
+            name: str
+            expression: str
+            id: str
+            variable_vector_map: List[VariableVectorMapInfo]
+
+        self.predefined_expressions: List[ExpressionInfo] = [
+            {
+                "name": "Test",
+                "expression": "x+y",
+                "id": f"{uuid4()}",
+                "variableVectorMap": [
+                    {
+                        "variableName": "x",
+                        "vectorName": ["WOPT:OP_1"],
+                    },
+                    {
+                        "variableName": "y",
+                        "vectorName": ["FGIR"],
+                    },
+                ],
+            },
+            {
+                "name": "Test2",
+                "expression": "x-y",
+                "id": f"{uuid4()}",
+                "variableVectorMap": [
+                    {
+                        "variableName": "x",
+                        "vectorName": ["WOPT:OP_3"],
+                    },
+                    {
+                        "variableName": "y",
+                        "vectorName": ["FGIR"],
+                    },
+                ],
+            },
+            {
+                "name": "Test3",
+                "expression": "x-2*y",
+                "id": f"{uuid4()}",
+                "variableVectorMap": [
+                    {
+                        "variableName": "x",
+                        "vectorName": ["WOPT:OP_1"],
+                    },
+                    {
+                        "variableName": "y",
+                        "vectorName": ["WBP4:OP_3"],
+                    },
+                ],
+            },
+            {
+                "name": "Test4",
+                "expression": "x-2*y/z",
+                "id": f"{uuid4()}",
+                "variableVectorMap": [
+                    {
+                        "variableName": "x",
+                        "vectorName": ["WOPT:OP_4"],
+                    },
+                    {
+                        "variableName": "y",
+                        "vectorName": ["FGIR"],
+                    },
+                    {
+                        "variableName": "z",
+                        "vectorName": ["WBP4:OP_3"],
+                    },
+                ],
+            },
+        ]
+
+        self.calculated_vectors: pd.DataFrame = pd.DataFrame()
+        self.expr_parser: Parser = get_vector_calculator_parser()
+
+        # Create function and pass in list of expressions
+        for elm in self.predefined_expressions:
+            name: str = elm["name"]
+            expr: str = elm["expression"]
+            var_vec_dict: dict = get_variable_vector_map_as_dict(
+                elm["variableVectorMap"]
+            )
+
+            try:
+                parsed_expr: Parser.Expression = self.expr_parser.parse(expr)
+                eval_dict: dict = get_parser_eval_dict(var_vec_dict, self.smry)
+                eval_expr = parsed_expr.evaluate(eval_dict)
+                self.calculated_vectors[name] = eval_expr
+            except Exception as e:
+                print("Oops!", e.__class__, "occurred.")
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
@@ -602,6 +705,7 @@ folder, to avoid risk of not extracting the right data.
     def open_modal_vector_calculator_layout(self) -> html.Div:
         return html.Details(
             id=self.uuid("vector_calculator_detail"),
+            style={"marginTop": "15px"},
             open=False,
             children=[
                 html.Summary("Vector Calculator:", style={"font-weight": "bold"}),
@@ -628,72 +732,7 @@ folder, to avoid risk of not extracting the right data.
                                     wsc.VectorCalculator(
                                         id=self.uuid("vector_calculator"),
                                         vectors=self.selector_data,
-                                        expressions=[
-                                            {
-                                                "name": "Test",
-                                                "expression": "x+y",
-                                                "id": f"{uuid4()}",
-                                                "variableVectorMap": [
-                                                    {
-                                                        "variableName": "x",
-                                                        "vectorName": ["WOPT:OP_1"],
-                                                    },
-                                                    {
-                                                        "variableName": "y",
-                                                        "vectorName": ["FGIR"],
-                                                    },
-                                                ],
-                                            },
-                                            {
-                                                "name": "Test2",
-                                                "expression": "x-y",
-                                                "id": f"{uuid4()}",
-                                                "variableVectorMap": [
-                                                    {
-                                                        "variableName": "x",
-                                                        "vectorName": ["WOPT:OP_3"],
-                                                    },
-                                                    {
-                                                        "variableName": "y",
-                                                        "vectorName": ["FGIR"],
-                                                    },
-                                                ],
-                                            },
-                                            {
-                                                "name": "Test3",
-                                                "expression": "x-2*y",
-                                                "id": f"{uuid4()}",
-                                                "variableVectorMap": [
-                                                    {
-                                                        "variableName": "x",
-                                                        "vectorName": ["WOPT:OP_1"],
-                                                    },
-                                                    {
-                                                        "variableName": "y",
-                                                        "vectorName": ["WBP4:OP_3"],
-                                                    },
-                                                ],
-                                            },
-                                            {
-                                                "name": "Test4",
-                                                "expression": "x-2*y/z",
-                                                "id": f"{uuid4()}",
-                                                "variableVectorMap": [
-                                                    {
-                                                        "variableName": "x",
-                                                        "vectorName": ["WOPT:OP_4"],
-                                                    },
-                                                    {
-                                                        "variableName": "y",
-                                                        "vectorName": ["FGIR"],
-                                                    },
-                                                    {
-                                                        "variableName": "z",
-                                                        "vectorName": ["WBP4:OP_3"],
-                                                    },
-                                                ],
-                                            },
-                                        ],
+                                        expressions=self.predefined_expressions,
                                     )
                                 ],
                             ),
@@ -1212,6 +1251,8 @@ folder, to avoid risk of not extracting the right data.
         def _update_vector_calculator_expressions(
             expressions: List[dict],
         ) -> List[dict]:
+            # Iterate through expressions and validate/parse.
+            # Add valid expressions into self.smry.cols?
             return expressions
 
         @app.callback(
