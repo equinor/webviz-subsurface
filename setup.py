@@ -73,6 +73,7 @@ setup(
         "pandas>=1.1.5",
         "pillow>=6.1",
         "pyscal>=0.7.5",
+        "py_expression_eval>=0.3.13",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.3.1",
