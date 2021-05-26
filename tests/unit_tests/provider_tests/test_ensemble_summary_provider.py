@@ -31,8 +31,8 @@ def test_create_from_aggregated_csv(testdata_folder: Path, tmp_path: Path) -> No
     assert vecdf.shape == (380, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
     assert vecdf["REAL"].nunique() == 10
-    # sampleddate = vecdf["DATE"][0]
-    # assert isinstance(sampleddate, datetime.datetime)
+    sampleddate = vecdf["DATE"][0]
+    assert isinstance(sampleddate, datetime.datetime)
 
     vecdf = p.get_vectors_df(["FOPR"], [1])
     assert vecdf.shape == (38, 3)
