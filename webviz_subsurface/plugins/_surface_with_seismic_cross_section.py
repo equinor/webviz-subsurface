@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import xtgeo
+import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -229,37 +230,58 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     children=[
                         html.Button(
                             id=self.uuid("toggle-drawing"),
-                            children="Toggle drawing mode",
+                            children="Draw polyline",
                         ),
                         DeckGLMap(
                             id=self.uuid("deckgl-map"),
-                            deckglSpecPatch={
-                                "op": "replace",
-                                "path": "",
-                                "value": {
-                                    "initialViewState": {
-                                        "target": [
-                                            0,
-                                            0,
-                                            0,
+                            deckglSpecPatch=[
+                                {
+                                    "op": "replace",
+                                    "path": "",
+                                    "value": {
+                                        "viewState": {
+                                            "target": [
+                                                0,
+                                                0,
+                                                0,
+                                            ],
+                                            "zoom": -3,
+                                        },
+                                        "layers": [
+                                            {
+                                                "@@type": "ColormapLayer",
+                                                "id": "colormap-layer",
+                                                "pickable": True,
+                                            },
+                                            {
+                                                "@@type": "Hillshading2DLayer",
+                                                "id": "hillshading-layer",
+                                            },
+                                            {
+                                                "@@type": "DrawingLayer",
+                                                "id": "drawing-layer",
+                                                "mode": "view",
+                                                "data": {
+                                                    "type": "FeatureCollection",
+                                                    "features": [],
+                                                },
+                                            },
                                         ],
-                                        "zoom": -3,
+                                        "views": [
+                                            {
+                                                "@@type": "OrthographicView",
+                                                "id": "main",
+                                                "controller": True,
+                                                "x": "0%",
+                                                "y": "0%",
+                                                "width": "100%",
+                                                "height": "100%",
+                                                "flipY": False,
+                                            }
+                                        ],
                                     },
-                                    "layers": [],
-                                    "views": [
-                                        {
-                                            "@@type": "OrthographicView",
-                                            "id": "main",
-                                            "controller": True,
-                                            "x": "0%",
-                                            "y": "0%",
-                                            "width": "100%",
-                                            "height": "100%",
-                                            "flipY": False,
-                                        }
-                                    ],
-                                },
-                            },
+                                }
+                            ],
                         ),
                     ],
                 ),
@@ -381,7 +403,23 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         def _render_surface(
             surfacepath, surface_type, cubepath, color_values, toggle_drawing
         ):
-
+            ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            if ctx == self.uuid("toggle-drawing"):
+                return [
+                    {
+                        "op": "replace",
+                        "path": "/layers/[drawing-layer]",
+                        "value": {
+                            "@@type": "DrawingLayer",
+                            "id": "drawing-layer",
+                            "mode": "drawLineString",
+                            "data": {
+                                "type": "FeatureCollection",
+                                "features": [],
+                            },
+                        },
+                    }
+                ]
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             min_val = None
             max_val = None
@@ -403,57 +441,37 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return [
                 {
                     "op": "replace",
-                    "path": "",
+                    "path": "/viewState",
                     "value": {
-                        "viewState": {
-                            "target": [
-                                deckgl_model.bounds[0] + width / 2,
-                                deckgl_model.bounds[1] + height / 2,
-                                0,
-                            ],
-                            "zoom": -3,
-                        },
-                        "layers": [
-                            deckgl_model.hillshading_layer,
-                            deckgl_model.colormap_layer,
-                            {
-                                "@@type": "DrawingLayer",
-                                "id": "drawing-layer",
-                                "mode": "view"
-                                if toggle_drawing is None or toggle_drawing % 2 == 0
-                                else "drawLineString",
-                                "data": {"type": "FeatureCollection", "features": []},
-                            },
+                        "target": [
+                            deckgl_model.bounds[0] + width / 2,
+                            deckgl_model.bounds[1] + height / 2,
+                            0,
                         ],
-                        "views": [
-                            {
-                                "@@type": "OrthographicView",
-                                "id": "main",
-                                "controller": True,
-                                "x": "0%",
-                                "y": "0%",
-                                "width": "100%",
-                                "height": "100%",
-                                "flipY": False,
-                            }
-                        ],
+                        "zoom": -4,
                     },
-                }
+                },
+                {
+                    "op": "replace",
+                    "path": "/layers/[colormap-layer]",
+                    "value": deckgl_model.colormap_layer,
+                },
+                {
+                    "op": "replace",
+                    "path": "/layers/[hillshading-layer]",
+                    "value": deckgl_model.hillshading_layer,
+                },
             ]
 
         @app.callback(
             Output(self.ids("fence-view"), "figure"),
-            Output(self.uuid("toggle-drawing"), "n_clicks"),
             Input(self.uuid("deckgl-map"), "deckglSpecPatch"),
             Input(self.ids("cube"), "value"),
             Input(self.ids("surface"), "value"),
             Input(self.ids("color-values"), "value"),
             Input(self.ids("color-scale"), "colorscale"),
-            State(self.uuid("toggle-drawing"), "n_clicks"),
         )
-        def _render_fence(
-            patch, cubepath, surfacepath, color_values, colorscale, toggle_drawing_btn
-        ):
+        def _render_fence(patch, cubepath, surfacepath, color_values, colorscale):
             if not patch:
                 raise PreventUpdate
             coords = get_drawing_layer_coordinates(patch)
@@ -465,23 +483,20 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
             surface = xtgeo.RegularSurface(get_path(surfacepath))
             s_arr = get_surface_fence(fence, surface)
-            return (
-                make_heatmap(
-                    values,
-                    s_arr=s_arr,
-                    theme=self.plotly_theme,
-                    s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
-                    colorscale=colorscale,
-                    xmin=hmin,
-                    xmax=hmax,
-                    ymin=vmin,
-                    ymax=vmax,
-                    zmin=color_values[0],
-                    zmax=color_values[1],
-                    xaxis_title="Distance along polyline",
-                    yaxis_title=self.zunit,
-                ),
-                toggle_drawing_btn + 1,
+            return make_heatmap(
+                values,
+                s_arr=s_arr,
+                theme=self.plotly_theme,
+                s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
+                colorscale=colorscale,
+                xmin=hmin,
+                xmax=hmax,
+                ymin=vmin,
+                ymax=vmax,
+                zmin=color_values[0],
+                zmax=color_values[1],
+                xaxis_title="Distance along polyline",
+                yaxis_title=self.zunit,
             )
 
         @app.callback(
@@ -508,7 +523,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
 
 def get_drawing_layer_coordinates(patch):
-    if patch[0]["path"] == "/layers/[drawing-layer]/data/features/0":
+
+    if "/layers/[drawing-layer]/data/features" in patch[0]["path"]:
         return patch[0]["value"]["geometry"]["coordinates"]
     return None
     # [
