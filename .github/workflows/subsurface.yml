@@ -50,11 +50,11 @@ jobs:
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
         pip install .
+        pip install --pre --upgrade webviz-config webviz-core-components  # Testing against our latest release (including pre-releases)
 
     - name: 📦 Install test dependencies
       run: |
         pip install .[tests]
-        pip install dash[testing]
         wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         export PATH=$PATH:$PWD
