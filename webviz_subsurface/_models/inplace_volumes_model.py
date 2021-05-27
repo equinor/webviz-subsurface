@@ -165,6 +165,14 @@ class InplaceVolumesModel:
         """List of available volume responses in dframe"""
         return self._parameters
 
+    @property
+    def aggregations(self) -> List[str]:
+        aggregations = {x: "sum" for x in self.volume_columns}
+        aggregations.update(
+            {x: "mean" for x in self.property_columns + self.parameters}
+        )
+        return aggregations
+
     def compute_property_columns(self):
         self._property_columns = []
 
@@ -218,6 +226,35 @@ class InplaceVolumesModel:
                 )
                 self._property_columns.append(pvt)
 
+    def test(self, dframe):
+
+        net_column = "NET"
+        bulk_column = "BULK"
+        pore_column = "PORV"
+        hcpv_column = "HCPV"
+
+        # if NTG not given Net is equal to bulk
+        if not net_column in dframe.columns:
+            net_column = bulk_column
+
+        # compute NTG
+        if net_column in dframe.columns and bulk_column in dframe.columns:
+            dframe["NTG"] = dframe[net_column] / dframe[bulk_column]
+        # compute PORO
+        if net_column in dframe.columns and pore_column in dframe.columns:
+            dframe["PORO"] = dframe[pore_column] / dframe[net_column]
+        # compute SW
+        if hcpv_column in dframe.columns and pore_column in dframe.columns:
+            dframe["SW"] = 1 - dframe[hcpv_column] / dframe[pore_column]
+
+        for voltype in ["OIL", "GAS"]:
+            vol_column = "STOIIP" if voltype == "OIL" else "GIIP"
+            # compute Bo/Bg
+            if hcpv_column in dframe.columns and vol_column in dframe.columns:
+                pvt = "BO" if voltype == "OIL" else "BG"
+                dframe[pvt] = dframe[hcpv_column] / dframe[vol_column]
+        return dframe
+
     def _prepare_parameter_data(self, parameter_table, drop_constants):
         """
         Different data preparations on the parameters, before storing them as an attribute.
@@ -268,7 +305,9 @@ class InplaceVolumesModel:
         parameter_table = parameter_table.loc[:, ~parameter_table.columns.duplicated()]
 
         self._parameterdf = parameter_table
-        self._parameters = list(parameter_table.columns)
+        self._parameters = [
+            x for x in parameter_table.columns if x not in self.SENS_COLUMNS
+        ]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

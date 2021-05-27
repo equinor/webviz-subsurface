@@ -9,7 +9,6 @@ def create_figure(plot_type, **kwargs) -> go.Figure:
     plotargs = set_default_args(**kwargs)
 
     fig = make_initial_figure(plot_type=plot_type, **plotargs)
-
     fig = update_xaxes(fig, **plotargs)
     fig = update_yaxes(fig, **plotargs)
     fig = update_layout(fig, plot_type, **plotargs)
@@ -40,6 +39,7 @@ def set_default_args(**plotargs):
                 20,
             ),
             facet_row_spacing=max((0.08 - (0.00071 * facet_cols)), 0.03),
+            facet_col_spacing=max((0.06 - (0.00071 * facet_cols)), 0.03),
         )
         plotargs["custom_data"] = [plotargs["facet_col"]]
 
@@ -63,14 +63,13 @@ def make_initial_figure(plot_type, **plotargs):
 def update_xaxes(figure, **kwargs):
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col", None)
-    figure.update_xaxes(
+    return figure.update_xaxes(
         gridwidth=1,
         gridcolor="lightgrey",
         showline=True,
         linewidth=2,
         linecolor="black",
         mirror=True,
-        fixedrange=True,
         title=None,
         showticklabels=(data_frame[facet_col].nunique() <= 100)
         if facet_col is not None
@@ -79,20 +78,18 @@ def update_xaxes(figure, **kwargs):
         tickfont_size=max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
         if facet_col is not None
         else None,
-    )
-    return figure.update_layout(**kwargs.get("xaxis", {}))
+    ).update_xaxes(**kwargs.get("xaxis", {}))
 
 
 def update_yaxes(figure, **kwargs):
-    figure.update_yaxes(
+    return figure.update_yaxes(
         showline=True,
         linewidth=2,
         linecolor="black",
         mirror=True,
         gridwidth=1,
         gridcolor="lightgrey",
-    )
-    return figure.update_layout(**kwargs.get("yaxis", {}))
+    ).update_yaxes(**kwargs.get("yaxis", {}))
 
 
 def update_layout(figure, plot_type, **kwargs):
@@ -100,13 +97,14 @@ def update_layout(figure, plot_type, **kwargs):
         figure.update_layout(
             bargap=0.1,
         )
-    figure.update_layout(plot_bgcolor="white")
-    return figure.update_layout(**kwargs.get("layout", {}))
+    return figure.update_layout(plot_bgcolor="white").update_layout(
+        **kwargs.get("layout", {})
+    )
 
 
 def for_each_annotation(figure, **kwargs):
     data_frame = kwargs["data_frame"]
-    facet_col = kwargs.get("facet_col", None)
+    facet_col = kwargs.get("facet_col")
     return figure.for_each_annotation(
         lambda a: a.update(
             text=(a.text.split("=")[-1]),
@@ -117,7 +115,7 @@ def for_each_annotation(figure, **kwargs):
             if facet_col is not None
             else None,
         )
-    )
+    ).for_each_annotation(lambda a: a.update(**kwargs.get("annotations", {})))
 
 
 def convert_violin_to_distribution_plot(figure, **kwargs):

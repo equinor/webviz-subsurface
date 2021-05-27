@@ -20,11 +20,10 @@ def main_view(
         make_tab(
             label="Inplace distributions",
             children=tab_view_layout(
-                uuid=get_uuid("main-layout-inplace-dist"),
                 main_layout=distributions_main_layout(
                     uuid=get_uuid("main-inplace-dist"),
                 ),
-                selections_layout=OrderedDict(
+                selections_details=OrderedDict(
                     Selections={
                         "open": True,
                         "children": [
@@ -55,9 +54,8 @@ def main_view(
         make_tab(
             label="Source comparison",
             children=tab_view_layout(
-                uuid=get_uuid("main-layout-source-comp"),
                 main_layout=[],
-                selections_layout=OrderedDict(
+                selections_details=OrderedDict(
                     Selections={
                         "open": True,
                         "children": [],
@@ -82,9 +80,8 @@ def main_view(
         make_tab(
             label="Ensemble comparison",
             children=tab_view_layout(
-                uuid=get_uuid("main-layout-ensemble-comp"),
                 main_layout=[],
-                selections_layout=OrderedDict(
+                selections_details=OrderedDict(
                     Selections={
                         "open": True,
                         "children": [],
@@ -113,9 +110,8 @@ def main_view(
             make_tab(
                 label="Tornadoplots",
                 children=tab_view_layout(
-                    uuid=get_uuid("main-layout-tornado"),
                     main_layout=[],
-                    selections_layout=OrderedDict(
+                    selections_details=OrderedDict(
                         Selections={
                             "open": True,
                             "children": [],
@@ -163,12 +159,10 @@ def make_tab(label, children):
     )
 
 
-def tab_view_layout(
-    main_layout: list, selections_layout: OrderedDict, uuid=None
-) -> wcc.FlexBox:
+def tab_view_layout(main_layout: list, selections_details: OrderedDict) -> wcc.FlexBox:
 
     detail_sections = []
-    for summary, options in selections_layout.items():
+    for summary, options in selections_details.items():
         detail_sections.append(
             html.Details(
                 style={"margin-bottom": "25px"},

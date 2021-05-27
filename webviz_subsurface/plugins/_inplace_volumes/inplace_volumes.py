@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable, Dict, Union
+from typing import List, Tuple, Callable, Dict, Union, Optional
 from pathlib import Path
 import pandas as pd
 import dash
@@ -36,7 +36,6 @@ class InplaceVolumes(WebvizPluginABC):
         ensembles: list = None,
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
-        response: str = "STOIIP_OIL",
         drop_constants: bool = True,
     ):
 
@@ -54,13 +53,18 @@ class InplaceVolumes(WebvizPluginABC):
             / "css"
             / "inplace_volumes.css"
         )
+        self.csvfile_vol = csvfile_vol
+        self.csvfile_parameters = csvfile_parameters
+        self.volfiles = volfiles
+        self.volfolder = volfolder
+
         if csvfile_vol and ensembles:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
         if csvfile_vol:
             volume_table: pd.DataFrame = read_csv(csvfile_vol)
-            parameters: pd.DataFrame = (
+            parameters: Optional[pd.DataFrame] = (
                 read_csv(csvfile_parameters) if csvfile_parameters else None
             )
 
@@ -117,7 +121,27 @@ class InplaceVolumes(WebvizPluginABC):
         layout_controllers(app=app, get_uuid=self.uuid)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return
+        if self.csvfile_vol is not None:
+            store_functions = [(read_csv, [{"csv_file": self.csvfile_vol}])]
+            if self.csvfile_parameters is not None:
+                store_functions.append(
+                    (read_csv, [{"csv_file": self.csvfile_parameters}])
+                )
+        else:
+            store_functions = [
+                (
+                    extract_volumes,
+                    [
+                        {
+                            "ensemble_set_model": self.emodel,
+                            "volfolder": self.volfolder,
+                            "volfiles": self.volfiles,
+                        }
+                    ],
+                ),
+            ]
+            store_functions.extend(self.emodel.webvizstore)
+        return store_functions
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
