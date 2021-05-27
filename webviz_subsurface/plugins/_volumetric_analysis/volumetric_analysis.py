@@ -23,8 +23,8 @@ from .controllers import (
 )
 
 
-class InplaceVolumes(WebvizPluginABC):
-    """Dashboard to analyze structural uncertainty results from FMU runs."""
+class VolumetricAnalysis(WebvizPluginABC):
+    """Dashboard to analyze volumetrics results from FMU runs."""
 
     # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     def __init__(
