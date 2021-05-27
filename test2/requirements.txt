@@ -1,3 +1,0 @@
-git+https://github.com/equinor/webviz-subsurface@3fb7130
-webviz-config==0.3.1
-gunicorn
