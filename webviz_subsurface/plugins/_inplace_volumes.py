@@ -455,7 +455,7 @@ but the following responses are given more descriptive names automatically:
             # Column specification
             columns = [
                 {**{"name": i[0], "id": i[0]}, **i[1]}
-                for i in InplaceVolumesOld.TABLE_STATISTICS
+                for i in InplaceVolumes.TABLE_STATISTICS
             ]
             # Make a graph object and return
             return (
