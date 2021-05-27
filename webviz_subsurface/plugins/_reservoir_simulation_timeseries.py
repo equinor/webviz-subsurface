@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable, Optional, NamedTuple
+from typing import List, Dict, Union, Tuple, Callable, Optional
 import sys
 from pathlib import Path
 import json
@@ -55,6 +55,7 @@ from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
+from .._utils.vector_calculator import ExpressionInfo
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -278,16 +279,6 @@ folder, to avoid risk of not extracting the right data.
                     }
                 )
 
-        class VariableVectorMapInfo(NamedTuple):
-            variableName: str
-            vectorName: List[str]
-
-        class ExpressionInfo(NamedTuple):
-            name: str
-            expression: str
-            id: str
-            variable_vector_map: List[VariableVectorMapInfo]
-
         self.predefined_expressions: List[ExpressionInfo] = [
             {
                 "name": "Test",
@@ -368,7 +359,9 @@ folder, to avoid risk of not extracting the right data.
 
             try:
                 parsed_expr: Parser.Expression = self.expr_parser.parse(expr)
-                eval_dict: dict = get_parser_eval_dict(var_vec_dict, self.smry)
+                eval_dict: Dict[str, str] = get_parser_eval_dict(
+                    var_vec_dict, self.smry
+                )
                 eval_expr = parsed_expr.evaluate(eval_dict)
                 self.calculated_vectors[name] = eval_expr
             except Exception as e:
@@ -1219,6 +1212,7 @@ folder, to avoid risk of not extracting the right data.
         ) -> List[dict]:
             # Iterate through expressions and validate/parse.
             # Add valid expressions into self.smry.cols?
+
             return expressions
 
         @app.callback(
