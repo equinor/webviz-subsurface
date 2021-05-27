@@ -9,6 +9,9 @@ import pandas as pd
 from .ensemble_table_provider import EnsembleTableProvider
 from .._utils.perf_timer import PerfTimer
 
+# Since PyArrow's actual compute functions are not seen by pylint
+# pylint: disable=no-member
+
 
 LOGGER = logging.getLogger(__name__)
 

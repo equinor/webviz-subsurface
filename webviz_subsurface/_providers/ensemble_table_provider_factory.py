@@ -146,6 +146,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
     def create_provider_set_from_per_realization_csv_file(
         self, ensembles: Dict[str, str], csv_file_rel_path: str
     ) -> EnsembleTableProviderSet:
+        # pylint: disable=too-many-locals
 
         LOGGER.info(
             f"create_provider_set_from_per_realization_csv_file() - {csv_file_rel_path}"
