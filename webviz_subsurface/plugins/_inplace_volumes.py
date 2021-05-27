@@ -14,13 +14,16 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 from .._datainput.inplace_volumes import extract_volumes
 from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import table_statistics_base
 
-
-class InplaceVolumesOld(WebvizPluginABC):
+@deprecated_plugin(
+    "Relevant functionality is implemented in the VolumetricAnalysis plugin."
+)
+class InplaceVolumes(WebvizPluginABC):
     """Visualizes inplace volumetric results from
 FMU ensembles.
 
