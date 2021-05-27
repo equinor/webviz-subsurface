@@ -177,9 +177,9 @@ def plot_selector_dropdowns(uuid: str, volumemodel):
             value = elements[0]
         if selector == "X Response":
             elements = volumemodel.responses
-            value = "STOIIP"
+            value = "STOIIP" if "STOIIP" in elements else elements[0]
         if selector == "Y Response":
-            elements = volumemodel.responses + volumemodel.selectors
+            elements = volumemodel.responses
             value = None
         if selector == "Subplots":
             elements = volumemodel.selectors
@@ -252,20 +252,23 @@ def subplot_xaxis_range(
         axis_matches_layout.append(
             html.Div(
                 children=[
-                    html.Span(f"Subplot {axis} option", style={"font-weight": "bold"}),
                     html.Div(
                         children=dcc.RadioItems(
                             id={
                                 "id": uuid,
                                 "selector": f"{axis} matches",
                             },
+                            style={
+                                "flex": 2,
+                                "minWidth": "70px",
+                            },
                             options=[
                                 {
-                                    "label": "Equal range",
+                                    "label": f"Equal {axis}",
                                     "value": True,
                                 },
                                 {
-                                    "label": "Individual range",
+                                    "label": f"Individual {axis}",
                                     "value": False,
                                 },
                             ],
@@ -276,10 +279,15 @@ def subplot_xaxis_range(
                             value=True,
                         ),
                     ),
-                ]
+                ],
             )
         )
-    return html.Div(axis_matches_layout)
+    return html.Div(
+        children=[
+            html.Span("Subplot axis range options", style={"font-weight": "bold"}),
+            html.Div(axis_matches_layout),
+        ]
+    )
 
 
 def table_sync_option(
