@@ -1,0 +1,109 @@
+.styledLogo {
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: none;
+    padding: 20px 30px;
+}
+
+.styledButton {
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    transition: background-color, color 200ms;
+    text-align: left;
+    box-sizing: none;
+    font-size: 16px;
+    font-family: var(--menuLinkFont);
+    font-weight: var(--menuLinkFontWeight);
+    font-style: var(--menuLinkFontStyle);
+    color: var(--menuLinkColor);
+    text-decoration: none;
+    padding: 20px 30px;
+    border-bottom: 1px solid white;
+}
+
+.styledButton:hover {
+    color: var(--menuLinkHoverColor);
+    background-color: var(--menuLinkBackgroundHover);
+}
+
+.selectedButton--selected {
+    color: var(--menuLinkColorSelected);
+    background-color: var(--menuLinkBackgroundSelected);
+}
+
+.layoutWrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+.sideWrapper {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    height: 98vh;
+    min-width: 30rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--menuBackground) var(--menuBackground); /* thumb and track color */    
+}
+
+.pageContent {
+    display: flex;
+    flex: 8;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    padding: 15px;
+}
+
+
+@media (min-width: 800px) {
+    .sideWrapper {
+        width: 30rem;
+    }
+}
+
+.sideWrapper:hover {
+    scrollbar-color: var(--menuLinkColor) var(--menuBackground); /* thumb and track color */
+}
+
+.sideWrapper::-webkit-scrollbar
+{
+	width: 3px;
+	background-color:var(--menuBackground);
+}
+
+.sideWrapper::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 3px var(--menuBackground);
+	background-color: var(--menuBackground);
+}
+
+.sideWrapper:hover::-webkit-scrollbar-track
+{
+    -webkit-box-shadow: inset 0 0 3px var(--menuLinkBackgroundHover);
+	background-color: var(--menuBackground);
+}
+
+.sideWrapper::-webkit-scrollbar-thumb
+{
+	background-color: var(--menuBackground);
+}
+
+.sideWrapper:hover::-webkit-scrollbar-thumb
+{
+	background-color: var(--menuLinkColor);
+}
+
+#logo {
+    padding: 50px;
+    border: none;
+    max-width: 100%;
+    height: auto;
+}

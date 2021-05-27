@@ -1,0 +1,33 @@
+._banner_image {
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 300%;
+
+    text-shadow: 0.05em 0.05em 0 rgba(0, 0, 0, 0.7);
+
+    width: 100%;
+
+    margin-bottom: 25px;
+
+    background-size: cover;
+    background-position: center;
+
+}
+
+._markdown_image {
+
+    display: block;
+    margin: auto;
+    max-width: 90%;
+    max-height: 90vw;
+
+}
+
+._markdown_image_caption {
+
+    display: block;
+    text-align: center;
+
+}

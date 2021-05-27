@@ -101,10 +101,10 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         ),
         State(
             {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
-            "options",
+            "value",
         ),
         State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
+            {"id": get_uuid("selections-inplace-dist"), "selector": "X Response"},
             "value",
         ),
         State(
@@ -121,8 +121,8 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         selected_page,
         selected_color_by,
         selected_subplot_value,
-        y_options,
         selected_y,
+        selected_x,
         plot_type_options,
         ids,
     ):
@@ -130,10 +130,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         if "Color by" in ctx["prop_id"] and plot_type != "box":
             raise PreventUpdate
 
-        disable_plot_type = selected_page in [
-            "per_zr",
-            "conv",
-        ]
+        disable_plot_type = selected_page in ["per_zr", "conv"]
         if disable_plot_type:
             plot_type_value = None
         else:
@@ -142,26 +139,23 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                 if plot_type is not None
                 else plot_type_options[0]["value"]
             )
-
-        disable_y = (
-            selected_page in ["per_zr", "conv"]
-            or plot_type_value
+        disable_y = selected_page in ["per_zr", "conv"] or any(
+            x
             in [
                 "distribution",
                 "histogram",
             ]
-            or plot_type
-            in [
-                "distribution",
-                "histogram",
-            ]
+            for x in [plot_type, plot_type_value]
         )
-        y_elm = (
-            volumemodel.responses + volumemodel.selectors + volumemodel.parameters
-            if plot_type == "scatter"
-            else volumemodel.selectors
-        )
-        y_options = [{"label": elm, "value": elm} for elm in y_elm]
+        if plot_type == "scatter":
+            y_elm = x_elm = (
+                volumemodel.responses + volumemodel.selectors + volumemodel.parameters
+            )
+        elif plot_type == "box":
+            y_elm = x_elm = volumemodel.responses + volumemodel.selectors
+        else:
+            y_elm = volumemodel.selectors
+            x_elm = volumemodel.responses
 
         if disable_y:
             y_value = None if selected_y is not None else dash.no_update
@@ -170,6 +164,8 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                 y_value = selected_color_by
             else:
                 y_value = dash.no_update if selected_y in y_elm else y_elm[0]
+
+        x_value = dash.no_update if selected_x in x_elm else x_elm[0]
 
         disable_subplot = selected_page not in ["custom", "conv"]
         subplot_value = (
@@ -204,7 +200,12 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             "Y Response": {
                 "disable": disable_y,
                 "value": y_value,
-                "options": y_options,
+                "options": [{"label": elm, "value": elm} for elm in y_elm],
+            },
+            "X Response": {
+                "disable": dash.no_update,
+                "value": x_value,
+                "options": [{"label": elm, "value": elm} for elm in x_elm],
             },
             "Color by": {
                 "disable": disable_colorby,
@@ -306,14 +307,20 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             {"id": get_uuid("selections-inplace-dist"), "selector": "Group by"},
             "value",
         ),
+        Input(
+            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
+            "value",
+        ),
         State({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "options"),
         State(
             {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "options"
         ),
     )
-    def _update_multi_option(colorby, subplot, groupby, source_values, ensemble_values):
+    def _update_multi_option(
+        colorby, subplot, groupby, sync_table, source_values, ensemble_values
+    ):
         data_groupers = [colorby, subplot]
-        if groupby is not None:
+        if groupby is not None and not sync_table:
             data_groupers.extend(groupby)
         return (
             "SOURCE" in data_groupers,

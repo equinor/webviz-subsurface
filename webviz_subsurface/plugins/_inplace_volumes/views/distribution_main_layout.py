@@ -25,13 +25,13 @@ def distributions_main_layout(uuid: str) -> html.Div:
             html.Div(
                 id={"id": uuid, "page": "conv"},
                 style={"display": "none"},
-                children=cumulative_plot_layout(uuid),
+                children=convergence_plot_layout(uuid),
             ),
         ]
     )
 
 
-def cumulative_plot_layout(uuid: str) -> html.Div:
+def convergence_plot_layout(uuid: str) -> html.Div:
     return html.Div(
         className="framed",
         style={"height": "91vh"},

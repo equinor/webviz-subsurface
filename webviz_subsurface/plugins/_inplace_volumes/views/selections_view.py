@@ -1,5 +1,4 @@
 from typing import Callable, List, Optional
-import plotly.express as px
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -20,11 +19,11 @@ def selections_layout(
                 title="Plots per zone/region",
                 page_id="per_zr",
             ),
-            button(uuid=uuid, title="Convergance plot mean/p10/p90", page_id="conv"),
+            button(uuid=uuid, title="Convergence plot mean/p10/p90", page_id="conv"),
             button(uuid=uuid, title="Custom plotting", page_id="custom"),
             plot_selections_layout(uuid, volumemodel),
             table_selections_layout(uuid, volumemodel),
-            settings_layout(uuid, volumemodel, theme),
+            settings_layout(uuid, theme),
         ]
     )
 
@@ -38,7 +37,6 @@ def button(uuid: str, title: str, page_id: str) -> html.Div:
 
 
 def source_selector(uuid: str, volumemodel) -> html.Div:
-    sources = volumemodel.sources
     return html.Div(
         style={
             "marginTop": "5px",
@@ -48,8 +46,10 @@ def source_selector(uuid: str, volumemodel) -> html.Div:
                 html.Span("Source", style={"font-weight": "bold"}),
                 dcc.Dropdown(
                     id={"id": uuid, "element": "ensembles"},
-                    options=[{"label": source, "value": source} for source in sources],
-                    value=sources[0],
+                    options=[
+                        {"label": src, "value": src} for src in volumemodel.sources
+                    ],
+                    value=volumemodel.sources[0],
                     clearable=False,
                     persistence=True,
                     persistence_type="session",
@@ -209,7 +209,7 @@ def plot_selector_dropdowns(uuid: str, volumemodel):
     return dropdowns
 
 
-def settings_layout(uuid: str, volumemodel, theme: WebvizConfigTheme) -> html.Div:
+def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Div:
 
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
     return html.Details(
@@ -247,34 +247,39 @@ def subplot_xaxis_range(
     uuid: str,
 ) -> html.Div:
 
-    return html.Div(
-        children=[
-            html.Span("Subplot X axis option", style={"font-weight": "bold"}),
+    axis_matches_layout = []
+    for axis in ["X axis", "Y axis"]:
+        axis_matches_layout.append(
             html.Div(
-                children=dcc.RadioItems(
-                    id={
-                        "id": uuid,
-                        "selector": "xrange_subplots_matches",
-                    },
-                    options=[
-                        {
-                            "label": "Equal range",
-                            "value": True,
-                        },
-                        {
-                            "label": "Individual range",
-                            "value": False,
-                        },
-                    ],
-                    labelStyle={
-                        "display": "inline-block",
-                        "margin-right": "5px",
-                    },
-                    value=True,
-                ),
-            ),
-        ]
-    )
+                children=[
+                    html.Span(f"Subplot {axis} option", style={"font-weight": "bold"}),
+                    html.Div(
+                        children=dcc.RadioItems(
+                            id={
+                                "id": uuid,
+                                "selector": f"{axis} matches",
+                            },
+                            options=[
+                                {
+                                    "label": "Equal range",
+                                    "value": True,
+                                },
+                                {
+                                    "label": "Individual range",
+                                    "value": False,
+                                },
+                            ],
+                            labelStyle={
+                                "display": "inline-block",
+                                "margin-right": "5px",
+                            },
+                            value=True,
+                        ),
+                    ),
+                ]
+            )
+        )
+    return html.Div(axis_matches_layout)
 
 
 def table_sync_option(
