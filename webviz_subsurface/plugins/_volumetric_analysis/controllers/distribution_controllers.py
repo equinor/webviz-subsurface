@@ -88,14 +88,11 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             )
 
         # Need to sum volume columns and take the average of property columns
-        aggregations = {
-            col: agg
-            for col, agg in volumemodel.aggregations.items()
-            if col in dframe.columns
-        }
+        aggregations = {x: "sum" for x in volumemodel.volume_columns}
+        aggregations.update({x: "mean" for x in parameters})
 
-        print(dframe)
         df_for_figure = dframe.groupby(plot_groups).agg(aggregations).reset_index()
+        df_for_figure = volumemodel.compute_property_columns(df_for_figure)
 
         if not (plot_table_select == "table" and page_selected == "custom"):
             figure = create_figure(
@@ -124,10 +121,8 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 if not selections["Y axis matches"]:
                     figure.update_yaxes({"matches": None})
 
-        print(plot_groups)
-        print(plot_table_select, page_selected)
         # Make tables
-        if not (plot_table_select == "plot" and page_selected == "custom"):
+        if not (plot_table_select == "graph" and page_selected == "custom"):
             if selections["sync_table"]:
                 table_columns, table_data = make_table(
                     dframe=df_for_figure,
@@ -145,6 +140,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                 df_for_table = (
                     dframe.groupby(table_groups).agg(aggregations).reset_index()
                 )
+                df_for_table = volumemodel.compute_property_columns(df_for_table)
                 table_columns, table_data = make_table(
                     dframe=df_for_table,
                     responses=selections["table_responses"],
@@ -353,7 +349,7 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
         [("Response", {})] + [(group, {}) for group in groups] + table_statistics_base()
     )
     print(table_statistics_base())
-    print(responses)
+
     if tabletype == "Statistics table":
         df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
         tables = []
