@@ -4,17 +4,15 @@ import sys
 from pathlib import Path
 import json
 import datetime
-from webviz_subsurface._utils.vector_calculator import (
-    get_parser_eval_dict,
-    get_variable_vector_map_as_dict,
-    get_vector_calculator_parser,
-)
+from uuid import uuid4
+from dash_table.DataTable import DataTable
 
 import numpy as np
 import pandas as pd
 from py_expression_eval import Parser
 from plotly.subplots import make_subplots
 import dash
+import dash_table
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -27,10 +25,10 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface_components as wsc
+from webviz_subsurface_components.VectorCalculator import VectorCalculator
+from webviz_subsurface_components.VectorCalculatorWrapper import VectorCalculatorParser
 
 import webviz_subsurface
-
-from uuid import uuid4
 
 
 from webviz_subsurface._models import EnsembleSetModel
@@ -55,7 +53,11 @@ from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
-from .._utils.vector_calculator import ExpressionInfo
+from .._utils.vector_calculator import (
+    ExpressionInfo,
+    get_expression_with_vector_names,
+    get_calculated_vectors,
+)
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -163,7 +165,6 @@ folder, to avoid risk of not extracting the right data.
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
         )
-        # app.config.external_stylesheets.append(dbc.themes.BOOTSTRAP)
 
         self.csvfile = csvfile
         self.obsfile = obsfile
@@ -222,7 +223,7 @@ folder, to avoid risk of not extracting the right data.
         ]
 
         self.dropdown_options = []
-        self.selector_data: list = []
+        self.vector_selector_data: list = []
         for vec in self.smry_cols:
             self.dropdown_options.append(
                 {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
@@ -230,10 +231,13 @@ folder, to avoid risk of not extracting the right data.
             split = vec.split(":")
 
             if (
-                next((x for x in self.selector_data if x["name"] == split[0]), None)
+                next(
+                    (x for x in self.vector_selector_data if x["name"] == split[0]),
+                    None,
+                )
                 == None
             ):
-                self.selector_data.append(
+                self.vector_selector_data.append(
                     {
                         "name": split[0],
                         "description": simulation_vector_description(vec),
@@ -241,7 +245,7 @@ folder, to avoid risk of not extracting the right data.
                     }
                 )
             if len(split) == 2:
-                for x in self.selector_data:
+                for x in self.vector_selector_data:
                     if x["name"] == split[0]:
                         if (
                             next(
@@ -346,26 +350,20 @@ folder, to avoid risk of not extracting the right data.
             },
         ]
 
-        self.calculated_vectors: pd.DataFrame = pd.DataFrame()
-        self.expr_parser: Parser = get_vector_calculator_parser()
+        self.calculated_vectors: pd.DataFrame = get_calculated_vectors(
+            self.predefined_expressions, self.smry
+        )
 
-        # Create function and pass in list of expressions
         for elm in self.predefined_expressions:
-            name: str = elm["name"]
-            expr: str = elm["expression"]
-            var_vec_dict: dict = get_variable_vector_map_as_dict(
-                elm["variableVectorMap"]
-            )
-
-            try:
-                parsed_expr: Parser.Expression = self.expr_parser.parse(expr)
-                eval_dict: Dict[str, str] = get_parser_eval_dict(
-                    var_vec_dict, self.smry
+            if elm is not None:
+                name = elm["name"]
+                expr = get_expression_with_vector_names(elm)
+                self.dropdown_options.append(
+                    {
+                        "label": f"{name} ({expr})",
+                        "value": f"{name}",
+                    }
                 )
-                eval_expr = parsed_expr.evaluate(eval_dict)
-                self.calculated_vectors[name] = eval_expr
-            except Exception as e:
-                print("Oops!", e.__class__, "occurred.")
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
@@ -650,7 +648,7 @@ folder, to avoid risk of not extracting the right data.
                                 children=[
                                     wsc.VectorCalculator(
                                         id=self.uuid("vector_calculator"),
-                                        vectors=self.selector_data,
+                                        vectors=self.vector_selector_data,
                                         expressions=self.predefined_expressions,
                                     )
                                 ],
@@ -820,8 +818,14 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 ),
                 dcc.Store(
-                    id=self.uuid("vector_calculator_output"),
-                    data=None,
+                    id=self.uuid("vector_calculator_expressions"),
+                    children=[
+                        self.predefined_expressions,
+                    ],
+                ),
+                dcc.Store(
+                    id=self.uuid("vector_calculator_calculated_vectors_updated"),
+                    children=[0],
                 ),
             ],
         )
@@ -843,6 +847,10 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("date"), "data"),
                 Input(self.uuid("trace_options"), "value"),
                 Input(self.uuid("stat_options"), "value"),
+                Input(
+                    self.uuid("vector_calculator_calculated_vectors_updated"),
+                    "children",
+                ),
             ],
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
@@ -859,6 +867,7 @@ folder, to avoid risk of not extracting the right data.
             stored_date: str,
             trace_options: List[str],
             stat_options: List[str],
+            _calculated_vectors: pd.DataFrame,
         ) -> dict:
             """Callback to update all graphs based on selections"""
 
@@ -898,6 +907,10 @@ folder, to avoid risk of not extracting the right data.
                     )
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
+                # TODO: Temporary code:
+                elif vec in self.calculated_vectors:
+                    titles.append(f"{vec}")
+                # END: Temporary code
                 else:
                     titles.append(
                         f"{simulation_vector_description(vec)}"
@@ -921,8 +934,13 @@ folder, to avoid risk of not extracting the right data.
 
             # Loop through each vector and calculate relevant plot
             legends = []
+
+            # TODO: Continue here
+            smry_new = self.smry.join(self.calculated_vectors)
+
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                # smry=self.smry,
+                smry=smry_new,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
@@ -1204,16 +1222,65 @@ folder, to avoid risk of not extracting the right data.
             return [dict(option, **{"disabled": True}) for option in options]
 
         @app.callback(
-            Output(self.uuid("vector_calculator_output"), "data"),
+            [
+                Output(self.uuid("vector1"), "options"),
+                Output(self.uuid("vector2"), "options"),
+                Output(self.uuid("vector3"), "options"),
+            ],
+            Input(self.uuid("vector_calculator_expressions"), "children"),
+        )
+        def _updated_vector_calculator_expressions(
+            expressions: List[ExpressionInfo],
+        ) -> List[list]:
+
+            additional_dropdown_options: List[Dict[str, str]] = []
+            for elm in expressions:
+                if elm is not None:
+                    name = elm["name"]
+                    expr = get_expression_with_vector_names(elm)
+                    option = {
+                        "label": f"{name} ({expr})",
+                        "value": f"{name}",
+                    }
+                    if (
+                        option not in self.dropdown_options
+                        and option not in additional_dropdown_options
+                    ):
+                        additional_dropdown_options.append(option)
+
+            dropdown_options = self.dropdown_options + additional_dropdown_options
+
+            return [dropdown_options, dropdown_options, dropdown_options]
+
+        @app.callback(
+            [
+                Output(self.uuid("vector_calculator_expressions"), "children"),
+                Output(
+                    self.uuid("vector_calculator_calculated_vectors_updated"),
+                    "children",
+                ),
+            ],
             Input(self.uuid("vector_calculator"), "expressions"),
+            State(
+                self.uuid("vector_calculator_calculated_vectors_updated"), "children"
+            ),
         )
         def _update_vector_calculator_expressions(
-            expressions: List[dict],
-        ) -> List[dict]:
-            # Iterate through expressions and validate/parse.
-            # Add valid expressions into self.smry.cols?
+            expressions: List[ExpressionInfo],
+            updated_counter: int,
+        ):
+            counter = 0
+            if updated_counter is not None:
+                counter = updated_counter + 1
 
-            return expressions
+            self.calculated_vectors = get_calculated_vectors(expressions, self.smry)
+
+            # TODO: Filter expressions to prevent non-valid expressions in dropdown
+            # TODO: Remove usage of counter, rather pass self.calculated_vectors in a way
+            # which does not trig non-dash component error for dcc.Store. Setting self.calcultated_vectors
+            # gives error.
+
+            return [expressions, counter]
 
         @app.callback(
             Output(self.uuid("modal_vector_calculator"), "is_open"),

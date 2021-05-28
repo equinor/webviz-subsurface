@@ -1,56 +1,45 @@
-from typing import List, Dict, TypedDict
-import numpy as np
+from typing import List, Dict
 import pandas as pd
-from py_expression_eval import Parser
+from webviz_subsurface_components import (
+    VectorCalculator,
+    ExpressionInfo,
+    VariableVectorMapInfo,
+)
 
 
-class VariableVectorMapInfo(TypedDict):
-    variableName: str
-    vectorName: List[str]
-
-
-class ExpressionInfo(TypedDict):
-    name: str
-    expression: str
-    id: str
-    variableVectorMap: List[VariableVectorMapInfo]
-
-
-def get_vector_calculator_parser() -> Parser:
-    """Creates expression parser configured to handle vector variables
-
-    Overrides operators to handle vectors by replacing math lib functions with numpy functions
-
-    returns: Configured expression parser
-    """
-    parser = Parser()
-    parser.ops2["^"] = np.power
-    parser.functions["log"] = np.log
-    return parser
-
-
-def get_variable_vector_map_as_dict(
-    var_vec_map: List[VariableVectorMapInfo],
-) -> Dict[str, str]:
-    res: dict = {}
-    for elm in var_vec_map:
-        # TODO verify that elm["variableName"] and elm["vectorName"][0] exists
-        res[elm["variableName"]] = elm["vectorName"][0]
+def get_expression_with_vector_names(expression: ExpressionInfo) -> str:
+    res: str = expression["expression"]
+    var_vec_map: List[VariableVectorMapInfo] = expression["variableVectorMap"]
+    for var_vec_pair in var_vec_map:
+        res = res.replace(var_vec_pair["variableName"], var_vec_pair["vectorName"][0])
     return res
 
 
-def get_parser_eval_dict(var_vec_dict: Dict[str, str], smry: pd.DataFrame) -> dict:
-    res: dict = {}
+def get_parser_values(
+    var_vec_dict: Dict[str, str], smry: pd.DataFrame
+) -> Dict[str, pd.Series]:
+    res: Dict[str, pd.Series] = {}
     for var_name in var_vec_dict:
         res[var_name] = smry[var_vec_dict[var_name]]
     return res
 
 
-# def set_calculated_vectors(
-#     calculated_vectors: pd.DataFrame,
-#     expressions: List[ExpressionInfo],
-#     expr_parser: Parser,
-# ) -> None:
+def get_calculated_vectors(
+    expressions: List[ExpressionInfo],
+    smry: pd.DataFrame,
+) -> pd.DataFrame:
+    # TODO: Refactor further
+    # Move get_parser_values() and get_expression_with_vector_names into wrapper?
+    calculated_vectors: pd.DataFrame = pd.DataFrame()
+    for elm in expressions:
+        name: str = elm["name"]
+        expr: str = elm["expression"]
+        var_vec_map = elm["variableVectorMap"]
 
-
-#     return None
+        values: Dict[str, pd.Series] = get_parser_values(
+            VectorCalculator.get_var_vec_dict(var_vec_map), smry
+        )
+        parsed_expr = VectorCalculator.parse_expression(expr, values)
+        if parsed_expr is not None:
+            calculated_vectors[name] = parsed_expr
+    return calculated_vectors
