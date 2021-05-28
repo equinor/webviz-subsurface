@@ -4,9 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 
-def clientside_stores(
-    get_uuid: Callable,
-) -> html.Div:
+def clientside_stores(get_uuid: Callable) -> html.Div:
     """Contains the clientside stores"""
     return html.Div(
         children=[

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple, Union
 
 import dash
 from dash.dependencies import Input, Output, State, ALL
@@ -6,7 +6,7 @@ from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import webviz_core_components as wcc
 
-
+# pylint: disable=too-many-statements
 def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
     @app.callback(
         Output(get_uuid("selections-inplace-dist"), "data"),
@@ -33,15 +33,15 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         State({"id": get_uuid("filter-inplace-dist"), "selected_reals": ALL}, "id"),
     )
     def _update_selections(
-        selectors,
-        filters,
-        reals,
-        colorscale,
-        sync_table,
-        selctor_ids,
-        filter_ids,
-        real_ids,
-    ):
+        selectors: list,
+        filters: list,
+        reals: list,
+        colorscale: str,
+        sync_table: list,
+        selctor_ids: dict,
+        filter_ids: dict,
+        real_ids: dict,
+    ) -> Tuple[dict, str]:
         ctx = dash.callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
@@ -116,16 +116,17 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             "id",
         ),
     )
+    # pylint: disable=too-many-locals
     def _plot_options(
-        plot_type,
-        selected_page,
-        selected_color_by,
-        selected_subplot_value,
-        selected_y,
-        selected_x,
-        plot_type_options,
-        ids,
-    ):
+        plot_type: str,
+        selected_page: str,
+        selected_color_by: list,
+        selected_subplot_value: list,
+        selected_y: list,
+        selected_x: list,
+        plot_type_options: dict,
+        selector_ids: list,
+    ) -> Tuple[list, list, list]:
         ctx = dash.callback_context.triggered[0]
         if "Color by" in ctx["prop_id"] and plot_type != "box":
             raise PreventUpdate
@@ -221,7 +222,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         disable_list = []
         value_list = []
         options_list = []
-        for selector_id in ids:
+        for selector_id in selector_ids:
             if selector_id["selector"] in settings:
                 disable_list.append(settings[selector_id["selector"]]["disable"])
                 value_list.append(settings[selector_id["selector"]]["value"])
@@ -248,7 +249,9 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         ),
         State(get_uuid("selections-inplace-dist"), "data"),
     )
-    def _update_realization_selected_info(input_selector, selections):
+    def _update_realization_selected_info(
+        input_selector: str, selections: dict
+    ) -> Union[dcc.RangeSlider, wcc.Select]:
         reals = volumemodel.realizations
         prev_selection = (
             selections["filters"].get("REAL", []) if selections is not None else None
@@ -318,14 +321,14 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         ),
     )
     def _update_multi_option(
-        colorby,
-        subplot,
-        groupby,
-        sync_table,
-        page_selected,
-        source_options,
-        ensemble_options,
-    ):
+        colorby: str,
+        subplot: str,
+        groupby: list,
+        sync_table: list,
+        page_selected: str,
+        source_options: dict,
+        ensemble_options: dict,
+    ) -> Tuple[bool, list]:
         data_groupers = []
         if page_selected not in ["per_zr", "conv"]:
             data_groupers = [colorby, subplot]
@@ -343,7 +346,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         )
 
 
-def create_range_string(real_list):
+def create_range_string(real_list: list) -> str:
     idx = 0
     ranges = [[real_list[0], real_list[0]]]
     for real in list(real_list):

@@ -1,11 +1,14 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+from webviz_subsurface._models import InplaceVolumesModel
 
 
-def filter_layout(uuid: Callable, volumemodel, filters=None) -> html.Div:
+def filter_layout(
+    uuid: Callable, volumemodel: InplaceVolumesModel, filters: Optional[list] = None
+) -> html.Div:
     """Layout for selecting intersection data"""
     return html.Div(
         children=[
@@ -17,7 +20,9 @@ def filter_layout(uuid: Callable, volumemodel, filters=None) -> html.Div:
     )
 
 
-def filter_dropdowns(uuid: str, volumemodel, filters=None) -> html.Div:
+def filter_dropdowns(
+    uuid: str, volumemodel: InplaceVolumesModel, filters: Optional[list] = None
+) -> html.Div:
     """Makes dropdowns for each selector"""
     dropdowns: List[html.Div] = []
     filters = filters if filters is not None else volumemodel.selectors

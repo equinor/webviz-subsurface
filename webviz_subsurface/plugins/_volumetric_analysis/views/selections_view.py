@@ -3,11 +3,12 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
+from webviz_subsurface._models import InplaceVolumesModel
 
 
 def selections_layout(
     uuid: Callable,
-    volumemodel,
+    volumemodel: InplaceVolumesModel,
     theme: WebvizConfigTheme,
 ) -> html.Div:
     """Layout for selecting intersection data"""
@@ -28,7 +29,7 @@ def selections_layout(
     )
 
 
-def button(uuid: str, title: str, page_id: str) -> html.Div:
+def button(uuid: str, title: str, page_id: str) -> html.Button:
     return html.Button(
         title,
         className="webviz-inplace-vol-btn",
@@ -36,7 +37,7 @@ def button(uuid: str, title: str, page_id: str) -> html.Div:
     )
 
 
-def source_selector(uuid: str, volumemodel) -> html.Div:
+def source_selector(uuid: str, volumemodel: InplaceVolumesModel) -> html.Div:
     return html.Div(
         style={
             "marginTop": "5px",
@@ -59,7 +60,7 @@ def source_selector(uuid: str, volumemodel) -> html.Div:
     )
 
 
-def plot_selections_layout(uuid: str, volumemodel) -> html.Div:
+def plot_selections_layout(uuid: str, volumemodel: InplaceVolumesModel) -> html.Details:
     return html.Details(
         className="webviz-inplace-vol-plotselect",
         style={"margin-top": "20px"},
@@ -83,7 +84,9 @@ def plot_selections_layout(uuid: str, volumemodel) -> html.Div:
     )
 
 
-def table_selections_layout(uuid: str, volumemodel) -> html.Div:
+def table_selections_layout(
+    uuid: str, volumemodel: InplaceVolumesModel
+) -> html.Details:
     responses = volumemodel.volume_columns + volumemodel.property_columns
     return html.Details(
         className="webviz-inplace-vol-plotselect",
@@ -144,7 +147,6 @@ def table_selections_layout(uuid: str, volumemodel) -> html.Div:
                                 id={"id": uuid, "selector": "table_responses"},
                                 options=[{"label": i, "value": i} for i in responses],
                                 value=responses,
-                                multi=True,
                                 size=min(
                                     20,
                                     len(responses),
@@ -160,7 +162,9 @@ def table_selections_layout(uuid: str, volumemodel) -> html.Div:
     )
 
 
-def plot_selector_dropdowns(uuid: str, volumemodel):
+def plot_selector_dropdowns(
+    uuid: str, volumemodel: InplaceVolumesModel
+) -> List[html.Div]:
     """Makes dropdowns for each selector"""
 
     dropdowns: List[html.Div] = []
@@ -209,7 +213,7 @@ def plot_selector_dropdowns(uuid: str, volumemodel):
     return dropdowns
 
 
-def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Div:
+def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Details:
 
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
     return html.Details(
