@@ -4,13 +4,13 @@ with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 TESTS_REQUIRE = [
-    "selenium>=3.141",
-    "pylint",
-    "mypy",
-    "mock",
-    "black>=21.4b0",
     "bandit",
+    "black>=21.4b0",
+    "dash[testing]",
+    "mypy",
+    "pylint",
     "pytest-xdist",
+    "selenium>=3.141",
 ]
 
 # pylint: disable=line-too-long
