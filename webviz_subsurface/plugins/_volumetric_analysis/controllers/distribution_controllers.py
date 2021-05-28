@@ -17,7 +17,7 @@ from webviz_subsurface._abbreviations.volume_terminology import (
 from ..figures import create_figure
 
 
-def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, theme):
+def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
     @app.callback(
         Output(
             {"id": get_uuid("main-inplace-dist"), "element": "graph", "page": ALL},
@@ -53,39 +53,28 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
     def _update_plots(
         selections, page_selected, plot_table_select, figure, table_data, table_columns
     ):
-        ctx = dash.callback_context.triggered[0]
         initial_callback = figure is None
-        if not initial_callback and (
-            page_selected not in ["1p1t", "custom"] or "page-selected" in ctx["prop_id"]
-        ):
+        if not initial_callback and page_selected not in ["1p1t", "custom"]:
             raise PreventUpdate
 
-        print("updating", ctx["prop_id"])
-
         plot_groups = ["ENSEMBLE", "REAL"]
-        data_groupers = [selections["Subplots"], selections["Color by"]]
-        for selection in data_groupers:
-            if selection is not None and selection not in plot_groups:
-                plot_groups.append(selection)
-
-        responses = {
-            x
-            for x in [selections["X Response"], selections["Y Response"]]
-            if x is not None
-        }
-        for response in responses:
-            if response not in plot_groups and response in volumemodel.selectors:
-                plot_groups.append(response)
+        parameters = []
+        for item in ["Subplots", "Color by", "X Response", "Y Response"]:
+            if selections[item] is not None:
+                if selections[item] in volumemodel.selectors:
+                    plot_groups.append(selections[item])
+                if selections[item] in volumemodel.parameters:
+                    parameters.append(selections[item])
+        plot_groups = list(set(plot_groups))
 
         dframe = volumemodel.dataframe.copy()
-        dframe = filter_df(dframe, selections["filters"])
 
-        parameters = [x for x in set(plot_groups + list(responses)) if x not in dframe]
         if parameters:
             columns = parameters + ["REAL", "ENSEMBLE"]
             dframe = pd.merge(
                 dframe, volumemodel.parameter_df[columns], on=["REAL", "ENSEMBLE"]
             )
+        dframe = filter_df(dframe, selections["filters"])
 
         # Need to sum volume columns and take the average of property columns
         aggregations = {x: "sum" for x in volumemodel.volume_columns}
@@ -126,7 +115,16 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
             if selections["sync_table"]:
                 table_columns, table_data = make_table(
                     dframe=df_for_figure,
-                    responses=list(responses),
+                    responses=list(
+                        {
+                            x
+                            for x in [
+                                selections["X Response"],
+                                selections["Y Response"],
+                            ]
+                            if x is not None
+                        }
+                    ),
                     groups=plot_groups,
                     volumemodel=volumemodel,
                     tabletype=selections["Table type"],
@@ -155,73 +153,50 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         Output(
             {
                 "id": get_uuid("main-inplace-dist"),
-                "piechart": "per_region",
-                "page": "per_zr",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "piechart": "per_zone",
-                "page": "per_zr",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "barchart": "per_region",
-                "page": "per_zr",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-inplace-dist"),
-                "barchart": "per_zone",
+                "chart": ALL,
+                "selector": ALL,
                 "page": "per_zr",
             },
             "figure",
         ),
         Input(get_uuid("selections-inplace-dist"), "data"),
         State(get_uuid("page-selected-inplace-dist"), "data"),
+        State(
+            {
+                "id": get_uuid("main-inplace-dist"),
+                "chart": ALL,
+                "selector": ALL,
+                "page": "per_zr",
+            },
+            "id",
+        ),
     )
-    def _update_plots_per_region_zone(selections, page_selected):
+    def _update_plots_per_region_zone(selections, page_selected, figure_ids):
         if page_selected != "per_zr":
             raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
         dframe = filter_df(dframe, selections["filters"])
-        pie_figs = []
-        bar_figs = []
+
+        figs = {}
         for selector in ["REGION", "ZONE"]:
             groups = ["ENSEMBLE", "REAL"]
             groups.append(selector)
 
-            df_group = (
-                dframe[[selections["X Response"]] + groups]
-                .groupby(groups)
-                .agg(
-                    {
-                        selections["X Response"]: "sum"
-                        if selections["X Response"] in volumemodel.volume_columns
-                        else "mean"
-                    }
-                )
-                .reset_index()
-            )
+            aggregations = {x: "sum" for x in volumemodel.volume_columns}
+            df_group = dframe.groupby(groups).agg(aggregations).reset_index()
+            df_group = volumemodel.compute_property_columns(df_group)
 
+            # find mean over realizations
             df_merged = (
-                df_group[[selections["X Response"], selector, "ENSEMBLE"]]
-                .groupby([selector, "ENSEMBLE"])
+                df_group.groupby([x for x in groups if x != "REAL"])
                 .mean()
                 .reset_index()
             )
 
             # pylint: disable=no-member
-            pie_figs.append(
-                create_figure(
+            figs[selector] = {
+                "pie": create_figure(
                     plot_type="pie",
                     data_frame=df_merged,
                     values=selections["X Response"],
@@ -229,10 +204,8 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     title=f"{selections['X Response']} per {selector}",
                     color_discrete_sequence=selections["Colorscale"],
                     color=selector,
-                )
-            )
-            bar_figs.append(
-                create_figure(
+                ),
+                "bar": create_figure(
                     plot_type="bar",
                     data_frame=df_merged,
                     x=selector,
@@ -241,10 +214,13 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     color=selections["Color by"],
                     text=selections["X Response"],
                     xaxis=dict(type="category", tickangle=45, tickfont_size=17),
-                ).update_traces(texttemplate="%{text:.2s}", textposition="auto")
-            )
+                ).update_traces(texttemplate="%{text:.2s}", textposition="auto"),
+            }
 
-        return pie_figs[0], pie_figs[1], bar_figs[0], bar_figs[1]
+        output_figs = []
+        for fig_id in figure_ids:
+            output_figs.append(figs[fig_id["selector"]][fig_id["chart"]])
+        return output_figs
 
     @app.callback(
         Output(
@@ -263,43 +239,21 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
         if dframe.empty:
             return []
 
+        subplots = selections["Subplots"] if selections["Subplots"] is not None else []
         groups = ["ENSEMBLE", "REAL"]
-        if selections["Subplots"] is not None and selections["Subplots"] not in groups:
-            groups.append(selections["Subplots"])
+        if subplots and subplots not in groups:
+            groups.append(subplots)
 
-        dframe = (
-            dframe[groups + [selections["X Response"]]]
-            .groupby(groups)
-            .agg(
-                {
-                    selections["X Response"]: "sum"
-                    if selections["X Response"] in volumemodel.volume_columns
-                    else "mean"
-                }
-            )
-            .reset_index()
-            .sort_values(by=["ENSEMBLE", "REAL"])
-        )
+        aggregations = {x: "sum" for x in volumemodel.volume_columns}
+        dframe = dframe.groupby(groups).agg(aggregations).reset_index()
+        dframe = volumemodel.compute_property_columns(dframe)
+        dframe = dframe.sort_values(by=["ENSEMBLE", "REAL"])
 
         dfs = []
-        for calculation in ["mean", "p10", "p90"]:
-            df_stat = dframe.copy()
-
-            if selections["Subplots"] is not None:
-                df_group = df_stat.groupby([selections["Subplots"]])
-                df_groups = []
-                for _, df in df_group:
-                    df[selections["X Response"]] = (
-                        (df[selections["X Response"]].expanding().mean())
-                        if calculation == "mean"
-                        else df[selections["X Response"]]
-                        .expanding()
-                        .quantile(0.1 if calculation == "p10" else 0.9)
-                    )
-                    df_groups.append(df)
-                df_stat = pd.concat(df_groups)
-
-            else:
+        df_groups = dframe.groupby(subplots) if subplots else [(None, dframe)]
+        for _, df in df_groups:
+            for calculation in ["mean", "p10", "p90"]:
+                df_stat = df.copy()
                 df_stat[selections["X Response"]] = (
                     (df_stat[selections["X Response"]].expanding().mean())
                     if calculation == "mean"
@@ -307,9 +261,8 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel, th
                     .expanding()
                     .quantile(0.1 if calculation == "p10" else 0.9)
                 )
-
-            df_stat["calculation"] = calculation
-            dfs.append(df_stat)
+                df_stat["calculation"] = calculation
+                dfs.append(df_stat)
         dframe = pd.concat(dfs)
 
         figure = (
@@ -346,9 +299,15 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
 
     groups = [x for x in groups if x != "REAL"] if groups is not None else []
     table_stats = (
-        [("Response", {})] + [(group, {}) for group in groups] + table_statistics_base()
+        [("Response", {})]
+        + [(group, {}) for group in groups]
+        + [
+            stat
+            for x in ["Mean", "Stddev", "P90", "P10", "Minimum", "Maximum"]
+            for stat in table_statistics_base()
+            if stat[0] == x
+        ]
     )
-    print(table_statistics_base())
 
     if tabletype == "Statistics table":
         df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
@@ -373,12 +332,8 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
                     )
                 tables.append(data)
 
-            if response in volumemodel.property_columns:
-                for _, values in table_stats:
-                    if "format" in values:
-                        values["format"] = Format(precision=3)
-
         columns = [{**{"name": i[0], "id": i[0]}, **i[1]} for i in table_stats]
+
     else:
         dframe = (
             dframe[responses + groups].groupby(groups).mean().reset_index()
@@ -386,7 +341,14 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
             else dframe[responses].mean().to_frame().T
         )
         columns = [
-            {"id": col, "name": col, "type": "numeric", "format": Format(precision=3)}
+            {
+                "id": col,
+                "name": col,
+                "type": "numeric",
+                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s"}
+                if col in volumemodel.volume_columns
+                else Format(precision=3),
+            }
             for col in dframe.columns
         ]
         tables = dframe.iloc[::-1].to_dict("records")
@@ -396,5 +358,4 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
 def filter_df(dframe, filters):
     for filt, values in filters.items():
         dframe = dframe.loc[dframe[filt].isin(values)]
-
     return dframe

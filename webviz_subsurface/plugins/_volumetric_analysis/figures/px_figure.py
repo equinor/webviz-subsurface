@@ -115,7 +115,7 @@ def for_each_annotation(figure, **kwargs):
             if facet_col is not None
             else None,
         )
-    ).for_each_annotation(lambda a: a.update(**kwargs.get("annotations", {})))
+    )
 
 
 def convert_violin_to_distribution_plot(figure, **kwargs):

@@ -7,11 +7,6 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 
-from webviz_subsurface._abbreviations.volume_terminology import (
-    volume_description,
-    volume_unit,
-)
-
 
 class InplaceVolumesModel:
     """Class to .."""
@@ -165,53 +160,23 @@ class InplaceVolumesModel:
         """List of available volume responses in dframe"""
         return self._parameters
 
-    @property
-    def aggregations(self) -> List[str]:
-        aggregations = {x: "sum" for x in self.volume_columns}
-        aggregations.update(
-            {x: "mean" for x in self.property_columns + self.parameters}
-        )
-        return aggregations
-
     def set_initial_property_columns(self):
         self._property_columns = []
+        # if Net not given, Net is equal to Bulk
+        net_column = "NET" if "NET" in self._dataframe else "BULK"
 
-        net_column = "NET"
-        bulk_column = "BULK"
-        pore_column = "PORV"
-        hcpv_column = "HCPV"
-
-        # if NTG not given Net is equal to bulk
-        if not net_column in self._dataframe.columns:
-            net_column = bulk_column
-
-        # compute NTG
-        if (
-            net_column in self._dataframe.columns
-            and bulk_column in self._dataframe.columns
-        ):
+        if all(col in self._dataframe for col in ["NET", "BULK"]):
             self._property_columns.append("NTG")
-        # compute PORO
-        if (
-            net_column in self._dataframe.columns
-            and pore_column in self._dataframe.columns
-        ):
+
+        if all(col in self._dataframe for col in [net_column, "PORV"]):
             self._property_columns.append("PORO")
-        # compute SW
-        if (
-            hcpv_column in self._dataframe.columns
-            and pore_column in self._dataframe.columns
-        ):
+
+        if all(col in self._dataframe for col in ["HCPV", "PORV"]):
             self._property_columns.append("SW")
 
-        for voltype in ["OIL", "GAS"]:
-            vol_column = "STOIIP" if voltype == "OIL" else "GIIP"
-            # compute Bo/Bg
-            if (
-                hcpv_column in self._dataframe.columns
-                and vol_column in self._dataframe.columns
-            ):
-                pvt = "BO" if voltype == "OIL" else "BG"
+        for vol_column in ["STOIIP", "GIIP"]:
+            if all(col in self._dataframe for col in ["HCPV", vol_column]):
+                pvt = "BO" if vol_column == "STOIIP" else "BG"
                 self._property_columns.append(pvt)
 
         self._dataframe = self.compute_property_columns(self._dataframe)

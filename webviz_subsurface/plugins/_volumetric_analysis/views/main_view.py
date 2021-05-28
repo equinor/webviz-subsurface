@@ -21,7 +21,7 @@ def main_view(
             label="Inplace distributions",
             children=tab_view_layout(
                 main_layout=distributions_main_layout(
-                    uuid=get_uuid("main-inplace-dist"),
+                    uuid=get_uuid("main-inplace-dist"), volumemodel=volumemodel
                 ),
                 selections_details=OrderedDict(
                     Selections={
