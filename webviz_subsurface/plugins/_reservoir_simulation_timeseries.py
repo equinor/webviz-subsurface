@@ -14,6 +14,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -210,11 +211,13 @@ folder, to avoid risk of not extracting the right data.
             and historical_vector(c, self.smry_meta, False) not in self.smry.columns
         ]
 
-        self.dropdown_options = []
+        self.vector_data: list = []
         for vec in self.smry_cols:
-            self.dropdown_options.append(
-                {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
+            split = vec.split(":")
+            self._add_vector(
+                self.vector_data, vec, simulation_vector_description(split[0])
             )
+
             if (
                 self.smry_meta is not None
                 and self.smry_meta.is_total[vec]
@@ -224,17 +227,19 @@ folder, to avoid risk of not extracting the right data.
                 # Requires that the time_index was either defined or possible to infer.
                 avgrate_vec = rename_vec_from_cum(vector=vec, as_rate=True)
                 interval_vec = rename_vec_from_cum(vector=vec, as_rate=False)
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(avgrate_vec)} ({avgrate_vec})",
-                        "value": avgrate_vec,
-                    }
+
+                avgrate_split = avgrate_vec.split(":")
+                interval_split = interval_vec.split(":")
+
+                self._add_vector(
+                    self.vector_data,
+                    avgrate_vec,
+                    f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
                 )
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(interval_vec)} ({interval_vec})",
-                        "value": interval_vec,
-                    }
+                self._add_vector(
+                    self.vector_data,
+                    interval_vec,
+                    f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
@@ -263,6 +268,36 @@ folder, to avoid risk of not extracting the right data.
             )
         self.allow_delta = len(self.ensembles) > 1
         self.set_callbacks(app)
+
+    @staticmethod
+    def _add_vector(vector_data: list, vector: str, description: str) -> None:
+        split = vector.split(":")
+
+        if next((x for x in vector_data if x["name"] == split[0]), None) == None:
+            vector_data.append(
+                {
+                    "name": split[0],
+                    "description": description,
+                    "children": [],
+                }
+            )
+
+        if len(split) == 2:
+            for x in vector_data:
+                if x["name"] == split[0]:
+                    if (
+                        next(
+                            (y for y in x["children"] if y["name"] == split[1]),
+                            None,
+                        )
+                        == None
+                    ):
+                        x["children"].append(
+                            {
+                                "name": split[1],
+                            }
+                        )
+                    break
 
     @property
     def ens_colors(self) -> dict:
@@ -511,44 +546,10 @@ folder, to avoid risk of not extracting the right data.
                                 html.Span(
                                     "Time series:", style={"font-weight": "bold"}
                                 ),
-                                dcc.Dropdown(
-                                    style={
-                                        "marginTop": "5px",
-                                        "marginBottom": "5px",
-                                        "fontSize": ".95em",
-                                    },
-                                    optionHeight=55,
-                                    id=self.uuid("vector1"),
-                                    clearable=False,
-                                    multi=False,
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get(
-                                        "vector1", self.smry_cols[0]
-                                    ),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                dcc.Dropdown(
-                                    style={"marginBottom": "5px", "fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector2"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector2", None),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                dcc.Dropdown(
-                                    style={"fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector3"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector3", None),
+                                wsc.VectorSelector(
+                                    id=self.uuid("vector"),
+                                    maxNumSelectedNodes=3,
+                                    data=self.vector_data,
                                     persistence=True,
                                     persistence_type="session",
                                 ),
@@ -659,9 +660,7 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vector"), "selectedNodes"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("mode"), "value"),
                 Input(self.uuid("base_ens"), "value"),
@@ -675,9 +674,7 @@ folder, to avoid risk of not extracting the right data.
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -695,13 +692,6 @@ folder, to avoid risk of not extracting the right data.
 
             if calc_mode not in ["ensembles", "delta_ensembles"]:
                 raise PreventUpdate
-
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
 
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
