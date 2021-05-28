@@ -68,7 +68,7 @@ setup(
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.6.1; sys_platform=='linux'",
+        "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
