@@ -311,26 +311,35 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
             "value",
         ),
+        Input(get_uuid("page-selected-inplace-dist"), "data"),
         State({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "options"),
         State(
             {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "options"
         ),
     )
     def _update_multi_option(
-        colorby, subplot, groupby, sync_table, source_values, ensemble_values
+        colorby,
+        subplot,
+        groupby,
+        sync_table,
+        page_selected,
+        source_options,
+        ensemble_options,
     ):
-        data_groupers = [colorby, subplot]
-        if groupby is not None and not sync_table:
-            data_groupers.extend(groupby)
+        data_groupers = []
+        if page_selected not in ["per_zr", "conv"]:
+            data_groupers = [colorby, subplot]
+            if groupby is not None and not sync_table:
+                data_groupers.extend(groupby)
         return (
             "SOURCE" in data_groupers,
-            [source_values[0]["value"]]
+            [source_options[0]["value"]]
             if "SOURCE" not in data_groupers
-            else [x["value"] for x in source_values],
+            else [x["value"] for x in source_options],
             "ENSEMBLE" in data_groupers,
-            [ensemble_values[0]["value"]]
+            [ensemble_options[0]["value"]]
             if "ENSEMBLE" not in data_groupers
-            else [x["value"] for x in ensemble_values],
+            else [x["value"] for x in ensemble_options],
         )
 
 

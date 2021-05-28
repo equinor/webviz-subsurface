@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable, Dict, Union, Optional
+from typing import List, Tuple, Callable, Optional
 from pathlib import Path
 import pandas as pd
 import dash
@@ -115,9 +115,7 @@ class VolumetricAnalysis(WebvizPluginABC):
 
     def set_callbacks(self, app: dash.Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
-        distribution_controllers(
-            app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
-        )
+        distribution_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         layout_controllers(app=app, get_uuid=self.uuid)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

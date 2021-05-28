@@ -4,18 +4,18 @@ import dash_table
 import webviz_core_components as wcc
 
 
-def distributions_main_layout(uuid: str) -> html.Div:
+def distributions_main_layout(uuid: str, volumemodel) -> html.Div:
     return html.Div(
         children=[
             html.Div(
                 id={"id": uuid, "page": "custom"},
                 style={"display": "block"},
-                children=custom_plotting_layout(uuid),
+                children=custom_plotting_layout(uuid, volumemodel),
             ),
             html.Div(
                 id={"id": uuid, "page": "1p1t"},
                 style={"display": "none"},
-                children=one_plot_one_table_layout(uuid),
+                children=one_plot_one_table_layout(uuid, volumemodel),
             ),
             html.Div(
                 id={"id": uuid, "page": "per_zr"},
@@ -45,7 +45,7 @@ def convergence_plot_layout(uuid: str) -> html.Div:
     )
 
 
-def custom_plotting_layout(uuid: str) -> html.Div:
+def custom_plotting_layout(uuid: str, volumemodel) -> html.Div:
     return html.Div(
         className="framed",
         style={"height": "91vh"},
@@ -83,13 +83,17 @@ def custom_plotting_layout(uuid: str) -> html.Div:
                     id={"id": uuid, "element": "table", "page": "custom"},
                     sort_action="native",
                     filter_action="native",
+                    style_cell_conditional=[
+                        {"if": {"column_id": c}, "textAlign": "left"}
+                        for c in volumemodel.selectors + ["Response"]
+                    ],
                 ),
             ),
         ],
     )
 
 
-def one_plot_one_table_layout(uuid: str) -> html.Div:
+def one_plot_one_table_layout(uuid: str, volumemodel) -> html.Div:
     return html.Div(
         children=[
             html.Div(
@@ -117,6 +121,10 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
                     page_size=16,
                     sort_action="native",
                     filter_action="native",
+                    style_cell_conditional=[
+                        {"if": {"column_id": c}, "textAlign": "left"}
+                        for c in volumemodel.selectors + ["Response"]
+                    ],
                 ),
             ),
         ]
@@ -137,7 +145,8 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 children=wcc.Graph(
                                     id={
                                         "id": uuid,
-                                        "piechart": "per_zone",
+                                        "chart": "pie",
+                                        "selector": "ZONE",
                                         "page": "per_zr",
                                     },
                                     config={"displayModeBar": False},
@@ -149,7 +158,8 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 children=wcc.Graph(
                                     id={
                                         "id": uuid,
-                                        "barchart": "per_zone",
+                                        "chart": "bar",
+                                        "selector": "ZONE",
                                         "page": "per_zr",
                                     },
                                     config={"displayModeBar": False},
@@ -170,7 +180,8 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                             children=wcc.Graph(
                                 id={
                                     "id": uuid,
-                                    "piechart": "per_region",
+                                    "chart": "pie",
+                                    "selector": "REGION",
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
@@ -182,7 +193,8 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                             children=wcc.Graph(
                                 id={
                                     "id": uuid,
-                                    "barchart": "per_region",
+                                    "chart": "bar",
+                                    "selector": "REGION",
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
