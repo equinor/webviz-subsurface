@@ -4,9 +4,9 @@ from pathlib import Path
 import json
 import logging
 
-# import pyarrow.feather
 import pyarrow as pa
 import pyarrow.compute as pc
+import pyarrow.feather
 import pandas as pd
 import numpy as np
 
@@ -25,7 +25,7 @@ _PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
 
 LOGGER = logging.getLogger(__name__)
 
-# Since PyArrow's actual compute functions are note seen by pylint
+# Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
 
 
@@ -204,12 +204,16 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
         table = _sort_table_on_date_and_real(table)
         et_sorting_s = timer.lap_s()
 
-        with pa.OSFile(str(arrow_file_name), "wb") as sink:
-            with pa.RecordBatchFileWriter(sink, table.schema) as writer:
-                writer.write_table(table)
+        # with pa.OSFile(str(arrow_file_name), "wb") as sink:
+        #     with pa.RecordBatchFileWriter(sink, table.schema) as writer:
+        #         writer.write_table(table)
+
         # pa.feather.write_feather(
-        #    table, dest=arrow_file_name, compression="uncompressed"
+        #     table, dest=arrow_file_name, compression="uncompressed"
         # )
+
+        pa.feather.write_feather(table, dest=arrow_file_name)
+
         et_write_s = timer.lap_s()
 
         LOGGER.debug(
