@@ -75,9 +75,7 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
 * **`obsfile`**: File with observations to plot together with the relevant time series. \
 (absolute path or relative to config file).
 * **`options`:** Options to initialize plots with:
-    * `vector1` : First vector to display
-    * `vector2` : Second vector to display
-    * `vector3` : Third vector to display
+    * `vectors` : List of vectors to display
     * `visualization` : `realizations`, `statistics` or `fanchart`
     * `date` : Date to show by default in histograms
 * **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
@@ -257,9 +255,9 @@ folder, to avoid risk of not extracting the right data.
         # Check if initially plotted vectors exist in data, raise ValueError if not.
         missing_vectors = [
             value
-            for key, value in self.plot_options.items()
-            if key in ["vector1", "vector2", "vector3"] and value not in self.smry_cols
-        ]
+            for value in self.plot_options["vectors"]
+            if  value not in self.smry_cols
+        ] if "vectors" in self.plot_options else []
         if missing_vectors:
             raise ValueError(
                 f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
@@ -548,11 +546,12 @@ folder, to avoid risk of not extracting the right data.
                                     "Time series:", style={"font-weight": "bold"}
                                 ),
                                 wsc.VectorSelector(
-                                    id=self.uuid("vector"),
+                                    id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
                                     data=self.vector_data,
                                     persistence=True,
                                     persistence_type="session",
+                                    selectedTags=self.plot_options.get("vectors", [self.smry_cols[0]])
                                 ),
                             ],
                         ),
@@ -661,7 +660,7 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
-                Input(self.uuid("vector"), "selectedNodes"),
+                Input(self.uuid("vectors"), "selectedNodes"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("mode"), "value"),
                 Input(self.uuid("base_ens"), "value"),
@@ -706,157 +705,157 @@ folder, to avoid risk of not extracting the right data.
             # Added None to union since date_to_interval_conversion() may return None.
             # Need input on what should be done since a None title is probably not what we want
             titles: List[Union[str, None]] = []
-            for vec in vectors:
-                if sys.version_info >= (3, 9):
-                    unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
-                else:
-                    unit_vec = (
-                        vec[4:]
-                        if vec.startswith("AVG_")
-                        else (vec[6:] if vec.startswith("INTVL_") else vec)
-                    )
-                if self.smry_meta is None:
-                    titles.append(simulation_vector_description(vec))
-                else:
-                    titles.append(
-                        f"{simulation_vector_description(vec)}"
-                        f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
-                    )
-                if "Histogram" in trace_options:
-                    titles.append(
-                        date_to_interval_conversion(
-                            date=date, vector=vec, interval=cum_interval, as_date=False
+            fig: dict = {}
+            if vectors:
+                for vec in vectors:
+                    if sys.version_info >= (3, 9):
+                        unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
+                    else:
+                        unit_vec = (
+                            vec[4:]
+                            if vec.startswith("AVG_")
+                            else (vec[6:] if vec.startswith("INTVL_") else vec)
                         )
-                    )
-
-            # Make a plotly subplot figure
-            fig = make_subplots(
-                rows=len(vectors),
-                cols=2 if "Histogram" in trace_options else 1,
-                shared_xaxes=True,
-                vertical_spacing=0.05,
-                subplot_titles=titles,
-            )
-
-            # Loop through each vector and calculate relevant plot
-            legends = []
-            dfs = calculate_vector_dataframes(
-                smry=self.smry,
-                smry_meta=self.smry_meta,
-                ensembles=ensembles,
-                vectors=vectors,
-                calc_mode=calc_mode,
-                visualization=visualization,
-                time_index=self.time_index,
-                cum_interval=cum_interval,
-            )
-            for i, vector in enumerate(vectors):
-                if dfs[vector]["data"].empty:
-                    continue
-                line_shape = get_simulation_line_shape(
-                    line_shape_fallback=self.line_shape_fallback,
-                    vector=vector,
-                    smry_meta=self.smry_meta,
-                )
-                if visualization == "fanchart":
-                    traces = _add_fanchart_traces(
-                        dfs[vector]["stat"],
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        interval=cum_interval,
-                    )
-                elif visualization == "statistics":
-                    traces = _add_statistics_traces(
-                        dfs[vector]["stat"],
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        interval=cum_interval,
-                        stat_options=stat_options,
-                    )
-
-                elif visualization == "realizations":
-                    traces = add_realization_traces(
-                        dfs[vector]["data"],
-                        vector,
-                        colors=self.ens_colors,
-                        line_shape=line_shape,
-                        interval=cum_interval,
-                    )
-                else:
-                    raise PreventUpdate
-
-                if "Histogram" in trace_options:
-                    histdata = add_histogram_traces(
-                        dfs[vector]["data"],
-                        vector,
-                        date=date,
-                        colors=self.ens_colors,
-                        interval=cum_interval,
-                    )
-                    for trace in histdata:
-                        fig.add_trace(trace, i + 1, 2)
-                if "History" in trace_options:
-                    historical_vector_name = historical_vector(
-                        vector=vector, smry_meta=self.smry_meta
-                    )
-                    if (
-                        historical_vector_name
-                        and historical_vector_name in dfs[vector]["data"].columns
-                        and not calc_mode == "delta_ensembles"
-                    ):
-                        traces.append(
-                            add_history_trace(
-                                dfs[vector]["data"],
-                                historical_vector_name,
-                                line_shape,
+                    if self.smry_meta is None:
+                        titles.append(simulation_vector_description(vec))
+                    else:
+                        titles.append(
+                            f"{simulation_vector_description(vec)}"
+                            f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
+                        )
+                    if "Histogram" in trace_options:
+                        titles.append(
+                            date_to_interval_conversion(
+                                date=date, vector=vec, interval=cum_interval, as_date=False
                             )
                         )
 
-                # Remove unwanted legends(only keep one for each ensemble)
-                for trace in traces:
-                    if trace.get("showlegend"):
-                        if trace.get("legendgroup") in legends:
-                            trace["showlegend"] = False
-                        else:
-                            legends.append(trace.get("legendgroup"))
-                    fig.add_trace(trace, i + 1, 1)
-                # Add observations
-                if calc_mode != "delta_ensembles" and self.observations.get(vector):
-                    for trace in add_observation_trace(self.observations.get(vector)):
+                # Make a plotly subplot figure
+                fig = make_subplots(
+                    rows=len(vectors),
+                    cols=2 if "Histogram" in trace_options else 1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.05,
+                    subplot_titles=titles,
+                )
+
+                # Loop through each vector and calculate relevant plot
+                legends = []
+                dfs = calculate_vector_dataframes(
+                    smry=self.smry,
+                    smry_meta=self.smry_meta,
+                    ensembles=ensembles,
+                    vectors=vectors,
+                    calc_mode=calc_mode,
+                    visualization=visualization,
+                    time_index=self.time_index,
+                    cum_interval=cum_interval,
+                )
+                for i, vector in enumerate(vectors):
+                    if dfs[vector]["data"].empty:
+                        continue
+                    line_shape = get_simulation_line_shape(
+                        line_shape_fallback=self.line_shape_fallback,
+                        vector=vector,
+                        smry_meta=self.smry_meta,
+                    )
+                    if visualization == "fanchart":
+                        traces = _add_fanchart_traces(
+                            dfs[vector]["stat"],
+                            vector,
+                            colors=self.ens_colors,
+                            line_shape=line_shape,
+                            interval=cum_interval,
+                        )
+                    elif visualization == "statistics":
+                        traces = _add_statistics_traces(
+                            dfs[vector]["stat"],
+                            vector,
+                            colors=self.ens_colors,
+                            line_shape=line_shape,
+                            interval=cum_interval,
+                            stat_options=stat_options,
+                        )
+
+                    elif visualization == "realizations":
+                        traces = add_realization_traces(
+                            dfs[vector]["data"],
+                            vector,
+                            colors=self.ens_colors,
+                            line_shape=line_shape,
+                            interval=cum_interval,
+                        )
+                    else:
+                        raise PreventUpdate
+
+                    if "Histogram" in trace_options:
+                        histdata = add_histogram_traces(
+                            dfs[vector]["data"],
+                            vector,
+                            date=date,
+                            colors=self.ens_colors,
+                            interval=cum_interval,
+                        )
+                        for trace in histdata:
+                            fig.add_trace(trace, i + 1, 2)
+                    if "History" in trace_options:
+                        historical_vector_name = historical_vector(
+                            vector=vector, smry_meta=self.smry_meta
+                        )
+                        if (
+                            historical_vector_name
+                            and historical_vector_name in dfs[vector]["data"].columns
+                            and not calc_mode == "delta_ensembles"
+                        ):
+                            traces.append(
+                                add_history_trace(
+                                    dfs[vector]["data"],
+                                    historical_vector_name,
+                                    line_shape,
+                                )
+                            )
+
+                    # Remove unwanted legends(only keep one for each ensemble)
+                    for trace in traces:
+                        if trace.get("showlegend"):
+                            if trace.get("legendgroup") in legends:
+                                trace["showlegend"] = False
+                            else:
+                                legends.append(trace.get("legendgroup"))
                         fig.add_trace(trace, i + 1, 1)
+                    # Add observations
+                    if calc_mode != "delta_ensembles" and self.observations.get(vector):
+                        for trace in add_observation_trace(self.observations.get(vector)):
+                            fig.add_trace(trace, i + 1, 1)
 
-            fig = fig.to_dict()
-            fig["layout"].update(
-                height=800,
-                margin={"t": 20, "b": 0},
-                barmode="overlay",
-                bargap=0.01,
-                bargroupgap=0.2,
-            )
-            fig["layout"] = self.theme.create_themed_layout(fig["layout"])
+                fig = fig.to_dict()
+                fig["layout"].update(
+                    height=800,
+                    margin={"t": 20, "b": 0},
+                    barmode="overlay",
+                    bargap=0.01,
+                    bargroupgap=0.2,
+                )
+                fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
-            if "Histogram" in trace_options:
-                # Remove linked x-axis for histograms
-                if "xaxis2" in fig["layout"]:
-                    fig["layout"]["xaxis2"]["matches"] = None
-                    fig["layout"]["xaxis2"]["showticklabels"] = True
-                if "xaxis4" in fig["layout"]:
-                    fig["layout"]["xaxis4"]["matches"] = None
-                    fig["layout"]["xaxis4"]["showticklabels"] = True
-                if "xaxis6" in fig["layout"]:
-                    fig["layout"]["xaxis6"]["matches"] = None
-                    fig["layout"]["xaxis6"]["showticklabels"] = True
+                if "Histogram" in trace_options:
+                    # Remove linked x-axis for histograms
+                    if "xaxis2" in fig["layout"]:
+                        fig["layout"]["xaxis2"]["matches"] = None
+                        fig["layout"]["xaxis2"]["showticklabels"] = True
+                    if "xaxis4" in fig["layout"]:
+                        fig["layout"]["xaxis4"]["matches"] = None
+                        fig["layout"]["xaxis4"]["showticklabels"] = True
+                    if "xaxis6" in fig["layout"]:
+                        fig["layout"]["xaxis6"]["matches"] = None
+                        fig["layout"]["xaxis6"]["showticklabels"] = True
             return fig
 
         @app.callback(
             self.plugin_data_output,
             [self.plugin_data_requested],
             [
-                State(self.uuid("vector1"), "value"),
-                State(self.uuid("vector2"), "value"),
-                State(self.uuid("vector3"), "value"),
+                State(self.uuid("vectors"), "selectedNodes"),
                 State(self.uuid("ensemble"), "value"),
                 State(self.uuid("mode"), "value"),
                 State(self.uuid("base_ens"), "value"),
@@ -867,9 +866,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _user_download_data(
             data_requested: Union[int, None],
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -881,12 +878,6 @@ folder, to avoid risk of not extracting the right data.
             if data_requested is None:
                 raise PreventUpdate
 
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
             # Ensure selected ensembles is a list and prevent update if invalid calc_mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
@@ -999,25 +990,22 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("cum_interval"), "options"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vectors"), "selectedNodes"),
             ],
             [State(self.uuid("cum_interval"), "options")],
         )
         def _activate_interval_radio_buttons(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             options: List[dict],
         ) -> List[dict]:
             """Switch activate/deactivate radio buttons for selectibg interval for
             calculations from cumulatives"""
             active = False
-            for vector in [vector1, vector2, vector3]:
-                if vector is not None and vector.startswith(("AVG_", "INTVL_")):
-                    active = True
-                    break
+            if vectors:
+                for vector in vectors:
+                    if vector is not None and vector.startswith(("AVG_", "INTVL_")):
+                        active = True
+                        break
             if active:
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]
