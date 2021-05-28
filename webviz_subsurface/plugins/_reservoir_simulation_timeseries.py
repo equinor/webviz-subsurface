@@ -132,7 +132,8 @@ folder, to avoid risk of not extracting the right data.
 """
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
-    # pylint:disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         app: dash.Dash,
@@ -273,7 +274,7 @@ folder, to avoid risk of not extracting the right data.
     def _add_vector(vector_data: list, vector: str, description: str) -> None:
         split = vector.split(":")
 
-        if next((x for x in vector_data if x["name"] == split[0]), None) == None:
+        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
             vector_data.append(
                 {
                     "name": split[0],
@@ -290,7 +291,7 @@ folder, to avoid risk of not extracting the right data.
                             (y for y in x["children"] if y["name"] == split[1]),
                             None,
                         )
-                        == None
+                        is None
                     ):
                         x["children"].append(
                             {
