@@ -5,6 +5,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
+from webviz_subsurface._models import InplaceVolumesModel
 from .filter_view import filter_layout
 from .distribution_main_layout import distributions_main_layout
 from .selections_view import selections_layout
@@ -12,7 +13,7 @@ from .selections_view import selections_layout
 
 def main_view(
     get_uuid: Callable,
-    volumemodel,
+    volumemodel: InplaceVolumesModel,
     theme: WebvizConfigTheme,
 ) -> dcc.Tabs:
 
@@ -137,7 +138,7 @@ def main_view(
     )
 
 
-def make_tab(label, children):
+def make_tab(label: str, children: list):
     tab_style = {
         "borderBottom": "1px solid #d6d6d6",
         "padding": "6px",

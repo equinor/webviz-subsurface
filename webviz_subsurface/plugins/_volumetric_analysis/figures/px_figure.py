@@ -1,9 +1,13 @@
+from typing import Callable, Optional
 import inspect
+
+import pandas as pd
+
 import plotly.express as px
 import plotly.graph_objects as go
 
 
-def create_figure(plot_type, **kwargs) -> go.Figure:
+def create_figure(plot_type: str, **kwargs: dict) -> go.Figure:
     """Create subplots for selected parameters"""
 
     plotargs = set_default_args(**kwargs)
@@ -15,7 +19,6 @@ def create_figure(plot_type, **kwargs) -> go.Figure:
     fig = for_each_annotation(fig, **plotargs)
 
     fig.update_traces(marker_size=15, selector=dict(type="scatter"))
-    #    fig.for_each_trace(lambda t: t.update())
     fig.update_traces(marker_line=dict(color="#000000", width=1))
     fig.update_traces(nbinsx=20, selector=dict(type="histogram"))
 
@@ -25,7 +28,7 @@ def create_figure(plot_type, **kwargs) -> go.Figure:
     return fig
 
 
-def set_default_args(**plotargs):
+def set_default_args(**plotargs: dict) -> dict:
 
     plotargs["histnorm"] = plotargs.get("histnorm", "percent")
     plotargs["barmode"] = plotargs.get("barmode", "group")
@@ -42,11 +45,10 @@ def set_default_args(**plotargs):
             facet_col_spacing=max((0.06 - (0.00071 * facet_cols)), 0.03),
         )
         plotargs["custom_data"] = [plotargs["facet_col"]]
-
     return plotargs
 
 
-def make_initial_figure(plot_type, **plotargs):
+def make_initial_figure(plot_type: str, **plotargs: dict) -> Callable:
 
     if plot_type == "distribution":
         plot_type = "violin"
@@ -60,7 +62,7 @@ def make_initial_figure(plot_type, **plotargs):
     return plotfunc(**plotargs)
 
 
-def update_xaxes(figure, **kwargs):
+def update_xaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col", None)
     return figure.update_xaxes(
@@ -81,7 +83,7 @@ def update_xaxes(figure, **kwargs):
     ).update_xaxes(**kwargs.get("xaxis", {}))
 
 
-def update_yaxes(figure, **kwargs):
+def update_yaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
     return figure.update_yaxes(
         showline=True,
         linewidth=2,
@@ -92,7 +94,7 @@ def update_yaxes(figure, **kwargs):
     ).update_yaxes(**kwargs.get("yaxis", {}))
 
 
-def update_layout(figure, plot_type, **kwargs):
+def update_layout(figure: go.Figure, plot_type: str, **kwargs: dict) -> go.Figure:
     if plot_type in ["histogram", "bar"]:
         figure.update_layout(
             bargap=0.1,
@@ -102,7 +104,7 @@ def update_layout(figure, plot_type, **kwargs):
     )
 
 
-def for_each_annotation(figure, **kwargs):
+def for_each_annotation(figure: go.Figure, **kwargs: dict) -> go.Figure:
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col")
     return figure.for_each_annotation(
@@ -118,7 +120,7 @@ def for_each_annotation(figure, **kwargs):
     )
 
 
-def convert_violin_to_distribution_plot(figure, **kwargs):
+def convert_violin_to_distribution_plot(figure: go.Figure, **kwargs: dict) -> go.Figure:
     figure.for_each_trace(
         lambda t: t.update(
             y0=0,
@@ -143,7 +145,13 @@ def convert_violin_to_distribution_plot(figure, **kwargs):
     return figure
 
 
-def create_hover_boxes_for_violin_plots(figure, dframe, x, facet_col, color_col):
+def create_hover_boxes_for_violin_plots(
+    figure: go.Figure,
+    dframe: pd.DataFrame,
+    x: str,
+    facet_col: Optional[str],
+    color_col: Optional[str],
+) -> list:
 
     # Create invisible boxes used for hoverinfo on the violin plots
     # Necessary due to https://github.com/plotly/plotly.js/issues/2145
@@ -168,7 +176,13 @@ def create_hover_boxes_for_violin_plots(figure, dframe, x, facet_col, color_col)
     return hovertraces
 
 
-def hover_box_text(trace, dframe, x, facet_col, color_col):
+def hover_box_text(
+    trace: dict,
+    dframe: pd.DataFrame,
+    x: str,
+    facet_col: Optional[str],
+    color_col: Optional[str],
+) -> str:
     colors = list(dframe[color_col].unique()) if color_col in dframe else []
     facet = trace["customdata"][0][0] if trace["customdata"] is not None else ""
     text = f"<b>{x}</b><br>" f"<b>{facet}</b><br>"
@@ -192,9 +206,15 @@ def hover_box_text(trace, dframe, x, facet_col, color_col):
     return text
 
 
+# pylint: disable=inconsistent-return-statements
 def get_filtered_x_series(
-    dframe, x, facet_col=None, facet=None, color_col=None, color=None
-):
+    dframe: pd.DataFrame,
+    x: str,
+    facet_col: Optional[str] = None,
+    facet: Optional[str] = None,
+    color_col: Optional[str] = None,
+    color: Optional[str] = None,
+) -> pd.Series:
     if facet_col is None and color_col is None:
         return dframe[x]
     if facet_col is None and color_col is not None:

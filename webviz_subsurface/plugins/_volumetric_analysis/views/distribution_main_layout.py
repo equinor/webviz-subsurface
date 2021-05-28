@@ -1,26 +1,26 @@
 import dash_html_components as html
 import dash_core_components as dcc
-import dash_table
 import webviz_core_components as wcc
+from webviz_subsurface._models import InplaceVolumesModel
 
 
-def distributions_main_layout(uuid: str, volumemodel) -> html.Div:
+def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> html.Div:
     return html.Div(
         children=[
             html.Div(
                 id={"id": uuid, "page": "custom"},
                 style={"display": "block"},
-                children=custom_plotting_layout(uuid, volumemodel),
+                children=custom_plotting_layout(uuid),
             ),
             html.Div(
                 id={"id": uuid, "page": "1p1t"},
                 style={"display": "none"},
-                children=one_plot_one_table_layout(uuid, volumemodel),
+                children=one_plot_one_table_layout(uuid),
             ),
             html.Div(
                 id={"id": uuid, "page": "per_zr"},
                 style={"display": "none"},
-                children=plots_per_zone_region_layout(uuid),
+                children=plots_per_zone_region_layout(uuid, volumemodel),
             ),
             html.Div(
                 id={"id": uuid, "page": "conv"},
@@ -45,7 +45,7 @@ def convergence_plot_layout(uuid: str) -> html.Div:
     )
 
 
-def custom_plotting_layout(uuid: str, volumemodel) -> html.Div:
+def custom_plotting_layout(uuid: str) -> html.Div:
     return html.Div(
         className="framed",
         style={"height": "91vh"},
@@ -79,21 +79,12 @@ def custom_plotting_layout(uuid: str, volumemodel) -> html.Div:
             html.Div(
                 id={"id": uuid, "wrapper": "table", "page": "custom"},
                 style={"display": "none"},
-                children=dash_table.DataTable(
-                    id={"id": uuid, "element": "table", "page": "custom"},
-                    sort_action="native",
-                    filter_action="native",
-                    style_cell_conditional=[
-                        {"if": {"column_id": c}, "textAlign": "left"}
-                        for c in volumemodel.selectors + ["Response"]
-                    ],
-                ),
             ),
         ],
     )
 
 
-def one_plot_one_table_layout(uuid: str, volumemodel) -> html.Div:
+def one_plot_one_table_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
             html.Div(
@@ -112,67 +103,23 @@ def one_plot_one_table_layout(uuid: str, volumemodel) -> html.Div:
             html.Div(
                 className="webviz-inplace-vol-framed",
                 style={"height": "44vh"},
-                children=dash_table.DataTable(
-                    id={
-                        "id": uuid,
-                        "element": "table",
-                        "page": "1p1t",
-                    },
-                    page_size=16,
-                    sort_action="native",
-                    filter_action="native",
-                    style_cell_conditional=[
-                        {"if": {"column_id": c}, "textAlign": "left"}
-                        for c in volumemodel.selectors + ["Response"]
-                    ],
-                ),
+                id={"id": uuid, "wrapper": "table", "page": "1p1t"},
             ),
         ]
     )
 
 
-def plots_per_zone_region_layout(uuid: str) -> html.Div:
-    return html.Div(
-        children=[
+def plots_per_zone_region_layout(
+    uuid: str, volumemodel: InplaceVolumesModel
+) -> html.Div:
+    selectors = ["ZONE", "REGION", "FACIES"]
+    height = max(88 / len(selectors), 25)
+    layout = []
+    for selector in [x for x in selectors if x in volumemodel.selectors]:
+        layout.append(
             html.Div(
                 className="webviz-inplace-vol-framed",
-                style={"height": "44vh"},
-                children=[
-                    wcc.FlexBox(
-                        children=[
-                            html.Div(
-                                style={"flex": 1},
-                                children=wcc.Graph(
-                                    id={
-                                        "id": uuid,
-                                        "chart": "pie",
-                                        "selector": "ZONE",
-                                        "page": "per_zr",
-                                    },
-                                    config={"displayModeBar": False},
-                                    style={"height": "44vh"},
-                                ),
-                            ),
-                            html.Div(
-                                style={"flex": 3},
-                                children=wcc.Graph(
-                                    id={
-                                        "id": uuid,
-                                        "chart": "bar",
-                                        "selector": "ZONE",
-                                        "page": "per_zr",
-                                    },
-                                    config={"displayModeBar": False},
-                                    style={"height": "44vh"},
-                                ),
-                            ),
-                        ]
-                    ),
-                ],
-            ),
-            html.Div(
-                className="webviz-inplace-vol-framed",
-                style={"height": "44vh"},
+                style={"height": f"{height}vh"},
                 children=wcc.FlexBox(
                     children=[
                         html.Div(
@@ -181,11 +128,11 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 id={
                                     "id": uuid,
                                     "chart": "pie",
-                                    "selector": "REGION",
+                                    "selector": selector,
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
-                                style={"height": "44vh"},
+                                style={"height": f"{height}vh"},
                             ),
                         ),
                         html.Div(
@@ -194,15 +141,16 @@ def plots_per_zone_region_layout(uuid: str) -> html.Div:
                                 id={
                                     "id": uuid,
                                     "chart": "bar",
-                                    "selector": "REGION",
+                                    "selector": selector,
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
-                                style={"height": "44vh"},
+                                style={"height": f"{height}vh"},
                             ),
                         ),
                     ]
                 ),
-            ),
-        ],
-    )
+            )
+        )
+
+    return html.Div(layout)

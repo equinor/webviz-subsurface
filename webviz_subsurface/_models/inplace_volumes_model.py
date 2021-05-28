@@ -6,6 +6,7 @@ import pandas as pd
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_subsurface._datainput.fmu_input import find_sens_type
+from webviz_subsurface._models import EnsembleSetModel
 
 
 class InplaceVolumesModel:
@@ -23,11 +24,11 @@ class InplaceVolumesModel:
         "SOURCE",
         "ENSEMBLE",
         "REAL",
-        "FLUID",
         "ZONE",
         "REGION",
         "FACIES",
         "LICENSE",
+        "FLUID",
         "SENSNAME",
         "SENSCASE",
         "SENSTYPE",
@@ -40,7 +41,8 @@ class InplaceVolumesModel:
         drop_constants: bool = False,
     ):
 
-        self._prepare_parameter_data(parameter_table, drop_constants=drop_constants)
+        if parameter_table is not None:
+            self._prepare_parameter_data(parameter_table, drop_constants=drop_constants)
 
         self._designrun = (
             parameter_table is not None and "SENSNAME" in parameter_table.columns
@@ -102,32 +104,32 @@ class InplaceVolumesModel:
         self.set_initial_property_columns()
 
     @property
-    def dataframe(self) -> list:
+    def dataframe(self) -> pd.DataFrame:
         """Returns surface attributes"""
         return self._dataframe
 
     @property
-    def parameter_df(self) -> list:
+    def parameter_df(self) -> pd.DataFrame:
         """Returns surface attributes"""
         return self._parameterdf
 
     @property
-    def sensrun(self) -> list:
+    def sensrun(self) -> bool:
         """Returns surface attributes"""
         return self._sensrun
 
     @property
-    def sources(self) -> list:
+    def sources(self) -> List[str]:
         """Returns surface attributes"""
         return sorted(list(self._dataframe["SOURCE"].unique()))
 
     @property
-    def realizations(self) -> list:
+    def realizations(self) -> List[int]:
         """Returns surface attributes"""
         return sorted(list(self._dataframe["REAL"].unique()))
 
     @property
-    def ensembles(self) -> list:
+    def ensembles(self) -> List[str]:
         """Returns surface attributes"""
         return list(self._dataframe["ENSEMBLE"].unique())
 
@@ -181,7 +183,9 @@ class InplaceVolumesModel:
 
         self._dataframe = self.compute_property_columns(self._dataframe)
 
-    def compute_property_columns(self, dframe, properties=None):
+    def compute_property_columns(
+        self, dframe: pd.DataFrame, properties: Optional[list] = None
+    ):
 
         properties = self.property_columns if properties is None else properties
 
@@ -193,7 +197,7 @@ class InplaceVolumesModel:
         if "PORO" in properties:
             dframe["PORO"] = dframe["PORV"] / dframe[net_column]
         if "SW" in properties:
-            dframe["SW"] = 1 - dframe["HCPV"] / dframe["PORV"]
+            dframe["SW"] = 1 - (dframe["HCPV"] / dframe["PORV"])
         if "BO" in properties:
             dframe["BO"] = dframe["HCPV"] / dframe["STOIIP"]
         if "BG" in properties:
@@ -201,7 +205,9 @@ class InplaceVolumesModel:
 
         return dframe
 
-    def _prepare_parameter_data(self, parameter_table, drop_constants):
+    def _prepare_parameter_data(
+        self, parameter_table: pd.DataFrame, drop_constants: bool
+    ):
         """
         Different data preparations on the parameters, before storing them as an attribute.
         Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
@@ -259,7 +265,7 @@ class InplaceVolumesModel:
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def extract_volumes(
-    ensemble_set_model, volfolder: str, volfiles: Dict[str, str]
+    ensemble_set_model: EnsembleSetModel, volfolder: str, volfiles: Dict[str, str]
 ) -> pd.DataFrame:
     """Aggregates volumetric files from an FMU ensemble.
     Files must be stored on standardized csv format.

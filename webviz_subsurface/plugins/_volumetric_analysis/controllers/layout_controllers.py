@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple
 
 import dash
 from dash.dependencies import Input, Output, State, ALL
@@ -11,11 +11,11 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
         Input({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "n_clicks"),
         State({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "id"),
     )
-    def _update_clicked_button(_apply_click, id_all):
+    def _update_clicked_button(_apply_click: int, all_ids: dict) -> Tuple[list, str]:
         ctx = dash.callback_context.triggered[0]
-        page_selected = id_all[0]["button"]
+        page_selected = all_ids[0]["button"]
         styles = []
-        for button_id in id_all:
+        for button_id in all_ids:
             if button_id["button"] in ctx["prop_id"]:
                 styles.append({"background-color": "#7393B3", "color": "#fff"})
                 page_selected = button_id["button"]
@@ -30,7 +30,7 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
         Input(get_uuid("page-selected-inplace-dist"), "data"),
         State({"id": get_uuid("main-inplace-dist"), "page": ALL}, "id"),
     )
-    def _select_main_layout(page_selected, all_ids):
+    def _select_main_layout(page_selected: str, all_ids: dict) -> list:
         styles = []
         for page_id in all_ids:
             if page_id["page"] == page_selected:
@@ -61,7 +61,7 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
             "id",
         ),
     )
-    def _show_hide_1x1(plot_table_select, all_ids):
+    def _show_hide_1x1(plot_table_select: str, all_ids: dict) -> list:
         styles = []
         for input_id in all_ids:
             if input_id["wrapper"] == plot_table_select:
@@ -83,5 +83,5 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
             "value",
         ),
     )
-    def _show_hide_table_response_group_controls(sync_table):
+    def _show_hide_table_response_group_controls(sync_table: list) -> dict:
         return {"display": "none"} if sync_table else {"display": "block"}

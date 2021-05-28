@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple, List
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
@@ -6,9 +6,12 @@ import dash
 from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 from dash_table.Format import Format
+import dash_html_components as html
+import dash_table
 import plotly.express as px
+import plotly.graph_objects as go
 
-from webviz_subsurface._abbreviations.number_formatting import table_statistics_base
+from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._abbreviations.volume_terminology import (
     volume_description,
     volume_unit,
@@ -16,20 +19,18 @@ from webviz_subsurface._abbreviations.volume_terminology import (
 
 from ..figures import create_figure
 
-
-def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
+# pylint: disable=too-many-statements
+def distribution_controllers(
+    app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
+):
     @app.callback(
         Output(
             {"id": get_uuid("main-inplace-dist"), "element": "graph", "page": ALL},
             "figure",
         ),
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "page": ALL},
-            "data",
-        ),
-        Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "page": ALL},
-            "columns",
+            {"id": get_uuid("main-inplace-dist"), "wrapper": "table", "page": ALL},
+            "children",
         ),
         Input(get_uuid("selections-inplace-dist"), "data"),
         State(get_uuid("page-selected-inplace-dist"), "data"),
@@ -42,17 +43,17 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             "figure",
         ),
         State(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "page": "custom"},
-            "data",
-        ),
-        State(
-            {"id": get_uuid("main-inplace-dist"), "element": "table", "page": "custom"},
-            "columns",
+            {"id": get_uuid("main-inplace-dist"), "wrapper": "table", "page": "custom"},
+            "children",
         ),
     )
     def _update_plots(
-        selections, page_selected, plot_table_select, figure, table_data, table_columns
-    ):
+        selections: dict,
+        page_selected: str,
+        plot_table_select: str,
+        figure: dict,
+        table_wrapper_children: list,
+    ) -> Tuple[list, list, list]:
         initial_callback = figure is None
         if not initial_callback and page_selected not in ["1p1t", "custom"]:
             raise PreventUpdate
@@ -113,7 +114,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         # Make tables
         if not (plot_table_select == "graph" and page_selected == "custom"):
             if selections["sync_table"]:
-                table_columns, table_data = make_table(
+                table_wrapper_children = make_table_wrapper_children(
                     dframe=df_for_figure,
                     responses=list(
                         {
@@ -128,6 +129,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                     groups=plot_groups,
                     volumemodel=volumemodel,
                     tabletype=selections["Table type"],
+                    page_selected=page_selected,
                 )
             else:
                 table_groups = ["ENSEMBLE", "REAL"]
@@ -139,15 +141,16 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                     dframe.groupby(table_groups).agg(aggregations).reset_index()
                 )
                 df_for_table = volumemodel.compute_property_columns(df_for_table)
-                table_columns, table_data = make_table(
+                table_wrapper_children = make_table_wrapper_children(
                     dframe=df_for_table,
                     responses=selections["table_responses"],
                     groups=selections["Group by"],
                     volumemodel=volumemodel,
                     tabletype=selections["Table type"],
+                    page_selected=page_selected,
                 )
 
-        return ([figure] * 2, [table_data] * 2, [table_columns] * 2)
+        return ([figure] * 2, [table_wrapper_children] * 2)
 
     @app.callback(
         Output(
@@ -171,7 +174,9 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             "id",
         ),
     )
-    def _update_plots_per_region_zone(selections, page_selected, figure_ids):
+    def _update_plots_per_region_zone(
+        selections: dict, page_selected: str, figure_ids: List[dict]
+    ) -> list:
         if page_selected != "per_zr":
             raise PreventUpdate
 
@@ -179,43 +184,48 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         dframe = filter_df(dframe, selections["filters"])
 
         figs = {}
-        for selector in ["REGION", "ZONE"]:
+        for selector in ["ZONE", "REGION", "FACIES"]:
             groups = ["ENSEMBLE", "REAL"]
-            groups.append(selector)
+            if selector in volumemodel.selectors:
+                groups.append(selector)
 
-            aggregations = {x: "sum" for x in volumemodel.volume_columns}
-            df_group = dframe.groupby(groups).agg(aggregations).reset_index()
-            df_group = volumemodel.compute_property_columns(df_group)
+                aggregations = {x: "sum" for x in volumemodel.volume_columns}
+                df_group = dframe.groupby(groups).agg(aggregations).reset_index()
+                df_group = volumemodel.compute_property_columns(df_group)
 
-            # find mean over realizations
-            df_merged = (
-                df_group.groupby([x for x in groups if x != "REAL"])
-                .mean()
-                .reset_index()
-            )
-
-            # pylint: disable=no-member
-            figs[selector] = {
-                "pie": create_figure(
-                    plot_type="pie",
-                    data_frame=df_merged,
-                    values=selections["X Response"],
-                    names=selector,
-                    title=f"{selections['X Response']} per {selector}",
-                    color_discrete_sequence=selections["Colorscale"],
-                    color=selector,
-                ),
-                "bar": create_figure(
-                    plot_type="bar",
-                    data_frame=df_merged,
-                    x=selector,
-                    y=selections["X Response"],
-                    color_discrete_sequence=px.colors.diverging.BrBG_r,
-                    color=selections["Color by"],
-                    text=selections["X Response"],
-                    xaxis=dict(type="category", tickangle=45, tickfont_size=17),
-                ).update_traces(texttemplate="%{text:.2s}", textposition="auto"),
-            }
+                # find mean over realizations
+                df_merged = (
+                    df_group.groupby([x for x in groups if x != "REAL"])
+                    .mean()
+                    .reset_index()
+                )
+                texttemplate = (
+                    "%{text:.3s}"
+                    if selections["X Response"] in volumemodel.volume_columns
+                    else "%{text:.3g}"
+                )
+                # pylint: disable=no-member
+                figs[selector] = {
+                    "pie": create_figure(
+                        plot_type="pie",
+                        data_frame=df_merged,
+                        values=selections["X Response"],
+                        names=selector,
+                        title=f"{selections['X Response']} per {selector}",
+                        color_discrete_sequence=selections["Colorscale"],
+                        color=selector,
+                    ),
+                    "bar": create_figure(
+                        plot_type="bar",
+                        data_frame=df_merged,
+                        x=selector,
+                        y=selections["X Response"],
+                        color_discrete_sequence=px.colors.diverging.BrBG_r,
+                        color=selections["Color by"],
+                        text=selections["X Response"],
+                        xaxis=dict(type="category", tickangle=45, tickfont_size=17),
+                    ).update_traces(texttemplate=texttemplate, textposition="auto"),
+                }
 
         output_figs = []
         for fig_id in figure_ids:
@@ -230,7 +240,7 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         Input(get_uuid("selections-inplace-dist"), "data"),
         State(get_uuid("page-selected-inplace-dist"), "data"),
     )
-    def _update_convergence_plot(selections, page_selected):
+    def _update_convergence_plot(selections: dict, page_selected: str) -> go.Figure:
         if page_selected != "conv":
             raise PreventUpdate
 
@@ -295,30 +305,34 @@ def distribution_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         return figure
 
 
-def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, tabletype):
+# pylint: disable=too-many-locals
+def make_table_wrapper_children(
+    dframe: pd.DataFrame,
+    responses: list,
+    groups: list,
+    volumemodel: InplaceVolumesModel,
+    tabletype: str,
+    page_selected: str,
+) -> Tuple[list, list]:
 
     groups = [x for x in groups if x != "REAL"] if groups is not None else []
-    table_stats = (
-        [("Response", {})]
-        + [(group, {}) for group in groups]
-        + [
-            stat
-            for x in ["Mean", "Stddev", "P90", "P10", "Minimum", "Maximum"]
-            for stat in table_statistics_base()
-            if stat[0] == x
-        ]
-    )
 
     if tabletype == "Statistics table":
+        statcols = ["Mean", "Stddev", "P10", "P90", "Minimum", "Maximum"]
+
         df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
-        tables = []
+
+        data_properties = []
+        data_volcols = []
         for response in responses:
             if not is_numeric_dtype(dframe[response]):
                 continue
             for name, df_group in df_groups:
                 values = df_group[response]
                 data = {
-                    "Response": response,
+                    "Response"
+                    if response in volumemodel.volume_columns
+                    else "Property": response,
                     "Mean": values.mean(),
                     "Stddev": values.std(),
                     "P10": np.percentile(values, 90),
@@ -330,32 +344,109 @@ def make_table(dframe: pd.DataFrame, responses: list, groups, volumemodel, table
                     data[group] = (
                         name if isinstance(name, str) == 1 else list(name)[idx]
                     )
-                tables.append(data)
+                if response in volumemodel.volume_columns:
+                    data_volcols.append(data)
+                else:
+                    data_properties.append(data)
 
-        columns = [{**{"name": i[0], "id": i[0]}, **i[1]} for i in table_stats]
+        if page_selected == "custom":
+            height = "43vh" if all([data_volcols, data_properties]) else "88vh"
+        else:
+            height = "22vh" if all([data_volcols, data_properties]) else "44vh"
 
-    else:
-        dframe = (
-            dframe[responses + groups].groupby(groups).mean().reset_index()
-            if groups
-            else dframe[responses].mean().to_frame().T
+        return html.Div(
+            children=[
+                html.Div(
+                    style={"margin-bottom": "30px"},
+                    children=create_data_table(
+                        volumemodel=volumemodel,
+                        columns=[
+                            {"id": col, "name": col} for col in ["Response"] + groups
+                        ]
+                        + create_table_columns(
+                            statcols, volumemodel, use_si_format=True
+                        ),
+                        data=data_volcols,
+                        height=height,
+                    ),
+                ),
+                create_data_table(
+                    volumemodel=volumemodel,
+                    columns=[{"id": col, "name": col} for col in ["Property"] + groups]
+                    + create_table_columns(statcols, volumemodel, use_si_format=False),
+                    data=data_properties,
+                    height=height,
+                ),
+            ]
         )
-        columns = [
-            {
-                "id": col,
-                "name": col,
-                "type": "numeric",
-                "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s"}
-                if col in volumemodel.volume_columns
-                else Format(precision=3),
-            }
-            for col in dframe.columns
+
+    # if table type datatable
+    dframe = (
+        dframe[responses + groups].groupby(groups).mean().reset_index()
+        if groups
+        else dframe[responses].mean().to_frame().T
+    )
+    return html.Div(
+        children=[
+            create_data_table(
+                volumemodel=volumemodel,
+                columns=create_table_columns(dframe.columns, volumemodel),
+                data=dframe.iloc[::-1].to_dict("records"),
+                height="88vh" if page_selected == "custom" else "44vh",
+            )
         ]
-        tables = dframe.iloc[::-1].to_dict("records")
-    return columns, tables
+    )
 
 
-def filter_df(dframe, filters):
+def filter_df(dframe: pd.DataFrame, filters: list) -> pd.DataFrame:
     for filt, values in filters.items():
         dframe = dframe.loc[dframe[filt].isin(values)]
     return dframe
+
+
+def create_table_columns(
+    columns: list, volumemodel: InplaceVolumesModel, use_si_format: bool = None
+) -> List[dict]:
+    return [
+        {
+            "id": col,
+            "name": col,
+            "type": "numeric",
+            "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s"}
+            if col in volumemodel.volume_columns or use_si_format
+            else Format(precision=3),
+        }
+        for col in columns
+    ]
+
+
+def create_data_table(
+    volumemodel: InplaceVolumesModel,
+    data: list,
+    columns: list,
+    height: str,
+) -> dash_table.DataTable:
+    if not data:
+        return
+
+    style_cell_conditional = [
+        {"if": {"column_id": c}, "textAlign": "left"}
+        for c in volumemodel.selectors + ["Response"]
+    ]
+    style_cell_conditional.extend(
+        [
+            {"if": {"column_id": c}, "width": "15%"}
+            for c in volumemodel.selectors + ["Response"]
+        ]
+    )
+    return dash_table.DataTable(
+        sort_action="native",
+        filter_action="native",
+        columns=columns,
+        data=data,
+        style_cell_conditional=style_cell_conditional,
+        style_table={
+            "height": height,
+            "overflowY": "auto",
+        },
+    )
