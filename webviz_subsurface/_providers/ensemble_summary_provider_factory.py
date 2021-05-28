@@ -78,8 +78,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         )
         timer = PerfTimer()
 
-        hashval = hashlib.md5(str(aggr_csv_file).encode()).hexdigest()
-        main_storage_key = f"aggr_csv__{hashval}"
+        main_storage_key = f"aggr_csv__{_make_hash_string(str(aggr_csv_file))}"
 
         # Since our only input is the file name of a single aggregated CSV file, we rely
         # on reading the dict which maps from ensemble names to the keys that need to
@@ -149,8 +148,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         # Try and create/load providers from backing store
         for ens_name, ens_path in ensembles.items():
-            hashval = hashlib.md5((ens_path + csv_file_rel_path).encode()).hexdigest()
-            storage_key = f"ens_csv__{hashval}"
+            storage_key = f"ens_csv__{_make_hash_string(ens_path + csv_file_rel_path)}"
             provider = self._create_provider_instance_from_backing_store(storage_key)
             if provider:
                 created_providers[ens_name] = provider
@@ -219,9 +217,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         # Try and create/load from backing store
         for ens_name, ens_path in ensembles.items():
-            hashval = hashlib.md5(ens_path.encode()).hexdigest()
-            ens_storage_key = f"ens_smry__{hashval}__{time_index}"
-
+            ens_storage_key = f"ens_smry__{_make_hash_string(ens_path)}__{time_index}"
             provider = self._create_provider_instance_from_backing_store(
                 ens_storage_key
             )
@@ -397,3 +393,9 @@ def _load_smry_dataframe_per_realization(
     )
 
     return real_df_list
+
+
+# -------------------------------------------------------------------------
+def _make_hash_string(string_to_hash: str) -> str:
+    # There is no security risk here and chances of collision should be very slim
+    return hashlib.md5(string_to_hash.encode()).hexdigest()  # nosec
