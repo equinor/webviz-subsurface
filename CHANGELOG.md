@@ -38,6 +38,7 @@ a new system to reduce the memory footprint of large datasets.
 - [#618](https://github.com/equinor/webviz-subsurface/pull/618) - Added deprecation warning to `HorizonUncertaintyViewer`,
 `WellCrossSection` and `WellCrossSectionFMU`. These plugins will soon be removed. Relevant functionality is implememented
 in the new `StructuralUncertainty` plugin.
+- [#646](https://github.com/equinor/webviz-subsurface/pull/646) - Replaced `DropDowns` in `ReservoirSimulationTimeSeries` plugin with `VectorSelector` components.
 
 ### Fixed
 - [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load
