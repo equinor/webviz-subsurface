@@ -74,10 +74,7 @@ def realization_filters(uuid: str) -> html.Div:
                 children=dcc.RadioItems(
                     id={"id": uuid, "element": "real-selector-option"},
                     options=[
-                        {
-                            "label": "Range",
-                            "value": "range",
-                        },
+                        {"label": "Range", "value": "range"},
                         {"label": "Select", "value": "select"},
                     ],
                     value="range",

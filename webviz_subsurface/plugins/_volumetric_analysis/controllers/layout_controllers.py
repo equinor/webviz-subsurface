@@ -6,10 +6,10 @@ from dash.dependencies import Input, Output, State, ALL
 
 def layout_controllers(app: dash.Dash, get_uuid: Callable):
     @app.callback(
-        Output({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "style"),
-        Output(get_uuid("page-selected-inplace-dist"), "data"),
-        Input({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "n_clicks"),
-        State({"id": get_uuid("selections-inplace-dist"), "button": ALL}, "id"),
+        Output({"id": get_uuid("selections-voldist"), "button": ALL}, "style"),
+        Output(get_uuid("page-selected-voldist"), "data"),
+        Input({"id": get_uuid("selections-voldist"), "button": ALL}, "n_clicks"),
+        State({"id": get_uuid("selections-voldist"), "button": ALL}, "id"),
     )
     def _update_clicked_button(_apply_click: int, all_ids: dict) -> Tuple[list, str]:
         ctx = dash.callback_context.triggered[0]
@@ -26,9 +26,9 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
         return styles, page_selected
 
     @app.callback(
-        Output({"id": get_uuid("main-inplace-dist"), "page": ALL}, "style"),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
-        State({"id": get_uuid("main-inplace-dist"), "page": ALL}, "id"),
+        Output({"id": get_uuid("main-voldist"), "page": ALL}, "style"),
+        Input(get_uuid("page-selected-voldist"), "data"),
+        State({"id": get_uuid("main-voldist"), "page": ALL}, "id"),
     )
     def _select_main_layout(page_selected: str, all_ids: dict) -> list:
         styles = []
@@ -42,19 +42,18 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
     @app.callback(
         Output(
             {
-                "id": get_uuid("main-inplace-dist"),
+                "id": get_uuid("main-voldist"),
                 "wrapper": ALL,
                 "page": "custom",
             },
             "style",
         ),
         Input(
-            {"id": get_uuid("main-inplace-dist"), "element": "plot-table-select"},
-            "value",
+            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
         ),
         State(
             {
-                "id": get_uuid("main-inplace-dist"),
+                "id": get_uuid("main-voldist"),
                 "wrapper": ALL,
                 "page": "custom",
             },
@@ -73,14 +72,13 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable):
     @app.callback(
         Output(
             {
-                "id": get_uuid("selections-inplace-dist"),
+                "id": get_uuid("selections-voldist"),
                 "element": "table_response_group_wrapper",
             },
             "style",
         ),
         Input(
-            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
-            "value",
+            {"id": get_uuid("selections-voldist"), "selector": "sync_table"}, "value"
         ),
     )
     def _show_hide_table_response_group_controls(sync_table: list) -> dict:
