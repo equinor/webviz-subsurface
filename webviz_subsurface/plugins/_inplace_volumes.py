@@ -20,6 +20,7 @@ from .._datainput.inplace_volumes import extract_volumes
 from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import table_statistics_base
 
+
 @deprecated_plugin(
     "Relevant functionality is implemented in the VolumetricAnalysis plugin."
 )

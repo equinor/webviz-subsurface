@@ -54,10 +54,7 @@ def custom_plotting_layout(uuid: str) -> html.Div:
                 children=dcc.RadioItems(
                     id={"id": uuid, "element": "plot-table-select"},
                     options=[
-                        {
-                            "label": "Plot",
-                            "value": "graph",
-                        },
+                        {"label": "Plot", "value": "graph"},
                         {"label": "Table", "value": "table"},
                     ],
                     value="graph",
@@ -91,11 +88,7 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
                 className="webviz-inplace-vol-framed",
                 style={"height": "44vh"},
                 children=wcc.Graph(
-                    id={
-                        "id": uuid,
-                        "element": "graph",
-                        "page": "1p1t",
-                    },
+                    id={"id": uuid, "element": "graph", "page": "1p1t"},
                     config={"displayModeBar": False},
                     style={"height": "44vh"},
                 ),
@@ -112,10 +105,10 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
 def plots_per_zone_region_layout(
     uuid: str, volumemodel: InplaceVolumesModel
 ) -> html.Div:
-    selectors = ["ZONE", "REGION", "FACIES"]
+    selectors = [x for x in ["ZONE", "REGION", "FACIES"] if x in volumemodel.selectors]
     height = max(88 / len(selectors), 25)
     layout = []
-    for selector in [x for x in selectors if x in volumemodel.selectors]:
+    for selector in selectors:
         layout.append(
             html.Div(
                 className="webviz-inplace-vol-framed",

@@ -12,14 +12,13 @@ def selections_layout(
     theme: WebvizConfigTheme,
 ) -> html.Div:
     """Layout for selecting intersection data"""
+    selectors = "/".join(
+        [x.lower() for x in ["ZONE", "REGION", "FACIES"] if x in volumemodel.selectors]
+    )
     return html.Div(
         children=[
             button(uuid=uuid, title="1 plot / 1 table", page_id="1p1t"),
-            button(
-                uuid=uuid,
-                title="Plots per zone/region",
-                page_id="per_zr",
-            ),
+            button(uuid=uuid, title=f"Plots per {selectors}", page_id="per_zr"),
             button(uuid=uuid, title="Convergence plot mean/p10/p90", page_id="conv"),
             button(uuid=uuid, title="Custom plotting", page_id="custom"),
             plot_selections_layout(uuid, volumemodel),
@@ -67,10 +66,7 @@ def plot_selections_layout(uuid: str, volumemodel: InplaceVolumesModel) -> html.
         open=True,
         children=[
             html.Summary(
-                style={
-                    "font-size": "15px",
-                    "font-weight": "bold",
-                },
+                style={"font-size": "15px", "font-weight": "bold"},
                 children="PLOT CONTROLS",
             ),
             html.Div(
@@ -128,10 +124,7 @@ def table_selections_layout(
                         children=[
                             html.Span("Group by", style={"font-weight": "bold"}),
                             dcc.Dropdown(
-                                id={
-                                    "id": uuid,
-                                    "selector": "Group by",
-                                },
+                                id={"id": uuid, "selector": "Group by"},
                                 options=[
                                     {"label": elm, "value": elm}
                                     for elm in volumemodel.selectors
@@ -203,6 +196,7 @@ def plot_selector_dropdowns(
                             value=value,
                             clearable=selector
                             in ["Subplots", "Color by", "Y Response"],
+                            disabled=selector in ["Subplots", "Y Response"],
                             persistence=True,
                             persistence_type="session",
                         ),
@@ -221,10 +215,7 @@ def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Details:
         open=False,
         children=[
             html.Summary(
-                style={
-                    "font-size": "15px",
-                    "font-weight": "bold",
-                },
+                style={"font-size": "15px", "font-weight": "bold"},
                 children="⚙️ SETTINGS",
             ),
             html.Div(
@@ -233,10 +224,7 @@ def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Details:
                     subplot_xaxis_range(uuid=uuid),
                     html.Span("Colors", style={"font-weight": "bold"}),
                     wcc.ColorScales(
-                        id={
-                            "id": uuid,
-                            "settings": "Colorscale",
-                        },
+                        id={"id": uuid, "settings": "Colorscale"},
                         colorscale=theme_colors,
                         fixSwatches=True,
                         nSwatches=12,
@@ -258,23 +246,11 @@ def subplot_xaxis_range(
                 children=[
                     html.Div(
                         children=dcc.RadioItems(
-                            id={
-                                "id": uuid,
-                                "selector": f"{axis} matches",
-                            },
-                            style={
-                                "flex": 2,
-                                "minWidth": "70px",
-                            },
+                            id={"id": uuid, "selector": f"{axis} matches"},
+                            style={"flex": 2, "minWidth": "70px"},
                             options=[
-                                {
-                                    "label": f"Equal {axis}",
-                                    "value": True,
-                                },
-                                {
-                                    "label": f"Individual {axis}",
-                                    "value": False,
-                                },
+                                {"label": f"Equal {axis}", "value": True},
+                                {"label": f"Individual {axis}", "value": False},
                             ],
                             labelStyle={
                                 "display": "inline-block",
@@ -301,16 +277,8 @@ def table_sync_option(
     return html.Div(
         style={"margin-bottom": "10px"},
         children=dcc.Checklist(
-            id={
-                "id": uuid,
-                "settings": "sync_table",
-            },
-            options=[
-                {
-                    "label": "Sync table with plot",
-                    "value": "Sync",
-                },
-            ],
+            id={"id": uuid, "selector": "sync_table"},
+            options=[{"label": "Sync table with plot", "value": "Sync"}],
             value=["Sync"],
         ),
     )

@@ -19,44 +19,47 @@ from webviz_subsurface._abbreviations.volume_terminology import (
 
 from ..figures import create_figure
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements, too-many-locals, too-many-branches
 def distribution_controllers(
     app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
 ):
     @app.callback(
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "graph", "page": ALL},
-            "figure",
+            {"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "figure"
         ),
         Output(
-            {"id": get_uuid("main-inplace-dist"), "wrapper": "table", "page": ALL},
+            {"id": get_uuid("main-voldist"), "wrapper": "table", "page": ALL},
             "children",
         ),
-        Input(get_uuid("selections-inplace-dist"), "data"),
-        State(get_uuid("page-selected-inplace-dist"), "data"),
-        State(
-            {"id": get_uuid("main-inplace-dist"), "element": "plot-table-select"},
-            "value",
+        Input(get_uuid("selections-voldist"), "data"),
+        Input(
+            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
         ),
+        State(get_uuid("page-selected-voldist"), "data"),
+        State({"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "id"),
         State(
-            {"id": get_uuid("main-inplace-dist"), "element": "graph", "page": "custom"},
-            "figure",
-        ),
-        State(
-            {"id": get_uuid("main-inplace-dist"), "wrapper": "table", "page": "custom"},
-            "children",
+            {"id": get_uuid("main-voldist"), "wrapper": "table", "page": ALL},
+            "id",
         ),
     )
     def _update_plots(
         selections: dict,
-        page_selected: str,
         plot_table_select: str,
-        figure: dict,
-        table_wrapper_children: list,
+        page_selected: str,
+        figure_ids: list,
+        table_wrapper_ids: list,
     ) -> Tuple[list, list, list]:
-        initial_callback = figure is None
-        if not initial_callback and page_selected not in ["1p1t", "custom"]:
+        ctx = dash.callback_context.triggered[0]
+        if page_selected not in ["1p1t", "custom"]:
             raise PreventUpdate
+
+        selections = selections[page_selected]
+
+        table_clicked = "plot-table-select" in ctx["prop_id"]
+        initial_callback = selections.get("update") is None
+        if not initial_callback and not table_clicked:
+            if not selections["update"]:
+                raise PreventUpdate
 
         plot_groups = ["ENSEMBLE", "REAL"]
         parameters = []
@@ -110,6 +113,8 @@ def distribution_controllers(
                     figure.update_xaxes({"matches": None})
                 if not selections["Y axis matches"]:
                     figure.update_yaxes({"matches": None})
+        else:
+            figure = dash.no_update
 
         # Make tables
         if not (plot_table_select == "graph" and page_selected == "custom"):
@@ -149,24 +154,40 @@ def distribution_controllers(
                     tabletype=selections["Table type"],
                     page_selected=page_selected,
                 )
+        else:
+            table_wrapper_children = dash.no_update
 
-        return ([figure] * 2, [table_wrapper_children] * 2)
+        figures = []
+        for fig_id in figure_ids:
+            if fig_id["page"] == page_selected:
+                figures.append(figure)
+            else:
+                figures.append(dash.no_update)
+
+        table_wrappers = []
+        for wrap_id in table_wrapper_ids:
+            if wrap_id["page"] == page_selected:
+                table_wrappers.append(table_wrapper_children)
+            else:
+                table_wrappers.append(dash.no_update)
+
+        return (figures, table_wrappers)
 
     @app.callback(
         Output(
             {
-                "id": get_uuid("main-inplace-dist"),
+                "id": get_uuid("main-voldist"),
                 "chart": ALL,
                 "selector": ALL,
                 "page": "per_zr",
             },
             "figure",
         ),
-        Input(get_uuid("selections-inplace-dist"), "data"),
-        State(get_uuid("page-selected-inplace-dist"), "data"),
+        Input(get_uuid("selections-voldist"), "data"),
+        State(get_uuid("page-selected-voldist"), "data"),
         State(
             {
-                "id": get_uuid("main-inplace-dist"),
+                "id": get_uuid("main-voldist"),
                 "chart": ALL,
                 "selector": ALL,
                 "page": "per_zr",
@@ -175,10 +196,19 @@ def distribution_controllers(
         ),
     )
     def _update_plots_per_region_zone(
-        selections: dict, page_selected: str, figure_ids: List[dict]
+        selections: dict,
+        page_selected: str,
+        figure_ids: List[dict],
     ) -> list:
         if page_selected != "per_zr":
             raise PreventUpdate
+
+        selections = selections[page_selected]
+
+        initial_callback = selections.get("update") is None
+        if not initial_callback:
+            if not selections["update"]:
+                raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
         dframe = filter_df(dframe, selections["filters"])
@@ -234,15 +264,22 @@ def distribution_controllers(
 
     @app.callback(
         Output(
-            {"id": get_uuid("main-inplace-dist"), "element": "plot", "page": "conv"},
+            {"id": get_uuid("main-voldist"), "element": "plot", "page": "conv"},
             "figure",
         ),
-        Input(get_uuid("selections-inplace-dist"), "data"),
-        State(get_uuid("page-selected-inplace-dist"), "data"),
+        Input(get_uuid("selections-voldist"), "data"),
+        State(get_uuid("page-selected-voldist"), "data"),
     )
     def _update_convergence_plot(selections: dict, page_selected: str) -> go.Figure:
         if page_selected != "conv":
             raise PreventUpdate
+
+        selections = selections[page_selected]
+
+        initial_callback = selections.get("update") is None
+        if not initial_callback:
+            if not selections["update"]:
+                raise PreventUpdate
 
         dframe = volumemodel.dataframe.copy()
         dframe = filter_df(dframe, selections["filters"])
@@ -420,6 +457,7 @@ def create_table_columns(
     ]
 
 
+# pylint: disable=inconsistent-return-statements
 def create_data_table(
     volumemodel: InplaceVolumesModel,
     data: list,
@@ -431,16 +469,17 @@ def create_data_table(
 
     style_cell_conditional = [
         {"if": {"column_id": c}, "textAlign": "left"}
-        for c in volumemodel.selectors + ["Response"]
+        for c in volumemodel.selectors + ["Response", "Property"]
     ]
     style_cell_conditional.extend(
         [
             {"if": {"column_id": c}, "width": "15%"}
-            for c in volumemodel.selectors + ["Response"]
+            for c in volumemodel.selectors + ["Response", "Property"]
         ]
     )
     return dash_table.DataTable(
         sort_action="native",
+        sort_mode="multi",
         filter_action="native",
         columns=columns,
         data=data,

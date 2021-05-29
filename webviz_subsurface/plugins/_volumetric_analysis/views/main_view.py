@@ -22,14 +22,14 @@ def main_view(
             label="Inplace distributions",
             children=tab_view_layout(
                 main_layout=distributions_main_layout(
-                    uuid=get_uuid("main-inplace-dist"), volumemodel=volumemodel
+                    uuid=get_uuid("main-voldist"), volumemodel=volumemodel
                 ),
                 selections_details=OrderedDict(
                     Selections={
                         "open": True,
                         "children": [
                             selections_layout(
-                                uuid=get_uuid("selections-inplace-dist"),
+                                uuid=get_uuid("selections-voldist"),
                                 volumemodel=volumemodel,
                                 theme=theme,
                             )
@@ -39,7 +39,7 @@ def main_view(
                         "open": True,
                         "children": [
                             filter_layout(
-                                uuid=get_uuid("filter-inplace-dist"),
+                                uuid=get_uuid("filter-voldist"),
                                 volumemodel=volumemodel,
                                 filters=[
                                     x

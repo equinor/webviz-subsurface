@@ -6,39 +6,35 @@ from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import webviz_core_components as wcc
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements, too-many-locals, too-many-arguments
 def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
     @app.callback(
-        Output(get_uuid("selections-inplace-dist"), "data"),
+        Output(get_uuid("selections-voldist"), "data"),
         Output(
-            {"id": get_uuid("filter-inplace-dist"), "element": "text_selected_reals"},
+            {"id": get_uuid("filter-voldist"), "element": "text_selected_reals"},
             "children",
         ),
-        Input({"id": get_uuid("selections-inplace-dist"), "selector": ALL}, "value"),
-        Input({"id": get_uuid("filter-inplace-dist"), "selector": ALL}, "value"),
+        Input({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
+        Input({"id": get_uuid("filter-voldist"), "selector": ALL}, "value"),
+        Input({"id": get_uuid("filter-voldist"), "selected_reals": ALL}, "value"),
         Input(
-            {"id": get_uuid("filter-inplace-dist"), "selected_reals": ALL},
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("selections-inplace-dist"), "settings": "Colorscale"},
+            {"id": get_uuid("selections-voldist"), "settings": "Colorscale"},
             "colorscale",
         ),
-        Input(
-            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
-            "value",
-        ),
-        State({"id": get_uuid("selections-inplace-dist"), "selector": ALL}, "id"),
-        State({"id": get_uuid("filter-inplace-dist"), "selector": ALL}, "id"),
-        State({"id": get_uuid("filter-inplace-dist"), "selected_reals": ALL}, "id"),
+        State(get_uuid("page-selected-voldist"), "data"),
+        State(get_uuid("selections-voldist"), "data"),
+        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
+        State({"id": get_uuid("filter-voldist"), "selector": ALL}, "id"),
+        State({"id": get_uuid("filter-voldist"), "selected_reals": ALL}, "id"),
     )
     def _update_selections(
         selectors: list,
         filters: list,
         reals: list,
         colorscale: str,
-        sync_table: list,
-        selctor_ids: dict,
+        selected_page: str,
+        previous_selection: dict,
+        selector_ids: dict,
         filter_ids: dict,
         real_ids: dict,
     ) -> Tuple[dict, str]:
@@ -46,192 +42,168 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         if ctx["prop_id"] == ".":
             raise PreventUpdate
 
-        selections = {
+        if previous_selection is None:
+            previous_selection = {}
+
+        page_selections = {
             id_value["selector"]: values
-            for id_value, values in zip(selctor_ids, selectors)
+            for id_value, values in zip(selector_ids, selectors)
         }
-        selections["filters"] = {
+        page_selections["filters"] = {
             id_value["selector"]: values
             for id_value, values in zip(filter_ids, filters)
         }
         real_list = [int(real) for real in reals[0]]
-        selections["filters"].update(
+        page_selections["filters"].update(
             REAL=(
                 list(range(real_list[0], real_list[1] + 1))
                 if real_ids[0]["selected_reals"] == "range"
                 else real_list
             )
         )
-        selections.update(Colorscale=colorscale)
-        selections.update(sync_table=sync_table)
-        selections.update(ctx_clicked=ctx["prop_id"])
+
+        page_selections.update(Colorscale=colorscale)
+        page_selections.update(ctx_clicked=ctx["prop_id"])
+
+        if previous_selection.get(selected_page) is not None:
+            equal_list = []
+            for selector, values in page_selections.items():
+                if selector != "ctx_clicked":
+                    equal_list.append(
+                        values == previous_selection[selected_page][selector]
+                    )
+
+            page_selections.update(update=not all(equal_list))
+
+        previous_selection[selected_page] = page_selections
 
         string_selected_reals = (
             create_range_string(real_list)
             if real_ids[0]["selected_reals"] == "select"
             else f"{real_list[0]}-{real_list[1]}"
         )
-        return selections, string_selected_reals
+        return previous_selection, string_selected_reals
 
     @app.callback(
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
-            "disabled",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
-            "value",
-        ),
-        Output(
-            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
-            "options",
-        ),
-        Input(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
-            "value",
-        ),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
-        Input(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Color by"},
-            "value",
-        ),
-        State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Subplots"},
-            "value",
-        ),
-        State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Y Response"},
-            "value",
-        ),
-        State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "X Response"},
-            "value",
-        ),
-        State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Plot type"},
-            "options",
-        ),
-        State(
-            {"id": get_uuid("selections-inplace-dist"), "selector": ALL},
-            "id",
-        ),
+        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "disabled"),
+        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
+        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "options"),
+        Input({"id": get_uuid("selections-voldist"), "selector": "Plot type"}, "value"),
+        Input(get_uuid("page-selected-voldist"), "data"),
+        Input({"id": get_uuid("selections-voldist"), "selector": "Color by"}, "value"),
+        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
+        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "options"),
+        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
+        State(get_uuid("selections-voldist"), "data"),
     )
     # pylint: disable=too-many-locals
     def _plot_options(
         plot_type: str,
         selected_page: str,
         selected_color_by: list,
-        selected_subplot_value: list,
-        selected_y: list,
-        selected_x: list,
-        plot_type_options: dict,
+        selector_values: list,
+        selector_options: list,
         selector_ids: list,
+        previous_selection: dict,
     ) -> Tuple[list, list, list]:
         ctx = dash.callback_context.triggered[0]
-        if "Color by" in ctx["prop_id"] and plot_type != "box":
+        if (
+            "Color by" in ctx["prop_id"]
+            and plot_type != "box"
+            or previous_selection is None
+        ):
             raise PreventUpdate
 
-        disable_plot_type = selected_page in ["per_zr", "conv"]
-        if disable_plot_type:
-            plot_type_value = None
+        initial_page_load = selected_page not in previous_selection
+
+        if initial_page_load:
+            selections = {
+                id_value["selector"]: options[0]["value"]
+                if id_value["selector"] in ["Plot type", "X Response"]
+                else None
+                for id_value, options in zip(selector_ids, selector_options)
+            }
         else:
-            plot_type_value = (
-                dash.no_update
-                if plot_type is not None
-                else plot_type_options[0]["value"]
+            selections = (
+                previous_selection.get(selected_page)
+                if "page-selected" in ctx["prop_id"]
+                else {
+                    id_value["selector"]: values
+                    for id_value, values in zip(selector_ids, selector_values)
+                }
             )
-        disable_y = selected_page in ["per_zr", "conv"] or any(
-            x
-            in [
-                "distribution",
-                "histogram",
-            ]
-            for x in [plot_type, plot_type_value]
-        )
-        if plot_type == "scatter":
+
+        selectors_disable_in_pages = {
+            "Plot type": ["per_zr", "conv"],
+            "Y Response": ["per_zr", "conv"],
+            "X Response": [],
+            "Color by": ["per_zr", "conv"],
+            "Subplots": ["per_zr", "1p1t"],
+        }
+
+        settings = {}
+        for selector, disable_in_pages in selectors_disable_in_pages.items():
+            disable = selected_page in disable_in_pages
+            if disable:
+                value = None
+            else:
+                value = selections.get(selector)
+
+            settings[selector] = {
+                "disable": disable,
+                "value": value,
+            }
+
+        if settings["Plot type"]["value"] in ["distribution", "histogram"]:
+            settings["Y Response"]["disable"] = True
+            settings["Y Response"]["value"] = None
+
+        # update dropdown options based on plot type
+        if settings["Plot type"]["value"] == "scatter":
             y_elm = x_elm = (
                 volumemodel.responses + volumemodel.selectors + volumemodel.parameters
             )
-        elif plot_type == "box":
+        elif settings["Plot type"]["value"] == "box":
             y_elm = x_elm = volumemodel.responses + volumemodel.selectors
+            if selections.get("Y Response") is None:
+                settings["Y Response"]["value"] = selected_color_by
         else:
             y_elm = volumemodel.selectors
             x_elm = volumemodel.responses
 
-        if disable_y:
-            y_value = None if selected_y is not None else dash.no_update
-        else:
-            if plot_type == "box" and selected_y is None:
-                y_value = selected_color_by
-            else:
-                y_value = dash.no_update if selected_y in y_elm else y_elm[0]
-
-        x_value = dash.no_update if selected_x in x_elm else x_elm[0]
-
-        disable_subplot = selected_page not in ["custom", "conv"]
-        subplot_value = (
-            None
-            if disable_subplot
-            and selected_subplot_value is not None
-            or "page-selected" in ctx["prop_id"]
-            and selected_page == "1p1t"
-            else dash.no_update
-        )
-
-        disable_colorby = selected_page in ["per_zr", "conv"]
         colorby_elm = (
             list(volumemodel.dataframe.columns) + volumemodel.parameters
-            if plot_type == "scatter"
+            if settings["Plot type"]["value"] == "scatter"
             else volumemodel.selectors
         )
-        colorby_value = (
-            None
-            if disable_colorby
-            and selected_color_by is not None
-            or selected_color_by not in colorby_elm
-            else dash.no_update
-        )
+        settings["Y Response"]["options"] = [
+            {"label": elm, "value": elm} for elm in y_elm
+        ]
+        settings["X Response"]["options"] = [
+            {"label": elm, "value": elm} for elm in x_elm
+        ]
+        settings["Color by"]["options"] = [
+            {"label": elm, "value": elm} for elm in colorby_elm
+        ]
 
-        settings = {
-            "Plot type": {
-                "disable": disable_plot_type,
-                "value": plot_type_value,
-                "options": dash.no_update,
-            },
-            "Y Response": {
-                "disable": disable_y,
-                "value": y_value,
-                "options": [{"label": elm, "value": elm} for elm in y_elm],
-            },
-            "X Response": {
-                "disable": dash.no_update,
-                "value": x_value,
-                "options": [{"label": elm, "value": elm} for elm in x_elm],
-            },
-            "Color by": {
-                "disable": disable_colorby,
-                "value": colorby_value,
-                "options": [{"label": elm, "value": elm} for elm in colorby_elm],
-            },
-            "Subplots": {
-                "disable": disable_subplot,
-                "value": subplot_value,
-                "options": dash.no_update,
-            },
-        }
         disable_list = []
         value_list = []
         options_list = []
         for selector_id in selector_ids:
             if selector_id["selector"] in settings:
-                disable_list.append(settings[selector_id["selector"]]["disable"])
-                value_list.append(settings[selector_id["selector"]]["value"])
-                options_list.append(settings[selector_id["selector"]]["options"])
+                disable_list.append(
+                    settings[selector_id["selector"]].get("disable", dash.no_update)
+                )
+                value_list.append(
+                    settings[selector_id["selector"]].get("value", dash.no_update)
+                )
+                options_list.append(
+                    settings[selector_id["selector"]].get("options", dash.no_update)
+                )
             else:
                 disable_list.append(dash.no_update)
                 value_list.append(dash.no_update)
                 options_list.append(dash.no_update)
-
         return (
             disable_list,
             value_list,
@@ -240,21 +212,25 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
 
     @app.callback(
         Output(
-            {"id": get_uuid("filter-inplace-dist"), "element": "real-slider-wrapper"},
+            {"id": get_uuid("filter-voldist"), "element": "real-slider-wrapper"},
             "children",
         ),
         Input(
-            {"id": get_uuid("filter-inplace-dist"), "element": "real-selector-option"},
+            {"id": get_uuid("filter-voldist"), "element": "real-selector-option"},
             "value",
         ),
-        State(get_uuid("selections-inplace-dist"), "data"),
+        State(get_uuid("selections-voldist"), "data"),
+        State(get_uuid("page-selected-voldist"), "data"),
     )
+    # pylint: disable=inconsistent-return-statements
     def _update_realization_selected_info(
-        input_selector: str, selections: dict
+        input_selector: str, selections: dict, page_selected: str
     ) -> Union[dcc.RangeSlider, wcc.Select]:
         reals = volumemodel.realizations
         prev_selection = (
-            selections["filters"].get("REAL", []) if selections is not None else None
+            selections[page_selected]["filters"].get("REAL", [])
+            if selections is not None and page_selected in selections
+            else None
         )
 
         if input_selector == "range":
@@ -266,7 +242,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             )
             return dcc.RangeSlider(
                 id={
-                    "id": get_uuid("filter-inplace-dist"),
+                    "id": get_uuid("filter-voldist"),
                     "selected_reals": input_selector,
                 },
                 value=[min_value, max_value],
@@ -274,53 +250,47 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
                 max=max(reals),
                 marks={str(i): {"label": str(i)} for i in [min(reals), max(reals)]},
             )
-        if input_selector == "select":
-            elements = prev_selection if prev_selection is not None else reals
-            return wcc.Select(
-                id={
-                    "id": get_uuid("filter-inplace-dist"),
-                    "selected_reals": input_selector,
-                },
-                options=[{"label": i, "value": i} for i in reals],
-                value=elements,
-                multi=True,
-                size=min(20, len(reals)),
-                persistence=True,
-                persistence_type="session",
-            )
+        # if input_selector == "select"
+        elements = prev_selection if prev_selection is not None else reals
+        return wcc.Select(
+            id={
+                "id": get_uuid("filter-voldist"),
+                "selected_reals": input_selector,
+            },
+            options=[{"label": i, "value": i} for i in reals],
+            value=elements,
+            multi=True,
+            size=min(20, len(reals)),
+            persistence=True,
+            persistence_type="session",
+        )
 
     @app.callback(
-        Output({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "multi"),
-        Output({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "value"),
-        Output(
-            {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "multi"
-        ),
-        Output(
-            {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "value"
-        ),
+        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "multi"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "value"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "multi"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "value"),
         Input(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Color by"},
+            {"id": get_uuid("selections-voldist"), "selector": "Color by"},
             "value",
         ),
         Input(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Subplots"},
+            {"id": get_uuid("selections-voldist"), "selector": "Subplots"},
             "value",
         ),
         Input(
-            {"id": get_uuid("selections-inplace-dist"), "selector": "Group by"},
+            {"id": get_uuid("selections-voldist"), "selector": "Group by"},
             "value",
         ),
         Input(
-            {"id": get_uuid("selections-inplace-dist"), "settings": "sync_table"},
+            {"id": get_uuid("selections-voldist"), "selector": "sync_table"},
             "value",
         ),
-        Input(get_uuid("page-selected-inplace-dist"), "data"),
-        State({"id": get_uuid("filter-inplace-dist"), "selector": "SOURCE"}, "options"),
-        State(
-            {"id": get_uuid("filter-inplace-dist"), "selector": "ENSEMBLE"}, "options"
-        ),
+        Input(get_uuid("page-selected-voldist"), "data"),
+        State({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "options"),
+        State({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "options"),
     )
-    def _update_multi_option(
+    def _update_filter_multi_option(
         colorby: str,
         subplot: str,
         groupby: list,
@@ -329,11 +299,13 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         source_options: dict,
         ensemble_options: dict,
     ) -> Tuple[bool, list]:
-        data_groupers = []
-        if page_selected not in ["per_zr", "conv"]:
-            data_groupers = [colorby, subplot]
-            if groupby is not None and not sync_table:
-                data_groupers.extend(groupby)
+        data_groupers = [colorby, subplot]
+        if (
+            page_selected in ["1p1t", "custom"]
+            and groupby is not None
+            and not sync_table
+        ):
+            data_groupers.extend(groupby)
         return (
             "SOURCE" in data_groupers,
             [source_options[0]["value"]]
