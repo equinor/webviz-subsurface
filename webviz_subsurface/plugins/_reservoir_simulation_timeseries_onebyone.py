@@ -183,7 +183,7 @@ folder, to avoid risk of not extracting the right data.
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeriesOneByOne.ENSEMBLE_COLUMNS
-            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
+            and historical_vector(c, self.smry_meta, False) not in self.smry.columns
         ]
         self.initial_vector = (
             initial_vector
