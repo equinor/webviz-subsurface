@@ -19,6 +19,8 @@ correctly from persisted user settings.
 - [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method
 
 ### Added
+- [#645](https://github.com/equinor/webviz-subsurface/pull/645) - New generic lineplotter plugin for FMU data. This is the first plugin that uses
+a new system to reduce the memory footprint of large datasets.
 
 ## [0.2.1] - 2021-04-27
 ### Changed

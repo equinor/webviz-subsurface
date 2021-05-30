@@ -57,6 +57,7 @@ setup(
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
+            "LinePlotterFMU = webviz_subsurface.plugins:LinePlotterFMU",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
@@ -73,6 +74,7 @@ setup(
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
         "pillow>=6.1",
+        "pyarrow>=3.0.0",
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
