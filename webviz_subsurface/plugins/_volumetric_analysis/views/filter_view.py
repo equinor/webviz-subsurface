@@ -43,7 +43,7 @@ def filter_dropdowns(
                             options=[{"label": i, "value": i} for i in elements],
                             value=elements,
                             multi=True,
-                            size=min(20, len(elements)),
+                            size=min(15, len(elements)),
                             persistence=True,
                             persistence_type="session",
                         ),

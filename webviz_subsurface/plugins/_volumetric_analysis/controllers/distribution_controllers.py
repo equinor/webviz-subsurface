@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, List
+from typing import Callable, Tuple, List, Optional
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
@@ -100,7 +100,12 @@ def distribution_controllers(
                     title=dict(
                         text=(
                             f"{volume_description(selections['X Response'])}"
-                            f"[{volume_unit(selections['X Response'])}]"
+                            + (
+                                f" [{volume_unit(selections['X Response'])}]"
+                                if selections["X Response"]
+                                in volumemodel.volume_columns
+                                else ""
+                            )
                         ),
                         x=0.5,
                         font=dict(size=18),
@@ -153,6 +158,8 @@ def distribution_controllers(
                     volumemodel=volumemodel,
                     tabletype=selections["Table type"],
                     page_selected=page_selected,
+                    groupby_real=selections["Group by"] is not None
+                    and "REAL" in selections["Group by"],
                 )
         else:
             table_wrapper_children = dash.no_update
@@ -253,7 +260,9 @@ def distribution_controllers(
                         color_discrete_sequence=px.colors.diverging.BrBG_r,
                         color=selections["Color by"],
                         text=selections["X Response"],
-                        xaxis=dict(type="category", tickangle=45, tickfont_size=17),
+                        xaxis=dict(
+                            type="category", tickangle=45, tickfont_size=17, title=None
+                        ),
                     ).update_traces(texttemplate=texttemplate, textposition="auto"),
                 }
 
@@ -346,14 +355,19 @@ def distribution_controllers(
 def make_table_wrapper_children(
     dframe: pd.DataFrame,
     responses: list,
-    groups: list,
     volumemodel: InplaceVolumesModel,
     tabletype: str,
     page_selected: str,
+    groupby_real: Optional[bool] = False,
+    groups: Optional[list] = None,
 ) -> Tuple[list, list]:
 
-    groups = [x for x in groups if x != "REAL"] if groups is not None else []
-
+    groups = groups if groups is not None else []
+    groups = (
+        groups
+        if groupby_real and tabletype != "Statistics table"
+        else [x for x in groups if x != "REAL"]
+    )
     if tabletype == "Statistics table":
         statcols = ["Mean", "Stddev", "P10", "P90", "Minimum", "Maximum"]
 

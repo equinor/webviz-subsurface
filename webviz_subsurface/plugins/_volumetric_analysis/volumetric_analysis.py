@@ -90,9 +90,7 @@ class VolumetricAnalysis(WebvizPluginABC):
             )
 
         self.volmodel = InplaceVolumesModel(volume_table, parameters, drop_constants)
-
         self.theme = webviz_settings.theme
-
         self.set_callbacks(app)
 
     #    @property
