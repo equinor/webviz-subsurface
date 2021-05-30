@@ -22,7 +22,7 @@ from ..figures import create_figure
 # pylint: disable=too-many-statements, too-many-locals, too-many-branches
 def distribution_controllers(
     app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
-):
+) -> None:
     @app.callback(
         Output(
             {"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "figure"
@@ -48,7 +48,7 @@ def distribution_controllers(
         page_selected: str,
         figure_ids: list,
         table_wrapper_ids: list,
-    ) -> Tuple[list, list, list]:
+    ) -> Tuple[list, list]:
         ctx = dash.callback_context.triggered[0]
         if page_selected not in ["1p1t", "custom"]:
             raise PreventUpdate
@@ -449,7 +449,7 @@ def make_table_wrapper_children(
     )
 
 
-def filter_df(dframe: pd.DataFrame, filters: list) -> pd.DataFrame:
+def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
     for filt, values in filters.items():
         dframe = dframe.loc[dframe[filt].isin(values)]
     return dframe

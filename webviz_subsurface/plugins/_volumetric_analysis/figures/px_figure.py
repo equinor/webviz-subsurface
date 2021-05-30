@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 import inspect
 
 import pandas as pd
@@ -7,12 +7,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
-def create_figure(plot_type: str, **kwargs: dict) -> go.Figure:
+def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
     """Create subplots for selected parameters"""
 
     plotargs = set_default_args(**kwargs)
 
-    fig = make_initial_figure(plot_type=plot_type, **plotargs)
+    fig: go.Figure = make_initial_figure(plot_type=plot_type, **plotargs)
     fig = update_xaxes(fig, **plotargs)
     fig = update_yaxes(fig, **plotargs)
     fig = update_layout(fig, plot_type, **plotargs)
@@ -28,7 +28,7 @@ def create_figure(plot_type: str, **kwargs: dict) -> go.Figure:
     return fig
 
 
-def set_default_args(**plotargs: dict) -> dict:
+def set_default_args(**plotargs: Any) -> dict:
 
     plotargs["histnorm"] = plotargs.get("histnorm", "percent")
     plotargs["barmode"] = plotargs.get("barmode", "group")
@@ -48,7 +48,7 @@ def set_default_args(**plotargs: dict) -> dict:
     return plotargs
 
 
-def make_initial_figure(plot_type: str, **plotargs: dict) -> Callable:
+def make_initial_figure(plot_type: str, **plotargs: Any) -> Callable:
 
     if plot_type == "distribution":
         plot_type = "violin"
@@ -62,7 +62,7 @@ def make_initial_figure(plot_type: str, **plotargs: dict) -> Callable:
     return plotfunc(**plotargs)
 
 
-def update_xaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
+def update_xaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col", None)
     return figure.update_xaxes(
@@ -83,7 +83,7 @@ def update_xaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
     ).update_xaxes(**kwargs.get("xaxis", {}))
 
 
-def update_yaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
+def update_yaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
     return figure.update_yaxes(
         showline=True,
         linewidth=2,
@@ -94,7 +94,7 @@ def update_yaxes(figure: go.Figure, **kwargs: dict) -> go.Figure:
     ).update_yaxes(**kwargs.get("yaxis", {}))
 
 
-def update_layout(figure: go.Figure, plot_type: str, **kwargs: dict) -> go.Figure:
+def update_layout(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
     if plot_type in ["histogram", "bar"]:
         figure.update_layout(
             bargap=0.1,
@@ -104,7 +104,7 @@ def update_layout(figure: go.Figure, plot_type: str, **kwargs: dict) -> go.Figur
     )
 
 
-def for_each_annotation(figure: go.Figure, **kwargs: dict) -> go.Figure:
+def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col")
     return figure.for_each_annotation(
@@ -120,7 +120,7 @@ def for_each_annotation(figure: go.Figure, **kwargs: dict) -> go.Figure:
     )
 
 
-def convert_violin_to_distribution_plot(figure: go.Figure, **kwargs: dict) -> go.Figure:
+def convert_violin_to_distribution_plot(figure: go.Figure, **kwargs: Any) -> go.Figure:
     figure.for_each_trace(
         lambda t: t.update(
             y0=0,

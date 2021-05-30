@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import dash_html_components as html
 import dash_core_components as dcc
@@ -7,7 +7,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 
 def filter_layout(
-    uuid: Callable, volumemodel: InplaceVolumesModel, filters: Optional[list] = None
+    uuid: str, volumemodel: InplaceVolumesModel, filters: Optional[list] = None
 ) -> html.Div:
     """Layout for selecting intersection data"""
     return html.Div(

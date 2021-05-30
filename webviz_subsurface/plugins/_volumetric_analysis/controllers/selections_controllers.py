@@ -1,13 +1,16 @@
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple, Union, Optional, Any
 
 import dash
 from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import webviz_core_components as wcc
+from webviz_subsurface._models import InplaceVolumesModel
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
-def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
+def selections_controllers(
+    app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
+) -> None:
     @app.callback(
         Output(get_uuid("selections-voldist"), "data"),
         Output(
@@ -104,7 +107,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         selector_values: list,
         selector_options: list,
         selector_ids: list,
-        previous_selection: dict,
+        previous_selection: Optional[dict],
     ) -> Tuple[list, list, list]:
         ctx = dash.callback_context.triggered[0]
         if (
@@ -115,7 +118,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             raise PreventUpdate
 
         initial_page_load = selected_page not in previous_selection
-
+        selections: Any = {}
         if initial_page_load:
             selections = {
                 id_value["selector"]: options[0]["value"]
@@ -143,7 +146,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
 
         settings = {}
         for selector, disable_in_pages in selectors_disable_in_pages.items():
-            disable = selected_page in disable_in_pages
+            disable = selected_page in disable_in_pages  # type: ignore
             if disable:
                 value = None
             else:
@@ -233,7 +236,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         ensemble_options: dict,
         selector_ids: list,
         prev_selection: dict,
-    ) -> Tuple[bool, list]:
+    ) -> tuple:
         ctx = dash.callback_context.triggered[0]
         page_selections = {
             id_value["selector"]: values

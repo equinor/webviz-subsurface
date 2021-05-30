@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import List, Optional
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
@@ -7,7 +7,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 
 def selections_layout(
-    uuid: Callable,
+    uuid: str,
     volumemodel: InplaceVolumesModel,
     theme: WebvizConfigTheme,
 ) -> html.Div:
@@ -161,6 +161,7 @@ def plot_selector_dropdowns(
     """Makes dropdowns for each selector"""
 
     dropdowns: List[html.Div] = []
+    value: Optional[str] = None
 
     for selector in [
         "Plot type",

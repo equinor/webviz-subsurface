@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +10,6 @@ from .ensemble_set_model import EnsembleSetModel
 
 
 class InplaceVolumesModel:
-    """Class to .."""
 
     SENS_COLUMNS = [
         "ENSEMBLE",
@@ -39,7 +38,7 @@ class InplaceVolumesModel:
         parameter_table: Optional[pd.DataFrame] = None,
         drop_constants: bool = False,
     ):
-        self._parameters = []
+        self._parameters: List[str] = []
         if parameter_table is not None:
             self._prepare_parameter_data(parameter_table, drop_constants=drop_constants)
 
@@ -57,7 +56,7 @@ class InplaceVolumesModel:
             parameter_table["SENSNAME"].nunique() > 1
             or (
                 parameter_table["SENSNAME"].nunique() == 1
-                and parameter_table["SENSTYPE"] != "mc"
+                and parameter_table["SENSTYPE"].unique() != ["mc"]
             )
         )
 
@@ -104,42 +103,34 @@ class InplaceVolumesModel:
 
     @property
     def dataframe(self) -> pd.DataFrame:
-        """Returns surface attributes"""
         return self._dataframe
 
     @property
     def parameter_df(self) -> pd.DataFrame:
-        """Returns surface attributes"""
         return self._parameterdf
 
     @property
     def sensrun(self) -> bool:
-        """Returns surface attributes"""
         return self._sensrun
 
     @property
     def sources(self) -> List[str]:
-        """Returns surface attributes"""
         return sorted(list(self._dataframe["SOURCE"].unique()))
 
     @property
     def realizations(self) -> List[int]:
-        """Returns surface attributes"""
         return sorted(list(self._dataframe["REAL"].unique()))
 
     @property
     def ensembles(self) -> List[str]:
-        """Returns surface attributes"""
         return list(self._dataframe["ENSEMBLE"].unique())
 
     @property
     def property_columns(self) -> List[str]:
-        """List of all columns in dataframe"""
         return self._property_columns
 
     @property
     def volume_columns(self) -> List[str]:
-        """List of all columns in dataframe"""
         return [
             x
             for x in self._dataframe
@@ -148,20 +139,17 @@ class InplaceVolumesModel:
 
     @property
     def selectors(self) -> List[str]:
-        """List of available selector columns in dframe"""
         return [x for x in self.POSSIBLE_SELECTORS if x in self._dataframe]
 
     @property
     def responses(self) -> List[str]:
-        """List of available volume responses in dframe"""
         return self.volume_columns + self.property_columns
 
     @property
     def parameters(self) -> List[str]:
-        """List of available volume responses in dframe"""
         return self._parameters
 
-    def set_initial_property_columns(self):
+    def set_initial_property_columns(self) -> None:
         self._property_columns = []
         # if Net not given, Net is equal to Bulk
         net_column = "NET" if "NET" in self._dataframe else "BULK"
@@ -184,7 +172,7 @@ class InplaceVolumesModel:
 
     def compute_property_columns(
         self, dframe: pd.DataFrame, properties: Optional[list] = None
-    ):
+    ) -> pd.DataFrame:
 
         properties = self.property_columns if properties is None else properties
 
@@ -206,7 +194,7 @@ class InplaceVolumesModel:
 
     def _prepare_parameter_data(
         self, parameter_table: pd.DataFrame, drop_constants: bool
-    ):
+    ) -> None:
         """
         Different data preparations on the parameters, before storing them as an attribute.
         Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
@@ -264,7 +252,7 @@ class InplaceVolumesModel:
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def extract_volumes(
-    ensemble_set_model: EnsembleSetModel, volfolder: str, volfiles: Dict[str, str]
+    ensemble_set_model: EnsembleSetModel, volfolder: str, volfiles: Dict[str, Any]
 ) -> pd.DataFrame:
     """Aggregates volumetric files from an FMU ensemble.
     Files must be stored on standardized csv format.

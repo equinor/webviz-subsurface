@@ -4,7 +4,7 @@ import dash
 from dash.dependencies import Input, Output, State, ALL
 
 
-def layout_controllers(app: dash.Dash, get_uuid: Callable):
+def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output({"id": get_uuid("selections-voldist"), "button": ALL}, "style"),
         Output(get_uuid("page-selected-voldist"), "data"),

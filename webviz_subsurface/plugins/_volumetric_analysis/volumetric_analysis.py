@@ -63,7 +63,7 @@ class VolumetricAnalysis(WebvizPluginABC):
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
         if csvfile_vol:
-            volume_table: pd.DataFrame = read_csv(csvfile_vol)
+            volume_table = read_csv(csvfile_vol)
             parameters: Optional[pd.DataFrame] = (
                 read_csv(csvfile_parameters) if csvfile_parameters else None
             )
@@ -80,9 +80,7 @@ class VolumetricAnalysis(WebvizPluginABC):
             )
             parameters = self.emodel.load_parameters()
 
-            volume_table: pd.DataFrame = extract_volumes(
-                self.emodel, volfolder, volfiles
-            )
+            volume_table = extract_volumes(self.emodel, volfolder, volfiles)
 
         else:
             raise ValueError(
@@ -124,18 +122,12 @@ class VolumetricAnalysis(WebvizPluginABC):
                     (read_csv, [{"csv_file": self.csvfile_parameters}])
                 )
         else:
-            store_functions = [
-                (
-                    extract_volumes,
-                    [
-                        {
-                            "ensemble_set_model": self.emodel,
-                            "volfolder": self.volfolder,
-                            "volfiles": self.volfiles,
-                        }
-                    ],
-                ),
-            ]
+            function_args: dict = {
+                "ensemble_set_model": self.emodel,
+                "volfolder": self.volfolder,
+                "volfiles": self.volfiles,
+            }
+            store_functions = [(extract_volumes, [function_args])]
             store_functions.extend(self.emodel.webvizstore)
         return store_functions
 

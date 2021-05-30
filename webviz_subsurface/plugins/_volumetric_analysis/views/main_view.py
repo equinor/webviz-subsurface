@@ -138,7 +138,7 @@ def main_view(
     )
 
 
-def make_tab(label: str, children: list):
+def make_tab(label: str, children: list) -> dcc.Tab:
     tab_style = {
         "borderBottom": "1px solid #d6d6d6",
         "padding": "6px",
