@@ -223,6 +223,7 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         State({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "options"),
         State({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "options"),
         State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
+        State(get_uuid("selections-voldist"), "data"),
     )
     def _update_filter_multi_option(
         selectors: list,
@@ -231,8 +232,9 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         source_options: dict,
         ensemble_options: dict,
         selector_ids: list,
+        prev_selection: dict,
     ) -> Tuple[bool, list]:
-
+        ctx = dash.callback_context.triggered[0]
         page_selections = {
             id_value["selector"]: values
             for id_value, values in zip(selector_ids, selectors)
@@ -256,15 +258,28 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         ):
             selected_data = table_groups
 
+        output = {}
+        for selector, options in zip(
+            ["SOURCE", "ENSEMBLE"], [source_options, ensemble_options]
+        ):
+            multi = selector in selected_data
+            if not multi:
+                values = [options[0]["value"]]
+            else:
+                values = (
+                    prev_selection[page_selected]["filters"][selector]
+                    if "page-selected" in ctx["prop_id"]
+                    and prev_selection is not None
+                    and page_selected in prev_selection
+                    else [x["value"] for x in options]
+                )
+            output[selector] = {"multi": multi, "values": values}
+
         return (
-            "SOURCE" in selected_data,
-            [source_options[0]["value"]]
-            if "SOURCE" not in selected_data
-            else [x["value"] for x in source_options],
-            "ENSEMBLE" in selected_data,
-            [ensemble_options[0]["value"]]
-            if "ENSEMBLE" not in selected_data
-            else [x["value"] for x in ensemble_options],
+            output["SOURCE"]["multi"],
+            output["SOURCE"]["values"],
+            output["ENSEMBLE"]["multi"],
+            output["ENSEMBLE"]["values"],
         )
 
     @app.callback(
