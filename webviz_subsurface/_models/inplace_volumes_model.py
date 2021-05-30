@@ -6,7 +6,7 @@ import pandas as pd
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_subsurface._datainput.fmu_input import find_sens_type
-from webviz_subsurface._models import EnsembleSetModel
+from .ensemble_set_model import EnsembleSetModel
 
 
 class InplaceVolumesModel:
@@ -19,7 +19,6 @@ class InplaceVolumesModel:
         "SENSNAME",
         "SENSTYPE",
     ]
-
     POSSIBLE_SELECTORS = [
         "SOURCE",
         "ENSEMBLE",
@@ -40,7 +39,7 @@ class InplaceVolumesModel:
         parameter_table: Optional[pd.DataFrame] = None,
         drop_constants: bool = False,
     ):
-
+        self._parameters = []
         if parameter_table is not None:
             self._prepare_parameter_data(parameter_table, drop_constants=drop_constants)
 

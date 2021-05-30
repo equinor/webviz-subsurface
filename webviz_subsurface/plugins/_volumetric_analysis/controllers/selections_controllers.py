@@ -211,6 +211,63 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
         )
 
     @app.callback(
+        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "multi"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "value"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "multi"),
+        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "value"),
+        Input({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
+        Input(get_uuid("page-selected-voldist"), "data"),
+        Input(
+            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
+        ),
+        State({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "options"),
+        State({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "options"),
+        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
+    )
+    def _update_filter_multi_option(
+        selectors: list,
+        page_selected: str,
+        plot_table_select: str,
+        source_options: dict,
+        ensemble_options: dict,
+        selector_ids: list,
+    ) -> Tuple[bool, list]:
+
+        page_selections = {
+            id_value["selector"]: values
+            for id_value, values in zip(selector_ids, selectors)
+        }
+        selected_data = [
+            page_selections[x]
+            for x in ["Color by", "Subplots", "X Response", "Y Response"]
+        ]
+        table_groups = (
+            page_selections["Group by"]
+            if page_selections["Group by"] is not None
+            else []
+        )
+
+        if page_selected == "1p1t" and not page_selections["sync_table"]:
+            selected_data.extend(table_groups)
+        if (
+            page_selected == "custom"
+            and plot_table_select == "table"
+            and not page_selections["sync_table"]
+        ):
+            selected_data = table_groups
+
+        return (
+            "SOURCE" in selected_data,
+            [source_options[0]["value"]]
+            if "SOURCE" not in selected_data
+            else [x["value"] for x in source_options],
+            "ENSEMBLE" in selected_data,
+            [ensemble_options[0]["value"]]
+            if "ENSEMBLE" not in selected_data
+            else [x["value"] for x in ensemble_options],
+        )
+
+    @app.callback(
         Output(
             {"id": get_uuid("filter-voldist"), "element": "real-slider-wrapper"},
             "children",
@@ -263,58 +320,6 @@ def selections_controllers(app: dash.Dash, get_uuid: Callable, volumemodel):
             size=min(20, len(reals)),
             persistence=True,
             persistence_type="session",
-        )
-
-    @app.callback(
-        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "multi"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "value"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "multi"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "value"),
-        Input(
-            {"id": get_uuid("selections-voldist"), "selector": "Color by"},
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("selections-voldist"), "selector": "Subplots"},
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("selections-voldist"), "selector": "Group by"},
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("selections-voldist"), "selector": "sync_table"},
-            "value",
-        ),
-        Input(get_uuid("page-selected-voldist"), "data"),
-        State({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "options"),
-        State({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "options"),
-    )
-    def _update_filter_multi_option(
-        colorby: str,
-        subplot: str,
-        groupby: list,
-        sync_table: list,
-        page_selected: str,
-        source_options: dict,
-        ensemble_options: dict,
-    ) -> Tuple[bool, list]:
-        data_groupers = [colorby, subplot]
-        if (
-            page_selected in ["1p1t", "custom"]
-            and groupby is not None
-            and not sync_table
-        ):
-            data_groupers.extend(groupby)
-        return (
-            "SOURCE" in data_groupers,
-            [source_options[0]["value"]]
-            if "SOURCE" not in data_groupers
-            else [x["value"] for x in source_options],
-            "ENSEMBLE" in data_groupers,
-            [ensemble_options[0]["value"]]
-            if "ENSEMBLE" not in data_groupers
-            else [x["value"] for x in ensemble_options],
         )
 
 
