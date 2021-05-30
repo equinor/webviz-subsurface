@@ -1,0 +1,51 @@
+.webviz-inplace-vol-btn {
+    background-color: #E8E8E8;
+    width: 100%;
+    display: block;
+    padding: 0 20px;
+    margin-top: 5px;
+    margin-left: auto;
+    font-size: 12px;
+}
+
+
+.webviz-inplace-vol-btn:hover {
+    box-shadow: 0px 0px 3px 0.5px lightgrey;
+}
+
+
+.webviz-inplace-vol-details-main {
+    cursor: pointer;
+    color: #ff1243;
+    border-bottom-style: solid;
+    border-width: thin;
+    border-color: #ff1243;
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 15px;
+} 
+
+
+.webviz-inplace-vol-plotselect {
+    cursor: pointer;
+    color: #555;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: rgb(232, 232, 232);    
+    border-radius: 4px;
+    border: 1px solid #bbb;    
+
+}
+
+.webviz-inplace-vol-plotselect:hover {
+    box-shadow: 0px 0px 3px 0.5px lightgrey;
+}
+
+.webviz-inplace-vol-framed {
+    border-radius: 5px;
+    background-color: white;
+    margin: 10px;
+    padding: 15px;
+    position: relative;
+    box-shadow: 0px 0px 4px 0.5px lightgrey;
+}
