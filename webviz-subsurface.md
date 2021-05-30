@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.2` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.3rc0` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -339,6 +339,12 @@ How to use in YAML config file:
 
 #### InplaceVolumes
 
+<details>
+  <summary markdown="span"> :warning: Plugin 'InplaceVolumes' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the VolumetricAnalysis plugin.
+</details>
+
 
 <!-- tabs:start -->
    
@@ -572,6 +578,127 @@ as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.
 
 An example of an aggregated file to use with `csvfile_parameters`
 [can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+#### LinePlotterFMU
+
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+General line plotter for FMU data
+
+
+ 
+
+<!-- tab:Arguments -->
+
+
+* **`csvfile`:** Relative path to Csv file stored per realization
+
+*default = null, Optional, type str*
+
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+
+*default = null, Optional, type list*
+
+
+---
+
+* **`aggregated_csvfile`:** 
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`aggregated_parameterfile`:** 
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`observation_file`:** Yaml file with observations
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`observation_group`:** Top-level key in observation file.
+
+*default = "general", Optional, type str*
+
+
+---
+
+* **`remap_observation_keys`:** Remap observation keys to columns in csv file
+
+*default = null, Optional, type Dict[str, str]*
+
+
+---
+
+* **`remap_observation_values`:** Remap observation values to columns in csv file
+
+*default = null, Optional, type Dict[str, str]*
+
+
+---
+
+* **`colors`:** Set colors for each ensemble
+
+*default = null, Optional, type Dict*
+
+
+---
+
+* **`initial_data`:** Initialize data selectors (x,y,ensemble, parameter)
+
+*default = null, Optional, type Dict*
+
+
+---
+
+* **`initial_layout`:** Initialize plot layout (x and y axis direction and type)
+
+*default = null, Optional, type Dict*
+
+
+---
+
+
+
+How to use in YAML config file:
+```yaml
+    - LinePlotterFMU:
+        csvfile:  # Optional, type str.
+        ensembles:  # Optional, type list.
+        aggregated_csvfile:  # Optional, type str (corresponding to a path).
+        aggregated_parameterfile:  # Optional, type str (corresponding to a path).
+        observation_file:  # Optional, type str (corresponding to a path).
+        observation_group:  # Optional, type str.
+        remap_observation_keys:  # Optional, type Dict[str, str].
+        remap_observation_values:  # Optional, type Dict[str, str].
+        colors:  # Optional, type Dict.
+        initial_data:  # Optional, type Dict.
+        initial_layout:  # Optional, type Dict.
+```
 
  
 
@@ -2689,6 +2816,124 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 
 <div class="plugin-doc">
 
+#### VolumetricAnalysis
+
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Dashboard to analyze volumetrics results from
+FMU ensembles.
+
+This plugin supports both monte carlo and sensitivity runs, and will automatically detect
+which case has been run.
+
+The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
+is removed and a `FLUID` column is added to be used as a filter or selector.
+
+Input can be given either as aggregated `csv` files or as ensemble name(s)
+defined in `shared_settings` (with volumetric `csv` files stored per realization).
+
+
+ 
+
+<!-- tab:Arguments -->
+
+
+* **`csvfile_vol`:** 
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`csvfile_parameters`:** 
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+
+*default = null, Optional, type list*
+
+
+---
+
+* **`volfiles`:** Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`. Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+
+*default = null, Optional, type dict*
+
+
+---
+
+* **`volfolder`:** Local folder for the `volfiles`.
+
+*default = "share/results/volumes", Optional, type str*
+
+
+---
+
+* **`drop_constants`:** 
+
+*default = true, Optional, type bool*
+
+
+---
+
+
+
+How to use in YAML config file:
+```yaml
+    - VolumetricAnalysis:
+        csvfile_vol:  # Optional, type str (corresponding to a path).
+        csvfile_parameters:  # Optional, type str (corresponding to a path).
+        ensembles:  # Optional, type list.
+        volfiles:  # Optional, type dict.
+        volfolder:  # Optional, type str.
+        drop_constants:  # Optional, type bool.
+```
+
+   
+
+<!-- tab:Data input -->
+
+
+?> The input files must follow FMU standards.
+
+* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+For sensitivity runs the sensitivity information is extracted automatically if `ensembles`is given as input, as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.* [Example of an aggregated file to use with `csvfile_parameters`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
+
+
+**The following columns will be used as available filters, if present:**
+
+* `ZONE`
+* `REGION`
+* `FACIES`
+* `LICENSE`
+* `SOURCE` (relevant if calculations are done for multiple grids)
+* `SENSNAME`
+* `SENSCASE`
+
+
+**Remaining columns are seen as volumetric responses.**
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
 #### WellCompletions
 
 
@@ -2698,6 +2943,8 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 <!-- tab:Description -->
 
 Visualizes well completions data per well coming from export of the Eclipse COMPDAT output.     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
+
+!> The plugin will not see lumps of completions that are shut using the WELOPEN keyword.     This is being worked on and will be fixed in future relases.
 
 
  
@@ -2712,30 +2959,37 @@ Visualizes well completions data per well coming from export of the Eclipse COMP
 
 ---
 
-* **`compdat_file`:** csvfile with compdat data per realization
+* **`compdat_file`:** `.csv` file with compdat data per realization
 
 *default = "share/results/wells/compdat.csv", Optional, type str*
 
 
 ---
 
-* **`zone_layer_mapping_file`:** Lyr file specifying the zone->layer mapping
+* **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
 
 *default = "rms/output/zone/simgrid_zone_layer_mapping.lyr", Optional, type str*
 
 
 ---
 
-* **`well_attributes_file`:** Json file with categorical well attributes
+* **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
+
+*default = "rms/output/zone/stratigraphy.json", Optional, type str*
+
+
+---
+
+* **`well_attributes_file`:** `.json` file with categorical well attributes
 
 *default = "rms/output/wells/well_attributes.json", Optional, type str*
 
 
 ---
 
-* **`kh_unit`:** Will normally be mDm
+* **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted
 
-*default = "", Optional, type str*
+*default = null, Optional, type str*
 
 
 ---
@@ -2755,6 +3009,7 @@ How to use in YAML config file:
         ensembles:  # Required, type list.
         compdat_file:  # Optional, type str.
         zone_layer_mapping_file:  # Optional, type str.
+        stratigraphy_file:  # Optional, type str.
         well_attributes_file:  # Optional, type str.
         kh_unit:  # Optional, type str.
         kh_decimal_places:  # Optional, type int.
@@ -2777,18 +3032,63 @@ installed).
 
 **Zone layer mapping**
 
-`zone_layer_mapping_file` file can be dumped to disk per realization by an internal     RMS script as part of the FMU workflow. A sample python script will be made available.
+The `zone_layer_mapping_file` file can be dumped to disk per realization by an internal     RMS script as part of the FMU workflow. A sample python script should be available in the     Drogon project.
 
-The file needs to be on the lyr format used in ResInsight.
+The file needs to be on the lyr format used by ResInsight:
 [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
+
+Zone colors can be specified in the lyr file, but only 6 digit hexadecimal codes will be used.
 
 If no file exists, layers will be used as zones.
 
+**Stratigraphy file**
+
+The `stratigraphy_file` file is intended to be generated per realization by an internal     RMS script as part of the FMU workflow, but can also be set up manually and copied to each
+realization. The stratigraphy is a tree structure, where each node has a name, an optional
+`color` parameter, and an optional `subzones` parameter which itself is a list of the same format.
+```json
+[
+    {
+        "name": "ZoneA",
+        "color": "#FFFFFF",
+        "subzones": [
+            {
+                "name": "ZoneA.1
+            },
+            {
+                "name": "ZoneA.2
+            }
+        ]
+    },
+    {
+        "name": "ZoneB",
+        "color": "#FFF000",
+        "subzones": [
+            {
+                "name": "ZoneB.1",
+                "color": "#FFF111"
+            },
+            {
+                "name": "ZoneB.2,
+                "subzones: {"name": "ZoneB.2.2"}
+            }
+        ]
+    },
+]
+```
+The `stratigraphy_file` and the `zone_layer_mapping_file` will be combined to create the final     stratigraphy. A node will be removed if the name or any of the subnode names are not     present in the zone layer mapping. A Value Error is raised if any zones are present in the
+zone layer mapping but not in the stratigraphy.
+
+Colors can be supplied both trough the stratigraphy and through the zone_layer_mapping.     The following prioritization will be applied:
+1. Colors specified in the stratigraphy
+2. Colors specified in the zone layer mapping lyr file
+3. If none of the above is specified, theme colors will be added to the leaves of the tree
+
 **Well Attributes file**
 
-`well_attributes_file` file is intended to be generated per realization by an internal     RMS script as part of the FMU workflow. A sample script will be made available, but it is     possible to manually set up the file and copy it to the correct folder on the scratch disk.    The categorical well attributes are completely flexible.
+The `well_attributes_file` file is intended to be generated per realization by an internal     RMS script as part of the FMU workflow. A sample script will be made available, but it is     possible to manually set up the file and copy it to the correct folder on the scratch disk.    The categorical well attributes are completely flexible.
 
-The file should be a json file on the following format:
+The file should be a `.json` file on the following format:
 ```json
 {
     "version" : "0.1",
@@ -2818,6 +3118,10 @@ The file should be a json file on the following format:
     ]
 }
 ```
+
+**KH unit**
+
+If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file.     The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
 
  
 

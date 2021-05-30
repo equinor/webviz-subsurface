@@ -1,7 +1,7 @@
 ## Deprecated plugins
 ### Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.2` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.3rc0` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -85,6 +85,125 @@ How to use in YAML config file:
         basedir:  # Required, type str (corresponding to a path).
         planned_wells_dir:  # Optional, type str (corresponding to a path).
 ```
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+##### InplaceVolumes
+
+> :warning: Plugin 'InplaceVolumes' has been deprecated.
+
+Relevant functionality is implemented in the VolumetricAnalysis plugin.
+
+
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Visualizes inplace volumetric results from
+FMU ensembles.
+
+Input can be given either as aggregated `csv` files or as ensemble name(s)
+defined in `shared_settings` (with volumetric `csv` files stored per realization).
+
+
+ 
+
+<!-- tab:Arguments -->
+
+
+* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file). **Using data stored per realization**
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+
+*default = null, Optional, type list*
+
+
+---
+
+* **`volfiles`:** Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`. Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+
+*default = null, Optional, type dict*
+
+
+---
+
+* **`volfolder`:** Local folder for the `volfiles`. **Common settings for both input options**
+
+*default = "share/results/volumes", Optional, type str*
+
+
+---
+
+* **`response`:** Optional volume response to visualize initially.
+
+*default = "STOIIP_OIL", Optional, type str*
+
+
+---
+
+
+
+How to use in YAML config file:
+```yaml
+    - InplaceVolumes:
+        csvfile:  # Optional, type str (corresponding to a path).
+        ensembles:  # Optional, type list.
+        volfiles:  # Optional, type dict.
+        volfolder:  # Optional, type str.
+        response:  # Optional, type str.
+```
+
+   
+
+<!-- tab:Data input -->
+
+
+?> The input files must follow FMU standards.
+
+* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+**The following columns will be used as available filters, if present:**
+
+* `ZONE`
+* `REGION`
+* `FACIES`
+* `LICENSE`
+* `SOURCE` (relevant if calculations are done for multiple grids)
+
+
+**Remaining columns are seen as volumetric responses.**
+
+All names are allowed (except those mentioned above, in addition to `REAL` and `ENSEMBLE`), but the following responses are given more descriptive names automatically:
+
+* `BULK_OIL`: Bulk Volume (Oil)
+* `NET_OIL`: Net Volume (Oil)
+* `PORE_OIL`: Pore Volume (Oil)
+* `HCPV_OIL`: Hydro Carbon Pore Volume (Oil)
+* `STOIIP_OIL`: Stock Tank Oil Initially In Place
+* `BULK_GAS`: Bulk Volume (Gas)
+* `NET_GAS`: Net Volume (Gas)
+* `PORV_GAS`: Pore Volume (Gas)
+* `HCPV_GAS`: Hydro Carbon Pore Volume (Gas)
+* `GIIP_GAS`: Gas Initially In Place
+* `RECOVERABLE_OIL`: Recoverable Volume (Oil)
+* `RECOVERABLE_GAS`: Recoverable Volume (Gas)
 
  
 

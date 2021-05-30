@@ -70,7 +70,7 @@ application - ready to be deployed to e.g. a cloud provider.
 **Non-portable**
 
 Non-portable is the easiest way if none of the plugins
-have time-consuming data aggregration to do.
+have time-consuming data aggregation to do.
 
 A feature in Dash, used by `webviz` is [hot reload](https://community.plot.ly/t/announcing-hot-reload/14177).
 When the Dash Python code file is saved, the content seen in the web browser is
@@ -131,6 +131,52 @@ If you are using Visual Studio Code, we recommend [Red Hat's YAML extension](htt
 }
 ```
 to your `settings.json` file, you will get help from the editor on YAML files following the namepatterns to the right (might have to restart the editor after updating the settings).
+
+#### Logging
+
+The default logging configuration for a Webviz application is to only show log messages with level `WARNING` or `ERROR`.
+This global logging level can be changed on the command line using the `--loglevel` argument like this:
+```bash
+webviz build ./examples/basic_example.yaml --loglevel INFO
+```
+
+In practice, setting the global logging level to `INFO` or `DEBUG` will likely flood the log with messages from various 
+sub-modules, possibly obscuring messages from the module(s) of interest. To allow finer grain control over logging, 
+Webviz accepts the `--logconfig` command line argument which allows detailed logging configuration through a YAML file:
+```bash
+webviz build ./examples/basic_example.yaml --logconfig my_log_config.yaml
+```
+
+The YAML file is expected to contain a dictionary with logging configuration adhering to the [schema described 
+here](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema). This allows for full 
+flexibility with regards to configuring logging in the Webviz application, including setting multiple handlers, 
+filtering and customized log message formatting.
+
+Included below is a simple YAML dictionary showing an *incremental* configuration suitable for controlling the level of the 
+root logger and a few named loggers. Please note the mandatory `version` key and the inclusion of the `incremental` key 
+(see Python docs for more information on [incremental configurations](https://docs.python.org/3/library/logging.config.html#incremental-configuration)).
+If you need more flexibility than incremental configurations allow, you are free to specify a full configuration, but be
+aware that this quickly becomes quite involved and requires a good understanding of the schema mentioned above.
+
+```yaml
+# This is a skeleton for a simple, incremental logging configuration.
+# See https://docs.python.org/3/library/logging.config.html#logging-config-dictschema for schema.
+
+version: 1
+incremental: True
+
+root:
+  level: DEBUG
+loggers:
+  werkzeug:
+    level: ERROR
+  some.other.module:
+    level: INFO
+```
+
+Please note that if both `--loglevel` and `--logconfig` are specified, the latter will take precedence. Internally, the 
+global log level set by `--loglevel` will be applied first. Then the configuration specified by `--logconfig` will
+be applied, possibly overwriting any overlapping settings.
 
 #### Deployment
 
