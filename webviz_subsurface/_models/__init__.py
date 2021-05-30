@@ -5,3 +5,4 @@ from .observation_model import ObservationModel
 from .parameter_model import ParametersModel
 from .surface_set_model import SurfaceSetModel
 from .well_set_model import WellSetModel
+from .inplace_volumes_model import InplaceVolumesModel
