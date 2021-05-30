@@ -50,11 +50,11 @@ jobs:
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
         pip install .
+        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
 
     - name: 📦 Install test dependencies
       run: |
         pip install .[tests]
-        pip install dash[testing]
         wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         export PATH=$PATH:$PWD
@@ -73,10 +73,10 @@ jobs:
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
+        TESTDATA_REPO_OWNER: hanskallekleiv
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: master
+        TESTDATA_REPO_BRANCH: volumetric-analysis
       run: |
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         # Copy any clientside script to the test folder before running tests

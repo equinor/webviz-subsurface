@@ -4,7 +4,11 @@ import dash
 from dash.dependencies import Input, Output, State, ALL
 
 
+<<<<<<< HEAD
 def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
+=======
+def layout_controllers(app: dash.Dash, get_uuid: Callable):
+>>>>>>> origin/inplace-volumes-upgrade
     @app.callback(
         Output({"id": get_uuid("selections-voldist"), "button": ALL}, "style"),
         Output(get_uuid("page-selected-voldist"), "data"),

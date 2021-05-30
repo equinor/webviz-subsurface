@@ -4,13 +4,13 @@ with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 TESTS_REQUIRE = [
-    "selenium>=3.141",
-    "pylint",
-    "mypy",
-    "mock",
-    "black>=21.4b0",
     "bandit",
+    "black>=21.4b0",
+    "dash[testing]",
+    "mypy",
+    "pylint",
     "pytest-xdist",
+    "selenium>=3.141",
 ]
 
 # pylint: disable=line-too-long
@@ -69,7 +69,7 @@ setup(
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.6.1; sys_platform=='linux'",
+        "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",

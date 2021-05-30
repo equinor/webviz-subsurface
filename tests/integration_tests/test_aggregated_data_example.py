@@ -66,6 +66,9 @@ def test_basic_example(
         "grid-viewer",
         "seg-y-viewer",
     ]:
+        # See https://github.com/plotly/dash/pull/1447#issuecomment-720737376
+        dash_duo._wait_for_callbacks()
+
         dash_duo.wait_for_element(f"#{page}").click()
         logs = [
             log
