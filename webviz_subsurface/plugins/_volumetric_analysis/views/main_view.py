@@ -55,7 +55,13 @@ def main_view(
         make_tab(
             label="Source comparison",
             children=tab_view_layout(
-                main_layout=[],
+                main_layout=[
+                    html.Div(
+                        "Under development - page for comparing geo/sim/eclipse "
+                        "volumes and identify differences",
+                        style={"margin": "50px", "font-size": "20px"},
+                    )
+                ],
                 selections_details=OrderedDict(
                     Selections={
                         "open": True,
@@ -67,11 +73,6 @@ def main_view(
                             filter_layout(
                                 uuid=get_uuid("filter-source-comp"),
                                 volumemodel=volumemodel,
-                                filters=[
-                                    x
-                                    for x in volumemodel.selectors
-                                    if x not in ["ENSEMBLE", "REAL"]
-                                ],
                             )
                         ],
                     },
@@ -81,7 +82,13 @@ def main_view(
         make_tab(
             label="Ensemble comparison",
             children=tab_view_layout(
-                main_layout=[],
+                main_layout=[
+                    html.Div(
+                        "Under development - page for analyzing volume changes "
+                        "and causes between ensembles (e.g between two model revision)",
+                        style={"margin": "50px", "font-size": "20px"},
+                    )
+                ],
                 selections_details=OrderedDict(
                     Selections={
                         "open": True,
@@ -93,11 +100,6 @@ def main_view(
                             filter_layout(
                                 uuid=get_uuid("filter-ensemble-comp"),
                                 volumemodel=volumemodel,
-                                filters=[
-                                    x
-                                    for x in volumemodel.selectors
-                                    if x not in ["SOURCE", "REAL"]
-                                ],
                             )
                         ],
                     },
@@ -111,7 +113,13 @@ def main_view(
             make_tab(
                 label="Tornadoplots",
                 children=tab_view_layout(
-                    main_layout=[],
+                    main_layout=[
+                        html.Div(
+                            "Under development - page for visualizing tornado plots "
+                            "and tables from sensitivity runs",
+                            style={"margin": "50px", "font-size": "20px"},
+                        )
+                    ],
                     selections_details=OrderedDict(
                         Selections={
                             "open": True,

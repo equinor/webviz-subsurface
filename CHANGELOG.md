@@ -19,6 +19,7 @@ correctly from persisted user settings.
 - [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method
 
 ### Added
+- [#641](https://github.com/equinor/webviz-subsurface/pull/641) - New plugin to analyze volumetrics results from FMU ensembles, replaces the `InplaceVolumes` plugin.
 
 ## [0.2.1] - 2021-04-27
 ### Changed

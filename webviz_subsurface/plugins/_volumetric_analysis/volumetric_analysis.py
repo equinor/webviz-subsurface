@@ -24,7 +24,60 @@ from .controllers import (
 
 
 class VolumetricAnalysis(WebvizPluginABC):
-    """Dashboard to analyze volumetrics results from FMU runs."""
+    """Dashboard to analyze volumetrics results from
+FMU ensembles.
+
+This plugin supports both monte carlo and sensitivity runs, and will automatically detect
+which case has been run.
+
+The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
+is removed and a `FLUID` column is added to be used as a filter or selector.
+
+Input can be given either as aggregated `csv` files or as ensemble name(s)
+defined in `shared_settings` (with volumetric `csv` files stored per realization).
+
+---
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns \
+(absolute path or relative to config file).
+
+**Using data stored per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`volfiles`:**  Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`.
+Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+* **`volfolder`:** Local folder for the `volfiles`.
+
+---
+
+?> The input files must follow FMU standards.
+
+* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/\
+webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/\
+realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+For sensitivity runs the sensitivity information is extracted automatically if `ensembles`\
+is given as input, as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.\
+* [Example of an aggregated file to use with `csvfile_parameters`]\
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+aggregated_data/parameters.csv)
+
+
+**The following columns will be used as available filters, if present:**
+
+* `ZONE`
+* `REGION`
+* `FACIES`
+* `LICENSE`
+* `SOURCE` (relevant if calculations are done for multiple grids)
+* `SENSNAME`
+* `SENSCASE`
+
+
+**Remaining columns are seen as volumetric responses.** """
 
     # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     def __init__(
