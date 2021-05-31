@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Changed
+- [#651](https://github.com/equinor/webviz-subsurface/pull/651) - Fixed issue with `_` in regions for `ReservoirSimulationTimeseriesRegional`.
 - [#642](https://github.com/equinor/webviz-subsurface/pull/642) - New functionality in `WellCompletions`: New stratigraphy input and tree
 selector in filters. Possibility to input colors either in stratigraphy or in the zone_layer_mapping .lyr-file. And kh unit autimatically
 found in Eclipse files.

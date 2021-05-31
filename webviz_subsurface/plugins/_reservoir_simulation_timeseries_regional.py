@@ -949,7 +949,11 @@ def render_single_date_graph(
                     "Not unique data for column, date and ensemble combination."
                 )
             trace = _make_trace(
-                date_viz, df, col, col.split("_")[-1], colors[col.split("_")[-1]]
+                date_viz,
+                df,
+                col,
+                col.split("_filtered_on_")[-1],
+                colors[col.split("_filtered_on_")[-1]],
             )
             if trace is not None:
                 traces.append(trace)
@@ -1049,7 +1053,7 @@ def render_table(
                 raise ValueError("Not unique data for column and date combination.")
             table.append(
                 {
-                    "Group": col.split("_")[-1],
+                    "Group": col.split("_filtered_on_")[-1],
                     "Minimum": df["nanmin"].iat[0],
                     "Maximum": df["nanmax"].iat[0],
                     "Mean": df["nanmean"].iat[0],
@@ -1322,8 +1326,8 @@ def add_statistic_traces(
                 add_fanchart_traces(
                     stat_df=stat_df,
                     col=col,
-                    legend_group=col.split("_")[-1],
-                    color=groupby_color[groupby][col.split("_")[-1]],
+                    legend_group=col.split("_filtered_on_")[-1],
+                    color=groupby_color[groupby][col.split("_filtered_on_")[-1]],
                     line_shape=line_shape,
                 )
             )
