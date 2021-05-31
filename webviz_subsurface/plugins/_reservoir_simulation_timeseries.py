@@ -5,14 +5,11 @@ from pathlib import Path
 import json
 import datetime
 from uuid import uuid4
-from dash_table.DataTable import DataTable
 
 import numpy as np
 import pandas as pd
-from py_expression_eval import Parser
 from plotly.subplots import make_subplots
 import dash
-import dash_table
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
@@ -57,8 +54,8 @@ from .._datainput.from_timeseries_cumulatives import (
 )
 from .._utils.vector_calculator import (
     ExpressionInfo,
-    get_expression_with_vector_names,
     get_calculated_vectors,
+    get_selected_expressions,
 )
 
 
@@ -375,20 +372,13 @@ folder, to avoid risk of not extracting the right data.
             },
         ]
 
-        self.calculated_vectors: pd.DataFrame = get_calculated_vectors(
-            self.predefined_expressions, self.smry
-        )
+        # self.calculated_vectors: pd.DataFrame = get_calculated_vectors(
+        #     self.predefined_expressions, self.smry
+        # )
 
-        for elm in self.predefined_expressions:
-            if elm is not None:
-                name = elm["name"]
-                expr = get_expression_with_vector_names(elm)
-                self.dropdown_options.append(
-                    {
-                        "label": f"{name} ({expr})",
-                        "value": f"{name}",
-                    }
-                )
+        self.predefined_expressions_dropdown_options = (
+            self.get_dropdown_options_from_expressions(self.predefined_expressions)
+        )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
@@ -709,32 +699,26 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def modal_vector_calculator_layout(self) -> html.Div:
-        return html.Details(
-            id=self.uuid("vector_calculator_modal"),
-            open=False,
+        return dbc.Modal(
+            style={"marginTop": "20vh", "width": "1300px"},
             children=[
-                dbc.Modal(
-                    style={"marginTop": "20vh", "width": "1300px"},
-                    children=[
-                        dbc.ModalHeader("Vector Calculator"),
-                        dbc.ModalBody(
-                            html.Div(
-                                id=self.uuid("vector_calculator_modal_body"),
-                                children=[
-                                    wsc.VectorCalculator(
-                                        id=self.uuid("vector_calculator"),
-                                        vectors=self.vector_selector_data,
-                                        expressions=self.predefined_expressions,
-                                    )
-                                ],
-                            ),
-                        ),
-                    ],
-                    id=self.uuid("modal_vector_calculator"),
-                    size="lg",
-                    centered=True,
+                dbc.ModalHeader("Vector Calculator"),
+                dbc.ModalBody(
+                    html.Div(
+                        id=self.uuid("vector_calculator_modal_body"),
+                        children=[
+                            wsc.VectorCalculator(
+                                id=self.uuid("vector_calculator"),
+                                vectors=self.vector_selector_data,
+                                expressions=self.predefined_expressions,
+                            )
+                        ],
+                    ),
                 ),
             ],
+            id=self.uuid("modal_vector_calculator"),
+            size="lg",
+            centered=True,
         )
 
     @property
@@ -872,12 +856,45 @@ folder, to avoid risk of not extracting the right data.
                         self.predefined_expressions,
                     ],
                 ),
-                dcc.Store(
-                    id=self.uuid("vector_calculator_calculated_vectors_updated"),
-                    children=[0],
-                ),
             ],
         )
+
+    @staticmethod
+    def get_valid_dropdown_value(
+        dropdown_options: List[Dict[str, str]], value: Union[str, None]
+    ) -> Optional[str]:
+        if value is None:
+            return None
+
+        return next(
+            (
+                option["value"]
+                for option in dropdown_options
+                if option["value"] == value
+            ),
+            None,
+        )
+
+    def get_dropdown_options_from_expressions(
+        self, expressions: List[ExpressionInfo]
+    ) -> List[Dict[str, str]]:
+        additional_dropdown_options: List[Dict[str, str]] = []
+        for elm in expressions:
+            if wsc.VectorCalculator.validate_expression(elm):
+                name = elm["name"]
+                expr = wsc.VectorCalculator.detailed_expression(elm)
+                option = {
+                    "label": f"{name} ({expr})",
+                    "value": f"{name}",
+                }
+
+                # Prevent duplicates
+                if (
+                    option not in self.dropdown_options
+                    and option not in additional_dropdown_options
+                ):
+                    additional_dropdown_options.append(option)
+        return additional_dropdown_options
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: dash.Dash) -> None:
@@ -895,7 +912,7 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("trace_options"), "value"),
                 Input(self.uuid("stat_options"), "value"),
                 Input(
-                    self.uuid("vector_calculator_calculated_vectors_updated"),
+                    self.uuid("vector_calculator_expressions"),
                     "children",
                 ),
             ],
@@ -912,7 +929,7 @@ folder, to avoid risk of not extracting the right data.
             stored_date: str,
             trace_options: List[str],
             stat_options: List[str],
-            _calculated_vectors: pd.DataFrame,
+            expressions: List[ExpressionInfo],
         ) -> dict:
             """Callback to update all graphs based on selections"""
 
@@ -932,6 +949,10 @@ folder, to avoid risk of not extracting the right data.
             # Retrieve previous/current selected date
             date = json.loads(stored_date) if stored_date else None
 
+            # Calculate selected expressions:
+            selected_expressions = get_selected_expressions(expressions, vectors)
+            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+
             # Titles for subplots
             # TODO(Sigurd)
             # Added None to union since date_to_interval_conversion() may return None.
@@ -949,8 +970,9 @@ folder, to avoid risk of not extracting the right data.
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
                 # TODO: Temporary code:
-                elif vec in self.calculated_vectors:
-                    titles.append(f"{vec}")
+                elif vec in calculated_vectors:
+                    # TODO Add meta data
+                    titles.append(f"{vec}" f" [meta data to be added]")
                 # END: Temporary code
                 else:
                     titles.append(
@@ -979,11 +1001,10 @@ folder, to avoid risk of not extracting the right data.
             # Loop through each vector and calculate relevant plot
             legends = []
 
-            # TODO: Continue here
-            smry_new = self.smry.join(self.calculated_vectors)
+            # TODO: Only for demo
+            smry_new = self.smry.join(calculated_vectors)
 
             dfs = calculate_vector_dataframes(
-                # smry=self.smry,
                 smry=smry_new,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
@@ -1117,6 +1138,8 @@ folder, to avoid risk of not extracting the right data.
             visualization: str,
             cum_interval: str,
         ) -> Union[EncodedFile, str]:
+            # TODO: Add calculation and download of selected vector calculator expressions
+
             """Callback to download data based on selections"""
             if data_requested is None:
                 raise PreventUpdate
@@ -1258,64 +1281,59 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             [
+                Output(self.uuid("vector_calculator_expressions"), "children"),
                 Output(self.uuid("vector1"), "options"),
                 Output(self.uuid("vector2"), "options"),
                 Output(self.uuid("vector3"), "options"),
-            ],
-            Input(self.uuid("vector_calculator_expressions"), "children"),
-        )
-        def _updated_vector_calculator_expressions(
-            expressions: List[ExpressionInfo],
-        ) -> List[list]:
-
-            additional_dropdown_options: List[Dict[str, str]] = []
-            for elm in expressions:
-                if elm is not None:
-                    name = elm["name"]
-                    expr = get_expression_with_vector_names(elm)
-                    option = {
-                        "label": f"{name} ({expr})",
-                        "value": f"{name}",
-                    }
-                    if (
-                        option not in self.dropdown_options
-                        and option not in additional_dropdown_options
-                    ):
-                        additional_dropdown_options.append(option)
-
-            dropdown_options = self.dropdown_options + additional_dropdown_options
-
-            return [dropdown_options, dropdown_options, dropdown_options]
-
-        @app.callback(
-            [
-                Output(self.uuid("vector_calculator_expressions"), "children"),
-                Output(
-                    self.uuid("vector_calculator_calculated_vectors_updated"),
-                    "children",
-                ),
+                Output(self.uuid("vector1"), "value"),
+                Output(self.uuid("vector2"), "value"),
+                Output(self.uuid("vector3"), "value"),
             ],
             Input(self.uuid("vector_calculator"), "expressions"),
-            State(
-                self.uuid("vector_calculator_calculated_vectors_updated"), "children"
-            ),
+            [
+                State(self.uuid("vector1"), "value"),
+                State(self.uuid("vector2"), "value"),
+                State(self.uuid("vector3"), "value"),
+            ],
         )
         def _update_vector_calculator_expressions(
             expressions: List[ExpressionInfo],
-            updated_counter: int,
-        ):
-            counter = 0
-            if updated_counter is not None:
-                counter = updated_counter + 1
+            first_dropdown_value: Union[str, None],
+            second_dropdown_value: Union[str, None],
+            third_dropdown_value: Union[str, None],
+        ) -> list:
+            # Validate expressions
+            valid_expressions: List[ExpressionInfo] = []
+            for expression in expressions:
+                if wsc.VectorCalculator.validate_expression(expression):
+                    valid_expressions.append(expression)
 
-            self.calculated_vectors = get_calculated_vectors(expressions, self.smry)
+            # Update dropdown options:
+            dropdown_options = (
+                self.dropdown_options
+                + self.get_dropdown_options_from_expressions(valid_expressions)
+            )
 
-            # TODO: Filter expressions to prevent non-valid expressions in dropdown
-            # TODO: Remove usage of counter, rather pass self.calculated_vectors in a way
-            # which does not trig non-dash component error for dcc.Store. Setting self.calcultated_vectors
-            # gives error.
+            # Ensure valid dropdown values
+            new_first_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options, first_dropdown_value
+            )
+            new_second_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options, second_dropdown_value
+            )
+            new_third_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options, third_dropdown_value
+            )
 
-            return [expressions, counter]
+            return [
+                valid_expressions,
+                dropdown_options,
+                dropdown_options,
+                dropdown_options,
+                new_first_dropdown_value,
+                new_second_dropdown_value,
+                new_third_dropdown_value,
+            ]
 
         @app.callback(
             Output(self.uuid("modal_vector_calculator"), "is_open"),
