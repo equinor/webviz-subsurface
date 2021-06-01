@@ -54,6 +54,7 @@ from .._datainput.from_timeseries_cumulatives import (
 )
 from .._utils.vector_calculator import (
     ExpressionInfo,
+    get_calculated_units,
     get_calculated_vectors,
     get_selected_expressions,
 )
@@ -952,6 +953,11 @@ folder, to avoid risk of not extracting the right data.
             # Calculate selected expressions:
             selected_expressions = get_selected_expressions(expressions, vectors)
             calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+            calculated_units = pd.Series()
+            if self.smry_meta is not None:
+                calculated_units = get_calculated_units(
+                    selected_expressions, self.smry_meta["unit"]
+                )
 
             # Titles for subplots
             # TODO(Sigurd)
@@ -972,7 +978,7 @@ folder, to avoid risk of not extracting the right data.
                 # TODO: Temporary code:
                 elif vec in calculated_vectors:
                     # TODO Add meta data
-                    titles.append(f"{vec}" f" [meta data to be added]")
+                    titles.append(f"{vec}" f" [{calculated_units[vec]}]")
                 # END: Temporary code
                 else:
                     titles.append(
