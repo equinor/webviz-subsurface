@@ -46,3 +46,37 @@ def get_calculated_vectors(
         if parsed_expr is not None:
             calculated_vectors[name] = parsed_expr
     return calculated_vectors
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_calculated_units(
+    expressions: List[ExpressionInfo],
+    units: pd.Series,
+) -> pd.Series:
+    # TODO Update expression handling
+    # Future: check equal equal unit on each vector:
+    # - if equal unit on + or -: x[m]+y[m] = [m]
+    # - If unequal unit on + or -: Set unit "mixed"?
+    # - *, / or ^: perform operators on units
+    #
+    # Utilize ./_datainput/units.py and/or ./_datainput/eclipse_unit.py
+    #
+    #
+    # Now: parse expression str with VectorCalculator.parser.parse()
+    # if valid, do string replace with units from smry_meta
+    calculated_units: pd.Series = pd.Series()
+
+    for expression in expressions:
+        try:
+            # Parse only for validation
+            VectorCalculator.parser.parse(expression["expression"])
+            unit_expr: str = expression["expression"]
+            for elm in expression["variableVectorMap"]:
+                unit_expr = unit_expr.replace(
+                    elm["variableName"], units[elm["vectorName"][0]]
+                )
+
+            calculated_units[expression["name"]] = unit_expr
+        except:
+            continue
+    return calculated_units
