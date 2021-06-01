@@ -3,7 +3,8 @@ from typing import List, Callable, Tuple, Union, Optional, Dict
 import numpy as np
 import pandas as pd
 import dash
-from dash.dependencies import Input, Output
+from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import ObservationModel
@@ -26,14 +27,7 @@ def build_figure(
         Output(
             {"id": get_uuid("clientside"), "plotly_attribute": "initial_layout"}, "data"
         ),
-        Input(
-            {
-                "id": get_uuid("data_selectors"),
-                "data_attribute": "x",
-                "source": "table",
-            },
-            "value",
-        ),
+        Input(get_uuid("stored_x_value"), "data"),
         Input(
             {
                 "id": get_uuid("data_selectors"),
@@ -61,9 +55,10 @@ def build_figure(
         Input(get_uuid("traces"), "value"),
         Input(get_uuid("observations"), "value"),
         Input(get_uuid("highlight-realizations"), "value"),
+        Input(get_uuid("mode"), "value"),
         Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
     )
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-arguments
     def _update_plot(
         x_column_name: str,
         y_column_name: str,
@@ -72,8 +67,11 @@ def build_figure(
         traces: List,
         show_obs: List,
         highlight_realizations: List[int],
-        parameter_filter: Dict,
+        mode: str,
+        parameter_filter: Optional[Dict],
     ) -> Union[Tuple]:
+        if not x_column_name:
+            raise PreventUpdate
         highlight_realizations = (
             [int(real) for real in highlight_realizations]
             if highlight_realizations
@@ -109,18 +107,25 @@ def build_figure(
         )
         if "Realizations" in traces:
             figure.add_realization_traces(
-                df,
-                x_column_name,
-                y_column_name,
+                dframe=df,
+                x_column=x_column_name,
+                y_column=y_column_name,
                 color_column=parameter_name,
                 highlight_reals=highlight_realizations,
                 opacity=0.5 if len(traces) > 1 else None,
+                mode=mode,
             )
             traces.remove("Realizations")
 
         if traces:
             stat_df = calc_series_statistics(df, [y_column_name], x_column_name)
-            figure.add_statistical_lines(stat_df, x_column_name, y_column_name, traces)
+            figure.add_statistical_lines(
+                dframe=stat_df,
+                x_column=x_column_name,
+                y_column=y_column_name,
+                traces=traces,
+                mode=mode,
+            )
         if show_obs and observationmodel is not None:
 
             observations = observationmodel.get_observations_for_attribute(
@@ -142,6 +147,93 @@ def build_figure(
     )
     def _clear_real_highlight(_click: int) -> Optional[List]:
         return []
+
+    @app.callback(
+        Output(get_uuid("stored_x_value"), "data"),
+        Output(get_uuid("traces"), "options"),
+        Output(get_uuid("traces"), "value"),
+        Output(get_uuid("statistics_warning"), "children"),
+        Input(
+            {
+                "id": get_uuid("data_selectors"),
+                "data_attribute": "x",
+                "source": "table",
+            },
+            "value",
+        ),
+        State(
+            {
+                "id": get_uuid("data_selectors"),
+                "data_attribute": "ensemble",
+                "source": "table",
+            },
+            "value",
+        ),
+        State(get_uuid("traces"), "value"),
+        State({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
+    )
+    def _update_statistics_options(
+        x_column_name: str,
+        ensemble_names: List,
+        current_values: List,
+        parameter_filter: Optional[Dict],
+    ) -> Tuple[str, List[Dict], List, str]:
+        """Deactivate statistics calculations if x-axis is varying between realizations"""
+        if not ensemble_names:
+            raise PreventUpdate
+        real_filter = {} if parameter_filter is None else parameter_filter
+        csv_dframe = get_table_data(
+            tableproviders=tableproviders,
+            ensemble_names=ensemble_names,
+            table_column_names=[x_column_name],
+            realization_filter=real_filter,
+        )
+        for _ens, ens_df in csv_dframe.groupby("ENSEMBLE"):
+            realizations = list(ens_df["REAL"].unique())
+            equal_x = all(
+                (
+                    all(
+                        ens_df.loc[ens_df["REAL"] == real][x_column_name].values
+                        == ens_df.loc[ens_df["REAL"] == realizations[0]][
+                            x_column_name
+                        ].values
+                    )
+                    for real in realizations
+                )
+            )
+            if not equal_x:
+                return (
+                    x_column_name,
+                    [
+                        {"label": "Realizations", "value": "Realizations"},
+                        {
+                            "label": "Mean",
+                            "value": "Mean",
+                            "disabled": True,
+                        },
+                        {
+                            "label": "P10/P90",
+                            "value": "P10/P90",
+                            "disabled": True,
+                        },
+                        {
+                            "label": "Low/High",
+                            "value": "Low/High",
+                            "disabled": True,
+                        },
+                    ],
+                    ["Realizations"] if "Realizations" in current_values else [],
+                    "⚠️ Cannot calculate statistics as x-axis varies between realizations",
+                )
+        return (
+            x_column_name,
+            [
+                {"label": val, "value": val}
+                for val in ["Realizations", "Mean", "P10/P90", "Low/High"]
+            ],
+            current_values,
+            "",
+        )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

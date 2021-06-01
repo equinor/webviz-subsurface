@@ -13,7 +13,19 @@ def line_traces_view(
         className="framed",
         style={"fontSize": "0.8em"},
         children=[
-            html.H5("Plot lines"),
+            html.H5("Plot traces"),
+            html.Div(
+                style={"marginTop": "5px", "marginBottom": "5px"},
+                children=dcc.RadioItems(
+                    id=get_uuid("mode"),
+                    options=[
+                        {"value": "lines", "label": "Lines"},
+                        {"value": "markers", "label": "Points"},
+                    ],
+                    value="lines",
+                    labelStyle={"display": "inline-block"},
+                ),
+            ),
             dcc.Checklist(
                 id=get_uuid("traces"),
                 options=[
@@ -33,6 +45,7 @@ def line_traces_view(
                 persistence=True,
                 persistence_type="session",
             ),
+            html.Label(id=get_uuid("statistics_warning"), children=""),
         ],
     )
 
