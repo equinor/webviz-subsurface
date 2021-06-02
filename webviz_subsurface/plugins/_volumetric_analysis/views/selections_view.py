@@ -38,9 +38,7 @@ def button(uuid: str, title: str, page_id: str) -> html.Button:
 
 def source_selector(uuid: str, volumemodel: InplaceVolumesModel) -> html.Div:
     return html.Div(
-        style={
-            "marginTop": "5px",
-        },
+        style={"marginTop": "5px"},
         children=html.Label(
             children=[
                 html.Span("Source", style={"font-weight": "bold"}),
@@ -180,7 +178,7 @@ def plot_selector_dropdowns(
             elements = volumemodel.responses
             value = None
         if selector == "Subplots":
-            elements = volumemodel.selectors
+            elements = [x for x in volumemodel.selectors if x != "REAL"]
             value = None
         if selector == "Color by":
             elements = volumemodel.selectors
@@ -222,7 +220,9 @@ def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Details:
             html.Div(
                 style={"padding": "10px"},
                 children=[
+                    remove_fluid_annotation(uuid=uuid),
                     subplot_xaxis_range(uuid=uuid),
+                    histogram_options(uuid=uuid),
                     html.Span("Colors", style={"font-weight": "bold"}),
                     wcc.ColorScales(
                         id={"id": uuid, "settings": "Colorscale"},
@@ -239,34 +239,21 @@ def settings_layout(uuid: str, theme: WebvizConfigTheme) -> html.Details:
 def subplot_xaxis_range(
     uuid: str,
 ) -> html.Div:
-
     axis_matches_layout = []
     for axis in ["X axis", "Y axis"]:
         axis_matches_layout.append(
             html.Div(
-                children=[
-                    html.Div(
-                        children=dcc.RadioItems(
-                            id={"id": uuid, "selector": f"{axis} matches"},
-                            style={"flex": 2, "minWidth": "70px"},
-                            options=[
-                                {"label": f"Equal {axis}", "value": True},
-                                {"label": f"Individual {axis}", "value": False},
-                            ],
-                            labelStyle={
-                                "display": "inline-block",
-                                "margin-right": "5px",
-                            },
-                            value=True,
-                        ),
-                    ),
-                ],
+                children=dcc.Checklist(
+                    id={"id": uuid, "selector": f"{axis} matches"},
+                    options=[{"label": f"Equal {axis} range", "value": "Equal"}],
+                    value=["Equal"],
+                )
             )
         )
     return html.Div(
         children=[
-            html.Span("Subplot axis range options", style={"font-weight": "bold"}),
-            html.Div(axis_matches_layout),
+            html.Span("Subplot options:", style={"font-weight": "bold"}),
+            html.Div(style={"margin-bottom": "10px"}, children=axis_matches_layout),
         ]
     )
 
@@ -274,7 +261,6 @@ def subplot_xaxis_range(
 def table_sync_option(
     uuid: str,
 ) -> html.Div:
-
     return html.Div(
         style={"margin-bottom": "10px"},
         children=dcc.Checklist(
@@ -282,4 +268,60 @@ def table_sync_option(
             options=[{"label": "Sync table with plot", "value": "Sync"}],
             value=["Sync"],
         ),
+    )
+
+
+def remove_fluid_annotation(
+    uuid: str,
+) -> html.Div:
+    return html.Div(
+        style={"margin-bottom": "10px"},
+        children=dcc.Checklist(
+            id={"id": uuid, "selector": "Fluid annotation"},
+            options=[{"label": "Show fluid annotation", "value": "Show"}],
+            value=["Show"],
+        ),
+    )
+
+
+def histogram_options(uuid: str) -> html.Div:
+    return html.Div(
+        children=[
+            html.Span("Histogram options:", style={"font-weight": "bold"}),
+            html.Div(
+                children=[
+                    dcc.RadioItems(
+                        id={"id": uuid, "selector": "barmode"},
+                        options=[
+                            {"label": "overlay", "value": "overlay"},
+                            {"label": "group", "value": "group"},
+                            {"label": "stack", "value": "stack"},
+                        ],
+                        labelStyle={"display": "inline-flex", "margin-right": "5px"},
+                        value="overlay",
+                    ),
+                    wcc.FlexBox(
+                        children=[
+                            html.Span(
+                                "Bins:",
+                                style={
+                                    "flex": 1,
+                                    "minWidth": "10px",
+                                    "maxWidth": "30px",
+                                },
+                            ),
+                            html.Div(
+                                style={"flex": 2, "minWidth": "250px"},
+                                children=dcc.Slider(
+                                    id={"id": uuid, "selector": "hist_bins"},
+                                    value=15,
+                                    min=5,
+                                    max=30,
+                                ),
+                            ),
+                        ]
+                    ),
+                ]
+            ),
+        ],
     )
