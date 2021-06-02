@@ -146,7 +146,9 @@ def build_figure(
         Input(get_uuid("clear-highlight-realizations"), "n_clicks"),
     )
     def _clear_real_highlight(_click: int) -> Optional[List]:
-        return []
+        if _click is not None:
+            return []
+        raise PreventUpdate
 
     @app.callback(
         Output(get_uuid("stored_x_value"), "data"),
