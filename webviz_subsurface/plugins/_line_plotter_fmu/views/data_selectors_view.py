@@ -82,6 +82,8 @@ def dropdown_for_plotly_data(
                 clearable=clearable,
                 placeholder=placeholder,
                 multi=multi,
+                persistence=True,
+                persistence_type="session",
             ),
         ],
     )
@@ -108,6 +110,8 @@ def color_scale_dropdown(
                 clearable=clearable,
                 placeholder=placeholder,
                 multi=multi,
+                persistence=True,
+                persistence_type="session",
             ),
         ],
     )

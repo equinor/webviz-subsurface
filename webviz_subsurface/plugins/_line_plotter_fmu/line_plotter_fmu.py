@@ -11,6 +11,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_core_components as wcc
 
+from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._models import ObservationModel
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 from webviz_subsurface._components.parameter_filter import ParameterFilter
@@ -54,10 +55,8 @@ class LinePlotterFMU(WebvizPluginABC):
         super().__init__()
 
         provider = EnsembleTableProviderFactory.instance()
-
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
-        self._colors = colors if colors else {}
         if ensembles is not None and csvfile is not None:
             ensembles_dict: Dict[str, str] = {
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
@@ -132,6 +131,11 @@ class LinePlotterFMU(WebvizPluginABC):
             / "js"
             / "update_plotly_figure.js"
         )
+
+        self._colors: Dict = unique_colors(self._ensemble_names, webviz_settings.theme)
+        if colors is not None:
+            self._colors.update(colors)
+
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

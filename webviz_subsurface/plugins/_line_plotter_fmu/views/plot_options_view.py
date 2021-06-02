@@ -94,6 +94,8 @@ def dropdown_for_plotly_layout(
                 value=value,
                 clearable=False,
                 placeholder=placeholder,
+                persistence=True,
+                persistence_type="session",
             ),
         ],
     )
