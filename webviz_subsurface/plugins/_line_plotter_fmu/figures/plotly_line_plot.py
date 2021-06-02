@@ -30,6 +30,7 @@ class PlotlyLinePlot:
         color_column: Optional[str],
         highlight_reals: List = None,
         opacity: float = None,
+        mode: str = "lines",
     ) -> None:
         """Renders line trace for each realization"""
         # If color parameter is given, normalize values for coloring
@@ -64,7 +65,7 @@ class PlotlyLinePlot:
                         },
                         "opacity": opacity,
                         "line": {"width": 3 if real in highlight_reals else 0.5},
-                        "mode": "lines",
+                        "mode": mode,
                         "showlegend": real_no == 0 and color_column is None,
                     }
                 )
@@ -99,7 +100,12 @@ class PlotlyLinePlot:
             )
 
     def add_statistical_lines(
-        self, dframe: pd.DataFrame, x_column: str, y_column: str, traces: List
+        self,
+        dframe: pd.DataFrame,
+        x_column: str,
+        y_column: str,
+        traces: List,
+        mode: str = "lines",
     ) -> None:
         for ensemble, ens_df in dframe.groupby("ENSEMBLE"):
             color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,1)")
@@ -114,7 +120,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
-                        "mode": "lines",
+                        "mode": mode,
                     }
                 )
             if "P10/P90" in traces:
@@ -128,7 +134,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
-                        "mode": "lines",
+                        "mode": mode,
                     }
                 )
             if "Mean" in traces:
@@ -141,7 +147,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         # "fill": "tonexty",
                         "marker": {"color": color},
-                        "mode": "lines",
+                        "mode": mode,
                         "line": {"width": 3},
                     }
                 )
@@ -157,7 +163,7 @@ class PlotlyLinePlot:
                         "showlegend": False,
                         # "fill": "tonexty",
                         "marker": {"color": color},
-                        "mode": "lines",
+                        "mode": mode,
                     }
                 )
             if "Low/High" in traces:
@@ -171,7 +177,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
-                        "mode": "lines",
+                        "mode": mode,
                     }
                 )
 

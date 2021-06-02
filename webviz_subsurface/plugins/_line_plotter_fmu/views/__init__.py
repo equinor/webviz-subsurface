@@ -96,6 +96,6 @@ def data_stores(get_uuid: Callable) -> html.Div:
                     "plotly_attribute": "update_layout",
                 }
             ),
-            dcc.Store(id={"id": get_uuid("clientside"), "attribute": "single_real"}),
+            dcc.Store(id=get_uuid("stored_x_value")),
         ]
     )
