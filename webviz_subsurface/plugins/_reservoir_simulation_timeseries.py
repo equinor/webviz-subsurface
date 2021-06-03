@@ -24,8 +24,7 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface_components as wsc
-from webviz_subsurface_components.VectorCalculator import VectorCalculator
-from webviz_subsurface_components.VectorCalculatorWrapper import VectorCalculatorParser
+
 
 import webviz_subsurface
 
