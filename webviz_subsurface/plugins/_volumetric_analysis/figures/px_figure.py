@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, List, Union
 import inspect
 
 import pandas as pd
@@ -10,18 +10,17 @@ import plotly.graph_objects as go
 def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
     """Create subplots for selected parameters"""
 
+    if kwargs["data_frame"].empty:
+        return empty_figure_layout()
+
     plotargs = set_default_args(**kwargs)
 
     fig: go.Figure = make_initial_figure(plot_type=plot_type, **plotargs)
     fig = update_xaxes(fig, **plotargs)
     fig = update_yaxes(fig, **plotargs)
-    fig = update_layout(fig, plot_type, **plotargs)
+    fig = update_layout(fig, **plotargs)
+    fig = update_traces(fig, **plotargs)
     fig = for_each_annotation(fig, **plotargs)
-
-    fig.update_traces(marker_size=15, selector=dict(type="scatter"))
-    fig.update_traces(marker_line=dict(color="#000000", width=1))
-    fig.update_traces(nbinsx=20, selector=dict(type="histogram"))
-    fig.update_traces(textposition="inside", selector=dict(type="pie"))
 
     if plot_type == "distribution":
         fig = convert_violin_to_distribution_plot(fig, **plotargs)
@@ -65,7 +64,7 @@ def make_initial_figure(plot_type: str, **plotargs: Any) -> Callable:
 
 def update_xaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
     data_frame = kwargs["data_frame"]
-    facet_col = kwargs.get("facet_col", None)
+    facet_col = kwargs.get("facet_col")
     return figure.update_xaxes(
         gridwidth=1,
         gridcolor="lightgrey",
@@ -95,14 +94,52 @@ def update_yaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
     ).update_yaxes(**kwargs.get("yaxis", {}))
 
 
-def update_layout(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
-    if plot_type in ["histogram", "bar"]:
-        figure.update_layout(
-            bargap=0.1,
-        )
-    return figure.update_layout(plot_bgcolor="white").update_layout(
-        **kwargs.get("layout", {})
+def update_layout(figure: go.Figure, **kwargs: Any) -> go.Figure:
+    return (
+        figure.update_layout(plot_bgcolor="white")
+        .update_layout(bargap=0)
+        .update_layout(**kwargs.get("layout", {}))
     )
+
+
+# pylint: disable=unnecessary-lambda
+def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
+    data_frame = kwargs["data_frame"]
+    facet_col = kwargs.get("facet_col")
+    return (
+        figure.update_traces(
+            marker_size=max((20 - (1.5 * data_frame[facet_col].nunique())), 5)
+            if facet_col is not None
+            else 20,
+            selector=lambda t: t["type"] in ["scatter", "scattergl"],
+        )
+        .update_traces(textposition="inside", selector=dict(type="pie"))
+        .for_each_trace(lambda t: set_marker_color(t))
+        .for_each_trace(
+            lambda t: t.update(
+                xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
+            ),
+            selector=dict(type="histogram"),
+        )
+    )
+
+
+def set_marker_color(trace: go) -> go:
+    marker_attributes = trace.marker.to_plotly_json()
+    if (
+        "color" in marker_attributes
+        and isinstance(trace.marker.color, str)
+        and "#" in trace.marker.color
+    ):
+        opacity = (
+            0.5
+            if trace.type in ["scatter", "scattergl"]
+            else marker_attributes.get("opacity", 0.7)
+        )
+        trace.update(marker_line=dict(color=trace.marker.color, width=1))
+        trace.update(marker_color=hex_to_rgb(trace.marker.color, opacity=opacity))
+        trace.update(marker_opacity=1)
+    return trace
 
 
 def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
@@ -117,6 +154,25 @@ def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
             font_size=max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
             if facet_col is not None
             else None,
+        )
+    )
+
+
+def empty_figure_layout() -> go.Figure:
+    return go.Figure(
+        layout=dict(
+            xaxis={"visible": False},
+            yaxis={"visible": False},
+            plot_bgcolor="white",
+            annotations=[
+                dict(
+                    text="No data available for figure",
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font={"size": 20},
+                )
+            ],
         )
     )
 
@@ -226,3 +282,14 @@ def get_filtered_x_series(
         return dframe.loc[(dframe[facet_col] == facet) & (dframe[color_col] == color)][
             x
         ]
+
+
+def hex_to_rgb(hex_string: str, opacity: float = 1) -> str:
+    """Converts a hex color to rgb"""
+    hex_string = hex_string.lstrip("#")
+    hlen = len(hex_string)
+    rgb: List[Union[int, float]] = [
+        int(hex_string[i : i + hlen // 3], 16) for i in range(0, hlen, hlen // 3)
+    ]
+    rgb.append(opacity)
+    return f"rgba{tuple(rgb)}"
