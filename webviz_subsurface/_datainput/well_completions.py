@@ -131,9 +131,9 @@ def get_real_from_filename(filename: str) -> int:
             return int(item.split("-")[1])
     raise ValueError(f"Realization number not found for {filename}")
 
+
 def read_connection_status(
-    ensemble_path: str,
-    connection_status_file: str
+    ensemble_path: str, connection_status_file: str
 ) -> Optional[pd.DataFrame]:
     """Reads parquet file with connection status data from the scratch disk.
     Merges together files from all realizations, does some fixing of the column
