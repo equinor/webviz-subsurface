@@ -23,7 +23,7 @@ from .._datainput.well_completions import (
     read_well_attributes,
     read_stratigraphy,
     get_ecl_unit_system,
-    read_connection_status
+    read_connection_status,
 )
 
 
@@ -332,11 +332,9 @@ def create_ensemble_dataset(
     """
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
-    qc_compdat(df)
-    df.DATE = pd.to_datetime(df.DATE).dt.date
+
     df_connstatus = read_connection_status(
-        ensemble_path=ensemble_path,
-        connection_status_file=connection_status_file
+        ensemble_path=ensemble_path, connection_status_file=connection_status_file
     )
     layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
         ensemble_path=ensemble_path,
@@ -353,14 +351,7 @@ def create_ensemble_dataset(
         kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
 
     if df_connstatus is not None:
-        #df = df[(df.REAL==0) & (df.WELL=="D_2H")]
-        #df_connstatus = df_connstatus[(df_connstatus.REAL == 0) & (df_connstatus.WELL=="D_2H")]
-        df.to_csv("/private/olind/webviz/output_compdat.csv")
-        df_connstatus.to_csv("/private/olind/webviz/output_connstatus.csv")
         df = merge_compdat_and_connstatus(df, df_connstatus)
-        df.to_csv("/private/olind/webviz/output_merged.csv")
-
-    #time_steps = [dte.astype(str)[:10] for dte in sorted(pd.to_datetime(df.DATE).unique())]
 
     time_steps = sorted(df.DATE.unique())
     realizations = list(sorted(df.REAL.unique()))
@@ -391,62 +382,30 @@ def create_ensemble_dataset(
     return io.BytesIO(json.dumps(result).encode())
 
 
-def merge_compdat_and_connstatus_for_single_connection(
-    df_compdat: pd.DataFrame,
-    df_connstatus: pd.DataFrame
-) -> pd.DataFrame:
-    """
-    Description
-    """
-    if df_connstatus.empty:
-        return df_compdat
-
-    df_connstatus["K1"] = df_connstatus.K
-
-    # check if all KH values are the same (which will be most of the time)
-    kh_values = df_compdat.KH.to_numpy()
-    if all(kh_values[0] == kh_values):
-        df_connstatus["KH"] = kh_values[0]
-    else:
-        def get_kh_for_date(row):
-            prev_date = df_compdat[df_compdate.DATE <= row.DATE].DATE.max()
-            print("kh is changing")
-            return 0 #float(df_compdat[df_compdat.DATE == prev_date].KH)
-        df_connstatus["KH"] = df_connstatus.apply(get_kh_for_date, axis=1)
-    df_connstatus.KH = pd.to_numeric(df_connstatus.KH)
-    return df_connstatus
-
 def merge_compdat_and_connstatus(
-    df_compdat: pd.DataFrame,
-    df_connstatus: pd.DataFrame
+    df_compdat: pd.DataFrame, df_connstatus: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    Description
-    """
-    import time
-    start = time.time()
-    print("starting merge")
-    df = pd.DataFrame()
-    df_connstatus.to_csv("/private/olind/webviz/compdat/connstatus_bauge.csv")
-    for group_id, df_group_compdat in df_compdat.groupby(["REAL", "WELL", "I", "J", "K1"]):
-        #print(group_id)
-        df_connstatus_filtered = df_connstatus[
-            (df_connstatus.REAL == group_id[0]) &
-            (df_connstatus.WELL == group_id[1]) &
-            (df_connstatus.I == group_id[2]) &
-            (df_connstatus.J == group_id[3]) &
-            (df_connstatus.K == group_id[4])
-        ]
-        if group_id[0] == 0 and group_id[1] == "D_1H":
-            df_group_compdat.to_csv(f"/private/olind/webviz/compdat/compdat_{group_id[0]}_{group_id[1]}_{group_id[2]}_{group_id[3]}_{group_id[4]}.csv")
-            df_connstatus_filtered.to_csv(f"/private/olind/webviz/compdat/connstatus_{group_id[0]}_{group_id[1]}_{group_id[2]}_{group_id[3]}_{group_id[4]}.csv")
+    """This function merges the compdat data (exported with ecl2df) with the connection
+    status data (extracted from the CPI summary data). The connection status data will
+    be used for wells where it exists. The KH will be merged from the compdat. For wells
+    that are not in the connection status data, the compdat data will be used as it is.
 
-        df_conn = merge_compdat_and_connstatus_for_single_connection(
-            df_group_compdat.copy(), df_connstatus_filtered.copy()
-        )
-        df = pd.concat([df, df_conn])
-    print(f"finish merged in {time.time()- start}")
+    This approach is fast, but a couple of things should be noted:
+    - in the connection status data, a connection is not set to SHUT before it has been OPEN. \
+    In the compdat data, some times all connections are first defined and the opened later.
+    - any connections that are in compdat but not in connections status will be ignored \
+    (e.g. connections that are always shut)
+    - there is no logic to handle KH changing with time for the same connection (this \
+    can easily be added using apply in pandas, but it is very rare and slows down the function
+    significantly)
+    """
+    match_on = ["REAL", "WELL", "I", "J", "K1"]
+    df = pd.merge(df_connstatus, df_compdat[match_on + ["KH"]], on=match_on, how="left")
+    df.drop_duplicates(keep="first", inplace=True)
+    df = pd.concat([df, df_compdat[~df_compdat.WELL.isin(df.WELL.unique())]])
+    df = df.reset_index(drop=True)
     return df
+
 
 def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
     """Counts the number of leaves in the stratigraphy tree"""
@@ -468,17 +427,6 @@ def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
     if unit_system is not None:
         return units[unit_system]
     return ("", 2)
-
-
-def qc_compdat(compdat: pd.DataFrame) -> None:
-    """QCs that the compdat data has the required format"""
-    needed_columns = ["WELL", "K1", "OP/SH", "KH"]
-    for column in needed_columns:
-        if column not in compdat:
-            raise ValueError(
-                f"Column {column} not found in compdat dataframe."
-                "This should not occur unless there has been changes to ecl2df."
-            )
 
 
 def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
@@ -504,6 +452,7 @@ def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
             # if minimum one of the compdats for the zone is OPEN then the zone is considered open
             event_value = 1 if not df_timestep_open.empty else -1
             kh_value = df_timestep_open.KH.sum()
+
         events.append(event_value)
         kh_values.append(kh_value)
     return events, kh_values
