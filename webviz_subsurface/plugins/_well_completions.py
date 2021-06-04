@@ -141,28 +141,28 @@ class WellCompletions(WebvizPluginABC):
     {
         "version" : "0.1",
         "wells" : [
-        {
-            "alias" : {
-                "eclipse" : "OP_1"
+            {
+                "alias" : {
+                    "eclipse" : "OP_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "mlt",
+                    "structure" : "East",
+                    "welltype" : "producer"
+                },
+                "name" : "OP_1"
             },
-            "attributes" : {
-                "mlt_singlebranch" : "mlt",
-                "structure" : "East",
-                "welltype" : "producer"
+            {
+                "alias" : {
+                    "eclipse" : "GI_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "singlebranch",
+                    "structure" : "West",
+                    "welltype" : "gas injector"
+                },
+                "name" : "GI_1"
             },
-            "name" : "OP_1"
-        },
-        {
-            "alias" : {
-                "eclipse" : "GI_1"
-            },
-            "attributes" : {
-                "mlt_singlebranch" : "singlebranch",
-                "structure" : "West",
-                "welltype" : "gas injector"
-            },
-            "name" : "GI_1"
-        },
         ]
     }
     ```
