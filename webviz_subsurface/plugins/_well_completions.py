@@ -23,6 +23,7 @@ from .._datainput.well_completions import (
     read_well_attributes,
     read_stratigraphy,
     get_ecl_unit_system,
+    read_connection_status
 )
 
 
@@ -167,6 +168,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/wells/compdat.csv",
+        connection_status_file: str = "share/results/tables/connection_status.parquet",
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
@@ -177,6 +179,7 @@ class WellCompletions(WebvizPluginABC):
         super().__init__()
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
+        self.connection_status_file = connection_status_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
         self.stratigraphy_file = stratigraphy_file
         self.well_attributes_file = well_attributes_file
@@ -201,6 +204,7 @@ class WellCompletions(WebvizPluginABC):
                         "ensemble": ensemble,
                         "ensemble_path": self.ens_paths[ensemble],
                         "compdat_file": self.compdat_file,
+                        "connection_status_file": self.connection_status_file,
                         "zone_layer_mapping_file": self.zone_layer_mapping_file,
                         "stratigraphy_file": self.stratigraphy_file,
                         "well_attributes_file": self.well_attributes_file,
@@ -282,6 +286,7 @@ class WellCompletions(WebvizPluginABC):
                     ensemble_name,
                     self.ens_paths[ensemble_name],
                     self.compdat_file,
+                    self.connection_status_file,
                     self.zone_layer_mapping_file,
                     self.stratigraphy_file,
                     self.well_attributes_file,
@@ -310,6 +315,7 @@ def create_ensemble_dataset(
     ensemble: str,
     ensemble_path: str,
     compdat_file: str,
+    connection_status_file: str,
     zone_layer_mapping_file: str,
     stratigraphy_file: str,
     well_attributes_file: str,
@@ -325,7 +331,13 @@ def create_ensemble_dataset(
     https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
     """
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
+    df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
     qc_compdat(df)
+    df.DATE = pd.to_datetime(df.DATE).dt.date
+    df_connstatus = read_connection_status(
+        ensemble_path=ensemble_path,
+        connection_status_file=connection_status_file
+    )
     layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
         ensemble_path=ensemble_path,
         zone_layer_mapping_file=zone_layer_mapping_file,
@@ -340,6 +352,16 @@ def create_ensemble_dataset(
     if kh_unit is None:
         kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
 
+    if df_connstatus is not None:
+        #df = df[(df.REAL==0) & (df.WELL=="D_2H")]
+        #df_connstatus = df_connstatus[(df_connstatus.REAL == 0) & (df_connstatus.WELL=="D_2H")]
+        df.to_csv("/private/olind/webviz/output_compdat.csv")
+        df_connstatus.to_csv("/private/olind/webviz/output_connstatus.csv")
+        df = merge_compdat_and_connstatus(df, df_connstatus)
+        df.to_csv("/private/olind/webviz/output_merged.csv")
+
+    #time_steps = [dte.astype(str)[:10] for dte in sorted(pd.to_datetime(df.DATE).unique())]
+
     time_steps = sorted(df.DATE.unique())
     realizations = list(sorted(df.REAL.unique()))
     layers = np.sort(df.K1.unique())
@@ -349,6 +371,7 @@ def create_ensemble_dataset(
         layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
 
     df["ZONE"] = df.K1.map(layer_zone_mapping)
+
     zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
 
     result = {
@@ -357,14 +380,73 @@ def create_ensemble_dataset(
         "stratigraphy": extract_stratigraphy(
             layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
         ),
-        "timeSteps": time_steps,
+        "timeSteps": [str(dte) for dte in time_steps],
         "wells": extract_wells(
             df, zone_names, time_steps, realizations, well_attributes
         ),
     }
-
+    with open("/private/olind/webviz/result.json", "w") as handle:
+        json.dump(result, handle)
+        print("output exported")
     return io.BytesIO(json.dumps(result).encode())
 
+
+def merge_compdat_and_connstatus_for_single_connection(
+    df_compdat: pd.DataFrame,
+    df_connstatus: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Description
+    """
+    if df_connstatus.empty:
+        return df_compdat
+
+    df_connstatus["K1"] = df_connstatus.K
+
+    # check if all KH values are the same (which will be most of the time)
+    kh_values = df_compdat.KH.to_numpy()
+    if all(kh_values[0] == kh_values):
+        df_connstatus["KH"] = kh_values[0]
+    else:
+        def get_kh_for_date(row):
+            prev_date = df_compdat[df_compdate.DATE <= row.DATE].DATE.max()
+            print("kh is changing")
+            return 0 #float(df_compdat[df_compdat.DATE == prev_date].KH)
+        df_connstatus["KH"] = df_connstatus.apply(get_kh_for_date, axis=1)
+    df_connstatus.KH = pd.to_numeric(df_connstatus.KH)
+    return df_connstatus
+
+def merge_compdat_and_connstatus(
+    df_compdat: pd.DataFrame,
+    df_connstatus: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Description
+    """
+    import time
+    start = time.time()
+    print("starting merge")
+    df = pd.DataFrame()
+    df_connstatus.to_csv("/private/olind/webviz/compdat/connstatus_bauge.csv")
+    for group_id, df_group_compdat in df_compdat.groupby(["REAL", "WELL", "I", "J", "K1"]):
+        #print(group_id)
+        df_connstatus_filtered = df_connstatus[
+            (df_connstatus.REAL == group_id[0]) &
+            (df_connstatus.WELL == group_id[1]) &
+            (df_connstatus.I == group_id[2]) &
+            (df_connstatus.J == group_id[3]) &
+            (df_connstatus.K == group_id[4])
+        ]
+        if group_id[0] == 0 and group_id[1] == "D_1H":
+            df_group_compdat.to_csv(f"/private/olind/webviz/compdat/compdat_{group_id[0]}_{group_id[1]}_{group_id[2]}_{group_id[3]}_{group_id[4]}.csv")
+            df_connstatus_filtered.to_csv(f"/private/olind/webviz/compdat/connstatus_{group_id[0]}_{group_id[1]}_{group_id[2]}_{group_id[3]}_{group_id[4]}.csv")
+
+        df_conn = merge_compdat_and_connstatus_for_single_connection(
+            df_group_compdat.copy(), df_connstatus_filtered.copy()
+        )
+        df = pd.concat([df, df_conn])
+    print(f"finish merged in {time.time()- start}")
+    return df
 
 def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
     """Counts the number of leaves in the stratigraphy tree"""
@@ -422,7 +504,6 @@ def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
             # if minimum one of the compdats for the zone is OPEN then the zone is considered open
             event_value = 1 if not df_timestep_open.empty else -1
             kh_value = df_timestep_open.KH.sum()
-
         events.append(event_value)
         kh_values.append(kh_value)
     return events, kh_values

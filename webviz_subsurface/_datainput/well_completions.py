@@ -5,6 +5,8 @@ from pathlib import Path
 import glob
 import logging
 
+import pandas as pd
+
 from ecl2df import common
 
 
@@ -118,3 +120,36 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
                 return unit_system
         return None
     return None
+
+
+def get_real_from_filename(filename: str) -> int:
+    """
+    Description
+    """
+    for item in filename.split("/"):
+        if item.startswith("realization-"):
+            return int(item.split("-")[1])
+    raise ValueError(f"Realization number not found for {filename}")
+
+def read_connection_status(
+    ensemble_path: str,
+    connection_status_file: str
+) -> Optional[pd.DataFrame]:
+    """
+    Description
+    """
+    files = glob.glob(f"{ensemble_path}/{connection_status_file}")
+    if not files:
+        return None
+
+    df = pd.DataFrame()
+    for filename in glob.glob(f"{ensemble_path}/{connection_status_file}"):
+        df_real = pd.read_parquet(filename)
+        real = get_real_from_filename(filename)
+        df_real["REAL"] = real
+        df = pd.concat([df, df_real])
+    df.I = pd.to_numeric(df.I)
+    df.J = pd.to_numeric(df.J)
+    df.K = pd.to_numeric(df.K)
+    df.DATE = pd.to_datetime(df.DATE).dt.date
+    return df
