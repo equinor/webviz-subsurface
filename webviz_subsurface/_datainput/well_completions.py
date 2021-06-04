@@ -123,8 +123,8 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
 
 
 def get_real_from_filename(filename: str) -> int:
-    """
-    Description
+    """Reads the realization number from the filepath. This will work
+    if one of the parent folders for the file is on the
     """
     for item in filename.split("/"):
         if item.startswith("realization-"):
@@ -135,8 +135,13 @@ def read_connection_status(
     ensemble_path: str,
     connection_status_file: str
 ) -> Optional[pd.DataFrame]:
-    """
-    Description
+    """Reads parquet file with connection status data from the scratch disk.
+    Merges together files from all realizations, does some fixing of the column
+    data types, and returns it as a pandas dataframe.
+
+    The connection status data is extracted from the CPI data, which is 0 if the
+    connection is SHUT and >0 if the connection is OPEN. This is independent of
+    the status of the well.
     """
     files = glob.glob(f"{ensemble_path}/{connection_status_file}")
     if not files:
@@ -150,6 +155,7 @@ def read_connection_status(
         df = pd.concat([df, df_real])
     df.I = pd.to_numeric(df.I)
     df.J = pd.to_numeric(df.J)
-    df.K = pd.to_numeric(df.K)
+    df["K1"] = pd.to_numeric(df.K)
+    df = df.drop(["K"], axis=1)
     df.DATE = pd.to_datetime(df.DATE).dt.date
     return df

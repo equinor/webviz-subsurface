@@ -38,10 +38,11 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping \
-    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels \
-    * **`well_attributes_file`:** `.json` file with categorical well attributes \
-    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted \
+    * **`connection_status_file`:** `.parquet` file with connection status data per realization
+    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
+    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
+    * **`well_attributes_file`:** `.json` file with categorical well attributes
+    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted
     * **`kh_decimal_places`:**
 
     ---
@@ -50,12 +51,23 @@ class WellCompletions(WebvizPluginABC):
     **COMPDAT input**
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/wells/compdat.csv`.
+    `share/results/wells/compdat.csv`).
 
     The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+
+    **Connection status input**
+
+    The `connection_status_file` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/connection_status.parquet`.
+
+    This file can be exported from the ERT workflow by a forward model: `EXPORT_CONNECTION_STATUS`,
+    which will be distributed somehow. This forward model uses the CPI summary data to create
+    a connection status history: for each connection cell there is one line for each time the
+    connection is opened or closed. This data is very sparse compared to the CPI data. This export
+    has the logic that
 
     **Zone layer mapping**
 
@@ -83,10 +95,10 @@ class WellCompletions(WebvizPluginABC):
             "color": "#FFFFFF",
             "subzones": [
                 {
-                    "name": "ZoneA.1
+                    "name": "ZoneA.1"
                 },
                 {
-                    "name": "ZoneA.2
+                    "name": "ZoneA.2"
                 }
             ]
         },
@@ -99,7 +111,7 @@ class WellCompletions(WebvizPluginABC):
                     "color": "#FFF111"
                 },
                 {
-                    "name": "ZoneB.2,
+                    "name": "ZoneB.2",
                     "subzones: {"name": "ZoneB.2.2"}
                 }
             ]
@@ -398,6 +410,8 @@ def merge_compdat_and_connstatus(
     - there is no logic to handle KH changing with time for the same connection (this \
     can easily be added using apply in pandas, but it is very rare and slows down the function
     significantly)
+    - if connection status is missing for a realization, but compdat exists, compdat will also \
+    be ignored.
     """
     match_on = ["REAL", "WELL", "I", "J", "K1"]
     df = pd.merge(df_connstatus, df_compdat[match_on + ["KH"]], on=match_on, how="left")
