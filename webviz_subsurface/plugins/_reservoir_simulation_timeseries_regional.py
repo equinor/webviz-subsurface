@@ -16,12 +16,14 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizConfigTheme
 from webviz_config import WebvizSettings
 
+import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._abbreviations.reservoir_simulation import (
@@ -130,6 +132,14 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
+
         self.column_keys = column_keys
         self.time_index = sampling
         if self.time_index not in ("daily", "monthly", "yearly"):
@@ -450,6 +460,7 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                                 dcc.RadioItems(
                                     id=self.selectors_id("timeseries_visualization"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "Individual realizations",

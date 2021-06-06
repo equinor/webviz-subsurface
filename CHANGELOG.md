@@ -15,6 +15,7 @@ found in Eclipse files.
 in the new `StructuralUncertainty` plugin.
 
 ### Fixed
+- [#659](https://github.com/equinor/webviz-subsurface/pull/659) - Added missing `display: block` in option selectors (e.g. radio items).
 - [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load
 correctly from persisted user settings.
 - [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method

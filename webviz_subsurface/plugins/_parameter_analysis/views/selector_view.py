@@ -125,10 +125,11 @@ def sortby_selector(
             ),
             dcc.RadioItems(
                 id=get_uuid("delta-sort"),
+                className="block-options",
                 options=[
                     {"label": "Name", "value": "Name"},
                     {
-                        "label": "StdDev",
+                        "label": "Standard deviation",
                         "value": "Stddev",
                     },
                     {
@@ -137,10 +138,6 @@ def sortby_selector(
                     },
                 ],
                 value=value,
-                labelStyle={
-                    "display": "inline-block",
-                    "margin-right": "5px",
-                },
                 persistence=True,
                 persistence_type="session",
             ),
@@ -154,6 +151,7 @@ def plot_options(get_uuid: Callable, tab: str) -> html.Div:
         children=[
             dcc.Checklist(
                 id={"id": get_uuid("checkbox-options"), "tab": tab},
+                className="block-options",
                 options=[
                     {"label": "Dateline visible", "value": "DateLine"},
                     {"label": "Auto compute correlations", "value": "AutoCompute"},

@@ -84,12 +84,13 @@ slow for large models.
         drop_constants: bool = True,
     ):
         super().__init__()
-        WEBVIZ_ASSETS.add(
-            pathlib.Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
+        for filename in ["container.css", "block_options.css"]:
+            WEBVIZ_ASSETS.add(
+                pathlib.Path(webviz_subsurface.__file__).parent
+                / "_assets"
+                / "css"
+                / filename
+            )
         self.theme = webviz_settings.theme
         self.time_index = time_index
         self.column_keys = column_keys

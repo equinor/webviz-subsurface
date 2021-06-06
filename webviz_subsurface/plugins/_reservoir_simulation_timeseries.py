@@ -16,9 +16,11 @@ import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
+import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._abbreviations.reservoir_simulation import (
@@ -144,6 +146,13 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
 
         self.csvfile = csvfile
         self.obsfile = obsfile
@@ -347,9 +356,13 @@ folder, to avoid risk of not extracting the right data.
                     style={"display": show_delta},
                     children=html.Label(
                         children=[
-                            html.Span("Mode:", style={"font-weight": "bold"}),
+                            html.Span(
+                                "Mode:",
+                                style={"font-weight": "bold"},
+                            ),
                             dcc.RadioItems(
                                 id=self.uuid("mode"),
+                                className="block-options",
                                 style={"marginBottom": "25px"},
                                 options=[
                                     {
@@ -465,6 +478,7 @@ folder, to avoid risk of not extracting the right data.
                 html.Div(
                     dcc.RadioItems(
                         id=self.uuid("cum_interval"),
+                        className="block-options",
                         options=[
                             {
                                 "label": (f"{i.lower().capitalize()}"),
@@ -550,6 +564,7 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                                 dcc.RadioItems(
                                     id=self.uuid("statistics"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "Individual realizations",
@@ -580,6 +595,7 @@ folder, to avoid risk of not extracting the right data.
                                 html.Summary("Options:", style={"font-weight": "bold"}),
                                 dcc.Checklist(
                                     id=self.uuid("trace_options"),
+                                    className="block-options",
                                     options=[
                                         {"label": val, "value": val}
                                         for val in ["History", "Histogram"]
@@ -597,6 +613,7 @@ folder, to avoid risk of not extracting the right data.
                                     children=[
                                         dcc.Checklist(
                                             id=self.uuid("stat_options"),
+                                            className="block-options",
                                             options=[
                                                 {"label": val, "value": val}
                                                 for val in [
