@@ -129,7 +129,7 @@ class LinePlotterFMU(WebvizPluginABC):
             Path(webviz_subsurface.__file__).parent
             / "_assets"
             / "js"
-            / "update_plotly_figure.js"
+            / "clientside_functions.js"
         )
 
         self._colors: Dict = unique_colors(self._ensemble_names, webviz_settings.theme)

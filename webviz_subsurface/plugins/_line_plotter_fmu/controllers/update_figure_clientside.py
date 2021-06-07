@@ -44,7 +44,7 @@ def update_figure_clientside(app: dash.Dash, get_uuid: Callable) -> None:
         return fig["layout"]
 
     app.clientside_callback(
-        ClientsideFunction(namespace="clientside", function_name="update_figure"),
+        ClientsideFunction(namespace="clientside", function_name="set_dcc_figure"),
         Output(get_uuid("graph"), "figure"),
         Input(
             {"id": get_uuid("clientside"), "plotly_attribute": "plotly_layout"}, "data"
