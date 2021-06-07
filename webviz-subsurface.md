@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.3rc0` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.3` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
