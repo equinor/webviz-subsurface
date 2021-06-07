@@ -10,12 +10,12 @@ from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
 
-import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 import webviz_subsurface_components
+import webviz_core_components as wcc
 
 from .._datainput.fmu_input import load_csv
 from .._datainput.well_completions import (
@@ -344,6 +344,7 @@ def create_ensemble_dataset(
     """
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
     df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
+    df.DATE = pd.to_datetime(df.DATE).dt.date
 
     df_connstatus = read_connection_status(
         ensemble_path=ensemble_path, connection_status_file=connection_status_file
@@ -388,9 +389,6 @@ def create_ensemble_dataset(
             df, zone_names, time_steps, realizations, well_attributes
         ),
     }
-    with open("/private/olind/webviz/result.json", "w") as handle:
-        json.dump(result, handle)
-        print("output exported")
     return io.BytesIO(json.dumps(result).encode())
 
 
@@ -403,21 +401,28 @@ def merge_compdat_and_connstatus(
     that are not in the connection status data, the compdat data will be used as it is.
 
     This approach is fast, but a couple of things should be noted:
-    - in the connection status data, a connection is not set to SHUT before it has been OPEN. \
+    * in the connection status data, a connection is not set to SHUT before it has been OPEN. \
     In the compdat data, some times all connections are first defined and the opened later.
-    - any connections that are in compdat but not in connections status will be ignored \
+    * any connections that are in compdat but not in connections status will be ignored \
     (e.g. connections that are always shut)
-    - there is no logic to handle KH changing with time for the same connection (this \
+    * there is no logic to handle KH changing with time for the same connection (this \
     can easily be added using apply in pandas, but it is very rare and slows down the function
     significantly)
-    - if connection status is missing for a realization, but compdat exists, compdat will also \
+    * if connection status is missing for a realization, but compdat exists, compdat will also \
     be ignored.
     """
     match_on = ["REAL", "WELL", "I", "J", "K1"]
     df = pd.merge(df_connstatus, df_compdat[match_on + ["KH"]], on=match_on, how="left")
-    df.drop_duplicates(keep="first", inplace=True)
+
+    # There will often be several rows (with different OP/SH) matching in compdat.
+    # Only the first is kept
+    df.drop_duplicates(subset=["DATE"] + match_on, keep="first", inplace=True)
+
+    # Concat from compdat the wells that are not in connection status
     df = pd.concat([df, df_compdat[~df_compdat.WELL.isin(df.WELL.unique())]])
+
     df = df.reset_index(drop=True)
+    df.KH = df.KH.fillna(0)
     return df
 
 
