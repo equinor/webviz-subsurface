@@ -66,8 +66,7 @@ class WellCompletions(WebvizPluginABC):
     This file can be exported from the ERT workflow by a forward model: `EXPORT_CONNECTION_STATUS`,
     which will be distributed somehow. This forward model uses the CPI summary data to create
     a connection status history: for each connection cell there is one line for each time the
-    connection is opened or closed. This data is very sparse compared to the CPI data. This export
-    has the logic that
+    connection is opened or closed. This data is very sparse compared to the CPI data.
 
     **Zone layer mapping**
 
