@@ -148,7 +148,7 @@ def read_connection_status(
         return None
 
     df = pd.DataFrame()
-    for filename in glob.glob(f"{ensemble_path}/{connection_status_file}"):
+    for filename in files:
         df_real = pd.read_parquet(filename)
         real = get_real_from_filename(filename)
         df_real["REAL"] = real
