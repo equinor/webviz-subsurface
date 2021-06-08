@@ -15,6 +15,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
+from py_expression_eval import Expression
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
@@ -25,6 +26,8 @@ import webviz_subsurface_components as wsc
 
 
 import webviz_subsurface
+
+from webviz_subsurface_components.VectorCalculatorWrapper import ( ExternalParseData )
 
 
 from webviz_subsurface._models import EnsembleSetModel
@@ -249,7 +252,7 @@ folder, to avoid risk of not extracting the right data.
                                 (y for y in x["children"] if y["name"] == split[1]),
                                 None,
                             )
-                            == None
+                            is None
                         ):
                             x["children"].append(
                                 {
@@ -295,6 +298,7 @@ folder, to avoid risk of not extracting the right data.
                         "vectorName": ["FGIR"],
                     },
                 ],
+                "isValid": True,
             },
             {
                 "name": "Test2",
@@ -310,6 +314,7 @@ folder, to avoid risk of not extracting the right data.
                         "vectorName": ["FGIR"],
                     },
                 ],
+                "isValid": True,
             },
             {
                 "name": "Test3",
@@ -325,6 +330,7 @@ folder, to avoid risk of not extracting the right data.
                         "vectorName": ["WBP4:OP_3"],
                     },
                 ],
+                "isValid": True,
             },
             {
                 "name": "Test4",
@@ -344,12 +350,9 @@ folder, to avoid risk of not extracting the right data.
                         "vectorName": ["WBP4:OP_3"],
                     },
                 ],
+                "isValid": True,
             },
         ]
-
-        # self.calculated_vectors: pd.DataFrame = get_calculated_vectors(
-        #     self.predefined_expressions, self.smry
-        # )
 
         self.predefined_expressions_dropdown_options = (
             self.get_dropdown_options_from_expressions(self.predefined_expressions)
@@ -834,7 +837,7 @@ folder, to avoid risk of not extracting the right data.
     ) -> List[Dict[str, str]]:
         additional_dropdown_options: List[Dict[str, str]] = []
         for elm in expressions:
-            if wsc.VectorCalculator.validate_expression(elm):
+            if elm["isValid"]:
                 name = elm["name"]
                 expr = wsc.VectorCalculator.detailed_expression(elm)
                 option = {
@@ -1253,6 +1256,18 @@ folder, to avoid risk of not extracting the right data.
             return [dict(option, **{"disabled": True}) for option in options]
 
         @app.callback(
+            Output(self.uuid("vector_calculator"), "externalParseData"),
+            Input(self.uuid("vector_calculator"), "externalParseExpression")
+        )
+        def _parse_vector_calculator_expression(
+            expression: ExpressionInfo
+        ) -> ExternalParseData:
+            if expression is None:
+                raise PreventUpdate 
+
+            return wsc.VectorCalculator.parse_expression(expression)
+
+        @app.callback(
             [
                 Output(self.uuid("vector_calculator_expressions"), "children"),
                 Output(self.uuid("vector1"), "options"),
@@ -1275,13 +1290,8 @@ folder, to avoid risk of not extracting the right data.
             second_dropdown_value: Union[str, None],
             third_dropdown_value: Union[str, None],
         ) -> list:
-            # Validate expressions
-            valid_expressions: List[ExpressionInfo] = []
-            for expression in expressions:
-                if wsc.VectorCalculator.validate_expression(expression):
-                    valid_expressions.append(expression)
-
             # Update dropdown options:
+            valid_expressions: List[ExpressionInfo] = [elm for elm in expressions if elm["isValid"]]
             dropdown_options = (
                 self.dropdown_options
                 + self.get_dropdown_options_from_expressions(valid_expressions)
