@@ -42,9 +42,9 @@ def get_calculated_vectors(
         for var in var_vec_dict:
             values[var] = smry[var_vec_dict[var]]
 
-        parsed_expr = VectorCalculator.parse_expression(expr, values)
-        if parsed_expr is not None:
-            calculated_vectors[name] = parsed_expr
+        evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
+        if evaluated_expr is not None:
+            calculated_vectors[name] = evaluated_expr
     return calculated_vectors
 
 
