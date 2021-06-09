@@ -8,7 +8,6 @@ import pandas as pd
 import dash
 from dash.dependencies import Input, Output
 import dash_html_components as html
-import dash_core_components as dcc
 
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -254,14 +253,14 @@ class WellCompletions(WebvizPluginABC):
             children=[
                 wcc.FlexBox(
                     children=[
-                        html.Div(
+                        wcc.Frame(
                             style={"flex": "1", "padding": "10px"},
-                            children=html.Label(
+                            color="white",
+                            highlight=False,
+                            children=wcc.Selectors(
+                                label="Ensemble",
                                 children=[
-                                    html.Span(
-                                        "Ensemble", style={"font-weight": "bold"}
-                                    ),
-                                    dcc.Dropdown(
+                                    wcc.Dropdown(
                                         id=self.uuid("ensemble_dropdown"),
                                         options=[
                                             {"label": ens, "value": ens}
@@ -272,7 +271,7 @@ class WellCompletions(WebvizPluginABC):
                                         persistence=True,
                                         persistence_type="session",
                                     ),
-                                ]
+                                ],
                             ),
                         ),
                         html.Div(style={"flex": 4}),

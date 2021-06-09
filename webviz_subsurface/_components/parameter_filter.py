@@ -231,38 +231,30 @@ class ParameterFilter:
 
 
 def make_range_slider(values: pd.Series, name: str, uuid: str) -> html.Div:
-    return html.Div(
-        children=[
-            html.Label(style={"textAlign": "center"}, children=name),
-            dcc.RangeSlider(
-                id={"id": uuid, "type": "range-slider", "name": name},
-                min=values.min(),
-                max=values.max(),
-                step=calculate_slider_step(
-                    min_value=values.min(),
-                    max_value=values.max(),
-                    steps=len(list(values.unique())) - 1,
-                ),
-                value=[values.min(), values.max()],
-                marks={
-                    str(values.min()): {"label": f"{values.min():.2f}"},
-                    str(values.max()): {"label": f"{values.max():.2f}"},
-                },
-                tooltip={"always_visible": False},
-            ),
-        ]
+    return wcc.RangeSlider(
+        label=name,
+        id={"id": uuid, "type": "range-slider", "name": name},
+        min=values.min(),
+        max=values.max(),
+        step=calculate_slider_step(
+            min_value=values.min(),
+            max_value=values.max(),
+            steps=len(list(values.unique())) - 1,
+        ),
+        value=[values.min(), values.max()],
+        marks={
+            str(values.min()): {"label": f"{values.min():.2f}"},
+            str(values.max()): {"label": f"{values.max():.2f}"},
+        },
+        tooltip={"always_visible": False},
     )
 
 
 def make_discrete_selector(values: pd.Series, name: str, uuid: str) -> html.Div:
-    return html.Div(
-        children=[
-            html.Label(style={"textAlign": "center"}, children=name),
-            wcc.Select(
-                id={"id": uuid, "type": "select", "name": name},
-                options=[{"label": val, "value": val} for val in values.unique()],
-                value=sorted(list(values.unique())),
-                multi=True,
-            ),
-        ]
+    return wcc.SelectWithLabel(
+        label=name,
+        id={"id": uuid, "type": "select", "name": name},
+        options=[{"label": val, "value": val} for val in values.unique()],
+        value=sorted(list(values.unique())),
+        multi=True,
     )

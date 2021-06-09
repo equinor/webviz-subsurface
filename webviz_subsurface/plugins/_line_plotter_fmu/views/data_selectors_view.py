@@ -1,7 +1,7 @@
 from typing import Callable, Union, List, Dict
 
 import dash_html_components as html
-import dash_core_components as dcc
+import webviz_core_components as wcc
 
 
 def data_selectors_view(
@@ -11,11 +11,9 @@ def data_selectors_view(
     parameter_names: List[str],
     initial_data: Dict,
 ) -> html.Div:
-    return html.Div(
-        className="framed",
-        style={"fontSize": "0.8em"},
+    return wcc.Selectors(
+        label="Selectors",
         children=[
-            html.H5("Data selectors"),
             dropdown_for_plotly_data(
                 uuid=get_uuid("data_selectors"),
                 source="table",
@@ -71,19 +69,14 @@ def dropdown_for_plotly_data(
     return html.Div(
         style={"flex": flex},
         children=[
-            html.Label(
-                title, style={"backgroundColor": "transparent", "fontWeight": "bold"}
-            ),
-            dcc.Dropdown(
-                style={"backgroundColor": "transparent"},
+            wcc.Dropdown(
+                label=title,
                 id={"id": uuid, "data_attribute": data_attribute, "source": source},
                 options=options,
                 value=value,
                 clearable=clearable,
                 placeholder=placeholder,
                 multi=multi,
-                persistence=True,
-                persistence_type="session",
             ),
         ],
     )
@@ -102,16 +95,14 @@ def color_scale_dropdown(
     return html.Div(
         style={"flex": flex},
         children=[
-            html.Label(title),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label=title,
                 id=uuid,
                 options=options,
                 value=value,
                 clearable=clearable,
                 placeholder=placeholder,
                 multi=multi,
-                persistence=True,
-                persistence_type="session",
             ),
         ],
     )

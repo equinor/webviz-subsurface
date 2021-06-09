@@ -75,13 +75,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.init_state = self.update_state(self.segyfiles[0])
         self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
-        self.uid = uuid4()
+
         self.plotly_theme = webviz_settings.theme.plotly_theme
         self.set_callbacks(app)
-
-    def ids(self, element: str) -> str:
-        """Generate unique id for dom element"""
-        return f"{element}-id-{self.uid}"
 
     def update_state(self, cubepath: str, **kwargs: Any) -> Dict[str, Any]:
         cube = load_cube_data(get_path(cubepath))
@@ -106,7 +102,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.ids("layout"),
+                "id": self.uuid("layout"),
                 "content": (
                     "Visualizes SEG-Y cubes. Display different slices "
                     "of the cube by clicking (MB1) in the different plots. "
@@ -115,37 +111,37 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 ),
             },
             {
-                "id": self.ids("cube"),
+                "id": self.uuid("cube"),
                 "content": "The currently visualized seismic cube.",
             },
             {
-                "id": self.ids("inline"),
+                "id": self.uuid("inline"),
                 "content": "Selected inline for the seismic cube.",
             },
             {
-                "id": self.ids("xline"),
+                "id": self.uuid("xline"),
                 "content": "Selected crossline for the seismic cube.",
             },
             {
-                "id": self.ids("zslice"),
+                "id": self.uuid("zslice"),
                 "content": "Selected zslice for the seismic cube.",
             },
             {
-                "id": self.ids("color-scale"),
+                "id": self.uuid("color-scale"),
                 "content": "Click this button to change colorscale",
             },
             {
-                "id": self.ids("color-values"),
+                "id": self.uuid("color-values"),
                 "content": "Drag either node of slider to truncate color ranges.",
             },
             {
-                "id": self.ids("color-reset"),
+                "id": self.uuid("color-reset"),
                 "content": (
                     "Click this button to update color slider min/max and reset ranges."
                 ),
             },
             {
-                "id": self.ids("zoom"),
+                "id": self.uuid("zoom"),
                 "content": "Click this button to reset zoom/pan state in the plot.",
             },
         ]
@@ -153,113 +149,102 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     @property
     def settings_layout(self) -> wcc.FlexBox:
         """Layout for color and other settings"""
-        return wcc.FlexBox(
-            style={"margin": "50px"},
+        return wcc.Frame(
+            style={"width": "40%"},
             children=[
                 html.Div(
                     style={"width": "100%"},
-                    children=html.Label(
-                        children=[
-                            html.Span("Seismic cube:", style={"font-weight": "bold"}),
-                            dcc.Dropdown(
-                                id=self.ids("cube"),
-                                options=[
-                                    {"label": Path(cube).stem, "value": cube}
-                                    for cube in self.segyfiles
-                                ],
-                                value=self.segyfiles[0],
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ]
+                    children=wcc.Dropdown(
+                        label="Seismic cube",
+                        id=self.uuid("cube"),
+                        options=[
+                            {"label": Path(cube).stem, "value": cube}
+                            for cube in self.segyfiles
+                        ],
+                        value=self.segyfiles[0],
+                        clearable=False,
                     ),
                 ),
                 html.Div(
-                    style={"marginRight": "50px", "width": "50%", "marginLeft": "50px"},
                     children=[
-                        html.Label(
-                            style={"font-weight": "bold", "textAlign": "center"},
+                        wcc.Label(
                             children="Set colorscale",
                         ),
                         wcc.ColorScales(
-                            id=self.ids("color-scale"),
+                            id=self.uuid("color-scale"),
                             colorscale=self.initial_colors,
                             nSwatches=12,
                         ),
                     ],
                 ),
                 html.Div(
-                    style={"marginRight": "50px", "width": "50%", "marginLeft": "50px"},
                     children=[
-                        html.P(
-                            "Color range",
-                            style={"textAlign": "center", "font-weight": "bold"},
-                        ),
-                        dcc.RangeSlider(
-                            id=self.ids("color-values"),
+                        wcc.RangeSlider(
+                            label="Color range",
+                            id=self.uuid("color-values"),
                             min=self.init_state["min_value"],
                             max=self.init_state["max_value"],
                             value=[
                                 self.init_state["min_value"],
                                 self.init_state["max_value"],
                             ],
-                            tooltip={"always_visible": True},
+                            tooltip={"placement": "bottom"},
                             step=calculate_slider_step(
                                 min_value=self.init_state["min_value"],
                                 max_value=self.init_state["max_value"],
                                 steps=100,
                             ),
-                            persistence=True,
-                            persistence_type="session",
                         ),
                     ],
                 ),
-                html.Button(id=self.ids("color-reset"), children="Reset Range"),
-                html.Button(id=self.ids("zoom"), children="Reset zoom"),
+                html.Button(id=self.uuid("color-reset"), children="Reset Range"),
+                html.Button(id=self.uuid("zoom"), children="Reset zoom"),
             ],
         )
 
     @property
     def layout(self) -> html.Div:
         return html.Div(
-            id=self.ids("layout"),
+            id=self.uuid("layout"),
             children=wcc.FlexBox(
                 children=[
-                    html.Div(
-                        style={"width": "50%"},
+                    wcc.FlexColumn(
                         children=[
-                            html.Div(
+                            wcc.Frame(
+                                color="white",
                                 style={"minWidth": "200px", "height": "400px"},
                                 children=wcc.Graph(
                                     config={"displayModeBar": False},
-                                    id=self.ids("inline"),
+                                    id=self.uuid("inline"),
                                 ),
                             ),
-                            html.Div(
+                            wcc.Frame(
+                                color="white",
                                 style={"minWidth": "200px", "height": "400px"},
                                 children=wcc.Graph(
                                     config={"displayModeBar": False},
-                                    id=self.ids("xline"),
+                                    id=self.uuid("xline"),
                                 ),
                             ),
                         ],
                     ),
-                    html.Div(
-                        style={"width": "50%"},
+                    wcc.FlexColumn(
                         children=[
-                            html.Div(
+                            wcc.Frame(
+                                color="white",
                                 style={"minWidth": "200px", "height": "400px"},
                                 children=wcc.Graph(
                                     config={"displayModeBar": False},
-                                    id=self.ids("zslice"),
+                                    id=self.uuid("zslice"),
                                 ),
                             ),
-                            self.settings_layout,
+                            html.Div(
+                                style={"height": "400px"}, children=self.settings_layout
+                            ),
                         ],
                     ),
                     dcc.Store(
-                        id=self.ids("state-storage"),
+                        id=self.uuid("state-storage"),
                         storage_type="session",
                         data=json.dumps(self.init_state),
                     ),
@@ -270,20 +255,20 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
-            Output(self.ids("state-storage"), "data"),
+            Output(self.uuid("state-storage"), "data"),
             [
-                Input(self.ids("cube"), "value"),
-                Input(self.ids("inline"), "clickData"),
-                Input(self.ids("xline"), "clickData"),
-                Input(self.ids("zslice"), "clickData"),
-                Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
-                Input(self.ids("zoom"), "n_clicks"),
-                Input(self.ids("color-reset"), "n_clicks"),
+                Input(self.uuid("cube"), "value"),
+                Input(self.uuid("inline"), "clickData"),
+                Input(self.uuid("xline"), "clickData"),
+                Input(self.uuid("zslice"), "clickData"),
+                Input(self.uuid("color-values"), "value"),
+                Input(self.uuid("color-scale"), "colorscale"),
+                Input(self.uuid("zoom"), "n_clicks"),
+                Input(self.uuid("color-reset"), "n_clicks"),
             ],
             [
-                State(self.ids("zslice"), "figure"),
-                State(self.ids("state-storage"), "data"),
+                State(self.uuid("zslice"), "figure"),
+                State(self.uuid("state-storage"), "data"),
             ],
         )
         # pylint: disable=unused-argument,too-many-arguments
@@ -304,17 +289,17 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             store: dict = json.loads(state_data_str)
             ctx = dash.callback_context.triggered[0]["prop_id"]
             x_was_clicked = (
-                xcd if xcd and ctx == f"{self.ids('xline')}.clickData" else None
+                xcd if xcd and ctx == f"{self.uuid('xline')}.clickData" else None
             )
             i_was_clicked = (
-                icd if icd and ctx == f"{self.ids('inline')}.clickData" else None
+                icd if icd and ctx == f"{self.uuid('inline')}.clickData" else None
             )
             z_was_clicked = (
-                zcd if zcd and ctx == f"{self.ids('zslice')}.clickData" else None
+                zcd if zcd and ctx == f"{self.uuid('zslice')}.clickData" else None
             )
-            if ctx == f"{self.ids('cube')}.value":
+            if ctx == f"{self.uuid('cube')}.value":
                 store = self.update_state(cubepath)
-            if ctx == f"{self.ids('zoom')}.n_clicks":
+            if ctx == f"{self.uuid('zoom')}.n_clicks":
                 store["uirevision"] = str(uuid4())
             if x_was_clicked and xcd is not None:
                 store["iline"] = xcd["points"][0]["x"]
@@ -326,7 +311,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             if i_was_clicked and icd is not None:
                 store["xline"] = icd["points"][0]["x"]
                 store["zslice"] = icd["points"][0]["y"]
-            if ctx == f"{self.ids('color-reset')}.n_clicks":
+            if ctx == f"{self.uuid('color-reset')}.n_clicks":
                 store["color_min_value"] = store["min_value"]
                 store["color_max_value"] = store["max_value"]
             else:
@@ -336,8 +321,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return json.dumps(store)
 
         @app.callback(
-            Output(self.ids("zslice"), "figure"),
-            [Input(self.ids("state-storage"), "data")],
+            Output(self.uuid("zslice"), "figure"),
+            [Input(self.uuid("state-storage"), "data")],
         )
         def _set_zslice(state_data_str: Union[str, None]) -> dict:
             """Updates z-slice heatmap"""
@@ -386,8 +371,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return fig
 
         @app.callback(
-            Output(self.ids("inline"), "figure"),
-            [Input(self.ids("state-storage"), "data")],
+            Output(self.uuid("inline"), "figure"),
+            [Input(self.uuid("state-storage"), "data")],
         )
         def _set_iline(state_data_str: Union[str, None]) -> dict:
             """Updates inline heatmap"""
@@ -432,8 +417,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             return fig
 
         @app.callback(
-            Output(self.ids("xline"), "figure"),
-            [Input(self.ids("state-storage"), "data")],
+            Output(self.uuid("xline"), "figure"),
+            [Input(self.uuid("state-storage"), "data")],
         )
         def _set_xline(state_data_str: Union[str, None]) -> dict:
             """Update xline heatmap"""
@@ -478,13 +463,13 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         @app.callback(
             [
-                Output(self.ids("color-values"), "min"),
-                Output(self.ids("color-values"), "max"),
-                Output(self.ids("color-values"), "value"),
-                Output(self.ids("color-values"), "step"),
+                Output(self.uuid("color-values"), "min"),
+                Output(self.uuid("color-values"), "max"),
+                Output(self.uuid("color-values"), "value"),
+                Output(self.uuid("color-values"), "step"),
             ],
-            [Input(self.ids("color-reset"), "n_clicks")],
-            [State(self.ids("state-storage"), "data")],
+            [Input(self.uuid("color-reset"), "n_clicks")],
+            [State(self.uuid("state-storage"), "data")],
         )
         # pylint: disable=unused-argument
         def _reset_color_range(

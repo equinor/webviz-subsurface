@@ -3,7 +3,6 @@ from pathlib import Path
 import pandas as pd
 from plotly.subplots import make_subplots
 from dash.dependencies import Input, Output
-import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
@@ -201,7 +200,7 @@ folder, to avoid risk of not extracting the right data.
         # Only select numerical parameters
         self.parameter_columns = parresp.filter_numerical_columns(df=self.parameterdf)
 
-        self.plotly_theme = webviz_settings.theme.plotly_theme
+        self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
     @property
@@ -255,37 +254,28 @@ folder, to avoid risk of not extracting the right data.
             domid = self.uuid(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
-                selector = wcc.Select(
+                selector = wcc.SelectWithLabel(
+                    label=col_name,
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values,
                     multi=True,
                     size=min(20, len(values)),
-                    persistence=True,
-                    persistence_type="session",
                 )
             elif col_type == "single":
-                selector = dcc.Dropdown(
+                selector = wcc.Dropdown(
+                    label=col_name,
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values[0],
                     multi=False,
                     clearable=False,
-                    persistence=True,
-                    persistence_type="session",
                 )
             elif col_type == "range":
                 selector = make_range_slider(domid, self.responsedf[col_name], col_name)
             else:
                 return children
-            children.append(
-                html.Div(
-                    children=[
-                        html.Label(col_name),
-                        selector,
-                    ]
-                )
-            )
+            children.append(selector)
 
         return children
 
@@ -293,36 +283,19 @@ folder, to avoid risk of not extracting the right data.
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
         return [
-            html.Div(
-                [
-                    html.Label("Ensemble"),
-                    dcc.Dropdown(
-                        id=self.uuid("ensemble"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
-                        ],
-                        clearable=False,
-                        value=self.ensembles[0],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
+            wcc.Dropdown(
+                label="Ensemble",
+                id=self.uuid("ensemble"),
+                options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                clearable=False,
+                value=self.ensembles[0],
             ),
-            html.Div(
-                [
-                    html.Label("Response"),
-                    dcc.Dropdown(
-                        id=self.uuid("responses"),
-                        options=[
-                            {"label": ens, "value": ens}
-                            for ens in self.response_columns
-                        ],
-                        clearable=False,
-                        value=self.response_columns[0],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
+            wcc.Dropdown(
+                label="Response",
+                id=self.uuid("responses"),
+                options=[{"label": ens, "value": ens} for ens in self.response_columns],
+                clearable=False,
+                value=self.response_columns[0],
             ),
         ]
 
@@ -332,24 +305,48 @@ folder, to avoid risk of not extracting the right data.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    style={"flex": 3},
-                    children=[
-                        wcc.Graph(self.uuid("correlation-graph")),
-                        dcc.Store(
-                            id=self.uuid("initial-parameter"), storage_type="session"
+                wcc.FlexColumn(
+                    flex=1,
+                    children=wcc.Frame(
+                        style={"height": "80vh"},
+                        children=[
+                            wcc.Selectors(
+                                label="Controls", children=self.control_layout
+                            )
+                        ]
+                        + [wcc.Selectors(label="Filters", children=self.filter_layout)]
+                        if self.response_filters
+                        else [],
+                    ),
+                ),
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        color="white",
+                        highlight=False,
+                        style={"height": "80vh"},
+                        children=[
+                            wcc.Graph(
+                                style={"height": "75vh"},
+                                id=self.uuid("correlation-graph"),
+                            ),
+                            dcc.Store(
+                                id=self.uuid("initial-parameter"),
+                                storage_type="session",
+                            ),
+                        ],
+                    ),
+                ),
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        color="white",
+                        highlight=False,
+                        style={"height": "80vh"},
+                        children=wcc.Graph(
+                            style={"height": "75vh"}, id=self.uuid("distribution-graph")
                         ),
-                    ],
-                ),
-                html.Div(
-                    style={"flex": 3},
-                    children=wcc.Graph(self.uuid("distribution-graph")),
-                ),
-                html.Div(
-                    style={"flex": 1},
-                    children=self.control_layout + self.filter_layout
-                    if self.response_filters
-                    else [],
+                    ),
                 ),
             ],
         )
@@ -420,7 +417,7 @@ folder, to avoid risk of not extracting the right data.
 
                 return (
                     make_correlation_plot(
-                        corr_response, response, self.plotly_theme, self.corr_method
+                        corr_response, response, self.theme, self.corr_method
                     ),
                     corr_response.index[-1],
                 )
@@ -470,7 +467,7 @@ folder, to avoid risk of not extracting the right data.
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
                 ["REAL", parameter, response]
             ]
-            return make_distribution_plot(df, parameter, response, self.plotly_theme)
+            return make_distribution_plot(df, parameter, response, self.theme)
 
     def add_webvizstore(self):
         if self.parameter_csv and self.response_csv:
@@ -538,17 +535,13 @@ def correlate(inputdf, response, method="pearson"):
 
 def make_correlation_plot(series, response, theme, corr_method):
     """Make Plotly trace for correlation plot"""
-    layout = theme_layout(
-        theme,
-        {
-            "barmode": "relative",
-            "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
-            "height": 750,
-            "xaxis": {"range": [-1, 1]},
-            "title": f"Correlations ({corr_method}) between {response} and input parameters",
-        },
-    )
-    layout["font"].update({"size": 8})
+    layout = {
+        "barmode": "relative",
+        "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
+        "xaxis": {"range": [-1, 1]},
+        "title": f"Correlations ({corr_method}) between {response} and input parameters",
+    }
+    layout = theme.create_themed_layout(layout)
 
     return {
         "data": [
@@ -605,9 +598,8 @@ def make_distribution_plot(df, parameter, response, theme):
     )
     fig["layout"].update(
         theme_layout(
-            theme,
+            theme.plotly_theme,
             {
-                "height": 800,
                 "bargap": 0.05,
                 "xaxis": {
                     "title": parameter,
@@ -619,7 +611,7 @@ def make_distribution_plot(df, parameter, response, theme):
             },
         )
     )
-    fig["layout"]["font"].update({"size": 8})
+
     return fig
 
 
@@ -631,7 +623,8 @@ def make_range_slider(domid, values, col_name):
             f"Cannot calculate filter range for {col_name}. "
             "Ensure that it is a numerical column."
         ) from exc
-    return dcc.RangeSlider(
+    return wcc.RangeSlider(
+        label=col_name,
         id=domid,
         min=values.min(),
         max=values.max(),

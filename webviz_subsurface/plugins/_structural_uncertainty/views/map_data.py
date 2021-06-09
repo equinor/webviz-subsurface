@@ -1,6 +1,5 @@
 from typing import List
 
-import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
@@ -17,55 +16,29 @@ def map_data_layout(
     """Layout for the map data modal"""
     return html.Div(
         children=[
-            html.Details(
-                open=True,
-                children=[
-                    html.Summary(
-                        style={
-                            "font-size": "15px",
-                            "font-weight": "bold",
-                        },
-                        children="Surface A",
-                    ),
-                    html.Div(
-                        make_map_selectors(
-                            uuid=uuid,
-                            surface_attributes=surface_attributes,
-                            surface_names=surface_names,
-                            ensembles=ensembles,
-                            realizations=realizations,
-                            use_wells=use_wells,
-                            map_id="map1",
-                        ),
-                    ),
-                ],
+            wcc.Selectors(
+                label="Surface A",
+                children=make_map_selectors(
+                    uuid=uuid,
+                    surface_attributes=surface_attributes,
+                    surface_names=surface_names,
+                    ensembles=ensembles,
+                    realizations=realizations,
+                    use_wells=use_wells,
+                    map_id="map1",
+                ),
             ),
-            html.Details(
-                style={
-                    "marginTop": "15px",
-                    "marginBottom": "10px",
-                },
-                open=False,
-                children=[
-                    html.Summary(
-                        style={
-                            "font-size": "15px",
-                            "font-weight": "bold",
-                        },
-                        children="Surface B",
-                    ),
-                    html.Div(
-                        make_map_selectors(
-                            uuid=uuid,
-                            surface_attributes=surface_attributes,
-                            surface_names=surface_names,
-                            ensembles=ensembles,
-                            realizations=realizations,
-                            use_wells=use_wells,
-                            map_id="map2",
-                        ),
-                    ),
-                ],
+            wcc.Selectors(
+                label="Surface B",
+                children=make_map_selectors(
+                    uuid=uuid,
+                    surface_attributes=surface_attributes,
+                    surface_names=surface_names,
+                    ensembles=ensembles,
+                    realizations=realizations,
+                    use_wells=use_wells,
+                    map_id="map2",
+                ),
             ),
             settings_layout(uuid=uuid),
         ]
@@ -83,49 +56,34 @@ def make_map_selectors(
 ) -> html.Div:
     return html.Div(
         children=[
-            html.Label(
-                "Surface attribute", style={"fontSize": "0.8em", "fontWeight": "bold"}
-            ),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label="Surface attribute",
                 id={"id": uuid, "map_id": map_id, "element": "surfaceattribute"},
                 options=[{"label": val, "value": val} for val in surface_attributes],
                 value=surface_attributes[0],
                 clearable=False,
-                persistence=True,
-                persistence_type="session",
             ),
-            html.Label(
-                "Surface name", style={"fontSize": "0.8em", "fontWeight": "bold"}
-            ),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label="Surface name",
                 id={"id": uuid, "map_id": map_id, "element": "surfacename"},
                 options=[{"label": val, "value": val} for val in surface_names],
                 value=surface_names[0],
                 clearable=False,
-                persistence=True,
-                persistence_type="session",
             ),
             html.Div(
                 style={"display": ("inline" if len(ensembles) > 1 else "none")},
                 children=[
-                    html.Label(
-                        "Ensemble", style={"fontSize": "0.8em", "fontWeight": "bold"}
-                    ),
-                    dcc.Dropdown(
+                    wcc.Dropdown(
+                        label="Ensemble",
                         id={"id": uuid, "map_id": map_id, "element": "ensemble"},
                         options=[{"label": val, "value": val} for val in ensembles],
                         value=ensembles[0],
                         clearable=False,
-                        persistence=True,
-                        persistence_type="session",
                     ),
                 ],
             ),
-            html.Label(
-                "Calculation/Realization",
-                style={"fontSize": "0.8em", "fontWeight": "bold"},
-            ),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label="Calculation/Realization",
                 id={"id": uuid, "map_id": map_id, "element": "calculation"},
                 options=[
                     {"label": val, "value": val}
@@ -134,11 +92,8 @@ def make_map_selectors(
                 ],
                 value=realizations[0],
                 clearable=False,
-                persistence=True,
-                persistence_type="session",
             ),
-            dcc.Checklist(
-                style={"marginTop": "10px"},
+            wcc.Checklist(
                 id={"id": uuid, "map_id": map_id, "element": "options"},
                 options=[
                     {"label": "Calculate well intersections", "value": "intersect_well"}
@@ -146,62 +101,43 @@ def make_map_selectors(
                 if use_wells
                 else [],
                 value=[],
-                persistence=True,
-                persistence_type="session",
             ),
         ]
     )
 
 
 def settings_layout(uuid: str) -> html.Details:
-    return html.Details(
-        className="webviz-structunc-settings",
-        open=False,
+    return wcc.Selectors(
+        open_details=False,
+        label="⚙️ Settings",
         children=[
-            html.Summary(
-                style={
-                    "font-size": "15px",
-                    "font-weight": "bold",
-                },
-                children="⚙️ Settings",
+            wcc.Checklist(
+                id={"id": uuid, "settings": "compute_diff"},
+                options=[
+                    {
+                        "label": "Auto compute difference map",
+                        "value": "compute_diffmap",
+                    }
+                ],
+                value=["compute_diffmap"],
             ),
             html.Div(
-                style={"padding": "10px"},
                 children=[
-                    dcc.Checklist(
-                        id={"id": uuid, "settings": "compute_diff"},
+                    wcc.Label(
+                        "Color ranges:",
+                        style={"font-weight": "bold"},
+                    ),
+                    color_range_layout(uuid=uuid, map_id="map1"),
+                    color_range_layout(uuid=uuid, map_id="map2"),
+                    wcc.Checklist(
+                        id={"id": uuid, "colors": "sync_range"},
                         options=[
                             {
-                                "label": "Auto compute difference map",
-                                "value": "compute_diffmap",
+                                "label": "Sync range on maps",
+                                "value": "sync_range",
                             }
                         ],
-                        value=["compute_diffmap"],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                    html.Div(
-                        style={"margin-top": "10px"},
-                        children=[
-                            html.Label(
-                                "Color ranges:",
-                                style={"font-weight": "bold"},
-                            ),
-                            color_range_layout(uuid=uuid, map_id="map1"),
-                            color_range_layout(uuid=uuid, map_id="map2"),
-                            dcc.Checklist(
-                                id={"id": uuid, "colors": "sync_range"},
-                                options=[
-                                    {
-                                        "label": "Sync range on maps",
-                                        "value": "sync_range",
-                                    }
-                                ],
-                                value=[],
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
+                        value=[],
                     ),
                 ],
             ),
@@ -213,16 +149,16 @@ def color_range_layout(uuid: str, map_id: str) -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"display": "flex", "align-items": "center"},
         children=[
-            html.Div(
+            wcc.Label(
                 "Surface A" if map_id == "map1" else "Surface B",
-                style={"flex": 1, "minWidth": "70px"},
+                style={"flex": 1, "minWidth": "40px"},
             ),
             dbc.Input(
                 id={
                     "id": uuid,
                     "colors": f"{map_id}_clip_min",
                 },
-                style={"flex": 1, "minWidth": "70px"},
+                style={"flex": 1, "minWidth": "40px"},
                 type="number",
                 value=None,
                 debounce=True,
@@ -235,7 +171,7 @@ def color_range_layout(uuid: str, map_id: str) -> wcc.FlexBox:
                     "id": uuid,
                     "colors": f"{map_id}_clip_max",
                 },
-                style={"flex": 1, "minWidth": "70px"},
+                style={"flex": 1, "minWidth": "40px"},
                 type="number",
                 value=None,
                 debounce=True,

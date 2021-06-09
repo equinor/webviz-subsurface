@@ -4,7 +4,6 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -250,18 +249,18 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ),
             },
             {
-                "id": self.uuid("sataxis_selector"),
+                "id": self.uuid("sataxis"),
                 "content": (
                     "Choose saturation type for your x-axis. Will automatically change available "
                     "options in 'Curves'."
                 ),
             },
             {
-                "id": self.uuid("color_by_selector"),
+                "id": self.uuid("color_by"),
                 "content": ("Choose basis for your colormap."),
             },
             {
-                "id": self.uuid("ensemble_selector"),
+                "id": self.uuid("ensemble"),
                 "content": ("Select ensembles."),
             },
             {
@@ -272,18 +271,18 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ),
             },
             {
-                "id": self.uuid("satnum_selector"),
+                "id": self.uuid("satnum"),
                 "content": ("Choose SATNUM regions."),
             },
             {
-                "id": self.uuid("visualization_selector"),
+                "id": self.uuid("visualization"),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
                     "individual lines per realization. 2. Show statistical fanchart per ensemble."
                 ),
             },
             {
-                "id": self.uuid("linlog_selector"),
+                "id": self.uuid("linlog"),
                 "content": ("Switch between linear and logarithmic y-axis."),
             },
             {
@@ -310,18 +309,15 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
+                wcc.Frame(
                     id=self.uuid("filters"),
-                    style={"flex": "1"},
+                    style={"flex": "1", "height": "90vh"},
                     children=[
-                        html.Label(
-                            id=self.uuid("sataxis_selector"),
+                        wcc.Selectors(
+                            label="Selectors",
                             children=[
-                                html.Span(
-                                    "Saturation axis:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Saturation axis",
                                     id=self.uuid("sataxis"),
                                     clearable=False,
                                     options=[
@@ -332,16 +328,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         for i in self.sat_axes
                                     ],
                                     value=self.sat_axes[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            id=self.uuid("color_by_selector"),
-                            children=[
-                                html.Span("Color by:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Color by",
                                     id=self.uuid("color_by"),
                                     clearable=False,
                                     options=[
@@ -352,21 +341,14 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            id=self.uuid("ensemble_selector"),
-                            children=[
                                 dcc.Store(
                                     id=self.uuid("stored_ensemble"),
                                     storage_type="session",
                                     data={},
                                 ),
-                                html.Span("Ensembles:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Ensembles",
                                     id=self.uuid("ensemble"),
                                     clearable=False,
                                     multi=True,
@@ -374,34 +356,20 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            id=self.uuid("curve_selector"),
-                            children=[
-                                html.Span("Curves:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Curves",
                                     id=self.uuid("curve"),
                                     clearable=False,
                                     multi=True,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        dcc.Store(
-                            id=self.uuid("stored_satnum"),
-                            storage_type="session",
-                            data={},
-                        ),
-                        html.Label(
-                            id=self.uuid("satnum_selector"),
-                            children=[
-                                html.Span("Satnum:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                dcc.Store(
+                                    id=self.uuid("stored_satnum"),
+                                    storage_type="session",
+                                    data={},
+                                ),
+                                wcc.Dropdown(
+                                    label="Satnum",
                                     id=self.uuid("satnum"),
                                     clearable=False,
                                     multi=True,
@@ -409,18 +377,14 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         {"label": i, "value": i} for i in self.satnums
                                     ],
                                     value=self.satnums[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                        html.Label(
-                            id=self.uuid("visualization_selector"),
+                        wcc.Selectors(
+                            label="Visualization",
                             children=[
-                                html.Span(
-                                    "Visualization:", style={"font-weight": "bold"}
-                                ),
-                                dcc.RadioItems(
+                                wcc.RadioItems(
+                                    label="Line traces",
                                     id=self.uuid("visualization"),
                                     className="block-options",
                                     options=[
@@ -434,16 +398,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         },
                                     ],
                                     value="statistics",
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            id=self.uuid("linlog_selector"),
-                            children=[
-                                html.Span("Y-axis:", style={"font-weight": "bold"}),
-                                dcc.RadioItems(
+                                wcc.RadioItems(
+                                    label="Y-axis",
                                     id=self.uuid("linlog"),
                                     className="block-options",
                                     options=[
@@ -457,22 +414,17 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         },
                                     ],
                                     value="linear",
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                        html.Label(
+                        wcc.Selectors(
                             style={"display": "block"}
                             if self.scal is not None
                             else {"display": "none"},
                             id=self.uuid("scal_selector"),
+                            label="SCAL recommendation",
                             children=[
-                                html.Span(
-                                    "SCAL recommendation:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Checklist(
+                                wcc.Checklist(
                                     id=self.uuid("scal"),
                                     options=[
                                         {
@@ -483,15 +435,16 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                     value=["show_scal"]
                                     if self.scal is not None
                                     else [],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
                     ],
                 ),
-                html.Div(
-                    style={"flex": "4"}, children=wcc.Graph(id=self.uuid("graph"))
+                wcc.Frame(
+                    color="white",
+                    highlight=False,
+                    style={"flex": "4", "height": "90vh"},
+                    children=wcc.Graph(style={"height": "88vh"}, id=self.uuid("graph")),
                 ),
             ],
         )
@@ -1007,7 +960,6 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
                     "type": linlog,
                     "showgrid": False,
                 },
-                "height": 800,
                 "margin": {"t": 20, "b": 0},
             }
         )
@@ -1059,7 +1011,6 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
                     "type": linlog,
                     "showgrid": False,
                 },
-                "height": 800,
                 "margin": {"t": 20, "b": 0},
             }
         )

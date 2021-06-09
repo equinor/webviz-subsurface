@@ -10,15 +10,12 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface
 from webviz_subsurface._components import TornadoWidget
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations, find_sens_type
@@ -127,12 +124,7 @@ aggregated_data/parameters.csv)
     ):
 
         super().__init__()
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
+
         self.csvfile_vol = csvfile_vol if csvfile_vol else None
         self.csvfile_parameters = csvfile_parameters if csvfile_parameters else None
 
@@ -218,23 +210,14 @@ aggregated_data/parameters.csv)
         )
 
     def selector(self, label: str, id_name: str, column: str) -> html.Div:
-        return html.Div(
-            children=html.Label(
-                children=[
-                    html.Span(f"{label}:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.uuid(id_name),
-                        options=[
-                            {"label": i, "value": i}
-                            for i in list(self.volumes[column].unique())
-                        ],
-                        clearable=False,
-                        value=list(self.volumes[column])[0],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
-            ),
+        return wcc.Dropdown(
+            label=label,
+            id=self.uuid(id_name),
+            options=[
+                {"label": i, "value": i} for i in list(self.volumes[column].unique())
+            ],
+            clearable=False,
+            value=list(self.volumes[column])[0],
         )
 
     @property
@@ -323,76 +306,50 @@ aggregated_data/parameters.csv)
     @property
     def plot_selector(self) -> html.Div:
         """Radiobuttons to select plot type"""
-        return html.Div(
-            children=[
-                html.Span("Plot type:", style={"font-weight": "bold"}),
-                dcc.Dropdown(
-                    id=self.uuid("plot-type"),
-                    options=[
-                        {"label": i, "value": i}
-                        for i in [
-                            "Per realization",
-                            "Per sensitivity name",
-                            "Per sensitivity case",
-                        ]
-                    ],
-                    value="Per realization",
-                    clearable=False,
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ]
+        return wcc.Dropdown(
+            label="Plot type",
+            id=self.uuid("plot-type"),
+            options=[
+                {"label": i, "value": i}
+                for i in [
+                    "Per realization",
+                    "Per sensitivity name",
+                    "Per sensitivity case",
+                ]
+            ],
+            value="Per realization",
+            clearable=False,
         )
 
     @property
     def response_selector(self) -> html.Div:
         """Dropdown to select volumetric response"""
-        return html.Div(
-            children=html.Label(
-                children=[
-                    html.Span("Volumetric calculation:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.uuid("response"),
-                        options=[
-                            {"label": volume_description(i), "value": i}
-                            for i in self.responses
-                        ],
-                        clearable=False,
-                        value=self.initial_response
-                        if self.initial_response in self.responses
-                        else self.responses[0],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
-            ),
+        return wcc.Dropdown(
+            label="Volumetric calculation",
+            id=self.uuid("response"),
+            options=[
+                {"label": volume_description(i), "value": i} for i in self.responses
+            ],
+            clearable=False,
+            value=self.initial_response
+            if self.initial_response in self.responses
+            else self.responses[0],
         )
 
     @property
     def filter_selectors(self) -> List[html.Div]:
         """Dropdowns for dataframe columns that can be filtered on (Zone, Region, etc)"""
         return [
-            html.Div(
-                children=[
-                    html.Details(
-                        open=True,
-                        children=[
-                            html.Summary(selector.lower().capitalize()),
-                            wcc.Select(
-                                id=self.selectors_id[selector],
-                                options=[
-                                    {"label": i, "value": i}
-                                    for i in list(self.volumes[selector].unique())
-                                ],
-                                value=list(self.volumes[selector].unique()),
-                                multi=True,
-                                size=min(20, len(self.volumes[selector].unique())),
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    )
-                ]
+            wcc.SelectWithLabel(
+                label=selector,
+                id=self.selectors_id[selector],
+                options=[
+                    {"label": i, "value": i}
+                    for i in list(self.volumes[selector].unique())
+                ],
+                value=list(self.volumes[selector].unique()),
+                multi=True,
+                size=min(20, len(self.volumes[selector].unique())),
             )
             for selector in self.selectors
         ]
@@ -400,66 +357,81 @@ aggregated_data/parameters.csv)
     @property
     def layout(self) -> html.Div:
         """Main layout"""
-        return html.Div(
+        return wcc.FlexBox(
+            id=self.uuid("layout"),
             children=[
-                wcc.FlexBox(
-                    id=self.uuid("layout"),
-                    style={"height": "95vh"},
-                    children=[
-                        html.Div(
-                            className="framed",
-                            style={"flex": 1},
-                            children=[
-                                self.selector("Ensemble", "ensemble", "ENSEMBLE"),
-                                self.selector("Grid source", "source", "SOURCE"),
-                                self.response_selector,
-                                self.plot_selector,
-                                html.Span(
-                                    "Filters:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                html.Div(
-                                    id=self.uuid("filters"),
-                                    children=self.filter_selectors,
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            style={
-                                "flex": 3,
-                            },
-                            children=[
-                                html.Div(
-                                    className="framed",
-                                    style={"height": "600px"},
-                                    id=self.uuid("graph-wrapper"),
-                                ),
-                                html.Div(
-                                    className="framed",
-                                    children=[
-                                        html.Div(
-                                            id=self.uuid("volume_title"),
-                                            style={"textAlign": "center"},
-                                            children="",
-                                        ),
-                                        DataTable(
+                wcc.FlexColumn(
+                    flex=1,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        children=[
+                            wcc.Selectors(
+                                label="Selectors",
+                                children=[
+                                    self.selector(
+                                        "Ensemble",
+                                        "ensemble",
+                                        "ENSEMBLE",
+                                    ),
+                                    self.selector(
+                                        "Grid source",
+                                        "source",
+                                        "SOURCE",
+                                    ),
+                                    self.response_selector,
+                                    self.plot_selector,
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Filters",
+                                id=self.uuid("filters"),
+                                children=self.filter_selectors,
+                            ),
+                        ],
+                    ),
+                ),
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        color="white",
+                        highlight=False,
+                        children=[
+                            html.Div(
+                                style={"height": "600px"},
+                                id=self.uuid("graph-wrapper"),
+                            ),
+                            html.Div(
+                                children=[
+                                    html.Div(
+                                        id=self.uuid("volume_title"),
+                                        style={"textAlign": "center"},
+                                        children="",
+                                    ),
+                                    html.Div(
+                                        style={"fontSize": "15px"},
+                                        children=DataTable(
                                             id=self.uuid("table"),
                                             sort_action="native",
                                             filter_action="native",
                                             page_action="native",
                                             page_size=10,
                                         ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("tornado-wrapper"),
-                            className="framed",
-                            style={"visibility": "visible", "flex": 3},
-                            children=[self.tornadoplot.layout],
-                        ),
-                    ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ),
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        id=self.uuid("tornado-wrapper"),
+                        color="white",
+                        highlight=False,
+                        children=[self.tornadoplot.layout],
+                    ),
                 ),
             ],
         )
@@ -586,7 +558,7 @@ aggregated_data/parameters.csv)
                 # One bar per realization
                 layout.update(
                     {
-                        "title": "Distribution for each realization",
+                        "title": "Response per realization",
                         "xaxis": {"title": "Realizations"},
                         "yaxis": {"title": volume_title},
                     }
