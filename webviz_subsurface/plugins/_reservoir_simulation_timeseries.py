@@ -299,6 +299,7 @@ folder, to avoid risk of not extracting the right data.
                     },
                 ],
                 "isValid": True,
+                "isDeletable": False,
             },
             {
                 "name": "Test2",
@@ -315,6 +316,7 @@ folder, to avoid risk of not extracting the right data.
                     },
                 ],
                 "isValid": True,
+                "isDeletable": False,
             },
             {
                 "name": "Test3",
@@ -331,6 +333,7 @@ folder, to avoid risk of not extracting the right data.
                     },
                 ],
                 "isValid": True,
+                "isDeletable": False,
             },
             {
                 "name": "Test4",
@@ -351,6 +354,7 @@ folder, to avoid risk of not extracting the right data.
                     },
                 ],
                 "isValid": True,
+                "isDeletable": False,
             },
         ]
 
