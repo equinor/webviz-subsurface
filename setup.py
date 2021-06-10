@@ -11,6 +11,8 @@ TESTS_REQUIRE = [
     "pylint",
     "pytest-xdist",
     "selenium>=3.141",
+    "types-pyyaml",
+    "types-pkg-resources",
 ]
 
 # pylint: disable=line-too-long
