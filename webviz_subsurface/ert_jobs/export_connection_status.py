@@ -19,7 +19,7 @@ Export connection status data on sparse form from CPI summary data.
 """
 
 
-def get_parser() -> argparse.ArgumentParser:
+def _get_parser() -> argparse.ArgumentParser:
     """Setup parser for command line options"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -40,7 +40,7 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_status_changes(df_conn: pd.DataFrame, cpi_column: str) -> List[Tuple[Any, str]]:
+def _get_status_changes(df_conn: pd.DataFrame, cpi_column: str) -> List[Tuple[Any, str]]:
     """Extracts the status history of a single connection as a list of tuples
     on the form (date, status)
     """
@@ -56,7 +56,7 @@ def get_status_changes(df_conn: pd.DataFrame, cpi_column: str) -> List[Tuple[Any
     return status_changes
 
 
-def extract_connection_status(filename: str) -> pd.DataFrame:
+def _extract_connection_status(filename: str) -> pd.DataFrame:
     """Exctracts connection status history for each compdat connection that
     is included in the summary data on the form CPI:WELL,I,J,K.
 
@@ -82,7 +82,7 @@ def extract_connection_status(filename: str) -> pd.DataFrame:
         coord = colsplit[2].split(",")
         i, j, k = coord[0], coord[1], coord[2]
 
-        status_changes = get_status_changes(smry[["DATE", col]], col)
+        status_changes = _get_status_changes(smry[["DATE", col]], col)
         for date, status in status_changes:
             df.loc[df.shape[0]] = [date, well, i, j, k, status]
 
@@ -91,10 +91,10 @@ def extract_connection_status(filename: str) -> pd.DataFrame:
 
 def main() -> None:
     """Entry point from command line"""
-    parser = get_parser()
+    parser = _get_parser()
     args = parser.parse_args()
 
-    df = extract_connection_status(args.input)
+    df = _extract_connection_status(args.input)
     df.to_parquet(args.output, index=False)
 
 
