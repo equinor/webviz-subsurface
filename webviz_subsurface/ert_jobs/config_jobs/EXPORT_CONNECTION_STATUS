@@ -1,0 +1,5 @@
+EXECUTABLE export_connection_status
+
+ARGLIST "--input" <INPUT> --output <OUTPUT>
+
+MIN_ARG 2
