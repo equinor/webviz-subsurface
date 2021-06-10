@@ -65,7 +65,11 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
-        ]
+        ],
+        "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
+        "console_scripts": [
+            "export_connection_status=webviz_subsurface.ert_jobs.export_connection_status:main",
+        ],
     },
     install_requires=[
         "dash>=1.11",
