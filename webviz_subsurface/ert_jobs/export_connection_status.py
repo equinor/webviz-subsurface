@@ -40,7 +40,7 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_status_changes(df_conn: pd.DataFrame, cpi_column: str) -> list:
+def get_status_changes(df_conn: pd.DataFrame, cpi_column: str) -> List[Tuple[Any, str]]:
     """Extracts the status history of a single connection as a list of tuples
     on the form (date, status)
     """
