@@ -17,10 +17,12 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
+import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
-from .._private_plugins.tornado_plot import TornadoPlot
+from webviz_subsurface._components import TornadoWidget
 from .._datainput.fmu_input import (
     get_realizations,
     find_sens_type,
@@ -136,7 +138,12 @@ folder, to avoid risk of not extracting the right data.
     ) -> None:
 
         super().__init__()
-
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "container.css"
+        )
         self.time_index = sampling
         self.column_keys = column_keys
         self.csvfile_smry = csvfile_smry
@@ -194,7 +201,7 @@ folder, to avoid risk of not extracting the right data.
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
-        self.tornadoplot = TornadoPlot(
+        self.tornadoplot = TornadoWidget(
             app, webviz_settings, self.parameters, allow_click=True
         )
         self.uid = uuid4()
@@ -319,7 +326,8 @@ folder, to avoid risk of not extracting the right data.
                     id=self.ids("layout"),
                     children=[
                         html.Div(
-                            style={"flex": 2},
+                            className="framed",
+                            style={"flex": 1},
                             children=[
                                 wcc.FlexBox(
                                     children=[
@@ -364,6 +372,7 @@ folder, to avoid risk of not extracting the right data.
                             ],
                         ),
                         html.Div(
+                            className="framed",
                             style={"flex": 1},
                             id=self.ids("tornado-wrapper"),
                             children=self.tornadoplot.layout,

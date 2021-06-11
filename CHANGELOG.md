@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - [#661](https://github.com/equinor/webviz-subsurface/pull/661) - Moved existing clientside function to a general dash_clientside file to facilitate adding more functions later on.
+- [#658](https://github.com/equinor/webviz-subsurface/pull/658) - Refactored Tornado figure code to be more reusable. Improved the Tornado bar visualization, added table display
+ and improved layout in relevant plugins.
 
 ### Fixed
 - [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`
