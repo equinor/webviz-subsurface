@@ -16,8 +16,10 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-from .._private_plugins.tornado_plot import TornadoPlot
+import webviz_subsurface
+from webviz_subsurface._components import TornadoWidget
 from .._datainput.inplace_volumes import extract_volumes
 from .._datainput.fmu_input import get_realizations, find_sens_type
 from .._abbreviations.volume_terminology import volume_description, volume_unit
@@ -125,7 +127,12 @@ aggregated_data/parameters.csv)
     ):
 
         super().__init__()
-
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "container.css"
+        )
         self.csvfile_vol = csvfile_vol if csvfile_vol else None
         self.csvfile_parameters = csvfile_parameters if csvfile_parameters else None
 
@@ -167,7 +174,7 @@ aggregated_data/parameters.csv)
         self.volumes = pd.merge(volumes, parameters, on=["ENSEMBLE", "REAL"])
 
         # Initialize a tornado plot. Data is added in callback
-        self.tornadoplot = TornadoPlot(
+        self.tornadoplot = TornadoWidget(
             app, webviz_settings, parameters, allow_click=True
         )
         self.uid = uuid4()
@@ -397,73 +404,64 @@ aggregated_data/parameters.csv)
             children=[
                 wcc.FlexBox(
                     id=self.uuid("layout"),
+                    style={"height": "95vh"},
                     children=[
                         html.Div(
+                            className="framed",
+                            style={"flex": 1},
                             children=[
-                                wcc.FlexBox(
+                                self.selector("Ensemble", "ensemble", "ENSEMBLE"),
+                                self.selector("Grid source", "source", "SOURCE"),
+                                self.response_selector,
+                                self.plot_selector,
+                                html.Span(
+                                    "Filters:",
+                                    style={"font-weight": "bold"},
+                                ),
+                                html.Div(
+                                    id=self.uuid("filters"),
+                                    children=self.filter_selectors,
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={
+                                "flex": 3,
+                            },
+                            children=[
+                                html.Div(
+                                    className="framed",
+                                    style={"height": "600px"},
+                                    id=self.uuid("graph-wrapper"),
+                                ),
+                                html.Div(
+                                    className="framed",
                                     children=[
                                         html.Div(
-                                            style={"flex": 1},
-                                            children=[
-                                                self.selector(
-                                                    "Ensemble", "ensemble", "ENSEMBLE"
-                                                ),
-                                                self.selector(
-                                                    "Grid source", "source", "SOURCE"
-                                                ),
-                                                self.response_selector,
-                                                self.plot_selector,
-                                                html.Span(
-                                                    "Filters:",
-                                                    style={"font-weight": "bold"},
-                                                ),
-                                                html.Div(
-                                                    id=self.uuid("filters"),
-                                                    children=self.filter_selectors,
-                                                ),
-                                            ],
+                                            id=self.uuid("volume_title"),
+                                            style={"textAlign": "center"},
+                                            children="",
                                         ),
-                                        html.Div(
-                                            style={"flex": 3},
-                                            children=[
-                                                html.Div(
-                                                    style={"height": "600px"},
-                                                    id=self.uuid("graph-wrapper"),
-                                                ),
-                                                html.Div(
-                                                    children=[
-                                                        html.Div(
-                                                            id=self.uuid(
-                                                                "volume_title"
-                                                            ),
-                                                            style={
-                                                                "textAlign": "center"
-                                                            },
-                                                            children="",
-                                                        ),
-                                                        DataTable(
-                                                            id=self.uuid("table"),
-                                                            sort_action="native",
-                                                            filter_action="native",
-                                                            page_action="native",
-                                                            page_size=10,
-                                                        ),
-                                                    ],
-                                                ),
-                                            ],
+                                        DataTable(
+                                            id=self.uuid("table"),
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            page_size=10,
                                         ),
                                     ],
-                                )
-                            ]
+                                ),
+                            ],
                         ),
                         html.Div(
                             id=self.uuid("tornado-wrapper"),
-                            style={"visibility": "visible", "flex": 2},
+                            className="framed",
+                            style={"visibility": "visible", "flex": 3},
                             children=[self.tornadoplot.layout],
                         ),
                     ],
                 ),
-            ]
+            ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
@@ -587,6 +585,7 @@ aggregated_data/parameters.csv)
                 # One bar per realization
                 layout.update(
                     {
+                        "title": "Distribution for each realization",
                         "xaxis": {"title": "Realizations"},
                         "yaxis": {"title": volume_title},
                     }

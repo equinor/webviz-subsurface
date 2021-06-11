@@ -9,5 +9,12 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
       */
       return { data: data, layout: layout };
     },
+    get_client_height: function (_triggered) {
+      /*
+          Can be used in a dash callback to get the clientHeight
+          in pixels
+     */
+      return document.documentElement.clientHeight
+    }
   },
 });
