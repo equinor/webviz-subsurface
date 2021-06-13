@@ -315,10 +315,12 @@ def check_and_format_observations(obsfile: Path) -> dict:
                 f"There is something wrong in the configuration file {obsfile}. "
             )
 
-            if hasattr(excep, "problem_mark"):
+            # Looking forward to only supporting Python 3.8+ and PEP572...
+            problem_mark = getattr(excep, "problem_mark", None)
+            if problem_mark is not None:
                 extra_info += (
                     "The typo is probably somewhere around "
-                    f"line {excep.problem_mark.line + 1}."
+                    f"line {problem_mark.line + 1}."
                 )
 
             raise type(excep)(
