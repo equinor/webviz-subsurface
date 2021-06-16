@@ -1,5 +1,6 @@
 from typing import List, Dict, Union, Tuple, Callable
 
+import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import dash
@@ -42,14 +43,19 @@ class NetworkControlModes(WebvizPluginABC):
                     for ens in ensembles
                 },
                 time_index=self.time_index,
-                column_keys=["WMCTL:*", "GMCT*", "FMCT*" "GPR:*", ]
+                column_keys=["WMCTL:*", "GMCT*", "FMCT*", "GPR:*", ]
             )
         )
         self.smry = self.emodel.get_or_load_smry_cached()
         self.smry_meta = self.emodel.load_smry_meta()
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
 
-        #self.set_callbacks(app)
+        self.set_callbacks(app)
+
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        functions: List[Tuple[Callable, list]] = []
+        functions.extend(self.emodel.webvizstore)
+        return functions
 
     # @property
     # def tour_steps(self) -> List[dict]:
@@ -63,27 +69,189 @@ class NetworkControlModes(WebvizPluginABC):
                 html.Div(
                     style={"flex": 1},
                     children=[
-                        html.Span(
-                                "Ensemble:", style={"font-weight": "bold"}
-                            ),
-                        dcc.Dropdown(
+                        html.Div(
                             id=self.uuid("ensemble"),
-                            clearable=False,
-                            multi=False,
-                            options=[
-                                {"label": i, "value": i} for i in self.ensembles
-                            ],
-                            value=[self.ensembles[0]],
-                            persistence=True,
-                            persistence_type="session",
+                            children=[
+                                html.Span(
+                                    "Ensemble:", style={"font-weight": "bold"}
+                                ),
+                                dcc.Dropdown(
+                                    id=self.uuid("ensemble_dropdown"),
+                                    clearable=False,
+                                    multi=False,
+                                    options=[
+                                        {"label": i, "value": i} for i in self.ensembles
+                                    ],
+                                    value=self.ensembles[0],
+                                    persistence=True,
+                                    persistence_type="session",
+                                ),
+                            ]
                         ),
+                        html.Div(
+                            id=self.uuid("node_type"),
+                            style={"marginTop": "15px"},
+                            children=[
+                                html.Span(
+                                    "Node type:", style={"font-weight": "bold"}
+                                ),
+                                dcc.RadioItems(
+                                    id=self.uuid("node_type_radioitems"),
+                                    className="block-options",
+                                    options=[
+                                        {
+                                            "label": "Field/Group",
+                                            "value": "field_group",
+                                        },
+                                        {
+                                            "label": "Well",
+                                            "value": "well",
+                                        },
+                                    ],
+                                    value="field_group",
+                                    persistence=True,
+                                    persistence_type="session",
+                                )
+                            ]
+                        ),
+                        html.Div(
+                            id=self.uuid("node"),
+                            style={"marginTop": "15px"},
+                            children=[
+                                html.Span(
+                                    "Node:", style={"font-weight": "bold"}
+                                ),
+                                dcc.Dropdown(
+                                    id=self.uuid("node_dropdown"),
+                                    clearable=False,
+                                    multi=False,
+                                    persistence=True,
+                                    persistence_type="session",
+                                ),
+                            ]
+                        )
                     ]
                 ),
                 html.Div(
                     style={"flex": 3},
                     children=wcc.Graph(
-                        id=self.uuid("graph"),
+                        id=self.uuid("ctrlmode_areachart"),
                     ),
                 )
             ]
         )
+
+    def set_callbacks(self, app: dash.Dash) -> None:
+        @app.callback(
+            Output(self.uuid("node_dropdown"), "options"),
+            Output(self.uuid("node_dropdown"), "value"),
+            Input(self.uuid("ensemble_dropdown"), "value"),
+            Input(self.uuid("node_type_radioitems"), "value"),
+        )
+        def _update_node_dropdown(ensemble: str, node_type: str) -> list:
+            smry = self.smry[self.smry.ENSEMBLE==ensemble].copy()
+            smry.dropna(how='all', axis=1, inplace=True)
+
+            if node_type == "well":
+                nodes = [vec.split(":")[1] for vec in smry.columns if vec.startswith("WMCTL")]
+            elif node_type == "field_group":
+                nodes = [vec.split(":")[1] for vec in smry.columns if vec.startswith("GMCTP")]
+            else:
+                raise ValueError(f"Node type {node_type} not implemented.")
+            if not nodes:
+                return [], None
+            return [{"label": node, "value": node} for node in nodes], nodes[0]
+
+        @app.callback(
+            Output(self.uuid("ctrlmode_areachart"), "figure"),
+            Input(self.uuid("ensemble_dropdown"), "value"),
+            Input(self.uuid("node_type_radioitems"), "value"),
+            Input(self.uuid("node_dropdown"), "value"),
+        )
+        def _make_area_chart(ensemble: str, node_type: str, node: str):
+            sumvec = f"WMCTL:{node}"
+            if not sumvec in self.smry.columns:
+                return go.Figure()
+            smry = self.smry[self.smry.ENSEMBLE==ensemble][["DATE", sumvec]]
+            df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
+            df["Other"] = 0
+            categories = get_ctrlmode_categories(node_type)
+
+            fig = go.Figure()
+
+            for col in [col for col in df.columns if not col in ["DATE", "Other"]]:
+                if str(col) in categories:
+                    name = categories[str(col)]["name"]
+                    color = categories[str(col)]["color"]
+                    add_trace(fig, df.DATE, df[col], name, color)
+                else:
+                    df.Other = df.Other + df[col]
+            add_trace(fig, df.DATE, df.Other, categories["Other"]["name"], categories["Other"]["color"])
+
+            fig.update_layout(
+                title_text="#realizations on control modes",
+                yaxis_title="#realizations",
+                margin=dict(t=20),
+                yaxis=dict(range[0,9])
+            )
+            fig.update
+            return fig
+
+def add_trace(fig, x_series, y_series, name, color):
+    """Description"""
+    fig.add_trace(
+        go.Scatter(
+            x=x_series,
+            y=y_series,
+            hoverinfo="x+y",
+            mode="lines",
+            line=dict(width=0.5, color=color),
+            name=name,
+            stackgroup="one",
+        )
+    )
+
+def get_ctrlmode_categories(node_type):
+    """Description"""
+    return {
+        "0.0":{
+            "name": "SHUT/STOP",
+            "color": "#302f2f" #grey
+        },
+        "1.0":{
+            "name": "ORAT",
+            "color": "#044a2e" #green
+        },
+        "2.0":{
+            "name": "WRAT",
+            "color": "#10026b" #blue
+        },
+        "3.0":{
+            "name": "GRAT",
+            "color": "#7a0202" #red
+        },
+        "4.0":{
+            "name": "LRAT",
+            "color": "#b06d15" #muted purple
+        },
+        "5.0":{
+            "name": "RESV",
+            "color": "#67ab99" #green/blue
+        },
+        "6.0":{
+            "name": "THP",
+            "color": "#7e5980" #purple
+        },
+        "7.0":{
+            "name": "BHP",
+            "color": "#1f77b4" #muted blue
+        },
+        "-1.0":{
+            "name": "GRUP",
+            "color": "#cfcc74" #yellow
+        },
+        "Other":{
+            "name": "Other",
+            "color": "#ffffff" #white
+        }
+    }
