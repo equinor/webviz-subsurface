@@ -1,4 +1,5 @@
 from typing import List, Dict, Union, Tuple, Callable
+from pathlib import Path
 
 import plotly.graph_objects as go
 import numpy as np
@@ -12,7 +13,9 @@ from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
+import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 
@@ -35,7 +38,6 @@ class NetworkControlModes(WebvizPluginABC):
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
-
         self.emodel: EnsembleSetModel = (
             caching_ensemble_set_model_factory.get_or_create_model(
                 ensemble_paths={
@@ -47,9 +49,10 @@ class NetworkControlModes(WebvizPluginABC):
             )
         )
         self.smry = self.emodel.get_or_load_smry_cached()
-        self.smry_meta = self.emodel.load_smry_meta()
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "container.css"
+        )
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
@@ -69,77 +72,71 @@ class NetworkControlModes(WebvizPluginABC):
                 html.Div(
                     style={"flex": 1},
                     children=[
-                        html.Div(
-                            id=self.uuid("ensemble"),
-                            children=[
-                                html.Span(
-                                    "Ensemble:", style={"font-weight": "bold"}
-                                ),
-                                dcc.Dropdown(
-                                    id=self.uuid("ensemble_dropdown"),
-                                    clearable=False,
-                                    multi=False,
-                                    options=[
-                                        {"label": i, "value": i} for i in self.ensembles
-                                    ],
-                                    value=self.ensembles[0],
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            id=self.uuid("node_type"),
-                            style={"marginTop": "15px"},
-                            children=[
-                                html.Span(
-                                    "Node type:", style={"font-weight": "bold"}
-                                ),
-                                dcc.RadioItems(
-                                    id=self.uuid("node_type_radioitems"),
-                                    className="block-options",
-                                    options=[
-                                        {
-                                            "label": "Field/Group",
-                                            "value": "field_group",
-                                        },
-                                        {
-                                            "label": "Well",
-                                            "value": "well",
-                                        },
-                                    ],
-                                    value="field_group",
-                                    persistence=True,
-                                    persistence_type="session",
-                                )
-                            ]
-                        ),
-                        html.Div(
-                            id=self.uuid("node"),
-                            style={"marginTop": "15px"},
-                            children=[
-                                html.Span(
-                                    "Node:", style={"font-weight": "bold"}
-                                ),
-                                dcc.Dropdown(
-                                    id=self.uuid("node_dropdown"),
-                                    clearable=False,
-                                    multi=False,
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ]
-                        )
+                        self.selectors_layout()
                     ]
                 ),
                 html.Div(
-                    style={"flex": 3},
-                    children=wcc.Graph(
-                        id=self.uuid("ctrlmode_areachart"),
-                    ),
+                    className="framed",
+                    style={"flex": 3, "height": "89vh"},
+                    children=[
+                        html.Div(
+                            children=wcc.Graph(id=self.uuid("ctrlmode_areachart"))
+                        )
+                    ]
                 )
             ]
         )
+
+
+
+    def selectors_layout(self):
+        return html.Div(
+            className = "framed",
+            style={"fontSize": "14"},
+            children=[
+                dropdown_for_plotly_data(
+                    uuid=self.uuid("ensemble_dropdown"),
+                    title="Ensemble",
+                    options=[{"label": col, "value": col} for col in self.ensembles],
+                    value=self.ensembles[0],
+                    multi=False,
+                ),
+                html.Div(
+                    id=self.uuid("node_type"),
+                    style={"marginTop": "15px"},
+                    children=[
+                        html.Label(
+                            "Node type", style={"backgroundColor": "transparent", "fontWeight": "bold"}
+                        ),
+                        dcc.RadioItems(
+                            id=self.uuid("node_type_radioitems"),
+                            className="block-options",
+                            options=[
+                                {
+                                    "label": "Well",
+                                    "value": "well",
+                                },
+                                {
+                                    "label": "Field/Group",
+                                    "value": "field_group",
+                                }
+                            ],
+                            value="well",
+                            persistence=True,
+                            persistence_type="session",
+                        )
+                    ]
+                ),
+                dropdown_for_plotly_data(
+                    uuid=self.uuid("node_dropdown"),
+                    title="Node",
+                    options=[],
+                    value=None,
+                    multi=False,
+                ),
+            ]
+        )
+
 
     def set_callbacks(self, app: dash.Dash) -> None:
         @app.callback(
@@ -149,6 +146,7 @@ class NetworkControlModes(WebvizPluginABC):
             Input(self.uuid("node_type_radioitems"), "value"),
         )
         def _update_node_dropdown(ensemble: str, node_type: str) -> list:
+            print("update node dropdown")
             smry = self.smry[self.smry.ENSEMBLE==ensemble].copy()
             smry.dropna(how='all', axis=1, inplace=True)
 
@@ -169,6 +167,7 @@ class NetworkControlModes(WebvizPluginABC):
             Input(self.uuid("node_dropdown"), "value"),
         )
         def _make_area_chart(ensemble: str, node_type: str, node: str):
+            print("make chart")
             sumvec = f"WMCTL:{node}"
             if not sumvec in self.smry.columns:
                 return go.Figure()
@@ -186,15 +185,18 @@ class NetworkControlModes(WebvizPluginABC):
                     add_trace(fig, df.DATE, df[col], name, color)
                 else:
                     df.Other = df.Other + df[col]
-            add_trace(fig, df.DATE, df.Other, categories["Other"]["name"], categories["Other"]["color"])
+            #df.to_csv("plotdata.csv")
+            if df.Other.sum()>0:
+                add_trace(fig, df.DATE, df.Other, categories["Other"]["name"], categories["Other"]["color"])
 
             fig.update_layout(
-                title_text="#realizations on control modes",
-                yaxis_title="#realizations",
-                margin=dict(t=20),
-                yaxis=dict(range[0,9])
+                title_text="Number of realizations on different control modes",
+                yaxis_title="# realizations",
+                margin=dict(t=60),
+                yaxis=dict(range=[0,self.smry.REAL.nunique()]),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
             )
-            fig.update
             return fig
 
 def add_trace(fig, x_series, y_series, name, color):
@@ -210,6 +212,38 @@ def add_trace(fig, x_series, y_series, name, color):
             stackgroup="one",
         )
     )
+
+# pylint: disable=too-many-arguments
+def dropdown_for_plotly_data(
+    uuid: str,
+    title: str,
+    options: List[Dict],
+    value: Union[List, str] = None,
+    flex: int = 1,
+    placeholder: str = "Select...",
+    multi: bool = False,
+    clearable: bool = False,
+) -> html.Div:
+    return html.Div(
+        style={"flex": flex},
+        children=[
+            html.Label(
+                title, style={"backgroundColor": "transparent", "fontWeight": "bold"}
+            ),
+            dcc.Dropdown(
+                style={"backgroundColor": "transparent"},
+                id=uuid,
+                options=options,
+                value=value,
+                clearable=clearable,
+                placeholder=placeholder,
+                multi=multi,
+                persistence=True,
+                persistence_type="session",
+            ),
+        ],
+    )
+
 
 def get_ctrlmode_categories(node_type):
     """Description"""
