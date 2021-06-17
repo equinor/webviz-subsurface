@@ -2,7 +2,7 @@ from typing import Callable, Optional, Any, List, Union
 import inspect
 
 import pandas as pd
-
+from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -118,7 +118,9 @@ def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
         .for_each_trace(
             lambda t: t.update(
                 xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
-            ),
+            )
+            if is_numeric_dtype(t["x"])
+            else None,
             selector=dict(type="histogram"),
         )
     )

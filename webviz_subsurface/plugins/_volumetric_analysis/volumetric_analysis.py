@@ -8,7 +8,6 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
 import webviz_subsurface
 
 from webviz_subsurface._models import EnsembleSetModel, InplaceVolumesModel
@@ -20,6 +19,7 @@ from .controllers import (
     distribution_controllers,
     selections_controllers,
     layout_controllers,
+    export_data_controllers,
 )
 
 
@@ -31,7 +31,12 @@ This plugin supports both monte carlo and sensitivity runs, and will automatical
 which case has been run.
 
 The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
-is removed and a `FLUID` column is added to be used as a filter or selector.
+is removed and a `FLUID_ZONE` column is added to be used as a filter or selector. Volumes from
+the Water zone will be calculated if Total volumes are included.
+
+Property columns (e.g. PORO, SW) are automatically computed from the data as long as
+relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES column
+by defining which facies are non-net.
 
 Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
@@ -39,8 +44,11 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 ---
 
 **Using aggregated data**
-* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns \
+* **`csvfile_vol`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns \
 (absolute path or relative to config file).
+* **`csvfile_parameters`:** Aggregated csvfile with parameter data (absolute path or \
+relative to config file).`REAL` and `ENSEMBLE` are mandatory columns.
+
 
 **Using data stored per realization**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
@@ -48,6 +56,9 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
 * **`volfolder`:** Local folder for the `volfiles`.
 
+
+**Common settings**
+* **`non_net_facies`:** List of facies which are non-net.
 ---
 
 ?> The input files must follow FMU standards.
@@ -89,7 +100,7 @@ aggregated_data/parameters.csv)
         ensembles: list = None,
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
-        drop_constants: bool = True,
+        non_net_facies: Optional[List[str]] = None,
     ):
 
         super().__init__()
@@ -106,6 +117,7 @@ aggregated_data/parameters.csv)
             / "css"
             / "inplace_volumes.css"
         )
+
         self.csvfile_vol = csvfile_vol
         self.csvfile_parameters = csvfile_parameters
         self.volfiles = volfiles
@@ -116,7 +128,7 @@ aggregated_data/parameters.csv)
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
         if csvfile_vol:
-            volume_table = read_csv(csvfile_vol)
+            volumes_table = read_csv(csvfile_vol)
             parameters: Optional[pd.DataFrame] = (
                 read_csv(csvfile_parameters) if csvfile_parameters else None
             )
@@ -132,26 +144,24 @@ aggregated_data/parameters.csv)
                 )
             )
             parameters = self.emodel.load_parameters()
-
-            volume_table = extract_volumes(self.emodel, volfolder, volfiles)
+            volumes_table = extract_volumes(self.emodel, volfolder, volfiles)
 
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
 
-        self.volmodel = InplaceVolumesModel(volume_table, parameters, drop_constants)
+        self.volmodel = InplaceVolumesModel(
+            volumes_table=volumes_table,
+            parameter_table=parameters,
+            non_net_facies=non_net_facies,
+        )
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
-
-    #    @property
-    #    def tour_steps(self) -> List[Dict]:
-    #        return generate_tour_steps(get_uuid=self.uuid)
 
     @property
     def layout(self) -> html.Div:
         return html.Div(
-            id=self.uuid("layout"),
             children=[
                 clientside_stores(get_uuid=self.uuid),
                 main_view(
@@ -164,8 +174,11 @@ aggregated_data/parameters.csv)
 
     def set_callbacks(self, app: dash.Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
-        distribution_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
+        distribution_controllers(
+            app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
+        )
         layout_controllers(app=app, get_uuid=self.uuid)
+        export_data_controllers(app=app, get_uuid=self.uuid)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         if self.csvfile_vol is not None:
@@ -175,13 +188,8 @@ aggregated_data/parameters.csv)
                     (read_csv, [{"csv_file": self.csvfile_parameters}])
                 )
         else:
-            function_args: dict = {
-                "ensemble_set_model": self.emodel,
-                "volfolder": self.volfolder,
-                "volfiles": self.volfiles,
-            }
-            store_functions = [(extract_volumes, [function_args])]
-            store_functions.extend(self.emodel.webvizstore)
+
+            store_functions = self.emodel.webvizstore
         return store_functions
 
 
