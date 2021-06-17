@@ -501,7 +501,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                             layers=[],
                             unitScale={},
                             autoScaleMap=True,
-                            minZoom=-5,
+                            minZoom=-19,
                             drawTools={
                                 "drawMarker": False,
                                 "drawPolygon": False,

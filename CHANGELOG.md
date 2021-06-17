@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`
-
+- [#675](https://github.com/equinor/webviz-subsurface/pull/675) - Adjust minimum zoom level in surface plugins for visualization of large surfaces.
+- 
 ## [0.2.3] - 2021-06-07
 
 ### Changed
