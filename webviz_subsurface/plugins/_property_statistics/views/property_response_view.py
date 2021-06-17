@@ -54,7 +54,7 @@ def surface_view(parent: "PropertyStatistics", tab: str) -> html.Div:
                 layers=[],
                 unitScale={},
                 autoScaleMap=True,
-                minZoom=-5,
+                minZoom=-19,
                 updateMode="update",
                 mouseCoords={"position": "bottomright"},
                 colorBar={"position": "bottomleft"},

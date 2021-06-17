@@ -59,7 +59,7 @@ def surface_view(
             else [],
             unitScale={},
             autoScaleMap=True,
-            minZoom=-5,
+            minZoom=-19,
             updateMode="replace",
             mouseCoords={"position": "bottomright"},
             colorBar={"position": "bottomleft"},
