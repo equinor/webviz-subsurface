@@ -5,14 +5,11 @@ from pkg_resources import resource_filename
 try:
     from ert_shared.plugins.plugin_manager import (
         hook_implementation,
-    )
+    )  # pylint: disable=import-error
 
-    # pylint: disable=import-error
     from ert_shared.plugins.plugin_response import (
         plugin_response,
-    )
-
-    # pylint: disable=import-error
+    )  # pylint: disable=import-error
 except ModuleNotFoundError:
     # ert is not installed - use dummy/transparent function decorators.
     def hook_implementation(func: Callable) -> Callable:
@@ -20,7 +17,8 @@ except ModuleNotFoundError:
 
     def plugin_response(
         plugin_name: str,
-    ) -> Callable:  # pylint: disable=unused-argument
+    ) -> Callable:
+        # pylint: disable=unused-argument
         def decorator(func: Callable) -> Callable:
             return func
 
@@ -30,6 +28,7 @@ except ModuleNotFoundError:
 @hook_implementation
 @plugin_response(plugin_name="webviz-subsurface")
 def installable_jobs() -> dict:
+    # pylint: disable=no-value-for-parameter
     resource_directory = Path(
         resource_filename("webviz_subsurface", "ert_jobs/config_jobs")
     )
