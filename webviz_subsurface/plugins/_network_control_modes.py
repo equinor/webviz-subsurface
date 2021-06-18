@@ -247,45 +247,91 @@ def dropdown_for_plotly_data(
 
 def get_ctrlmode_categories(node_type):
     """Description"""
-    return {
-        "0.0":{
-            "name": "SHUT/STOP",
-            "color": "#302f2f" #grey
-        },
-        "1.0":{
-            "name": "ORAT",
-            "color": "#044a2e" #green
-        },
-        "2.0":{
-            "name": "WRAT",
-            "color": "#10026b" #blue
-        },
-        "3.0":{
-            "name": "GRAT",
-            "color": "#7a0202" #red
-        },
-        "4.0":{
-            "name": "LRAT",
-            "color": "#b06d15" #muted purple
-        },
-        "5.0":{
-            "name": "RESV",
-            "color": "#67ab99" #green/blue
-        },
-        "6.0":{
-            "name": "THP",
-            "color": "#7e5980" #purple
-        },
-        "7.0":{
-            "name": "BHP",
-            "color": "#1f77b4" #muted blue
-        },
-        "-1.0":{
-            "name": "GRUP",
-            "color": "#cfcc74" #yellow
-        },
-        "Other":{
-            "name": "Other",
-            "color": "#ffffff" #white
+    if node_type == "well":
+        return {
+            "0.0":{
+                "name": "SHUT/STOP",
+                "color": "#302f2f" #grey
+            },
+            "1.0":{
+                "name": "ORAT",
+                "color": "#044a2e" #green
+            },
+            "2.0":{
+                "name": "WRAT",
+                "color": "#10026b" #blue
+            },
+            "3.0":{
+                "name": "GRAT",
+                "color": "#7a0202" #red
+            },
+            "4.0":{
+                "name": "LRAT",
+                "color": "#b06d15" #muted purple
+            },
+            "5.0":{
+                "name": "RESV",
+                "color": "#67ab99" #green/blue
+            },
+            "6.0":{
+                "name": "THP",
+                "color": "#7e5980" #purple
+            },
+            "7.0":{
+                "name": "BHP",
+                "color": "#1f77b4" #muted blue
+            },
+            "-1.0":{
+                "name": "GRUP",
+                "color": "#cfcc74" #yellow
+            },
+            "Other":{
+                "name": "Other",
+                "color": "#ffffff" #white
+            }
         }
-    }
+    elif node_type == "field_group":
+        return {
+            "0.0":{
+                "name": "NONE",
+                "color": "#302f2f" #grey
+            },
+            "1.0":{
+                "name": "ORAT",
+                "color": "#044a2e" #green
+            },
+            "2.0":{
+                "name": "WRAT",
+                "color": "#10026b" #blue
+            },
+            "3.0":{
+                "name": "GRAT",
+                "color": "#7a0202" #red
+            },
+            "4.0":{
+                "name": "LRAT",
+                "color": "#b06d15" #muted purple
+            },
+            "5.0":{
+                "name": "RESV",
+                "color": "#67ab99" #green/blue
+            },
+            "6.0":{
+                "name": "PRBL",
+                "color": "#7e5980" #purple
+            },
+            "7.0":{
+                "name": "ENERGY",
+                "color": "#1f77b4" #muted blue
+            },
+            "-ve":{
+                "name": "GRUP",
+                "color": "#cfcc74" #yellow
+            },
+            "Other":{
+                "name": "Other",
+                "color": "#ffffff" #white
+            }
+        }
+    else:
+        raise ValueError(f"Node type: {node_type} not implemented")
