@@ -1,20 +1,25 @@
+from typing import Callable
 from pathlib import Path
 from pkg_resources import resource_filename
 
 try:
     from ert_shared.plugins.plugin_manager import (
         hook_implementation,
-    )  # pylint: disable=import-error
+    )
+    # pylint: disable=import-error
     from ert_shared.plugins.plugin_response import (
         plugin_response,
-    )  # pylint: disable=import-error
+    )
+    # pylint: disable=import-error
 except ModuleNotFoundError:
     # ert is not installed - use dummy/transparent function decorators.
-    def hook_implementation(func):
+    def hook_implementation(func: Callable) -> Callable:
         return func
 
-    def plugin_response(plugin_name):  # pylint: disable=unused-argument
-        def decorator(func):
+    def plugin_response(
+        plugin_name: str,
+    ) -> Callable:  # pylint: disable=unused-argument
+        def decorator(func: Callable) -> Callable:
             return func
 
         return decorator
@@ -22,7 +27,7 @@ except ModuleNotFoundError:
 
 @hook_implementation
 @plugin_response(plugin_name="webviz-subsurface")
-def installable_jobs():
+def installable_jobs() -> dict:
     resource_directory = Path(
         resource_filename("webviz_subsurface", "ert_jobs/config_jobs")
     )
