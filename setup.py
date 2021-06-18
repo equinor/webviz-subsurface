@@ -13,6 +13,7 @@ TESTS_REQUIRE = [
     "selenium>=3.141",
     "types-pyyaml",
     "types-pkg-resources",
+    "ert"
 ]
 
 # pylint: disable=line-too-long
