@@ -1,15 +1,6 @@
 import subprocess
 from pathlib import Path
 
-# ERT_CONFIG = """
-# ECLBASE     something
-# RUNPATH     /private/olind/webviz/webviz-subsurface-testdata/reek_history_match/realization-0/iter-0/
-# NUM_REALIZATIONS    1
-# QUEUE_OPTION   LSF MAX_RUNNING 1
-# QUEUE_SYSTEM LOCAL
-# FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)
-# """
-
 
 def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None:
 
