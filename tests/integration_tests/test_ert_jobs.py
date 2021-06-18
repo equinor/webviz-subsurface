@@ -10,6 +10,7 @@ from pathlib import Path
 # FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)
 # """
 
+
 def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None:
 
     ert_config = f"""
@@ -24,6 +25,4 @@ FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parq
     with open(ert_config_file, "w") as file:
         file.write(ert_config)
 
-    subprocess.call(  # nosec
-        ["ert", "test_run", ert_config_file]
-    )
+    subprocess.call(["ert", "test_run", ert_config_file])  # nosec
