@@ -3,13 +3,14 @@ from pathlib import Path
 from pkg_resources import resource_filename
 
 try:
+# pylint: disable=import-error
     from ert_shared.plugins.plugin_manager import (
         hook_implementation,
-    )  # pylint: disable=import-error
+    )
 
     from ert_shared.plugins.plugin_response import (
         plugin_response,
-    )  # pylint: disable=import-error
+    )
 except ModuleNotFoundError:
     # ert is not installed - use dummy/transparent function decorators.
     def hook_implementation(func: Callable) -> Callable:
