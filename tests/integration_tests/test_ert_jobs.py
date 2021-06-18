@@ -12,7 +12,7 @@ QUEUE_OPTION   LSF MAX_RUNNING 1\n
 QUEUE_SYSTEM LOCAL\n
 FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)\n
 """
-    ert_config_file = tmp_path / "ert" / "config.ert"
+    ert_config_file = tmp_path / "config.ert"
     with open(ert_config_file, "w") as file:
         file.write(ert_config)
 
