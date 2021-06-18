@@ -1,24 +1,29 @@
 import subprocess
 from pathlib import Path
 
-ERT_CONFIG = """
-DEFINE <USER>              test
-DEFINE <SCRATCH>           webviz/webviz-subsurface-testdata/reek_history_match
-DEFINE <CASE_DIR>          reek_history_match
-RUNPATH     <SCRATCH>/<USER>/<CASE_DIR>/realization-%d/iter-0/
+# ERT_CONFIG = """
+# ECLBASE     something
+# RUNPATH     /private/olind/webviz/webviz-subsurface-testdata/reek_history_match/realization-0/iter-0/
+# NUM_REALIZATIONS    1
+# QUEUE_OPTION   LSF MAX_RUNNING 1
+# QUEUE_SYSTEM LOCAL
+# FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)
+# """
 
-NUM_REALIZATIONS    1
---MAX_RUNTIME         18000
---MIN_REALIZATIONS    1
---MAX_SUBMIT          1
-QUEUE_SYSTEM LOCAL
+def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None:
 
-FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)
-
+    ert_config = f"""
+ECLBASE     something\n
+RUNPATH     {testdata_folder}/reek_history_match/realization-0/iter-0/\n
+NUM_REALIZATIONS    1\n
+QUEUE_OPTION   LSF MAX_RUNNING 1\n
+QUEUE_SYSTEM LOCAL\n
+FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=output.parquet)\n
 """
+    ert_config_file = tmp_path / "ert" / "config.ert"
+    with open(ert_config_file, "w") as file:
+        file.write(ert_config)
 
-def test_export_connection_status(testdata_folder: Path) -> None:
     subprocess.call(  # nosec
-        ["ert", "test_run", "config.ert"],
-        cwd=testdata_folder / "webviz_examples",
+        ["ert", "test_run", ert_config_file]
     )
