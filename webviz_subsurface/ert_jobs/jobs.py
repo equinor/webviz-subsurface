@@ -26,10 +26,8 @@ except ModuleNotFoundError:
         return decorator
 
 
-@hook_implementation
-@plugin_response(
-    plugin_name="webviz-subsurface"
-)  # pylint: disable=no-value-for-parameter
+@hook_implementation  # pylint: disable=no-value-for-parameter
+@plugin_response(plugin_name="webviz-subsurface")
 def installable_jobs() -> dict:
     resource_directory = Path(
         resource_filename("webviz_subsurface", "ert_jobs/config_jobs")
