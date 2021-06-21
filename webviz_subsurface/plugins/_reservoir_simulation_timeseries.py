@@ -770,11 +770,11 @@ folder, to avoid risk of not extracting the right data.
 
             # Make a plotly subplot figure
             fig = make_subplots(
-                rows=len(vectors),
+                rows=len(vectors) if len(vectors) > 0 else 1,
                 cols=2 if "Histogram" in trace_options else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
-                subplot_titles=titles,
+                subplot_titles=titles if len(titles) > 0 else ["No vector selected"],
             )
 
             # Loop through each vector and calculate relevant plot
