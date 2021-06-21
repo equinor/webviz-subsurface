@@ -30,6 +30,7 @@ setup(
             "_abbreviations/abbreviation_data/*.json",
             "_assets/css/*.css",
             "_assets/js/*.js",
+            "ert_jobs/config_jobs/*",
         ]
     },
     entry_points={
