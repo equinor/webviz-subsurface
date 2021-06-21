@@ -75,7 +75,7 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
 * **`obsfile`**: File with observations to plot together with the relevant time series. \
 (absolute path or relative to config file).
 * **`options`:** Options to initialize plots with:
-    * `vectors` : List of vectors to display
+    * `vectors` : List of vectors to display (max 3 vectors, additional ones are ignored)
     * `visualization` : `realizations`, `statistics` or `fanchart`
     * `date` : Date to show by default in histograms
 * **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
@@ -558,7 +558,7 @@ folder, to avoid risk of not extracting the right data.
                                     persistence_type="session",
                                     selectedTags=self.plot_options.get(
                                         "vectors", [self.smry_cols[0]]
-                                    ),
+                                    )[:3],
                                     numSecondsUntilSuggestionsAreShown=0,
                                 ),
                             ],
@@ -702,7 +702,7 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
 
             if vectors is None:
-                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])[:3]
 
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
@@ -900,7 +900,7 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
 
             if vectors is None:
-                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])[:3]
 
             dfs = calculate_vector_dataframes(
                 smry=self.smry,
