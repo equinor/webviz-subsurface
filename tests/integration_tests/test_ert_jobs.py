@@ -6,7 +6,7 @@ import pandas as pd
 
 def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None:
 
-    runpath = f"{testdata_folder}/reek_history_match/realization-0/iter-0/"
+    runpath = f"{testdata_folder}/reek_history_match/realization-0/iter-0"
     ert_config = f"""
 ECLBASE     something\n
 RUNPATH     {runpath}\n
@@ -20,9 +20,11 @@ FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parq
     with open(ert_config_file, "w") as file:
         file.write(ert_config)
 
-    subprocess.call(["ert", "test_run", ert_config_file])  # nosec
+    subprocess.check_output(
+        ["ert", "test_run", ert_config_file], stderr=subprocess.STDOUT
+    )  # nosec
 
-    output_file = Path(f"{runpath}output.parquet")
+    output_file = Path(f"{runpath}/output.parquet")
     assert output_file.exists()
 
     df = pd.read_parquet(output_file)
