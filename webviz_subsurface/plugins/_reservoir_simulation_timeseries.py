@@ -15,7 +15,6 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
-from py_expression_eval import Expression
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
@@ -949,13 +948,6 @@ folder, to avoid risk of not extracting the right data.
             if vectors is None:
                 vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
-            # Synthesize ensembles list for delta mode
-            if calc_mode == "delta_ensembles":
-                ensembles = [base_ens, delta_ens]
-
-            # Retrieve previous/current selected date
-            date = json.loads(stored_date) if stored_date else None
-
             # Calculate selected expressions:
             selected_expressions = get_selected_expressions(expressions, vectors)
             calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
@@ -964,6 +956,13 @@ folder, to avoid risk of not extracting the right data.
                 calculated_units = get_calculated_units(
                     selected_expressions, self.smry_meta["unit"]
                 )
+
+            # Synthesize ensembles list for delta mode
+            if calc_mode == "delta_ensembles":
+                ensembles = [base_ens, delta_ens]
+
+            # Retrieve previous/current selected date
+            date = json.loads(stored_date) if stored_date else None
 
             # Titles for subplots
             # TODO(Sigurd)
@@ -1013,7 +1012,7 @@ folder, to avoid risk of not extracting the right data.
             # Loop through each vector and calculate relevant plot
             legends = []
 
-            # TODO: Only for demo
+            # Join smry and calculated vectors
             smry_new = self.smry.join(calculated_vectors)
 
             dfs = calculate_vector_dataframes(
@@ -1138,6 +1137,10 @@ folder, to avoid risk of not extracting the right data.
                 State(self.uuid("delta_ens"), "value"),
                 State(self.uuid("statistics"), "value"),
                 State(self.uuid("cum_interval"), "value"),
+                State(
+                    self.uuid("vector_calculator_expressions"),
+                    "children",
+                ),
             ],
         )
         def _user_download_data(
@@ -1149,6 +1152,7 @@ folder, to avoid risk of not extracting the right data.
             delta_ens: str,
             visualization: str,
             cum_interval: str,
+            expressions: List[ExpressionInfo],
         ) -> Union[EncodedFile, str]:
             # TODO: Add calculation and download of selected vector calculator expressions
 
@@ -1168,8 +1172,15 @@ folder, to avoid risk of not extracting the right data.
             if vectors is None:
                 vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
+            # Calculate selected expressions:
+            selected_expressions = get_selected_expressions(expressions, vectors)
+            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+
+            # Join smry and calculated vectors
+            smry_new = self.smry.join(calculated_vectors)
+
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                smry=smry_new,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
