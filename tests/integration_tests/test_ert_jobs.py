@@ -20,7 +20,7 @@ FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parq
     with open(ert_config_file, "w") as file:
         file.write(ert_config)
 
-    subprocess.check_output( # nosec
+    subprocess.check_output(  # nosec
         ["ert", "test_run", ert_config_file], stderr=subprocess.STDOUT
     )
 
