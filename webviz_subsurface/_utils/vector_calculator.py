@@ -28,8 +28,6 @@ def get_calculated_vectors(
     expressions: List[ExpressionInfo],
     smry: pd.DataFrame,
 ) -> pd.DataFrame:
-    # TODO: Refactor further
-    # Move get_parser_values() and get_expression_with_vector_names into wrapper?
     calculated_vectors: pd.DataFrame = pd.DataFrame()
     for elm in expressions:
         name: str = elm["name"]
