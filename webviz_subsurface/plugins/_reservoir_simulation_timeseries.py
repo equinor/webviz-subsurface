@@ -770,11 +770,11 @@ folder, to avoid risk of not extracting the right data.
 
             # Make a plotly subplot figure
             fig = make_subplots(
-                rows=len(vectors) if len(vectors) > 0 else 1,
+                rows=max(1, len(vectors)),
                 cols=2 if "Histogram" in trace_options else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
-                subplot_titles=titles if len(titles) > 0 else ["No vector selected"],
+                subplot_titles=titles if titles else ["No vector selected"],
             )
 
             # Loop through each vector and calculate relevant plot
@@ -789,6 +789,7 @@ folder, to avoid risk of not extracting the right data.
                 time_index=self.time_index,
                 cum_interval=cum_interval,
             )
+
             for i, vector in enumerate(vectors):
                 if dfs[vector]["data"].empty:
                     continue
@@ -866,27 +867,27 @@ folder, to avoid risk of not extracting the right data.
                     for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
 
-                fig = fig.to_dict()
-                fig["layout"].update(
-                    height=800,
-                    margin={"t": 20, "b": 0},
-                    barmode="overlay",
-                    bargap=0.01,
-                    bargroupgap=0.2,
-                )
-                fig["layout"] = self.theme.create_themed_layout(fig["layout"])
+            fig = fig.to_dict()
+            fig["layout"].update(
+                height=800,
+                margin={"t": 20, "b": 0},
+                barmode="overlay",
+                bargap=0.01,
+                bargroupgap=0.2,
+            )
+            fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
-                if "Histogram" in trace_options:
-                    # Remove linked x-axis for histograms
-                    if "xaxis2" in fig["layout"]:
-                        fig["layout"]["xaxis2"]["matches"] = None
-                        fig["layout"]["xaxis2"]["showticklabels"] = True
-                    if "xaxis4" in fig["layout"]:
-                        fig["layout"]["xaxis4"]["matches"] = None
-                        fig["layout"]["xaxis4"]["showticklabels"] = True
-                    if "xaxis6" in fig["layout"]:
-                        fig["layout"]["xaxis6"]["matches"] = None
-                        fig["layout"]["xaxis6"]["showticklabels"] = True
+            if "Histogram" in trace_options:
+                # Remove linked x-axis for histograms
+                if "xaxis2" in fig["layout"]:
+                    fig["layout"]["xaxis2"]["matches"] = None
+                    fig["layout"]["xaxis2"]["showticklabels"] = True
+                if "xaxis4" in fig["layout"]:
+                    fig["layout"]["xaxis4"]["matches"] = None
+                    fig["layout"]["xaxis4"]["showticklabels"] = True
+                if "xaxis6" in fig["layout"]:
+                    fig["layout"]["xaxis6"]["matches"] = None
+                    fig["layout"]["xaxis6"]["showticklabels"] = True
             return fig
 
         @app.callback(
