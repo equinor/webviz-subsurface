@@ -168,6 +168,7 @@ folder, to avoid risk of not extracting the right data.
 
         self.smry: pd.DataFrame
         self.smry_meta: Union[pd.DataFrame, None]
+
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
@@ -253,11 +254,15 @@ folder, to avoid risk of not extracting the right data.
             line_shape_fallback
         )
         # Check if initially plotted vectors exist in data, raise ValueError if not.
-        missing_vectors = [
-            value
-            for value in self.plot_options["vectors"]
-            if  value not in self.smry_cols
-        ] if "vectors" in self.plot_options else []
+        missing_vectors = (
+            [
+                value
+                for value in self.plot_options["vectors"]
+                if value not in self.smry_cols
+            ]
+            if "vectors" in self.plot_options
+            else []
+        )
         if missing_vectors:
             raise ValueError(
                 f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
@@ -551,7 +556,10 @@ folder, to avoid risk of not extracting the right data.
                                     data=self.vector_data,
                                     persistence=True,
                                     persistence_type="session",
-                                    selectedTags=self.plot_options.get("vectors", [self.smry_cols[0]])
+                                    selectedTags=self.plot_options.get(
+                                        "vectors", [self.smry_cols[0]]
+                                    ),
+                                    numSecondsUntilSuggestionsAreShown=0,
                                 ),
                             ],
                         ),
@@ -693,6 +701,9 @@ folder, to avoid risk of not extracting the right data.
             if calc_mode not in ["ensembles", "delta_ensembles"]:
                 raise PreventUpdate
 
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
+
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
@@ -705,128 +716,129 @@ folder, to avoid risk of not extracting the right data.
             # Added None to union since date_to_interval_conversion() may return None.
             # Need input on what should be done since a None title is probably not what we want
             titles: List[Union[str, None]] = []
-            fig: dict = {}
-            if vectors:
-                for vec in vectors:
-                    if sys.version_info >= (3, 9):
-                        unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
-                    else:
-                        unit_vec = (
-                            vec[4:]
-                            if vec.startswith("AVG_")
-                            else (vec[6:] if vec.startswith("INTVL_") else vec)
-                        )
-                    if self.smry_meta is None:
-                        titles.append(simulation_vector_description(vec))
-                    else:
-                        titles.append(
-                            f"{simulation_vector_description(vec)}"
-                            f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
-                        )
-                    if "Histogram" in trace_options:
-                        titles.append(
-                            date_to_interval_conversion(
-                                date=date, vector=vec, interval=cum_interval, as_date=False
-                            )
-                        )
-
-                # Make a plotly subplot figure
-                fig = make_subplots(
-                    rows=len(vectors),
-                    cols=2 if "Histogram" in trace_options else 1,
-                    shared_xaxes=True,
-                    vertical_spacing=0.05,
-                    subplot_titles=titles,
-                )
-
-                # Loop through each vector and calculate relevant plot
-                legends = []
-                dfs = calculate_vector_dataframes(
-                    smry=self.smry,
-                    smry_meta=self.smry_meta,
-                    ensembles=ensembles,
-                    vectors=vectors,
-                    calc_mode=calc_mode,
-                    visualization=visualization,
-                    time_index=self.time_index,
-                    cum_interval=cum_interval,
-                )
-                for i, vector in enumerate(vectors):
-                    if dfs[vector]["data"].empty:
-                        continue
-                    line_shape = get_simulation_line_shape(
-                        line_shape_fallback=self.line_shape_fallback,
-                        vector=vector,
-                        smry_meta=self.smry_meta,
+            for vec in vectors:
+                if sys.version_info >= (3, 9):
+                    unit_vec = vec.removeprefix("AVG_").removeprefix("INTVL_")
+                else:
+                    unit_vec = (
+                        vec[4:]
+                        if vec.startswith("AVG_")
+                        else (vec[6:] if vec.startswith("INTVL_") else vec)
                     )
-                    if visualization == "fanchart":
-                        traces = _add_fanchart_traces(
-                            dfs[vector]["stat"],
-                            vector,
-                            colors=self.ens_colors,
-                            line_shape=line_shape,
-                            interval=cum_interval,
-                        )
-                    elif visualization == "statistics":
-                        traces = _add_statistics_traces(
-                            dfs[vector]["stat"],
-                            vector,
-                            colors=self.ens_colors,
-                            line_shape=line_shape,
-                            interval=cum_interval,
-                            stat_options=stat_options,
-                        )
-
-                    elif visualization == "realizations":
-                        traces = add_realization_traces(
-                            dfs[vector]["data"],
-                            vector,
-                            colors=self.ens_colors,
-                            line_shape=line_shape,
-                            interval=cum_interval,
-                        )
-                    else:
-                        raise PreventUpdate
-
-                    if "Histogram" in trace_options:
-                        histdata = add_histogram_traces(
-                            dfs[vector]["data"],
-                            vector,
+                if self.smry_meta is None:
+                    titles.append(simulation_vector_description(vec))
+                else:
+                    titles.append(
+                        f"{simulation_vector_description(vec)}"
+                        f" [{simulation_unit_reformat(self.smry_meta.unit[unit_vec])}]"
+                    )
+                if "Histogram" in trace_options:
+                    titles.append(
+                        date_to_interval_conversion(
                             date=date,
-                            colors=self.ens_colors,
+                            vector=vec,
                             interval=cum_interval,
+                            as_date=False,
                         )
-                        for trace in histdata:
-                            fig.add_trace(trace, i + 1, 2)
-                    if "History" in trace_options:
-                        historical_vector_name = historical_vector(
-                            vector=vector, smry_meta=self.smry_meta
-                        )
-                        if (
-                            historical_vector_name
-                            and historical_vector_name in dfs[vector]["data"].columns
-                            and not calc_mode == "delta_ensembles"
-                        ):
-                            traces.append(
-                                add_history_trace(
-                                    dfs[vector]["data"],
-                                    historical_vector_name,
-                                    line_shape,
-                                )
-                            )
+                    )
 
-                    # Remove unwanted legends(only keep one for each ensemble)
-                    for trace in traces:
-                        if trace.get("showlegend"):
-                            if trace.get("legendgroup") in legends:
-                                trace["showlegend"] = False
-                            else:
-                                legends.append(trace.get("legendgroup"))
+            # Make a plotly subplot figure
+            fig = make_subplots(
+                rows=len(vectors),
+                cols=2 if "Histogram" in trace_options else 1,
+                shared_xaxes=True,
+                vertical_spacing=0.05,
+                subplot_titles=titles,
+            )
+
+            # Loop through each vector and calculate relevant plot
+            legends = []
+            dfs = calculate_vector_dataframes(
+                smry=self.smry,
+                smry_meta=self.smry_meta,
+                ensembles=ensembles,
+                vectors=vectors,
+                calc_mode=calc_mode,
+                visualization=visualization,
+                time_index=self.time_index,
+                cum_interval=cum_interval,
+            )
+            for i, vector in enumerate(vectors):
+                if dfs[vector]["data"].empty:
+                    continue
+                line_shape = get_simulation_line_shape(
+                    line_shape_fallback=self.line_shape_fallback,
+                    vector=vector,
+                    smry_meta=self.smry_meta,
+                )
+                if visualization == "fanchart":
+                    traces = _add_fanchart_traces(
+                        dfs[vector]["stat"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
+                    )
+                elif visualization == "statistics":
+                    traces = _add_statistics_traces(
+                        dfs[vector]["stat"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
+                        stat_options=stat_options,
+                    )
+
+                elif visualization == "realizations":
+                    traces = add_realization_traces(
+                        dfs[vector]["data"],
+                        vector,
+                        colors=self.ens_colors,
+                        line_shape=line_shape,
+                        interval=cum_interval,
+                    )
+                else:
+                    raise PreventUpdate
+
+                if "Histogram" in trace_options:
+                    histdata = add_histogram_traces(
+                        dfs[vector]["data"],
+                        vector,
+                        date=date,
+                        colors=self.ens_colors,
+                        interval=cum_interval,
+                    )
+                    for trace in histdata:
+                        fig.add_trace(trace, i + 1, 2)
+                if "History" in trace_options:
+                    historical_vector_name = historical_vector(
+                        vector=vector, smry_meta=self.smry_meta
+                    )
+                    if (
+                        historical_vector_name
+                        and historical_vector_name in dfs[vector]["data"].columns
+                        and not calc_mode == "delta_ensembles"
+                    ):
+                        traces.append(
+                            add_history_trace(
+                                dfs[vector]["data"],
+                                historical_vector_name,
+                                line_shape,
+                            )
+                        )
+
+                # Remove unwanted legends(only keep one for each ensemble)
+                for trace in traces:
+                    if trace.get("showlegend"):
+                        if trace.get("legendgroup") in legends:
+                            trace["showlegend"] = False
+                        else:
+                            legends.append(trace.get("legendgroup"))
+                    fig.add_trace(trace, i + 1, 1)
+                # Add observations
+                if calc_mode != "delta_ensembles" and self.observations.get(vector):
+                    for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
-                    # Add observations
-                    if calc_mode != "delta_ensembles" and self.observations.get(vector):
-                        for trace in add_observation_trace(self.observations.get(vector)):
-                            fig.add_trace(trace, i + 1, 1)
 
                 fig = fig.to_dict()
                 fig["layout"].update(
@@ -886,6 +898,9 @@ folder, to avoid risk of not extracting the right data.
                     raise TypeError("ensembles should always be of type list")
             else:
                 raise PreventUpdate
+
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             dfs = calculate_vector_dataframes(
                 smry=self.smry,
