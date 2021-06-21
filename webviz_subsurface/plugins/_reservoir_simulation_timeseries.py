@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable
+from typing import List, Dict, Union, Tuple, Callable, Optional
 import sys
 from pathlib import Path
 import json
@@ -20,6 +20,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
@@ -44,6 +45,17 @@ from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
+
+
+def _check_plugin_options(options: Optional[dict]) -> Optional[Tuple[str, str]]:
+    if options:
+        if "vector1" in options or "vector2" in options or "vector3" in options:
+            return (
+                "Please use 'vectors' instead of 'vector1/2/3' in this plugin's options.",
+                "Single vector options ('vector1', 'vector2', 'vector3')"
+                " have been replaced with a vectors list.",
+            )
+    return None
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -130,6 +142,9 @@ folder, to avoid risk of not extracting the right data.
 """
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
+
+    @deprecated_plugin_arguments(_check_plugin_options)
+    # pylint: disable=too-many-statements
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
     def __init__(
@@ -244,7 +259,18 @@ folder, to avoid risk of not extracting the right data.
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
+
         self.plot_options = options if options else {}
+        if "vectors" not in self.plot_options:
+            self.plot_options["vectors"] = []
+        for vector in [
+            vector
+            for vector in ["vector1", "vector2", "vector3"]
+            if vector in self.plot_options.keys()
+        ]:
+            self.plot_options["vectors"].append(self.plot_options[vector])
+        self.plot_options["vectors"] = self.plot_options["vectors"][:3]
+
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
@@ -558,7 +584,7 @@ folder, to avoid risk of not extracting the right data.
                                     persistence_type="session",
                                     selectedTags=self.plot_options.get(
                                         "vectors", [self.smry_cols[0]]
-                                    )[:3],
+                                    ),
                                     numSecondsUntilSuggestionsAreShown=0,
                                 ),
                             ],
@@ -702,7 +728,7 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
 
             if vectors is None:
-                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])[:3]
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
@@ -900,7 +926,7 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
 
             if vectors is None:
-                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])[:3]
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             dfs = calculate_vector_dataframes(
                 smry=self.smry,
