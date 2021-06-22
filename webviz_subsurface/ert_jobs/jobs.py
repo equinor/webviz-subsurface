@@ -52,7 +52,9 @@ def _get_module_variable_if_exists(
 
 
 @hook_implementation
-@plugin_response(plugin_name="webviz_subsurface")
+@plugin_response(  # pylint: disable=no-value-for-parameter
+    plugin_name="webviz-subsurface"
+)
 def job_documentation(job_name: str) -> Optional[dict]:
     webviz_subsurface_jobs = set(installable_jobs().keys())
     if job_name not in webviz_subsurface_jobs:
