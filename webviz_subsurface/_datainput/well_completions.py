@@ -1,11 +1,12 @@
 from typing import Optional, Dict, List, Tuple, Any
 import json
 import re
-from pathlib import Path
 import glob
+from pathlib import Path
 import logging
 
 import pandas as pd
+from fmu.ensemble import ScratchEnsemble
 
 from ecl2df import common
 
@@ -122,16 +123,6 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     return None
 
 
-def get_real_from_filename(filename: str) -> int:
-    """Reads the realization number from the filepath. This will work
-    if one of the parent folders for the file is on the
-    """
-    for item in filename.split("/"):
-        if item.startswith("realization-"):
-            return int(item.split("-")[1])
-    raise ValueError(f"Realization number not found for {filename}")
-
-
 def read_connection_status(
     ensemble_path: str, connection_status_file: str
 ) -> Optional[pd.DataFrame]:
@@ -139,19 +130,22 @@ def read_connection_status(
     Merges together files from all realizations, does some fixing of the column
     data types, and returns it as a pandas dataframe.
 
+    fmu-ensemble is used to find the file names on the scratch disk
+
     The connection status data is extracted from the CPI data, which is 0 if the
     connection is SHUT and >0 if the connection is OPEN. This is independent of
     the status of the well.
     """
-    files = glob.glob(f"{ensemble_path}/{connection_status_file}")
-    if not files:
+    ens = ScratchEnsemble("ens", ensemble_path)
+    df_files = ens.find_files(connection_status_file)
+
+    if df_files.empty:
         return None
 
     df = pd.DataFrame()
-    for filename in files:
-        df_real = pd.read_parquet(filename)
-        real = get_real_from_filename(filename)
-        df_real["REAL"] = real
+    for _, row in df_files.iterrows():
+        df_real = pd.read_parquet(row.FULLPATH)
+        df_real["REAL"] = row.REAL
         df = pd.concat([df, df_real])
     df.I = pd.to_numeric(df.I)
     df.J = pd.to_numeric(df.J)

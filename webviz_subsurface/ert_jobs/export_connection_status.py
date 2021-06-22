@@ -15,10 +15,10 @@ from pathlib import Path
 
 import pandas as pd
 
-DESCRIPTION = """
+DESCRIPTION: str = """
 Export connection status data on sparse form from CPI summary data.
 """
-CATEGORY = "utility.eclipse"
+CATEGORY: str = "utility.eclipse"
 EXAMPLES: str = """
 Extracts connection status history from summary parquet file by running
 this in the ert workflow:
