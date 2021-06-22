@@ -18,6 +18,14 @@ import pandas as pd
 DESCRIPTION = """
 Export connection status data on sparse form from CPI summary data.
 """
+CATEGORY = "utility.eclipse"
+EXAMPLES: str = """
+Extracts connection status history from summary parquet file by running
+this in the ert workflow:
+
+    FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=share/results/tables/connection_status.parquet)
+
+"""  # noqa
 
 
 def _get_parser() -> argparse.ArgumentParser:

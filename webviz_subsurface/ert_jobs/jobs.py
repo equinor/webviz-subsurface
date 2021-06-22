@@ -1,4 +1,5 @@
-from typing import Callable
+import importlib
+from typing import Callable, Optional
 from pathlib import Path
 from pkg_resources import resource_filename
 
@@ -36,4 +37,41 @@ def installable_jobs() -> dict:
     )
     return {
         "EXPORT_CONNECTION_STATUS": str(resource_directory / "EXPORT_CONNECTION_STATUS")
+    }
+
+
+def _get_module_variable_if_exists(
+    module_name: str, variable_name: str, default: str = ""
+) -> str:
+    try:
+        script_module = importlib.import_module(module_name)
+    except ImportError:
+        return default
+
+    return getattr(script_module, variable_name, default)
+
+
+@hook_implementation
+@plugin_response(plugin_name="webviz_subsurface")
+def job_documentation(job_name: str) -> Optional[dict]:
+    webviz_subsurface_jobs = set(installable_jobs().keys())
+    if job_name not in webviz_subsurface_jobs:
+        return None
+
+    module_name = f"webviz_subsurface.ert_jobs.{job_name.lower()}"
+
+    description = _get_module_variable_if_exists(
+        module_name=module_name, variable_name="DESCRIPTION"
+    )
+    examples = _get_module_variable_if_exists(
+        module_name=module_name, variable_name="EXAMPLES"
+    )
+    category = _get_module_variable_if_exists(
+        module_name=module_name, variable_name="CATEGORY", default="other"
+    )
+
+    return {
+        "description": description,
+        "examples": examples,
+        "category": category,
     }
