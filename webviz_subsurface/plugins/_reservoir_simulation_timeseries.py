@@ -20,7 +20,6 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 
 import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
