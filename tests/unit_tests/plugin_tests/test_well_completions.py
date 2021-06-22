@@ -153,8 +153,6 @@ def test_merge_compdat_and_connstatus():
         }
     )
     df_result = merge_compdat_and_connstatus(df_compdat, df_connstatus)
-    print(df_output)
-    print(df_result)
     assert_frame_equal(
         df_result, df_output, check_like=True
     )  # Ignore order of rows and columns

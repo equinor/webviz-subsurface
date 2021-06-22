@@ -7,13 +7,13 @@ TESTS_REQUIRE = [
     "bandit",
     "black>=21.4b0",
     "dash[testing]",
+    "ert",
     "mypy",
     "pylint",
     "pytest-xdist",
     "selenium>=3.141",
     "types-pyyaml",
     "types-pkg-resources",
-    "ert",
 ]
 
 # pylint: disable=line-too-long

@@ -11,6 +11,7 @@ The output data set is very sparse compared to the CPI summary data.
 import argparse
 import re
 from typing import List, Tuple, Any
+from pathlib import Path
 
 import pandas as pd
 
@@ -28,14 +29,16 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-i",
         "--input",
+        type=Path,
         help="Input file",
-        default="share/results/tables/summary.parquet",
+        default=Path("share/results/tables") / "summary.parquet",
     )
     parser.add_argument(
         "-o",
         "--output",
+        type=Path,
         help="Output file",
-        default="share/results/tables/connection_status.parquet",
+        default=Path("share/results/tables") / "connection_status.parquet",
     )
     return parser
 
