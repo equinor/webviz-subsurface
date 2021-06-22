@@ -87,7 +87,9 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
 * **`obsfile`**: File with observations to plot together with the relevant time series. \
 (absolute path or relative to config file).
 * **`options`:** Options to initialize plots with:
-    * `vectors` : List of vectors to display (max 3 vectors, additional ones are ignored)
+    * `vector1` : First vector to display
+    * `vector2` : Second vector to display
+    * `vector3` : Third vector to display
     * `visualization` : `realizations`, `statistics` or `fanchart`
     * `date` : Date to show by default in histograms
 * **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
@@ -143,7 +145,6 @@ folder, to avoid risk of not extracting the right data.
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    @deprecated_plugin_arguments(_check_plugin_options)
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
