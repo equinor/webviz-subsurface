@@ -811,26 +811,37 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 ),
                 dcc.Store(
+                    id=self.uuid("vector_calculator_expressions_modal_open"),
+                    data=self.predefined_expressions,
+                ),
+                dcc.Store(
                     id=self.uuid("vector_calculator_expressions"),
-                    children=[
-                        self.predefined_expressions,
-                    ],
+                    data=self.predefined_expressions,
                 ),
             ],
         )
 
     @staticmethod
     def get_valid_dropdown_value(
-        dropdown_options: List[Dict[str, str]], value: Union[str, None]
+        dropdown_options: List[Dict[str, str]], 
+        value: Optional[str],
+        new_expressions:List[ExpressionInfo], 
+        existing_expressions: List[ExpressionInfo],
     ) -> Optional[str]:
         if value is None:
             return None
+
+        # If value is among existing expressions, retreive id and find id among new expressions
+        dropdown_id = next((elm["id"] for elm in existing_expressions if elm["name"] == value),None)
+        new_value: Optional[str] = value
+        if dropdown_id:
+            new_value = next((elm["name"] for elm in new_expressions if elm["id"] == dropdown_id), None)        
 
         return next(
             (
                 option["value"]
                 for option in dropdown_options
-                if option["value"] == value
+                if option["value"] == new_value
             ),
             None,
         )
@@ -875,7 +886,7 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("stat_options"), "value"),
                 Input(
                     self.uuid("vector_calculator_expressions"),
-                    "children",
+                    "data",
                 ),
             ],
         )
@@ -1099,7 +1110,7 @@ folder, to avoid risk of not extracting the right data.
                 State(self.uuid("cum_interval"), "value"),
                 State(
                     self.uuid("vector_calculator_expressions"),
-                    "children",
+                    "data",
                 ),
             ],
         )
@@ -1284,7 +1295,7 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             [
-                Output(self.uuid("vector_calculator_expressions"), "children"),
+                Output(self.uuid("vector_calculator_expressions"), "data"),
                 Output(self.uuid("vector1"), "options"),
                 Output(self.uuid("vector2"), "options"),
                 Output(self.uuid("vector3"), "options"),
@@ -1292,39 +1303,39 @@ folder, to avoid risk of not extracting the right data.
                 Output(self.uuid("vector2"), "value"),
                 Output(self.uuid("vector3"), "value"),
             ],
-            Input(self.uuid("vector_calculator"), "expressions"),
+            Input(self.uuid("modal_vector_calculator"), "is_open"),
             [
+                State(self.uuid("vector_calculator_expressions_modal_open"), "data"),
+                State(self.uuid("vector_calculator_expressions"), "data"),
                 State(self.uuid("vector1"), "value"),
                 State(self.uuid("vector2"), "value"),
                 State(self.uuid("vector3"), "value"),
             ],
         )
-        def _update_vector_calculator_expressions(
-            expressions: List[ExpressionInfo],
+        def _update_vector_calculator_expressions_actual(
+            modal_open: bool,
+            new_expressions: List[ExpressionInfo],
+            existing_expressions: List[ExpressionInfo],
             first_dropdown_value: Union[str, None],
             second_dropdown_value: Union[str, None],
             third_dropdown_value: Union[str, None],
         ) -> list:
+            if modal_open:
+                raise PreventUpdate
+            
             # Update dropdown options:
-            valid_expressions: List[ExpressionInfo] = [elm for elm in expressions if elm["isValid"]]
             dropdown_options = (
                 self.dropdown_options
-                + self.get_dropdown_options_from_expressions(valid_expressions)
+                + self.get_dropdown_options_from_expressions(new_expressions)
             )
 
             # Ensure valid dropdown values
-            new_first_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options, first_dropdown_value
-            )
-            new_second_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options, second_dropdown_value
-            )
-            new_third_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options, third_dropdown_value
-            )
+            new_first_dropdown_value = self.get_valid_dropdown_value(dropdown_options,first_dropdown_value,new_expressions,existing_expressions)
+            new_second_dropdown_value = self.get_valid_dropdown_value(dropdown_options,second_dropdown_value,new_expressions,existing_expressions)
+            new_third_dropdown_value = self.get_valid_dropdown_value(dropdown_options,third_dropdown_value,new_expressions,existing_expressions)
 
             return [
-                valid_expressions,
+                new_expressions,
                 dropdown_options,
                 dropdown_options,
                 dropdown_options,
@@ -1332,6 +1343,17 @@ folder, to avoid risk of not extracting the right data.
                 new_second_dropdown_value,
                 new_third_dropdown_value,
             ]
+
+        @app.callback(
+            Output(self.uuid("vector_calculator_expressions_modal_open"), "data"),
+            Input(self.uuid("vector_calculator"), "expressions")
+        )
+        def _update_vector_calculator_expressions(
+            expressions: List[ExpressionInfo]
+        ) -> list:
+            valid_expressions: List[ExpressionInfo] = [elm for elm in expressions if elm["isValid"]]
+            
+            return valid_expressions
 
         @app.callback(
             Output(self.uuid("modal_vector_calculator"), "is_open"),
