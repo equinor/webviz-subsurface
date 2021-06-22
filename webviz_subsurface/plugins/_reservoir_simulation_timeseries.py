@@ -585,7 +585,8 @@ folder, to avoid risk of not extracting the right data.
                                     selectedTags=self.plot_options.get(
                                         "vectors", [self.smry_cols[0]]
                                     ),
-                                    numSecondsUntilSuggestionsAreShown=0,
+                                    numSecondsUntilSuggestionsAreShown=0.5,
+                                    lineBreakAfterTag=True,
                                 ),
                             ],
                         ),
