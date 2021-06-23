@@ -1,5 +1,5 @@
 EXECUTABLE export_connection_status
 
-ARGLIST -i <INPUT> -o <OUTPUT>
+ARGLIST <INPUT> <OUTPUT>
 
 MIN_ARG 2

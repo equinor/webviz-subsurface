@@ -10,20 +10,23 @@ The output data set is very sparse compared to the CPI summary data.
 """
 import argparse
 import re
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Set
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from ecl.summary import EclSum, EclSumKeyWordVector
+
 
 DESCRIPTION: str = """
 Export connection status data on sparse form from CPI summary data.
 """
 CATEGORY: str = "utility.eclipse"
 EXAMPLES: str = """
-Extracts connection status history from summary parquet file by running
+Extracts connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
-    FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=share/results/tables/summary.parquet, <OUTPUT>=share/results/tables/connection_status.parquet)
+    FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/connection_status.parquet)
 
 """  # noqa
 
@@ -35,41 +38,38 @@ def _get_parser() -> argparse.ArgumentParser:
         description=DESCRIPTION,
     )
     parser.add_argument(
-        "-i",
-        "--input",
+        "input",
         type=Path,
         help="Input file",
-        default=Path("share/results/tables") / "summary.parquet",
     )
     parser.add_argument(
-        "-o",
-        "--output",
+        "output",
         type=Path,
         help="Output file",
-        default=Path("share/results/tables") / "connection_status.parquet",
+        default=Path() / "share" / "results" / "tables" / "connection_status.parquet",
     )
     return parser
 
 
 def _get_status_changes(
-    df_conn: pd.DataFrame, cpi_column: str
+    dates: np.ndarray, conn_values: np.ndarray
 ) -> List[Tuple[Any, str]]:
     """Extracts the status history of a single connection as a list of tuples
     on the form (date, status)
     """
     status_changes = []
     prev_value = 0
-    for _, row in df_conn.sort_values(by="DATE").iterrows():
-        value = row[cpi_column]
+    for date, value in zip(dates, conn_values):
         if value > 0 and prev_value == 0:
-            status_changes.append((row.DATE, "OPEN"))
+            status_changes.append((date, "OPEN"))
         elif prev_value > 0 and value == 0:
-            status_changes.append((row.DATE, "SHUT"))
+            status_changes.append((date, "SHUT"))
         prev_value = value
     return status_changes
 
 
-def _extract_connection_status(filename: str) -> pd.DataFrame:
+def _extract_connection_status(filename: Path) -> pd.DataFrame:
+    # pylint: disable=too-many-locals
     """Exctracts connection status history for each compdat connection that
     is included in the summary data on the form CPI:WELL,I,J,K.
 
@@ -81,10 +81,14 @@ def _extract_connection_status(filename: str) -> pd.DataFrame:
     be SHUT before it has been OPEN. This means that any cells that are always SHUT
     will not be included in the export.
     """
-    smry = pd.read_parquet(filename)
+
+    eclsum = EclSum(str(filename), include_restart=False, lazy_load=False)
+    column_names: Set[str] = set(EclSumKeyWordVector(eclsum, add_keywords=True))
+    np_dates_ms = eclsum.numpy_dates
+
     cpi_columns = [
         col
-        for col in smry.columns
+        for col in column_names
         if re.match("^CPI:[A-Z0-9_-]{1,8}:[0-9]+,[0-9]+,[0-9]+$", col)
     ]
     df = pd.DataFrame(columns=["DATE", "WELL", "I", "J", "K", "OP/SH"])
@@ -92,10 +96,11 @@ def _extract_connection_status(filename: str) -> pd.DataFrame:
     for col in cpi_columns:
         colsplit = col.split(":")
         well = colsplit[1]
-        coord = colsplit[2].split(",")
-        i, j, k = coord[0], coord[1], coord[2]
+        i, j, k = colsplit[2].split(",")
 
-        status_changes = _get_status_changes(smry[["DATE", col]], col)
+        vector = eclsum.numpy_vector(col)
+
+        status_changes = _get_status_changes(np_dates_ms, vector)
         for date, status in status_changes:
             df.loc[df.shape[0]] = [date, well, i, j, k, status]
 
