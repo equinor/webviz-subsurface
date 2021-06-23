@@ -1352,7 +1352,7 @@ folder, to avoid risk of not extracting the right data.
             second_dropdown_value: Union[str, None],
             third_dropdown_value: Union[str, None],
         ) -> list:
-            if modal_open:
+            if modal_open or (new_expressions == existing_expressions):
                 raise PreventUpdate
             
             # Update dropdown options:
