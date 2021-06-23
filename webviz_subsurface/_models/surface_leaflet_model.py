@@ -73,7 +73,7 @@ class SurfaceLeafletModel:
     ) -> np.ndarray:
         surface = self.surface.copy()
         if clip_min or clip_max:
-            np.ma.clip(surface.values, clip_min, clip_max, out=surface.values)
+            np.ma.clip(surface.values, clip_min, clip_max, out=surface.values)  # type: ignore
         if unrotate:
             surface.unrotate()
         surface.fill(np.nan)
