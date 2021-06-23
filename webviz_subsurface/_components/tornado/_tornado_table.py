@@ -1,48 +1,63 @@
-from webviz_subsurface._utils.formatting import printable_int_list
+from typing import List, Dict
+
 from ._tornado_data import TornadoData
 
 
 class TornadoTable:
     """Creates `data`for a `dash_table.DataTable` from a TornadaData instance."""
 
-    COLUMNS = [
-        "Sensitivity",
-        "Low Case",
-        "High Case",
-        "Delta low",
-        "Delta high",
-        "True low",
-        "True high",
-        "Low reals",
-        "High reals",
-    ]
-
     def __init__(
         self,
         tornado_data: TornadoData,
     ) -> None:
         self._table = tornado_data.tornadotable.copy()
-        self._table["Delta low"] = (
-            self._table["true_low"].astype("float") - tornado_data.reference_average
-        )
-        self._table["Delta high"] = (
-            self._table["true_high"].astype("float") - tornado_data.reference_average
-        )
-        self._table["low_reals"] = self._table["low_reals"].apply(printable_int_list)
-        self._table["high_reals"] = self._table["high_reals"].apply(printable_int_list)
+        self.scale = tornado_data.scale
 
+        self._table["low_reals"] = self._table["low_reals"].apply(lambda x: str(len(x)))
+        self._table["high_reals"] = self._table["high_reals"].apply(
+            lambda x: str(len(x))
+        )
+        self._table["Response"] = tornado_data.response_name
         self._table.rename(
             columns={
                 "sensname": "Sensitivity",
-                "low": "Low Case",
-                "high": "High Case",
+                "low": "Delta low" + (" (%)" if self.scale == "Percentage" else ""),
+                "high": "Delta high" + (" (%)" if self.scale == "Percentage" else ""),
                 "true_low": "True low",
                 "true_high": "True high",
-                "low_reals": "Low reals",
-                "high_reals": "High reals",
+                "low_reals": "Low #reals",
+                "high_reals": "High #reals",
             },
             inplace=True,
         )
+
+    @property
+    def columns(self) -> List[Dict]:
+        return [
+            {
+                "name": col,
+                "id": col,
+                "type": "numeric",
+                "format": {
+                    "locale": {"symbol": ["", ""]},
+                    "specifier": "$.4s",
+                }
+                if not "%" in col
+                else {
+                    "specifier": ".1f",
+                },
+            }
+            for col in [
+                "Response",
+                "Sensitivity",
+                "Delta low" + (" (%)" if self.scale == "Percentage" else ""),
+                "Delta high" + (" (%)" if self.scale == "Percentage" else ""),
+                "True low",
+                "True high",
+                "Low #reals",
+                "High #reals",
+            ]
+        ]
 
     @property
     def as_plotly_table(self) -> dict:

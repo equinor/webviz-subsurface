@@ -503,6 +503,7 @@ aggregated_data/parameters.csv)
                     .sum()
                     .reset_index()[["REAL", response]]
                     .values.tolist(),
+                    "response_name": response,
                     "number_format": "#.4g",
                     "unit": volume_unit(response),
                 }

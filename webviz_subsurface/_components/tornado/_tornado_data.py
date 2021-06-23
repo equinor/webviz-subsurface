@@ -1,21 +1,20 @@
 from typing import Dict, List, Union
-
 import pandas as pd
 
 
 class TornadoData:
-    """Calculate tornado data from a dataframe of sensitivities."""
-
     REQUIRED_COLUMNS = ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE", "VALUE"]
 
     def __init__(
         self,
         dframe: pd.DataFrame,
+        response_name: str = "Response",
         reference: str = "rms_seed",
         cutbyref: bool = False,
         scale: str = "Percentage",
     ) -> None:
         self._reference = reference
+        self.response_name = response_name
         self._validate_input(dframe)
         self._scale = scale
         self._reference_average = self._calculate_ref_average(dframe)
@@ -23,6 +22,7 @@ class TornadoData:
         if cutbyref:
             self._cut_sensitivities_by_ref()
         self._sort_sensitivities_by_max()
+        self._real_df = dframe[["REAL", "VALUE"]]
 
     def _validate_input(self, dframe: pd.DataFrame) -> None:
         for col in self.REQUIRED_COLUMNS:
@@ -39,6 +39,10 @@ class TornadoData:
                 )
         if dframe.loc[dframe["SENSNAME"].isin([self._reference])].empty:
             raise ValueError(f"Reference SENSNAME {self._reference} not in input data")
+
+    @property
+    def real_df(self) -> pd.DataFrame:
+        return self._real_df
 
     @property
     def scale(self) -> str:
@@ -200,18 +204,10 @@ class TornadoData:
 
     def _cut_sensitivities_by_ref(self) -> None:
         """Removes sensitivities smaller than reference sensitivity from table"""
-        if self._tornadotable["sensname"].str.contains(self._reference).any():
-            maskref = self._tornadotable.sensname == self._reference
-            reflow = self._tornadotable[maskref].low.abs()
-            refhigh = self._tornadotable[maskref].high.abs()
-            refmax = max(float(reflow), float(refhigh))
-            self._tornadotable = self._tornadotable.loc[
-                (self._tornadotable["sensname"] == self._reference)
-                | (
-                    (self._tornadotable["low"].abs() >= refmax)
-                    | (self._tornadotable["high"].abs() >= refmax)
-                )
-            ]
+
+        self._tornadotable = self._tornadotable.loc[
+            ((self._tornadotable["low"] - self._tornadotable["high"]) != 0)
+        ]
 
     def _sort_sensitivities_by_max(self) -> None:
         """Sorts table based on max(abs('low', 'high'))"""
@@ -222,6 +218,12 @@ class TornadoData:
         )
         self._tornadotable.sort_values("max", ascending=True, inplace=True)
         self._tornadotable.drop(["max"], axis=1, inplace=True)
+        self._tornadotable = pd.concat(
+            [
+                self._tornadotable[self._tornadotable["sensname"] != self._reference],
+                self._tornadotable[self._tornadotable["sensname"] == self._reference],
+            ]
+        )
 
     @property
     def low_high_realizations_list(self) -> Dict[str, Dict]:
