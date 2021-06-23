@@ -1321,7 +1321,7 @@ folder, to avoid risk of not extracting the right data.
             expression: ExpressionInfo
         ) -> ExternalParseData:
             if expression is None:
-                raise PreventUpdate 
+                raise PreventUpdate
 
             return wsc.VectorCalculator.parse_expression(expression)
 
@@ -1365,6 +1365,14 @@ folder, to avoid risk of not extracting the right data.
             new_first_dropdown_value = self.get_valid_dropdown_value(dropdown_options,first_dropdown_value,new_expressions,existing_expressions)
             new_second_dropdown_value = self.get_valid_dropdown_value(dropdown_options,second_dropdown_value,new_expressions,existing_expressions)
             new_third_dropdown_value = self.get_valid_dropdown_value(dropdown_options,third_dropdown_value,new_expressions,existing_expressions)
+
+            # Prevent updates if dropdow values are unchanged
+            if new_first_dropdown_value == first_dropdown_value:
+                new_first_dropdown_value = dash.no_update
+            if new_second_dropdown_value == second_dropdown_value:
+                new_second_dropdown_value = dash.no_update
+            if new_third_dropdown_value == third_dropdown_value:
+                new_third_dropdown_value = dash.no_update
 
             return [
                 new_expressions,
