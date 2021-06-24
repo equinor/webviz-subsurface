@@ -6,9 +6,7 @@ import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config import WebvizConfigTheme
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .views.main_view import main_view
@@ -94,12 +92,6 @@ folder, to avoid risk of not extracting the right data.
         column_keys: Optional[list] = None,
     ):
         super().__init__()
-        WEBVIZ_ASSETS.add(
-            pathlib.Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
         self.theme: WebvizConfigTheme = webviz_settings.theme
         self.time_index = time_index
         self.column_keys = column_keys

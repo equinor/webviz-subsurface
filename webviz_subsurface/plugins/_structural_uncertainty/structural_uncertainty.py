@@ -146,12 +146,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         super().__init__()
         self._initial_settings = initial_settings if initial_settings else {}
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
+
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "_assets"
@@ -273,26 +268,17 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 ),
                 wcc.FlexBox(
                     children=[
-                        html.Div(
-                            className="framed",
-                            style={
-                                "height": "91vh",
-                                "flex": 1,
-                                "fontSize": "0.8em",
-                                "overflowY": "auto",
-                            },
-                            children=[
-                                html.Div(
-                                    children=[
-                                        html.Details(
-                                            style={"margin-bottom": "25px"},
-                                            open=True,
-                                            children=[
-                                                html.Summary(
-                                                    "Intersection controls",
-                                                    className="webviz-structunc-details-main",
-                                                ),
-                                                intersection_data_layout(
+                        wcc.FlexColumn(
+                            wcc.Frame(
+                                style={
+                                    "height": "91vh",
+                                },
+                                children=[
+                                    html.Div(
+                                        children=[
+                                            wcc.Selectors(
+                                                label="Intersection controls",
+                                                children=intersection_data_layout(
                                                     get_uuid=self.uuid,
                                                     surface_attributes=self._surf_attrs,
                                                     surface_names=self._surfacenames,
@@ -306,21 +292,13 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                         "intersection_data", {}
                                                     ),
                                                 ),
-                                            ],
-                                        ),
-                                        html.Details(
-                                            style={"margin-bottom": "25px"},
-                                            open=True,
-                                            children=[
-                                                html.Summary(
-                                                    "Map controls",
-                                                    className="webviz-structunc-details-main",
+                                            ),
+                                            html.Div(
+                                                id=self.uuid(
+                                                    "surface-settings-wrapper"
                                                 ),
-                                                html.Div(
-                                                    style={"padding": "5px"},
-                                                    id=self.uuid(
-                                                        "surface-settings-wrapper"
-                                                    ),
+                                                children=wcc.Selectors(
+                                                    label="Map controls",
                                                     children=[
                                                         map_data_layout(
                                                             uuid=self.uuid(
@@ -334,40 +312,24 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                         )
                                                     ],
                                                 ),
-                                            ],
-                                        ),
-                                        html.Details(
-                                            style={"margin-bottom": "25px"},
-                                            open=True,
-                                            children=[
-                                                html.Summary(
-                                                    "Filters",
-                                                    className="webviz-structunc-details-main",
-                                                ),
-                                                html.Div(
-                                                    style={
-                                                        "marginTop": "10px",
-                                                        "marginBottom": "10px",
-                                                    },
-                                                    id=self.uuid(
-                                                        "realization-filter-wrapper"
+                                            ),
+                                            wcc.Selectors(
+                                                label="Filters",
+                                                children=[
+                                                    modal.open_modal_layout(
+                                                        uuid=self.uuid("modal"),
+                                                        modal_id="realization-filter",
+                                                        title="Realization filter",
                                                     ),
-                                                    children=[
-                                                        modal.open_modal_layout(
-                                                            uuid=self.uuid("modal"),
-                                                            modal_id="realization-filter",
-                                                            title="Realization filter",
-                                                        ),
-                                                    ],
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            )
                         ),
-                        html.Div(
-                            style={"flex": 6},
+                        wcc.FlexColumn(
+                            flex=6,
                             children=intersection_and_map_layout(get_uuid=self.uuid),
                         ),
                     ]

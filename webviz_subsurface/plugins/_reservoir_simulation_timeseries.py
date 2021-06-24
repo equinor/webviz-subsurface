@@ -17,11 +17,9 @@ import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 
-import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._abbreviations.reservoir_simulation import (
@@ -161,13 +159,6 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
-
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "block_options.css"
-        )
 
         self.csvfile = csvfile
         self.obsfile = obsfile
@@ -419,131 +410,89 @@ folder, to avoid risk of not extracting the right data.
             children=[
                 html.Div(
                     style={"display": show_delta},
-                    children=html.Label(
-                        children=[
-                            html.Span(
-                                "Mode:",
-                                style={"font-weight": "bold"},
-                            ),
-                            dcc.RadioItems(
-                                id=self.uuid("mode"),
-                                className="block-options",
-                                style={"marginBottom": "25px"},
-                                options=[
-                                    {
-                                        "label": "Individual ensembles",
-                                        "value": "ensembles",
-                                    },
-                                    {
-                                        "label": "Delta between ensembles",
-                                        "value": "delta_ensembles",
-                                    },
-                                ],
-                                value="ensembles",
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ]
+                    children=wcc.RadioItems(
+                        label="Mode",
+                        id=self.uuid("mode"),
+                        style={"marginBottom": "0.5vh"},
+                        options=[
+                            {
+                                "label": "Individual ensembles",
+                                "value": "ensembles",
+                            },
+                            {
+                                "label": "Delta between ensembles",
+                                "value": "delta_ensembles",
+                            },
+                        ],
+                        value="ensembles",
                     ),
                 ),
-                html.Div(
-                    id=self.uuid("show_ensembles"),
-                    children=html.Label(
-                        children=[
-                            html.Span(
-                                "Selected ensembles:", style={"font-weight": "bold"}
-                            ),
-                            dcc.Dropdown(
-                                id=self.uuid("ensemble"),
-                                clearable=False,
-                                multi=True,
-                                options=[
-                                    {"label": i, "value": i} for i in self.ensembles
-                                ],
-                                value=[self.ensembles[0]],
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
+                wcc.Dropdown(
+                    wrapper_id=self.uuid("show_ensembles"),
+                    label="Selected ensembles",
+                    id=self.uuid("ensemble"),
+                    clearable=False,
+                    multi=True,
+                    options=[{"label": i, "value": i} for i in self.ensembles],
+                    value=[self.ensembles[0]],
                 ),
                 html.Div(
                     id=self.uuid("calc_delta"),
                     style={"display": "none"},
                     children=[
-                        html.Span(
-                            "Selected ensemble delta (A-B):",
-                            style={"font-weight": "bold"},
-                        ),
-                        html.Div(
-                            style=self.set_grid_layout("1fr 1fr"),
+                        wcc.Label("Selected ensemble delta (A-B):"),
+                        wcc.FlexBox(
                             children=[
-                                html.Div(
-                                    [
-                                        html.Label(
-                                            style={"fontSize": "12px"},
-                                            children="Ensemble A",
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.uuid("base_ens"),
-                                            clearable=False,
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.ensembles
-                                            ],
-                                            value=self.ensembles[0],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                wcc.FlexColumn(
+                                    min_width="100px",
+                                    children=wcc.Dropdown(
+                                        label="Ensemble A",
+                                        id=self.uuid("base_ens"),
+                                        clearable=False,
+                                        options=[
+                                            {"label": i, "value": i}
+                                            for i in self.ensembles
+                                        ],
+                                        value=self.ensembles[0],
+                                    ),
                                 ),
-                                html.Div(
-                                    [
-                                        html.Label(
-                                            style={"fontSize": "12px"},
-                                            children="Ensemble B",
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.uuid("delta_ens"),
-                                            clearable=False,
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.ensembles
-                                            ],
-                                            value=self.ensembles[-1],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                wcc.FlexColumn(
+                                    min_width="100px",
+                                    children=wcc.Dropdown(
+                                        label="Ensemble B",
+                                        id=self.uuid("delta_ens"),
+                                        clearable=False,
+                                        options=[
+                                            {"label": i, "value": i}
+                                            for i in self.ensembles
+                                        ],
+                                        value=self.ensembles[-1],
+                                    ),
                                 ),
                             ],
                         ),
                     ],
                 ),
-            ]
+            ],
         )
 
     @property
     def from_cumulatives_layout(self) -> html.Div:
         return html.Div(
             style=(
-                {"marginTop": "15px", "display": "block"}
+                {}
                 if len(self.time_interval_options) > 0 and self.smry_meta is not None
                 else {"display": "none"}
             ),
             children=[
-                html.Span(
-                    "Calculated from cumulatives:",
-                    style={"font-weight": "bold"},
-                ),
-                html.Div(
+                wcc.Label("Calculated from cumulatives:"),
+                wcc.Label(
                     "Average (AVG_) and interval (INTVL_) time series",
-                    style={"font-style": "italic", "font-size": "0.75em"},
+                    style={"font-style": "italic"},
                 ),
                 html.Div(
-                    dcc.RadioItems(
+                    wcc.RadioItems(
                         id=self.uuid("cum_interval"),
-                        className="block-options",
                         options=[
                             {
                                 "label": (f"{i.lower().capitalize()}"),
@@ -553,8 +502,6 @@ folder, to avoid risk of not extracting the right data.
                             for i in self.time_interval_options
                         ],
                         value=self.time_index,
-                        persistence=True,
-                        persistence_type="session",
                     ),
                 ),
             ],
@@ -565,18 +512,17 @@ folder, to avoid risk of not extracting the right data.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    style={"flex": 1},
-                    children=[
-                        self.delta_layout,
-                        html.Div(
-                            id=self.uuid("vectors"),
-                            style={"marginTop": "15px"},
-                            children=[
-                                html.Span(
-                                    "Time series:", style={"font-weight": "bold"}
-                                ),
-                                wsc.VectorSelector(
+                wcc.FlexColumn(
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        children=[
+                            wcc.Selectors(
+                                label="Ensembles", children=[self.delta_layout]
+                            ),
+                            wcc.Selectors(
+                                label="Time series",
+                                id=self.uuid("vectors"),
+                                children=wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
                                     data=self.vector_data,
@@ -588,95 +534,91 @@ folder, to avoid risk of not extracting the right data.
                                     numSecondsUntilSuggestionsAreShown=0.5,
                                     lineBreakAfterTag=True,
                                 ),
-                            ],
-                        ),
-                        html.Details(
-                            id=self.uuid("visualization"),
-                            style={"marginTop": "15px"},
-                            open=True,
-                            children=[
-                                html.Summary(
-                                    "Visualization:", style={"font-weight": "bold"}
-                                ),
-                                dcc.RadioItems(
-                                    id=self.uuid("statistics"),
-                                    className="block-options",
-                                    options=[
-                                        {
-                                            "label": "Individual realizations",
-                                            "value": "realizations",
-                                        },
-                                        {
-                                            "label": "Statistical lines",
-                                            "value": "statistics",
-                                        },
-                                        {
-                                            "label": "Statistical fanchart",
-                                            "value": "fanchart",
-                                        },
-                                    ],
-                                    value=self.plot_options.get(
-                                        "visualization", "statistics"
+                            ),
+                            wcc.Selectors(
+                                label="Visualization",
+                                id=self.uuid("visualization"),
+                                children=[
+                                    wcc.RadioItems(
+                                        id=self.uuid("statistics"),
+                                        options=[
+                                            {
+                                                "label": "Individual realizations",
+                                                "value": "realizations",
+                                            },
+                                            {
+                                                "label": "Statistical lines",
+                                                "value": "statistics",
+                                            },
+                                            {
+                                                "label": "Statistical fanchart",
+                                                "value": "fanchart",
+                                            },
+                                        ],
+                                        value=self.plot_options.get(
+                                            "visualization", "statistics"
+                                        ),
                                     ),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ],
-                        ),
-                        html.Details(
-                            id=self.uuid("options"),
-                            style={"marginTop": "15px"},
-                            open=False,
-                            children=[
-                                html.Summary("Options:", style={"font-weight": "bold"}),
-                                dcc.Checklist(
-                                    id=self.uuid("trace_options"),
-                                    className="block-options",
-                                    options=[
-                                        {"label": val, "value": val}
-                                        for val in ["History", "Histogram"]
-                                    ],
-                                    value=["History"],
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                html.Div(
-                                    id=self.uuid("view_stat_options"),
-                                    style={"display": "block"}
-                                    if "statistics"
-                                    in self.plot_options.get("visualization", "")
-                                    else {"display": "none"},
-                                    children=[
-                                        dcc.Checklist(
-                                            id=self.uuid("stat_options"),
-                                            className="block-options",
-                                            options=[
-                                                {"label": val, "value": val}
-                                                for val in [
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Options",
+                                id=self.uuid("options"),
+                                children=[
+                                    wcc.Checklist(
+                                        id=self.uuid("trace_options"),
+                                        options=[
+                                            {"label": val, "value": val}
+                                            for val in ["History", "Histogram"]
+                                        ],
+                                        value=["History"],
+                                    ),
+                                    html.Div(
+                                        id=self.uuid("view_stat_options"),
+                                        style={"display": "block"}
+                                        if "statistics"
+                                        in self.plot_options.get("visualization", "")
+                                        else {"display": "none"},
+                                        children=[
+                                            wcc.Checklist(
+                                                id=self.uuid("stat_options"),
+                                                options=[
+                                                    {"label": val, "value": val}
+                                                    for val in [
+                                                        "Mean",
+                                                        "P10 (high)",
+                                                        "P50 (median)",
+                                                        "P90 (low)",
+                                                        "Maximum",
+                                                        "Minimum",
+                                                    ]
+                                                ],
+                                                value=[
                                                     "Mean",
                                                     "P10 (high)",
-                                                    "P50 (median)",
                                                     "P90 (low)",
-                                                    "Maximum",
-                                                    "Minimum",
-                                                ]
-                                            ],
-                                            value=["Mean", "P10 (high)", "P90 (low)"],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        self.from_cumulatives_layout,
-                    ],
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Calculations",
+                                children=[self.from_cumulatives_layout],
+                            ),
+                        ],
+                    )
                 ),
-                html.Div(
-                    style={"flex": 3},
+                wcc.FlexColumn(
+                    flex=4,
                     children=[
-                        html.Div(
+                        wcc.Frame(
+                            style={"height": "90vh"},
+                            highlight=False,
+                            color="white",
                             children=wcc.Graph(
+                                style={"height": "85vh"},
                                 id=self.uuid("graph"),
                             ),
                         ),
@@ -870,12 +812,12 @@ folder, to avoid risk of not extracting the right data.
 
             fig = fig.to_dict()
             fig["layout"].update(
-                height=800,
-                margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
                 bargroupgap=0.2,
             )
+            if len(vectors) == 1:
+                fig["layout"].update({"title": {"text": titles[0]}})
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
             if "Histogram" in trace_options:

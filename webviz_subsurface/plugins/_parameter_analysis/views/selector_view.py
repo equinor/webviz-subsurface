@@ -18,17 +18,15 @@ def ensemble_selector(
     heading: str = None,
 ) -> html.Div:
     children = []
-    if heading is not None:
-        children.append(html.Span(heading, style={"font-weight": "bold"}))
+
     children.append(
-        dcc.Dropdown(
+        wcc.Dropdown(
+            label=heading,
             id={"id": get_uuid(id_string), "tab": tab},
             options=[{"label": ens, "value": ens} for ens in parametermodel.ensembles],
             multi=multi,
             value=value if value is not None else parametermodel.ensembles[0],
             clearable=False,
-            persistence=True,
-            persistence_type="session",
         )
     )
     return html.Div(style={"width": "90%"}, children=children)
@@ -43,9 +41,9 @@ def vector_selector(
         else list(vectormodel.vector_groups.keys())[0]
     )
     return html.Div(
-        style={"width": "90%", "margin-top": "15px"},
+        style={"width": "90%"},
         children=[
-            html.Span("Vector type:", style={"font-weight": "bold"}),
+            html.Span(wcc.Label("Vector type")),
             html.Div(
                 id=get_uuid("vtype-container"),
                 children=[
@@ -62,11 +60,11 @@ def vector_selector(
             html.Div(
                 style={"margin-top": "5px"},
                 children=[
-                    html.Span("Vector:", style={"font-weight": "bold"}),
+                    html.Span(wcc.Label("Vector")),
                     html.Div(
                         id=get_uuid("vshort-container"),
                         children=[
-                            dcc.Dropdown(
+                            wcc.Dropdown(
                                 id=get_uuid("vshort-select"),
                                 options=[
                                     {"label": i, "value": i}
@@ -79,8 +77,6 @@ def vector_selector(
                                 ][0],
                                 placeholder="Select a vector...",
                                 clearable=False,
-                                persistence=True,
-                                persistence_type="session",
                             ),
                         ],
                     ),
@@ -96,19 +92,12 @@ def vector_selector(
 def parameter_selector(
     get_uuid: Callable, parametermodel: ParametersModel, tab: str
 ) -> html.Div:
-    return html.Div(
-        style={"width": "90%", "margin-top": "15px"},
-        children=[
-            html.Span("Parameter:", style={"font-weight": "bold"}),
-            dcc.Dropdown(
-                id={"id": get_uuid("parameter-select"), "tab": tab},
-                options=[{"label": i, "value": i} for i in parametermodel.parameters],
-                placeholder="Select a parameter...",
-                clearable=False,
-                persistence=True,
-                persistence_type="session",
-            ),
-        ],
+    return wcc.Dropdown(
+        label="Parameter",
+        id={"id": get_uuid("parameter-select"), "tab": tab},
+        options=[{"label": i, "value": i} for i in parametermodel.parameters],
+        placeholder="Select a parameter...",
+        clearable=False,
     )
 
 
@@ -117,41 +106,31 @@ def sortby_selector(
     value: str = None,
 ) -> html.Div:
     return html.Div(
-        style={"margin-top": "10px", "width": "90%"},
-        children=[
-            html.Span(
-                "Sort parameters by:",
-                style={"font-weight": "bold"},
-            ),
-            dcc.RadioItems(
-                id=get_uuid("delta-sort"),
-                className="block-options",
-                options=[
-                    {"label": "Name", "value": "Name"},
-                    {
-                        "label": "Standard deviation",
-                        "value": "Stddev",
-                    },
-                    {
-                        "label": "Average",
-                        "value": "Avg",
-                    },
-                ],
-                value=value,
-                persistence=True,
-                persistence_type="session",
-            ),
-        ],
+        wcc.RadioItems(
+            label="Sort parameters by",
+            id=get_uuid("delta-sort"),
+            className="block-options",
+            options=[
+                {"label": "Name", "value": "Name"},
+                {
+                    "label": "Standard deviation",
+                    "value": "Stddev",
+                },
+                {
+                    "label": "Average",
+                    "value": "Avg",
+                },
+            ],
+            value=value,
+        )
     )
 
 
 def plot_options(get_uuid: Callable, tab: str) -> html.Div:
     return html.Div(
-        style={"width": "90%", "margin-top": "15px"},
         children=[
-            dcc.Checklist(
+            wcc.Checklist(
                 id={"id": get_uuid("checkbox-options"), "tab": tab},
-                className="block-options",
                 options=[
                     {"label": "Dateline visible", "value": "DateLine"},
                     {"label": "Auto compute correlations", "value": "AutoCompute"},
@@ -171,20 +150,21 @@ def date_selector(
 ) -> html.Div:
     dates = vectormodel.dates
     return html.Div(
-        style={"width": "90%", "margin-top": "15px"},
         children=[
             html.Div(
                 style={"display": "inline-flex"},
                 children=[
-                    html.Span("Date:", style={"font-weight": "bold"}),
+                    html.Span(wcc.Label("Date:")),
                     html.Span(
-                        "date",
-                        id=get_uuid("date-selected"),
-                        style={"margin-left": "10px"},
+                        html.Label(
+                            "date",
+                            id=get_uuid("date-selected"),
+                            style={"margin-left": "10px"},
+                        ),
                     ),
                 ],
             ),
-            dcc.Slider(
+            wcc.Slider(
                 id=get_uuid("date-slider"),
                 value=len(dates) - 1,
                 min=0,
@@ -214,11 +194,11 @@ def filter_parameter(
     return html.Div(
         style={"margin-top": "10px", "width": "90%"},
         children=[
-            html.Span("Parameters:", style={"font-weight": "bold"}),
+            wcc.Label("Select parameters"),
             html.Div(
                 id=get_uuid("filter-parameter-container"),
                 children=[
-                    wcc.Select(
+                    wcc.SelectWithLabel(
                         id={
                             "id": get_uuid("filter-parameter"),
                             "tab": tab,
@@ -229,8 +209,6 @@ def filter_parameter(
                         value=value,
                         multi=multi,
                         size=min(40, len(parametermodel.parameters)),
-                        persistence=True,
-                        persistence_type="session",
                     ),
                 ],
             ),
@@ -246,27 +224,23 @@ def make_filter(
     multi: bool = True,
     value: Union[str, float] = None,
     open_details: bool = False,
-) -> html.Div:
-    return html.Div(
-        children=html.Details(
-            open=open_details,
-            children=[
-                html.Summary(vtype),
-                wcc.Select(
-                    id={
-                        "id": get_uuid("vitem-filter"),
-                        "tab": tab,
-                        "vtype": vtype,
-                    },
-                    options=[{"label": i, "value": i} for i in column_values],
-                    value=[value] if value is not None else column_values,
-                    multi=multi,
-                    size=min(15, len(column_values)),
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ],
-        ),
+) -> wcc.Selectors:
+    return wcc.Selectors(
+        label=vtype,
+        open=open_details,
+        children=[
+            wcc.SelectWithLabel(
+                id={
+                    "id": get_uuid("vitem-filter"),
+                    "tab": tab,
+                    "vtype": vtype,
+                },
+                options=[{"label": i, "value": i} for i in column_values],
+                value=[value] if value is not None else column_values,
+                multi=multi,
+                size=min(15, len(column_values)),
+            ),
+        ],
     )
 
 
@@ -281,8 +255,8 @@ def filter_vector_selector(
     return html.Div(
         style={"width": "90%"},
         children=[
-            html.Span("Vector type:", style={"font-weight": "bold"}),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label="Vector type",
                 id={
                     "id": get_uuid("vtype-filter"),
                     "tab": tab,
@@ -292,8 +266,6 @@ def filter_vector_selector(
                 clearable=False,
                 style={"background-color": "white"},
                 multi=True,
-                persistence=True,
-                persistence_type="session",
             ),
             html.Div(
                 children=[
@@ -328,7 +300,7 @@ def color_selector(
     return html.Div(
         style={"width": "90%", "margin-top": "5px"},
         children=[
-            html.Span("Colors:", style={"font-weight": "bold"}),
+            wcc.Label("Colors"),
             wcc.Graph(
                 id={"id": get_uuid("color-selector"), "tab": tab},
                 config={"displayModeBar": False},

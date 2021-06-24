@@ -203,50 +203,39 @@ class PvtPlot(WebvizPluginABC):
                 ),
             },
             {
-                "id": self.uuid("color_by_selector"),
+                "id": self.uuid("color_by"),
                 "content": ("Choose the basis for your colormap."),
             },
             {
-                "id": self.uuid("ensemble_selector"),
+                "id": self.uuid("ensemble"),
                 "content": ("Select ensembles."),
             },
             {
-                "id": self.uuid("phase_selector"),
+                "id": self.uuid("phase"),
                 "content": (
                     "Choose a phase. Formation volume factor and viscosity data will be"
                     " shown for the selected phase in separate plots."
                 ),
             },
             {
-                "id": self.uuid("pvtnum_selector"),
+                "id": self.uuid("pvtnum"),
                 "content": ("Choose PVTNUM regions."),
             },
         ]
-
-    @staticmethod
-    def label(text: str, margin_top: bool = True) -> html.Span:
-        return html.Span(
-            text,
-            style={
-                "font-weight": "bold",
-                "margin-top": ("8px" if margin_top else "0"),
-            },
-        )
 
     @property
     def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    id=self.uuid("filters"),
-                    style={"flex": "1"},
+                wcc.Frame(
+                    style={"flex": "1", "height": "90vh"},
                     children=[
-                        html.Label(
-                            id=self.uuid("color_by_selector"),
+                        wcc.Selectors(
+                            label="Selectors",
                             children=[
-                                self.label("Color by:"),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Color by",
                                     id=self.uuid("color_by"),
                                     clearable=False,
                                     options=[
@@ -257,17 +246,9 @@ class PvtPlot(WebvizPluginABC):
                                         for i in self.color_options
                                     ],
                                     value=self.color_options[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                            style={"margin-bottom": "8px", "display": "block"},
-                        ),
-                        html.Label(
-                            id=self.uuid("ensemble_selector"),
-                            children=[
-                                self.label("Ensembles:"),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Ensembles",
                                     id=self.uuid("ensemble"),
                                     clearable=False,
                                     multi=True,
@@ -275,17 +256,9 @@ class PvtPlot(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.ensembles
                                     ],
                                     value=self.ensembles,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                            style={"margin-bottom": "8px", "display": "block"},
-                        ),
-                        html.Label(
-                            id=self.uuid("phase_selector"),
-                            children=[
-                                self.label("Phase:"),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Phase",
                                     id=self.uuid("phase"),
                                     clearable=False,
                                     options=[
@@ -297,17 +270,9 @@ class PvtPlot(WebvizPluginABC):
                                     ],
                                     multi=False,
                                     value=list(self.phases.keys())[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                            style={"margin-bottom": "8px", "display": "block"},
-                        ),
-                        html.Label(
-                            id=self.uuid("pvtnum_selector"),
-                            children=[
-                                self.label("Pvtnum:"),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Pvtnum",
                                     id=self.uuid("pvtnum"),
                                     clearable=False,
                                     multi=False,
@@ -315,17 +280,13 @@ class PvtPlot(WebvizPluginABC):
                                         {"label": i, "value": i} for i in self.pvtnums
                                     ],
                                     value=self.pvtnums[0],
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
-                            style={"margin-bottom": "8px", "display": "block"},
                         ),
-                        html.Label(
-                            id=self.uuid("plot_visibility_selector"),
+                        wcc.Selectors(
+                            label="Show plots",
                             children=[
-                                self.label("Show plots"),
-                                dcc.Checklist(
+                                wcc.Checklist(
                                     id=self.uuid("plots_visibility"),
                                     options=[
                                         {"label": l, "value": v}
@@ -338,15 +299,18 @@ class PvtPlot(WebvizPluginABC):
                                         "ratio",
                                     ],
                                     labelStyle={"display": "block"},
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
-                            style={"margin-bottom": "8px", "display": "block"},
                         ),
                     ],
                 ),
-                html.Div(id=self.uuid("graphs"), style={"flex": "4", "height": "90vh"}),
+                wcc.Frame(
+                    color="white",
+                    highlight=False,
+                    id=self.uuid("graphs"),
+                    style={"flex": "6", "height": "90vh"},
+                    children=[],
+                ),
                 dcc.Store(
                     id=self.uuid("init_callback"), storage_type="session", data=True
                 ),

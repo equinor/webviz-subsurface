@@ -36,31 +36,16 @@ def main_view(parent: "PropertyStatistics") -> dcc.Tabs:
 
     return html.Div(
         id=parent.uuid("layout"),
-        children=dcc.Tabs(
+        children=wcc.Tabs(
             style={"width": "100%"},
-            persistence=True,
             children=tabs,
         ),
     )
 
 
 def make_tab(label: str, children: wcc.FlexBox) -> dcc.Tab:
-    tab_style = {
-        "borderBottom": "1px solid #d6d6d6",
-        "padding": "6px",
-        "fontWeight": "bold",
-    }
 
-    tab_selected_style = {
-        "borderTop": "1px solid #d6d6d6",
-        "borderBottom": "1px solid #d6d6d6",
-        "backgroundColor": "#007079",
-        "color": "white",
-        "padding": "6px",
-    }
-    return dcc.Tab(
+    return wcc.Tab(
         label=label,
-        style=tab_style,
-        selected_style=tab_selected_style,
         children=children,
     )

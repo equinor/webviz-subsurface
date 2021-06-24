@@ -9,8 +9,9 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
     """Layout for the intersection graph and maps"""
     return html.Div(
         children=[
-            html.Div(
-                className="framed",
+            wcc.Frame(
+                highlight=False,
+                color="white",
                 children=[
                     wcc.Graph(
                         style={"height": "48vh", "background-color": "white"},
@@ -18,13 +19,13 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                     ),
                 ],
             ),
-            html.Div(
+            wcc.Frame(
                 id=get_uuid("maps-and-uncertainty-table-wrapper"),
-                style={"background-color": "white"},
+                highlight=False,
+                color="white",
                 children=[
                     wcc.FlexBox(
                         style={"height": "40vh", "display": "flex"},
-                        className="framed",
                         id=get_uuid("all-maps-wrapper"),
                         children=[
                             html.Div(
@@ -64,12 +65,11 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                             ),
                         ],
                     ),
-                    html.Div(
+                    wcc.Frame(
                         id={
                             "id": get_uuid("uncertainty-table"),
                             "element": "wrapper",
                         },
-                        className="framed",
                         style={"height": "40vh", "display": "none"},
                         children=uncertainty_table_layout(
                             uuid=get_uuid("uncertainty-table"),
@@ -101,7 +101,6 @@ def map_layout(
         else {}
     )
     return html.Div(
-        style={"height": "100%", "padding": "10px"},
         children=[
             html.Label(
                 style={"textAlign": "center", "fontSize": "0.8em"},
@@ -109,7 +108,7 @@ def map_layout(
             ),
             html.Div(
                 style={
-                    "height": "38vh",
+                    "height": "37vh",
                 },
                 children=LeafletMap(
                     syncedMaps=synced_uuids,

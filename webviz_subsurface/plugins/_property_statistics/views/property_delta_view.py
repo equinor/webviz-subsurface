@@ -1,7 +1,6 @@
 from typing import List, Any, TYPE_CHECKING
 
 import dash_html_components as html
-import dash_core_components as dcc
 import dash_table
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
@@ -23,24 +22,20 @@ def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     return html.Div(
         id=parent.uuid("surface-select"),
         style={"width": "75%"},
-        children=[
-            html.Label("Surface statistics"),
-            dcc.Dropdown(
-                id={"id": parent.uuid("surface-type"), "tab": tab},
-                options=[
-                    {"label": "Mean", "value": "mean"},
-                    {"label": "Standard Deviation", "value": "stddev"},
-                    {"label": "Minimum", "value": "min"},
-                    {"label": "Maximum", "value": "max"},
-                    {"label": "P10", "value": "p10"},
-                    {"label": "P90", "value": "p90"},
-                ],
-                clearable=False,
-                value="mean",
-                persistence=True,
-                persistence_type="session",
-            ),
-        ],
+        children=wcc.Dropdown(
+            label="Surface statistics",
+            id={"id": parent.uuid("surface-type"), "tab": tab},
+            options=[
+                {"label": "Mean", "value": "mean"},
+                {"label": "Standard Deviation", "value": "stddev"},
+                {"label": "Minimum", "value": "min"},
+                {"label": "Maximum", "value": "max"},
+                {"label": "P10", "value": "p10"},
+                {"label": "P90", "value": "p90"},
+            ],
+            clearable=False,
+            value="mean",
+        ),
     )
 
 
@@ -82,8 +77,7 @@ def surface_views(
     return html.Div(
         style={"height": "76vh"},
         children=[
-            html.P(
-                style={"margin": "0px", "fontSize": "2vh"},
+            wcc.Label(
                 children=f"{statistic} for {prop}, {zone} in {ensemble}",
             ),
             surface_view(
@@ -92,8 +86,7 @@ def surface_views(
                 synced_ids=[delta_ensemble, "diff"],
                 layers=[ens_layer],
             ),
-            html.P(
-                style={"margin": "0px", "fontSize": "2vh"},
+            wcc.Label(
                 children=f"{statistic} for {prop}, {zone} in {delta_ensemble}",
             ),
             surface_view(
@@ -102,8 +95,7 @@ def surface_views(
                 synced_ids=[ensemble, "diff"],
                 layers=[delta_ens_layer],
             ),
-            html.P(
-                style={"margin": "0px", "fontSize": "2vh"},
+            wcc.Label(
                 children=f"{statistic} for {prop}, {zone} in {ensemble} - {delta_ensemble}",
             ),
             surface_view(
@@ -117,26 +109,27 @@ def surface_views(
 
 
 def selector_view(parent: "PropertyStatistics") -> html.Div:
-    return html.Div(
+    return wcc.Frame(
         style={"height": "80vh", "overflowY": "auto"},
-        className="framed",
         children=[
-            html.Div(
+            wcc.Selectors(
+                label="Selectors",
                 children=[
                     ensemble_selector(parent=parent, tab="delta"),
                     delta_ensemble_selector(parent=parent, tab="delta"),
-                ]
+                    property_selector(parent=parent, tab="delta"),
+                    source_selector(parent=parent, tab="delta"),
+                ],
             ),
-            property_selector(parent=parent, tab="delta"),
-            source_selector(parent=parent, tab="delta"),
-            filter_selector(parent=parent, tab="delta"),
+            wcc.Selectors(
+                label="Filters", children=[filter_selector(parent=parent, tab="delta")]
+            ),
         ],
     )
 
 
 def delta_avg_view() -> html.Div:
-    return html.Div(
-        style={"flex": 1},
+    return wcc.FlexColumn(
         children=[],
     )
 
@@ -150,49 +143,50 @@ def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
-            html.Div(style={"flex": 1}, children=selector_view(parent=parent)),
-            html.Div(
-                style={"flex": 4, "height": "80vh"},
-                className="framed",
-                children=[
-                    dcc.RadioItems(
-                        id=parent.uuid("delta-sort"),
-                        options=[
-                            {"label": "Sort by Average", "value": "Avg"},
-                            {"label": "Sort by Standard Deviation", "value": "Stddev"},
-                        ],
-                        value="Avg",
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin": "5px",
-                        },
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                    wcc.Graph(
-                        id=parent.uuid("delta-bar-graph"),
-                        config={"displayModeBar": False},
-                        style={"height": "75vh"},
-                    ),
-                ],
+            wcc.FlexColumn(children=selector_view(parent=parent)),
+            wcc.FlexColumn(
+                flex=4,
+                children=wcc.Frame(
+                    color="white",
+                    highlight=False,
+                    style={"height": "80vh"},
+                    children=[
+                        wcc.RadioItems(
+                            vertical=False,
+                            id=parent.uuid("delta-sort"),
+                            options=[
+                                {"label": "Sort by Average", "value": "Avg"},
+                                {
+                                    "label": "Sort by Standard Deviation",
+                                    "value": "Stddev",
+                                },
+                            ],
+                            value="Avg",
+                        ),
+                        wcc.Graph(
+                            id=parent.uuid("delta-bar-graph"),
+                            config={"displayModeBar": False},
+                            style={"height": "75vh"},
+                        ),
+                    ],
+                ),
             ),
-            html.Div(
-                style={"flex": 4, "height": "80vh"},
-                className="framed",
-                children=[
-                    dcc.RadioItems(
-                        id=parent.uuid("delta-switch-table-surface"),
-                        options=table_surf_options,
-                        value="table",
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin": "5px",
-                        },
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                    html.Div(id=parent.uuid("delta-table-surface-wrapper")),
-                ],
+            wcc.FlexColumn(
+                flex=4,
+                children=wcc.Frame(
+                    style={"height": "80vh"},
+                    color="white",
+                    highlight=False,
+                    children=[
+                        wcc.RadioItems(
+                            id=parent.uuid("delta-switch-table-surface"),
+                            vertical=False,
+                            options=table_surf_options,
+                            value="table",
+                        ),
+                        html.Div(id=parent.uuid("delta-table-surface-wrapper")),
+                    ],
+                ),
             ),
         ],
     )

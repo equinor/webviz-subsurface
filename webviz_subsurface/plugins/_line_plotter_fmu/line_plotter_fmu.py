@@ -161,9 +161,8 @@ class LinePlotterFMU(WebvizPluginABC):
                         initial_layout=self._initial_layout,
                     ),
                 ),
-                html.Div(
-                    className="framed",
-                    style={"flex": 1, "height": "89vh"},
+                wcc.Frame(
+                    style={"flex": 1, "height": "90vh"},
                     children=self._parameter_filter.layout,
                 ),
             ]
