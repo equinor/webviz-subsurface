@@ -7,6 +7,7 @@ TESTS_REQUIRE = [
     "bandit",
     "black>=21.4b0",
     "dash[testing]",
+    "ert",
     "mypy",
     "pylint",
     "pytest-xdist",
@@ -29,6 +30,7 @@ setup(
             "_abbreviations/abbreviation_data/*.json",
             "_assets/css/*.css",
             "_assets/js/*.js",
+            "ert_jobs/config_jobs/*",
         ]
     },
     entry_points={
@@ -65,7 +67,11 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
-        ]
+        ],
+        "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
+        "console_scripts": [
+            "export_connection_status=webviz_subsurface.ert_jobs.export_connection_status:main",
+        ],
     },
     install_requires=[
         "dash>=1.11",

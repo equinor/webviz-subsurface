@@ -1,9 +1,12 @@
 from typing import Optional, Dict, List, Tuple, Any
 import json
 import re
-from pathlib import Path
 import glob
+from pathlib import Path
 import logging
+
+import pandas as pd
+from fmu.ensemble import ScratchEnsemble
 
 from ecl2df import common
 
@@ -118,3 +121,35 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
                 return unit_system
         return None
     return None
+
+
+def read_connection_status(
+    ensemble_path: str, connection_status_file: str
+) -> Optional[pd.DataFrame]:
+    """Reads parquet file with connection status data from the scratch disk.
+    Merges together files from all realizations, does some fixing of the column
+    data types, and returns it as a pandas dataframe.
+
+    fmu-ensemble is used to find the file names on the scratch disk
+
+    The connection status data is extracted from the CPI data, which is 0 if the
+    connection is SHUT and >0 if the connection is OPEN. This is independent of
+    the status of the well.
+    """
+    ens = ScratchEnsemble("ens", ensemble_path)
+    df_files = ens.find_files(connection_status_file)
+
+    if df_files.empty:
+        return None
+
+    df = pd.DataFrame()
+    for _, row in df_files.iterrows():
+        df_real = pd.read_parquet(row.FULLPATH)
+        df_real["REAL"] = row.REAL
+        df = pd.concat([df, df_real])
+    df.I = pd.to_numeric(df.I)
+    df.J = pd.to_numeric(df.J)
+    df["K1"] = pd.to_numeric(df.K)
+    df = df.drop(["K"], axis=1)
+    df.DATE = pd.to_datetime(df.DATE).dt.date
+    return df

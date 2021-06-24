@@ -10,12 +10,12 @@ from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
 
-import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 import webviz_subsurface_components
+import webviz_core_components as wcc
 
 from .._datainput.fmu_input import load_csv
 from .._datainput.well_completions import (
@@ -23,6 +23,7 @@ from .._datainput.well_completions import (
     read_well_attributes,
     read_stratigraphy,
     get_ecl_unit_system,
+    read_connection_status,
 )
 
 
@@ -37,10 +38,11 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping \
-    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels \
-    * **`well_attributes_file`:** `.json` file with categorical well attributes \
-    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted \
+    * **`connection_status_file`:** `.parquet` file with connection status data per realization
+    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
+    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
+    * **`well_attributes_file`:** `.json` file with categorical well attributes
+    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted
     * **`kh_decimal_places`:**
 
     ---
@@ -49,12 +51,22 @@ class WellCompletions(WebvizPluginABC):
     **COMPDAT input**
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/wells/compdat.csv`.
+    `share/results/wells/compdat.csv`).
 
     The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+
+    **Connection status input**
+
+    The `connection_status_file` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/connection_status.parquet`.
+
+    This file can be exported from the ERT workflow by a forward model: `EXPORT_CONNECTION_STATUS`,
+    which will be distributed somehow. This forward model uses the CPI summary data to create
+    a connection status history: for each connection cell there is one line for each time the
+    connection is opened or closed. This data is very sparse compared to the CPI data.
 
     **Zone layer mapping**
 
@@ -82,10 +94,10 @@ class WellCompletions(WebvizPluginABC):
             "color": "#FFFFFF",
             "subzones": [
                 {
-                    "name": "ZoneA.1
+                    "name": "ZoneA.1"
                 },
                 {
-                    "name": "ZoneA.2
+                    "name": "ZoneA.2"
                 }
             ]
         },
@@ -98,7 +110,7 @@ class WellCompletions(WebvizPluginABC):
                     "color": "#FFF111"
                 },
                 {
-                    "name": "ZoneB.2,
+                    "name": "ZoneB.2",
                     "subzones: {"name": "ZoneB.2.2"}
                 }
             ]
@@ -128,28 +140,28 @@ class WellCompletions(WebvizPluginABC):
     {
         "version" : "0.1",
         "wells" : [
-        {
-            "alias" : {
-                "eclipse" : "OP_1"
+            {
+                "alias" : {
+                    "eclipse" : "OP_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "mlt",
+                    "structure" : "East",
+                    "welltype" : "producer"
+                },
+                "name" : "OP_1"
             },
-            "attributes" : {
-                "mlt_singlebranch" : "mlt",
-                "structure" : "East",
-                "welltype" : "producer"
+            {
+                "alias" : {
+                    "eclipse" : "GI_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "singlebranch",
+                    "structure" : "West",
+                    "welltype" : "gas injector"
+                },
+                "name" : "GI_1"
             },
-            "name" : "OP_1"
-        },
-        {
-            "alias" : {
-                "eclipse" : "GI_1"
-            },
-            "attributes" : {
-                "mlt_singlebranch" : "singlebranch",
-                "structure" : "West",
-                "welltype" : "gas injector"
-            },
-            "name" : "GI_1"
-        },
         ]
     }
     ```
@@ -167,6 +179,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/wells/compdat.csv",
+        connection_status_file: str = "share/results/tables/connection_status.parquet",
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
@@ -177,6 +190,7 @@ class WellCompletions(WebvizPluginABC):
         super().__init__()
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
+        self.connection_status_file = connection_status_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
         self.stratigraphy_file = stratigraphy_file
         self.well_attributes_file = well_attributes_file
@@ -201,6 +215,7 @@ class WellCompletions(WebvizPluginABC):
                         "ensemble": ensemble,
                         "ensemble_path": self.ens_paths[ensemble],
                         "compdat_file": self.compdat_file,
+                        "connection_status_file": self.connection_status_file,
                         "zone_layer_mapping_file": self.zone_layer_mapping_file,
                         "stratigraphy_file": self.stratigraphy_file,
                         "well_attributes_file": self.well_attributes_file,
@@ -282,6 +297,7 @@ class WellCompletions(WebvizPluginABC):
                     ensemble_name,
                     self.ens_paths[ensemble_name],
                     self.compdat_file,
+                    self.connection_status_file,
                     self.zone_layer_mapping_file,
                     self.stratigraphy_file,
                     self.well_attributes_file,
@@ -310,6 +326,7 @@ def create_ensemble_dataset(
     ensemble: str,
     ensemble_path: str,
     compdat_file: str,
+    connection_status_file: str,
     zone_layer_mapping_file: str,
     stratigraphy_file: str,
     well_attributes_file: str,
@@ -325,7 +342,12 @@ def create_ensemble_dataset(
     https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
     """
     df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
-    qc_compdat(df)
+    df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
+    df.DATE = pd.to_datetime(df.DATE).dt.date
+
+    df_connstatus = read_connection_status(
+        ensemble_path=ensemble_path, connection_status_file=connection_status_file
+    )
     layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
         ensemble_path=ensemble_path,
         zone_layer_mapping_file=zone_layer_mapping_file,
@@ -340,6 +362,9 @@ def create_ensemble_dataset(
     if kh_unit is None:
         kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
 
+    if df_connstatus is not None:
+        df = merge_compdat_and_connstatus(df, df_connstatus)
+
     time_steps = sorted(df.DATE.unique())
     realizations = list(sorted(df.REAL.unique()))
     layers = np.sort(df.K1.unique())
@@ -349,6 +374,7 @@ def create_ensemble_dataset(
         layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
 
     df["ZONE"] = df.K1.map(layer_zone_mapping)
+
     zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
 
     result = {
@@ -357,13 +383,46 @@ def create_ensemble_dataset(
         "stratigraphy": extract_stratigraphy(
             layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
         ),
-        "timeSteps": time_steps,
+        "timeSteps": [str(dte) for dte in time_steps],
         "wells": extract_wells(
             df, zone_names, time_steps, realizations, well_attributes
         ),
     }
-
     return io.BytesIO(json.dumps(result).encode())
+
+
+def merge_compdat_and_connstatus(
+    df_compdat: pd.DataFrame, df_connstatus: pd.DataFrame
+) -> pd.DataFrame:
+    """This function merges the compdat data (exported with ecl2df) with the connection
+    status data (extracted from the CPI summary data). The connection status data will
+    be used for wells where it exists. The KH will be merged from the compdat. For wells
+    that are not in the connection status data, the compdat data will be used as it is.
+
+    This approach is fast, but a couple of things should be noted:
+    * in the connection status data, a connection is not set to SHUT before it has been OPEN. \
+    In the compdat data, some times all connections are first defined and the opened later.
+    * any connections that are in compdat but not in connections status will be ignored \
+    (e.g. connections that are always shut)
+    * there is no logic to handle KH changing with time for the same connection (this \
+    can easily be added using apply in pandas, but it is very rare and slows down the function
+    significantly)
+    * if connection status is missing for a realization, but compdat exists, compdat will also \
+    be ignored.
+    """
+    match_on = ["REAL", "WELL", "I", "J", "K1"]
+    df = pd.merge(df_connstatus, df_compdat[match_on + ["KH"]], on=match_on, how="left")
+
+    # There will often be several rows (with different OP/SH) matching in compdat.
+    # Only the first is kept
+    df.drop_duplicates(subset=["DATE"] + match_on, keep="first", inplace=True)
+
+    # Concat from compdat the wells that are not in connection status
+    df = pd.concat([df, df_compdat[~df_compdat.WELL.isin(df.WELL.unique())]])
+
+    df = df.reset_index(drop=True)
+    df.KH = df.KH.fillna(0)
+    return df
 
 
 def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
@@ -386,17 +445,6 @@ def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
     if unit_system is not None:
         return units[unit_system]
     return ("", 2)
-
-
-def qc_compdat(compdat: pd.DataFrame) -> None:
-    """QCs that the compdat data has the required format"""
-    needed_columns = ["WELL", "K1", "OP/SH", "KH"]
-    for column in needed_columns:
-        if column not in compdat:
-            raise ValueError(
-                f"Column {column} not found in compdat dataframe."
-                "This should not occur unless there has been changes to ecl2df."
-            )
 
 
 def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
