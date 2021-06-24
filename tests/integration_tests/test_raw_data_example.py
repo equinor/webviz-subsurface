@@ -65,12 +65,24 @@ def test_full_example(
         # See https://github.com/plotly/dash/pull/1447#issuecomment-720737376
         dash_duo._wait_for_callbacks()
 
-        dash_duo.wait_for_element(f"#{page}").click()
+        for _ in range(5):
+            try:
+                dash_duo.wait_for_element(f"#{page}").click()
+            except StaleElementReferenceException:
+                pass
+            else:
+                break
+
         logs = [
             log
             for log in dash_duo.get_logs()
-            if "TypeError: Cannot read property 'hardwareConcurrency' of undefined"
-            not in log["message"]
+            if all(
+                msg not in log["message"]
+                for msg in [
+                    "TypeError: Cannot read property 'hardwareConcurrency' of undefined",
+                    "Error: An object was provided as `children` instead of a component, string, or number (or list of those).",
+                ]
+            )
         ]
 
         if logs != []:
