@@ -60,5 +60,5 @@ class TornadoTable:
         ]
 
     @property
-    def as_plotly_table(self) -> dict:
+    def as_plotly_table(self) -> list:
         return self._table.iloc[::-1].to_dict("records")

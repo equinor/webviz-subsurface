@@ -1,46 +1,41 @@
-from typing import Callable, Tuple, Union, Optional, Any
+from typing import Callable, Optional, Any
 
 import dash
 from dash.dependencies import Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
+from ..utils.utils import create_range_string, update_relevant_components
+
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
 def selections_controllers(
     app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
     @app.callback(
-        Output(get_uuid("selections-voldist"), "data"),
-        Output(
-            {"id": get_uuid("filter-voldist"), "element": "text_selected_reals"},
-            "children",
-        ),
-        Input({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
-        Input({"id": get_uuid("filter-voldist"), "selector": ALL}, "value"),
-        Input({"id": get_uuid("filter-voldist"), "selected_reals": ALL}, "value"),
+        Output(get_uuid("selections"), "data"),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
+        Input({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "value"),
         Input(
-            {"id": get_uuid("selections-voldist"), "settings": "Colorscale"},
+            {"id": get_uuid("selections"), "tab": "voldist", "settings": "Colorscale"},
             "colorscale",
         ),
-        State(get_uuid("page-selected-voldist"), "data"),
-        State(get_uuid("selections-voldist"), "data"),
-        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
-        State({"id": get_uuid("filter-voldist"), "selector": ALL}, "id"),
-        State({"id": get_uuid("filter-voldist"), "selected_reals": ALL}, "id"),
+        State(get_uuid("page-selected"), "data"),
+        State(get_uuid("tabs"), "value"),
+        State(get_uuid("selections"), "data"),
+        State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
+        State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "id"),
     )
     def _update_selections(
         selectors: list,
         filters: list,
-        reals: list,
         colorscale: str,
         selected_page: str,
+        selected_tab: str,
         previous_selection: dict,
-        selector_ids: dict,
-        filter_ids: dict,
-        real_ids: dict,
-    ) -> Tuple[dict, str]:
+        selector_ids: list,
+        filter_ids: list,
+    ) -> dict:
         ctx = dash.callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
@@ -51,53 +46,60 @@ def selections_controllers(
         page_selections = {
             id_value["selector"]: values
             for id_value, values in zip(selector_ids, selectors)
+            if id_value["tab"] == selected_tab
         }
         page_selections["filters"] = {
             id_value["selector"]: values
             for id_value, values in zip(filter_ids, filters)
+            if id_value["tab"] == selected_tab
         }
-        real_list = [int(real) for real in reals[0]]
-        page_selections["filters"].update(
-            REAL=(
-                list(range(real_list[0], real_list[1] + 1))
-                if real_ids[0]["selected_reals"] == "range"
-                else real_list
-            )
-        )
 
         page_selections.update(Colorscale=colorscale)
         page_selections.update(ctx_clicked=ctx["prop_id"])
 
-        if previous_selection.get(selected_page) is not None:
+        if previous_selection.get(selected_page) is None:
+            page_selections.update(update=True)
+        else:
             equal_list = []
             for selector, values in page_selections.items():
                 if selector != "ctx_clicked":
                     equal_list.append(
                         values == previous_selection[selected_page][selector]
                     )
-
             page_selections.update(update=not all(equal_list))
 
         previous_selection[selected_page] = page_selections
-
-        string_selected_reals = (
-            create_range_string(real_list)
-            if real_ids[0]["selected_reals"] == "select"
-            else f"{real_list[0]}-{real_list[1]}"
-        )
-        return previous_selection, string_selected_reals
+        return previous_selection
 
     @app.callback(
-        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "disabled"),
-        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
-        Output({"id": get_uuid("selections-voldist"), "selector": ALL}, "options"),
-        Input({"id": get_uuid("selections-voldist"), "selector": "Plot type"}, "value"),
-        Input(get_uuid("page-selected-voldist"), "data"),
-        Input({"id": get_uuid("selections-voldist"), "selector": "Color by"}, "value"),
-        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
-        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "options"),
-        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
-        State(get_uuid("selections-voldist"), "data"),
+        Output(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL},
+            "disabled",
+        ),
+        Output(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "value"
+        ),
+        Output(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "options"
+        ),
+        Input(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": "Plot type"},
+            "value",
+        ),
+        Input(get_uuid("page-selected"), "data"),
+        Input(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": "Color by"},
+            "value",
+        ),
+        State(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "value"
+        ),
+        State(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "options"
+        ),
+        State({"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "id"),
+        State(get_uuid("selections"), "data"),
+        State(get_uuid("tabs"), "value"),
     )
     # pylint: disable=too-many-locals
     def _plot_options(
@@ -108,11 +110,12 @@ def selections_controllers(
         selector_options: list,
         selector_ids: list,
         previous_selection: Optional[dict],
-    ) -> Tuple[list, list, list]:
+        selected_tab: str,
+    ) -> tuple:
         ctx = dash.callback_context.triggered[0]
         if (
-            "Color by" in ctx["prop_id"]
-            and plot_type != "box"
+            selected_tab != "voldist"
+            or ("Color by" in ctx["prop_id"] and plot_type not in ["box", "bar"])
             or previous_selection is None
         ):
             raise PreventUpdate
@@ -147,10 +150,7 @@ def selections_controllers(
         settings = {}
         for selector, disable_in_pages in selectors_disable_in_pages.items():
             disable = selected_page in disable_in_pages  # type: ignore
-            if disable:
-                value = None
-            else:
-                value = selections.get(selector)
+            value = None if disable else selections.get(selector)
 
             settings[selector] = {
                 "disable": disable,
@@ -166,7 +166,7 @@ def selections_controllers(
             y_elm = x_elm = (
                 volumemodel.responses + volumemodel.selectors + volumemodel.parameters
             )
-        elif settings["Plot type"]["value"] == "box":
+        elif settings["Plot type"]["value"] in ["box", "bar"]:
             y_elm = x_elm = volumemodel.responses + volumemodel.selectors
             if selections.get("Y Response") is None:
                 settings["Y Response"]["value"] = selected_color_by
@@ -188,169 +188,249 @@ def selections_controllers(
         settings["Color by"]["options"] = [
             {"label": elm, "value": elm} for elm in colorby_elm
         ]
-
-        disable_list = []
-        value_list = []
-        options_list = []
-        for selector_id in selector_ids:
-            if selector_id["selector"] in settings:
-                disable_list.append(
-                    settings[selector_id["selector"]].get("disable", dash.no_update)
-                )
-                value_list.append(
-                    settings[selector_id["selector"]].get("value", dash.no_update)
-                )
-                options_list.append(
-                    settings[selector_id["selector"]].get("options", dash.no_update)
-                )
-            else:
-                disable_list.append(dash.no_update)
-                value_list.append(dash.no_update)
-                options_list.append(dash.no_update)
-        return (
-            disable_list,
-            value_list,
-            options_list,
+        return tuple(
+            update_relevant_components(
+                id_list=selector_ids,
+                update_info=[
+                    {
+                        "new_value": values.get(prop, dash.no_update),
+                        "conditions": {"selector": selector},
+                    }
+                    for selector, values in settings.items()
+                ],
+            )
+            for prop in ["disable", "value", "options"]
         )
 
     @app.callback(
-        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "multi"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "value"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "multi"),
-        Output({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "value"),
-        Input({"id": get_uuid("selections-voldist"), "selector": ALL}, "value"),
-        Input(get_uuid("page-selected-voldist"), "data"),
+        Output({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "multi"),
+        Output({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "value"),
+        Output(
+            {"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "children"
+        ),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
+        Input(get_uuid("page-selected"), "data"),
         Input(
             {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
         ),
-        State({"id": get_uuid("filter-voldist"), "selector": "SOURCE"}, "options"),
-        State({"id": get_uuid("filter-voldist"), "selector": "ENSEMBLE"}, "options"),
-        State({"id": get_uuid("selections-voldist"), "selector": ALL}, "id"),
-        State(get_uuid("selections-voldist"), "data"),
+        Input({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "value"),
+        State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
+        State(get_uuid("selections"), "data"),
+        State(get_uuid("tabs"), "value"),
+        State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "options"),
+        State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "id"),
+        State({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "id"),
+        State({"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "id"),
     )
-    def _update_filter_multi_option(
+    def _update_filter_options(
         selectors: list,
-        page_selected: str,
+        selected_page: str,
         plot_table_select: str,
-        source_options: dict,
-        ensemble_options: dict,
+        reals: list,
         selector_ids: list,
         prev_selection: dict,
+        selected_tab: str,
+        filter_options: list,
+        filter_ids: list,
+        reals_ids: list,
+        real_string_ids: list,
     ) -> tuple:
         ctx = dash.callback_context.triggered[0]
+
         page_selections = {
             id_value["selector"]: values
             for id_value, values in zip(selector_ids, selectors)
+            if id_value["tab"] == selected_tab
         }
-        selected_data = [
-            page_selections[x]
-            for x in ["Color by", "Subplots", "X Response", "Y Response"]
-        ]
-        table_groups = (
-            page_selections["Group by"]
-            if page_selections["Group by"] is not None
-            else []
-        )
+        page_filter_options = {
+            id_value["selector"]: values
+            for id_value, values in zip(filter_ids, filter_options)
+            if id_value["tab"] == selected_tab
+        }
 
-        if page_selected == "1p1t" and not page_selections["sync_table"]:
-            selected_data.extend(table_groups)
-        if (
-            page_selected == "custom"
-            and plot_table_select == "table"
-            and not page_selections["sync_table"]
-        ):
-            selected_data = table_groups
+        selected_data = []
+        if selected_tab == "voldist":
+            selected_data = [
+                page_selections[x]
+                for x in ["Color by", "Subplots", "X Response", "Y Response"]
+            ]
+            table_groups = (
+                page_selections["Group by"]
+                if page_selections["Group by"] is not None
+                else []
+            )
+
+            if selected_page == "1p1t" and not page_selections["sync_table"]:
+                selected_data.extend(table_groups)
+            if (
+                selected_page == "custom"
+                and plot_table_select == "table"
+                and not page_selections["sync_table"]
+            ):
+                selected_data = table_groups
 
         output = {}
-        for selector, options in zip(
-            ["SOURCE", "ENSEMBLE"], [source_options, ensemble_options]
-        ):
+        for selector in ["SOURCE", "ENSEMBLE"]:
             multi = selector in selected_data
             if not multi:
-                values = [options[0]["value"]]
+                values = [page_filter_options[selector][0]["value"]]
             else:
                 values = (
-                    prev_selection[page_selected]["filters"][selector]
+                    prev_selection[selected_page]["filters"][selector]
                     if "page-selected" in ctx["prop_id"]
                     and prev_selection is not None
-                    and page_selected in prev_selection
-                    else [x["value"] for x in options]
+                    and selected_page in prev_selection
+                    else [x["value"] for x in page_filter_options[selector]]
                 )
             output[selector] = {"multi": multi, "values": values}
 
+        # realization
+        index = [x["tab"] for x in reals_ids].index(selected_tab)
+        real_list = [int(real) for real in reals[index]]
+
+        if reals_ids[index]["component_type"] == "range":
+            real_list = list(range(real_list[0], real_list[1] + 1))
+            text = f"{real_list[0]}-{real_list[-1]}"
+        else:
+            text = create_range_string(real_list)
+
+        output["REAL"] = {"values": real_list}
+
         return (
-            output["SOURCE"]["multi"],
-            output["SOURCE"]["values"],
-            output["ENSEMBLE"]["multi"],
-            output["ENSEMBLE"]["values"],
+            update_relevant_components(
+                id_list=filter_ids,
+                update_info=[
+                    {
+                        "new_value": output[item].get("multi", dash.no_update),
+                        "conditions": {"tab": selected_tab, "selector": item},
+                    }
+                    for item in ["SOURCE", "ENSEMBLE", "REAL"]
+                ],
+            ),
+            update_relevant_components(
+                id_list=filter_ids,
+                update_info=[
+                    {
+                        "new_value": output[item].get("values", dash.no_update),
+                        "conditions": {"tab": selected_tab, "selector": item},
+                    }
+                    for item in ["SOURCE", "ENSEMBLE", "REAL"]
+                ],
+            ),
+            update_relevant_components(
+                id_list=real_string_ids,
+                update_info=[{"new_value": text, "conditions": {"tab": selected_tab}}],
+            ),
         )
 
     @app.callback(
         Output(
-            {"id": get_uuid("filter-voldist"), "element": "real-slider-wrapper"},
+            {
+                "id": get_uuid("filters"),
+                "tab": ALL,
+                "element": "real-slider-wrapper",
+            },
             "children",
         ),
         Input(
-            {"id": get_uuid("filter-voldist"), "element": "real-selector-option"},
+            {
+                "id": get_uuid("filters"),
+                "tab": ALL,
+                "element": "real-selector-option",
+            },
             "value",
         ),
-        State(get_uuid("selections-voldist"), "data"),
-        State(get_uuid("page-selected-voldist"), "data"),
+        State(get_uuid("selections"), "data"),
+        State(get_uuid("page-selected"), "data"),
+        State(get_uuid("tabs"), "value"),
+        State(
+            {
+                "id": get_uuid("filters"),
+                "tab": ALL,
+                "element": "real-selector-option",
+            },
+            "id",
+        ),
+        State(
+            {
+                "id": get_uuid("filters"),
+                "tab": ALL,
+                "element": "real-slider-wrapper",
+            },
+            "id",
+        ),
     )
-    # pylint: disable=inconsistent-return-statements
     def _update_realization_selected_info(
-        input_selector: str, selections: dict, page_selected: str
-    ) -> Union[dcc.RangeSlider, wcc.Select]:
+        input_selectors: list,
+        selections: dict,
+        selected_page: str,
+        selected_tab: str,
+        input_ids: list,
+        wrapper_ids: list,
+    ) -> list:
         reals = volumemodel.realizations
         prev_selection = (
-            selections[page_selected]["filters"].get("REAL", [])
-            if selections is not None and page_selected in selections
+            selections[selected_page]["filters"].get("REAL", [])
+            if selections is not None and selected_page in selections
             else None
         )
 
-        if input_selector == "range":
+        page_value = [
+            value
+            for id_value, value in zip(input_ids, input_selectors)
+            if id_value["tab"] == selected_tab
+        ]
+
+        if page_value[0] == "range":
             min_value = (
                 min(prev_selection) if prev_selection is not None else min(reals)
             )
             max_value = (
                 max(prev_selection) if prev_selection is not None else max(reals)
             )
-            return dcc.RangeSlider(
-                id={
-                    "id": get_uuid("filter-voldist"),
-                    "selected_reals": input_selector,
-                },
-                value=[min_value, max_value],
-                min=min(reals),
-                max=max(reals),
-                marks={str(i): {"label": str(i)} for i in [min(reals), max(reals)]},
+            return update_relevant_components(
+                id_list=wrapper_ids,
+                update_info=[
+                    {
+                        "new_value": wcc.RangeSlider(
+                            id={
+                                "id": get_uuid("filters"),
+                                "tab": selected_tab,
+                                "component_type": page_value[0],
+                            },
+                            value=[min_value, max_value],
+                            min=min(reals),
+                            max=max(reals),
+                            marks={
+                                str(i): {"label": str(i)}
+                                for i in [min(reals), max(reals)]
+                            },
+                        ),
+                        "conditions": {"tab": selected_tab},
+                    }
+                ],
             )
+
         # if input_selector == "select"
         elements = prev_selection if prev_selection is not None else reals
-        return wcc.Select(
-            id={
-                "id": get_uuid("filter-voldist"),
-                "selected_reals": input_selector,
-            },
-            options=[{"label": i, "value": i} for i in reals],
-            value=elements,
-            multi=True,
-            size=min(20, len(reals)),
-            persistence=True,
-            persistence_type="session",
+        return update_relevant_components(
+            id_list=wrapper_ids,
+            update_info=[
+                {
+                    "new_value": wcc.Select(
+                        id={
+                            "id": get_uuid("filters"),
+                            "tab": selected_tab,
+                            "component_type": page_value[0],
+                        },
+                        options=[{"label": i, "value": i} for i in reals],
+                        value=elements,
+                        multi=True,
+                        size=min(20, len(reals)),
+                        persistence=True,
+                        persistence_type="session",
+                    ),
+                    "conditions": {"tab": selected_tab},
+                }
+            ],
         )
-
-
-def create_range_string(real_list: list) -> str:
-    idx = 0
-    ranges = [[real_list[0], real_list[0]]]
-    for real in list(real_list):
-        if ranges[idx][1] in (real, real - 1):
-            ranges[idx][1] = real
-        else:
-            ranges.append([real, real])
-            idx += 1
-
-    return ", ".join(
-        map(lambda p: "%s-%s" % tuple(p) if p[0] != p[1] else str(p[0]), ranges)
-    )

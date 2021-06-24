@@ -6,38 +6,61 @@ from dash.dependencies import Input, Output, State, ALL
 
 def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
     @app.callback(
-        Output({"id": get_uuid("selections-voldist"), "button": ALL}, "style"),
-        Output(get_uuid("page-selected-voldist"), "data"),
-        Input({"id": get_uuid("selections-voldist"), "button": ALL}, "n_clicks"),
-        State({"id": get_uuid("selections-voldist"), "button": ALL}, "id"),
+        Output({"id": get_uuid("selections"), "button": ALL}, "style"),
+        Output(get_uuid("page-selected"), "data"),
+        Output({"id": get_uuid("main-voldist"), "page": ALL}, "style"),
+        Output(get_uuid("voldist-page-selected"), "data"),
+        Input({"id": get_uuid("selections"), "button": ALL}, "n_clicks"),
+        Input(get_uuid("tabs"), "value"),
+        State({"id": get_uuid("selections"), "button": ALL}, "id"),
+        State({"id": get_uuid("main-voldist"), "page": ALL}, "id"),
+        State(get_uuid("voldist-page-selected"), "data"),
     )
-    def _update_clicked_button(_apply_click: int, all_ids: dict) -> Tuple[list, str]:
+    def _selected_page_controllers(
+        _apply_click: int,
+        tab_selected: str,
+        button_ids: dict,
+        main_layout_ids: list,
+        prev_voldist_page: str,
+    ) -> Tuple[list, str, list, str]:
+
         ctx = dash.callback_context.triggered[0]
-        page_selected = all_ids[0]["button"]
-        styles = []
-        for button_id in all_ids:
+
+        if (
+            tab_selected != "voldist"
+            or "tabs" in ctx["prop_id"]
+            and prev_voldist_page is not None
+        ):
+            return (
+                [dash.no_update] * len(button_ids),
+                tab_selected if tab_selected != "voldist" else prev_voldist_page,
+                [dash.no_update] * len(main_layout_ids),
+                dash.no_update,
+            )
+
+        button_styles = []
+        for button_id in button_ids:
             if button_id["button"] in ctx["prop_id"]:
-                styles.append({"background-color": "#7393B3", "color": "#fff"})
+                button_styles.append({"background-color": "#7393B3", "color": "#fff"})
                 page_selected = button_id["button"]
             else:
-                styles.append({"background-color": "#E8E8E8"})
-        if ctx["prop_id"] == ".":
-            styles[0] = {"background-color": "#7393B3", "color": "#fff"}
-        return styles, page_selected
+                button_styles.append({"background-color": "#E8E8E8"})
+        if (
+            ctx["prop_id"] == "."
+            or "tabs" in ctx["prop_id"]
+            and prev_voldist_page is None
+        ):
+            page_selected = button_ids[0]["button"]
+            button_styles[0] = {"background-color": "#7393B3", "color": "#fff"}
 
-    @app.callback(
-        Output({"id": get_uuid("main-voldist"), "page": ALL}, "style"),
-        Input(get_uuid("page-selected-voldist"), "data"),
-        State({"id": get_uuid("main-voldist"), "page": ALL}, "id"),
-    )
-    def _select_main_layout(page_selected: str, all_ids: dict) -> list:
-        styles = []
-        for page_id in all_ids:
+        voldist_layout = []
+        for page_id in main_layout_ids:
             if page_id["page"] == page_selected:
-                styles.append({"display": "block"})
+                voldist_layout.append({"display": "block"})
             else:
-                styles.append({"display": "none"})
-        return styles
+                voldist_layout.append({"display": "none"})
+
+        return button_styles, page_selected, voldist_layout, page_selected
 
     @app.callback(
         Output(
@@ -72,13 +95,15 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output(
             {
-                "id": get_uuid("selections-voldist"),
+                "id": get_uuid("selections"),
+                "tab": "voldist",
                 "element": "table_response_group_wrapper",
             },
             "style",
         ),
         Input(
-            {"id": get_uuid("selections-voldist"), "selector": "sync_table"}, "value"
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": "sync_table"},
+            "value",
         ),
     )
     def _show_hide_table_response_group_controls(sync_table: list) -> dict:
