@@ -12,9 +12,12 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 import webviz_core_components as wcc
+
+import webviz_subsurface
 
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
@@ -56,6 +59,13 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
 
         self.input_dir = input_dir
         self.theme = webviz_settings.theme
@@ -99,6 +109,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                                 ),
                                 dcc.RadioItems(
                                     id=self.uuid("choice_id"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "One by one observation",

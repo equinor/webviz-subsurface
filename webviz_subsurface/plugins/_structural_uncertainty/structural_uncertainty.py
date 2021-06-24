@@ -165,7 +165,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             Path(webviz_subsurface.__file__).parent
             / "_assets"
             / "js"
-            / "update_plotly_figure.js"
+            / "clientside_functions.js"
         )
         self._calculate_percentiles = calculate_percentiles
         self._wellfolder = wellfolder

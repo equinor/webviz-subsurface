@@ -330,7 +330,7 @@ def update_intersection(
     # Store intersection data and layout to the plotly figure
     # Done clientside for performance
     app.clientside_callback(
-        ClientsideFunction(namespace="clientside", function_name="update_figure"),
+        ClientsideFunction(namespace="clientside", function_name="set_dcc_figure"),
         Output(get_uuid("intersection-graph"), "figure"),
         Input(get_uuid("intersection-graph-layout"), "data"),
         State(get_uuid("intersection-graph-data"), "data"),

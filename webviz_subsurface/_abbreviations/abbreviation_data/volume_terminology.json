@@ -22,6 +22,20 @@
   "GIIP_TOTAL": {"label": "Gas initially in place (total)", "unit": "Sm³", "eclsum": ["FGIP", "RGIP"]},
   "RECOVERABLE_OIL": {"label": "Recoverable volume (oil zone)", "unit": "Sm³"},
   "RECOVERABLE_GAS": {"label": "Recoverable volume (gas zone)", "unit": "Sm³"},
-  "RECOVERABLE_TOTAL": {"label": "Recoverable volume (total)", "unit": "Sm³"}
+  "RECOVERABLE_TOTAL": {"label": "Recoverable volume (total)", "unit": "Sm³"},
+  "BULK": {"label": "Bulk volume", "unit": "m³"},
+  "NET": {"label": "Net volume", "unit": "m³"},
+  "PORV": {"label": "Pore volume", "unit": "m³"},
+  "HCPV": {"label": "Hydro carbon pore volume", "unit": "m³"},
+  "STOIIP": {"label": "Stock tank oil initially in place", "unit": "Sm³", "eclsum": ["FOIPL", "ROIPL"]},
+  "GIIP": {"label": "Gas initially in place", "unit": "Sm³", "eclsum": ["FGIPL", "RGIPL"]},
+  "RECOVERABLE": {"label": "Recoverable volume", "unit": "Sm³"},
+  "ASSOCIATEDGAS": {"label": "Associated gas", "unit": "Sm³"},
+  "ASSOCIATEDOIL": {"label": "Associated oil", "unit": "Sm³"},
+  "PORO": {"label": "Porosity"},
+  "SW": {"label": "Water saturation"},
+  "NTG": {"label": "Net to gross"},
+  "BO": {"label": "Oil formation volume factor"},
+  "BG": {"label": "Gas formation volume factor"}
 }
 

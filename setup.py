@@ -4,12 +4,15 @@ with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 TESTS_REQUIRE = [
-    "selenium>=3.141",
-    "pylint",
-    "mypy",
-    "black>=21.4b0",
     "bandit",
+    "black>=21.4b0",
+    "dash[testing]",
+    "mypy",
+    "pylint",
     "pytest-xdist",
+    "selenium>=3.141",
+    "types-pyyaml",
+    "types-pkg-resources",
 ]
 
 # pylint: disable=line-too-long
@@ -36,6 +39,7 @@ setup(
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
             "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
+            "LinePlotterFMU = webviz_subsurface.plugins:LinePlotterFMU",
             "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
             "ParameterAnalysis = webviz_subsurface.plugins:ParameterAnalysis",
             "ParameterCorrelation = webviz_subsurface.plugins:ParameterCorrelation",
@@ -56,6 +60,7 @@ setup(
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
+            "VolumetricAnalysis = webviz_subsurface.plugins:VolumetricAnalysis",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
@@ -67,17 +72,18 @@ setup(
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.6.1; sys_platform=='linux'",
+        "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
         "pillow>=6.1",
+        "pyarrow>=3.0.0",
         "pyscal>=0.7.5",
         "py_expression_eval>=0.3.13",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.3.1",
-        "webviz-subsurface-components>=0.4.2",
+        "webviz-subsurface-components>=0.4.3",
         "xtgeo>=2.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},

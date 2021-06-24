@@ -16,8 +16,10 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -57,6 +59,17 @@ from .._utils.vector_calculator import (
     get_calculated_vectors,
     get_selected_expressions,
 )
+
+
+def _check_plugin_options(options: Optional[dict]) -> Optional[Tuple[str, str]]:
+    if options:
+        if "vector1" in options or "vector2" in options or "vector3" in options:
+            return (
+                "Please use 'vectors' instead of 'vector1/2/3' in this plugin's options.",
+                "Single vector options ('vector1', 'vector2', 'vector3')"
+                " have been replaced with a vectors list.",
+            )
+    return None
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -145,7 +158,10 @@ folder, to avoid risk of not extracting the right data.
 """
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
-    # pylint:disable=too-many-arguments
+
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         app: dash.Dash,
@@ -160,6 +176,13 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
 
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
@@ -179,6 +202,7 @@ folder, to avoid risk of not extracting the right data.
 
         self.smry: pd.DataFrame
         self.smry_meta: Union[pd.DataFrame, None]
+
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
@@ -218,25 +242,24 @@ folder, to avoid risk of not extracting the right data.
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
-            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
+            and historical_vector(c, self.smry_meta, False) not in self.smry.columns
         ]
 
-        self.dropdown_options: List[Dict[str, str]] = []
-        self.vector_selector_data: list = []
+        self.vector_data: list = []
         for vec in self.smry_cols:
-            self.dropdown_options.append(
-                {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
-            )
             split = vec.split(":")
+            self._add_vector(
+                self.vector_data, vec, simulation_vector_description(split[0])
+            )
 
             if (
                 next(
-                    (x for x in self.vector_selector_data if x["name"] == split[0]),
+                    (x for x in self.vector_data if x["name"] == split[0]),
                     None,
                 )
                 == None
             ):
-                self.vector_selector_data.append(
+                self.vector_data.append(
                     {
                         "name": split[0],
                         "description": simulation_vector_description(vec),
@@ -244,7 +267,7 @@ folder, to avoid risk of not extracting the right data.
                     }
                 )
             if len(split) == 2:
-                for x in self.vector_selector_data:
+                for x in self.vector_data:
                     if x["name"] == split[0]:
                         if (
                             next(
@@ -269,17 +292,19 @@ folder, to avoid risk of not extracting the right data.
                 # Requires that the time_index was either defined or possible to infer.
                 avgrate_vec = rename_vec_from_cum(vector=vec, as_rate=True)
                 interval_vec = rename_vec_from_cum(vector=vec, as_rate=False)
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(avgrate_vec)} ({avgrate_vec})",
-                        "value": avgrate_vec,
-                    }
+
+                avgrate_split = avgrate_vec.split(":")
+                interval_split = interval_vec.split(":")
+
+                self._add_vector(
+                    self.vector_data,
+                    avgrate_vec,
+                    f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
                 )
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(interval_vec)} ({interval_vec})",
-                        "value": interval_vec,
-                    }
+                self._add_vector(
+                    self.vector_data,
+                    interval_vec,
+                    f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
 
         self.predefined_expressions: List[ExpressionInfo] = [
@@ -363,7 +388,18 @@ folder, to avoid risk of not extracting the right data.
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
+
         self.plot_options = options if options else {}
+        if "vectors" not in self.plot_options:
+            self.plot_options["vectors"] = []
+        for vector in [
+            vector
+            for vector in ["vector1", "vector2", "vector3"]
+            if vector in self.plot_options.keys()
+        ]:
+            self.plot_options["vectors"].append(self.plot_options[vector])
+        self.plot_options["vectors"] = self.plot_options["vectors"][:3]
+
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
@@ -373,11 +409,15 @@ folder, to avoid risk of not extracting the right data.
             line_shape_fallback
         )
         # Check if initially plotted vectors exist in data, raise ValueError if not.
-        missing_vectors = [
-            value
-            for key, value in self.plot_options.items()
-            if key in ["vector1", "vector2", "vector3"] and value not in self.smry_cols
-        ]
+        missing_vectors = (
+            [
+                value
+                for value in self.plot_options["vectors"]
+                if value not in self.smry_cols
+            ]
+            if "vectors" in self.plot_options
+            else []
+        )
         if missing_vectors:
             raise ValueError(
                 f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
@@ -387,6 +427,36 @@ folder, to avoid risk of not extracting the right data.
             )
         self.allow_delta = len(self.ensembles) > 1
         self.set_callbacks(app)
+
+    @staticmethod
+    def _add_vector(vector_data: list, vector: str, description: str) -> None:
+        split = vector.split(":")
+
+        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
+            vector_data.append(
+                {
+                    "name": split[0],
+                    "description": description,
+                    "children": [],
+                }
+            )
+
+        if len(split) == 2:
+            for x in vector_data:
+                if x["name"] == split[0]:
+                    if (
+                        next(
+                            (y for y in x["children"] if y["name"] == split[1]),
+                            None,
+                        )
+                        is None
+                    ):
+                        x["children"].append(
+                            {
+                                "name": split[1],
+                            }
+                        )
+                    break
 
     @property
     def ens_colors(self) -> dict:
@@ -480,9 +550,13 @@ folder, to avoid risk of not extracting the right data.
                     style={"display": show_delta},
                     children=html.Label(
                         children=[
-                            html.Span("Mode:", style={"font-weight": "bold"}),
+                            html.Span(
+                                "Mode:",
+                                style={"font-weight": "bold"},
+                            ),
                             dcc.RadioItems(
                                 id=self.uuid("mode"),
+                                className="block-options",
                                 style={"marginBottom": "25px"},
                                 options=[
                                     {
@@ -598,6 +672,7 @@ folder, to avoid risk of not extracting the right data.
                 html.Div(
                     dcc.RadioItems(
                         id=self.uuid("cum_interval"),
+                        className="block-options",
                         options=[
                             {
                                 "label": (f"{i.lower().capitalize()}"),
@@ -640,7 +715,7 @@ folder, to avoid risk of not extracting the right data.
                         children=[
                             wsc.VectorCalculator(
                                 id=self.uuid("vector_calculator"),
-                                vectors=self.vector_selector_data,
+                                vectors=self.vector_data,
                                 expressions=self.predefined_expressions,
                             )
                         ],
@@ -668,46 +743,17 @@ folder, to avoid risk of not extracting the right data.
                                 html.Span(
                                     "Time series:", style={"font-weight": "bold"}
                                 ),
-                                dcc.Dropdown(
-                                    style={
-                                        "marginTop": "5px",
-                                        "marginBottom": "5px",
-                                        "fontSize": ".95em",
-                                    },
-                                    optionHeight=55,
-                                    id=self.uuid("vector1"),
-                                    clearable=False,
-                                    multi=False,
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get(
-                                        "vector1", self.smry_cols[0]
+                                wsc.VectorSelector(
+                                    id=self.uuid("vectors"),
+                                    maxNumSelectedNodes=3,
+                                    data=self.vector_data,
+                                    persistence=True,
+                                    persistence_type="session",
+                                    selectedTags=self.plot_options.get(
+                                        "vectors", [self.smry_cols[0]]
                                     ),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                dcc.Dropdown(
-                                    style={"marginBottom": "5px", "fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector2"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector2", None),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                dcc.Dropdown(
-                                    style={"fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector3"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector3", None),
-                                    persistence=True,
-                                    persistence_type="session",
+                                    numSecondsUntilSuggestionsAreShown=0.5,
+                                    lineBreakAfterTag=True,
                                 ),
                             ],
                         ),
@@ -721,6 +767,7 @@ folder, to avoid risk of not extracting the right data.
                                 ),
                                 dcc.RadioItems(
                                     id=self.uuid("statistics"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "Individual realizations",
@@ -751,6 +798,7 @@ folder, to avoid risk of not extracting the right data.
                                 html.Summary("Options:", style={"font-weight": "bold"}),
                                 dcc.Checklist(
                                     id=self.uuid("trace_options"),
+                                    className="block-options",
                                     options=[
                                         {"label": val, "value": val}
                                         for val in ["History", "Histogram"]
@@ -768,6 +816,7 @@ folder, to avoid risk of not extracting the right data.
                                     children=[
                                         dcc.Checklist(
                                             id=self.uuid("stat_options"),
+                                            className="block-options",
                                             options=[
                                                 {"label": val, "value": val}
                                                 for val in [
@@ -874,9 +923,7 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vectors"), "selectedNodes"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("mode"), "value"),
                 Input(self.uuid("base_ens"), "value"),
@@ -894,9 +941,7 @@ folder, to avoid risk of not extracting the right data.
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -916,12 +961,17 @@ folder, to avoid risk of not extracting the right data.
             if calc_mode not in ["ensembles", "delta_ensembles"]:
                 raise PreventUpdate
 
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
+
+            # Calculate selected expressions:
+            selected_expressions = get_selected_expressions(expressions, vectors)
+            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+            calculated_units = pd.Series()
+            if self.smry_meta is not None:
+                calculated_units = get_calculated_units(
+                    selected_expressions, self.smry_meta["unit"]
+                )
 
             # Calculate selected expressions:
             selected_expressions = get_selected_expressions(expressions, vectors)
@@ -968,17 +1018,20 @@ folder, to avoid risk of not extracting the right data.
                 if "Histogram" in trace_options:
                     titles.append(
                         date_to_interval_conversion(
-                            date=date, vector=vec, interval=cum_interval, as_date=False
+                            date=date,
+                            vector=vec,
+                            interval=cum_interval,
+                            as_date=False,
                         )
                     )
 
             # Make a plotly subplot figure
             fig = make_subplots(
-                rows=len(vectors),
+                rows=max(1, len(vectors)),
                 cols=2 if "Histogram" in trace_options else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
-                subplot_titles=titles,
+                subplot_titles=titles if titles else ["No vector selected"],
             )
 
             # Loop through each vector and calculate relevant plot
@@ -997,6 +1050,7 @@ folder, to avoid risk of not extracting the right data.
                 time_index=self.time_index,
                 cum_interval=cum_interval,
             )
+
             for i, vector in enumerate(vectors):
                 if dfs[vector]["data"].empty:
                     continue
@@ -1101,9 +1155,7 @@ folder, to avoid risk of not extracting the right data.
             self.plugin_data_output,
             [self.plugin_data_requested],
             [
-                State(self.uuid("vector1"), "value"),
-                State(self.uuid("vector2"), "value"),
-                State(self.uuid("vector3"), "value"),
+                State(self.uuid("vectors"), "selectedNodes"),
                 State(self.uuid("ensemble"), "value"),
                 State(self.uuid("mode"), "value"),
                 State(self.uuid("base_ens"), "value"),
@@ -1118,9 +1170,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _user_download_data(
             data_requested: Union[int, None],
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -1135,12 +1185,6 @@ folder, to avoid risk of not extracting the right data.
             if data_requested is None:
                 raise PreventUpdate
 
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
             # Ensure selected ensembles is a list and prevent update if invalid calc_mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
@@ -1149,6 +1193,9 @@ folder, to avoid risk of not extracting the right data.
                     raise TypeError("ensembles should always be of type list")
             else:
                 raise PreventUpdate
+
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             # Calculate selected expressions:
             selected_expressions = get_selected_expressions(expressions, vectors)
@@ -1260,25 +1307,22 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("cum_interval"), "options"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vectors"), "selectedNodes"),
             ],
             [State(self.uuid("cum_interval"), "options")],
         )
         def _activate_interval_radio_buttons(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             options: List[dict],
         ) -> List[dict]:
             """Switch activate/deactivate radio buttons for selectibg interval for
             calculations from cumulatives"""
             active = False
-            for vector in [vector1, vector2, vector3]:
-                if vector is not None and vector.startswith(("AVG_", "INTVL_")):
-                    active = True
-                    break
+            if vectors:
+                for vector in vectors:
+                    if vector is not None and vector.startswith(("AVG_", "INTVL_")):
+                        active = True
+                        break
             if active:
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]

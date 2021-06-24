@@ -9,10 +9,12 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
+import webviz_subsurface
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
 from .._utils.colors import hex_to_rgba
@@ -95,6 +97,14 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
+
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -412,6 +422,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                 ),
                                 dcc.RadioItems(
                                     id=self.uuid("visualization"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "Individual realizations",
@@ -434,6 +445,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                 html.Span("Y-axis:", style={"font-weight": "bold"}),
                                 dcc.RadioItems(
                                     id=self.uuid("linlog"),
+                                    className="block-options",
                                     options=[
                                         {
                                             "label": "Linear",
@@ -445,7 +457,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         },
                                     ],
                                     value="linear",
-                                    labelStyle={"display": "inline-block"},
                                     persistence=True,
                                     persistence_type="session",
                                 ),

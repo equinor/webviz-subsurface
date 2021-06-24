@@ -244,7 +244,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 layers=[],
                                 unitScale={},
                                 autoScaleMap=True,
-                                minZoom=-5,
+                                minZoom=-19,
                                 updateMode="update",
                                 mouseCoords={"position": "bottomright"},
                                 colorBar={"position": "bottomleft"},

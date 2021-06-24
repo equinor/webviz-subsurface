@@ -50,11 +50,11 @@ jobs:
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
         pip install .
+        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
 
     - name: 📦 Install test dependencies
       run: |
         pip install .[tests]
-        pip install dash[testing]
         wget https://chromedriver.storage.googleapis.com/$(wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE -q -O -)/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         export PATH=$PATH:$PWD
@@ -88,6 +88,7 @@ jobs:
     - name: 🐳 Build Docker example image
       run: |
         pip install webviz-config-equinor
+        export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
         export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
         webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
