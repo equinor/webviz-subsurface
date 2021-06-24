@@ -28,7 +28,7 @@ import webviz_subsurface_components as wsc
 
 import webviz_subsurface
 
-from webviz_subsurface_components.VectorCalculatorWrapper import ( ExternalParseData )
+from webviz_subsurface_components.VectorCalculatorWrapper import ExternalParseData
 
 
 from webviz_subsurface._models import EnsembleSetModel
@@ -382,7 +382,7 @@ folder, to avoid risk of not extracting the right data.
             },
         ]
 
-        self.predefined_expressions_dropdown_options = (
+        self.dropdown_options.extend(
             self.get_dropdown_options_from_expressions(self.predefined_expressions)
         )
 
@@ -869,19 +869,24 @@ folder, to avoid risk of not extracting the right data.
 
     @staticmethod
     def get_valid_dropdown_value(
-        dropdown_options: List[Dict[str, str]], 
+        dropdown_options: List[Dict[str, str]],
         value: Optional[str],
-        new_expressions:List[ExpressionInfo], 
+        new_expressions: List[ExpressionInfo],
         existing_expressions: List[ExpressionInfo],
     ) -> Optional[str]:
         if value is None:
             return None
 
         # If value is among existing expressions, retreive id and find id among new expressions
-        dropdown_id = next((elm["id"] for elm in existing_expressions if elm["name"] == value),None)
+        dropdown_id = next(
+            (elm["id"] for elm in existing_expressions if elm["name"] == value), None
+        )
         new_value: Optional[str] = value
         if dropdown_id:
-            new_value = next((elm["name"] for elm in new_expressions if elm["id"] == dropdown_id), None)        
+            new_value = next(
+                (elm["name"] for elm in new_expressions if elm["id"] == dropdown_id),
+                None,
+            )
 
         return next(
             (
@@ -1315,10 +1320,10 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             Output(self.uuid("vector_calculator"), "externalParseData"),
-            Input(self.uuid("vector_calculator"), "externalParseExpression")
+            Input(self.uuid("vector_calculator"), "externalParseExpression"),
         )
         def _parse_vector_calculator_expression(
-            expression: ExpressionInfo
+            expression: ExpressionInfo,
         ) -> ExternalParseData:
             if expression is None:
                 raise PreventUpdate
@@ -1354,7 +1359,7 @@ folder, to avoid risk of not extracting the right data.
         ) -> list:
             if modal_open or (new_expressions == existing_expressions):
                 raise PreventUpdate
-            
+
             # Update dropdown options:
             dropdown_options = (
                 self.dropdown_options
@@ -1362,9 +1367,24 @@ folder, to avoid risk of not extracting the right data.
             )
 
             # Ensure valid dropdown values
-            new_first_dropdown_value = self.get_valid_dropdown_value(dropdown_options,first_dropdown_value,new_expressions,existing_expressions)
-            new_second_dropdown_value = self.get_valid_dropdown_value(dropdown_options,second_dropdown_value,new_expressions,existing_expressions)
-            new_third_dropdown_value = self.get_valid_dropdown_value(dropdown_options,third_dropdown_value,new_expressions,existing_expressions)
+            new_first_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options,
+                first_dropdown_value,
+                new_expressions,
+                existing_expressions,
+            )
+            new_second_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options,
+                second_dropdown_value,
+                new_expressions,
+                existing_expressions,
+            )
+            new_third_dropdown_value = self.get_valid_dropdown_value(
+                dropdown_options,
+                third_dropdown_value,
+                new_expressions,
+                existing_expressions,
+            )
 
             # Prevent updates if dropdow values are unchanged
             if new_first_dropdown_value == first_dropdown_value:
@@ -1386,13 +1406,15 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             Output(self.uuid("vector_calculator_expressions_modal_open"), "data"),
-            Input(self.uuid("vector_calculator"), "expressions")
+            Input(self.uuid("vector_calculator"), "expressions"),
         )
         def _update_vector_calculator_expressions(
-            expressions: List[ExpressionInfo]
+            expressions: List[ExpressionInfo],
         ) -> list:
-            valid_expressions: List[ExpressionInfo] = [elm for elm in expressions if elm["isValid"]]
-            
+            valid_expressions: List[ExpressionInfo] = [
+                elm for elm in expressions if elm["isValid"]
+            ]
+
             return valid_expressions
 
         @app.callback(
