@@ -93,7 +93,6 @@ def _load_smry_into_table(smry_filename: str) -> pa.Table:
     # For now, we go via a set to prune out duplicate entries being returned by EclSumKeyWordVector,
     # see: https://github.com/equinor/ecl/issues/816#issuecomment-865881283
     column_names: List[str] = list(set(EclSumKeyWordVector(eclsum, add_keywords=True)))
-    # column_names = eclsum.keys()
 
     # Exclude CPI columns from export
     org_col_count = len(column_names)
