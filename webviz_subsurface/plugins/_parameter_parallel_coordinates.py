@@ -4,7 +4,6 @@ import pandas as pd
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -252,15 +251,13 @@ folder, to avoid risk of not extracting the right data.
         if self.no_responses:
             return []
         children = [
-            html.Span("Response:", style={"font-weight": "bold"}),
-            dcc.Dropdown(
+            wcc.Dropdown(
+                label="Response",
                 id=self.uuid("responses"),
                 options=[{"label": ens, "value": ens} for ens in self.response_columns],
                 clearable=False,
                 value=self.response_columns[0],
                 style={"marginBottom": "20px"},
-                persistence=True,
-                persistence_type="session",
             ),
         ]
 
@@ -268,33 +265,28 @@ folder, to avoid risk of not extracting the right data.
             for col_name, col_type in self.response_filters.items():
                 values = list(self.responsedf[col_name].unique())
                 if col_type == "multi":
-                    selector = wcc.Select(
-                        id=self.uuid(f"filter-{col_name}"),
-                        options=[{"label": val, "value": val} for val in values],
-                        value=values,
-                        multi=True,
-                        size=min(20, len(values)),
-                        persistence=True,
-                        persistence_type="session",
+                    children.append(
+                        wcc.SelectWithLabel(
+                            label=col_name,
+                            id=self.uuid(f"filter-{col_name}"),
+                            options=[{"label": val, "value": val} for val in values],
+                            value=values,
+                            multi=True,
+                            size=min(20, len(values)),
+                        )
                     )
                 elif col_type == "single":
-                    selector = dcc.Dropdown(
-                        id=self.uuid(f"filter-{col_name}"),
-                        options=[{"label": val, "value": val} for val in values],
-                        value=values[0],
-                        multi=False,
-                        clearable=False,
-                        persistence=True,
-                        persistence_type="session",
+                    children.append(
+                        wcc.Dropdown(
+                            label=col_name,
+                            id=self.uuid(f"filter-{col_name}"),
+                            options=[{"label": val, "value": val} for val in values],
+                            value=values[0],
+                            multi=False,
+                            clearable=False,
+                        )
                     )
-                children.append(
-                    html.Div(
-                        children=[
-                            html.Label(col_name),
-                            selector,
-                        ]
-                    )
-                )
+
         return [
             html.Div(
                 id=self.uuid("view_response"),
@@ -310,74 +302,56 @@ folder, to avoid risk of not extracting the right data.
             []
             if self.no_responses
             else [
-                html.Label(
+                wcc.Selectors(
+                    label="Mode",
                     children=[
-                        html.Span("Mode:", style={"font-weight": "bold"}),
-                        dcc.RadioItems(
+                        wcc.RadioItems(
                             id=self.uuid("mode"),
                             options=[
                                 {"label": "Ensemble", "value": "ensemble"},
                                 {"label": "Response", "value": "response"},
                             ],
                             value="ensemble",
-                            labelStyle={"display": "inline-block"},
-                            persistence=True,
-                            persistence_type="session",
                         ),
-                    ]
+                    ],
                 )
             ]
         )
 
         return mode_select + [
-            html.Span("Ensemble:", style={"font-weight": "bold"}),
-            wcc.Select(
-                id=self.uuid("ensembles"),
-                options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                multi=True,
-                value=self.ensembles,
-                size=min(len(self.ensembles), 10),
-                persistence=True,
-                persistence_type="session",
+            wcc.Selectors(
+                label="Ensembles",
+                children=wcc.SelectWithLabel(
+                    id=self.uuid("ensembles"),
+                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                    multi=True,
+                    value=self.ensembles,
+                    size=min(len(self.ensembles), 10),
+                ),
             ),
-            html.Label(
+            wcc.Selectors(
+                label="Parameter filter",
                 children=[
-                    html.Span(
-                        "Parameters:",
-                        id=self.uuid("parameters"),
-                        style={
-                            "font-weight": "bold",
-                        },
-                    ),
-                    dcc.RadioItems(
+                    wcc.RadioItems(
                         id=self.uuid("exclude_include"),
                         options=[
                             {"label": "Exclude", "value": "exc"},
                             {"label": "Include", "value": "inc"},
                         ],
                         value="exc",
-                        labelStyle={"display": "inline-block"},
-                        style={"fontSize": ".80em"},
-                        persistence=True,
-                        persistence_type="session",
                     ),
-                ]
-            ),
-            wcc.Select(
-                id=self.uuid("parameter-list"),
-                options=[
-                    {"label": ens, "value": ens} for ens in self.parameter_columns
+                    wcc.SelectWithLabel(
+                        label="Parameters",
+                        id=self.uuid("parameter-list"),
+                        options=[
+                            {"label": ens, "value": ens}
+                            for ens in self.parameter_columns
+                        ],
+                        multi=True,
+                        size=min(len(self.parameter_columns), 15),
+                        value=[],
+                    ),
                 ],
-                multi=True,
-                size=min(len(self.parameter_columns), 15),
-                value=[],
-                style={
-                    "marginBottom": "20px",
-                    "fontSize": ".80em",
-                    "overflowX": "auto",
-                },
-                persistence=True,
-                persistence_type="session",
             ),
         ]
 
@@ -386,13 +360,16 @@ folder, to avoid risk of not extracting the right data.
         """Main layout"""
         return wcc.FlexBox(
             id=self.uuid("layout"),
+            style={"height": "90vh"},
             children=[
-                html.Div(
-                    style={"flex": 1},
+                wcc.Frame(
+                    style={"flex": 1, "height": "90vh"},
                     children=(self.control_layout + self.response_layout),
                 ),
-                html.Div(
-                    style={"flex": 3},
+                wcc.Frame(
+                    style={"flex": 4, "height": "90vh", "marginRight": "2vw"},
+                    color="white",
+                    highlight=False,
                     children=wcc.Graph(
                         id=self.uuid("parcoords"),
                     ),

@@ -1,12 +1,9 @@
-from typing import Callable, Union, List, Dict
-from pathlib import Path
+from typing import Callable, List, Dict
 
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface
 from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
 from .plot_traces_view import line_traces_view, highlight_realizations_view
@@ -21,13 +18,11 @@ def main_view(
     initial_data: Dict,
     initial_layout: Dict,
 ) -> html.Div:
-    WEBVIZ_ASSETS.add(
-        Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "container.css"
-    )
+
     return wcc.FlexBox(
         children=[
-            html.Div(
-                style={"flex": 1, "height": "89vh"},
+            wcc.Frame(
+                style={"flex": 1, "height": "90vh"},
                 children=[
                     data_stores(get_uuid=get_uuid),
                     data_selectors_view(
@@ -46,23 +41,11 @@ def main_view(
                     plot_options_view(get_uuid=get_uuid, initial_layout=initial_layout),
                 ],
             ),
-            html.Div(
-                className="framed",
-                style={"flex": 5, "height": "89vh"},
-                children=[plot_view(get_uuid=get_uuid)],
-            ),
-        ]
-    )
-
-
-def plot_view(get_uuid: Callable) -> html.Div:
-    return html.Div(
-        [
-            wcc.FlexBox(
-                style={"height": "88vh"},
-                children=[
-                    wcc.Graph(id=get_uuid("graph")),
-                ],
+            wcc.Frame(
+                style={"flex": 5, "height": "90vh"},
+                color="white",
+                highlight=False,
+                children=wcc.Graph(style={"height": "86vh"}, id=get_uuid("graph")),
             ),
         ]
     )

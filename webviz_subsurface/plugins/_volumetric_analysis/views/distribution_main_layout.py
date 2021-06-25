@@ -1,5 +1,4 @@
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -9,12 +8,12 @@ def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> ht
         children=[
             html.Div(
                 id={"id": uuid, "page": "custom"},
-                style={"display": "block"},
+                style={"display": "none"},
                 children=custom_plotting_layout(uuid),
             ),
             html.Div(
                 id={"id": uuid, "page": "1p1t"},
-                style={"display": "none"},
+                style={"display": "block"},
                 children=one_plot_one_table_layout(uuid),
             ),
             html.Div(
@@ -32,8 +31,9 @@ def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> ht
 
 
 def convergence_plot_layout(uuid: str) -> html.Div:
-    return html.Div(
-        className="framed",
+    return wcc.Frame(
+        color="white",
+        highlight=False,
         style={"height": "91vh"},
         children=[
             wcc.Graph(
@@ -46,23 +46,19 @@ def convergence_plot_layout(uuid: str) -> html.Div:
 
 
 def custom_plotting_layout(uuid: str) -> html.Div:
-    return html.Div(
-        className="framed",
+    return wcc.Frame(
+        color="white",
+        highlight=False,
         style={"height": "91vh"},
         children=[
-            html.Div(
-                children=dcc.RadioItems(
-                    id={"id": uuid, "element": "plot-table-select"},
-                    options=[
-                        {"label": "Plot", "value": "graph"},
-                        {"label": "Table", "value": "table"},
-                    ],
-                    value="graph",
-                    labelStyle={
-                        "display": "inline-block",
-                        "margin": "5px",
-                    },
-                ),
+            wcc.RadioItems(
+                id={"id": uuid, "element": "plot-table-select"},
+                options=[
+                    {"label": "Plot", "value": "graph"},
+                    {"label": "Table", "value": "table"},
+                ],
+                value="graph",
+                vertical=False,
             ),
             html.Div(
                 id={"id": uuid, "wrapper": "graph", "page": "custom"},
@@ -84,8 +80,9 @@ def custom_plotting_layout(uuid: str) -> html.Div:
 def one_plot_one_table_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
-            html.Div(
-                className="webviz-inplace-vol-framed",
+            wcc.Frame(
+                color="white",
+                highlight=False,
                 style={"height": "44vh"},
                 children=wcc.Graph(
                     id={"id": uuid, "element": "graph", "page": "1p1t"},
@@ -93,10 +90,12 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
                     style={"height": "44vh"},
                 ),
             ),
-            html.Div(
-                className="webviz-inplace-vol-framed",
+            wcc.Frame(
+                color="white",
+                highlight=False,
                 style={"height": "44vh"},
                 id={"id": uuid, "wrapper": "table", "page": "1p1t"},
+                children=[],
             ),
         ]
     )
@@ -110,8 +109,9 @@ def plots_per_zone_region_layout(
     layout = []
     for selector in selectors:
         layout.append(
-            html.Div(
-                className="webviz-inplace-vol-framed",
+            wcc.Frame(
+                color="white",
+                highlight=False,
                 style={"height": f"{height}vh"},
                 children=wcc.FlexBox(
                     children=[

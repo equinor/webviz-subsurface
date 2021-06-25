@@ -17,9 +17,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from webviz_subsurface._components import TornadoWidget
@@ -138,12 +136,7 @@ folder, to avoid risk of not extracting the right data.
     ) -> None:
 
         super().__init__()
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
+
         self.time_index = sampling
         self.column_keys = column_keys
         self.csvfile_smry = csvfile_smry
@@ -244,47 +237,29 @@ folder, to avoid risk of not extracting the right data.
     @property
     def ensemble_selector(self) -> html.Div:
         """Dropdown to select ensemble"""
-        return html.Div(
-            style={"paddingBottom": "30px"},
-            children=html.Label(
-                children=[
-                    html.Span("Ensemble:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.ids("ensemble"),
-                        options=[{"label": i, "value": i} for i in self.ensembles],
-                        clearable=False,
-                        value=self.ensembles[0],
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
-            ),
+        return wcc.Dropdown(
+            label="Ensemble",
+            id=self.ids("ensemble"),
+            options=[{"label": i, "value": i} for i in self.ensembles],
+            clearable=False,
+            value=self.ensembles[0],
         )
 
     @property
     def smry_selector(self) -> html.Div:
         """Dropdown to select ensemble"""
-        return html.Div(
-            style={"paddingBottom": "30px"},
-            children=html.Label(
-                children=[
-                    html.Span("Time series:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
-                        id=self.ids("vector"),
-                        options=[
-                            {
-                                "label": f"{simulation_vector_description(vec)} ({vec})",
-                                "value": vec,
-                            }
-                            for vec in self.smry_cols
-                        ],
-                        clearable=False,
-                        value=self.initial_vector,
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
-            ),
+        return wcc.Dropdown(
+            label="Time series",
+            id=self.ids("vector"),
+            options=[
+                {
+                    "label": f"{simulation_vector_description(vec)} ({vec})",
+                    "value": vec,
+                }
+                for vec in self.smry_cols
+            ],
+            clearable=False,
+            value=self.initial_vector,
         )
 
     @property
@@ -320,66 +295,73 @@ folder, to avoid risk of not extracting the right data.
 
     @property
     def layout(self) -> html.Div:
-        return html.Div(
+        return wcc.FlexBox(
+            id=self.ids("layout"),
             children=[
-                wcc.FlexBox(
-                    id=self.ids("layout"),
-                    children=[
-                        html.Div(
-                            className="framed",
-                            style={"flex": 1},
-                            children=[
-                                wcc.FlexBox(
-                                    children=[
-                                        self.ensemble_selector,
-                                        self.smry_selector,
-                                        dcc.Store(
-                                            id=self.ids("date-store"),
-                                            storage_type="session",
-                                        ),
-                                    ],
+                wcc.FlexColumn(
+                    flex=1,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        children=[
+                            wcc.Selectors(
+                                label="Selectors",
+                                children=[self.ensemble_selector, self.smry_selector],
+                            ),
+                            dcc.Store(
+                                id=self.ids("date-store"),
+                                storage_type="session",
+                            ),
+                        ],
+                    ),
+                ),
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        color="white",
+                        highlight=False,
+                        children=[
+                            html.Div(
+                                id=self.ids("graph-wrapper"),
+                                style={"height": "450px"},
+                                children=wcc.Graph(
+                                    id=self.ids("graph"),
+                                    clickData={"points": [{"x": self.initial_date}]},
                                 ),
-                                wcc.FlexBox(
-                                    children=[
-                                        html.Div(
-                                            id=self.ids("graph-wrapper"),
-                                            style={"height": "450px"},
-                                            children=wcc.Graph(
-                                                id=self.ids("graph"),
-                                                clickData={
-                                                    "points": [{"x": self.initial_date}]
-                                                },
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                                html.Div(
-                                    children=[
-                                        html.Div(
-                                            id=self.ids("table_title"),
-                                            style={"textAlign": "center"},
-                                            children="",
-                                        ),
-                                        DataTable(
+                            ),
+                            html.Div(
+                                children=[
+                                    html.Div(
+                                        id=self.ids("table_title"),
+                                        style={"textAlign": "center"},
+                                        children="",
+                                    ),
+                                    html.Div(
+                                        style={"fontSize": "15px"},
+                                        children=DataTable(
                                             id=self.ids("table"),
                                             sort_action="native",
                                             filter_action="native",
                                             page_action="native",
                                             page_size=10,
                                         ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            className="framed",
-                            style={"flex": 1},
-                            id=self.ids("tornado-wrapper"),
-                            children=self.tornadoplot.layout,
-                        ),
-                    ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
                 ),
-            ]
+                wcc.FlexColumn(
+                    flex=3,
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        color="white",
+                        highlight=False,
+                        id=self.ids("tornado-wrapper"),
+                        children=self.tornadoplot.layout,
+                    ),
+                ),
+            ],
         )
 
     # pylint: disable=too-many-statements

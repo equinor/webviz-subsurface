@@ -1,21 +1,16 @@
 from typing import List, Dict, Union, Callable
 
-import dash_core_components as dcc
 import dash_html_components as html
+import webviz_core_components as wcc
 
 
 def plot_options_view(get_uuid: Callable, initial_layout: Dict) -> html.Div:
-    return html.Div(
-        className="framed",
-        style={"fontSize": "0.8em"},
+    return wcc.Selectors(
+        label="Plot options",
         children=[
-            html.H5("Plot options"),
-            dcc.Checklist(
+            wcc.Checklist(
                 id=get_uuid("plotly_uirevision"),
                 options=[{"label": "Keep plot range and zoom", "value": "keep"}],
-                labelStyle={"display": "block"},
-                persistence=True,
-                persistence_type="session",
             ),
             dropdown_for_plotly_layout(
                 uuid=get_uuid("plotly_layout"),
@@ -77,25 +72,16 @@ def dropdown_for_plotly_layout(
     title: str,
     options: List[Dict],
     value: Union[List, str],
-    flex: int = 1,
     placeholder: str = "Select...",
 ) -> html.Div:
-    return html.Div(
-        style={"flex": flex},
-        children=[
-            html.Label(title),
-            dcc.Dropdown(
-                style={"backgroundColor": "transparent"},
-                id={
-                    "id": uuid,
-                    "layout_attribute": layout_attribute,
-                },
-                options=options,
-                value=value,
-                clearable=False,
-                placeholder=placeholder,
-                persistence=True,
-                persistence_type="session",
-            ),
-        ],
+    return wcc.Dropdown(
+        label=title,
+        id={
+            "id": uuid,
+            "layout_attribute": layout_attribute,
+        },
+        options=options,
+        value=value,
+        clearable=False,
+        placeholder=placeholder,
     )

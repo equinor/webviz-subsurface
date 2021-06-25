@@ -8,16 +8,13 @@ import plotly.graph_objs as go
 import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
+import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-import webviz_core_components as wcc
-
-import webviz_subsurface
 
 
 class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
@@ -60,13 +57,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
         super().__init__()
 
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "block_options.css"
-        )
-
         self.input_dir = input_dir
         self.theme = webviz_settings.theme
         self.ks_filter = ks_filter
@@ -80,65 +70,69 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             children=[
                 wcc.FlexBox(
                     children=[
-                        html.Div(
-                            style={"flex": 1},
+                        wcc.Frame(
+                            style={"flex": 1, "style": "45vh"},
                             children=[
-                                html.Div(
-                                    children="Filter observations:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Input(
-                                    id=self.uuid("filter1_id"),
-                                    value="",
-                                    type="text",
-                                    debounce=True,
-                                ),
-                                html.Div(
-                                    children="Filter parameters:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Input(
-                                    id=self.uuid("filter2_id"),
-                                    value="",
-                                    type="text",
-                                    debounce=True,
-                                ),
-                                html.Div(
-                                    children="Selected output:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.RadioItems(
-                                    id=self.uuid("choice_id"),
-                                    className="block-options",
-                                    options=[
-                                        {
-                                            "label": "One by one observation",
-                                            "value": "ONE",
-                                        },
-                                        {
-                                            "label": "All minus one observation",
-                                            "value": "ALL",
-                                        },
+                                wcc.Selectors(
+                                    label="Filters",
+                                    children=[
+                                        wcc.Label(
+                                            children="Filter observations:",
+                                            style={"display": "block"},
+                                        ),
+                                        dcc.Input(
+                                            id=self.uuid("filter1_id"),
+                                            value="",
+                                            type="text",
+                                            debounce=True,
+                                        ),
+                                        wcc.Label(
+                                            children="Filter parameters:",
+                                            style={"display": "block"},
+                                        ),
+                                        dcc.Input(
+                                            id=self.uuid("filter2_id"),
+                                            value="",
+                                            type="text",
+                                            debounce=True,
+                                        ),
                                     ],
-                                    value="ONE",
                                 ),
-                                html.Div(
-                                    children="Parameter distribution:",
-                                    style={"font-weight": "bold"},
+                                wcc.Selectors(
+                                    label="Selected output:",
+                                    children=wcc.RadioItems(
+                                        id=self.uuid("choice_id"),
+                                        options=[
+                                            {
+                                                "label": "One by one observation",
+                                                "value": "ONE",
+                                            },
+                                            {
+                                                "label": "All minus one observation",
+                                                "value": "ALL",
+                                            },
+                                        ],
+                                        value="ONE",
+                                    ),
                                 ),
-                                dcc.Checklist(
-                                    id=self.uuid("choice_hist_id"),
-                                    options=[
-                                        {
-                                            "label": "Transformed dist. (if available)",
-                                            "value": "TRANS",
-                                        },
-                                    ],
-                                    value=[],
+                                wcc.Selectors(
+                                    label="Parameter distribution:",
+                                    children=dcc.Checklist(
+                                        id=self.uuid("choice_hist_id"),
+                                        options=[
+                                            {
+                                                "label": "Transformed dist. (if available)",
+                                                "value": "TRANS",
+                                            },
+                                        ],
+                                        value=[],
+                                    ),
                                 ),
                             ],
                         ),
-                        html.Div(
+                        wcc.Frame(
+                            color="white",
+                            highlight=False,
                             style={"flex": 3},
                             children=[
                                 html.Div(
@@ -146,7 +140,9 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                                 ),
                             ],
                         ),
-                        html.Div(
+                        wcc.Frame(
+                            color="white",
+                            highlight=False,
                             style={"flex": 3},
                             children=[
                                 html.Div(
@@ -260,7 +256,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                         }
                     ),
                 },
-                style={"height": 750},
+                style={"height": "45vh"},
                 clickData={"points": [{"x": xx_data[0], "y": yy_data[0]}]},
             )
 
@@ -306,7 +302,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                             "JY",
                             deltadata,
                         ],
-                        height=750,
                     ),
                 )
             post_df = read_csv(get_path(self.input_dir / f"{obs}.csv"))
@@ -332,7 +327,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 )
             )
 
-            return wcc.Graph(id="lineplots", style={"height": 750}, figure=fig)
+            return wcc.Graph(id="lineplots", style={"height": "45vh"}, figure=fig)
 
         @app.callback(
             Output(self.uuid("generate_table"), component_property="children"),

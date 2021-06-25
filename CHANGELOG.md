@@ -6,11 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+- [#669](https://github.com/equinor/webviz-subsurface/pull/669) - New generic plugin to visualize tornado plots from a csv file of responses.
+
 ### Changed
+- [#681](https://github.com/equinor/webviz-subsurface/pull/681) - `VolumetricAnalysis` upgrades - added page with tornadoplots to `VolumetricAnalysis`, automatic computation of volumes
+from the water zone if the volumes from the full grid geometry are included, and possibility of computing NTG from facies.
 - [#661](https://github.com/equinor/webviz-subsurface/pull/661) - Moved existing clientside function to a general dash_clientside file to facilitate adding more functions later on.
 - [#658](https://github.com/equinor/webviz-subsurface/pull/658) - Refactored Tornado figure code to be more reusable. Improved the Tornado bar visualization, added table display
  and improved layout in relevant plugins.
 - [#676](https://github.com/equinor/webviz-subsurface/pull/676) - Added realization points to Tornado visualization. Various improvements to Tornado figure layout.
+- [#667](https://github.com/equinor/webviz-subsurface/pull/667) - Standardized layout and styling of plugins.
 
 ### Fixed
 - [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`

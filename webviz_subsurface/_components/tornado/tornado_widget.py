@@ -152,8 +152,8 @@ class TornadoWidget:
                                         "marginRight": "10px",
                                     },
                                     children=[
-                                        html.Label("Reference:"),
-                                        dcc.Dropdown(
+                                        wcc.Dropdown(
+                                            label="Reference",
                                             id=self.ids("reference"),
                                             options=[
                                                 {
@@ -164,11 +164,9 @@ class TornadoWidget:
                                             ],
                                             value=self.initial_reference,
                                             clearable=False,
-                                            persistence=True,
-                                            persistence_type="session",
                                         ),
-                                        html.Label("Scale:"),
-                                        dcc.Dropdown(
+                                        wcc.Dropdown(
+                                            label="Scale",
                                             id=self.ids("scale"),
                                             options=[
                                                 {
@@ -183,25 +181,16 @@ class TornadoWidget:
                                             ],
                                             value="Relative value (%)",
                                             clearable=False,
-                                            persistence=True,
-                                            persistence_type="session",
                                         ),
-                                        html.Label("Label"),
-                                        dcc.Dropdown(
-                                            id=self.ids("label"),
-                                            options=[
-                                                {"label": "No label", "value": "hide"},
-                                                {
-                                                    "label": "Simple label",
-                                                    "value": "simple",
-                                                },
-                                                {
-                                                    "label": "Detailed label",
-                                                    "value": "detailed",
-                                                },
-                                            ],
-                                            value="detailed",
-                                            clearable=False,
+                                        html.Button(
+                                            style={
+                                                "fontSize": "10px",
+                                                "marginTop": "10px",
+                                            }
+                                            if self.allow_click
+                                            else {"display": "none"},
+                                            id=self.ids("reset"),
+                                            children="Clear selected",
                                         ),
                                     ],
                                 ),
@@ -212,8 +201,8 @@ class TornadoWidget:
                                         "marginRight": "10px",
                                     },
                                     children=[
-                                        html.Label("Select sensitivities:"),
-                                        wcc.Select(
+                                        wcc.SelectWithLabel(
+                                            label="Select sensitivities",
                                             id=self.ids("sens_filter"),
                                             options=[
                                                 {
@@ -228,8 +217,6 @@ class TornadoWidget:
                                                 5,
                                                 len(self.sensnames),
                                             ),
-                                            persistence=True,
-                                            persistence_type="session",
                                         ),
                                     ],
                                 ),
@@ -239,8 +226,8 @@ class TornadoWidget:
                                         "flex": 3,
                                     },
                                     children=[
-                                        html.Label("Plot options:"),
-                                        dcc.Checklist(
+                                        wcc.Checklist(
+                                            label="Plot options",
                                             id=self.ids("plot-options"),
                                             options=[
                                                 {
@@ -258,18 +245,23 @@ class TornadoWidget:
                                             ],
                                             value=[],
                                             labelStyle={"display": "block"},
-                                            persistence=True,
-                                            persistence_type="session",
                                         ),
-                                        html.Button(
-                                            style={
-                                                "fontSize": "10px",
-                                                "width": "100%",
-                                            }
-                                            if self.allow_click
-                                            else {"display": "none"},
-                                            id=self.ids("reset"),
-                                            children="Clear selected",
+                                        wcc.Dropdown(
+                                            label="Label",
+                                            id=self.ids("label"),
+                                            options=[
+                                                {"label": "No label", "value": "hide"},
+                                                {
+                                                    "label": "Simple label",
+                                                    "value": "simple",
+                                                },
+                                                {
+                                                    "label": "Detailed label",
+                                                    "value": "detailed",
+                                                },
+                                            ],
+                                            value="detailed",
+                                            clearable=False,
                                         ),
                                     ],
                                 ),
@@ -294,7 +286,8 @@ class TornadoWidget:
                                 "font-weight": "bold",
                             },
                         ),
-                        dcc.RadioItems(
+                        wcc.RadioItems(
+                            vertical=False,
                             id=self.ids("plot-or-table"),
                             options=[
                                 {"label": "Show bars", "value": "bars"},

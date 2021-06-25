@@ -11,7 +11,6 @@ from .selector_view import (
     parameter_selector,
     date_selector,
     plot_options,
-    html_details,
     color_selector,
     color_opacity_selector,
 )
@@ -42,16 +41,15 @@ def selector_view(
         theme_colors[1:12] if theme_colors and len(theme_colors) >= 12 else theme_colors
     )
 
-    return html.Div(
+    return wcc.Frame(
         style={
             "height": "80vh",
             "overflowY": "auto",
             "font-size": "15px",
         },
-        className="framed",
         children=[
-            html_details(
-                summary="Selections",
+            wcc.Selectors(
+                label="Selections",
                 children=[
                     ensemble_selector(
                         get_uuid=get_uuid,
@@ -67,10 +65,9 @@ def selector_view(
                         get_uuid=get_uuid, parametermodel=parametermodel, tab="response"
                     ),
                 ],
-                open_details=True,
             ),
-            html_details(
-                summary=[
+            wcc.Selectors(
+                label=[
                     "Filters ",
                     html.Span(
                         "(for correlations)",
@@ -87,10 +84,9 @@ def selector_view(
                         get_uuid=get_uuid, vectormodel=vectormodel, tab="response"
                     )
                 ],
-                open_details=False,
             ),
-            html_details(
-                summary="Options",
+            wcc.Selectors(
+                label="Options",
                 children=[
                     plot_options(get_uuid=get_uuid, tab="response"),
                     color_selector(
@@ -104,7 +100,6 @@ def selector_view(
                         get_uuid=get_uuid, tab="response", value=0.5
                     ),
                 ],
-                open_details=False,
             ),
         ],
     )
@@ -119,8 +114,7 @@ def parameter_response_view(
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
-            html.Div(
-                style={"flex": 1, "width": "90%"},
+            wcc.FlexColumn(
                 children=selector_view(
                     get_uuid=get_uuid,
                     parametermodel=parametermodel,
@@ -128,17 +122,20 @@ def parameter_response_view(
                     theme=theme,
                 ),
             ),
-            html.Div(
-                style={"flex": 2, "height": "80vh"},
+            wcc.FlexColumn(
+                flex=2,
+                style={"height": "80vh"},
                 children=[
-                    html.Div(
-                        className="framed",
-                        style={"height": "37.5vh"},
+                    wcc.Frame(
+                        style={"height": "38.5vh"},
+                        color="white",
+                        highlight=False,
                         children=timeseries_view(get_uuid=get_uuid),
                     ),
-                    html.Div(
-                        className="framed",
-                        style={"height": "37.5vh"},
+                    wcc.Frame(
+                        style={"height": "38.5vh"},
+                        color="white",
+                        highlight=False,
                         children=[
                             wcc.Graph(
                                 id=get_uuid("vector-vs-param-scatter"),
@@ -149,12 +146,14 @@ def parameter_response_view(
                     ),
                 ],
             ),
-            html.Div(
-                style={"flex": 2, "height": "80vh"},
+            wcc.FlexColumn(
+                flex=2,
+                style={"height": "80vh"},
                 children=[
-                    html.Div(
-                        className="framed",
-                        style={"height": "37.5vh"},
+                    wcc.Frame(
+                        color="white",
+                        highlight=False,
+                        style={"height": "38.5vh"},
                         children=[
                             wcc.Graph(
                                 config={"displayModeBar": False},
@@ -163,9 +162,10 @@ def parameter_response_view(
                             ),
                         ],
                     ),
-                    html.Div(
-                        className="framed",
-                        style={"height": "37.5vh"},
+                    wcc.Frame(
+                        color="white",
+                        highlight=False,
+                        style={"height": "38.5vh"},
                         children=[
                             wcc.Graph(
                                 config={"displayModeBar": False},

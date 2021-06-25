@@ -51,6 +51,7 @@ from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._structural_uncertainty import StructuralUncertainty
+from ._tornado_plotter_fmu import TornadoPlotterFMU
 from ._volumetric_analysis import VolumetricAnalysis
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
