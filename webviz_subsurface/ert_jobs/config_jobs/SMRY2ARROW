@@ -1,0 +1,5 @@
+EXECUTABLE smry2arrow
+
+ARGLIST <INPUT> <OUTPUT>
+
+MIN_ARG 2
