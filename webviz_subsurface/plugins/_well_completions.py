@@ -58,9 +58,9 @@ class WellCompletions(WebvizPluginABC):
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
     The connection status history of each cell is not necessarily complete in the `ecl2df` export,
-    because status changes resulting from ACTION setups can't be extracted from the Eclipse input
+    because status changes resulting from ACTIONs can't be extracted from the Eclipse input
     files. If the `ecl2df` export is good, it is recommended to use that. This will often be the
-    ase for history runs. But if not, an alternative way of extracting the data is described in
+    case for history runs. But if not, an alternative way of extracting the data is described in
     the next section.
 
     **Well Connection status input**
