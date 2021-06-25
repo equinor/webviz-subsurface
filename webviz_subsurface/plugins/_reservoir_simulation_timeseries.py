@@ -816,8 +816,6 @@ folder, to avoid risk of not extracting the right data.
                 bargap=0.01,
                 bargroupgap=0.2,
             )
-            if len(vectors) == 1:
-                fig["layout"].update({"title": {"text": titles[0]}})
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
             if "Histogram" in trace_options:
