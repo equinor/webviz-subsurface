@@ -253,37 +253,6 @@ folder, to avoid risk of not extracting the right data.
             )
 
             if (
-                next(
-                    (x for x in self.vector_data if x["name"] == split[0]),
-                    None,
-                )
-                == None
-            ):
-                self.vector_data.append(
-                    {
-                        "name": split[0],
-                        "description": simulation_vector_description(vec),
-                        "children": [],
-                    }
-                )
-            if len(split) == 2:
-                for x in self.vector_data:
-                    if x["name"] == split[0]:
-                        if (
-                            next(
-                                (y for y in x["children"] if y["name"] == split[1]),
-                                None,
-                            )
-                            is None
-                        ):
-                            x["children"].append(
-                                {
-                                    "name": split[1],
-                                }
-                            )
-                        break
-
-            if (
                 self.smry_meta is not None
                 and self.smry_meta.is_total[vec]
                 and self.time_index is not None
@@ -307,6 +276,7 @@ folder, to avoid risk of not extracting the right data.
                     f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
 
+        # TODO: Define in configuration file and parse/handle with wrapper helper function
         self.predefined_expressions: List[ExpressionInfo] = [
             {
                 "name": "Test",
@@ -382,8 +352,9 @@ folder, to avoid risk of not extracting the right data.
             },
         ]
 
-        self.dropdown_options.extend(
-            self.get_dropdown_options_from_expressions(self.predefined_expressions)
+        # Get predefined expressions data
+        self.expressions_data = self._get_vector_data_from_expressions(
+            self.predefined_expressions
         )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
@@ -517,6 +488,16 @@ folder, to avoid risk of not extracting the right data.
                     "one time series dependent on the interval setting is chosen."
                     "The option might be completely hidden if the data input does not support "
                     "calculation from cumulatives."
+                ),
+            },
+            {
+                "id": self.uuid("vector_calculator_detail"),
+                "content": (
+                    "Create mathematical expressions with provided vector time series. "
+                    "Parsing of the mathematical expression is handled and will give feedback "
+                    "when entering invalid expressions. "
+                    "The expressions are calculated on the fly and can be selected among the time series "
+                    "to be shown in the plots."
                 ),
             },
         ]
@@ -746,7 +727,7 @@ folder, to avoid risk of not extracting the right data.
                                 wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
-                                    data=self.vector_data,
+                                    data=(self.vector_data + self.expressions_data),
                                     persistence=True,
                                     persistence_type="session",
                                     selectedTags=self.plot_options.get(
@@ -868,55 +849,76 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @staticmethod
-    def get_valid_dropdown_value(
-        dropdown_options: List[Dict[str, str]],
-        value: Optional[str],
+    def _is_vector_existing(vector_data: list, vector: str) -> bool:
+        # TODO: What if len(split) is larger than 2? Not allowed or no possible?
+        split = vector.split(":")
+
+        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
+            return False
+
+        if len(split) == 2:
+            for x in vector_data:
+                if x["name"] == split[0]:
+                    if (
+                        next(
+                            (y for y in x["children"] if y["name"] == split[1]),
+                            None,
+                        )
+                        is None
+                    ):
+                        return False
+        return True
+
+    def _get_valid_vector_selections(
+        self,
+        vector_data: list,
+        selected_vectors: List[str],
         new_expressions: List[ExpressionInfo],
         existing_expressions: List[ExpressionInfo],
-    ) -> Optional[str]:
-        if value is None:
-            return None
+    ) -> List[str]:
+        valid_selections: List[str] = []
+        for vector in selected_vectors:
+            new_vector: Optional[str] = vector
 
-        # If value is among existing expressions, retreive id and find id among new expressions
-        dropdown_id = next(
-            (elm["id"] for elm in existing_expressions if elm["name"] == value), None
-        )
-        new_value: Optional[str] = value
-        if dropdown_id:
-            new_value = next(
-                (elm["name"] for elm in new_expressions if elm["id"] == dropdown_id),
+            # Get id if vector is among existing expressions
+            dropdown_id = next(
+                (elm["id"] for elm in existing_expressions if elm["name"] == vector),
                 None,
             )
+            # Find id among new expressions to get new/edited name
+            if dropdown_id:
+                new_vector = next(
+                    (
+                        elm["name"]
+                        for elm in new_expressions
+                        if elm["id"] == dropdown_id
+                    ),
+                    None,
+                )
 
-        return next(
-            (
-                option["value"]
-                for option in dropdown_options
-                if option["value"] == new_value
-            ),
-            None,
-        )
+            # Append if vector name exist among data
+            if new_vector is not None and self._is_vector_existing(
+                vector_data, new_vector
+            ):
+                valid_selections.append(new_vector)
 
-    def get_dropdown_options_from_expressions(
+        return valid_selections
+
+    def _get_vector_data_from_expressions(
         self, expressions: List[ExpressionInfo]
-    ) -> List[Dict[str, str]]:
-        additional_dropdown_options: List[Dict[str, str]] = []
+    ) -> list:
+        data: list = []
         for elm in expressions:
-            if elm["isValid"]:
-                name = elm["name"]
-                expr = wsc.VectorCalculator.detailed_expression(elm)
-                option = {
-                    "label": f"{name} ({expr})",
-                    "value": f"{name}",
-                }
+            if not elm["isValid"]:
+                continue
 
-                # Prevent duplicates
-                if (
-                    option not in self.dropdown_options
-                    and option not in additional_dropdown_options
-                ):
-                    additional_dropdown_options.append(option)
-        return additional_dropdown_options
+            name = elm["name"]
+            expression = elm["expression"]
+
+            # Prevent duplicates among expressions
+            if not any([elm == name for elm in data]):
+                self._add_vector(data, name, expression)
+        return data
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: dash.Dash) -> None:
@@ -973,15 +975,6 @@ folder, to avoid risk of not extracting the right data.
                     selected_expressions, self.smry_meta["unit"]
                 )
 
-            # Calculate selected expressions:
-            selected_expressions = get_selected_expressions(expressions, vectors)
-            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
-            calculated_units = pd.Series()
-            if self.smry_meta is not None:
-                calculated_units = get_calculated_units(
-                    selected_expressions, self.smry_meta["unit"]
-                )
-
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
@@ -1005,11 +998,8 @@ folder, to avoid risk of not extracting the right data.
                     )
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
-                # TODO: Temporary code:
                 elif vec in calculated_vectors:
-                    # TODO Add meta data
                     titles.append(f"{vec}" f" [{calculated_units[vec]}]")
-                # END: Temporary code
                 else:
                     titles.append(
                         f"{simulation_vector_description(vec)}"
@@ -1342,76 +1332,40 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             [
                 Output(self.uuid("vector_calculator_expressions"), "data"),
-                Output(self.uuid("vector1"), "options"),
-                Output(self.uuid("vector2"), "options"),
-                Output(self.uuid("vector3"), "options"),
-                Output(self.uuid("vector1"), "value"),
-                Output(self.uuid("vector2"), "value"),
-                Output(self.uuid("vector3"), "value"),
+                Output(self.uuid("vectors"), "data"),
+                Output(self.uuid("vectors"), "selectedTags"),
             ],
             Input(self.uuid("modal_vector_calculator"), "is_open"),
             [
                 State(self.uuid("vector_calculator_expressions_modal_open"), "data"),
                 State(self.uuid("vector_calculator_expressions"), "data"),
-                State(self.uuid("vector1"), "value"),
-                State(self.uuid("vector2"), "value"),
-                State(self.uuid("vector3"), "value"),
+                State(self.uuid("vectors"), "selectedNodes"),
             ],
         )
         def _update_vector_calculator_expressions_actual(
             modal_open: bool,
             new_expressions: List[ExpressionInfo],
             existing_expressions: List[ExpressionInfo],
-            first_dropdown_value: Union[str, None],
-            second_dropdown_value: Union[str, None],
-            third_dropdown_value: Union[str, None],
+            selected_vectors: List[str],
         ) -> list:
             if modal_open or (new_expressions == existing_expressions):
                 raise PreventUpdate
 
-            # Update dropdown options:
-            dropdown_options = (
-                self.dropdown_options
-                + self.get_dropdown_options_from_expressions(new_expressions)
+            # TODO: Add check if self.get_vector_data_from_expression data is not among self.vector_data
+            # or parse expression name from react comp in python (external name parsing?) before save
+            vector_data = self.vector_data + self._get_vector_data_from_expressions(
+                new_expressions
             )
 
-            # Ensure valid dropdown values
-            new_first_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options,
-                first_dropdown_value,
-                new_expressions,
-                existing_expressions,
-            )
-            new_second_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options,
-                second_dropdown_value,
-                new_expressions,
-                existing_expressions,
-            )
-            new_third_dropdown_value = self.get_valid_dropdown_value(
-                dropdown_options,
-                third_dropdown_value,
-                new_expressions,
-                existing_expressions,
+            new_selected_vectors = self._get_valid_vector_selections(
+                vector_data, selected_vectors, new_expressions, existing_expressions
             )
 
-            # Prevent updates if dropdow values are unchanged
-            if new_first_dropdown_value == first_dropdown_value:
-                new_first_dropdown_value = dash.no_update
-            if new_second_dropdown_value == second_dropdown_value:
-                new_second_dropdown_value = dash.no_update
-            if new_third_dropdown_value == third_dropdown_value:
-                new_third_dropdown_value = dash.no_update
+            # Prevent updates if selected vectors are unchanged
+            if new_selected_vectors == selected_vectors:
+                new_selected_vectors = dash.no_update
 
-            return [
-                new_expressions,
-                dropdown_options,
-                dropdown_options,
-                dropdown_options,
-                new_first_dropdown_value,
-                new_second_dropdown_value,
-                new_third_dropdown_value,
-            ]
+            return [new_expressions, vector_data, new_selected_vectors]
 
         @app.callback(
             Output(self.uuid("vector_calculator_expressions_modal_open"), "data"),
