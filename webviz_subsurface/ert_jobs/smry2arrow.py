@@ -27,7 +27,7 @@ this in the ert workflow:
 
     FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/unsmry.arrow)
 
-"""  # noqa
+"""
 
 
 def _get_parser() -> argparse.ArgumentParser:
