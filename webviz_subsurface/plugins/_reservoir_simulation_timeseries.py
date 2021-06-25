@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 import json
 import datetime
-from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -28,7 +27,10 @@ import webviz_subsurface_components as wsc
 
 import webviz_subsurface
 
-from webviz_subsurface_components.VectorCalculatorWrapper import ExternalParseData
+from webviz_subsurface_components.VectorCalculatorWrapper import (
+    ExternalParseData,
+    ConfigExpressionData,
+)
 
 
 from webviz_subsurface._models import EnsembleSetModel
@@ -114,6 +116,9 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
     * `backfilled`
     * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
 
+**Calculated vector expressions**
+* **`predefined_expressions`:** JSON file with pre-defined expressions
+
 ---
 
 ?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will \
@@ -172,6 +177,7 @@ folder, to avoid risk of not extracting the right data.
         column_keys: list = None,
         sampling: str = "monthly",
         options: dict = None,
+        predefined_expressions: Path = None,
         line_shape_fallback: str = "linear",
     ):
 
@@ -276,87 +282,6 @@ folder, to avoid risk of not extracting the right data.
                     f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
 
-        # TODO: Define in configuration file and parse/handle with wrapper helper function
-        self.predefined_expressions: List[ExpressionInfo] = [
-            {
-                "name": "Test",
-                "expression": "x+y",
-                "id": f"{uuid4()}",
-                "variableVectorMap": [
-                    {
-                        "variableName": "x",
-                        "vectorName": ["WOPT:OP_1"],
-                    },
-                    {
-                        "variableName": "y",
-                        "vectorName": ["FGIR"],
-                    },
-                ],
-                "isValid": True,
-                "isDeletable": False,
-            },
-            {
-                "name": "Test2",
-                "expression": "x-y",
-                "id": f"{uuid4()}",
-                "variableVectorMap": [
-                    {
-                        "variableName": "x",
-                        "vectorName": ["WOPT:OP_3"],
-                    },
-                    {
-                        "variableName": "y",
-                        "vectorName": ["FGIR"],
-                    },
-                ],
-                "isValid": True,
-                "isDeletable": False,
-            },
-            {
-                "name": "Test3",
-                "expression": "x-2*y",
-                "id": f"{uuid4()}",
-                "variableVectorMap": [
-                    {
-                        "variableName": "x",
-                        "vectorName": ["WOPT:OP_1"],
-                    },
-                    {
-                        "variableName": "y",
-                        "vectorName": ["WBP4:OP_3"],
-                    },
-                ],
-                "isValid": True,
-                "isDeletable": False,
-            },
-            {
-                "name": "Test4",
-                "expression": "x-2*y/z",
-                "id": f"{uuid4()}",
-                "variableVectorMap": [
-                    {
-                        "variableName": "x",
-                        "vectorName": ["WOPT:OP_4"],
-                    },
-                    {
-                        "variableName": "y",
-                        "vectorName": ["FGIR"],
-                    },
-                    {
-                        "variableName": "z",
-                        "vectorName": ["WBP4:OP_3"],
-                    },
-                ],
-                "isValid": True,
-                "isDeletable": False,
-            },
-        ]
-
-        # Get predefined expressions data
-        self.expressions_data = self._get_vector_data_from_expressions(
-            self.predefined_expressions
-        )
-
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
 
@@ -379,6 +304,25 @@ folder, to avoid risk of not extracting the right data.
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
+
+        # Get the predefined expressions for vector calculator
+        self.predefined_expressions: List[ExpressionInfo] = []
+        if predefined_expressions:
+            file = open(predefined_expressions.__str__())
+            # TODO: Add typecheck of json.load data? Ensure that data is correct  - i.e. dict with ConfigExpressionData
+            # ("expression" and "variableVectorMap")
+            predefined_expressions_data: Dict[str, ConfigExpressionData] = json.load(
+                file
+            )
+            self.predefined_expressions = wsc.VectorCalculator.expressions_from_config(
+                predefined_expressions_data
+            )
+
+        # Get predefined expressions data
+        self.expressions_data = self._get_vector_data_from_expressions(
+            self.predefined_expressions
+        )
+
         # Check if initially plotted vectors exist in data, raise ValueError if not.
         missing_vectors = (
             [

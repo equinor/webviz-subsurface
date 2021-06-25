@@ -32,7 +32,7 @@ def get_calculated_vectors(
     for elm in expressions:
         name: str = elm["name"]
         expr: str = elm["expression"]
-        var_vec_dict: Dict[str, str] = VectorCalculator.get_var_vec_dict(
+        var_vec_dict: Dict[str, str] = VectorCalculator.variable_vector_dict(
             elm["variableVectorMap"]
         )
 
