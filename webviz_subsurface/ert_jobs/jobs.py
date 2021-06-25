@@ -36,7 +36,10 @@ def installable_jobs() -> dict:
         resource_filename("webviz_subsurface", "ert_jobs/config_jobs")
     )
     return {
-        "EXPORT_CONNECTION_STATUS": str(resource_directory / "EXPORT_CONNECTION_STATUS")
+        "EXPORT_CONNECTION_STATUS": str(
+            resource_directory / "EXPORT_CONNECTION_STATUS"
+        ),
+        "SMRY2ARROW": str(resource_directory / "SMRY2ARROW"),
     }
 
 
