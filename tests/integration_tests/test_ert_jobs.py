@@ -54,7 +54,7 @@ def expected_jobs():
         / "webviz_subsurface"
         / "ert_jobs"
     )
-    expected_job_names = ["EXPORT_CONNECTION_STATUS"]
+    expected_job_names = ["WELL_CONNECTION_STATUS"]
     return {
         name: str(config_location / "config_jobs" / name) for name in expected_job_names
     }
