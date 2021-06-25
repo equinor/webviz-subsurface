@@ -1,4 +1,4 @@
-EXECUTABLE export_connection_status
+EXECUTABLE well_connection_status
 
 ARGLIST <INPUT> <OUTPUT>
 

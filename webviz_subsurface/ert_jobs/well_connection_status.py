@@ -26,7 +26,7 @@ EXAMPLES: str = """
 Extracts connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
-    FORWARD_MODEL EXPORT_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/connection_status.parquet)
+    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/connection_status.parquet)
 
 """  # noqa
 
@@ -46,7 +46,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "output",
         type=Path,
         help="Output file",
-        default=Path() / "share" / "results" / "tables" / "connection_status.parquet",
+        default=Path() / "share" / "results" / "tables" / "well_connection_status.parquet",
     )
     return parser
 
@@ -68,9 +68,9 @@ def _get_status_changes(
     return status_changes
 
 
-def _extract_connection_status(filename: Path) -> pd.DataFrame:
+def _extract_well_connection_status(filename: Path) -> pd.DataFrame:
     # pylint: disable=too-many-locals
-    """Exctracts connection status history for each compdat connection that
+    """Exctracts well connection status history for each compdat connection that
     is included in the summary data on the form CPI:WELL,I,J,K.
 
     From the CPI time series it is possible to extract the status of the connection
@@ -112,7 +112,7 @@ def main() -> None:
     parser = _get_parser()
     args = parser.parse_args()
 
-    df = _extract_connection_status(args.input)
+    df = _extract_well_connection_status(args.input)
     df.to_parquet(args.output, index=False)
 
 
