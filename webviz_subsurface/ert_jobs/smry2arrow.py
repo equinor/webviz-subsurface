@@ -90,8 +90,6 @@ def _load_smry_into_table(smry_filename: str) -> pa.Table:
 
     eclsum = EclSum(smry_filename, include_restart=False, lazy_load=False)
 
-    # Unclear what the difference between these two is, but it seems that
-    # EclSum.pandas_frame() internally uses EclSumKeyWordVector
     # For now, we go via a set to prune out duplicate entries being returned by EclSumKeyWordVector,
     # see: https://github.com/equinor/ecl/issues/816#issuecomment-865881283
     column_names: List[str] = list(set(EclSumKeyWordVector(eclsum, add_keywords=True)))
