@@ -23,12 +23,12 @@ Export connection status data on sparse form from CPI summary data.
 """
 CATEGORY: str = "utility.eclipse"
 EXAMPLES: str = """
-Extracts connection status history from the .UNSMRY file by running
+Extracts well connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
     FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/well_connection_status.parquet)
 
-"""  # noqa
+"""
 
 
 def _get_parser() -> argparse.ArgumentParser:
