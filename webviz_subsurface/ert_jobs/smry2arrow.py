@@ -50,7 +50,8 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# TODO(Sigurd) This function should be shared with export_connection_status.py
+# This logic is copied from well_connection_status.py.
+# Should be refactored so that the two modules share a common implementation.
 def _is_cpi_column(column_name: str) -> bool:
     return bool(re.match("^CPI:[A-Z0-9_-]{1,8}:[0-9]+,[0-9]+,[0-9]+$", column_name))
 
