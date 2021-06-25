@@ -34,7 +34,7 @@ RUNPATH          {runpath}
 NUM_REALIZATIONS 1
 QUEUE_OPTION     LSF MAX_RUNNING 1
 QUEUE_SYSTEM     LOCAL
-FORWARD_MODEL    EXPORT_CONNECTION_STATUS(<INPUT>={input_file}, <OUTPUT>={output_file})
+FORWARD_MODEL    WELL_CONNECTION_STATUS(<INPUT>={input_file}, <OUTPUT>={output_file})
 """
     )
 
@@ -54,7 +54,7 @@ def expected_jobs():
         / "webviz_subsurface"
         / "ert_jobs"
     )
-    expected_job_names = ["EXPORT_CONNECTION_STATUS"]
+    expected_job_names = ["WELL_CONNECTION_STATUS"]
     return {
         name: str(config_location / "config_jobs" / name) for name in expected_job_names
     }
