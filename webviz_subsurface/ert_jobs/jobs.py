@@ -56,7 +56,7 @@ def _get_module_variable_if_exists(
     plugin_name="webviz-subsurface"
 )
 def job_documentation(job_name: str) -> Optional[dict]:
-    webviz_subsurface_jobs = set(installable_jobs().keys())
+    webviz_subsurface_jobs = set(installable_jobs().data.keys())
     if job_name not in webviz_subsurface_jobs:
         return None
 
