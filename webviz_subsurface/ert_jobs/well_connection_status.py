@@ -46,7 +46,11 @@ def _get_parser() -> argparse.ArgumentParser:
         "output",
         type=Path,
         help="Output file",
-        default=Path() / "share" / "results" / "tables" / "well_connection_status.parquet",
+        default=Path()
+        / "share"
+        / "results"
+        / "tables"
+        / "well_connection_status.parquet",
     )
     return parser
 

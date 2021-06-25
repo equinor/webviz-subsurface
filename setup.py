@@ -71,7 +71,7 @@ setup(
         ],
         "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
         "console_scripts": [
-            "export_connection_status=webviz_subsurface.ert_jobs.export_connection_status:main",
+            "well_connection_status=webviz_subsurface.ert_jobs.well_connection_status:main",
         ],
     },
     install_requires=[

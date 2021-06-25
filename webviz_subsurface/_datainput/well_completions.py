@@ -123,21 +123,21 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     return None
 
 
-def read_connection_status(
-    ensemble_path: str, connection_status_file: str
+def read_well_connection_status(
+    ensemble_path: str, well_connection_status_file: str
 ) -> Optional[pd.DataFrame]:
-    """Reads parquet file with connection status data from the scratch disk.
+    """Reads parquet file with well connection status data from the scratch disk.
     Merges together files from all realizations, does some fixing of the column
     data types, and returns it as a pandas dataframe.
 
     fmu-ensemble is used to find the file names on the scratch disk
 
-    The connection status data is extracted from the CPI data, which is 0 if the
+    The well connection status data is extracted from the CPI data, which is 0 if the
     connection is SHUT and >0 if the connection is OPEN. This is independent of
     the status of the well.
     """
     ens = ScratchEnsemble("ens", ensemble_path)
-    df_files = ens.find_files(connection_status_file)
+    df_files = ens.find_files(well_connection_status_file)
 
     if df_files.empty:
         return None
