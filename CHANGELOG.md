@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#669](https://github.com/equinor/webviz-subsurface/pull/669) - New generic plugin to visualize tornado plots from a csv file of responses.
+- [#685](https://github.com/equinor/webviz-subsurface/pull/685) - Added ERT forward model to convert from `.UNSMRY` to Arrow IPC file format (`.arrow`)
 
 ### Changed
 - [#681](https://github.com/equinor/webviz-subsurface/pull/681) - `VolumetricAnalysis` upgrades - added page with tornadoplots to `VolumetricAnalysis`, automatic computation of volumes
