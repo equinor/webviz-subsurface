@@ -15,6 +15,7 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 from webviz_subsurface._components import TornadoWidget
 from .._datainput.inplace_volumes import extract_volumes
@@ -23,6 +24,9 @@ from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import table_statistics_base
 
 
+@deprecated_plugin(
+    "Relevant functionality is implemented in the VolumetricAnalysis plugin."
+)
 class InplaceVolumesOneByOne(WebvizPluginABC):
     # pylint: disable=too-many-instance-attributes
     """Visualizes inplace volumetrics related to a FMU ensemble with a design matrix.
