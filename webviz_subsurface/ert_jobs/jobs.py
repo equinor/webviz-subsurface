@@ -36,7 +36,8 @@ def installable_jobs() -> dict:
         resource_filename("webviz_subsurface", "ert_jobs/config_jobs")
     )
     return {
-        "EXPORT_CONNECTION_STATUS": str(resource_directory / "EXPORT_CONNECTION_STATUS")
+        "WELL_CONNECTION_STATUS": str(resource_directory / "WELL_CONNECTION_STATUS"),
+        "SMRY2ARROW": str(resource_directory / "SMRY2ARROW"),
     }
 
 
@@ -56,7 +57,9 @@ def _get_module_variable_if_exists(
     plugin_name="webviz-subsurface"
 )
 def job_documentation(job_name: str) -> Optional[dict]:
-    webviz_subsurface_jobs = set(installable_jobs().keys())
+    webviz_subsurface_jobs = set(
+        installable_jobs().data.keys()  # pylint: disable=no-member
+    )
     if job_name not in webviz_subsurface_jobs:
         return None
 

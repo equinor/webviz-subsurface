@@ -1,4 +1,4 @@
-EXECUTABLE export_connection_status
+EXECUTABLE smry2arrow
 
 ARGLIST <INPUT> <OUTPUT>
 

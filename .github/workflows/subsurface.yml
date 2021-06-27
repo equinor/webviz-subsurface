@@ -87,7 +87,7 @@ jobs:
 
     - name: 🐳 Build Docker example image
       run: |
-        pip install webviz-config-equinor
+        pip install --pre webviz-config-equinor
         export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
         export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
         webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor

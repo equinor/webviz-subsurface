@@ -1,0 +1,5 @@
+EXECUTABLE well_connection_status
+
+ARGLIST <INPUT> <OUTPUT>
+
+MIN_ARG 2
