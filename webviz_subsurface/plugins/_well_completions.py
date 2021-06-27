@@ -260,26 +260,21 @@ class WellCompletions(WebvizPluginABC):
             children=[
                 wcc.FlexBox(
                     children=[
-                        wcc.Frame(
-                            style={"flex": "1", "padding": "10px"},
-                            color="white",
-                            highlight=False,
-                            children=wcc.Selectors(
-                                label="Ensemble",
-                                children=[
-                                    wcc.Dropdown(
-                                        id=self.uuid("ensemble_dropdown"),
-                                        options=[
-                                            {"label": ens, "value": ens}
-                                            for ens in self.ensembles
-                                        ],
-                                        clearable=False,
-                                        value=self.ensembles[0],
-                                        persistence=True,
-                                        persistence_type="session",
-                                    ),
-                                ],
-                            ),
+                        wcc.Selectors(
+                            label="Ensemble",
+                            children=[
+                                wcc.Dropdown(
+                                    id=self.uuid("ensemble_dropdown"),
+                                    options=[
+                                        {"label": ens, "value": ens}
+                                        for ens in self.ensembles
+                                    ],
+                                    clearable=False,
+                                    value=self.ensembles[0],
+                                    persistence=True,
+                                    persistence_type="session",
+                                ),
+                            ],
                         ),
                         html.Div(style={"flex": 4}),
                     ],
