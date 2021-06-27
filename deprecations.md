@@ -1,7 +1,7 @@
 ## Deprecated plugins
 ### Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.3` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.4rc0` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -204,6 +204,143 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 * `GIIP_GAS`: Gas Initially In Place
 * `RECOVERABLE_OIL`: Recoverable Volume (Oil)
 * `RECOVERABLE_GAS`: Recoverable Volume (Gas)
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
+##### InplaceVolumesOneByOne
+
+> :warning: Plugin 'InplaceVolumesOneByOne' has been deprecated.
+
+Relevant functionality is implemented in the VolumetricAnalysis plugin.
+
+
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+Visualizes inplace volumetrics related to a FMU ensemble with a design matrix.
+
+Input can be given either as an aggregated `csv` file for volumes and sensitivity information,
+or as ensemble name(s) defined in `shared_settings` and volumetric `csv` files
+stored per realization.
+
+
+ 
+
+<!-- tab:Arguments -->
+
+
+* **`csvfile_vol`:** Aggregated csvfile for volumes with `REAL`, `ENSEMBLE` and `SOURCE` columns.
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`csvfile_parameters`:** Aggregated csvfile of parameters for sensitivity information with `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns.
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize (not to be used with `csvfile_vol` and `csvfile_parameters`).
+
+*default = null, Optional, type list*
+
+
+---
+
+* **`volfiles`:** Key/value pair of csv files when using `ensembles`. E.g. `{geogrid: geogrid--oil.csv}`.
+
+*default = null, Optional, type dict*
+
+
+---
+
+* **`volfolder`:** Optional local folder for the `volfiles`.
+
+*default = "share/results/volumes", Optional, type str*
+
+
+---
+
+* **`response`:** Optional volume response to visualize initially.
+
+*default = "STOIIP_OIL", Optional, type str*
+
+
+---
+
+
+
+How to use in YAML config file:
+```yaml
+    - InplaceVolumesOneByOne:
+        csvfile_vol:  # Optional, type str (corresponding to a path).
+        csvfile_parameters:  # Optional, type str (corresponding to a path).
+        ensembles:  # Optional, type list.
+        volfiles:  # Optional, type dict.
+        volfolder:  # Optional, type str.
+        response:  # Optional, type str.
+```
+
+   
+
+<!-- tab:Data input -->
+
+?> The input files must follow FMU standards.
+
+
+**Volumetric input**
+
+* [Example of an aggregated file for `csvfile_vol`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+
+The following columns will be used as available filters, if present:
+
+* `ZONE`
+* `REGION`
+* `FACIES`
+* `LICENSE`
+* `SOURCE` (relevant if calculations are done for multiple grids)
+
+
+Remaining columns are seen as volumetric responses.
+
+All names are allowed (except those mentioned above, in addition to `REAL` and `ENSEMBLE`), but the following responses are given more descriptive names automatically:
+
+* `BULK_OIL`: Bulk Volume (Oil)
+* `NET_OIL`: Net Volume (Oil)
+* `PORE_OIL`: Pore Volume (Oil)
+* `HCPV_OIL`: Hydro Carbon Pore Volume (Oil)
+* `STOIIP_OIL`: Stock Tank Oil Initially In Place
+* `BULK_GAS`: Bulk Volume (Gas)
+* `NET_GAS`: Net Volume (Gas)
+* `PORV_GAS`: Pore Volume (Gas)
+* `HCPV_GAS`: Hydro Carbon Pore Volume (Gas)
+* `GIIP_GAS`: Gas Initially In Place
+* `RECOVERABLE_OIL`: Recoverable Volume (Oil)
+* `RECOVERABLE_GAS`: Recoverable Volume (Gas)
+
+**Sensitivity input**
+
+The sensitivity information is extracted automatically if `ensembles` is given as input,
+as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.
+
+An example of an aggregated file to use with `csvfile_parameters`
+[can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
 
  
 

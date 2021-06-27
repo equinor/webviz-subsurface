@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.3` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.4rc0` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -458,6 +458,12 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 <div class="plugin-doc">
 
 #### InplaceVolumesOneByOne
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'InplaceVolumesOneByOne' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the VolumetricAnalysis plugin.
+</details>
 
 
 <!-- tabs:start -->
@@ -2816,6 +2822,94 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 
 <div class="plugin-doc">
 
+#### TornadoPlotterFMU
+
+
+<!-- tabs:start -->
+   
+
+<!-- tab:Description -->
+
+General tornado plotter for FMU data from a csv file of responses.
+
+ 
+
+<!-- tab:Arguments -->
+
+
+* **`csvfile`:** Relative ensemble path to csv file with responses
+
+*default = null, Optional, type str*
+
+
+---
+
+* **`ensemble`:** 
+
+*default = null, Optional, type str*
+
+
+---
+
+* **`aggregated_csvfile`:** Alternative to ensemble + csvfile with aggregated responses. Requires REAL and ENSEMBLE columns
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`aggregated_parameterfile`:** Necessary when aggregated_csvfile is specified. File with sensitivity specification for each realization. Requires columns REAL, ENSEMBLE, SENSNAME and SENSCASE.
+
+*default = null, Optional, type str (corresponding to a path)*
+
+
+---
+
+* **`initial_response`:** Initialize plugin with this response column visualized
+
+*default = null, Optional, type str*
+
+
+---
+
+* **`single_value_selectors`:** List of columns in response csv file that should be used to select/filter data. E.g. for UNSMRY data the DATE column can be used. For each entry a Dropdown is shown with all unique values and a single value can be selected at a time.
+
+*default = null, Optional, type List[str]*
+
+
+---
+
+* **`multi_value_selectors`:** List of columns in response csv file to filter/select data. For each entry a Select is shown with all unique values. Multiple values can be selected at a time, and a tornado plot will be shown from the matching response rows. Used e.g. for volumetrics data, to select a subset of ZONES and REGIONS.
+
+*default = null, Optional, type List[str]*
+
+
+---
+
+
+
+How to use in YAML config file:
+```yaml
+    - TornadoPlotterFMU:
+        csvfile:  # Optional, type str.
+        ensemble:  # Optional, type str.
+        aggregated_csvfile:  # Optional, type str (corresponding to a path).
+        aggregated_parameterfile:  # Optional, type str (corresponding to a path).
+        initial_response:  # Optional, type str.
+        single_value_selectors:  # Optional, type List[str].
+        multi_value_selectors:  # Optional, type List[str].
+```
+
+ 
+
+<!-- tabs:end -->
+
+</div>
+
+
+
+<div class="plugin-doc">
+
 #### VolumetricAnalysis
 
 
@@ -2831,7 +2925,12 @@ This plugin supports both monte carlo and sensitivity runs, and will automatical
 which case has been run.
 
 The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
-is removed and a `FLUID` column is added to be used as a filter or selector.
+is removed and a `FLUID_ZONE` column is added to be used as a filter or selector. Volumes from
+the Water zone will be calculated if Total volumes are included.
+
+Property columns (e.g. PORO, SW) are automatically computed from the data as long as
+relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES column
+by defining which facies are non-net.
 
 Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
@@ -2842,14 +2941,14 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 <!-- tab:Arguments -->
 
 
-* **`csvfile_vol`:** 
+* **`csvfile_vol`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file).
 
 *default = null, Optional, type str (corresponding to a path)*
 
 
 ---
 
-* **`csvfile_parameters`:** 
+* **`csvfile_parameters`:** Aggregated csvfile with parameter data (absolute path or relative to config file).`REAL` and `ENSEMBLE` are mandatory columns. **Using data stored per realization**
 
 *default = null, Optional, type str (corresponding to a path)*
 
@@ -2870,16 +2969,16 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 
 ---
 
-* **`volfolder`:** Local folder for the `volfiles`.
+* **`volfolder`:** Local folder for the `volfiles`. **Common settings**
 
 *default = "share/results/volumes", Optional, type str*
 
 
 ---
 
-* **`drop_constants`:** 
+* **`non_net_facies`:** List of facies which are non-net.
 
-*default = true, Optional, type bool*
+*default = null, Optional, type Union[typing.List[str], NoneType]*
 
 
 ---
@@ -2894,7 +2993,7 @@ How to use in YAML config file:
         ensembles:  # Optional, type list.
         volfiles:  # Optional, type dict.
         volfolder:  # Optional, type str.
-        drop_constants:  # Optional, type bool.
+        non_net_facies:  # Optional, type Union[typing.List[str], NoneType].
 ```
 
    
@@ -2966,6 +3065,13 @@ Visualizes well completions data per well coming from export of the Eclipse COMP
 
 ---
 
+* **`well_connection_status_file`:** `.parquet` file with well connection status data per realization
+
+*default = "share/results/tables/well_connection_status.parquet", Optional, type str*
+
+
+---
+
 * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
 
 *default = "rms/output/zone/simgrid_zone_layer_mapping.lyr", Optional, type str*
@@ -3008,6 +3114,7 @@ How to use in YAML config file:
     - WellCompletions:
         ensembles:  # Required, type list.
         compdat_file:  # Optional, type str.
+        well_connection_status_file:  # Optional, type str.
         zone_layer_mapping_file:  # Optional, type str.
         stratigraphy_file:  # Optional, type str.
         well_attributes_file:  # Optional, type str.
@@ -3023,12 +3130,28 @@ The minimum requirement is to define `ensembles`.
 
 **COMPDAT input**
 
-`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/wells/compdat.csv`.
+`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/wells/compdat.csv`).
 
 The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
 wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
 installed).
 [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+
+The connection status history of each cell is not necessarily complete in the `ecl2df` export,
+because status changes resulting from ACTIONs can't be extracted from the Eclipse input
+files. If the `ecl2df` export is good, it is recommended to use that. This will often be the
+case for history runs. But if not, an alternative way of extracting the data is described in
+the next section.
+
+**Well Connection status input**
+
+The `well_connection_status_file` is a path to a file stored per realization (e.g. in     `share/results/tables/well_connection_status.parquet`.
+
+This file can be exported from the ERT workflow by a forward model: `WELL_CONNECTION_STATUS`.
+This forward model uses the CPI summary data to create a well connection status history: for
+each well connection cell there is one line for each time the connection is opened or closed.
+
+This data is sparse, but be aware that the CPI summary data can potentially become very large.
 
 **Zone layer mapping**
 
@@ -3053,10 +3176,10 @@ realization. The stratigraphy is a tree structure, where each node has a name, a
         "color": "#FFFFFF",
         "subzones": [
             {
-                "name": "ZoneA.1
+                "name": "ZoneA.1"
             },
             {
-                "name": "ZoneA.2
+                "name": "ZoneA.2"
             }
         ]
     },
@@ -3069,7 +3192,7 @@ realization. The stratigraphy is a tree structure, where each node has a name, a
                 "color": "#FFF111"
             },
             {
-                "name": "ZoneB.2,
+                "name": "ZoneB.2",
                 "subzones: {"name": "ZoneB.2.2"}
             }
         ]
@@ -3093,28 +3216,28 @@ The file should be a `.json` file on the following format:
 {
     "version" : "0.1",
     "wells" : [
-    {
-        "alias" : {
-            "eclipse" : "OP_1"
+        {
+            "alias" : {
+                "eclipse" : "OP_1"
+            },
+            "attributes" : {
+                "mlt_singlebranch" : "mlt",
+                "structure" : "East",
+                "welltype" : "producer"
+            },
+            "name" : "OP_1"
         },
-        "attributes" : {
-            "mlt_singlebranch" : "mlt",
-            "structure" : "East",
-            "welltype" : "producer"
+        {
+            "alias" : {
+                "eclipse" : "GI_1"
+            },
+            "attributes" : {
+                "mlt_singlebranch" : "singlebranch",
+                "structure" : "West",
+                "welltype" : "gas injector"
+            },
+            "name" : "GI_1"
         },
-        "name" : "OP_1"
-    },
-    {
-        "alias" : {
-            "eclipse" : "GI_1"
-        },
-        "attributes" : {
-            "mlt_singlebranch" : "singlebranch",
-            "structure" : "West",
-            "welltype" : "gas injector"
-        },
-        "name" : "GI_1"
-    },
     ]
 }
 ```

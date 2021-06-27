@@ -120,17 +120,36 @@ webviz preferences --theme equinor --browser firefox
 
 #### YAML schema
 
-By running `webviz schema` you will get a YAML (or technically, a JSON) schema which you can use in text editors, which then will
-help you with auto-completion, detect mistakes immediately, and get hover description on different plugins.
+If you are using an editor that supports YAML file validation towards a schema (like Visual Studio Code),
+Webviz can provide your editor with a schema which then will help you with e.g. auto-completion,
+detect mistakes immediately and get hover description on different plugins.
 
-If you are using Visual Studio Code, we recommend [Red Hat's YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml). After installing the extension, and adding something like
-```json
-{
-  ...
-  "yaml.schemas": { "file:///some/path/to/your/webviz_schema.json": ["*webviz*.yml", "*webviz*.yaml"]}
-}
-```
-to your `settings.json` file, you will get help from the editor on YAML files following the namepatterns to the right (might have to restart the editor after updating the settings).
+##### Visual Studio Code
+
+If you are using [Visual Studio Code](https://code.visualstudio.com/) as editor you can
+follow these steps in order to enable validation:
+
+1) Open Visual Studio Code by e.g. running the command `code`
+2) From there, open the "Extension Marketplace" by e.g. `Ctrl`+`Shift`+`X`
+3) Search for the extension `redhat.vscode-yaml` (which is [Red Hat's YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml))
+4) Click `Install`
+5) Open `settings.json` by e.g. `Ctrl`+`,`
+6) Search for the setting `Yaml: Schemas` and click "Edit in `settings.json`"
+7) Between `yaml.schemas: {` and the following `}` insert:
+    ```json
+    "PATH_TO_YOUR_SCHEMA": ["*webviz*.{yml, yaml}"]
+    ```
+   where you replace `PATH_TO_YOUR_SCHEMA` with what you get from one of these options:
+      * Use [one of the online URLs](https://equinor.github.io/webviz-awesome/)
+        where regularly updated schemas are hosted.
+      * Run `webviz schema` and use the file path the schema is written to.
+        Note that if you use this option you need to rerun `webviz schema`
+        when you update or install new plugin projects in order to
+        keep the schema used by the editor updated with what is actually installed.
+
+After these steps you will start getting help from the editor on YAML files
+having `webviz` as part of the filename. You might have to restart the editor
+after updating the settings.
 
 #### Logging
 
