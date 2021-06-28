@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable, Optional
+from typing import List, Dict, Union, Tuple, Callable, Optional, Iterator
 import sys
 from pathlib import Path
 import json
@@ -23,15 +23,12 @@ from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface_components as wsc
-
-
 import webviz_subsurface
 
-from webviz_subsurface_components.VectorCalculatorWrapper import (
+from webviz_subsurface_components import (
+    ExpressionInfo,
     ExternalParseData,
-    ConfigExpressionData,
 )
-
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
@@ -56,7 +53,8 @@ from .._datainput.from_timeseries_cumulatives import (
     rename_vec_from_cum,
 )
 from .._utils.vector_calculator import (
-    ExpressionInfo,
+    ConfigExpressionData,
+    expressions_from_config,
     get_calculated_units,
     get_calculated_vectors,
     get_selected_expressions,
@@ -314,12 +312,12 @@ folder, to avoid risk of not extracting the right data.
             predefined_expressions_data: Dict[str, ConfigExpressionData] = json.load(
                 file
             )
-            self.predefined_expressions = wsc.VectorCalculator.expressions_from_config(
+            self.predefined_expressions = expressions_from_config(
                 predefined_expressions_data
             )
 
         # Get predefined expressions data
-        self.expressions_data = self._get_vector_data_from_expressions(
+        self.expressions_data = self._vector_data_from_expressions(
             self.predefined_expressions
         )
 
@@ -344,34 +342,54 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @staticmethod
-    def _add_vector(vector_data: list, vector: str, description: str) -> None:
-        split = vector.split(":")
-
-        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
-            vector_data.append(
-                {
-                    "name": split[0],
-                    "description": description,
-                    "children": [],
-                }
-            )
-
-        if len(split) == 2:
-            for x in vector_data:
-                if x["name"] == split[0]:
-                    if (
-                        next(
-                            (y for y in x["children"] if y["name"] == split[1]),
-                            None,
-                        )
-                        is None
-                    ):
-                        x["children"].append(
-                            {
-                                "name": split[1],
-                            }
-                        )
+    def _add_vector(
+        vector_data: list,
+        vector: str,
+        description: str,
+        description_at_last_node: bool = False,
+    ) -> None:
+        nodes = vector.split(":")
+        current_child_list = vector_data
+        for index, node in enumerate(nodes):
+            found = False
+            for child in current_child_list:
+                if child["name"] == node:
+                    current_child_list = child["children"]
+                    found = True
                     break
+            if not found:
+                description_text = description if index == 0 else ""
+                if description_at_last_node:
+                    description_text = description if index == len(nodes) - 1 else ""
+                current_child_list.append(
+                    {
+                        "name": node,
+                        "description": description_text,
+                        "children": [] if index < len(nodes) - 1 else None,
+                    }
+                )
+                current_child_list = current_child_list[-1]["children"]
+
+    @staticmethod
+    def _add_expression(expression_data: list, name: str, expression: str) -> None:
+        ReservoirSimulationTimeSeries._add_vector(
+            expression_data, name, expression, True
+        )
+
+    @staticmethod
+    def _is_vector_existing(vector_data: list, vector: str) -> bool:
+        nodes = vector.split(":")
+        current_child_list = vector_data
+        for node in nodes:
+            found = False
+            for child in current_child_list:
+                if child["name"] == node:
+                    current_child_list = child["children"]
+                    found = True
+                    break
+            if not found:
+                return False
+        return found
 
     @property
     def ens_colors(self) -> dict:
@@ -792,27 +810,6 @@ folder, to avoid risk of not extracting the right data.
             ],
         )
 
-    @staticmethod
-    def _is_vector_existing(vector_data: list, vector: str) -> bool:
-        # TODO: What if len(split) is larger than 2? Not allowed or no possible?
-        split = vector.split(":")
-
-        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
-            return False
-
-        if len(split) == 2:
-            for x in vector_data:
-                if x["name"] == split[0]:
-                    if (
-                        next(
-                            (y for y in x["children"] if y["name"] == split[1]),
-                            None,
-                        )
-                        is None
-                    ):
-                        return False
-        return True
-
     def _get_valid_vector_selections(
         self,
         vector_data: list,
@@ -848,9 +845,7 @@ folder, to avoid risk of not extracting the right data.
 
         return valid_selections
 
-    def _get_vector_data_from_expressions(
-        self, expressions: List[ExpressionInfo]
-    ) -> list:
+    def _vector_data_from_expressions(self, expressions: List[ExpressionInfo]) -> list:
         data: list = []
         for elm in expressions:
             if not elm["isValid"]:
@@ -859,9 +854,7 @@ folder, to avoid risk of not extracting the right data.
             name = elm["name"]
             expression = elm["expression"]
 
-            # Prevent duplicates among expressions
-            if not any([elm == name for elm in data]):
-                self._add_vector(data, name, expression)
+            self._add_expression(data, name, expression)
         return data
 
     # pylint: disable=too-many-statements
@@ -1296,8 +1289,8 @@ folder, to avoid risk of not extracting the right data.
                 raise PreventUpdate
 
             # TODO: Add check if self.get_vector_data_from_expression data is not among self.vector_data
-            # or parse expression name from react comp in python (external name parsing?) before save
-            vector_data = self.vector_data + self._get_vector_data_from_expressions(
+            # or handle in react component? (React component has vector data for its vector selector)
+            vector_data = self.vector_data + self._vector_data_from_expressions(
                 new_expressions
             )
 

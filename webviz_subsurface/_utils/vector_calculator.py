@@ -1,12 +1,73 @@
 from typing import List, Dict
 import pandas as pd
+import sys
+
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8:
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
+from uuid import uuid4
 
 from webviz_config.common_cache import CACHE
-
 from webviz_subsurface_components import (
     VectorCalculator,
     ExpressionInfo,
+    VariableVectorMapInfo,
 )
+
+
+class ConfigExpressionData(TypedDict):
+    """Type definition for configuration of pre-defined calculated expressions
+
+    Simplified data type to pre-define expressions for user.
+
+    The ConfigExpressionData instance name is the name of the expression - i.e.
+    when using a dictionary of ConfigExpressionData the expression name is the dict key
+
+    expression: str, mathematical expression
+    variableVectorMap: Dict[str,str], Dictionary with {key, value} = {variableName, vectorName}
+    """
+
+    expression: str
+    variableVectorMap: Dict[str, str]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def variable_vector_map_from_dict(
+    variable_vector_dict: Dict[str, str]
+) -> List[VariableVectorMapInfo]:
+    variable_vector_map: List[VariableVectorMapInfo] = []
+    for variable in variable_vector_dict:
+        variable_vector_map.append(
+            {
+                "variableName": variable,
+                "vectorName": [variable_vector_dict[variable]],
+            }
+        )
+    return variable_vector_map
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def expressions_from_config(
+    expressions: Dict[str, ConfigExpressionData],
+) -> List[ExpressionInfo]:
+    output: List[ExpressionInfo] = []
+
+    for expression in expressions:
+        output.append(
+            {
+                "name": expression,
+                "expression": expressions[expression]["expression"],
+                "id": f"{uuid4()}",
+                "variableVectorMap": variable_vector_map_from_dict(
+                    expressions[expression]["variableVectorMap"]
+                ),
+                "isValid": True,
+                "isDeletable": False,
+            }
+        )
+    return output
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
