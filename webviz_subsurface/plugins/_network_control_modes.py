@@ -105,13 +105,11 @@ class NetworkControlModes(WebvizPluginABC):
                     id=self.uuid("node_type"),
                     style={"marginTop": "15px"},
                     children=[
-                        html.Label(
-                            "Node type", style={"backgroundColor": "transparent", "fontWeight": "bold"}
-                        ),
-                        dcc.RadioItems(
-                            id=self.uuid("node_type_radioitems"),
-                            className="block-options",
-                            options=[
+                        wcc.RadioItems(
+                            label = "Node type",
+                            vertical = False,
+                            wrapper_id = self.uuid("node_type_radioitems"),
+                            options = [
                                 {
                                     "label": "Well",
                                     "value": "well",
@@ -122,8 +120,6 @@ class NetworkControlModes(WebvizPluginABC):
                                 }
                             ],
                             value="well",
-                            persistence=True,
-                            persistence_type="session",
                         )
                     ]
                 ),
