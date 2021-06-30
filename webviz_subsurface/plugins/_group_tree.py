@@ -207,7 +207,7 @@ def get_node_smry(node, node_type, smry_in_datespan, dates) -> pd.DataFrame:
     for date in dates:
         smry_at_date = smry_in_datespan[smry_in_datespan.DATE==date]
         smry_mean = smry_at_date[sumvecs.values()].mean()
-        for key in sumvecs:
+        for key, sumvec in sumvecs.items():
             output[key].append(round(smry_mean.loc[sumvec],2))
     return output
 
