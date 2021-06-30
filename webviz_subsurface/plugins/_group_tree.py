@@ -124,34 +124,41 @@ def create_ensemble_dataset(
         ensemble_paths={ensemble: ensemble_path}, csv_file=gruptree_file
     )
     df_gruptrees.DATE = pd.to_datetime(df_gruptrees.DATE).dt.date
-    trees = {}
+    #smry.DATE = pd.to_datetime(smry.DATE).dt.date
+    trees = []
 
-    count = 0
-    for date, smry_at_date in smry.groupby("DATE"):
-        count += 1
-        prev_gruptrees_date = df_gruptrees[df_gruptrees.DATE <= date].DATE.max()
-        group_nodes = df_gruptrees[df_gruptrees.DATE == prev_gruptrees_date]
-        trees[date.strftime("%Y-%m-%d")] = extract_tree(
-            group_nodes, "FIELD", smry_at_date
+    # loop trees
+    for tree_date, df_gruptree in df_gruptrees.groupby("DATE"):
+        next_tree_date = df_gruptrees[df_gruptrees.DATE>tree_date].DATE.min()
+        if pd.isna(next_tree_date):
+            next_tree_date = smry.DATE.max()
+        smry_in_datespan = smry[(smry.DATE>=tree_date) & (smry.DATE<next_tree_date)]
+        dates = list(smry_in_datespan.DATE.unique())
+        # str_dates = [date.strftime("%Y-%m-%d") for date in dates]
+        # print(
+        #     f"from date: {tree_date} "
+        #     f"next_date: {next_tree_date} "
+        #     f"dates: {str_dates} "
+        # )
+        trees.append(
+            {
+                "dates": [date.strftime("%Y-%m-%d") for date in dates],
+                "tree": extract_tree(df_gruptree, "FIELD", smry_in_datespan, dates)
+            }
+
         )
-    print(f"{count} dates")
-    print(f"{len(list(df_gruptrees.DATE.unique()))} trees")
 
-    # for date, group_nodes in df_gruptrees.groupby("DATE"):
-    #    trees[date] = extract_tree(group_nodes.reset_index(), "FIELD")
-
-    result = {"iterations": {ensemble: {"trees": trees}}}
-    with open("/private/olind/webviz/grouptree_example.json", "w") as handle:
-        json.dump(result, handle)
+    with open(f"/private/olind/webviz/grouptree_suggested_format_{ensemble}.json", "w") as handle:
+        json.dump(trees, handle)
         print("output exported")
 
-    return io.BytesIO(json.dumps(result).encode())
+    return io.BytesIO(json.dumps(trees).encode())
 
 
-def extract_tree(df_gruptree, node, smry) -> dict:
+def extract_tree(df_gruptree, node, smry_in_datespan, dates) -> dict:
     """Description"""
     node_type = df_gruptree[df_gruptree.CHILD == node].KEYWORD.iloc[0]
-    node_values = get_node_smry(node, node_type, smry)
+    node_values = get_node_smry(node, node_type, smry_in_datespan, dates)
     result = {
         "name": node,
         "pressure": node_values["pressure"],
@@ -163,13 +170,13 @@ def extract_tree(df_gruptree, node, smry) -> dict:
     children = list(df_gruptree[df_gruptree.PARENT == node].CHILD.unique())
     if children:
         result["children"] = [
-            extract_tree(df_gruptree, child_node, smry)
+            extract_tree(df_gruptree, child_node, smry_in_datespan, dates)
             for child_node in df_gruptree[df_gruptree.PARENT == node].CHILD.unique()
         ]
     return result
 
 
-def get_node_smry(node, node_type, smry) -> pd.DataFrame:
+def get_node_smry(node, node_type, smry_in_datespan, dates) -> pd.DataFrame:
     """Description"""
     if node == "FIELD":
         sumvecs = {
@@ -193,10 +200,16 @@ def get_node_smry(node, node_type, smry) -> pd.DataFrame:
             "pressure": f"WTHP:{node}",
         }
     for sumvec in sumvecs.values():
-        if sumvec not in smry.columns:
-            smry[sumvec] = np.nan
-    df = smry[sumvecs.values()].mean()
-    return {key: round(df.loc[sumvec],2) for key, sumvec in sumvecs.items()}
+        if sumvec not in smry_in_datespan.columns:
+            smry_in_datespan[sumvec] = np.nan
+
+    output = {"pressure":[], "oilrate":[], "waterrate":[], "gasrate":[]}
+    for date in dates:
+        smry_at_date = smry_in_datespan[smry_in_datespan.DATE==date]
+        smry_mean = smry_at_date[sumvecs.values()].mean()
+        for key in sumvecs:
+            output[key].append(round(smry_mean.loc[sumvec],2))
+    return output
 
 
 def load_smry(ensemble: str, ensemble_path: str, time_index: str) -> pd.DataFrame:
