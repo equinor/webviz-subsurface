@@ -419,7 +419,7 @@ class TornadoWidget:
                 client_height * 0.59
                 if "Fit all bars in figure" in plot_options
                 and client_height is not None
-                else 100 * len(tornado_data.tornadotable["sensname"].unique())
+                else max(100 * len(tornado_data.tornadotable["sensname"].unique()), 200)
             )
             tornado_figure = TornadoBarChart(
                 tornado_data=tornado_data,
