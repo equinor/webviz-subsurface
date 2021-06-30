@@ -818,17 +818,20 @@ folder, to avoid risk of not extracting the right data.
             )
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
 
-            if "Histogram" in trace_options:
-                # Remove linked x-axis for histograms
-                if "xaxis2" in fig["layout"]:
-                    fig["layout"]["xaxis2"]["matches"] = None
-                    fig["layout"]["xaxis2"]["showticklabels"] = True
-                if "xaxis4" in fig["layout"]:
-                    fig["layout"]["xaxis4"]["matches"] = None
-                    fig["layout"]["xaxis4"]["showticklabels"] = True
-                if "xaxis6" in fig["layout"]:
-                    fig["layout"]["xaxis6"]["matches"] = None
-                    fig["layout"]["xaxis6"]["showticklabels"] = True
+            # Remove linked x-axis for histograms
+            # Keep uirevision (e.g. zoom) for unchanged data.
+            fig["layout"][f"xaxis"]["uirevision"] = f"locked"  # Time axis state kept
+            for i, vector in enumerate(vectors, start=1):
+                if "Histogram" in trace_options:
+                    c0 = "" if i == 1 else i * 2 - 1
+                    fig["layout"][f"xaxis{i*2}"]["matches"] = None
+                    fig["layout"][f"xaxis{i*2}"]["showticklabels"] = True
+                    fig["layout"][f"xaxis{i*2}"]["uirevision"] = f"{vector}"  # _hist"
+                    fig["layout"][f"yaxis{i*2}"]["uirevision"] = f"{vector}"  # _hist"
+                    fig["layout"][f"yaxis{c0}"]["uirevision"] = f"{vector}"  # _hist"
+                else:
+                    c0 = "" if i == 1 else i
+                    fig["layout"][f"yaxis{c0}"]["uirevision"] = f"{vector}"
             return fig
 
         @app.callback(
