@@ -1,9 +1,10 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable, Optional, Iterator
+from typing import List, Dict, Union, Tuple, Callable, Optional
 import sys
 from pathlib import Path
 import json
 import datetime
+import copy
 
 import numpy as np
 import pandas as pd
@@ -316,9 +317,10 @@ folder, to avoid risk of not extracting the right data.
                 predefined_expressions_data
             )
 
-        # Get predefined expressions data
-        self.expressions_data = self._vector_data_from_expressions(
-            self.predefined_expressions
+        # Add predefined expressions to vector selector data
+        self.initial_vector_selector_data = copy.deepcopy(self.vector_data)
+        self._add_expressions_to_vector_data(
+            self.initial_vector_selector_data, self.predefined_expressions
         )
 
         # Check if initially plotted vectors exist in data, raise ValueError if not.
@@ -368,7 +370,8 @@ folder, to avoid risk of not extracting the right data.
                         "children": [] if index < len(nodes) - 1 else None,
                     }
                 )
-                current_child_list = current_child_list[-1]["children"]
+                children = current_child_list[-1]["children"]
+                current_child_list = children if children is not None else []
 
     @staticmethod
     def _add_expression(expression_data: list, name: str, expression: str) -> None:
@@ -689,7 +692,8 @@ folder, to avoid risk of not extracting the right data.
                                 wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
-                                    data=(self.vector_data + self.expressions_data),
+                                    data=self.initial_vector_selector_data,
+                                    placeholder="Add new vector...",
                                     persistence=True,
                                     persistence_type="session",
                                     selectedTags=self.plot_options.get(
@@ -845,17 +849,17 @@ folder, to avoid risk of not extracting the right data.
 
         return valid_selections
 
-    def _vector_data_from_expressions(self, expressions: List[ExpressionInfo]) -> list:
-        data: list = []
-        for elm in expressions:
-            if not elm["isValid"]:
+    def _add_expressions_to_vector_data(
+        self, vector_data: list, expressions: List[ExpressionInfo]
+    ) -> None:
+        for expression in expressions:
+            if not expression["isValid"]:
                 continue
 
-            name = elm["name"]
-            expression = elm["expression"]
+            name = expression["name"]
+            expression = expression["expression"]
 
-            self._add_expression(data, name, expression)
-        return data
+            self._add_expression(vector_data, name, expression)
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: dash.Dash) -> None:
@@ -1288,11 +1292,9 @@ folder, to avoid risk of not extracting the right data.
             if modal_open or (new_expressions == existing_expressions):
                 raise PreventUpdate
 
-            # TODO: Add check if self.get_vector_data_from_expression data is not among self.vector_data
-            # or handle in react component? (React component has vector data for its vector selector)
-            vector_data = self.vector_data + self._vector_data_from_expressions(
-                new_expressions
-            )
+            # Deep copy to prevent modifying self.vector_data
+            vector_data = copy.deepcopy(self.vector_data)
+            self._add_expressions_to_vector_data(vector_data, new_expressions)
 
             new_selected_vectors = self._get_valid_vector_selections(
                 vector_data, selected_vectors, new_expressions, existing_expressions
