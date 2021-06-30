@@ -734,7 +734,7 @@ folder, to avoid risk of not extracting the right data.
                     "title": make_title(self.smry_meta, ref_vector, vector, mode),
                     "showgrid": False,
                 },
-                "xaxis": {"showgrid": False},
+                "xaxis": {"showgrid": False, "uirevision": "locked"},
                 "height": 450,
             }
             if mode == "rec":

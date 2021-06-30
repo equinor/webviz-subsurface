@@ -611,8 +611,10 @@ folder, to avoid risk of not extracting the right data.
                     ""
                     if get_unit(self.smry_meta, vector) is None
                     else f" [{get_unit(self.smry_meta, vector)}]"
-                )
+                ),
+                "uirevision": vector,
             }
+            figure["layout"]["xaxis"] = {"uirevision": "locked"}
             figure["layout"]["legend"] = {
                 "orientation": "h",
                 # "traceorder": "reversed",
