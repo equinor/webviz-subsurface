@@ -20,8 +20,9 @@ from webviz_subsurface._abbreviations.volume_terminology import (
     volume_description,
     volume_unit,
 )
+from webviz_subsurface._figures import create_figure
 from ..utils.utils import update_relevant_components
-from ..figures import create_figure
+
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-branches
 def distribution_controllers(
