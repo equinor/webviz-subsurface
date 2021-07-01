@@ -463,7 +463,11 @@ folder, to avoid risk of not extracting the right data.
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = (
+                self.parameterdf.loc[  # PyCQA/pylint#4577 # pylint: disable=no-member
+                    self.parameterdf["ENSEMBLE"] == ensemble
+                ]
+            )
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
                 ["REAL", parameter, response]
             ]

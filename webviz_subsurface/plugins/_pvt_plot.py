@@ -153,8 +153,8 @@ class PvtPlot(WebvizPluginABC):
     @property
     def phases(self) -> Dict[str, str]:
         phase_descriptions: Dict[str, str] = {}
-        for i in range(0, len(PvtPlot.PHASES)):
-            phase_descriptions[PvtPlot.PHASES[i]] = self.phases_additional_info[i]
+        for i, phase in enumerate(PvtPlot.PHASES):
+            phase_descriptions[phase] = self.phases_additional_info[i]
         return phase_descriptions
 
     @property
@@ -755,13 +755,13 @@ def create_traces(
                         ]
                     )
     if show_border_values:
-        for group in border_value_pressure:
+        for group, group_border_value_pressure in border_value_pressure.items():
             traces.extend(
                 [
                     {
                         "type": "scatter",
                         "mode": ("lines+markers" if show_border_markers else "lines"),
-                        "x": border_value_pressure[group],
+                        "x": group_border_value_pressure,
                         "y": border_value_dependent[group],
                         "xaxis": "x",
                         "yaxis": "y",

@@ -12,7 +12,7 @@ import time
 
 from ecl.summary import EclSum, EclSumKeyWordVector
 import pyarrow as pa
-import pyarrow.feather as feather
+from pyarrow import feather
 
 logger = logging.getLogger(__name__)
 
