@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 
-import numpy.ma as ma
+from numpy import ma
 import numpy as np
 import pandas as pd
 import xtgeo

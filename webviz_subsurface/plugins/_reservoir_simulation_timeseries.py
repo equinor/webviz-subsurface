@@ -882,39 +882,31 @@ folder, to avoid risk of not extracting the right data.
             )
             for vector, df in dfs.items():
                 if visualization in ["fanchart", "statistics"]:
-                    dfs[vector]["stat"] = df["stat"].sort_values(
+                    df["stat"] = df["stat"].sort_values(
                         by=[("", "ENSEMBLE"), ("", "DATE")]
                     )
                     if vector.startswith(("AVG_", "INTVL_")):
-                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
-                            "", "DATE"
-                        ].astype(str)
-                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
-                            "", "DATE"
-                        ].apply(
+                        df["stat"]["", "DATE"] = df["stat"]["", "DATE"].astype(str)
+                        df["stat"]["", "DATE"] = df["stat"]["", "DATE"].apply(
                             date_to_interval_conversion,
                             vector=vector,
                             interval=cum_interval,
                             as_date=False,
                         )
                 else:
-                    dfs[vector]["data"] = df["data"].sort_values(
-                        by=["ENSEMBLE", "REAL", "DATE"]
-                    )
+                    df["data"] = df["data"].sort_values(by=["ENSEMBLE", "REAL", "DATE"])
                     # Reorder columns
-                    dfs[vector]["data"] = dfs[vector]["data"][
+                    df["data"] = df["data"][
                         ["ENSEMBLE", "REAL", "DATE"]
                         + [
                             col
-                            for col in dfs[vector]["data"].columns
+                            for col in df["data"].columns
                             if col not in ["ENSEMBLE", "REAL", "DATE"]
                         ]
                     ]
                     if vector.startswith(("AVG_", "INTVL_")):
-                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"][
-                            "DATE"
-                        ].astype(str)
-                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"]["DATE"].apply(
+                        df["data"]["DATE"] = df["data"]["DATE"].astype(str)
+                        df["data"]["DATE"] = df["data"]["DATE"].apply(
                             date_to_interval_conversion,
                             vector=vector,
                             interval=cum_interval,

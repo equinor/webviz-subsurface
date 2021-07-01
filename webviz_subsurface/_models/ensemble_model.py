@@ -29,7 +29,9 @@ class EnsembleModel:
     @property
     def ens_folder(self) -> dict:
         """Get root folder for ensemble"""
-        return {self.ensemble_name: self.ensemble_path.split("realization")[0]}
+        return {
+            self.ensemble_name: self.ensemble_path.split("realization", maxsplit=1)[0]
+        }
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def load_ensemble(self) -> ScratchEnsemble:
