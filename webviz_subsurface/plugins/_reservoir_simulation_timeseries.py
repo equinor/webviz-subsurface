@@ -5,7 +5,9 @@ from pathlib import Path
 import json
 import datetime
 import copy
+import warnings
 
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
@@ -54,11 +56,11 @@ from .._datainput.from_timeseries_cumulatives import (
     rename_vec_from_cum,
 )
 from .._utils.vector_calculator import (
-    ConfigExpressionData,
-    expressions_from_config,
     get_calculated_units,
     get_calculated_vectors,
     get_selected_expressions,
+    is_vector_name_existing,
+    validate_predefined_expression,
 )
 
 
@@ -176,7 +178,8 @@ folder, to avoid risk of not extracting the right data.
         column_keys: list = None,
         sampling: str = "monthly",
         options: dict = None,
-        predefined_expressions: Path = None,
+        predefined_expressions: str = None,
+        # predefined_expressions: List[ExpressionInfo] = [],
         line_shape_fallback: str = "linear",
     ):
 
@@ -304,20 +307,22 @@ folder, to avoid risk of not extracting the right data.
             line_shape_fallback
         )
 
-        # Get the predefined expressions for vector calculator
+        # Retreive predefined expressions from configuration
         self.predefined_expressions: List[ExpressionInfo] = []
         if predefined_expressions:
-            file = open(predefined_expressions.__str__())
-            # TODO: Add typecheck of json.load data? Ensure that data is correct  - i.e. dict with ConfigExpressionData
-            # ("expression" and "variableVectorMap")
-            predefined_expressions_data: Dict[str, ConfigExpressionData] = json.load(
-                file
-            )
-            self.predefined_expressions = expressions_from_config(
-                predefined_expressions_data
-            )
+            self.predefined_expressions = webviz_settings.shared_settings[
+                predefined_expressions
+            ]
 
-        # Add predefined expressions to vector selector data
+        for expression in self.predefined_expressions:
+            valid, message = validate_predefined_expression(
+                expression, self.vector_data
+            )
+            if not valid:
+                warnings.warn(message)
+            expression["isValid"] = valid
+
+        # Create initial vector selector data
         self.initial_vector_selector_data = copy.deepcopy(self.vector_data)
         self._add_expressions_to_vector_data(
             self.initial_vector_selector_data, self.predefined_expressions
@@ -378,21 +383,6 @@ folder, to avoid risk of not extracting the right data.
         ReservoirSimulationTimeSeries._add_vector(
             expression_data, name, expression, True
         )
-
-    @staticmethod
-    def _is_vector_existing(vector_data: list, vector: str) -> bool:
-        nodes = vector.split(":")
-        current_child_list = vector_data
-        for node in nodes:
-            found = False
-            for child in current_child_list:
-                if child["name"] == node:
-                    current_child_list = child["children"]
-                    found = True
-                    break
-            if not found:
-                return False
-        return found
 
     @property
     def ens_colors(self) -> dict:
@@ -842,8 +832,8 @@ folder, to avoid risk of not extracting the right data.
                 )
 
             # Append if vector name exist among data
-            if new_vector is not None and self._is_vector_existing(
-                vector_data, new_vector
+            if new_vector is not None and is_vector_name_existing(
+                new_vector, vector_data
             ):
                 valid_selections.append(new_vector)
 
@@ -1110,7 +1100,6 @@ folder, to avoid risk of not extracting the right data.
             cum_interval: str,
             expressions: List[ExpressionInfo],
         ) -> Union[EncodedFile, str]:
-            # TODO: Add calculation and download of selected vector calculator expressions
 
             """Callback to download data based on selections"""
             if data_requested is None:
@@ -1268,7 +1257,7 @@ folder, to avoid risk of not extracting the right data.
             if expression is None:
                 raise PreventUpdate
 
-            return wsc.VectorCalculator.parse_expression(expression)
+            return wsc.VectorCalculator.external_parse_data(expression)
 
         @app.callback(
             [
