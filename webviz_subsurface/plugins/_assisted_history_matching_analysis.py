@@ -339,7 +339,11 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
                 get_path(self.input_dir / "misfit_obs_info.csv"), index_col=0
             )
             list_ok = list(misfit_info.filter(like="All_obs", axis=1).columns)
-            listtoplot = [ele for ele in misfit_info.columns if ele not in list_ok]
+            listtoplot = [
+                ele
+                for ele in misfit_info.columns  # PyCQA/pylint#4577 # pylint: disable=no-member
+                if ele not in list_ok
+            ]
             if choiceplot == "ALL":
                 listtoplot = list_ok
             active_info = read_csv(

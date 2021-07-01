@@ -181,7 +181,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             self.ertdatadf["SIMULATED"] - self.ertdatadf["OBSERVED"]
         )
         self.ertdatadf["YEAR"] = pd.to_datetime(self.ertdatadf["DATE"]).dt.year
-        self.ertdatadf = self.ertdatadf.sort_values(by="DATE")
+        self.ertdatadf = (
+            self.ertdatadf.sort_values(  # PyCQA/pylint#4577 # pylint: disable=no-member
+                by="DATE"
+            )
+        )
         self.ertdatadf["DATE_IDX"] = self.ertdatadf["DATE"].apply(
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
@@ -192,9 +196,15 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 "ACTIVE": 1,
             },
         )
-        self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
+        self.ertdatadf[
+            "STDDEV"
+        ] = self.ertdatadf.groupby(  # PyCQA/pylint#4577 # pylint: disable=no-member
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
-        )["SIMULATED"].transform("std")
+        )[
+            "SIMULATED"
+        ].transform(
+            "std"
+        )
 
         self.set_callbacks(app)
 
