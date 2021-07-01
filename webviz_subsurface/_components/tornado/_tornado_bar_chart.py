@@ -60,7 +60,11 @@ class TornadoBarChart:
                 df["sensname"] = sensname
                 df["case"] = case
                 dfs.append(df)
-        return pd.concat(dfs)
+        return (
+            pd.concat(dfs)
+            if dfs
+            else pd.DataFrame(columns=["REAL", "sensname", "case"])
+        )
 
     @property
     def figure_height(self) -> Optional[int]:
@@ -202,7 +206,7 @@ class TornadoBarChart:
                 "xaxis": {
                     "title": self._scale,
                     "range": self.range,
-                    "autorange": self._show_scatter,
+                    "autorange": self._show_scatter or self._tornadotable.empty,
                     "showgrid": False,
                     "zeroline": False,
                     "linecolor": "black",
