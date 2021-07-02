@@ -726,10 +726,11 @@ folder, to avoid risk of not extracting the right data.
                                 label="Calculations",
                                 children=[self.from_cumulatives_layout],
                             ),
-                        	self.open_modal_vector_calculator_layout,    
+                            self.open_modal_vector_calculator_layout,
                         ],
                     )
                 ),
+                self.modal_vector_calculator_layout,
                 wcc.FlexColumn(
                     flex=4,
                     children=[
