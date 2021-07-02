@@ -161,7 +161,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Create the output folder if it doesn't exist
-    args.output.mkdir(parents=True, exist_ok=True)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
 
     smry2arrow(args.input, args.output)
 
