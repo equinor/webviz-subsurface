@@ -73,7 +73,7 @@ def validate_predefined_expression(
     * vector_data: Vector data
 
     Returns:
-    * Tuple of valid state and vaidation message. Validation message is empty for valid expression
+    * Tuple of valid state and validation message. Validation message is empty for valid expression
 
     """
     parsed_expression: ExternalData = VectorCalculator.external_parse_data(expression)
