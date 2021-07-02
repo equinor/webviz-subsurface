@@ -44,7 +44,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="Input file",
     )
     parser.add_argument(
-        "output",
+        "--output",
         type=Path,
         help="Output file",
         default=Path()
