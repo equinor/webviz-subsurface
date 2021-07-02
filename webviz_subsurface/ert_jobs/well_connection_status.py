@@ -118,7 +118,7 @@ def main() -> None:
 
     df = _extract_well_connection_status(args.input)
 
-    # Create the output folder if it doen't exist
+    # Create the output folder if it doesn't exist
     args.output.mkdir(parents=True, exist_ok=True)
     # Write to file
     df.to_parquet(args.output, index=False)
