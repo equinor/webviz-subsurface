@@ -160,6 +160,9 @@ def main() -> None:
     parser = _get_parser()
     args = parser.parse_args()
 
+    # Create the output folder if it doen't exist
+    args.output.mkdir(parents=True, exist_ok=True)
+
     smry2arrow(args.input, args.output)
 
 

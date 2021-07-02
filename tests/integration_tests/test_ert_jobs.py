@@ -43,14 +43,15 @@ def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None
     ).resolve()
     assert input_file.exists()
 
-    output_file = tmp_path / "output.parquet"
-
     ert_config_file = _create_minimal_ert_config_file(
         tmp_path,
-        f"WELL_CONNECTION_STATUS(<INPUT>={input_file}, <OUTPUT>={output_file})",
+        f"WELL_CONNECTION_STATUS(<INPUT>={input_file})",
     )
 
     subprocess.check_output(["ert", "test_run", ert_config_file], cwd=tmp_path)  # nosec
+    output_file = (
+        tmp_path / "output" / "share" / "results" / "tables" / "output.parquet"
+    )
     assert output_file.exists()
 
     df = pd.read_parquet(output_file)
