@@ -1,7 +1,7 @@
 from typing import Optional, List, Tuple, Callable
 import shutil
 import warnings
-import pathlib
+from pathlib import Path
 import datetime
 
 import pandas as pd
@@ -36,7 +36,7 @@ class DiskUsage(WebvizPluginABC):
     def __init__(
         self,
         webviz_settings: WebvizSettings,
-        scratch_dir: pathlib.Path,
+        scratch_dir: Path,
         date: Optional["str"] = None,
     ):
 
@@ -45,9 +45,7 @@ class DiskUsage(WebvizPluginABC):
         self.scratch_dir = scratch_dir
         self.date_input = date
         self.disk_usage = get_disk_usage(self.scratch_dir, self.date_input)
-        self.date = str(self.disk_usage["date"].unique()[0])
-        self.users = self.disk_usage["userid"]
-        self.usage_gib = self.disk_usage["usageKB"] / (1024 ** 2)
+        self.date = str(self.disk_usage["date"][0])
         self.theme = webviz_settings.theme
 
     @property
@@ -86,10 +84,11 @@ class DiskUsage(WebvizPluginABC):
         return {
             "data": [
                 {
-                    "values": self.usage_gib,
-                    "labels": self.users,
-                    "pull": (self.users.values == "<b>Free space</b>") * 0.05,
-                    "text": (self.usage_gib).map("{:.2f} GiB".format),
+                    "values": self.disk_usage["usageGiB"],
+                    "labels": self.disk_usage["userid"],
+                    "pull": (self.disk_usage["userid"].values == "<b>Free space</b>")
+                    * 0.05,
+                    "text": (self.disk_usage["usageGiB"]).map("{:.2f} GiB".format),
                     "textinfo": "label",
                     "textposition": "inside",
                     "hoverinfo": "label+text",
@@ -104,9 +103,9 @@ class DiskUsage(WebvizPluginABC):
         return {
             "data": [
                 {
-                    "y": self.usage_gib,
-                    "x": self.users,
-                    "text": (self.usage_gib).map("{:.2f} GiB".format),
+                    "y": self.disk_usage["usageGiB"],
+                    "x": self.disk_usage["userid"],
+                    "text": (self.disk_usage["usageGiB"]).map("{:.2f} GiB".format),
                     "hoverinfo": "x+text",
                     "type": "bar",
                 }
@@ -127,45 +126,41 @@ class DiskUsage(WebvizPluginABC):
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
-def get_disk_usage(scratch_dir: pathlib.Path, date: Optional[str]) -> pd.DataFrame:
-    def _loop_dates(scratch_dir: pathlib.Path) -> pd.DataFrame:
-        today = datetime.datetime.today()
-        for i in range(7):
-            date = today - datetime.timedelta(days=i)
-            try:
-                return pd.read_csv(
-                    scratch_dir
-                    / ".disk_usage"
-                    / f"disk_usage_user_{date.strftime('%Y-%m-%d')}.csv"
-                ).assign(date=date.strftime("%Y-%m-%d"))
-            except FileNotFoundError:
-                continue
-        raise FileNotFoundError(
-            f"No disk usage file found for last week in {scratch_dir}."
-        )
-
+def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
     if date is None:
-        df = _loop_dates(scratch_dir)
+        df, date = _loop_dates(scratch_dir)
     else:
-        try:
-            df = pd.read_csv(
-                scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv"
-            ).assign(date=date)
-        except FileNotFoundError as exc:
+        df = _get_disk_usage_for_date(scratch_dir, date)
+        if df is None:
             raise FileNotFoundError(
                 f"No disk usage file found for {date} in {scratch_dir}."
-            ) from exc
+            )
 
-    free_space_kib = (shutil.disk_usage(scratch_dir).total / 1024) - df["usageKB"].sum()
+    df.rename(
+        columns={"usageKB": "usageKiB"}, inplace=True
+    )  # Old format had an error (KB instead of KiB)
 
-    if free_space_kib < 0:
+    df[  # PyCQA/pylint#4577 # pylint: disable=unsupported-assignment-operation
+        "usageGiB"
+    ] = df[  # PyCQA/pylint#4577 # pylint: disable=unsubscriptable-object
+        "usageKiB"
+    ] / (
+        1024 ** 2
+    )
+
+    df.drop(  # PyCQA/pylint#4577 # pylint: disable=no-member
+        columns="usageKiB", inplace=True
+    )
+
+    free_space_gib = _estimate_free_space(df, scratch_dir, date)
+    if free_space_gib < 0:
         warnings.warn(
             f"Reported disk usage in "
-            f"{scratch_dir}/.disk_usage/disk_usage_user_{df['date'].unique()[0]}.csv "
-            f"must be wrong (unless total disk size has changed after {df['date'].unique()[0]}). "
-            f"Total reported usage is {int(df['usageKB'].sum() / 1024**2)} GiB, "
+            f"{scratch_dir}/.disk_usage for {date}"
+            f"must be wrong (unless total disk size has changed after {date}). "
+            f"Total reported usage is {int(df['usageGiB'])} GiB, "
             f"but the disk size is only {int(shutil.disk_usage(scratch_dir).total / 1024**3)} GiB "
-            f"(this would imply negative free space of {int(free_space_kib / 1024**2)} GiB).",
+            f"(this would imply negative free space of {int(free_space_gib)} GiB).",
             UserWarning,
             stacklevel=0,
         )
@@ -173,10 +168,45 @@ def get_disk_usage(scratch_dir: pathlib.Path, date: Optional[str]) -> pd.DataFra
         df = df.append(
             {
                 "userid": "<b>Free space</b>",
-                "usageKB": free_space_kib,
-                "date": df["date"].unique()[0],
+                "usageGiB": free_space_gib,
             },
             ignore_index=True,
         )
 
-    return df.sort_values(by="usageKB", axis=0, ascending=False)
+    df["date"] = date
+    return df.sort_values(by="usageGiB", axis=0, ascending=False)
+
+
+def _get_disk_usage_for_date(scratch_dir: Path, date: str) -> Optional[pd.DataFrame]:
+    csv_file = Path(scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv")
+    if csv_file.exists():
+        return pd.read_csv(csv_file)
+    return None
+
+
+def _loop_dates(scratch_dir: Path) -> Tuple[pd.DataFrame, str]:
+    today = datetime.datetime.today()
+    for i in range(7):
+        date = (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+        df = _get_disk_usage_for_date(scratch_dir, date)
+        if df is not None:
+            return (df, date)
+    raise FileNotFoundError(
+        f"No disk usage file found for the last week in {scratch_dir}."
+    )
+
+
+def _estimate_free_space(df: pd.DataFrame, scratch_dir: Path, date: str) -> float:
+    txt_file = Path(scratch_dir / ".disk_usage" / f"disk_usage_user_test_{date}.txt")
+    total_usage = None
+    if txt_file.exists():
+        with open(txt_file, "r") as filehandle:
+            lines = filehandle.readlines()
+        for line in lines[::-1]:  # reversed as last line is most likely
+            if line.startswith("Total usage without overhead"):
+                line = line[len("Total usage without overhead") :]
+                total_usage = float(line.split()[0])
+                break
+
+    total_usage = df["usageGiB"].sum() if total_usage is None else total_usage
+    return shutil.disk_usage(scratch_dir).total / (1024 ** 3) - total_usage
