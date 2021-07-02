@@ -26,8 +26,9 @@ EXAMPLES: str = """
 Extracts well connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
-    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/well_connection_status.parquet)
+    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY)
 
+The default output file is share/results/tables/well_connection_status.parquet
 """
 
 

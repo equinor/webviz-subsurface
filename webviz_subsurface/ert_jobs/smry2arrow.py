@@ -25,7 +25,7 @@ EXAMPLES: str = """
 Convert and output summary data in SOME.UNSMRY file to an Arrow IPC file named unsmry.arrow
 this in the ert workflow:
 
-    FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/unsmry.arrow)
+    FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY)
 
 """
 
