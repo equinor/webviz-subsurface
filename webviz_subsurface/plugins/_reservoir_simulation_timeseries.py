@@ -4,18 +4,31 @@ import sys
 from pathlib import Path
 import json
 import datetime
+import copy
+import warnings
 
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
+import webviz_subsurface_components as wsc
+import webviz_subsurface
+
+from webviz_subsurface_components import (
+    ExpressionInfo,
+    ExternalParseData,
+)
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
@@ -44,6 +57,13 @@ from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
+)
+from .._utils.vector_calculator import (
+    get_calculated_units,
+    get_calculated_vectors,
+    get_selected_expressions,
+    is_vector_name_existing,
+    validate_predefined_expression,
 )
 
 
@@ -99,6 +119,9 @@ class ReservoirSimulationTimeSeries(WebvizPluginABC):
     * `linear` (default)
     * `backfilled`
     * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
+
+**Calculated vector expressions**
+* **`predefined_expressions`:** JSON file with pre-defined expressions
 
 ---
 
@@ -157,10 +180,23 @@ folder, to avoid risk of not extracting the right data.
         column_keys: list = None,
         sampling: str = "monthly",
         options: dict = None,
+        predefined_expressions: str = None,
+        # predefined_expressions: List[ExpressionInfo] = [],
         line_shape_fallback: str = "linear",
     ):
 
         super().__init__()
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "block_options.css"
+        )
+
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
+        )
 
         self.csvfile = csvfile
         self.obsfile = obsfile
@@ -212,7 +248,7 @@ folder, to avoid risk of not extracting the right data.
                 "'AVG_' and/or 'INTVL_'. These prefixes are not allowed, as they are used"
                 "internally in the plugin."
             )
-        self.smry_cols = [
+        self.smry_cols: List[str] = [
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
@@ -276,6 +312,28 @@ folder, to avoid risk of not extracting the right data.
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
+
+        # Retreive predefined expressions from configuration
+        self.predefined_expressions: List[ExpressionInfo] = []
+        if predefined_expressions:
+            self.predefined_expressions = webviz_settings.shared_settings[
+                predefined_expressions
+            ]
+
+        for expression in self.predefined_expressions:
+            valid, message = validate_predefined_expression(
+                expression, self.vector_data
+            )
+            if not valid:
+                warnings.warn(message)
+            expression["isValid"] = valid
+
+        # Create initial vector selector data
+        self.initial_vector_selector_data = copy.deepcopy(self.vector_data)
+        self._add_expressions_to_vector_data(
+            self.initial_vector_selector_data, self.predefined_expressions
+        )
+
         # Check if initially plotted vectors exist in data, raise ValueError if not.
         missing_vectors = (
             [
@@ -297,34 +355,40 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @staticmethod
-    def _add_vector(vector_data: list, vector: str, description: str) -> None:
-        split = vector.split(":")
-
-        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
-            vector_data.append(
-                {
-                    "name": split[0],
-                    "description": description,
-                    "children": [],
-                }
-            )
-
-        if len(split) == 2:
-            for x in vector_data:
-                if x["name"] == split[0]:
-                    if (
-                        next(
-                            (y for y in x["children"] if y["name"] == split[1]),
-                            None,
-                        )
-                        is None
-                    ):
-                        x["children"].append(
-                            {
-                                "name": split[1],
-                            }
-                        )
+    def _add_vector(
+        vector_data: list,
+        vector: str,
+        description: str,
+        description_at_last_node: bool = False,
+    ) -> None:
+        nodes = vector.split(":")
+        current_child_list = vector_data
+        for index, node in enumerate(nodes):
+            found = False
+            for child in current_child_list:
+                if child["name"] == node:
+                    current_child_list = child["children"]
+                    found = True
                     break
+            if not found:
+                description_text = description if index == 0 else ""
+                if description_at_last_node:
+                    description_text = description if index == len(nodes) - 1 else ""
+                current_child_list.append(
+                    {
+                        "name": node,
+                        "description": description_text,
+                        "children": [] if index < len(nodes) - 1 else None,
+                    }
+                )
+                children = current_child_list[-1]["children"]
+                current_child_list = children if children is not None else []
+
+    @staticmethod
+    def _add_expression(expression_data: list, name: str, expression: str) -> None:
+        ReservoirSimulationTimeSeries._add_vector(
+            expression_data, name, expression, True
+        )
 
     @property
     def ens_colors(self) -> dict:
@@ -385,6 +449,16 @@ folder, to avoid risk of not extracting the right data.
                     "one time series dependent on the interval setting is chosen."
                     "The option might be completely hidden if the data input does not support "
                     "calculation from cumulatives."
+                ),
+            },
+            {
+                "id": self.uuid("vector_calculator_detail"),
+                "content": (
+                    "Create mathematical expressions with provided vector time series. "
+                    "Parsing of the mathematical expression is handled and will give feedback "
+                    "when entering invalid expressions. "
+                    "The expressions are calculated on the fly and can be selected among the time series "
+                    "to be shown in the plots."
                 ),
             },
         ]
@@ -499,6 +573,7 @@ folder, to avoid risk of not extracting the right data.
                 html.Div(
                     wcc.RadioItems(
                         id=self.uuid("cum_interval"),
+                        className="block-options",
                         options=[
                             {
                                 "label": (f"{i.lower().capitalize()}"),
@@ -511,6 +586,44 @@ folder, to avoid risk of not extracting the right data.
                     ),
                 ),
             ],
+        )
+
+    @property
+    def open_modal_vector_calculator_layout(self) -> html.Div:
+        return html.Details(
+            id=self.uuid("vector_calculator_detail"),
+            style={"marginTop": "15px"},
+            open=False,
+            children=[
+                html.Summary("Vector Calculator:", style={"font-weight": "bold"}),
+                dbc.Button(
+                    "Vector Calculator", id=self.uuid("vector_calculator_open_btn")
+                ),
+            ],
+        )
+
+    @property
+    def modal_vector_calculator_layout(self) -> html.Div:
+        return dbc.Modal(
+            style={"marginTop": "20vh", "width": "1300px"},
+            children=[
+                dbc.ModalHeader("Vector Calculator"),
+                dbc.ModalBody(
+                    html.Div(
+                        id=self.uuid("vector_calculator_modal_body"),
+                        children=[
+                            wsc.VectorCalculator(
+                                id=self.uuid("vector_calculator"),
+                                vectors=self.vector_data,
+                                expressions=self.predefined_expressions,
+                            )
+                        ],
+                    ),
+                ),
+            ],
+            id=self.uuid("modal_vector_calculator"),
+            size="lg",
+            centered=True,
         )
 
     @property
@@ -530,7 +643,8 @@ folder, to avoid risk of not extracting the right data.
                                 children=wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
-                                    data=self.vector_data,
+                                    data=self.initial_vector_selector_data,
+                                    placeholder="Add new vector...",
                                     persistence=True,
                                     persistence_type="session",
                                     selectedTags=self.plot_options.get(
@@ -612,6 +726,7 @@ folder, to avoid risk of not extracting the right data.
                                 label="Calculations",
                                 children=[self.from_cumulatives_layout],
                             ),
+                        	self.open_modal_vector_calculator_layout,    
                         ],
                     )
                 ),
@@ -634,8 +749,63 @@ folder, to avoid risk of not extracting the right data.
                         ),
                     ],
                 ),
+                dcc.Store(
+                    id=self.uuid("vector_calculator_expressions_modal_open"),
+                    data=self.predefined_expressions,
+                ),
+                dcc.Store(
+                    id=self.uuid("vector_calculator_expressions"),
+                    data=self.predefined_expressions,
+                ),
             ],
         )
+
+    def _get_valid_vector_selections(
+        self,
+        vector_data: list,
+        selected_vectors: List[str],
+        new_expressions: List[ExpressionInfo],
+        existing_expressions: List[ExpressionInfo],
+    ) -> List[str]:
+        valid_selections: List[str] = []
+        for vector in selected_vectors:
+            new_vector: Optional[str] = vector
+
+            # Get id if vector is among existing expressions
+            dropdown_id = next(
+                (elm["id"] for elm in existing_expressions if elm["name"] == vector),
+                None,
+            )
+            # Find id among new expressions to get new/edited name
+            if dropdown_id:
+                new_vector = next(
+                    (
+                        elm["name"]
+                        for elm in new_expressions
+                        if elm["id"] == dropdown_id
+                    ),
+                    None,
+                )
+
+            # Append if vector name exist among data
+            if new_vector is not None and is_vector_name_existing(
+                new_vector, vector_data
+            ):
+                valid_selections.append(new_vector)
+
+        return valid_selections
+
+    def _add_expressions_to_vector_data(
+        self, vector_data: list, expressions: List[ExpressionInfo]
+    ) -> None:
+        for expression in expressions:
+            if not expression["isValid"]:
+                continue
+
+            name = expression["name"]
+            expression = expression["expression"]
+
+            self._add_expression(vector_data, name, expression)
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: Dash) -> None:
@@ -652,6 +822,10 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("date"), "data"),
                 Input(self.uuid("trace_options"), "value"),
                 Input(self.uuid("stat_options"), "value"),
+                Input(
+                    self.uuid("vector_calculator_expressions"),
+                    "data",
+                ),
             ],
         )
         # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
@@ -666,6 +840,7 @@ folder, to avoid risk of not extracting the right data.
             stored_date: str,
             trace_options: List[str],
             stat_options: List[str],
+            expressions: List[ExpressionInfo],
         ) -> dict:
             """Callback to update all graphs based on selections"""
 
@@ -677,6 +852,15 @@ folder, to avoid risk of not extracting the right data.
 
             if vectors is None:
                 vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
+
+            # Calculate selected expressions:
+            selected_expressions = get_selected_expressions(expressions, vectors)
+            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+            calculated_units = pd.Series()
+            if self.smry_meta is not None:
+                calculated_units = get_calculated_units(
+                    selected_expressions, self.smry_meta["unit"]
+                )
 
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
@@ -701,6 +885,8 @@ folder, to avoid risk of not extracting the right data.
                     )
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
+                elif vec in calculated_vectors:
+                    titles.append(f"{vec}" f" [{calculated_units[vec]}]")
                 else:
                     titles.append(
                         f"{simulation_vector_description(vec)}"
@@ -727,8 +913,12 @@ folder, to avoid risk of not extracting the right data.
 
             # Loop through each vector and calculate relevant plot
             legends = []
+
+            # Join smry and calculated vectors
+            smry_new = self.smry.join(calculated_vectors)
+
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                smry=smry_new,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
@@ -850,6 +1040,10 @@ folder, to avoid risk of not extracting the right data.
                 State(self.uuid("delta_ens"), "value"),
                 State(self.uuid("statistics"), "value"),
                 State(self.uuid("cum_interval"), "value"),
+                State(
+                    self.uuid("vector_calculator_expressions"),
+                    "data",
+                ),
             ],
         )
         def _user_download_data(
@@ -861,7 +1055,9 @@ folder, to avoid risk of not extracting the right data.
             delta_ens: str,
             visualization: str,
             cum_interval: str,
+            expressions: List[ExpressionInfo],
         ) -> Union[EncodedFile, str]:
+
             """Callback to download data based on selections"""
             if data_requested is None:
                 raise PreventUpdate
@@ -878,8 +1074,15 @@ folder, to avoid risk of not extracting the right data.
             if vectors is None:
                 vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
+            # Calculate selected expressions:
+            selected_expressions = get_selected_expressions(expressions, vectors)
+            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
+
+            # Join smry and calculated vectors
+            smry_new = self.smry.join(calculated_vectors)
+
             dfs = calculate_vector_dataframes(
-                smry=self.smry,
+                smry=smry_new,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
@@ -992,6 +1195,79 @@ folder, to avoid risk of not extracting the right data.
             if active:
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]
+
+        @app.callback(
+            Output(self.uuid("vector_calculator"), "externalParseData"),
+            Input(self.uuid("vector_calculator"), "externalParseExpression"),
+        )
+        def _parse_vector_calculator_expression(
+            expression: ExpressionInfo,
+        ) -> ExternalParseData:
+            if expression is None:
+                raise PreventUpdate
+
+            return wsc.VectorCalculator.external_parse_data(expression)
+
+        @app.callback(
+            [
+                Output(self.uuid("vector_calculator_expressions"), "data"),
+                Output(self.uuid("vectors"), "data"),
+                Output(self.uuid("vectors"), "selectedTags"),
+            ],
+            Input(self.uuid("modal_vector_calculator"), "is_open"),
+            [
+                State(self.uuid("vector_calculator_expressions_modal_open"), "data"),
+                State(self.uuid("vector_calculator_expressions"), "data"),
+                State(self.uuid("vectors"), "selectedNodes"),
+            ],
+        )
+        def _update_vector_calculator_expressions_actual(
+            modal_open: bool,
+            new_expressions: List[ExpressionInfo],
+            existing_expressions: List[ExpressionInfo],
+            selected_vectors: List[str],
+        ) -> list:
+            if modal_open or (new_expressions == existing_expressions):
+                raise PreventUpdate
+
+            # Deep copy to prevent modifying self.vector_data
+            vector_data = copy.deepcopy(self.vector_data)
+            self._add_expressions_to_vector_data(vector_data, new_expressions)
+
+            new_selected_vectors = self._get_valid_vector_selections(
+                vector_data, selected_vectors, new_expressions, existing_expressions
+            )
+
+            # Prevent updates if selected vectors are unchanged
+            if new_selected_vectors == selected_vectors:
+                new_selected_vectors = dash.no_update
+
+            return [new_expressions, vector_data, new_selected_vectors]
+
+        @app.callback(
+            Output(self.uuid("vector_calculator_expressions_modal_open"), "data"),
+            Input(self.uuid("vector_calculator"), "expressions"),
+        )
+        def _update_vector_calculator_expressions(
+            expressions: List[ExpressionInfo],
+        ) -> list:
+            valid_expressions: List[ExpressionInfo] = [
+                elm for elm in expressions if elm["isValid"]
+            ]
+
+            return valid_expressions
+
+        @app.callback(
+            Output(self.uuid("modal_vector_calculator"), "is_open"),
+            [
+                Input(self.uuid("vector_calculator_open_btn"), "n_clicks"),
+            ],
+            [State(self.uuid("modal_vector_calculator"), "is_open")],
+        )
+        def _toggle_modal(n_open_clicks: int, is_open: bool) -> Optional[bool]:
+            if n_open_clicks:
+                return not is_open
+            raise PreventUpdate
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
