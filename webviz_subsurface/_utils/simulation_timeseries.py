@@ -101,6 +101,17 @@ def add_fanchart_traces(
     return [
         {
             "name": legend_group,
+            "hovertemplate": hovertemplate + "Mean",
+            "x": ens_stat_df[("", refaxis)],
+            "y": ens_stat_df[(vector, "mean")],
+            "mode": "lines",
+            "fillcolor": fill_color,
+            "line": {"color": line_color, "shape": line_shape},
+            "legendgroup": legend_group,
+            "showlegend": True,
+        },
+        {
+            "name": legend_group,
             "hovertemplate": hovertemplate + "Maximum",
             "x": ens_stat_df[("", refaxis)],
             "y": ens_stat_df[(vector, "max")],
@@ -132,18 +143,6 @@ def add_fanchart_traces(
             "line": {"width": 0, "color": line_color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "Mean",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "mean")],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": True,
         },
         {
             "name": legend_group,
