@@ -26,8 +26,9 @@ EXAMPLES: str = """
 Extracts well connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
-    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/well_connection_status.parquet)
+    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY)
 
+The default output file is share/results/tables/well_connection_status.parquet
 """
 
 
@@ -43,7 +44,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="Input file",
     )
     parser.add_argument(
-        "output",
+        "--output",
         type=Path,
         help="Output file",
         default=Path()
@@ -117,6 +118,10 @@ def main() -> None:
     args = parser.parse_args()
 
     df = _extract_well_connection_status(args.input)
+
+    # Create the output folder if it doesn't exist
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    # Write to file
     df.to_parquet(args.output, index=False)
 
 

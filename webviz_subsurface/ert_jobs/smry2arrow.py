@@ -25,7 +25,7 @@ EXAMPLES: str = """
 Convert and output summary data in SOME.UNSMRY file to an Arrow IPC file named unsmry.arrow
 this in the ert workflow:
 
-    FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY, <OUTPUT>=share/results/tables/unsmry.arrow)
+    FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY)
 
 """
 
@@ -42,7 +42,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="Input file",
     )
     parser.add_argument(
-        "output",
+        "--output",
         type=Path,
         help="Output file",
         default=Path() / "share" / "results" / "tables" / "unsmry.arrow",
@@ -159,6 +159,9 @@ def main() -> None:
     """Entry point from command line"""
     parser = _get_parser()
     args = parser.parse_args()
+
+    # Create the output folder if it doesn't exist
+    args.output.parent.mkdir(parents=True, exist_ok=True)
 
     smry2arrow(args.input, args.output)
 

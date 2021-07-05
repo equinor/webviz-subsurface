@@ -76,7 +76,7 @@ setup(
         ],
     },
     install_requires=[
-        "dash>=1.11",
+        "dash>=1.20.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
