@@ -153,7 +153,8 @@ def is_vector_name_existing(name: str, vector_data: list) -> bool:
         found = False
         for child in current_child_list:
             if child["name"] == node:
-                current_child_list = child["children"]
+                children = child["children"]
+                current_child_list = children if children is not None else []
                 found = True
                 break
         if not found:
