@@ -33,7 +33,9 @@ class TornadoData:
             raise KeyError("No sensitivities found in tornado input")
 
         for sens_name, sens_name_df in dframe.groupby("SENSNAME"):
-            if sens_name_df["SENSTYPE"].all() not in ["scalar", "mc"]:
+            if not any(
+                (sens_name_df["SENSTYPE"] == st).all() for st in ["scalar", "mc"]
+            ):
                 raise ValueError(
                     f"Sensitivity {sens_name} is not of type 'mc' or 'scalar"
                 )
@@ -87,7 +89,7 @@ class TornadoData:
                 continue
 
             # If `SENSTYPE` is scalar get the mean for each `SENSCASE`
-            if sens_name_df["SENSTYPE"].all() == "scalar":
+            if (sens_name_df["SENSTYPE"] == "scalar").all():
                 for sens_case, sens_case_df in sens_name_df.groupby(["SENSCASE"]):
                     avg_per_sensitivity.append(
                         {
@@ -101,7 +103,7 @@ class TornadoData:
                         }
                     )
             # If `SENSTYPE` is monte carlo get p10, p90
-            elif sens_name_df["SENSTYPE"].all() == "mc":
+            elif (sens_name_df["SENSTYPE"] == "mc").all():
 
                 # Calculate p90(low) and p10(high)
                 p90 = sens_name_df["VALUE"].quantile(0.10)
