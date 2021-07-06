@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from ecl.summary import EclSum, EclSumKeyWordVector
+from ..plugins._well_completions import WELL_CONNECTION_STATUS_FILE
 
 
 DESCRIPTION: str = """
@@ -47,11 +48,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         help="Output file",
-        default=Path()
-        / "share"
-        / "results"
-        / "tables"
-        / "well_connection_status.parquet",
+        default=Path(WELL_CONNECTION_STATUS_FILE),
     )
     return parser
 
