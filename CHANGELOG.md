@@ -23,6 +23,7 @@ from the water zone if the volumes from the full grid geometry are included, and
 ### Fixed
 - [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`
 - [#675](https://github.com/equinor/webviz-subsurface/pull/675) - Adjust minimum zoom level in surface plugins for visualization of large surfaces.
+- [#715](https://github.com/equinor/webviz-subsurface/pull/715) - After this, the WellCompletion plugin finds the kh unit even if the unit system is in an INCLUDE file. Also, well_connection_status_file refers to the same variable in the plugin and ert job.
 
 ### Added
 - [#662](https://github.com/equinor/webviz-subsurface/pull/662) - Added support in `WellCompletion` for connection history from summary data.
