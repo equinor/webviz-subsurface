@@ -48,7 +48,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         help="Output file",
-        default=Path(WELL_CONNECTION_STATUS_FILE),
+        default=WELL_CONNECTION_STATUS_FILE,
     )
     return parser
 

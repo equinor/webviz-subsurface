@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Tuple, Callable, Any, Iterator
 import json
 import itertools
 import io
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,9 @@ from .._datainput.well_completions import (
     read_well_connection_status,
 )
 
-WELL_CONNECTION_STATUS_FILE = "share/results/tables/well_connection_status.parquet"
+WELL_CONNECTION_STATUS_FILE = (
+    Path() / "share" / "results" / "tables" / "well_connection_status.parquet"
+)
 
 
 class WellCompletions(WebvizPluginABC):
@@ -187,7 +190,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/tables/compdat.csv",
-        well_connection_status_file: str = WELL_CONNECTION_STATUS_FILE,
+        well_connection_status_file: str = WELL_CONNECTION_STATUS_FILE.read_text(),
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
