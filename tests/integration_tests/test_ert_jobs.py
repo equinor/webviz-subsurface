@@ -41,7 +41,7 @@ def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None
         / "model"
         / "5_R001_REEK-0"
     ).resolve()
-    assert input_file.exists()
+    assert eclbase.with_suffix(".UNSMRY").exists()
 
     ert_config_file = _create_minimal_ert_config_file(
         tmp_path,
@@ -74,7 +74,7 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
         / "model"
         / "5_R001_REEK-0"
     ).resolve()
-    assert input_file.exists()
+    assert eclbase.with_suffix(".UNSMRY").exists()
 
     output_file = tmp_path / "output.arrow"
 
