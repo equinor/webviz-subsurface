@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from ecl.summary import EclSum, EclSumKeyWordVector
-from ..plugins._well_completions import WELL_CONNECTION_STATUS_FILE
+from webviz_subsurface.plugins._well_completions import WELL_CONNECTION_STATUS_FILE
 
 
 DESCRIPTION: str = """
