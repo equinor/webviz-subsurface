@@ -1,6 +1,6 @@
 EXECUTABLE well_connection_status
 
-ARGLIST <INPUT>
+ARGLIST <ECLBASE>
 
 MIN_ARG 1
 MAX_ARG 1

@@ -32,20 +32,20 @@ FORWARD_MODEL    {forward_model_string}
 
 def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None:
 
-    input_file = (
+    eclbase = (
         testdata_folder
         / "reek_history_match"
         / "realization-0"
         / "iter-0"
         / "eclipse"
         / "model"
-        / "5_R001_REEK-0.UNSMRY"
+        / "5_R001_REEK-0"
     ).resolve()
     assert input_file.exists()
 
     ert_config_file = _create_minimal_ert_config_file(
         tmp_path,
-        f"WELL_CONNECTION_STATUS(<INPUT>={input_file})",
+        f"WELL_CONNECTION_STATUS(<ECLBASE>={eclbase})",
     )
 
     subprocess.check_output(["ert", "test_run", ert_config_file], cwd=tmp_path)  # nosec
@@ -65,21 +65,21 @@ def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None
 
 def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
 
-    input_file = (
+    eclbase = (
         testdata_folder
         / "reek_history_match"
         / "realization-0"
         / "iter-0"
         / "eclipse"
         / "model"
-        / "5_R001_REEK-0.UNSMRY"
+        / "5_R001_REEK-0"
     ).resolve()
     assert input_file.exists()
 
     output_file = tmp_path / "output.arrow"
 
     ert_config_file = _create_minimal_ert_config_file(
-        tmp_path, f"SMRY2ARROW(<INPUT>={input_file})"
+        tmp_path, f"SMRY2ARROW(<ECLBASE>={eclbase})"
     )
     output_file = tmp_path / "output" / "share" / "results" / "tables" / "unsmry.arrow"
     subprocess.check_output(["ert", "test_run", ert_config_file], cwd=tmp_path)  # nosec
