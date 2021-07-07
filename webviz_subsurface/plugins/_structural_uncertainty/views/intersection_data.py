@@ -32,7 +32,6 @@ def intersection_data_layout(
                 },
                 id=get_uuid("intersection-source-wrapper"),
                 children=[
-                    html.Span("Intersection source", style={"font-weight": "bold"}),
                     source_layout(
                         uuid=get_uuid("intersection-data"),
                         use_wells=use_wells,
@@ -98,15 +97,12 @@ def source_layout(uuid: str, use_wells: bool = True) -> html.Div:
     ]
     if use_wells:
         options.append({"label": "Intersect well", "value": "well"})
-    return html.Div(
-        children=dcc.Dropdown(
-            id={"id": uuid, "element": "source"},
-            options=options,
-            value="well" if use_wells else "polyline",
-            clearable=False,
-            persistence=True,
-            persistence_type="session",
-        ),
+    return wcc.Dropdown(
+        label="Intersection source",
+        id={"id": uuid, "element": "source"},
+        options=options,
+        value="well" if use_wells else "polyline",
+        clearable=False,
     )
 
 
@@ -120,18 +116,12 @@ def well_layout(
         if value is None
         else {},
         id={"id": uuid, "element": "well-wrapper"},
-        children=html.Label(
-            children=[
-                html.Span("Well:", style={"font-weight": "bold"}),
-                dcc.Dropdown(
-                    id={"id": uuid, "element": "well"},
-                    options=[{"label": well, "value": well} for well in well_names],
-                    value=value,
-                    clearable=False,
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ]
+        children=wcc.Dropdown(
+            label="Well",
+            id={"id": uuid, "element": "well"},
+            options=[{"label": well, "value": well} for well in well_names],
+            value=value,
+            clearable=False,
         ),
     )
 
@@ -225,50 +215,30 @@ def yline_layout(uuid: str, surface_geometry: Dict) -> html.Div:
 def surface_attribute_layout(
     uuid: str, surface_attributes: List[str], value: str
 ) -> html.Div:
-    return html.Div(
-        style={"marginTop": "10px"},
-        children=html.Label(
-            children=[
-                html.Span("Surface attribute", style={"font-weight": "bold"}),
-                dcc.Dropdown(
-                    id={"id": uuid, "element": "surface_attribute"},
-                    options=[
-                        {"label": attribute, "value": attribute}
-                        for attribute in surface_attributes
-                    ],
-                    value=value,
-                    clearable=False,
-                    multi=False,
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ]
-        ),
+    return wcc.Dropdown(
+        label="Surface attribute",
+        id={"id": uuid, "element": "surface_attribute"},
+        options=[
+            {"label": attribute, "value": attribute} for attribute in surface_attributes
+        ],
+        value=value,
+        clearable=False,
+        multi=False,
     )
 
 
 def surface_names_layout(
     uuid: str, surface_names: List[str], value: List[str]
 ) -> html.Div:
-    return html.Div(
-        style={"marginTop": "5px"},
-        children=html.Label(
-            children=[
-                html.Span("Surfacenames", style={"font-weight": "bold"}),
-                wcc.Select(
-                    id={"id": uuid, "element": "surface_names"},
-                    options=[
-                        {"label": attribute, "value": attribute}
-                        for attribute in surface_names
-                    ],
-                    value=value,
-                    multi=True,
-                    size=min(len(surface_names), 5),
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ]
-        ),
+    return wcc.SelectWithLabel(
+        label="Surface names",
+        id={"id": uuid, "element": "surface_names"},
+        options=[
+            {"label": attribute, "value": attribute} for attribute in surface_names
+        ],
+        value=value,
+        multi=True,
+        size=min(len(surface_names), 5),
     )
 
 
@@ -278,50 +248,31 @@ def ensemble_layout(uuid: str, ensemble_names: List[str], value: List[str]) -> h
             "marginTop": "5px",
             "display": ("inline" if len(ensemble_names) > 1 else "none"),
         },
-        children=html.Label(
-            children=[
-                html.Span("Ensembles", style={"font-weight": "bold"}),
-                wcc.Select(
-                    id={"id": uuid, "element": "ensembles"},
-                    options=[{"label": ens, "value": ens} for ens in ensemble_names],
-                    value=value,
-                    size=min(len(ensemble_names), 3),
-                    persistence=True,
-                    persistence_type="session",
-                ),
-            ]
+        children=wcc.SelectWithLabel(
+            label="Ensembles",
+            id={"id": uuid, "element": "ensembles"},
+            options=[{"label": ens, "value": ens} for ens in ensemble_names],
+            value=value,
+            size=min(len(ensemble_names), 3),
         ),
     )
 
 
 def statistical_layout(uuid: str, value: List[str]) -> html.Div:
-    return html.Div(
-        style={"marginTop": "10px"},
-        children=html.Label(
-            children=[
-                html.Span("Show surfaces:", style={"font-weight": "bold"}),
-                dcc.Checklist(
-                    id={"id": uuid, "element": "calculation"},
-                    options=[
-                        {"label": "Mean", "value": "Mean"},
-                        {"label": "Min", "value": "Min"},
-                        {"label": "Max", "value": "Max"},
-                        {"label": "Realizations", "value": "Realizations"},
-                        {
-                            "label": "Uncertainty envelope (slow)",
-                            "value": "Uncertainty envelope",
-                        },
-                    ],
-                    value=value,
-                    persistence=True,
-                    persistence_type="session",
-                    labelStyle={
-                        "display": "inline-block",
-                        "margin-right": "5px",
-                    },
-                ),
-            ]
-        ),
+    return wcc.Checklist(
+        label="Show surfaces",
+        id={"id": uuid, "element": "calculation"},
+        options=[
+            {"label": "Mean", "value": "Mean"},
+            {"label": "Min", "value": "Min"},
+            {"label": "Max", "value": "Max"},
+            {"label": "Realizations", "value": "Realizations"},
+            {
+                "label": "Uncertainty envelope (slow)",
+                "value": "Uncertainty envelope",
+            },
+        ],
+        value=value,
     )
 
 
@@ -345,9 +296,8 @@ def options_layout(
         children=[
             html.Div(
                 children=[
-                    html.Label(
+                    wcc.Label(
                         "Resolution (m) ",
-                        className="webviz-structunc-range-label",
                     ),
                     dcc.Input(
                         className="webviz-structunc-range-input",
@@ -362,9 +312,8 @@ def options_layout(
             ),
             html.Div(
                 children=[
-                    html.Label(
+                    wcc.Label(
                         "Extension (m) ",
-                        className="webviz-structunc-range-label",
                     ),
                     dcc.Input(
                         className="webviz-structunc-range-input",
@@ -381,10 +330,7 @@ def options_layout(
             html.Div(
                 style={"margin-top": "10px"},
                 children=[
-                    html.Label(
-                        "Depth range settings:",
-                        style={"font-weight": "bold"},
-                    ),
+                    wcc.Label("Depth range settings:"),
                     wcc.FlexBox(
                         style={"display": "flex"},
                         children=[
@@ -416,11 +362,7 @@ def options_layout(
                             ),
                         ],
                     ),
-                    dcc.RadioItems(
-                        style={
-                            "margin-top": "5px",
-                            "margin-bottom": "10px",
-                        },
+                    wcc.RadioItems(
                         id={
                             "id": uuid,
                             "settings": "zrange_locks",
@@ -435,16 +377,9 @@ def options_layout(
                                 "value": "lock",
                             },
                         ],
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin-right": "5px",
-                        },
                         value="truncate",
                     ),
-                    dcc.Checklist(
-                        style={
-                            "margin-bottom": "10px",
-                        },
+                    wcc.Checklist(
                         id={
                             "id": uuid,
                             "settings": "ui_options",
@@ -453,8 +388,6 @@ def options_layout(
                             {"label": "Keep zoom state", "value": "uirevision"},
                         ],
                         value=["uirevision"] if "uirevision" in initial_layout else [],
-                        persistence=True,
-                        persistence_type="session",
                     ),
                 ],
             ),
@@ -463,33 +396,21 @@ def options_layout(
 
 
 def settings_layout(get_uuid: Callable, initial_settings: Dict) -> html.Div:
-    return html.Details(
-        className="webviz-structunc-settings",
-        open=False,
+    return wcc.Selectors(
+        open_details=False,
+        label="⚙️ Settings",
         children=[
-            html.Summary(
-                style={
-                    "font-size": "15px",
-                    "font-weight": "bold",
-                },
-                children="⚙️ Settings",
+            options_layout(
+                uuid=get_uuid("intersection-data"),
+                depth_truncations=initial_settings.get("depth_truncations", {}),
+                resolution=initial_settings.get("resolution", 10),
+                extension=initial_settings.get("extension", 500),
+                initial_layout=initial_settings.get("intersection_layout", {}),
             ),
-            html.Div(
-                style={"padding": "10px"},
-                children=[
-                    options_layout(
-                        uuid=get_uuid("intersection-data"),
-                        depth_truncations=initial_settings.get("depth_truncations", {}),
-                        resolution=initial_settings.get("resolution", 10),
-                        extension=initial_settings.get("extension", 500),
-                        initial_layout=initial_settings.get("intersection_layout", {}),
-                    ),
-                    open_modal_layout(
-                        modal_id="color",
-                        uuid=get_uuid("modal"),
-                        title="Intersection colors",
-                    ),
-                ],
+            open_modal_layout(
+                modal_id="color",
+                uuid=get_uuid("modal"),
+                title="Intersection colors",
             ),
         ],
     )

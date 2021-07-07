@@ -54,18 +54,28 @@ class DiskUsage(WebvizPluginABC):
     def layout(self) -> html.Div:
         return html.Div(
             [
-                html.H5(
+                wcc.Header(
                     f"Disk usage on {self.scratch_dir} per user as of {self.date}",
                     style={"text-align": "center"},
                 ),
                 wcc.FlexBox(
                     children=[
-                        wcc.Graph(
-                            style={"flex": 1},
-                            figure=self.pie_chart,
-                            config={"displayModeBar": False},
+                        wcc.Frame(
+                            color="white",
+                            children=wcc.FlexColumn(
+                                wcc.Graph(
+                                    figure=self.pie_chart,
+                                    config={"displayModeBar": False},
+                                )
+                            ),
                         ),
-                        wcc.Graph(style={"flex": 2}, figure=self.bar_chart),
+                        wcc.Frame(
+                            color="white",
+                            children=wcc.FlexColumn(
+                                flex=2,
+                                children=wcc.Graph(figure=self.bar_chart),
+                            ),
+                        ),
                     ]
                 ),
             ]

@@ -130,6 +130,7 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
         self.column_keys = column_keys
         self.time_index = sampling
         if self.time_index not in ("daily", "monthly", "yearly"):
@@ -370,15 +371,14 @@ folder, to avoid risk of not extracting the right data.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    style={"flex": 1},
+                wcc.Frame(
+                    style={"flex": 1, "height": "90vh"},
                     children=[
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("fip_array"),
+                        wcc.Selectors(
+                            label="Selectors",
                             children=[
-                                html.Div("FIP array:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="FIP array",
                                     id=self.uuid("fip"),
                                     options=[
                                         {"label": i, "value": i}
@@ -390,30 +390,14 @@ folder, to avoid risk of not extracting the right data.
                                         else self.fip_arrays[0]
                                     ),
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("groupby"),
-                            children=[
-                                html.Div("Group by:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Group by",
                                     id=self.selectors_id("groupby"),
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("ensemble"),
-                            children=[
-                                html.Div("Ensembles:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Ensembles",
                                     id=self.selectors_id("ensemble"),
                                     options=[
                                         {"label": i, "value": i} for i in self.ensembles
@@ -421,34 +405,20 @@ folder, to avoid risk of not extracting the right data.
                                     value=self.ensembles,
                                     multi=True,
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("vector"),
-                            children=[
-                                html.Div("Time series:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Time series",
                                     id=self.selectors_id("vector"),
                                     clearable=False,
                                     optionHeight=80,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("timeseries_visualization"),
+                        wcc.Selectors(
+                            label="Visualization",
                             children=[
-                                html.Div(
-                                    "Time series visualization:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.RadioItems(
+                                wcc.RadioItems(
+                                    label="Time series",
                                     id=self.selectors_id("timeseries_visualization"),
                                     options=[
                                         {
@@ -461,20 +431,9 @@ folder, to avoid risk of not extracting the right data.
                                         },
                                     ],
                                     value="statistics",
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ],
-                        ),
-                        html.Label(
-                            style={"paddingBottom": "15px"},
-                            id=self.uuid("date_visualization"),
-                            children=[
-                                html.Div(
-                                    "Single date statistics as:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Single date statistics as",
                                     id=self.selectors_id("date_view"),
                                     options=[
                                         {"label": i.lower().capitalize(), "value": i}
@@ -487,34 +446,45 @@ folder, to avoid risk of not extracting the right data.
                                     ],
                                     value="table",
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                        html.Div(
-                            children="Filters:",
-                            style={"font-weight": "bold"},
+                        wcc.Selectors(
+                            label="Filters:",
+                            children=html.Div(id=self.uuid("filters"), children=[]),
                         ),
-                        html.Div(id=self.uuid("filters"), children=[]),
                     ],
                 ),
-                html.Div(
-                    style={"flex": 6, "paddingLeft": "5px"},
+                wcc.FlexColumn(
+                    flex=6,
+                    style={"height": "90vh"},
                     children=[
-                        wcc.Graph(
-                            id=self.uuid("graph"),
-                            clickData={"points": [{"x": str(self.smry["DATE"].min())}]},
-                            style={"height": "450px"},
+                        wcc.Frame(
+                            color="white",
+                            highlight=False,
+                            children=wcc.Graph(
+                                id=self.uuid("graph"),
+                                clickData={
+                                    "points": [{"x": str(self.smry["DATE"].min())}]
+                                },
+                                style={"height": "40vh"},
+                            ),
                         ),
-                        html.Div(
-                            id=self.uuid("stats_title"),
-                            style={
-                                "textAlign": "center",
-                            },
-                            children="",
+                        wcc.Frame(
+                            style={"height": "45vh"},
+                            color="white",
+                            highlight=False,
+                            children=[
+                                html.Div(
+                                    id=self.uuid("stats_title"),
+                                    style={
+                                        "textAlign": "center",
+                                    },
+                                    children="",
+                                ),
+                                html.Div(id=self.uuid("date_view_wrapper")),
+                            ],
                         ),
-                        html.Div(id=self.uuid("date_view_wrapper")),
                     ],
                 ),
                 dcc.Store(
@@ -565,39 +535,26 @@ folder, to avoid risk of not extracting the right data.
             if fipdesc is None:
                 nodes = get_fip_array_nodes(fip, self.smry_cols)
                 filters = [
-                    html.Details(
-                        open=True,
-                        children=[
-                            html.Summary("Regions:"),
-                            wcc.Select(
-                                id=self.selectors_id(fip + self.uuid("regions")),
-                                options=[{"label": i, "value": i} for i in nodes],
-                                size=min([len(nodes), 10]),
-                                value=nodes,
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    )
+                    wcc.SelectWithLabel(
+                        label="Regions",
+                        id=self.selectors_id(fip + self.uuid("regions")),
+                        options=[{"label": i, "value": i} for i in nodes],
+                        size=min([len(nodes), 10]),
+                        value=nodes,
+                    ),
                 ]
+
             else:
                 filters = [
-                    html.Details(
-                        open=True,
-                        children=[
-                            html.Summary(group.lower().capitalize()),
-                            wcc.Select(
-                                id=self.selectors_id(fip + self.uuid(group)),
-                                options=[
-                                    {"label": i, "value": i}
-                                    for i in group_df["SUBGROUP"].unique()
-                                ],
-                                size=min([len(group_df["SUBGROUP"].unique()), 5]),
-                                value=group_df["SUBGROUP"].unique(),
-                                persistence=True,
-                                persistence_type="session",
-                            ),
+                    wcc.SelectWithLabel(
+                        label=group.lower().capitalize(),
+                        id=self.selectors_id(fip + self.uuid(group)),
+                        options=[
+                            {"label": i, "value": i}
+                            for i in group_df["SUBGROUP"].unique()
                         ],
+                        size=min([len(group_df["SUBGROUP"].unique()), 5]),
+                        value=group_df["SUBGROUP"].unique(),
                     )
                     for group, group_df in fipdesc.groupby("GROUP")
                 ]
@@ -949,11 +906,21 @@ def render_single_date_graph(
                     "Not unique data for column, date and ensemble combination."
                 )
             trace = _make_trace(
-                date_viz, df, col, col.split("_")[-1], colors[col.split("_")[-1]]
+                date_viz,
+                df,
+                col,
+                col.split("_filtered_on_")[-1],
+                colors[col.split("_filtered_on_")[-1]],
             )
             if trace is not None:
                 traces.append(trace)
-    layout = {"height": 600, "margin": {"t": 10, "b": 230}, "showlegend": True}
+    layout = {
+        "height": 500,
+        "margin": {
+            "t": 10,
+        },
+        "showlegend": True,
+    }
 
     if date_viz == "histogram":
         layout.update(
@@ -1049,7 +1016,7 @@ def render_table(
                 raise ValueError("Not unique data for column and date combination.")
             table.append(
                 {
-                    "Group": col.split("_")[-1],
+                    "Group": col.split("_filtered_on_")[-1],
                     "Minimum": df["nanmin"].iat[0],
                     "Maximum": df["nanmax"].iat[0],
                     "Mean": df["nanmean"].iat[0],
@@ -1322,8 +1289,8 @@ def add_statistic_traces(
                 add_fanchart_traces(
                     stat_df=stat_df,
                     col=col,
-                    legend_group=col.split("_")[-1],
-                    color=groupby_color[groupby][col.split("_")[-1]],
+                    legend_group=col.split("_filtered_on_")[-1],
+                    color=groupby_color[groupby][col.split("_filtered_on_")[-1]],
                     line_shape=line_shape,
                 )
             )

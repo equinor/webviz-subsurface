@@ -4,9 +4,7 @@ from typing import Optional
 import dash_core_components as dcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .views import main_view
@@ -84,12 +82,7 @@ slow for large models.
         drop_constants: bool = True,
     ):
         super().__init__()
-        WEBVIZ_ASSETS.add(
-            pathlib.Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
+
         self.theme = webviz_settings.theme
         self.time_index = time_index
         self.column_keys = column_keys

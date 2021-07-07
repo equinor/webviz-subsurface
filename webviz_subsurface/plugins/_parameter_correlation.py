@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import dash
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
@@ -15,19 +14,6 @@ from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from .._datainput.fmu_input import scratch_ensemble
-
-
-class Widgets:
-    @staticmethod
-    def dropdown_from_dict(dom_id: str, dictionary: dict) -> dcc.Dropdown:
-        return dcc.Dropdown(
-            id=dom_id,
-            options=[{"label": k, "value": v} for k, v in dictionary.items()],
-            value=list(dictionary.values())[0],
-            clearable=False,
-            persistence=True,
-            persistence_type="session",
-        )
 
 
 class ParameterCorrelation(WebvizPluginABC):
@@ -77,7 +63,7 @@ class ParameterCorrelation(WebvizPluginABC):
     @property
     def matrix_plot(self) -> html.Div:
         return html.Div(
-            style={"height": "400px"},
+            style={"height": "45vh"},
             children=wcc.Graph(
                 id=self.ids("matrix"),
                 clickData={"points": [{"x": self.p_cols[0], "y": self.p_cols[0]}]},
@@ -87,64 +73,67 @@ class ParameterCorrelation(WebvizPluginABC):
     @property
     def control_div(self) -> list:
         return [
-            html.Div(
-                style={"padding": "5px"},
+            wcc.Selectors(
+                label="Distribution plot horizontal axis",
                 children=[
-                    html.Label(
-                        "Parameter horizontal axis:",
-                        style={"font-weight": "bold"},
-                    ),
-                    dcc.Dropdown(
+                    wcc.Dropdown(
                         id=self.ids("parameter1"),
+                        label="Parameter",
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
-                        persistence=True,
-                        persistence_type="session",
                     ),
-                    Widgets.dropdown_from_dict(self.ids("ensemble-1"), self.ensembles),
+                    wcc.Dropdown(
+                        label="Ensemble",
+                        id=self.ids("ensemble-1"),
+                        options=[
+                            {"label": k, "value": v} for k, v in self.ensembles.items()
+                        ],
+                        value=list(self.ensembles.values())[0],
+                        clearable=False,
+                    ),
                 ],
             ),
-            html.Div(
-                style={"padding": "5px"},
+            wcc.Selectors(
+                label="Distribution plot vertical axis",
                 children=[
-                    html.Label(
-                        "Parameter vertical axis:", style={"font-weight": "bold"}
-                    ),
-                    dcc.Dropdown(
+                    wcc.Dropdown(
                         id=self.ids("parameter2"),
+                        label="Parameter",
                         options=[{"label": p, "value": p} for p in self.p_cols],
                         value=self.p_cols[0],
                         clearable=False,
-                        persistence=True,
-                        persistence_type="session",
                     ),
-                    Widgets.dropdown_from_dict(self.ids("ensemble-2"), self.ensembles),
+                    wcc.Dropdown(
+                        label="Ensemble",
+                        id=self.ids("ensemble-2"),
+                        options=[
+                            {"label": k, "value": v} for k, v in self.ensembles.items()
+                        ],
+                        value=list(self.ensembles.values())[0],
+                        clearable=False,
+                    ),
                 ],
             ),
-            html.Div(
-                style={"padding": "5px"},
+            wcc.Selectors(
+                label="Distribution plot options",
                 children=[
-                    html.Label("Color scatter by:", style={"font-weight": "bold"}),
-                    dcc.Dropdown(
+                    wcc.Dropdown(
+                        label="Color by",
                         id=self.ids("scatter-color"),
                         options=[{"label": p, "value": p} for p in self.p_cols],
-                        persistence=True,
-                        persistence_type="session",
+                    ),
+                    wcc.Checklist(
+                        id=self.ids("density"),
+                        style={"padding": "5px"},
+                        options=[
+                            {
+                                "label": "Show scatterplot density",
+                                "value": "density",
+                            }
+                        ],
                     ),
                 ],
-            ),
-            dcc.Checklist(
-                id=self.ids("density"),
-                style={"padding": "5px"},
-                options=[
-                    {
-                        "label": "Show scatterplot density",
-                        "value": "density",
-                    }
-                ],
-                persistence=True,
-                persistence_type="session",
             ),
         ]
 
@@ -152,33 +141,36 @@ class ParameterCorrelation(WebvizPluginABC):
     def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
             children=[
-                html.Div(
-                    style={"flex": 1},
+                wcc.Frame(
+                    style={"flex": 1, "height": "90vh"},
                     children=[
-                        self.matrix_plot,
-                        html.Div(
-                            style={"padding": "5px"},
-                            children=[
-                                html.Label(
-                                    "Set ensemble in all plots:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                Widgets.dropdown_from_dict(
-                                    self.ids("ensemble-all"), self.ensembles
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={"flex": 1},
-                    children=[
-                        html.Div(
-                            style={"height": "400px"},
-                            children=[wcc.Graph(id=self.ids("scatter"))],
+                        wcc.Selectors(
+                            label="Ensemble in both plots",
+                            children=wcc.Dropdown(
+                                id=self.ids("ensemble-all"),
+                                options=[
+                                    {"label": k, "value": v}
+                                    for k, v in self.ensembles.items()
+                                ],
+                                value=list(self.ensembles.values())[0],
+                                clearable=False,
+                            ),
                         )
                     ]
                     + self.control_div,
+                ),
+                wcc.Frame(
+                    style={"flex": 6, "height": "90vh"},
+                    children=[
+                        html.Div(
+                            children=[
+                                self.matrix_plot,
+                                wcc.Graph(
+                                    style={"height": "45vh"}, id=self.ids("scatter")
+                                ),
+                            ],
+                        )
+                    ],
                 ),
             ]
         )

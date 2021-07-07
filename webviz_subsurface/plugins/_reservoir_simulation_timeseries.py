@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable
+from typing import List, Dict, Union, Tuple, Callable, Optional
 import sys
 from pathlib import Path
 import json
@@ -14,6 +14,7 @@ from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
@@ -41,6 +42,17 @@ from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
+
+
+def _check_plugin_options(options: Optional[dict]) -> Optional[Tuple[str, str]]:
+    if options:
+        if "vector1" in options or "vector2" in options or "vector3" in options:
+            return (
+                "Please use 'vectors' instead of 'vector1/2/3' in this plugin's options.",
+                "Single vector options ('vector1', 'vector2', 'vector3')"
+                " have been replaced with a vectors list.",
+            )
+    return None
 
 
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
@@ -129,7 +141,10 @@ folder, to avoid risk of not extracting the right data.
 """
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
-    # pylint:disable=too-many-arguments
+
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         app: dash.Dash,
@@ -159,6 +174,7 @@ folder, to avoid risk of not extracting the right data.
 
         self.smry: pd.DataFrame
         self.smry_meta: Union[pd.DataFrame, None]
+
         if csvfile:
             self.smry = read_csv(csvfile)
             self.smry_meta = None
@@ -198,14 +214,16 @@ folder, to avoid risk of not extracting the right data.
             c
             for c in self.smry.columns
             if c not in ReservoirSimulationTimeSeries.ENSEMBLE_COLUMNS
-            and not historical_vector(c, self.smry_meta, False) in self.smry.columns
+            and historical_vector(c, self.smry_meta, False) not in self.smry.columns
         ]
 
-        self.dropdown_options = []
+        self.vector_data: list = []
         for vec in self.smry_cols:
-            self.dropdown_options.append(
-                {"label": f"{simulation_vector_description(vec)} ({vec})", "value": vec}
+            split = vec.split(":")
+            self._add_vector(
+                self.vector_data, vec, simulation_vector_description(split[0])
             )
+
             if (
                 self.smry_meta is not None
                 and self.smry_meta.is_total[vec]
@@ -215,22 +233,35 @@ folder, to avoid risk of not extracting the right data.
                 # Requires that the time_index was either defined or possible to infer.
                 avgrate_vec = rename_vec_from_cum(vector=vec, as_rate=True)
                 interval_vec = rename_vec_from_cum(vector=vec, as_rate=False)
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(avgrate_vec)} ({avgrate_vec})",
-                        "value": avgrate_vec,
-                    }
+
+                avgrate_split = avgrate_vec.split(":")
+                interval_split = interval_vec.split(":")
+
+                self._add_vector(
+                    self.vector_data,
+                    avgrate_vec,
+                    f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
                 )
-                self.dropdown_options.append(
-                    {
-                        "label": f"{simulation_vector_description(interval_vec)} ({interval_vec})",
-                        "value": interval_vec,
-                    }
+                self._add_vector(
+                    self.vector_data,
+                    interval_vec,
+                    f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
 
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.theme = webviz_settings.theme
+
         self.plot_options = options if options else {}
+        if "vectors" not in self.plot_options:
+            self.plot_options["vectors"] = []
+        for vector in [
+            vector
+            for vector in ["vector1", "vector2", "vector3"]
+            if vector in self.plot_options.keys()
+        ]:
+            self.plot_options["vectors"].append(self.plot_options[vector])
+        self.plot_options["vectors"] = self.plot_options["vectors"][:3]
+
         self.plot_options["date"] = (
             str(self.plot_options.get("date"))
             if self.plot_options.get("date")
@@ -240,11 +271,15 @@ folder, to avoid risk of not extracting the right data.
             line_shape_fallback
         )
         # Check if initially plotted vectors exist in data, raise ValueError if not.
-        missing_vectors = [
-            value
-            for key, value in self.plot_options.items()
-            if key in ["vector1", "vector2", "vector3"] and value not in self.smry_cols
-        ]
+        missing_vectors = (
+            [
+                value
+                for value in self.plot_options["vectors"]
+                if value not in self.smry_cols
+            ]
+            if "vectors" in self.plot_options
+            else []
+        )
         if missing_vectors:
             raise ValueError(
                 f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
@@ -254,6 +289,36 @@ folder, to avoid risk of not extracting the right data.
             )
         self.allow_delta = len(self.ensembles) > 1
         self.set_callbacks(app)
+
+    @staticmethod
+    def _add_vector(vector_data: list, vector: str, description: str) -> None:
+        split = vector.split(":")
+
+        if next((x for x in vector_data if x["name"] == split[0]), None) is None:
+            vector_data.append(
+                {
+                    "name": split[0],
+                    "description": description,
+                    "children": [],
+                }
+            )
+
+        if len(split) == 2:
+            for x in vector_data:
+                if x["name"] == split[0]:
+                    if (
+                        next(
+                            (y for y in x["children"] if y["name"] == split[1]),
+                            None,
+                        )
+                        is None
+                    ):
+                        x["children"].append(
+                            {
+                                "name": split[1],
+                            }
+                        )
+                    break
 
     @property
     def ens_colors(self) -> dict:
@@ -345,125 +410,88 @@ folder, to avoid risk of not extracting the right data.
             children=[
                 html.Div(
                     style={"display": show_delta},
-                    children=html.Label(
-                        children=[
-                            html.Span("Mode:", style={"font-weight": "bold"}),
-                            dcc.RadioItems(
-                                id=self.uuid("mode"),
-                                style={"marginBottom": "25px"},
-                                options=[
-                                    {
-                                        "label": "Individual ensembles",
-                                        "value": "ensembles",
-                                    },
-                                    {
-                                        "label": "Delta between ensembles",
-                                        "value": "delta_ensembles",
-                                    },
-                                ],
-                                value="ensembles",
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ]
+                    children=wcc.RadioItems(
+                        label="Mode",
+                        id=self.uuid("mode"),
+                        style={"marginBottom": "0.5vh"},
+                        options=[
+                            {
+                                "label": "Individual ensembles",
+                                "value": "ensembles",
+                            },
+                            {
+                                "label": "Delta between ensembles",
+                                "value": "delta_ensembles",
+                            },
+                        ],
+                        value="ensembles",
                     ),
                 ),
-                html.Div(
-                    id=self.uuid("show_ensembles"),
-                    children=html.Label(
-                        children=[
-                            html.Span(
-                                "Selected ensembles:", style={"font-weight": "bold"}
-                            ),
-                            dcc.Dropdown(
-                                id=self.uuid("ensemble"),
-                                clearable=False,
-                                multi=True,
-                                options=[
-                                    {"label": i, "value": i} for i in self.ensembles
-                                ],
-                                value=[self.ensembles[0]],
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
+                wcc.Dropdown(
+                    wrapper_id=self.uuid("show_ensembles"),
+                    label="Selected ensembles",
+                    id=self.uuid("ensemble"),
+                    clearable=False,
+                    multi=True,
+                    options=[{"label": i, "value": i} for i in self.ensembles],
+                    value=[self.ensembles[0]],
                 ),
                 html.Div(
                     id=self.uuid("calc_delta"),
                     style={"display": "none"},
                     children=[
-                        html.Span(
-                            "Selected ensemble delta (A-B):",
-                            style={"font-weight": "bold"},
-                        ),
-                        html.Div(
-                            style=self.set_grid_layout("1fr 1fr"),
+                        wcc.Label("Selected ensemble delta (A-B):"),
+                        wcc.FlexBox(
                             children=[
-                                html.Div(
-                                    [
-                                        html.Label(
-                                            style={"fontSize": "12px"},
-                                            children="Ensemble A",
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.uuid("base_ens"),
-                                            clearable=False,
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.ensembles
-                                            ],
-                                            value=self.ensembles[0],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                wcc.FlexColumn(
+                                    min_width="100px",
+                                    children=wcc.Dropdown(
+                                        label="Ensemble A",
+                                        id=self.uuid("base_ens"),
+                                        clearable=False,
+                                        options=[
+                                            {"label": i, "value": i}
+                                            for i in self.ensembles
+                                        ],
+                                        value=self.ensembles[0],
+                                    ),
                                 ),
-                                html.Div(
-                                    [
-                                        html.Label(
-                                            style={"fontSize": "12px"},
-                                            children="Ensemble B",
-                                        ),
-                                        dcc.Dropdown(
-                                            id=self.uuid("delta_ens"),
-                                            clearable=False,
-                                            options=[
-                                                {"label": i, "value": i}
-                                                for i in self.ensembles
-                                            ],
-                                            value=self.ensembles[-1],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ]
+                                wcc.FlexColumn(
+                                    min_width="100px",
+                                    children=wcc.Dropdown(
+                                        label="Ensemble B",
+                                        id=self.uuid("delta_ens"),
+                                        clearable=False,
+                                        options=[
+                                            {"label": i, "value": i}
+                                            for i in self.ensembles
+                                        ],
+                                        value=self.ensembles[-1],
+                                    ),
                                 ),
                             ],
                         ),
                     ],
                 ),
-            ]
+            ],
         )
 
     @property
     def from_cumulatives_layout(self) -> html.Div:
         return html.Div(
             style=(
-                {"marginTop": "15px", "display": "block"}
+                {}
                 if len(self.time_interval_options) > 0 and self.smry_meta is not None
                 else {"display": "none"}
             ),
             children=[
-                html.Span(
-                    "Calculated from cumulatives:",
-                    style={"font-weight": "bold"},
-                ),
-                html.Div(
+                wcc.Label("Calculated from cumulatives:"),
+                wcc.Label(
                     "Average (AVG_) and interval (INTVL_) time series",
-                    style={"font-style": "italic", "font-size": "0.75em"},
+                    style={"font-style": "italic"},
                 ),
                 html.Div(
-                    dcc.RadioItems(
+                    wcc.RadioItems(
                         id=self.uuid("cum_interval"),
                         options=[
                             {
@@ -474,8 +502,6 @@ folder, to avoid risk of not extracting the right data.
                             for i in self.time_interval_options
                         ],
                         value=self.time_index,
-                        persistence=True,
-                        persistence_type="session",
                     ),
                 ),
             ],
@@ -486,144 +512,113 @@ folder, to avoid risk of not extracting the right data.
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    style={"flex": 1},
-                    children=[
-                        self.delta_layout,
-                        html.Div(
-                            id=self.uuid("vectors"),
-                            style={"marginTop": "15px"},
-                            children=[
-                                html.Span(
-                                    "Time series:", style={"font-weight": "bold"}
-                                ),
-                                dcc.Dropdown(
-                                    style={
-                                        "marginTop": "5px",
-                                        "marginBottom": "5px",
-                                        "fontSize": ".95em",
-                                    },
-                                    optionHeight=55,
-                                    id=self.uuid("vector1"),
-                                    clearable=False,
-                                    multi=False,
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get(
-                                        "vector1", self.smry_cols[0]
+                wcc.FlexColumn(
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        children=[
+                            wcc.Selectors(
+                                label="Ensembles", children=[self.delta_layout]
+                            ),
+                            wcc.Selectors(
+                                label="Time series",
+                                id=self.uuid("vectors"),
+                                children=wsc.VectorSelector(
+                                    id=self.uuid("vectors"),
+                                    maxNumSelectedNodes=3,
+                                    data=self.vector_data,
+                                    persistence=True,
+                                    persistence_type="session",
+                                    selectedTags=self.plot_options.get(
+                                        "vectors", [self.smry_cols[0]]
                                     ),
-                                    persistence=True,
-                                    persistence_type="session",
+                                    numSecondsUntilSuggestionsAreShown=0.5,
+                                    lineBreakAfterTag=True,
                                 ),
-                                dcc.Dropdown(
-                                    style={"marginBottom": "5px", "fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector2"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector2", None),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                dcc.Dropdown(
-                                    style={"fontSize": ".95em"},
-                                    optionHeight=55,
-                                    id=self.uuid("vector3"),
-                                    clearable=True,
-                                    multi=False,
-                                    placeholder="Add additional series",
-                                    options=self.dropdown_options,
-                                    value=self.plot_options.get("vector3", None),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ],
-                        ),
-                        html.Details(
-                            id=self.uuid("visualization"),
-                            style={"marginTop": "15px"},
-                            open=True,
-                            children=[
-                                html.Summary(
-                                    "Visualization:", style={"font-weight": "bold"}
-                                ),
-                                dcc.RadioItems(
-                                    id=self.uuid("statistics"),
-                                    options=[
-                                        {
-                                            "label": "Individual realizations",
-                                            "value": "realizations",
-                                        },
-                                        {
-                                            "label": "Statistical lines",
-                                            "value": "statistics",
-                                        },
-                                        {
-                                            "label": "Statistical fanchart",
-                                            "value": "fanchart",
-                                        },
-                                    ],
-                                    value=self.plot_options.get(
-                                        "visualization", "statistics"
+                            ),
+                            wcc.Selectors(
+                                label="Visualization",
+                                id=self.uuid("visualization"),
+                                children=[
+                                    wcc.RadioItems(
+                                        id=self.uuid("statistics"),
+                                        options=[
+                                            {
+                                                "label": "Individual realizations",
+                                                "value": "realizations",
+                                            },
+                                            {
+                                                "label": "Statistical lines",
+                                                "value": "statistics",
+                                            },
+                                            {
+                                                "label": "Statistical fanchart",
+                                                "value": "fanchart",
+                                            },
+                                        ],
+                                        value=self.plot_options.get(
+                                            "visualization", "statistics"
+                                        ),
                                     ),
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ],
-                        ),
-                        html.Details(
-                            id=self.uuid("options"),
-                            style={"marginTop": "15px"},
-                            open=False,
-                            children=[
-                                html.Summary("Options:", style={"font-weight": "bold"}),
-                                dcc.Checklist(
-                                    id=self.uuid("trace_options"),
-                                    options=[
-                                        {"label": val, "value": val}
-                                        for val in ["History", "Histogram"]
-                                    ],
-                                    value=["History"],
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                                html.Div(
-                                    id=self.uuid("view_stat_options"),
-                                    style={"display": "block"}
-                                    if "statistics"
-                                    in self.plot_options.get("visualization", "")
-                                    else {"display": "none"},
-                                    children=[
-                                        dcc.Checklist(
-                                            id=self.uuid("stat_options"),
-                                            options=[
-                                                {"label": val, "value": val}
-                                                for val in [
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Options",
+                                id=self.uuid("options"),
+                                children=[
+                                    wcc.Checklist(
+                                        id=self.uuid("trace_options"),
+                                        options=[
+                                            {"label": val, "value": val}
+                                            for val in ["History", "Histogram"]
+                                        ],
+                                        value=["History"],
+                                    ),
+                                    html.Div(
+                                        id=self.uuid("view_stat_options"),
+                                        style={"display": "block"}
+                                        if "statistics"
+                                        in self.plot_options.get("visualization", "")
+                                        else {"display": "none"},
+                                        children=[
+                                            wcc.Checklist(
+                                                id=self.uuid("stat_options"),
+                                                options=[
+                                                    {"label": val, "value": val}
+                                                    for val in [
+                                                        "Mean",
+                                                        "P10 (high)",
+                                                        "P50 (median)",
+                                                        "P90 (low)",
+                                                        "Maximum",
+                                                        "Minimum",
+                                                    ]
+                                                ],
+                                                value=[
                                                     "Mean",
                                                     "P10 (high)",
-                                                    "P50 (median)",
                                                     "P90 (low)",
-                                                    "Maximum",
-                                                    "Minimum",
-                                                ]
-                                            ],
-                                            value=["Mean", "P10 (high)", "P90 (low)"],
-                                            persistence=True,
-                                            persistence_type="session",
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        self.from_cumulatives_layout,
-                    ],
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Calculations",
+                                children=[self.from_cumulatives_layout],
+                            ),
+                        ],
+                    )
                 ),
-                html.Div(
-                    style={"flex": 3},
+                wcc.FlexColumn(
+                    flex=4,
                     children=[
-                        html.Div(
+                        wcc.Frame(
+                            style={"height": "90vh"},
+                            highlight=False,
+                            color="white",
                             children=wcc.Graph(
+                                style={"height": "85vh"},
                                 id=self.uuid("graph"),
                             ),
                         ),
@@ -642,9 +637,7 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vectors"), "selectedNodes"),
                 Input(self.uuid("ensemble"), "value"),
                 Input(self.uuid("mode"), "value"),
                 Input(self.uuid("base_ens"), "value"),
@@ -658,9 +651,7 @@ folder, to avoid risk of not extracting the right data.
         )
         # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -679,12 +670,8 @@ folder, to avoid risk of not extracting the right data.
             if calc_mode not in ["ensembles", "delta_ensembles"]:
                 raise PreventUpdate
 
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             # Synthesize ensembles list for delta mode
             if calc_mode == "delta_ensembles":
@@ -717,17 +704,20 @@ folder, to avoid risk of not extracting the right data.
                 if "Histogram" in trace_options:
                     titles.append(
                         date_to_interval_conversion(
-                            date=date, vector=vec, interval=cum_interval, as_date=False
+                            date=date,
+                            vector=vec,
+                            interval=cum_interval,
+                            as_date=False,
                         )
                     )
 
             # Make a plotly subplot figure
             fig = make_subplots(
-                rows=len(vectors),
+                rows=max(1, len(vectors)),
                 cols=2 if "Histogram" in trace_options else 1,
                 shared_xaxes=True,
                 vertical_spacing=0.05,
-                subplot_titles=titles,
+                subplot_titles=titles if titles else ["No vector selected"],
             )
 
             # Loop through each vector and calculate relevant plot
@@ -742,6 +732,7 @@ folder, to avoid risk of not extracting the right data.
                 time_index=self.time_index,
                 cum_interval=cum_interval,
             )
+
             for i, vector in enumerate(vectors):
                 if dfs[vector]["data"].empty:
                     continue
@@ -821,8 +812,6 @@ folder, to avoid risk of not extracting the right data.
 
             fig = fig.to_dict()
             fig["layout"].update(
-                height=800,
-                margin={"t": 20, "b": 0},
                 barmode="overlay",
                 bargap=0.01,
                 bargroupgap=0.2,
@@ -846,9 +835,7 @@ folder, to avoid risk of not extracting the right data.
             self.plugin_data_output,
             [self.plugin_data_requested],
             [
-                State(self.uuid("vector1"), "value"),
-                State(self.uuid("vector2"), "value"),
-                State(self.uuid("vector3"), "value"),
+                State(self.uuid("vectors"), "selectedNodes"),
                 State(self.uuid("ensemble"), "value"),
                 State(self.uuid("mode"), "value"),
                 State(self.uuid("base_ens"), "value"),
@@ -859,9 +846,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _user_download_data(
             data_requested: Union[int, None],
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             ensembles: List[str],
             calc_mode: str,
             base_ens: str,
@@ -873,12 +858,6 @@ folder, to avoid risk of not extracting the right data.
             if data_requested is None:
                 raise PreventUpdate
 
-            # Combine selected vectors
-            vectors = [vector1]
-            if vector2:
-                vectors.append(vector2)
-            if vector3:
-                vectors.append(vector3)
             # Ensure selected ensembles is a list and prevent update if invalid calc_mode
             if calc_mode == "delta_ensembles":
                 ensembles = [base_ens, delta_ens]
@@ -887,6 +866,9 @@ folder, to avoid risk of not extracting the right data.
                     raise TypeError("ensembles should always be of type list")
             else:
                 raise PreventUpdate
+
+            if vectors is None:
+                vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
             dfs = calculate_vector_dataframes(
                 smry=self.smry,
@@ -900,39 +882,31 @@ folder, to avoid risk of not extracting the right data.
             )
             for vector, df in dfs.items():
                 if visualization in ["fanchart", "statistics"]:
-                    dfs[vector]["stat"] = df["stat"].sort_values(
+                    df["stat"] = df["stat"].sort_values(
                         by=[("", "ENSEMBLE"), ("", "DATE")]
                     )
                     if vector.startswith(("AVG_", "INTVL_")):
-                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
-                            "", "DATE"
-                        ].astype(str)
-                        dfs[vector]["stat"]["", "DATE"] = dfs[vector]["stat"][
-                            "", "DATE"
-                        ].apply(
+                        df["stat"]["", "DATE"] = df["stat"]["", "DATE"].astype(str)
+                        df["stat"]["", "DATE"] = df["stat"]["", "DATE"].apply(
                             date_to_interval_conversion,
                             vector=vector,
                             interval=cum_interval,
                             as_date=False,
                         )
                 else:
-                    dfs[vector]["data"] = df["data"].sort_values(
-                        by=["ENSEMBLE", "REAL", "DATE"]
-                    )
+                    df["data"] = df["data"].sort_values(by=["ENSEMBLE", "REAL", "DATE"])
                     # Reorder columns
-                    dfs[vector]["data"] = dfs[vector]["data"][
+                    df["data"] = df["data"][
                         ["ENSEMBLE", "REAL", "DATE"]
                         + [
                             col
-                            for col in dfs[vector]["data"].columns
+                            for col in df["data"].columns
                             if col not in ["ENSEMBLE", "REAL", "DATE"]
                         ]
                     ]
                     if vector.startswith(("AVG_", "INTVL_")):
-                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"][
-                            "DATE"
-                        ].astype(str)
-                        dfs[vector]["data"]["DATE"] = dfs[vector]["data"]["DATE"].apply(
+                        df["data"]["DATE"] = df["data"]["DATE"].astype(str)
+                        df["data"]["DATE"] = df["data"]["DATE"].apply(
                             date_to_interval_conversion,
                             vector=vector,
                             interval=cum_interval,
@@ -991,25 +965,22 @@ folder, to avoid risk of not extracting the right data.
         @app.callback(
             Output(self.uuid("cum_interval"), "options"),
             [
-                Input(self.uuid("vector1"), "value"),
-                Input(self.uuid("vector2"), "value"),
-                Input(self.uuid("vector3"), "value"),
+                Input(self.uuid("vectors"), "selectedNodes"),
             ],
             [State(self.uuid("cum_interval"), "options")],
         )
         def _activate_interval_radio_buttons(
-            vector1: str,
-            vector2: Union[str, None],
-            vector3: Union[str, None],
+            vectors: List[str],
             options: List[dict],
         ) -> List[dict]:
             """Switch activate/deactivate radio buttons for selectibg interval for
             calculations from cumulatives"""
             active = False
-            for vector in [vector1, vector2, vector3]:
-                if vector is not None and vector.startswith(("AVG_", "INTVL_")):
-                    active = True
-                    break
+            if vectors:
+                for vector in vectors:
+                    if vector is not None and vector.startswith(("AVG_", "INTVL_")):
+                        active = True
+                        break
             if active:
                 return [dict(option, **{"disabled": False}) for option in options]
             return [dict(option, **{"disabled": True}) for option in options]

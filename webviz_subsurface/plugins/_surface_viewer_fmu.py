@@ -399,7 +399,7 @@ attribute_settings:
                                     layers=[],
                                     unitScale={},
                                     autoScaleMap=True,
-                                    minZoom=-5,
+                                    minZoom=-19,
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
@@ -420,7 +420,7 @@ attribute_settings:
                                     layers=[],
                                     unitScale={},
                                     autoScaleMap=True,
-                                    minZoom=-5,
+                                    minZoom=-19,
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
@@ -441,7 +441,7 @@ attribute_settings:
                                     layers=[],
                                     unitScale={},
                                     autoScaleMap=True,
-                                    minZoom=-5,
+                                    minZoom=-19,
                                     updateMode="update",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
@@ -731,13 +731,12 @@ def calculate_surface_difference(
     surface2: xtgeo.RegularSurface,
     calculation: str = "Difference",
 ) -> xtgeo.RegularSurface:
-    surface3 = surface.copy()
     if calculation == "Difference":
-        surface3.values = surface3.values - surface2.values
+        calculated_surface = surface - surface2
     elif calculation == "Sum":
-        surface3.values = surface3.values + surface2.values
+        calculated_surface = surface + surface2
     elif calculation == "Product":
-        surface3.values = surface3.values * surface2.values
+        calculated_surface = surface * surface2
     elif calculation == "Quotient":
-        surface3.values = surface3.values / surface2.values
-    return surface3
+        calculated_surface = surface / surface2
+    return calculated_surface

@@ -56,7 +56,8 @@ class SurfaceSelector:
     def read_config(config: Union[str, dict]) -> dict:
         """Reads config file either from a yaml provided file or from a dict"""
         if isinstance(config, str):
-            return yaml.safe_load(open(config, "r"))
+            with open(config, "r") as filehandle:
+                return yaml.safe_load(filehandle)
 
         if isinstance(config, dict):
             return config
@@ -292,7 +293,7 @@ class SurfaceSelector:
                 raise PreventUpdate
             dates = self._dates_in_attr(attr)
 
-            if not dates or not dates[0]:
+            if dates is None or dates[0] is None:
                 return [], None, {"visibility": "hidden"}
 
             callback = ctx[0]["prop_id"]
@@ -328,7 +329,13 @@ class SurfaceSelector:
                 raise PreventUpdate
 
             dates_in_attr = self._dates_in_attr(attr)
-            if dates_in_attr and date and not date in dates_in_attr:
+
+            if (
+                dates_in_attr
+                and date
+                and not date
+                in dates_in_attr  # PyCQA/pylint#3045 # pylint: disable=unsupported-membership-test
+            ):
                 raise PreventUpdate
             return json.dumps({"name": name, "attribute": attr, "date": date})
 

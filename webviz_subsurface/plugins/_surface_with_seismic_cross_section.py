@@ -7,7 +7,6 @@ import xtgeo
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
@@ -168,23 +167,19 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         ]
 
     @property
-    def surface_layout(self):
-        """Layout for surface section"""
-        return html.Div(
+    def layout(self):
+        return wcc.FlexBox(
+            id=self.ids("layout"),
             children=[
-                wcc.FlexBox(
+                wcc.Frame(
+                    style={"flex": 1},
                     children=[
-                        html.Div(
+                        wcc.Selectors(
+                            label="Map settings",
                             children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                    children="Select surface",
-                                ),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
                                     id=self.ids("surface"),
+                                    label="Select surface",
                                     options=[
                                         {"label": name, "value": path}
                                         for name, path in zip(
@@ -193,14 +188,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.surfacefiles[0],
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ]
-                        ),
-                        html.Div(
-                            children=[
-                                dcc.RadioItems(
+                                wcc.RadioItems(
                                     id=self.ids("surface-type"),
                                     options=[
                                         {
@@ -213,66 +202,14 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                         },
                                     ],
                                     value="surface",
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                    ],
-                ),
-                html.Div(
-                    children=[
-                        html.Div(
-                            style={
-                                "marginTop": "20px",
-                                "height": "800px",
-                                "zIndex": -9999,
-                            },
+                        wcc.Selectors(
+                            label="Intersection settings",
                             children=[
-                                LeafletMap(
-                                    id=self.ids("map-view"),
-                                    autoScaleMap=True,
-                                    minZoom=-5,
-                                    updateMode="update",
-                                    layers=[],
-                                    drawTools={
-                                        "drawMarker": False,
-                                        "drawPolygon": False,
-                                        "drawPolyline": True,
-                                        "position": "topright",
-                                    },
-                                    mouseCoords={"position": "bottomright"},
-                                    colorBar={"position": "bottomleft"},
-                                    switch={
-                                        "value": False,
-                                        "disabled": False,
-                                        "label": "Hillshading",
-                                    },
-                                ),
-                            ],
-                        )
-                    ]
-                ),
-            ]
-        )
-
-    @property
-    def seismic_layout(self):
-        """Layout for color and other settings"""
-        return html.Div(
-            children=[
-                wcc.FlexBox(
-                    children=[
-                        html.Div(
-                            children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                    children="Select seismic cube",
-                                ),
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Select seismic cube",
                                     id=self.ids("cube"),
                                     options=[
                                         {"label": Path(cube).stem, "value": cube}
@@ -280,19 +217,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.segyfiles[0],
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
-                            ]
-                        ),
-                        html.Div(
-                            style={"zIndex": 2000},
-                            children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
+                                wcc.Label(
                                     children="Set colorscale",
                                 ),
                                 wcc.ColorScales(
@@ -300,59 +226,56 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     colorscale=self.initial_colors,
                                     nSwatches=12,
                                 ),
-                            ],
-                        ),
-                    ]
-                ),
-                wcc.FlexBox(
-                    children=[
-                        html.Div(
-                            style={
-                                "marginRight": "50px",
-                                "marginTop": "20px",
-                                "marginBottom": "0px",
-                                "flex": 1,
-                            },
-                            children=[
-                                html.Label(
-                                    style={
-                                        "font-weight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                    children="Set color range",
-                                ),
-                                dcc.RangeSlider(
+                                wcc.RangeSlider(
+                                    label="Set color range",
                                     id=self.ids("color-values"),
-                                    tooltip={"always_visible": True},
-                                    persistence=True,
-                                    persistence_type="session",
+                                    tooltip={"always_visible": False},
+                                ),
+                                html.Button(
+                                    id=self.ids("color-range-btn"),
+                                    children="Reset Range",
                                 ),
                             ],
                         ),
-                        html.Div(
-                            style={"flex": 1},
-                            children=html.Button(
-                                id=self.ids("color-range-btn"), children="Reset Range"
-                            ),
+                    ],
+                ),
+                wcc.Frame(
+                    highlight=False,
+                    style={
+                        "height": "800px",
+                        "flex": 3,
+                    },
+                    children=[
+                        LeafletMap(
+                            id=self.ids("map-view"),
+                            autoScaleMap=True,
+                            minZoom=-19,
+                            updateMode="update",
+                            layers=[],
+                            drawTools={
+                                "drawMarker": False,
+                                "drawPolygon": False,
+                                "drawPolyline": True,
+                                "position": "topright",
+                            },
+                            mouseCoords={"position": "bottomright"},
+                            colorBar={"position": "bottomleft"},
+                            switch={
+                                "value": False,
+                                "disabled": False,
+                                "label": "Hillshading",
+                            },
                         ),
                     ],
                 ),
                 html.Div(
-                    style={"height": "800px"},
-                    children=wcc.Graph(
-                        config={"displayModeBar": False}, id=self.ids("fence-view")
-                    ),
+                    style={"flex": 3, "height": "800px"},
+                    children=[
+                        wcc.Graph(
+                            config={"displayModeBar": False}, id=self.ids("fence-view")
+                        ),
+                    ],
                 ),
-            ]
-        )
-
-    @property
-    def layout(self):
-        return wcc.FlexBox(
-            id=self.ids("layout"),
-            children=[
-                html.Div(style={"flex": 1}, children=self.surface_layout),
-                html.Div(style={"flex": 1}, children=self.seismic_layout),
             ],
         )
 
@@ -486,7 +409,7 @@ def make_heatmap(
             "height": height,
             "title": title,
             "uirevision": uirevision,
-            "margin": {"b": 50, "t": 0, "r": 0},
+            "margin": {"b": 50, "t": 50, "r": 0},
             "yaxis": {
                 "title": yaxis_title,
                 "autorange": "reversed" if reverse_y else None,

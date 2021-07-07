@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import dash
 import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
@@ -147,18 +146,12 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
     @property
     def control_div(self) -> html.Div:
         return html.Div(
-            style={
-                "padding-right": 15,
-            },
             children=[
-                html.Label(
+                wcc.Selectors(
+                    label="Mode",
                     children=[
-                        html.Span("Mode:", style={"font-weight": "bold"}),
-                        dcc.RadioItems(
+                        wcc.RadioItems(
                             id=self.uuid("mode"),
-                            style={
-                                "padding-bottom": 10,
-                            },
                             options=[
                                 {
                                     "label": "Running time matrix",
@@ -170,48 +163,30 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                                 },
                             ],
                             value="running_time_matrix",
-                            persistence=True,
-                            persistence_type="session",
                         ),
                     ],
                 ),
-                html.Label(
+                wcc.Selectors(
+                    label="Ensemble",
                     children=[
-                        html.Span("Set ensemble:", style={"font-weight": "bold"}),
-                        html.Div(
-                            style={
-                                "padding-bottom": 10,
-                            },
-                            children=[
-                                dcc.Dropdown(
-                                    id=self.uuid("ensemble"),
-                                    options=[
-                                        {"label": ens, "value": ens}
-                                        for ens in self.ensembles
-                                    ],
-                                    value=self.ensembles[0],
-                                    clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
+                        wcc.Dropdown(
+                            id=self.uuid("ensemble"),
+                            options=[
+                                {"label": ens, "value": ens} for ens in self.ensembles
                             ],
+                            value=self.ensembles[0],
+                            clearable=False,
                         ),
                     ],
                 ),
-                html.Label(
-                    id=self.uuid("matrix_color"),
-                    style={"display": "block"},
+                wcc.Selectors(
+                    label="Coloring",
                     children=[
-                        html.Span(
-                            "Color jobs relative to running time of:",
-                            style={"font-weight": "bold"},
-                        ),
                         html.Div(
-                            style={
-                                "padding-bottom": 10,
-                            },
+                            id=self.uuid("matrix_color"),
                             children=[
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Color jobs relative to running time of:",
                                     id=self.uuid("relative_runtime"),
                                     options=[
                                         {"label": rel, "value": rel}
@@ -221,27 +196,15 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                                         0
                                     ],
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
-                    ],
-                ),
-                html.Label(
-                    id=self.uuid("parcoords_color"),
-                    style={"display": "none"},
-                    children=[
-                        html.Span(
-                            "Color realizations relative to:",
-                            style={"font-weight": "bold"},
-                        ),
                         html.Div(
-                            style={
-                                "padding-bottom": 10,
-                            },
+                            id=self.uuid("parcoords_color"),
+                            style={"display": "none"},
                             children=[
-                                dcc.Dropdown(
+                                wcc.Dropdown(
+                                    label="Color realizations relative to:",
                                     id=self.uuid("relative_real"),
                                     options=[
                                         {"label": rel, "value": rel}
@@ -251,68 +214,66 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
                                         0
                                     ],
                                     clearable=False,
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                         ),
                     ],
                 ),
-                html.Label(
-                    id=self.uuid("parameter_dropdown"),
-                    style={"display": "none"},
+                wcc.Selectors(
+                    label="Filtering",
                     children=[
-                        html.Span(
-                            "Selected parameters:",
-                            style={"font-weight": "bold"},
-                        ),
-                        wcc.Select(
-                            id=self.uuid("parameters"),
-                            style={"overflowX": "auto", "fontSize": "0.97rem"},
-                            options=[
-                                {"label": param, "value": param}
-                                for param in self.parameters
+                        html.Div(
+                            id=self.uuid("parameter_dropdown"),
+                            style={"display": "none"},
+                            children=[
+                                wcc.SelectWithLabel(
+                                    id=self.uuid("parameters"),
+                                    style={"overflowX": "auto", "fontSize": "0.97rem"},
+                                    options=[
+                                        {"label": param, "value": param}
+                                        for param in self.parameters
+                                    ],
+                                    multi=True,
+                                    value=self.visual_parameters,
+                                    size=min(50, len(self.visual_parameters)),
+                                ),
                             ],
-                            multi=True,
-                            value=self.visual_parameters,
-                            size=min(50, len(self.visual_parameters)),
-                            persistence=True,
-                            persistence_type="session",
+                        ),
+                        html.Div(
+                            id=self.uuid("filter_short_checkbox"),
+                            children=[
+                                wcc.Checklist(
+                                    label="Filter jobs",
+                                    id=self.uuid("filter_short"),
+                                    options=[
+                                        {
+                                            "label": "Slowest in ensemble less than "
+                                            f"{self.filter_shorter}s",
+                                            "value": "filter_short",
+                                        },
+                                    ],
+                                    value=["filter_short"],
+                                ),
+                            ],
                         ),
                     ],
                 ),
-                html.Label(
-                    id=self.uuid("filter_short_checkbox"),
-                    style={"display": "block"},
-                    children=[
-                        html.Span("Filter jobs:", style={"font-weight": "bold"}),
-                        dcc.Checklist(
-                            id=self.uuid("filter_short"),
-                            options=[
-                                {
-                                    "label": f"Slowest in ensemble less than {self.filter_shorter}"
-                                    "s",
-                                    "value": "filter_short",
-                                },
-                            ],
-                            value=["filter_short"],
-                            persistence=True,
-                            persistence_type="session",
-                        ),
-                    ],
-                ),
-            ],
+            ]
         )
 
     @property
     def layout(self) -> wcc.FlexBox:
         return wcc.FlexBox(
-            style={
-                "padding-top": 10,
-            },
             children=[
-                html.Div(style={"flex": "1"}, children=self.control_div),
-                html.Div(style={"flex": "3"}, children=self.plot_fig),
+                wcc.Frame(
+                    style={"flex": "1", "height": "90vh"}, children=self.control_div
+                ),
+                wcc.Frame(
+                    color="white",
+                    highlight=False,
+                    style={"flex": "6", "height": "90vh"},
+                    children=self.plot_fig,
+                ),
             ],
         )
 

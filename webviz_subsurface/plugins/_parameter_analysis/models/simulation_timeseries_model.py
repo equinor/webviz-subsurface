@@ -96,7 +96,9 @@ class SimulationTimeSeriesModel:
             for x in vector_names
             if x
             not in list(
-                chain.from_iterable([vgroups[vtype]["vectors"] for vtype in vgroups])
+                chain.from_iterable(
+                    [vtype_dict["vectors"] for vtype_dict in vgroups.values()]
+                )
             )
         ]
         if other_vectors:

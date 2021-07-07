@@ -5,7 +5,6 @@ import numpy as np
 import dash
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
@@ -119,52 +118,37 @@ class BhpQc(WebvizPluginABC):
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                html.Div(
-                    style={"flex": 1},
+                wcc.Frame(
+                    style={"flex": 1, "height": "45vh"},
                     children=[
-                        html.Label(
-                            children=[
-                                html.Span(
-                                    "Ensemble:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Dropdown(
-                                    id=self.uuid("ensemble"),
-                                    options=[
-                                        {"label": i, "value": i} for i in self.ensembles
-                                    ],
-                                    value=self.ensembles[0],
-                                    clearable=False,
-                                    multi=False,
-                                ),
-                            ],
+                        wcc.Dropdown(
+                            label="Ensemble",
+                            id=self.uuid("ensemble"),
+                            options=[{"label": i, "value": i} for i in self.ensembles],
+                            value=self.ensembles[0],
+                            clearable=False,
+                            multi=False,
                         ),
-                        html.Label(
-                            children=[
-                                html.Span("Plot type:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
-                                    id=self.uuid("plot_type"),
-                                    options=[
-                                        {"label": i, "value": i}
-                                        for i in [
-                                            "Fan chart",
-                                            "Bar chart",
-                                            "Line chart",
-                                        ]
-                                    ],
-                                    clearable=False,
-                                    value="Fan chart",
-                                ),
+                        wcc.Dropdown(
+                            label="Plot type",
+                            id=self.uuid("plot_type"),
+                            options=[
+                                {"label": i, "value": i}
+                                for i in [
+                                    "Fan chart",
+                                    "Bar chart",
+                                    "Line chart",
+                                ]
                             ],
+                            clearable=False,
+                            value="Fan chart",
                         ),
-                        html.Label(
+                        html.Div(
                             id=self.uuid("select_stat"),
                             style={"display": "none"},
                             children=[
-                                html.Span(
-                                    "Select statistics:", style={"font-weight": "bold"}
-                                ),
-                                wcc.Select(
+                                wcc.SelectWithLabel(
+                                    label="Select statistics",
                                     id=self.uuid("stat_bars"),
                                     options=[
                                         {"label": key, "value": value}
@@ -175,21 +159,18 @@ class BhpQc(WebvizPluginABC):
                                 ),
                             ],
                         ),
-                        html.Label(
-                            children=[
-                                html.Span("Sort by:", style={"font-weight": "bold"}),
-                                dcc.Dropdown(
-                                    id=self.uuid("sort_by"),
-                                    options=[
-                                        {"label": key, "value": value}
-                                        for key, value in self.label_map.items()
-                                    ],
-                                    clearable=False,
-                                    value="low_p90",
-                                ),
+                        wcc.Dropdown(
+                            label="Sort by",
+                            id=self.uuid("sort_by"),
+                            options=[
+                                {"label": key, "value": value}
+                                for key, value in self.label_map.items()
                             ],
+                            clearable=False,
+                            value="low_p90",
                         ),
-                        dcc.RadioItems(
+                        wcc.RadioItems(
+                            vertical=False,
                             id=self.uuid("ascending"),
                             options=[
                                 {"label": "Ascending", "value": True},
@@ -198,43 +179,29 @@ class BhpQc(WebvizPluginABC):
                             value=True,
                             labelStyle={"display": "inline-block"},
                         ),
-                        html.Label(
-                            children=[
-                                html.Span(
-                                    "Max number of wells in plot:",
-                                    style={"font-weight": "bold"},
-                                ),
-                                dcc.Slider(
-                                    id=self.uuid("n_wells"),
-                                    min=1,
-                                    max=len(self.wells),
-                                    value=min(10, len(self.wells)),
-                                    marks={1: 1, len(self.wells): len(self.wells)},
-                                ),
-                            ]
+                        wcc.Slider(
+                            label="Max number of wells in plot",
+                            id=self.uuid("n_wells"),
+                            min=1,
+                            max=len(self.wells),
+                            value=min(10, len(self.wells)),
+                            marks={1: 1, len(self.wells): len(self.wells)},
                         ),
-                        html.Label(
-                            children=[
-                                html.Span("Wells:", style={"font-weight": "bold"}),
-                                wcc.Select(
-                                    id=self.uuid("wells"),
-                                    options=[
-                                        {"label": i, "value": i} for i in self.wells
-                                    ],
-                                    size=min([len(self.wells), 20]),
-                                    value=self.wells,
-                                ),
-                            ],
+                        wcc.SelectWithLabel(
+                            label="Wells",
+                            id=self.uuid("wells"),
+                            options=[{"label": i, "value": i} for i in self.wells],
+                            size=min([len(self.wells), 20]),
+                            value=self.wells,
                         ),
                     ],
                 ),
-                html.Div(
-                    style={"flex": 3},
+                wcc.Frame(
+                    color="white",
+                    highlight=False,
+                    style={"flex": 6, "height": "45vh"},
                     children=[
-                        html.Div(
-                            # style={"height": "300px"},
-                            children=wcc.Graph(id=self.uuid("graph")),
-                        ),
+                        wcc.Graph(id=self.uuid("graph")),
                     ],
                 ),
             ],

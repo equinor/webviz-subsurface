@@ -7,7 +7,6 @@ import pandas as pd
 import dash_html_components as html
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -182,7 +181,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             self.ertdatadf["SIMULATED"] - self.ertdatadf["OBSERVED"]
         )
         self.ertdatadf["YEAR"] = pd.to_datetime(self.ertdatadf["DATE"]).dt.year
-        self.ertdatadf = self.ertdatadf.sort_values(by="DATE")
+        self.ertdatadf = (
+            self.ertdatadf.sort_values(  # PyCQA/pylint#4577 # pylint: disable=no-member
+                by="DATE"
+            )
+        )
         self.ertdatadf["DATE_IDX"] = self.ertdatadf["DATE"].apply(
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
@@ -193,9 +196,15 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                 "ACTIVE": 1,
             },
         )
-        self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
+        self.ertdatadf[
+            "STDDEV"
+        ] = self.ertdatadf.groupby(  # PyCQA/pylint#4577 # pylint: disable=no-member
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
-        )["SIMULATED"].transform("std")
+        )[
+            "SIMULATED"
+        ].transform(
+            "std"
+        )
 
         self.set_callbacks(app)
 
@@ -294,454 +303,301 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     @property
     def formation_plot_selectors(self) -> List[html.Div]:
-        return [
-            html.Div(
-                [
-                    html.Label(
-                        style={"font-weight": "bold"},
-                        children="Ensembles in well plot",
-                    ),
-                    dcc.Dropdown(
-                        id=self.uuid("ensemble"),
-                        options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
-                        ],
-                        value=self.ensembles[0],
-                        multi=True,
-                        clearable=False,
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ]
-            ),
-            wcc.FlexBox(
-                children=[
-                    html.Div(
-                        style={"flex": 1},
-                        children=[
-                            html.Label(
-                                style={"font-weight": "bold"},
-                                children="Well",
-                            ),
-                            dcc.Dropdown(
-                                id=self.uuid("well"),
-                                options=[
-                                    {"label": well, "value": well}
-                                    for well in self.well_names
-                                ],
-                                value=self.well_names[0],
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
-                    html.Div(
-                        style={"flex": 1},
-                        children=[
-                            html.Label(
-                                style={"font-weight": "bold"},
-                                children="Date",
-                            ),
-                            dcc.Dropdown(
-                                id=self.uuid("date"),
-                                options=[
-                                    {"label": date, "value": date}
-                                    for date in self.date_in_well(self.well_names[0])
-                                ],
-                                clearable=False,
-                                value=self.date_in_well(self.well_names[0])[0],
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
-                ]
-            ),
-            wcc.FlexBox(
-                children=[
-                    html.Div(
-                        style={"flex": 1},
-                        children=[
-                            html.Label(
-                                style={"font-weight": "bold"},
-                                children="Plot simulated results as",
-                            ),
-                            dcc.RadioItems(
-                                id=self.uuid("linetype"),
-                                options=[
-                                    {
-                                        "label": "Realization lines",
-                                        "value": "realization",
-                                    },
-                                    {
-                                        "label": "Statistical fanchart",
-                                        "value": "fanchart",
-                                    },
-                                ],
-                                value="realization",
-                                labelStyle={
-                                    "display": "inline-block",
-                                    "margin": "5px",
-                                },
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
-                    html.Div(
-                        style={"flex": 1},
-                        children=[
-                            html.Label(
-                                style={"font-weight": "bold"},
-                                children="Depth option",
-                            ),
-                            dcc.RadioItems(
-                                id=self.uuid("depth_option"),
-                                options=[
-                                    {
-                                        "label": "TVD",
-                                        "value": "TVD",
-                                    },
-                                    {
-                                        "label": "MD",
-                                        "value": "MD",
-                                    },
-                                ],
-                                value="TVD",
-                                labelStyle={
-                                    "display": "inline-block",
-                                    "margin": "5px",
-                                },
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-        ]
+        return wcc.Selectors(
+            label="Formation plot settings",
+            children=[
+                wcc.Dropdown(
+                    label="Ensemble",
+                    id=self.uuid("ensemble"),
+                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                    value=self.ensembles[0],
+                    multi=True,
+                    clearable=False,
+                ),
+                wcc.Dropdown(
+                    label="Well",
+                    id=self.uuid("well"),
+                    options=[
+                        {"label": well, "value": well} for well in self.well_names
+                    ],
+                    value=self.well_names[0],
+                    clearable=False,
+                ),
+                wcc.Dropdown(
+                    label="Date",
+                    id=self.uuid("date"),
+                    options=[
+                        {"label": date, "value": date}
+                        for date in self.date_in_well(self.well_names[0])
+                    ],
+                    clearable=False,
+                    value=self.date_in_well(self.well_names[0])[0],
+                ),
+                wcc.RadioItems(
+                    label="Plot simulations as",
+                    id=self.uuid("linetype"),
+                    options=[
+                        {
+                            "label": "Realization lines",
+                            "value": "realization",
+                        },
+                        {
+                            "label": "Statistical fanchart",
+                            "value": "fanchart",
+                        },
+                    ],
+                    value="realization",
+                ),
+                wcc.RadioItems(
+                    label="Depth option",
+                    id=self.uuid("depth_option"),
+                    options=[
+                        {
+                            "label": "TVD",
+                            "value": "TVD",
+                        },
+                        {
+                            "label": "MD",
+                            "value": "MD",
+                        },
+                    ],
+                    value="TVD",
+                ),
+            ],
+        )
 
     @property
     def map_plot_selectors(self) -> List[html.Div]:
 
-        return [
-            html.Div(
-                style={"marginRight": "10px"},
-                children=[
-                    html.Div(
-                        style={"width": "50%"},
-                        children=[
-                            html.Label(
-                                style={"font-weight": "bold"},
-                                children="Ensemble in map plot",
-                            ),
-                            dcc.Dropdown(
-                                id=self.uuid("map_ensemble"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in list(self.ertdatadf["ENSEMBLE"].unique())
-                                ],
-                                value=list(self.ertdatadf["ENSEMBLE"].unique())[0],
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="session",
-                            ),
-                        ],
-                    ),
-                    wcc.FlexBox(
-                        children=[
-                            html.Div(
-                                style={"flex": 1},
-                                children=[
-                                    html.Label(
-                                        style={"font-weight": "bold"},
-                                        children="Size by",
-                                    ),
-                                    dcc.Dropdown(
-                                        id=self.uuid("map_size"),
-                                        options=[
-                                            {
-                                                "label": "Standard Deviation",
-                                                "value": "STDDEV",
-                                            },
-                                            {
-                                                "label": "Misfit",
-                                                "value": "ABSDIFF",
-                                            },
-                                        ],
-                                        value="ABSDIFF",
-                                        clearable=False,
-                                        persistence=True,
-                                        persistence_type="session",
-                                    ),
-                                ],
-                            ),
-                            html.Div(
-                                style={"flex": 1},
-                                children=[
-                                    html.Label(
-                                        style={"font-weight": "bold"},
-                                        children="Color by",
-                                    ),
-                                    dcc.Dropdown(
-                                        id=self.uuid("map_color"),
-                                        options=[
-                                            {
-                                                "label": "Misfit",
-                                                "value": "ABSDIFF",
-                                            },
-                                            {
-                                                "label": "Standard Deviation",
-                                                "value": "STDDEV",
-                                            },
-                                            {
-                                                "label": "Year",
-                                                "value": "YEAR",
-                                            },
-                                        ],
-                                        value="STDDEV",
-                                        clearable=False,
-                                        persistence=True,
-                                        persistence_type="session",
-                                    ),
-                                ],
-                            ),
-                        ]
-                    ),
-                    html.Label(
-                        style={"font-weight": "bold"},
-                        children="Date range",
-                    ),
-                    html.Div(
-                        style={"width": "100%", "height": "70px"},
-                        children=[
-                            dcc.RangeSlider(
-                                id=self.uuid("map_date"),
-                                min=self.ertdatadf["DATE_IDX"].min(),
-                                max=self.ertdatadf["DATE_IDX"].max(),
-                                value=[
-                                    self.ertdatadf["DATE_IDX"].min(),
-                                    self.ertdatadf["DATE_IDX"].max(),
-                                ],
-                                marks=self.date_marks,
-                                persistence=True,
-                                persistence_type="session",
-                            )
-                        ],
-                    ),
-                ],
-            ),
-        ]
+        return wcc.Selectors(
+            label="Map plot settings",
+            children=[
+                wcc.Dropdown(
+                    label="Ensemble",
+                    id=self.uuid("map_ensemble"),
+                    options=[
+                        {"label": ens, "value": ens}
+                        for ens in list(self.ertdatadf["ENSEMBLE"].unique())
+                    ],
+                    value=list(self.ertdatadf["ENSEMBLE"].unique())[0],
+                    clearable=False,
+                ),
+                wcc.Dropdown(
+                    label="Size points by",
+                    id=self.uuid("map_size"),
+                    options=[
+                        {
+                            "label": "Standard Deviation",
+                            "value": "STDDEV",
+                        },
+                        {
+                            "label": "Misfit",
+                            "value": "ABSDIFF",
+                        },
+                    ],
+                    value="ABSDIFF",
+                    clearable=False,
+                ),
+                wcc.Dropdown(
+                    label="Color points by",
+                    id=self.uuid("map_color"),
+                    options=[
+                        {
+                            "label": "Misfit",
+                            "value": "ABSDIFF",
+                        },
+                        {
+                            "label": "Standard Deviation",
+                            "value": "STDDEV",
+                        },
+                        {
+                            "label": "Year",
+                            "value": "YEAR",
+                        },
+                    ],
+                    value="STDDEV",
+                    clearable=False,
+                ),
+                wcc.RangeSlider(
+                    label="Filter date range",
+                    id=self.uuid("map_date"),
+                    min=self.ertdatadf["DATE_IDX"].min(),
+                    max=self.ertdatadf["DATE_IDX"].max(),
+                    value=[
+                        self.ertdatadf["DATE_IDX"].min(),
+                        self.ertdatadf["DATE_IDX"].max(),
+                    ],
+                    marks=self.date_marks,
+                ),
+            ],
+        )
 
     def filter_layout(
         self, tab: str
     ) -> List[dash.development.base_component.Component]:
         """Layout for shared filters"""
-        return [
-            html.Label(
-                style={"font-weight": "bold"},
-                children=["Ensembles"],
-            ),
-            wcc.Select(
-                size=min(4, len(self.ensembles)),
-                id=self.uuid(f"ensemble-{tab}"),
-                options=[{"label": name, "value": name} for name in self.ensembles],
-                value=self.ensembles,
-                multi=True,
-                persistence=True,
-                persistence_type="session",
-            ),
-            html.Label(
-                style={"font-weight": "bold"},
-                children=["Wells"],
-            ),
-            wcc.Select(
-                size=min(20, len(self.well_names)),
-                id=self.uuid(f"well-{tab}"),
-                options=[{"label": name, "value": name} for name in self.well_names],
-                value=self.well_names,
-                multi=True,
-                persistence=True,
-                persistence_type="session",
-            ),
-            html.Label(
-                style={"font-weight": "bold"},
-                children=["Zones"],
-            ),
-            wcc.Select(
-                size=min(10, len(self.zone_names)),
-                id=self.uuid(f"zone-{tab}"),
-                options=[{"label": name, "value": name} for name in self.zone_names],
-                value=self.zone_names,
-                multi=True,
-                persistence=True,
-                persistence_type="session",
-            ),
-            html.Label(
-                style={"font-weight": "bold"},
-                children=["Dates"],
-            ),
-            wcc.Select(
-                size=min(10, len(self.dates)),
-                id=self.uuid(f"date-{tab}"),
-                options=[{"label": name, "value": name} for name in self.dates],
-                value=self.dates,
-                multi=True,
-                persistence=True,
-                persistence_type="session",
-            ),
-        ]
+        return wcc.Selectors(
+            label="Selectors",
+            children=[
+                wcc.SelectWithLabel(
+                    label="Ensembles",
+                    size=min(4, len(self.ensembles)),
+                    id=self.uuid(f"ensemble-{tab}"),
+                    options=[{"label": name, "value": name} for name in self.ensembles],
+                    value=self.ensembles,
+                    multi=True,
+                ),
+                wcc.SelectWithLabel(
+                    label="Wells",
+                    size=min(20, len(self.well_names)),
+                    id=self.uuid(f"well-{tab}"),
+                    options=[
+                        {"label": name, "value": name} for name in self.well_names
+                    ],
+                    value=self.well_names,
+                    multi=True,
+                ),
+                wcc.SelectWithLabel(
+                    label="Zones",
+                    size=min(10, len(self.zone_names)),
+                    id=self.uuid(f"zone-{tab}"),
+                    options=[
+                        {"label": name, "value": name} for name in self.zone_names
+                    ],
+                    value=self.zone_names,
+                    multi=True,
+                ),
+                wcc.SelectWithLabel(
+                    label="Dates",
+                    size=min(10, len(self.dates)),
+                    id=self.uuid(f"date-{tab}"),
+                    options=[{"label": name, "value": name} for name in self.dates],
+                    value=self.dates,
+                    multi=True,
+                ),
+            ],
+        )
 
     def size_color_layout(self) -> List[html.Div]:
-        return [
-            html.Div(
-                children=[
-                    html.Label(
-                        style={"font-weight": "bold"},
-                        children="Color by",
-                    ),
-                    dcc.Dropdown(
-                        id=self.uuid("crossplot_color"),
-                        options=[
-                            {
-                                "label": "Misfit",
-                                "value": "ABSDIFF",
-                            },
-                            {
-                                "label": "Standard Deviation",
-                                "value": "STDDEV",
-                            },
-                        ],
-                        value="STDDEV",
-                        clearable=False,
-                    ),
-                ],
-            ),
-            html.Div(
-                children=[
-                    html.Label(
-                        style={"font-weight": "bold"},
-                        children="Size by",
-                    ),
-                    dcc.Dropdown(
-                        id=self.uuid("crossplot_size"),
-                        options=[
-                            {
-                                "label": "Standard Deviation",
-                                "value": "STDDEV",
-                            },
-                            {
-                                "label": "Misfit",
-                                "value": "ABSDIFF",
-                            },
-                        ],
-                        value="ABSDIFF",
-                        clearable=False,
-                        persistence=True,
-                        persistence_type="session",
-                    ),
-                ],
-            ),
-        ]
+        return wcc.Selectors(
+            label="Plot settings",
+            children=[
+                wcc.Dropdown(
+                    label="Color by",
+                    id=self.uuid("crossplot_color"),
+                    options=[
+                        {
+                            "label": "Misfit",
+                            "value": "ABSDIFF",
+                        },
+                        {
+                            "label": "Standard Deviation",
+                            "value": "STDDEV",
+                        },
+                    ],
+                    value="STDDEV",
+                    clearable=False,
+                ),
+                wcc.Dropdown(
+                    label="Size by",
+                    id=self.uuid("crossplot_size"),
+                    options=[
+                        {
+                            "label": "Standard Deviation",
+                            "value": "STDDEV",
+                        },
+                        {
+                            "label": "Misfit",
+                            "value": "ABSDIFF",
+                        },
+                    ],
+                    value="ABSDIFF",
+                    clearable=False,
+                ),
+            ],
+        )
 
     @property
-    def layout(self) -> dcc.Tabs:
+    def layout(self) -> wcc.Tabs:
 
-        tabs_styles = {"height": "44px", "width": "100%"}
-        tab_style = {
-            "borderBottom": "1px solid #d6d6d6",
-            "padding": "6px",
-            "fontWeight": "bold",
-        }
-
-        tab_selected_style = {
-            "borderTop": "1px solid #d6d6d6",
-            "borderBottom": "1px solid #d6d6d6",
-            "backgroundColor": "#007079",
-            "color": "white",
-            "padding": "6px",
-        }
-
-        return dcc.Tabs(
-            style=tabs_styles,
+        return wcc.Tabs(
             children=[
-                dcc.Tab(
+                wcc.Tab(
                     label="RFT Map",
-                    style=tab_style,
-                    selected_style=tab_selected_style,
                     children=[
-                        html.Div(
+                        wcc.FlexBox(
                             children=[
-                                wcc.FlexBox(
+                                wcc.Frame(
+                                    style={"flex": 1, "height": "87vh"},
                                     children=[
-                                        html.Div(
-                                            style={"flex": 1},
-                                            children=self.map_plot_selectors,
-                                        ),
-                                        html.Div(
-                                            style={"flex": 1},
-                                            children=self.formation_plot_selectors,
-                                        ),
-                                    ]
+                                        self.map_plot_selectors,
+                                        self.formation_plot_selectors,
+                                    ],
                                 ),
-                                wcc.FlexBox(
-                                    children=[
-                                        wcc.Graph(
-                                            style={"flex": 1},
-                                            id=self.uuid("map"),
-                                        ),
-                                        wcc.Graph(
-                                            style={"flex": 1},
-                                            id=self.uuid("graph"),
-                                            figure={
-                                                "layout": {
-                                                    "height": 800,
-                                                    "margin": {"t": 50},
-                                                    "xaxis": {"showgrid": False},
-                                                    "yaxis": {"showgrid": False},
-                                                }
-                                            },
-                                        ),
-                                    ]
+                                wcc.Frame(
+                                    style={"flex": 3, "height": "87vh"},
+                                    color="white",
+                                    highlight=False,
+                                    children=wcc.Graph(
+                                        id=self.uuid("map"),
+                                    ),
+                                ),
+                                wcc.Frame(
+                                    style={"flex": 3, "height": "87vh"},
+                                    color="white",
+                                    highlight=False,
+                                    children=wcc.Graph(
+                                        id=self.uuid("graph"),
+                                        figure={
+                                            "layout": {
+                                                "height": 800,
+                                                "margin": {"t": 50},
+                                                "xaxis": {"showgrid": False},
+                                                "yaxis": {"showgrid": False},
+                                            }
+                                        },
+                                    ),
                                 ),
                             ]
                         )
                     ],
                 ),
-                dcc.Tab(
+                wcc.Tab(
                     label="RFT misfit per real",
-                    style=tab_style,
-                    selected_style=tab_selected_style,
                     children=[
                         wcc.FlexBox(
                             children=[
-                                html.Div(
-                                    style={"flex": 1},
+                                wcc.Frame(
+                                    style={"flex": 1, "height": "87vh"},
                                     children=self.filter_layout("misfitplot"),
                                 ),
-                                html.Div(
-                                    style={"flex": 4},
+                                wcc.Frame(
+                                    style={"flex": 6, "height": "87vh"},
+                                    color="white",
+                                    highlight=False,
                                     id=self.uuid("misfit-graph-wrapper"),
+                                    children=[],
                                 ),
                             ]
                         )
                     ],
                 ),
-                dcc.Tab(
+                wcc.Tab(
                     label="RFT crossplot - sim vs obs",
-                    style=tab_style,
-                    selected_style=tab_selected_style,
                     children=[
                         wcc.FlexBox(
                             children=[
-                                html.Div(
-                                    style={"flex": 1},
-                                    children=self.filter_layout("crossplot")
-                                    + self.size_color_layout(),
+                                wcc.Frame(
+                                    style={"flex": 1, "height": "87vh"},
+                                    children=[
+                                        self.filter_layout("crossplot"),
+                                        self.size_color_layout(),
+                                    ],
                                 ),
-                                html.Div(
-                                    style={"flex": 4},
+                                wcc.Frame(
+                                    style={"flex": 6, "height": "87vh"},
+                                    color="white",
+                                    highlight=False,
                                     children=[
                                         html.Div(
                                             id=self.uuid("crossplot-graph-wrapper")
@@ -752,20 +608,23 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
                         ),
                     ],
                 ),
-                dcc.Tab(
+                wcc.Tab(
                     label="RFT misfit per observation",
-                    style=tab_style,
-                    selected_style=tab_selected_style,
                     children=[
                         wcc.FlexBox(
                             children=[
-                                html.Div(
-                                    style={"flex": 1},
+                                wcc.Frame(
+                                    style={"flex": 1, "height": "87vh"},
                                     children=self.filter_layout("errorplot"),
                                 ),
-                                html.Div(
-                                    style={"flex": 4},
-                                    children=wcc.Graph(id=self.uuid("errorplot-graph")),
+                                wcc.Frame(
+                                    color="white",
+                                    highlight=False,
+                                    style={"flex": 6, "height": "87vh"},
+                                    children=wcc.Graph(
+                                        style={"height": "84vh"},
+                                        id=self.uuid("errorplot-graph"),
+                                    ),
                                 ),
                             ],
                         ),

@@ -296,9 +296,9 @@ class Unit:
                 for denom, denom_power in denominator.items():
                     if num == denom:
                         denominator[num] = max(0, denom_power - num_power)
-                        numerator[num] = max(0, num_power - denom_power)
+                        num_power = max(0, num_power - denom_power)
                         break
-                num_power = numerator[num]
+
                 if num_power > 0:
                     if self.__symbol == "":
                         self.__symbol += num

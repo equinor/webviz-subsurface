@@ -5,17 +5,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+
+### Added
+- [#669](https://github.com/equinor/webviz-subsurface/pull/669) - New generic plugin to visualize tornado plots from a csv file of responses.
+- [#685](https://github.com/equinor/webviz-subsurface/pull/685) - Added ERT forward model to convert from `.UNSMRY` to Arrow IPC file format (`.arrow`)
+
+### Changed
+- [#681](https://github.com/equinor/webviz-subsurface/pull/681) - `VolumetricAnalysis` upgrades - added page with tornadoplots to `VolumetricAnalysis`, automatic computation of volumes
+from the water zone if the volumes from the full grid geometry are included, and possibility of computing NTG from facies.
+- [#683](https://github.com/equinor/webviz-subsurface/pull/683) - Added deprecation warning to `InplaceVolumesOneByOne`.
+- [#661](https://github.com/equinor/webviz-subsurface/pull/661) - Moved existing clientside function to a general dash_clientside file to facilitate adding more functions later on.
+- [#658](https://github.com/equinor/webviz-subsurface/pull/658) - Refactored Tornado figure code to be more reusable. Improved the Tornado bar visualization, added table display
+ and improved layout in relevant plugins.
+- [#676](https://github.com/equinor/webviz-subsurface/pull/676) - Added realization points to Tornado visualization. Various improvements to Tornado figure layout.
+- [#667](https://github.com/equinor/webviz-subsurface/pull/667) - Standardized layout and styling of plugins.
+
+### Fixed
+- [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`
+- [#675](https://github.com/equinor/webviz-subsurface/pull/675) - Adjust minimum zoom level in surface plugins for visualization of large surfaces.
+
+### Added
+- [#662](https://github.com/equinor/webviz-subsurface/pull/662) - Added support in `WellCompletion` for connection history from summary data.
+
+## [0.2.3] - 2021-06-07
+
+### Changed
+- [#651](https://github.com/equinor/webviz-subsurface/pull/651) - Fixed issue with `_` in regions for `ReservoirSimulationTimeseriesRegional`.
+- [#642](https://github.com/equinor/webviz-subsurface/pull/642) - New functionality in `WellCompletions`: New stratigraphy input and tree
+selector in filters. Possibility to input colors either in stratigraphy or in the zone_layer_mapping `.lyr`-file. And kh unit automatically
+found in Eclipse files.
+
+### Fixed
+- [#659](https://github.com/equinor/webviz-subsurface/pull/659) - Added missing `display: block` in option selectors (e.g. radio items).
+
+### Added
+- [#645](https://github.com/equinor/webviz-subsurface/pull/645) - New generic lineplotter plugin for FMU data. This is the first plugin that uses
+a new system to reduce the memory footprint of large datasets.
+- [#641](https://github.com/equinor/webviz-subsurface/pull/641) - New plugin to analyze volumetrics results from FMU ensembles, replaces the `InplaceVolumes` plugin.
+
+## [0.2.2] - 2021-04-30
+
 ### Changed
 - [#618](https://github.com/equinor/webviz-subsurface/pull/618) - Added deprecation warning to `HorizonUncertaintyViewer`,
 `WellCrossSection` and `WellCrossSectionFMU`. These plugins will soon be removed. Relevant functionality is implememented
 in the new `StructuralUncertainty` plugin.
+- [#646](https://github.com/equinor/webviz-subsurface/pull/646) - Replaced `DropDowns` in `ReservoirSimulationTimeSeries` plugin with `VectorSelector` components.
 
 ### Fixed
 - [#621](https://github.com/equinor/webviz-subsurface/pull/621) - Fixed issue in `StructuralUncertainty` where map base layers did not load
 correctly from persisted user settings.
-- [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method
-
-### Added
+- [#626](https://github.com/equinor/webviz-subsurface/pull/626) - Fixed small bugs in the docstring of `WellCompletions` and added a tour_steps method.
 
 ## [0.2.1] - 2021-04-27
 ### Changed
