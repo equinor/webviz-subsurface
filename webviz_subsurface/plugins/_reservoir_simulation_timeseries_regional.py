@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import Optional, List, Tuple, Callable, Union, Any
+from typing import Optional, Dict, List, Tuple, Callable, Union, Any
 from pathlib import Path
 import fnmatch
 import warnings
@@ -39,6 +39,7 @@ from .._utils.simulation_timeseries import (
     get_simulation_line_shape,
 )
 from .._utils.colors import hex_to_rgba
+from .._utils.fanchart_helpers import FanchartData, get_fanchart_traces
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
@@ -1276,9 +1277,9 @@ def add_statistic_traces(
         if groupby == "ENSEMBLE":
             for ens in ensembles:
                 traces.extend(
-                    add_fanchart_traces(
+                    _get_fanchart_traces(
                         stat_df=stat_df[stat_df["ENSEMBLE"] == ens],
-                        col=col,
+                        column=col,
                         legend_group=ens,
                         color=groupby_color[groupby][ens],
                         line_shape=line_shape,
@@ -1286,9 +1287,9 @@ def add_statistic_traces(
                 )
         else:
             traces.extend(
-                add_fanchart_traces(
+                _get_fanchart_traces(
                     stat_df=stat_df,
-                    col=col,
+                    column=col,
                     legend_group=col.split("_filtered_on_")[-1],
                     color=groupby_color[groupby][col.split("_filtered_on_")[-1]],
                     line_shape=line_shape,
@@ -1297,72 +1298,31 @@ def add_statistic_traces(
     return traces
 
 
-def add_fanchart_traces(
-    stat_df: pd.DataFrame, col: str, legend_group: str, color: str, line_shape: str
-) -> List[dict]:
+def _get_fanchart_traces(
+    stat_df: pd.DataFrame, column: str, legend_group: str, color: str, line_shape: str
+) -> List[Dict[str, Any]]:
     """Renders a fanchart"""
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": f"Maximum {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmax"],
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"P90 {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["p90"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"Mean {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmean"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"P10 {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["p10"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"Minimum {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmin"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
+
+    x = stat_df["DATE"].tolist()
+
+    data = FanchartData(
+        samples=x,
+        mean=stat_df[column]["nanmean"].tolist(),
+        maximum=stat_df[column]["nanmax"].tolist(),
+        p90=stat_df[column]["p90"].tolist(),
+        p10=stat_df[column]["p10"].tolist(),
+        minimum=stat_df[column]["nanmin"].tolist(),
+    )
+
+    hovertemplate = f"{legend_group}"
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        line_shape=line_shape,
+        hovertext=hovertemplate,
+    )
 
 
 def get_fip_array_nodes(fip: str, smry_cols: list) -> List[int]:

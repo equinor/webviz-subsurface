@@ -17,6 +17,7 @@ import webviz_subsurface
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
 from .._utils.colors import hex_to_rgba
+from .._utils.fanchart_helpers import FanchartData, get_fanchart_traces
 
 
 class RelativePermeability(WebvizPluginABC):
@@ -769,7 +770,7 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
                     or bool(color_by == "SATNUM" and curve_no == 0 and ens_no == 0)
                 )
                 traces.extend(
-                    add_fanchart_traces(
+                    _get_fanchart_traces(
                         df_stat[curve],
                         colors.get(legend_group, colors[list(colors.keys())[0]]),
                         xaxis,
@@ -785,7 +786,7 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
 
 
 # pylint: disable=too-many-arguments
-def add_fanchart_traces(
+def _get_fanchart_traces(
     curve_stats,
     color,
     xaxis,
@@ -798,78 +799,28 @@ def add_fanchart_traces(
 ):
     """Renders a fanchart"""
 
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Maximum <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmax"].index.tolist(),
-            "y": curve_stats["nanmax"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} P90 <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["p90"].index.tolist(),
-            "y": curve_stats["p90"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Mean <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmean"].index.tolist(),
-            "y": curve_stats["nanmean"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": show_legend,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} P10 <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["p10"].index.tolist(),
-            "y": curve_stats["p10"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Minimum <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmin"].index.tolist(),
-            "y": curve_stats["nanmin"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
+    # Retrieve indices from one of the keys in series
+    x = curve_stats["nanmax"].index.tolist()
+    data = FanchartData(
+        samples=x,
+        mean=curve_stats["nanmean"].tolist(),
+        maximum=curve_stats["nanmax"].tolist(),
+        p90=curve_stats["p90"].tolist(),
+        p10=curve_stats["p10"].tolist(),
+        minimum=curve_stats["nanmin"].tolist(),
+    )
+
+    hovertemplate = f"{curve} <br>" f"Ensemble: {ens}, Satnum: {satnum}"
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        xaxis=xaxis,
+        yaxis=yaxis,
+        hovertext=hovertemplate,
+        show_legend=show_legend,
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

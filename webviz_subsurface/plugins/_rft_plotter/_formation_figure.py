@@ -5,6 +5,7 @@ import numpy as np
 
 from ._processing import interpolate_depth, filter_frame
 from ..._utils.colors import hex_to_rgba
+from ..._utils.fanchart_helpers import TraceDirection, FanchartData, get_fanchart_traces
 
 
 class FormationFigure:
@@ -265,7 +266,7 @@ class FormationFigure:
                     dframes["maximum"] = dframe.max()
                     dframes["minimum"] = dframe.min()
                     self.traces.extend(
-                        add_fanchart_traces(
+                        add_fanchart_traces2(
                             pd.concat(dframes, names=["STATISTIC"], sort=False)[
                                 "PRESSURE"
                             ],
@@ -341,3 +342,28 @@ def add_fanchart_traces(
             "showlegend": False,
         },
     ]
+
+
+def add_fanchart_traces2(
+    vector_stats: pd.DataFrame, color: str, legend_group: str
+) -> List[Dict[str, Any]]:
+    """Renders a fanchart for an ensemble vector"""
+
+    # Retrieve indices from one of the keys
+    x = vector_stats["maximum"].index.tolist()
+
+    data = FanchartData(
+        samples=x,
+        mean=vector_stats["mean"].tolist(),
+        maximum=vector_stats["maximum"].tolist(),
+        p90=vector_stats["p90"].tolist(),
+        p10=vector_stats["p10"].tolist(),
+        minimum=vector_stats["minimum"].tolist(),
+    )
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        direction=TraceDirection.VERTICAL,
+    )
