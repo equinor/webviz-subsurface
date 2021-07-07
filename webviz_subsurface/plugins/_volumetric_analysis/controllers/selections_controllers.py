@@ -215,9 +215,9 @@ def selections_controllers(
         ),
         Input({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "value"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
-        State(get_uuid("selections"), "data"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "options"),
+        State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "multi"),
         State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "id"),
         State({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "id"),
         State({"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "id"),
@@ -228,23 +228,24 @@ def selections_controllers(
         plot_table_select: str,
         reals: list,
         selector_ids: list,
-        prev_selection: dict,
         selected_tab: str,
         filter_options: list,
+        filter_multi: list,
         filter_ids: list,
         reals_ids: list,
         real_string_ids: list,
     ) -> tuple:
-        ctx = dash.callback_context.triggered[0]
 
         page_selections = {
             id_value["selector"]: values
             for id_value, values in zip(selector_ids, selectors)
             if id_value["tab"] == selected_tab
         }
-        page_filter_options = {
-            id_value["selector"]: values
-            for id_value, values in zip(filter_ids, filter_options)
+        page_filter_settings = {
+            id_value["selector"]: {"options": options, "multi": multi}
+            for id_value, options, multi in zip(
+                filter_ids, filter_options, filter_multi
+            )
             if id_value["tab"] == selected_tab
         }
 
@@ -272,16 +273,13 @@ def selections_controllers(
         output = {}
         for selector in ["SOURCE", "ENSEMBLE"]:
             multi = selector in selected_data
-            if not multi:
-                values = [page_filter_options[selector][0]["value"]]
+            selector_is_multi = page_filter_settings[selector]["multi"]
+            if not multi and selector_is_multi:
+                values = [page_filter_settings[selector]["options"][0]["value"]]
+            elif multi and not selector_is_multi:
+                values = [x["value"] for x in page_filter_settings[selector]["options"]]
             else:
-                values = (
-                    prev_selection[selected_page]["filters"][selector]
-                    if "page-selected" in ctx["prop_id"]
-                    and prev_selection is not None
-                    and selected_page in prev_selection
-                    else [x["value"] for x in page_filter_options[selector]]
-                )
+                multi = values = dash.no_update
             output[selector] = {"multi": multi, "values": values}
 
         # realization
