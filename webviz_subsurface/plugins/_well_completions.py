@@ -190,7 +190,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/tables/compdat.csv",
-        well_connection_status_file: str = WELL_CONNECTION_STATUS_FILE.read_text(),
+        well_connection_status_file: str = str(WELL_CONNECTION_STATUS_FILE),
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
