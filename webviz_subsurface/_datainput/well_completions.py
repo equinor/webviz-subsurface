@@ -8,7 +8,7 @@ import logging
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from ecl2df import common
+from ecl2df import common, EclFiles
 
 
 def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -104,23 +104,32 @@ def read_stratigraphy(
     return None
 
 
+def get_ecl_datafile(ensemble_path: str) -> Optional[str]:
+    """Returns the first eclipse DATA file found in the ensemble_path.
+    If no DATA file is found it returns None.
+    """
+    for filename in glob.glob(f"{ensemble_path}/eclipse/model/*.DATA"):
+        return filename
+    return None
+
+
 def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     """Returns the unit system of an eclipse deck. The options are \
     METRIC, FIELD, LAB and PVT-M.
 
-    If none of these are found, the function returns None, even though \
-    the default unit system is METRIC. This is because the unit system \
-    keyword could be in an include file.
-    """
-    for filename in glob.glob(f"{ensemble_path}/eclipse/model/*.DATA"):
-        with open(filename, "r") as handle:
-            ecl_data_lines = handle.readlines()
+    If none of these are found, the function returns METRIC
 
-        for unit_system in ["METRIC", "FIELD", "LAB", "PVT-M"]:
-            if any(line.startswith(unit_system) for line in ecl_data_lines):
-                return unit_system
+    If no eclipse DATA file is found in the ensemble path, it
+    returns None
+    """
+    datafile = get_ecl_datafile(ensemble_path)
+    if datafile is None:
         return None
-    return None
+    ecl_deck = EclFiles(datafile).get_ecldeck()
+    for keyword in ecl_deck:
+        if keyword.name in ["METRIC", "FIELD", "LAB", "PVT-M"]:
+            return keyword.name
+    return "METRIC"
 
 
 def read_well_connection_status(

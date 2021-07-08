@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from ecl.summary import EclSum, EclSumKeyWordVector
+from webviz_subsurface.plugins._well_completions import WELL_CONNECTION_STATUS_FILE
 
 
 DESCRIPTION: str = """
@@ -26,7 +27,7 @@ EXAMPLES: str = """
 Extracts well connection status history from the .UNSMRY file by running
 this in the ert workflow:
 
-    FORWARD_MODEL WELL_CONNECTION_STATUS(<INPUT>=eclipse/model/SOME.UNSMRY)
+    FORWARD_MODEL WELL_CONNECTION_STATUS(<ECLBASE>=eclipse/model/SOME)
 
 The default output file is share/results/tables/well_connection_status.parquet
 """
@@ -39,19 +40,15 @@ def _get_parser() -> argparse.ArgumentParser:
         description=DESCRIPTION,
     )
     parser.add_argument(
-        "input",
+        "eclbase",
         type=Path,
-        help="Input file",
+        help="Eclipse base name",
     )
     parser.add_argument(
         "--output",
         type=Path,
         help="Output file",
-        default=Path()
-        / "share"
-        / "results"
-        / "tables"
-        / "well_connection_status.parquet",
+        default=WELL_CONNECTION_STATUS_FILE,
     )
     return parser
 
@@ -117,7 +114,7 @@ def main() -> None:
     parser = _get_parser()
     args = parser.parse_args()
 
-    df = _extract_well_connection_status(args.input)
+    df = _extract_well_connection_status(args.eclbase.with_suffix(".UNSMRY"))
 
     # Create the output folder if it doesn't exist
     args.output.parent.mkdir(parents=True, exist_ok=True)
