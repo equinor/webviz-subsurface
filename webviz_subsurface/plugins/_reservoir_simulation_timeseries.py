@@ -1209,6 +1209,7 @@ def _get_fanchart_traces(
                 color=colors.get(ensemble, colors[list(colors.keys())[0]]),
                 legend_group=ensemble,
                 line_shape=line_shape,
+                hovertemplate=render_hovertemplate(vector, interval),
             )
         )
     return traces
