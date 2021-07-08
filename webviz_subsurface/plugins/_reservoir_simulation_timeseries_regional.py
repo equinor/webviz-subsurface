@@ -1307,11 +1307,11 @@ def _get_fanchart_traces(
 
     data = FanchartData(
         samples=x,
-        mean=stat_df[column]["nanmean"].tolist(),
-        maximum=stat_df[column]["nanmax"].tolist(),
-        p90=stat_df[column]["p90"].tolist(),
-        p10=stat_df[column]["p10"].tolist(),
-        minimum=stat_df[column]["nanmin"].tolist(),
+        mean=stat_df[column]["nanmean"].values,
+        maximum=stat_df[column]["nanmax"].values,
+        low=stat_df[column]["p90"].values,
+        high=stat_df[column]["p10"].values,
+        minimum=stat_df[column]["nanmin"].values,
     )
 
     hovertemplate = f"{legend_group}"

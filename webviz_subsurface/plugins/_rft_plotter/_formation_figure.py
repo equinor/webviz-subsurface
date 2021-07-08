@@ -266,7 +266,7 @@ class FormationFigure:
                     dframes["maximum"] = dframe.max()
                     dframes["minimum"] = dframe.min()
                     self.traces.extend(
-                        add_fanchart_traces2(
+                        _get_fanchart_traces(
                             pd.concat(dframes, names=["STATISTIC"], sort=False)[
                                 "PRESSURE"
                             ],
@@ -276,75 +276,7 @@ class FormationFigure:
                     )
 
 
-def add_fanchart_traces(
-    vector_stats: pd.DataFrame, color: str, legend_group: str
-) -> List[Dict[str, Any]]:
-    """Renders a fanchart for an ensemble vector"""
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": "Maximum",
-            "y": vector_stats["maximum"].index.tolist(),
-            "x": vector_stats["maximum"].values,
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P10",
-            "y": vector_stats["p10"].index.tolist(),
-            "x": vector_stats["p10"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Mean",
-            "y": vector_stats["mean"].index.tolist(),
-            "x": vector_stats["mean"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P90",
-            "y": vector_stats["p90"].index.tolist(),
-            "x": vector_stats["p90"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Minimum",
-            "y": vector_stats["minimum"].index.tolist(),
-            "x": vector_stats["minimum"].values,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
-
-
-def add_fanchart_traces2(
+def _get_fanchart_traces(
     vector_stats: pd.DataFrame, color: str, legend_group: str
 ) -> List[Dict[str, Any]]:
     """Renders a fanchart for an ensemble vector"""
@@ -354,11 +286,11 @@ def add_fanchart_traces2(
 
     data = FanchartData(
         samples=x,
-        mean=vector_stats["mean"].tolist(),
-        maximum=vector_stats["maximum"].tolist(),
-        p90=vector_stats["p90"].tolist(),
-        p10=vector_stats["p10"].tolist(),
-        minimum=vector_stats["minimum"].tolist(),
+        mean=vector_stats["mean"].values,
+        maximum=vector_stats["maximum"].values,
+        low=vector_stats["p90"].values,
+        high=vector_stats["p10"].values,
+        minimum=vector_stats["minimum"].values,
     )
 
     return get_fanchart_traces(

@@ -803,11 +803,11 @@ def _get_fanchart_traces(
     x = curve_stats["nanmax"].index.tolist()
     data = FanchartData(
         samples=x,
-        mean=curve_stats["nanmean"].tolist(),
-        maximum=curve_stats["nanmax"].tolist(),
-        p90=curve_stats["p90"].tolist(),
-        p10=curve_stats["p10"].tolist(),
-        minimum=curve_stats["nanmin"].tolist(),
+        mean=curve_stats["nanmean"].values,
+        maximum=curve_stats["nanmax"].values,
+        low=curve_stats["p90"].values,
+        high=curve_stats["p10"].values,
+        minimum=curve_stats["nanmin"].values,
     )
 
     hovertemplate = f"{curve} <br>" f"Ensemble: {ens}, Satnum: {satnum}"

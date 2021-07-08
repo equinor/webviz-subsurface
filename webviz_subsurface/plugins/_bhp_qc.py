@@ -376,11 +376,11 @@ def _get_fanchart_traces(
 
     data = FanchartData(
         samples=x,
-        mean=ens_stat_df["mean"].tolist(),
-        maximum=ens_stat_df["max"].tolist(),
-        p90=ens_stat_df["low_p90"].tolist(),
-        p10=ens_stat_df["high_p10"].tolist(),
-        minimum=ens_stat_df["min"].tolist(),
+        mean=ens_stat_df["mean"].values,
+        maximum=ens_stat_df["max"].values,
+        low=ens_stat_df["low_p90"].values,
+        high=ens_stat_df["high_p10"].values,
+        minimum=ens_stat_df["min"].values,
     )
 
     return get_fanchart_traces(data=data, color=color, legend_group=legend_group)

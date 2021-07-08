@@ -1197,11 +1197,11 @@ def _get_fanchart_traces(
 
         data = FanchartData(
             samples=ens_df[("", "DATE")].tolist(),
-            mean=ens_df[(vector, "mean")].tolist(),
-            maximum=ens_df[(vector, "max")].tolist(),
-            p90=ens_df[(vector, "low_p90")].tolist(),
-            p10=ens_df[(vector, "high_p10")].tolist(),
-            minimum=ens_df[(vector, "min")].tolist(),
+            mean=ens_df[(vector, "mean")].values,
+            maximum=ens_df[(vector, "max")].values,
+            low=ens_df[(vector, "low_p90")].values,
+            high=ens_df[(vector, "high_p10")].values,
+            minimum=ens_df[(vector, "min")].values,
         )
         traces.extend(
             get_fanchart_traces(
