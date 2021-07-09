@@ -14,11 +14,11 @@ class FanchartData:
 
     Attributes:
     samples - Common sample point list for each following value list.
-    mean    - List of mean value data. Type: float
-    maximum - List of maximum value data. Type: float
-    low     - List of low percentile value data. Type: float
-    high    - List of high percentile value data. Type: float
-    minimum - List of minimum value data. Type: float
+    mean    - 1D np.array of mean value data.
+    maximum - 1D np.array of maximum value data.
+    low     - 1D np.array of low percentile value data.
+    high    - 1D np.array of high percentile value data.
+    minimum - 1D np.array of minimum value data.
     """
 
     samples: list = field(default_factory=list)
@@ -75,12 +75,13 @@ def get_fanchart_traces(
     line_shape: str = "linear",
     xaxis: str = "x",
     yaxis: str = "y",
-    hovertext: str = "",
-    hovertemplate: Optional[str] = None,
     low_percentile_name: str = "P90",
     high_percentile_name: str = "P10",
     show_legend: bool = True,
     direction: TraceDirection = TraceDirection.HORIZONTAL,
+    hovertext: str = "",
+    hovertemplate: Optional[str] = None,
+    hovermode: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Utility function for creating statistical fanchart traces
@@ -116,7 +117,7 @@ def get_fanchart_traces(
     fill_color_dark = hex_to_rgba(color, 0.6)
     line_color = hex_to_rgba(color, 1)
 
-    def get_trace(data_name: str, values: np.ndarray) -> Dict[str, Any]:
+    def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
         trace = {
             "name": legend_group,
             "x": data.samples if direction == TraceDirection.HORIZONTAL else values,
@@ -128,47 +129,52 @@ def get_fanchart_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
+        if hovermode is not None:
+            trace["hovermode"] = hovermode
         if hovertemplate is not None:
-            trace["hovertemplate"] = hovertemplate + data_name
+            trace["hovertemplate"] = hovertemplate + statistics_name
         else:
-            trace["hovertext"] = data_name + " " + hovertext
+            trace["hovertext"] = statistics_name + " " + hovertext
         return trace
 
     traces: List[Dict[str, Any]] = []
 
     if data.minimum is not None:
         traces.append(
-            get_trace(
-                data_name="Minimum",
+            get_default_trace(
+                statistics_name="Minimum",
                 values=data.minimum,
             )
         )
 
     if data.low is not None:
-        low_trace = get_trace(
-            data_name=low_percentile_name,
+        low_trace = get_default_trace(
+            statistics_name=low_percentile_name,
             values=data.low,
         )
+        # Add fill to previous trace
         if len(traces) > 0:
             low_trace["fill"] = "tonexty"
             low_trace["fillcolor"] = fill_color_light
         traces.append(low_trace)
 
     if data.high is not None:
-        high_trace = get_trace(
-            data_name=high_percentile_name,
+        high_trace = get_default_trace(
+            statistics_name=high_percentile_name,
             values=data.high,
         )
+        # Add fill to previous trace
         if len(traces) > 0:
             high_trace["fill"] = "tonexty"
             high_trace["fillcolor"] = fill_color_dark
         traces.append(high_trace)
 
     if data.maximum is not None:
-        maximum_trace = get_trace(
-            data_name="Maximum",
+        maximum_trace = get_default_trace(
+            statistics_name="Maximum",
             values=data.maximum,
         )
+        # Add fill to previous trace (opposite color of previous fill)
         if len(traces) > 0:
             fill_color = (
                 fill_color_dark
@@ -181,8 +187,8 @@ def get_fanchart_traces(
         traces.append(maximum_trace)
 
     if data.mean is not None:
-        mean_trace = get_trace(
-            data_name="Mean",
+        mean_trace = get_default_trace(
+            statistics_name="Mean",
             values=data.mean,
         )
         # Set solid line for mean

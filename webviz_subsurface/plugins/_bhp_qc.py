@@ -383,4 +383,6 @@ def _get_fanchart_traces(
         minimum=ens_stat_df["min"].values,
     )
 
-    return get_fanchart_traces(data=data, color=color, legend_group=legend_group)
+    return get_fanchart_traces(
+        data=data, color=color, legend_group=legend_group, hovermode="x"
+    )
