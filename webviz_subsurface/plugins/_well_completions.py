@@ -468,9 +468,10 @@ def get_time_series(df: pd.DataFrame, time_steps: list) -> tuple:
 
     events, kh_values = [], []
     event_value, kh_value = 0, 0
+    unique_dates = df.DATE.unique()
 
     for timestep in time_steps:
-        if timestep in df.DATE.unique():
+        if timestep in unique_dates:
             df_timestep = df[df.DATE == timestep]
             df_timestep_open = df_timestep[df_timestep["OP/SH"] == "OPEN"]
 
