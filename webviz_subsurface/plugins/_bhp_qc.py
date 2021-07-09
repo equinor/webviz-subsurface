@@ -384,5 +384,10 @@ def _get_fanchart_traces(
     )
 
     return get_fanchart_traces(
-        data=data, color=color, legend_group=legend_group, hovermode="x"
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        high_percentile_name="P10 (high)",
+        low_percentile_name="P90 (low)",
+        hovermode="x",
     )
