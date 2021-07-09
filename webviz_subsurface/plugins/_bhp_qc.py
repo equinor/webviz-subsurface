@@ -13,7 +13,6 @@ from webviz_config import WebvizSettings
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._utils.unique_theming import unique_colors
-from .._utils.colors import hex_to_rgba
 from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
 
 

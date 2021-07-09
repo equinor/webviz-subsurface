@@ -8,8 +8,6 @@ import numpy as np
 import yaml
 from webviz_config.utils import terminal_colors
 
-from .._utils.colors import hex_to_rgba
-
 
 def set_simulation_line_shape_fallback(line_shape_fallback: str) -> str:
     """

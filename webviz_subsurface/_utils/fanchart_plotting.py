@@ -58,7 +58,8 @@ def validate_fanchart_data(data: FanchartData) -> None:
         )
     if data.high is not None and len(data.samples) != len(data.high):
         raise ValueError(
-            "Invalid fanchart high percentile value data length. len(data.samples) != len(data.high)"
+            "Invalid fanchart high percentile value data length. "
+            "len(data.samples) != len(data.high)"
         )
     if data.minimum is not None and len(data.samples) != len(data.minimum):
         raise ValueError(
