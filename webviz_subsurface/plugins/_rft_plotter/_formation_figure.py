@@ -4,8 +4,11 @@ import pandas as pd
 import numpy as np
 
 from ._processing import interpolate_depth, filter_frame
-from ..._utils.colors import hex_to_rgba
-from ..._utils.fanchart_helpers import TraceDirection, FanchartData, get_fanchart_traces
+from ..._utils.fanchart_plotting import (
+    TraceDirection,
+    FanchartData,
+    get_fanchart_traces,
+)
 
 
 class FormationFigure:

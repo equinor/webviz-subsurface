@@ -17,7 +17,7 @@ import webviz_subsurface
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
 from .._utils.colors import hex_to_rgba
-from .._utils.fanchart_helpers import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
 
 
 class RelativePermeability(WebvizPluginABC):

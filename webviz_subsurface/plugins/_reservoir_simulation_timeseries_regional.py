@@ -38,8 +38,7 @@ from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
 )
-from .._utils.colors import hex_to_rgba
-from .._utils.fanchart_helpers import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):

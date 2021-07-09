@@ -36,7 +36,7 @@ from .._utils.simulation_timeseries import (
     date_to_interval_conversion,
     check_and_format_observations,
 )
-from .._utils.fanchart_helpers import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
 from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
