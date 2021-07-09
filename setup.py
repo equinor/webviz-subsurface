@@ -94,6 +94,7 @@ setup(
         "webviz-subsurface-components>=0.4.4",
         "xtgeo>=2.14",
         "dataclasses>=0.8; python_version<'3.7'",
+        "types-dataclasses>=0.1.5; python_version<'3.7'",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
