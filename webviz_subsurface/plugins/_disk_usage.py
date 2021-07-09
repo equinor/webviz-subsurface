@@ -200,8 +200,7 @@ def _estimate_free_space(df: pd.DataFrame, scratch_dir: Path, date: str) -> floa
     txt_file = Path(scratch_dir / ".disk_usage" / f"disk_usage_user_test_{date}.txt")
     total_usage = None
     if txt_file.exists():
-        with open(txt_file, "r") as filehandle:
-            lines = filehandle.readlines()
+        lines = txt_file.read_text().splitlines()
         for line in lines[::-1]:  # reversed as last line is most likely
             if line.startswith("Total usage without overhead"):
                 line = line[len("Total usage without overhead") :]
