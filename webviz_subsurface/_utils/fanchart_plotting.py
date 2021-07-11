@@ -141,8 +141,8 @@ def get_fanchart_traces(
     plotted on top.
 
     Note that min and max, and high and low percentile are paired optional statistics. This implies
-    that if minimum is provided, maximum must be provided as well, and vice versa. The same yields for
-    low and high percentile data.
+    that if minimum is provided, maximum must be provided as well, and vice versa. The same yields
+    for low and high percentile data.
 
     The function provides a list of traces: [trace0, tract1, ..., traceN]
 
