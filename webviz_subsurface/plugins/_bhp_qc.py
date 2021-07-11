@@ -13,7 +13,13 @@ from webviz_config import WebvizSettings
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._utils.unique_theming import unique_colors
-from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
 
 class BhpQc(WebvizPluginABC):
@@ -375,18 +381,22 @@ def _get_fanchart_traces(
 
     data = FanchartData(
         samples=x,
-        mean=ens_stat_df["mean"].values,
-        maximum=ens_stat_df["max"].values,
-        low=ens_stat_df["low_p90"].values,
-        high=ens_stat_df["high_p10"].values,
-        minimum=ens_stat_df["min"].values,
+        low_high=LowHighData(
+            low_data=ens_stat_df["low_p90"].values,
+            low_name="P90 (low)",
+            high_data=ens_stat_df["high_p10"].values,
+            high_name="P10 (high)",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=ens_stat_df["min"].values,
+            maximum=ens_stat_df["max"].values,
+        ),
+        free_line=FreeLineData("Mean", ens_stat_df["mean"].values),
     )
 
     return get_fanchart_traces(
         data=data,
         color=color,
         legend_group=legend_group,
-        high_percentile_name="P10 (high)",
-        low_percentile_name="P90 (low)",
         hovermode="x",
     )

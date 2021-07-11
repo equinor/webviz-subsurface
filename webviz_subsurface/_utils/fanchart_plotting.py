@@ -8,25 +8,69 @@ from .colors import hex_to_rgba
 
 
 @dataclass
+class FreeLineData:
+    """
+    Dataclass for defining statistics data for freee line trace in fanchart
+
+    Attributes:
+    name - Name of statistics data
+    data - 1D np.array of statistics value data
+    """
+
+    name: str
+    data: np.ndarray
+
+
+@dataclass
+class LowHighData:
+    """
+    Definition of paired low and high percentile data for fanchart
+
+    Attributes:
+    low_data  - 1D np.array of low percentile value data
+    low_name  - Name of low percentile
+    high_data - 1D np.array of high percentile value data
+    high_name - Name of high percentile
+    """
+
+    low_data: np.ndarray
+    low_name: str
+    high_data: np.ndarray
+    high_name: str
+
+
+@dataclass
+class MinMaxData:
+    """
+    Definition of paired minimum and maximum data for fanchart
+
+    Attributes:
+    minimum - 1D np.array of minimum value data
+    maximum - 1D np.array of maximum value data
+    """
+
+    minimum: np.ndarray
+    maximum: np.ndarray
+
+
+@dataclass
 class FanchartData:
     """
     Dataclass defining fanchart data utilized in creation of statistical fanchart traces
 
     Attributes:
     samples - Common sample point list for each following value list.
-    mean    - 1D np.array of mean value data.
-    maximum - 1D np.array of maximum value data.
-    low     - 1D np.array of low percentile value data.
-    high    - 1D np.array of high percentile value data.
-    minimum - 1D np.array of minimum value data.
+    free_line - FreeLineData with name and value data for free line trace in fanchart (e.g.
+     mean, median, etc.)
+    minimum_maximum - Paired optional minimum and maximum data for fanchart plotting
+    low_high - Paired optional low and high percentile names and data for fanchart plotting
+
     """
 
     samples: list = field(default_factory=list)
-    mean: Optional[np.ndarray] = None
-    maximum: Optional[np.ndarray] = None
-    low: Optional[np.ndarray] = None
-    high: Optional[np.ndarray] = None
-    minimum: Optional[np.ndarray] = None
+    free_line: Optional[FreeLineData] = None
+    minimum_maximum: Optional[MinMaxData] = None
+    low_high: Optional[LowHighData] = None
 
 
 class TraceDirection(Enum):
@@ -44,26 +88,33 @@ def validate_fanchart_data(data: FanchartData) -> None:
     """
     if len(data.samples) <= 0:
         raise ValueError("Empty x-axis data list in FanchartData")
-    if data.mean is not None and len(data.samples) != len(data.mean):
+    if data.free_line is not None and len(data.samples) != len(data.free_line.data):
         raise ValueError(
-            "Invalid fanchart mean value data length. len(data.samples) != len(data.mean)"
+            "Invalid fanchart mean value data length. len(data.samples) != len(free_line.data)"
         )
-    if data.maximum is not None and len(data.samples) != len(data.maximum):
+    if data.minimum_maximum is not None and len(data.samples) != len(
+        data.minimum_maximum.minimum
+    ):
         raise ValueError(
-            "Invalid fanchart maximum value data length. len(data.samples) != len(data.maximum)"
+            "Invalid fanchart minimum value data length. len(data.samples) "
+            "!= len(data.minimum_maximum.minimum)"
         )
-    if data.low is not None and len(data.samples) != len(data.low):
+    if data.minimum_maximum is not None and len(data.samples) != len(
+        data.minimum_maximum.maximum
+    ):
         raise ValueError(
-            "Invalid fanchart low percentile value data length. len(data.samples) != len(data.low)"
+            "Invalid fanchart maximum value data length. len(data.samples) != "
+            "len(data.minimum_maximum.maximum)"
         )
-    if data.high is not None and len(data.samples) != len(data.high):
+    if data.low_high is not None and len(data.samples) != len(data.low_high.low_data):
+        raise ValueError(
+            "Invalid fanchart low percentile value data length. len(data.samples) "
+            "!= len(data.low_high.low_data)"
+        )
+    if data.low_high is not None and len(data.samples) != len(data.low_high.high_data):
         raise ValueError(
             "Invalid fanchart high percentile value data length. "
-            "len(data.samples) != len(data.high)"
-        )
-    if data.minimum is not None and len(data.samples) != len(data.minimum):
-        raise ValueError(
-            "Invalid fanchart minimum value data length. len(data.samples) != len(data.minimum)"
+            "len(data.samples) != len(data.low_high.high_data)"
         )
 
 
@@ -76,8 +127,6 @@ def get_fanchart_traces(
     line_shape: str = "linear",
     xaxis: str = "x",
     yaxis: str = "y",
-    low_percentile_name: str = "P90",
-    high_percentile_name: str = "P10",
     show_legend: bool = True,
     direction: TraceDirection = TraceDirection.HORIZONTAL,
     hovertext: str = "",
@@ -91,20 +140,23 @@ def get_fanchart_traces(
     each feature. Plotly plots traces from front to end of the list, thereby the last trace is
     plotted on top.
 
-    Provides a list of traces: [trace0, tract1, ..., traceN]
+    Note that min and max, and high and low percentile are paired optional statistics. This implies
+    that if minimum is provided, maximum must be provided as well, and vice versa. The same yields for
+    low and high percentile data.
+
+    The function provides a list of traces: [trace0, tract1, ..., traceN]
 
     Fanchart is created by use of fill "tonexty" configuration for the traces. Fill "tonexty" is
     missleading naming, as "tonexty" in trace1 fills to y in trace0, i.e y in previous trace.
 
-    The order of traces are minimum, low, high, maximum and mean. Thus it is required that values
-    in minimum <= values in low, and low <= high, and high <= maximum. Fill is setting "tonexty"
-    in this function is set s.t. trace fillings are not stacked making colors in fills unchanged
-    when disabling trace for one or more of statistics inputs (minimum, low, high or maximum).
+    The order of traces are minimum, low, high, maximum and free line. Thus it is required that
+    values in minimum <= low, and low <= high, and high <= maximum. Fill is setting "tonexty" in
+    this function is set s.t. trace fillings are not stacked making colors in fills unchanged
+    when disabling trace statistics inputs (minimum and maximum or low and high).
 
-    Mean is last trace and is plotted on top as a line - without filling to other traces.
+    Free line is last trace and is plotted on top as a line - without filling to other traces.
 
     Note:
-    Assume values: minimum <= low, low <= high and high <= maximum due to fill setting "tonexty".
     If hovertemplate is proved it overrides the hovertext
 
     Returns:
@@ -130,28 +182,30 @@ def get_fanchart_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
-        if hovermode is not None:
-            trace["hovermode"] = hovermode
         if hovertemplate is not None:
             trace["hovertemplate"] = hovertemplate + statistics_name
         else:
             trace["hovertext"] = statistics_name + " " + hovertext
+        if hovermode is not None:
+            trace["hovermode"] = hovermode
         return trace
 
     traces: List[Dict[str, Any]] = []
 
-    if data.minimum is not None:
+    # Minimum
+    if data.minimum_maximum is not None:
         traces.append(
             get_default_trace(
                 statistics_name="Minimum",
-                values=data.minimum,
+                values=data.minimum_maximum.minimum,
             )
         )
 
-    if data.low is not None:
+    # Low and high percentile
+    if data.low_high is not None:
         low_trace = get_default_trace(
-            statistics_name=low_percentile_name,
-            values=data.low,
+            statistics_name=data.low_high.low_name,
+            values=data.low_high.low_data,
         )
         # Add fill to previous trace
         if len(traces) > 0:
@@ -159,42 +213,35 @@ def get_fanchart_traces(
             low_trace["fillcolor"] = fill_color_light
         traces.append(low_trace)
 
-    if data.high is not None:
         high_trace = get_default_trace(
-            statistics_name=high_percentile_name,
-            values=data.high,
+            statistics_name=data.low_high.high_name,
+            values=data.low_high.high_data,
+        )
+        high_trace["fill"] = "tonexty"
+        high_trace["fillcolor"] = fill_color_dark
+        traces.append(high_trace)
+
+    # Maximum
+    if data.minimum_maximum is not None:
+        maximum_trace = get_default_trace(
+            statistics_name="Maximum",
+            values=data.minimum_maximum.maximum,
         )
         # Add fill to previous trace
         if len(traces) > 0:
-            high_trace["fill"] = "tonexty"
-            high_trace["fillcolor"] = fill_color_dark
-        traces.append(high_trace)
-
-    if data.maximum is not None:
-        maximum_trace = get_default_trace(
-            statistics_name="Maximum",
-            values=data.maximum,
-        )
-        # Add fill to previous trace (opposite color of previous fill)
-        if len(traces) > 0:
-            fill_color = (
-                fill_color_dark
-                if "fillcolor" in traces[-1].keys()
-                and traces[-1]["fillcolor"] == fill_color_light
-                else fill_color_light
-            )
             maximum_trace["fill"] = "tonexty"
-            maximum_trace["fillcolor"] = fill_color
+            maximum_trace["fillcolor"] = fill_color_light
         traces.append(maximum_trace)
 
-    if data.mean is not None:
-        mean_trace = get_default_trace(
-            statistics_name="Mean",
-            values=data.mean,
+    # Free line
+    if data.free_line is not None:
+        line_trace = get_default_trace(
+            statistics_name=data.free_line.name,
+            values=data.free_line.data,
         )
         # Set solid line for mean
-        mean_trace["line"] = {"color": line_color, "shape": line_shape}
-        traces.append(mean_trace)
+        line_trace["line"] = {"color": line_color, "shape": line_shape}
+        traces.append(line_trace)
 
     # Set legend for last trace in list
     if len(traces) > 0:

@@ -36,7 +36,13 @@ from .._utils.simulation_timeseries import (
     date_to_interval_conversion,
     check_and_format_observations,
 )
-from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
@@ -1197,11 +1203,17 @@ def _get_fanchart_traces(
 
         data = FanchartData(
             samples=ens_df[("", "DATE")].tolist(),
-            mean=ens_df[(vector, "mean")].values,
-            maximum=ens_df[(vector, "max")].values,
-            low=ens_df[(vector, "low_p90")].values,
-            high=ens_df[(vector, "high_p10")].values,
-            minimum=ens_df[(vector, "min")].values,
+            low_high=LowHighData(
+                low_data=ens_df[(vector, "low_p90")].values,
+                low_name="P90",
+                high_data=ens_df[(vector, "high_p10")].values,
+                high_name="P10",
+            ),
+            minimum_maximum=MinMaxData(
+                minimum=ens_df[(vector, "min")].values,
+                maximum=ens_df[(vector, "max")].values,
+            ),
+            free_line=FreeLineData("Mean", ens_df[(vector, "mean")].values),
         )
         traces.extend(
             get_fanchart_traces(

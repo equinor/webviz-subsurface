@@ -8,6 +8,9 @@ from ..._utils.fanchart_plotting import (
     TraceDirection,
     FanchartData,
     get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
 )
 
 
@@ -289,11 +292,17 @@ def _get_fanchart_traces(
 
     data = FanchartData(
         samples=x,
-        mean=vector_stats["mean"].values,
-        maximum=vector_stats["maximum"].values,
-        low=vector_stats["p90"].values,
-        high=vector_stats["p10"].values,
-        minimum=vector_stats["minimum"].values,
+        low_high=LowHighData(
+            low_data=vector_stats["p90"].values,
+            low_name="P90",
+            high_data=vector_stats["p10"].values,
+            high_name="P10",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=vector_stats["minimum"].values,
+            maximum=vector_stats["maximum"].values,
+        ),
+        free_line=FreeLineData("Mean", vector_stats["mean"].values),
     )
 
     return get_fanchart_traces(

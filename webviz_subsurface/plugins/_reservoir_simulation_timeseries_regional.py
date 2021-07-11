@@ -38,7 +38,13 @@ from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
 )
-from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
@@ -1306,11 +1312,17 @@ def _get_fanchart_traces(
 
     data = FanchartData(
         samples=x,
-        mean=stat_df[column]["nanmean"].values,
-        maximum=stat_df[column]["nanmax"].values,
-        low=stat_df[column]["p90"].values,
-        high=stat_df[column]["p10"].values,
-        minimum=stat_df[column]["nanmin"].values,
+        low_high=LowHighData(
+            low_data=stat_df[column]["p90"].values,
+            low_name="P90",
+            high_data=stat_df[column]["p10"].values,
+            high_name="P10",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=stat_df[column]["nanmin"].values,
+            maximum=stat_df[column]["nanmax"].values,
+        ),
+        free_line=FreeLineData("Mean", stat_df[column]["nanmean"].values),
     )
 
     hovertemplate = f"{legend_group}"

@@ -16,7 +16,13 @@ from webviz_config import WebvizSettings
 import webviz_subsurface
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
-from .._utils.fanchart_plotting import FanchartData, get_fanchart_traces
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
 
 class RelativePermeability(WebvizPluginABC):
@@ -802,11 +808,17 @@ def _get_fanchart_traces(
     x = curve_stats["nanmax"].index.tolist()
     data = FanchartData(
         samples=x,
-        mean=curve_stats["nanmean"].values,
-        maximum=curve_stats["nanmax"].values,
-        low=curve_stats["p90"].values,
-        high=curve_stats["p10"].values,
-        minimum=curve_stats["nanmin"].values,
+        low_high=LowHighData(
+            low_data=curve_stats["p90"].values,
+            low_name="P90",
+            high_data=curve_stats["p10"].values,
+            high_name="P10",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=curve_stats["nanmin"].values,
+            maximum=curve_stats["nanmax"].values,
+        ),
+        free_line=FreeLineData("Mean", curve_stats["nanmean"].values),
     )
 
     hovertemplate = f"{curve} <br>" f"Ensemble: {ens}, Satnum: {satnum}"
