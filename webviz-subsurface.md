@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.4rc0` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.4` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
@@ -3060,7 +3060,7 @@ Visualizes well completions data per well coming from export of the Eclipse COMP
 
 * **`compdat_file`:** `.csv` file with compdat data per realization
 
-*default = "share/results/wells/compdat.csv", Optional, type str*
+*default = "share/results/tables/compdat.csv", Optional, type str*
 
 
 ---

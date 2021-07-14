@@ -1,7 +1,7 @@
 ## Deprecated plugins
 ### Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.4rc0` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.4` of `webviz-subsurface`. 
 
    
 These are plugins relevant within subsurface workflows. Most of them
