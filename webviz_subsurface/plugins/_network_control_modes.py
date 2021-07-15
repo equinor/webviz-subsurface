@@ -50,7 +50,9 @@ class NetworkControlModes(WebvizPluginABC):
                     "WMCTL:*",
                     "GMCT*",
                     "FMCT*",
-                    "GPR:*",
+                    "WTHP:*",
+                    "WBHP:*" "GPR:*",
+                    "FPR",
                 ],
             )
         )
@@ -78,29 +80,36 @@ class NetworkControlModes(WebvizPluginABC):
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                wcc.FlexColumn(
-                    flex=1, style={"height": "90vh"}, children=[self.selectors_layout()]
-                ),
+                wcc.FlexColumn(flex=1, children=self.selectors_layout()),
                 wcc.FlexColumn(
                     flex=4,
                     children=[
                         wcc.Frame(
-                            style={"height": "90vh"},
+                            style={"height": "45vh"},
                             highlight=False,
                             color="white",
                             children=wcc.Graph(
-                                style={"height": "85vh"}, id=self.uuid("graph")
+                                style={"height": "45vh"},
+                                id=self.uuid("ctrl_mode_graph"),
                             ),
-                        )
+                        ),
+                        wcc.Frame(
+                            style={"height": "45vh"},
+                            highlight=False,
+                            color="white",
+                            children=wcc.Graph(
+                                style={"height": "45vh"},
+                                id=self.uuid("pressures_graph"),
+                            ),
+                        ),
                     ],
                 ),
             ],
         )
 
     def selectors_layout(self):
-        return html.Div(
-            className="framed",
-            style={"fontSize": "14"},
+        return wcc.Frame(
+            style={"height": "40vh"},
             children=[
                 wcc.Selectors(
                     label="Ensemble",
@@ -123,7 +132,7 @@ class NetworkControlModes(WebvizPluginABC):
                                 "value": "well",
                             },
                             {
-                                "label": "Field/group",
+                                "label": "Field / Group",
                                 "value": "field_group",
                             },
                         ],
@@ -169,7 +178,8 @@ class NetworkControlModes(WebvizPluginABC):
             return [{"label": node, "value": node} for node in nodes], nodes[0]
 
         @app.callback(
-            Output(self.uuid("graph"), "figure"),
+            Output(self.uuid("ctrl_mode_graph"), "figure"),
+            Output(self.uuid("pressures_graph"), "figure"),
             Input(self.uuid("ensemble_dropdown"), "value"),
             Input(self.uuid("node_type_radioitems"), "value"),
             Input(self.uuid("node_dropdown"), "value"),
@@ -179,85 +189,95 @@ class NetworkControlModes(WebvizPluginABC):
 
             if ensemble is None or node_type is None or node is None:
                 # Format this a bit more
-                return go.Figure()
+                fig = go.Figure()
+                fig.update_layout(plot_bgcolor="white", title="No data")
+                return fig, fig
 
-            fig = make_subplots(
-                rows=2,
-                shared_xaxes=False,
-                vertical_spacing=0.05,
-                subplot_titles=[
-                    "Number of realizations on different control modes",
-                    "Node pressures",
-                ],
+            smry_ens = self.smry[self.smry.ENSEMBLE == ensemble]
+
+            return (
+                make_area_graph(node_type, node, smry_ens),
+                make_node_pressure_graph(node_type, node, smry_ens),
             )
 
-            fig.add_traces(
-                [
-                    make_area_chart(ensemble, node_type, node, self.smry),
-                    make_node_pressure_graph(),
-                ],
-                rows=[1, 2],
-            )
 
-            return fig
-
-
-def make_node_pressure_graph():
+def make_node_pressure_graph(
+    node_type: str, node: str, smry: pd.DataFrame
+) -> go.Figure():
     """Description"""
-    return go.Figure()
+    fig = go.Figure()
+    sumvec = get_pressure_sumvec(node_type, node, smry)
+    print(sumvec)
+    return fig
 
 
-def make_area_chart(ensemble: str, node_type: str, node: str, smry: pd.DataFrame):
+def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure():
     """Description"""
+    fig = go.Figure()
 
-    ctrl_mode_sumvec = sumvec = get_sumvec_from_nodetype_and_name(node_type, node)
-    sumvec = get_sumvec_from_nodetype_and_name(node_type, node)
-    fig = go.Figure
-    if not sumvec in smry.columns:
-        print(f"{sumvec} not in emsemble")
-        return fig
-
-    smry = smry[smry.ENSEMBLE == ensemble][["DATE", sumvec, "REAL"]]
+    sumvec = get_ctrlmode_sumvec(node_type, node, smry)
+    df = smry[["DATE", sumvec]]
     df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
-    return px.area(smry, x="DATE", y=sumvec, color="REAL")
-    # df["Other"] = 0
-    # categories = get_ctrlmode_categories(node_type)
+    df["Other"] = 0
+    categories = get_ctrlmode_categories(node_type)
 
-    # for col in [col for col in df.columns if not col in ["DATE", "Other"]]:
-    #     if str(col) in categories:
-    #         name = categories[str(col)]["name"]
-    #         color = categories[str(col)]["color"]
-    #         #add_trace(fig, df.DATE, df[col], name, color)
-    #     else:
-    #         df.Other = df.Other + df[col]
+    for col in [col for col in df.columns if not col in ["DATE", "Other"]]:
+        if str(col) in categories:
+            name = categories[str(col)]["name"]
+            color = categories[str(col)]["color"]
+            add_trace(fig, df.DATE, df[col], name, color)
+        else:
+            df.Other = df.Other + df[col]
 
-    # if df.Other.sum()>0:
-    #    add_trace(fig, df.DATE, df.Other, categories["Other"]["name"], categories["Other"]["color"])
+    if df.Other.sum() > 0:
+        add_trace(
+            fig,
+            df.DATE,
+            df.Other,
+            categories["Other"]["name"],
+            categories["Other"]["color"],
+        )
 
-    # fig.update_layout(
-    #     title_text="Number of realizations on different control modes",
-    #     yaxis_title="# realizations",
-    #     margin=dict(t=60),
-    #     yaxis=dict(range=[0,self.smry.REAL.nunique()]),
-    #     paper_bgcolor="rgba(0,0,0,0)",
-    #     plot_bgcolor="rgba(0,0,0,0)",
-    # )
+    fig.update_layout(
+        title_text="Number of realizations on different control modes",
+        yaxis_title="# realizations",
+        yaxis=dict(range=[0, smry.REAL.nunique()]),
+        plot_bgcolor="white",
+    )
 
-    # return fig
+    return fig
 
 
-def get_sumvec_from_nodetype_and_name(node_type: str, node: str):
+def get_ctrlmode_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
     """Description"""
-    if node is None:
-        return None
-    elif node == "FIELD":
-        return "FMCTP"
+    if node == "FIELD":
+        sumvec = "FMCTP"
     elif node_type == "well":
-        return f"WMCTL:{node}"
+        sumvec = f"WMCTL:{node}"
     elif node_type == "field_group":
-        return f"GMCTP:{node}"
+        sumvec = f"GMCTP:{node}"
     else:
         raise ValueError(f"Node type {node_type} not implemented")
+    if sumvec in smry.columns:
+        return sumvec
+    else:
+        raise ValueError(f"{sumvec} not in ensemble")
+
+
+def get_pressure_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
+    """Description"""
+    if node == "FIELD":
+        sumvec = "FPR"
+    elif node_type == "well":
+        sumvec = f"WTHP:{node}"
+    elif node_type == "field_group":
+        sumvec = f"GPR:{node}"
+    else:
+        raise ValueError(f"Node type {node_type} not implemented")
+    if sumvec in smry.columns:
+        return sumvec
+    else:
+        raise ValueError(f"{sumvec} not in ensemble")
 
 
 def add_trace(fig, x_series, y_series, name, color):
