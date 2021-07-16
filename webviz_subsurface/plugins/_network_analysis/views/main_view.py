@@ -15,20 +15,20 @@ def main_view(
                 flex=4,
                 children=[
                     wcc.Frame(
-                        style={"height": "45vh"},
+                        style={"height": "40vh"},
                         highlight=False,
                         color="white",
                         children=wcc.Graph(
-                            style={"height": "45vh"},
+                            style={"height": "40vh"},
                             id=get_uuid("ctrl_mode_graph"),
                         ),
                     ),
                     wcc.Frame(
-                        style={"height": "45vh"},
+                        style={"height": "40vh"},
                         highlight=False,
                         color="white",
                         children=wcc.Graph(
-                            style={"height": "45vh"},
+                            style={"height": "40vh"},
                             id=get_uuid("pressures_graph"),
                         ),
                     ),

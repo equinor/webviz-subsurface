@@ -1,5 +1,6 @@
 from typing import List, Tuple, Callable
 
+import pandas as pd
 import dash
 import dash_html_components as html
 from webviz_config import WebvizPluginABC
@@ -12,6 +13,7 @@ from webviz_subsurface._models import caching_ensemble_set_model_factory
 
 from .views import main_view
 from .controllers import selections_controllers
+from .utils.utils import read_gruptree_files
 
 
 class NetworkAnalysis(WebvizPluginABC):
@@ -23,6 +25,7 @@ class NetworkAnalysis(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         sampling: str = "monthly",
+        gruptree_file: str = "share/results/tables/gruptree.csv",
     ):
 
         super().__init__()
@@ -51,6 +54,8 @@ class NetworkAnalysis(WebvizPluginABC):
         )
         self.smry = self.emodel.get_or_load_smry_cached()
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
+        self.gruptree = read_gruptree_files(self.ens_paths, gruptree_file)
+
         self.theme = webviz_settings.theme
 
         self.set_callbacks(app)
@@ -76,4 +81,4 @@ class NetworkAnalysis(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        selections_controllers(app=app, get_uuid=self.uuid, smry=self.smry)
+        selections_controllers(app=app, get_uuid=self.uuid, smry=self.smry, gruptree=self.gruptree)

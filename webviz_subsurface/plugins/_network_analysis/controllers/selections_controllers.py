@@ -6,11 +6,12 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
 from ..figures import make_node_pressure_graph, make_area_graph
+from ..utils.utils import get_upstream_nodes
 
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
 def selections_controllers(
-    app: dash.Dash, get_uuid: Callable, smry: pd.DataFrame
+    app: dash.Dash, get_uuid: Callable, smry: pd.DataFrame, gruptree: pd.DataFrame
 ) -> None:
     @app.callback(
         Output(get_uuid("node_dropdown"), "options"),
@@ -46,7 +47,7 @@ def selections_controllers(
         Input(get_uuid("node_type_radioitems"), "value"),
         Input(get_uuid("node_dropdown"), "value"),
     )
-    def _update_graph(
+    def _update_graphs(
         ensemble: str, node_type: str, node: str
     ) -> Tuple[go.Figure, go.Figure]:
         print("make chart")
@@ -58,6 +59,7 @@ def selections_controllers(
             return fig, fig
 
         smry_ens = smry[smry.ENSEMBLE == ensemble]
+        gruptree_ens = get_upstream_nodes(gruptree[gruptree.ENSEMBLE == ensemble], node_type, node)
 
         return (
             make_area_graph(node_type, node, smry_ens),
