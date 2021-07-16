@@ -206,8 +206,26 @@ def make_node_pressure_graph(
 ) -> go.Figure():
     """Description"""
     fig = go.Figure()
+
     sumvec = get_pressure_sumvec(node_type, node, smry)
-    print(sumvec)
+    if sumvec not in smry.columns:
+        return go.Figure().update_layout(plot_bgcolor="white")
+    df = smry[["DATE", sumvec]].groupby("DATE").mean().reset_index()
+    fig.add_trace(
+        {
+            "x": list(df["DATE"]),
+            "y": list(df[sumvec]),
+            "name": sumvec,
+            "showlegend": True,
+        }
+    )
+
+    fig.update_layout(
+        title_text="Node Pressures",
+        yaxis_title="Pressure",
+        plot_bgcolor="white",
+    )
+
     return fig
 
 
@@ -216,6 +234,8 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure(
     fig = go.Figure()
 
     sumvec = get_ctrlmode_sumvec(node_type, node, smry)
+    if sumvec not in smry.columns:
+        return go.Figure().update_layout(plot_bgcolor="white")
     df = smry[["DATE", sumvec]]
     df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
     df["Other"] = 0
@@ -251,33 +271,24 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure(
 def get_ctrlmode_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
     """Description"""
     if node == "FIELD":
-        sumvec = "FMCTP"
+        return "FMCTP"
     elif node_type == "well":
-        sumvec = f"WMCTL:{node}"
+        return f"WMCTL:{node}"
     elif node_type == "field_group":
-        sumvec = f"GMCTP:{node}"
+        return f"GMCTP:{node}"
     else:
         raise ValueError(f"Node type {node_type} not implemented")
-    if sumvec in smry.columns:
-        return sumvec
-    else:
-        raise ValueError(f"{sumvec} not in ensemble")
-
 
 def get_pressure_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
     """Description"""
     if node == "FIELD":
-        sumvec = "FPR"
+        return "FPR"
     elif node_type == "well":
-        sumvec = f"WTHP:{node}"
+        return f"WTHP:{node}"
     elif node_type == "field_group":
-        sumvec = f"GPR:{node}"
+        return f"GPR:{node}"
     else:
         raise ValueError(f"Node type {node_type} not implemented")
-    if sumvec in smry.columns:
-        return sumvec
-    else:
-        raise ValueError(f"{sumvec} not in ensemble")
 
 
 def add_trace(fig, x_series, y_series, name, color):
