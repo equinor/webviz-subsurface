@@ -1,12 +1,9 @@
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, Tuple, List
 
 import pandas as pd
 import dash
-from dash.dependencies import Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output
 import plotly.graph_objects as go
-
-import webviz_core_components as wcc
 
 from ..figures import make_node_pressure_graph, make_area_graph
 
@@ -21,7 +18,9 @@ def selections_controllers(
         Input(get_uuid("ensemble_dropdown"), "value"),
         Input(get_uuid("node_type_radioitems"), "value"),
     )
-    def _update_node_dropdown(ensemble: str, node_type: str) -> list:
+    def _update_node_dropdown(
+        ensemble: str, node_type: str
+    ) -> Tuple[List[Any], Optional[str]]:
         print("update node dropdown")
         smry_ens = smry[smry.ENSEMBLE == ensemble].copy()
         smry_ens.dropna(how="all", axis=1, inplace=True)
@@ -47,7 +46,9 @@ def selections_controllers(
         Input(get_uuid("node_type_radioitems"), "value"),
         Input(get_uuid("node_dropdown"), "value"),
     )
-    def _update_graph(ensemble: str, node_type: str, node: str):
+    def _update_graph(
+        ensemble: str, node_type: str, node: str
+    ) -> Tuple[go.Figure, go.Figure]:
         print("make chart")
 
         if ensemble is None or node_type is None or node is None:

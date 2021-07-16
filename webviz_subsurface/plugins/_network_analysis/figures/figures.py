@@ -1,13 +1,14 @@
 import pandas as pd
 import plotly.graph_objects as go
 
+
 def make_node_pressure_graph(
     node_type: str, node: str, smry: pd.DataFrame
-) -> go.Figure():
+) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    sumvec = get_pressure_sumvec(node_type, node, smry)
+    sumvec = get_pressure_sumvec(node_type, node)
     if sumvec not in smry.columns:
         return go.Figure().update_layout(plot_bgcolor="white")
     df = smry[["DATE", sumvec]].groupby("DATE").mean().reset_index()
@@ -29,11 +30,11 @@ def make_node_pressure_graph(
     return fig
 
 
-def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure():
+def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    sumvec = get_ctrlmode_sumvec(node_type, node, smry)
+    sumvec = get_ctrlmode_sumvec(node_type, node)
     if sumvec not in smry.columns:
         return go.Figure().update_layout(plot_bgcolor="white")
     df = smry[["DATE", sumvec]]
@@ -68,31 +69,35 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure(
     return fig
 
 
-def get_ctrlmode_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
+def get_ctrlmode_sumvec(node_type: str, node: str) -> str:
     """Description"""
     if node == "FIELD":
         return "FMCTP"
-    elif node_type == "well":
+    if node_type == "well":
         return f"WMCTL:{node}"
-    elif node_type == "field_group":
+    if node_type == "field_group":
         return f"GMCTP:{node}"
-    else:
-        raise ValueError(f"Node type {node_type} not implemented")
+    raise ValueError(f"Node type {node_type} not implemented")
 
-def get_pressure_sumvec(node_type: str, node: str, smry: pd.DataFrame) -> str:
+
+def get_pressure_sumvec(node_type: str, node: str) -> str:
     """Description"""
     if node == "FIELD":
         return "FPR"
-    elif node_type == "well":
+    if node_type == "well":
         return f"WTHP:{node}"
-    elif node_type == "field_group":
+    if node_type == "field_group":
         return f"GPR:{node}"
-    else:
-        raise ValueError(f"Node type {node_type} not implemented")
+    raise ValueError(f"Node type {node_type} not implemented")
 
 
-def add_trace(fig, x_series, y_series, name, color):
-    """Description"""
+def add_trace(
+    fig: go.Figure, x_series: str, y_series: str, name: str, color: str
+) -> go.Figure:
+    """Description
+    Ikke helt sikker paa om retur-typen er riktig her. kanskje den heller burde
+    returnere en dict?
+    """
     fig.add_trace(
         go.Scatter(
             x=x_series,
@@ -106,7 +111,7 @@ def add_trace(fig, x_series, y_series, name, color):
     )
 
 
-def get_ctrlmode_categories(node_type):
+def get_ctrlmode_categories(node_type: str) -> dict:
     """Description"""
     if node_type == "well":
         return {
@@ -121,7 +126,7 @@ def get_ctrlmode_categories(node_type):
             "-1.0": {"name": "GRUP", "color": "#cfcc74"},  # yellow
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
-    elif node_type == "field_group":
+    if node_type == "field_group":
         return {
             "0.0": {"name": "NONE", "color": "#302f2f"},  # grey
             "1.0": {"name": "ORAT", "color": "#044a2e"},  # green
@@ -134,5 +139,4 @@ def get_ctrlmode_categories(node_type):
             "-ve": {"name": "GRUP", "color": "#cfcc74"},  # yellow
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
-    else:
-        raise ValueError(f"Node type: {node_type} not implemented")
+    raise ValueError(f"Node type: {node_type} not implemented")

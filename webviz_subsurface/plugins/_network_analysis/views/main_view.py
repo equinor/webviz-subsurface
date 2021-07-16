@@ -1,12 +1,12 @@
+from typing import Callable
 
-from typing import List, Tuple, Callable, Optional
-
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
 
-def main_view(get_uuid: Callable, theme: WebvizConfigTheme, ensembles: list) -> wcc.FlexBox:
+
+def main_view(
+    get_uuid: Callable, theme: WebvizConfigTheme, ensembles: list
+) -> wcc.FlexBox:
     return wcc.FlexBox(
         id=get_uuid("layout"),
         children=[
@@ -37,6 +37,7 @@ def main_view(get_uuid: Callable, theme: WebvizConfigTheme, ensembles: list) -> 
         ],
     )
 
+
 def selectors_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
     return wcc.Frame(
         style={"height": "40vh"},
@@ -45,9 +46,7 @@ def selectors_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
                 label="Ensemble",
                 children=wcc.Dropdown(
                     id=get_uuid("ensemble_dropdown"),
-                    options=[
-                        {"label": col, "value": col} for col in ensembles
-                    ],
+                    options=[{"label": col, "value": col} for col in ensembles],
                     value=ensembles[0],
                     multi=False,
                 ),
