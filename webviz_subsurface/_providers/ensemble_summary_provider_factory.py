@@ -25,9 +25,8 @@ from .._utils.perf_timer import PerfTimer
 
 class BackingType(Enum):
     ARROW = 1
-    ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL = 2
-    PARQUET = 3
-    INMEM_PARQUET = 4
+    PARQUET = 2
+    INMEM_PARQUET = 3
 
 
 LOGGER = logging.getLogger(__name__)
@@ -237,30 +236,13 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 timer.lap_s()
 
                 ens_path = ensembles[ens_name]
+                ensemble_df = _load_smry_single_dataframe_for_ensemble(
+                    ens_path, time_index
+                )
+                et_import_smry_s = timer.lap_s()
 
-                # Experiment with importing smry data per realization instead of whole
-                # dataframe for entire ensemble (pyarrow only)
-                if (
-                    self._backing_type
-                    is BackingType.ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL
-                ):
-                    per_real_dfs = _load_smry_dataframe_per_realization(
-                        ens_path, time_index
-                    )
-                    et_import_smry_s = timer.lap_s()
-
-                    EnsembleSummaryProviderImplArrow.write_backing_store_from_per_realization_dataframes_experimental(
-                        self._storage_dir, ens_storage_key, per_real_dfs
-                    )
-                    et_write_s = timer.lap_s()
-                else:
-                    ensemble_df = _load_smry_single_dataframe_for_ensemble(
-                        ens_path, time_index
-                    )
-                    et_import_smry_s = timer.lap_s()
-
-                    self._write_data_to_backing_store(ens_storage_key, ensemble_df)
-                    et_write_s = timer.lap_s()
+                self._write_data_to_backing_store(ens_storage_key, ensemble_df)
+                et_write_s = timer.lap_s()
 
                 provider = self._create_provider_instance_from_backing_store(
                     ens_storage_key
@@ -292,10 +274,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     def _create_provider_instance_from_backing_store(
         self, storage_key: str
     ) -> Optional[EnsembleSummaryProvider]:
-        if (
-            self._backing_type is BackingType.ARROW
-            or self._backing_type is BackingType.ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL
-        ):
+        if self._backing_type is BackingType.ARROW:
             return EnsembleSummaryProviderImplArrow.from_backing_store(
                 self._storage_dir, storage_key
             )
@@ -318,10 +297,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     def _write_data_to_backing_store(
         self, storage_key: str, ensemble_df: pd.DataFrame
     ) -> None:
-        if (
-            self._backing_type is BackingType.ARROW
-            or self._backing_type is BackingType.ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL
-        ):
+        if self._backing_type is BackingType.ARROW:
             EnsembleSummaryProviderImplArrow.write_backing_store_from_ensemble_dataframe(
                 self._storage_dir, storage_key, ensemble_df
             )
@@ -363,36 +339,6 @@ def _load_smry_single_dataframe_for_ensemble(
     )
 
     return ensemble_df
-
-
-# -------------------------------------------------------------------------
-# @profile
-def _load_smry_dataframe_per_realization(
-    ens_path: str, time_index: str
-) -> List[pd.DataFrame]:
-
-    LOGGER.debug(f"_load_smry_dataframe_per_realization() starting - {ens_path}")
-    timer = PerfTimer()
-
-    scratch_ensemble = ScratchEnsemble("tempEnsName", paths=ens_path)
-    et_create_scratch_ens_s = timer.lap_s()
-
-    real_df_list = []
-    for _realidx, realization in scratch_ensemble.realizations.items():
-        # Note that default caching (cache_eclsum=True) seems faster even if we're
-        # at realization level, but uses more memory
-        real_df = realization.load_smry(time_index=time_index)
-        real_df_list.append(real_df)
-    et_aggr_load_smry_s = timer.lap_s()
-
-    LOGGER.debug(
-        f"_load_smry_dataframe_per_realization() "
-        f"finished in: {timer.elapsed_s():.2f}s ("
-        f"create_scratch_ens={et_create_scratch_ens_s:.2f}s "
-        f"aggr_load_smry={et_aggr_load_smry_s:.2f}s)"
-    )
-
-    return real_df_list
 
 
 # -------------------------------------------------------------------------

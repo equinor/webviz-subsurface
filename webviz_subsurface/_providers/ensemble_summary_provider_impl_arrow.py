@@ -8,7 +8,6 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.feather
 import pandas as pd
-import numpy as np
 
 from .ensemble_summary_provider import EnsembleSummaryProvider
 from .ensemble_summary_provider_dataframe_utils import (
@@ -221,75 +220,6 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
             f"convert_date={et_convert_date_s:.2f}s, "
             f"find_min_max={et_find_min_max_s:.2f}s, "
             f"table_from_pandas={et_table_from_pandas_s:.2f}s, "
-            f"sorting={et_sorting_s:.2f}s, "
-            f"write={et_write_s:.2f}s)"
-        )
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    # @profile
-    def write_backing_store_from_per_realization_dataframes_experimental(
-        storage_dir: Path, storage_key: str, per_real_dfs: List[pd.DataFrame]
-    ) -> None:
-
-        """This implementation is a work in progress and is experimental.
-        The idea is to let the caller avoid reading a large dataframe with all
-        realizations and instead read separate dataframes for each realization.
-        This should give a smaller memory footprint and should potentially be faster,
-        but this has yet to be proven.
-        NOTE! that currently this implementation is not complete as it does not extract
-        and store per-column min/max values
-        """
-
-        LOGGER.debug("Writing backing store from PER REALIZATION DF to arrow file...")
-        timer = PerfTimer()
-
-        arrow_file_name = storage_dir / (storage_key + ".arrow")
-
-        # For experimenting with conversion to float32
-        do_convert_to_float32 = False
-
-        table_list: List[pa.Table] = []
-        for real_idx, real_df in enumerate(per_real_dfs):
-            real_df = make_date_column_datetime_object(real_df)
-
-            default_schema = pa.Schema.from_pandas(real_df, preserve_index=False)
-            schema_to_use = _set_date_column_type_to_timestamp_us(default_schema)
-
-            if do_convert_to_float32:
-                schema_to_use = _create_float_downcasting_schema(schema_to_use)
-
-            table = pa.Table.from_pandas(
-                real_df, schema=schema_to_use, preserve_index=False
-            )
-            table_list.append(table)
-        et_tables_from_pandas_s = timer.lap_s()
-
-        table = pa.concat_tables(table_list, promote=True)
-        et_concat_tables_s = timer.lap_s()
-
-        real_arr = np.empty(table.num_rows, np.int64)
-        table_start_idx = 0
-        for real_idx, real_table in enumerate(table_list):
-            real_arr[table_start_idx : table_start_idx + real_table.num_rows] = real_idx
-            table_start_idx += real_table.num_rows
-
-        table = table.add_column(0, "REAL", pa.array(real_arr))
-        et_build_add_real_col_s = timer.lap_s()
-
-        table = _sort_table_on_date_and_real(table)
-        et_sorting_s = timer.lap_s()
-
-        with pa.OSFile(str(arrow_file_name), "wb") as sink:
-            with pa.RecordBatchFileWriter(sink, table.schema) as writer:
-                writer.write_table(table)
-        et_write_s = timer.lap_s()
-
-        LOGGER.debug(
-            f"Wrote backing store to arrow file in: {timer.elapsed_s():.2f}s ("
-            f"tables_from_pandas={et_tables_from_pandas_s:.2f}s, "
-            f"concat_tables={et_concat_tables_s:.2f}s, "
-            f"build_add_real_col={et_build_add_real_col_s:.2f}s, "
             f"sorting={et_sorting_s:.2f}s, "
             f"write={et_write_s:.2f}s)"
         )

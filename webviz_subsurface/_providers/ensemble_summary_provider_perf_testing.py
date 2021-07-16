@@ -212,7 +212,6 @@ if __name__ == "__main__":
     # ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
     BACKING_TYPE: BackingType = BackingType.ARROW
-    # BACKING_TYPE: BackingType = BackingType.ARROW_PER_REAL_SMRY_IMPORT_EXPERIMENTAL
     # BACKING_TYPE: BackingType = BackingType.PARQUET
     # BACKING_TYPE: BackingType = BackingType.INMEM_PARQUET
 
