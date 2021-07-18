@@ -1,7 +1,6 @@
 from typing import Dict
 from enum import Enum
 import json
-import bisect
 from dataclasses import dataclass
 
 import pyarrow as pa
@@ -87,26 +86,24 @@ def interpolate_backfill(
 
     return ret_arr
 
-    """
     # Naive approach that is way too slow
-    valcount = len(x)
-    y = np.zeros(valcount)
-    idx = 0
-    while idx < valcount:
-        insidx = bisect.bisect_left(xp, x[idx])
-        if insidx == 0 and x[idx] < xp[0]:
-            yval = yleft
-        elif insidx == len(xp):
-            yval = yright
-        else:
-            yval = yp[insidx]
+    # valcount = len(x)
+    # y = np.zeros(valcount)
+    # idx = 0
+    # while idx < valcount:
+    #     insidx = bisect.bisect_left(xp, x[idx])
+    #     if insidx == 0 and x[idx] < xp[0]:
+    #         yval = yleft
+    #     elif insidx == len(xp):
+    #         yval = yright
+    #     else:
+    #         yval = yp[insidx]
 
-        y[idx] = yval
+    #     y[idx] = yval
 
-        idx += 1
+    #     idx += 1
 
-    return y
-    """
+    # return y
 
 
 # -------------------------------------------------------------------------
@@ -190,7 +187,7 @@ def resample_sorted_multi_real_table_NAIVE(
 
     resampled_tables_list = []
 
-    for i, real in enumerate(unique_reals):
+    for i, _real in enumerate(unique_reals):
         start_row_idx = first_occurence_idx[i]
         row_count = real_counts[i]
         real_table = table.slice(start_row_idx, row_count)
@@ -242,7 +239,7 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
     real_interpolation_info_dict: Dict[int, RealInterpolationInfo] = {}
 
     for colname in table.schema.names:
-        if colname == "DATE" or colname == "REAL":
+        if colname in ["DATE", "REAL"]:
             continue
 
         field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
