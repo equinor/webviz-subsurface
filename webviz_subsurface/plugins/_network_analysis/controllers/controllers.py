@@ -13,10 +13,10 @@ def controllers(
     app: dash.Dash, get_uuid: Callable, smry: pd.DataFrame, gruptree: pd.DataFrame
 ) -> None:
     @app.callback(
-        Output(get_uuid("node_dropdown"), "options"),
-        Output(get_uuid("node_dropdown"), "value"),
-        Input(get_uuid("ensemble_dropdown"), "value"),
-        Input(get_uuid("node_type_radioitems"), "value"),
+        Output({"id": get_uuid("plot_controls"), "element": "node"}, "options"),
+        Output({"id": get_uuid("plot_controls"), "element": "node"}, "value"),
+        Input({"id": get_uuid("plot_controls"), "element": "ensemble"}, "value"),
+        Input({"id": get_uuid("plot_controls"), "element": "node_type"}, "value"),
     )
     def _update_node_dropdown(
         ensemble: str, node_type: str
@@ -42,10 +42,13 @@ def controllers(
     @app.callback(
         Output(get_uuid("ctrl_mode_graph"), "figure"),
         Output(get_uuid("pressures_graph"), "figure"),
-        Input(get_uuid("ensemble_dropdown"), "value"),
-        Input(get_uuid("node_type_radioitems"), "value"),
-        Input(get_uuid("node_dropdown"), "value"),
-        Input(get_uuid("include_bhp"), "value")
+        Input({"id": get_uuid("plot_controls"), "element": "ensemble"}, "value"),
+        Input({"id": get_uuid("plot_controls"), "element": "node_type"}, "value"),
+        Input({"id": get_uuid("plot_controls"), "element": "node"}, "value"),
+        Input(
+            {"id": get_uuid("pressure_plot_options"), "element": "include_bhp"},
+            "value",
+        )
     )
     def _update_graphs(
         ensemble: str, node_type: str, node: str, include_bhp: list
@@ -63,14 +66,33 @@ def controllers(
                 {
                     "start_date": smry_ens.DATE.min(),
                     "end_date": smry_ens.DATE.max(),
-                    "nodes": [get_node_field(node_type, node)]
+                    "nodes": [get_node_field(node_type, node)],
                 }
             ]
         else:
-            upstream_nodes = get_upstream_nodes(gruptree[gruptree.ENSEMBLE == ensemble], node_type, node)
-
+            upstream_nodes = get_upstream_nodes(
+                gruptree[gruptree.ENSEMBLE == ensemble], node_type, node
+            )
 
         return (
             make_area_graph(node_type, node, smry_ens),
-            make_node_pressure_graph(upstream_nodes, smry_ens, "include_bhp" in include_bhp, True),
+            make_node_pressure_graph(
+                upstream_nodes, smry_ens, "include_bhp" in include_bhp, True
+            ),
         )
+
+    @app.callback(
+        Output(
+            {
+                "id": get_uuid("pressure_plot_options"),
+                "element": "real_dropdown",
+            },
+            "disabled",
+        ),
+        Input(
+            {"id": get_uuid("pressure_plot_options"), "element": "mean_or_single_real"},
+            "value",
+        ),
+    )
+    def _show_hide_realizations_dropdown(mean_or_single_real: list) -> dict:
+        return True if mean_or_single_real == "plot_mean" else False

@@ -29,7 +29,7 @@ def make_node_pressure_graph(
                     {
                         "x": list(df_filtered["DATE"]),
                         "y": list(df_filtered[sumvec]),
-                        "name": node["name"],
+                        "name": node["label"],
                         "showlegend": True
                     }
                 )
