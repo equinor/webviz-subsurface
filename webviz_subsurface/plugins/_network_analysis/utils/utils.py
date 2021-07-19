@@ -74,12 +74,15 @@ def _get_nodelist(df, node_type, node) -> List[Dict[str, str]]:
         raise ValueError(f"CHILD can only maximum once per date: {child_row}")
 
     parent = child_row.PARENT.values[0]
+
+    if node_type == "well":
+        return [get_node_field(node_type, node), get_node_field("well_bhp", node)] + _get_nodelist(df, "field_group", parent)
     return [get_node_field(node_type, node)] + _get_nodelist(
         df, "field_group", parent
     )
 
 
-def get_node_field(node_type: str, node: str) -> dict:
+def get_node_field(node_type: str, node: str) -> Dict[str, str]:
     """Description"""
     if node == "FIELD":
         return {"name": node, "type": "field", "pressure": "GPR:FIELD"}
@@ -87,9 +90,14 @@ def get_node_field(node_type: str, node: str) -> dict:
         return {"name": node, "type": "group", "pressure": f"GPR:{node}"}
     if node_type == "well":
         return {
-            "name": node,
+            "name": f"{node} - THP",
             "type": "well",
             "pressure": f"WTHP:{node}",
-            "bhp_pressure": f"WBHP:{node}",
+        }
+    if node_type == "well_bhp":
+        return {
+            "name": f"{node} - BHP",
+            "type": "well_bhp",
+            "pressure": f"WBHP:{node}",
         }
     raise ValueError(f"Node type {node_type} not implemented.")

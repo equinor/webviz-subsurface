@@ -6,7 +6,7 @@ import numpy as np
 
 
 def make_node_pressure_graph(
-    nodes: Dict[str, Any], smry: pd.DataFrame,
+    nodes: Dict[str, Any], smry: pd.DataFrame, include_bhp: bool, plot_mean: bool
 ) -> go.Figure:
     """Description"""
     fig = go.Figure()
@@ -17,8 +17,12 @@ def make_node_pressure_graph(
         df_filtered = smry[smry.DATE>=start_date]
         if end_date is not None:
             df_filtered = df_filtered[df_filtered.DATE<end_date]
+        if plot_mean:
+            df_filtered = df_filtered.groupby("DATE").mean().reset_index()
 
         for node in node_dict["nodes"]:
+            if node["type"] == "well_bhp" and not include_bhp:
+                continue
             sumvec = node["pressure"]
             if sumvec in df_filtered.columns:
                 fig.add_trace(
@@ -30,7 +34,6 @@ def make_node_pressure_graph(
                     }
                 )
             else:
-                sumvec
                 print(f"Summary vector {sumvec} not in dataset.")
 
     fig.update_layout(
@@ -38,6 +41,7 @@ def make_node_pressure_graph(
         yaxis_title="Pressure",
         plot_bgcolor="white",
     )
+    fig.update_yaxes(autorange="reversed")
 
     return fig
 

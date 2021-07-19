@@ -77,5 +77,15 @@ def selectors_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
                     multi=False,
                 ),
             ),
+            wcc.Selectors(
+                label="Pressure Plot Options",
+                children=[
+                    wcc.Checklist(
+                        id=get_uuid("include_bhp"),
+                        options=[{"label": "Include BHP", "value": "include_bhp"}],
+                        value=["include_bhp"],
+                    ),
+                ]
+            )
         ],
     )

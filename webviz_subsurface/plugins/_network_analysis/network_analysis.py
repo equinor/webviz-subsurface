@@ -12,7 +12,7 @@ from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 
 from .views import main_view
-from .controllers import selections_controllers
+from .controllers import controllers
 from .utils.utils import read_gruptree_files
 
 
@@ -80,4 +80,4 @@ class NetworkAnalysis(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        selections_controllers(app=app, get_uuid=self.uuid, smry=self.smry, gruptree=self.gruptree)
+        controllers(app=app, get_uuid=self.uuid, smry=self.smry, gruptree=self.gruptree)
