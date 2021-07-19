@@ -49,11 +49,12 @@ def _sort_table_on_real_then_date(table: pa.Table) -> pa.Table:
 class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
 
     # -------------------------------------------------------------------------
-    def __init__(self, arrow_file_name: Path) -> None:
+    def __init__(self, arrow_file_name: Path, sample_freq: Optional[Frequency]) -> None:
         self._arrow_file_name = str(arrow_file_name)
-        self._sample_freq = Frequency.YEARLY
+        self._sample_freq = sample_freq
 
         LOGGER.debug(f"init with arrow file: {self._arrow_file_name}")
+        LOGGER.debug(f"init sample_freq: {repr(self._sample_freq)}")
         timer = PerfTimer()
 
         source = pa.memory_map(self._arrow_file_name, "r")
@@ -159,12 +160,12 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
     # -------------------------------------------------------------------------
     @staticmethod
     def from_backing_store(
-        storage_dir: Path, storage_key: str
+        storage_dir: Path, storage_key: str, sample_freq: Optional[Frequency]
     ) -> Optional["EnsembleSummaryProviderImplLAZYArrow"]:
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
-            return EnsembleSummaryProviderImplLAZYArrow(arrow_file_name)
+            return EnsembleSummaryProviderImplLAZYArrow(arrow_file_name, sample_freq)
 
         return None
 

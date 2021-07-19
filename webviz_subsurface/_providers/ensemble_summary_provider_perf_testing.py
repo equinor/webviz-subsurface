@@ -212,12 +212,14 @@ if __name__ == "__main__":
 
     # provider_set = (
     #     factory.create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file(
-    #         ENSEMBLES
+    #         ENSEMBLES, "daily"
     #     )
     # )
 
     provider_set = (
-        factory.create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(ENSEMBLES)
+        factory.create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(
+            ENSEMBLES, "daily"
+        )
     )
 
     print(

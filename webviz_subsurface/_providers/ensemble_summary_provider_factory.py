@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 from pathlib import Path
 import os
 import hashlib
@@ -279,7 +279,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
     # -------------------------------------------------------------------------
     def create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file(
-        self, ensembles: Dict[str, str]
+        self,
+        ensembles: Dict[str, str],
+        sampling_frequency_str: Literal["daily", "weekly", "monthly", "yearly", "raw"],
     ) -> EnsembleSummaryProviderSet:
 
         LOGGER.info(
@@ -287,11 +289,15 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         )
         timer = PerfTimer()
 
+        frequency_enum: Optional[Frequency] = None
+        if sampling_frequency_str is not "raw":
+            frequency_enum = Frequency(sampling_frequency_str)
+
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
         missing_storage_keys: Dict[str, str] = {}
 
         for ens_name, ens_path in ensembles.items():
-            ens_storage_key = f"ens_concat_PRESAMPLED__{_make_hash_string(ens_path)}"
+            ens_storage_key = f"ens_concat_PRESAMPLED_{sampling_frequency_str}__{_make_hash_string(ens_path)}"
             provider = EnsembleSummaryProviderImplArrow.from_backing_store(
                 self._storage_dir, ens_storage_key
             )
@@ -314,9 +320,10 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 )
                 et_import_smry_s = timer.lap_s()
 
-                per_real_tables = resample_per_real_tables(
-                    per_real_tables, Frequency.DAILY
-                )
+                if frequency_enum is not None:
+                    per_real_tables = resample_per_real_tables(
+                        per_real_tables, frequency_enum
+                    )
                 et_resample_s = timer.lap_s()
 
                 EnsembleSummaryProviderImplArrow.write_backing_store_from_per_realization_tables(
@@ -351,7 +358,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
     # -------------------------------------------------------------------------
     def create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(
-        self, ensembles: Dict[str, str]
+        self,
+        ensembles: Dict[str, str],
+        report_frequency_str: Literal["daily", "weekly", "monthly", "yearly", "raw"],
     ) -> EnsembleSummaryProviderSet:
 
         LOGGER.info(
@@ -359,13 +368,17 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         )
         timer = PerfTimer()
 
+        frequency_enum: Optional[Frequency] = None
+        if report_frequency_str is not "raw":
+            frequency_enum = Frequency(report_frequency_str)
+
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
         missing_storage_keys: Dict[str, str] = {}
 
         for ens_name, ens_path in ensembles.items():
             ens_storage_key = f"ens_concat_LAZY__{_make_hash_string(ens_path)}"
             provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
-                self._storage_dir, ens_storage_key
+                self._storage_dir, ens_storage_key, frequency_enum
             )
             if provider:
                 created_providers[ens_name] = provider
@@ -392,7 +405,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 et_write_s = timer.lap_s()
 
                 provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
-                    self._storage_dir, ens_storage_key
+                    self._storage_dir, ens_storage_key, frequency_enum
                 )
 
                 if provider:
