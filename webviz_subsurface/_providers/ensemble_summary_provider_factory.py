@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 from pathlib import Path
 import os
 import hashlib
@@ -22,6 +22,15 @@ from .ensemble_summary_provider_impl_inmem_parquet import (
 )
 from .._utils.perf_timer import PerfTimer
 
+from .ensemble_summary_provider_experiments import (
+    load_per_realization_smry_tables_using_smry2arrow,
+    resample_per_real_tables,
+    Frequency,
+)
+from .ensemble_summary_provider_impl_LAZY_arrow import (
+    EnsembleSummaryProviderImplLAZYArrow,
+)
+
 
 class BackingType(Enum):
     ARROW = 1
@@ -36,16 +45,16 @@ LOGGER = logging.getLogger(__name__)
 class EnsembleSummaryProviderFactory(WebvizFactory):
 
     # -------------------------------------------------------------------------
-    def __init__(self, root_storage_folder: Path, backing_type: BackingType) -> None:
+    def __init__(self, root_storage_folder: Path, pref_df_backing: BackingType) -> None:
         self._storage_dir = Path(root_storage_folder) / __name__
-        self._backing_type: BackingType = backing_type
+        self._pref_df_backing: BackingType = pref_df_backing
         self._allow_storage_writes = True
 
         LOGGER.info(
-            f"EnsembleSummaryProviderFactory init: backing_type={repr(self._backing_type)}"
+            f"EnsembleSummaryProviderFactory init: storage_dir={self._storage_dir}"
         )
         LOGGER.info(
-            f"EnsembleSummaryProviderFactory init: storage_dir={self._storage_dir}"
+            f"EnsembleSummaryProviderFactory init: pref_df_backing={repr(self._pref_df_backing)}"
         )
 
         if self._allow_storage_writes:
@@ -107,7 +116,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
             for ens_name in ensemble_names:
                 storage_key = main_storage_key + "__" + ens_name
                 ensemble_df = aggregated_df[aggregated_df["ENSEMBLE"] == ens_name]
-                self._write_data_to_backing_store(storage_key, ensemble_df.copy())
+                self._write_df_to_pref_df_backing(storage_key, ensemble_df.copy())
                 storage_keys_to_load[ens_name] = storage_key
 
             with open(json_filename, "w") as file:
@@ -115,7 +124,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
         for ens_name, storage_key in storage_keys_to_load.items():
-            provider = self._create_provider_instance_from_backing_store(storage_key)
+            provider = self._create_provider_instance_from_pref_df_backing(storage_key)
             if provider:
                 created_providers[ens_name] = provider
 
@@ -148,7 +157,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         # Try and create/load providers from backing store
         for ens_name, ens_path in ensembles.items():
             storage_key = f"ens_csv__{_make_hash_string(ens_path + csv_file_rel_path)}"
-            provider = self._create_provider_instance_from_backing_store(storage_key)
+            provider = self._create_provider_instance_from_pref_df_backing(storage_key)
             if provider:
                 created_providers[ens_name] = provider
                 LOGGER.info(
@@ -175,10 +184,10 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 ensemble_df = scratch_ensemble.load_csv(csv_file_rel_path)
                 et_load_csv_s = timer.lap_s()
 
-                self._write_data_to_backing_store(storage_key, ensemble_df)
+                self._write_df_to_pref_df_backing(storage_key, ensemble_df)
                 et_write_s = timer.lap_s()
 
-                provider = self._create_provider_instance_from_backing_store(
+                provider = self._create_provider_instance_from_pref_df_backing(
                     storage_key
                 )
                 if provider:
@@ -204,11 +213,11 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         return EnsembleSummaryProviderSet(created_providers)
 
     # -------------------------------------------------------------------------
-    def create_provider_set_from_ensemble_smry(
+    def create_provider_set_from_ensemble_smry_fmu(
         self, ensembles: Dict[str, str], time_index: str
     ) -> EnsembleSummaryProviderSet:
 
-        LOGGER.info("create_provider_set_from_ensemble_smry() starting...")
+        LOGGER.info("create_provider_set_from_ensemble_smry_fmu() starting...")
         timer = PerfTimer()
 
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
@@ -217,7 +226,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         # Try and create/load from backing store
         for ens_name, ens_path in ensembles.items():
             ens_storage_key = f"ens_smry__{_make_hash_string(ens_path)}__{time_index}"
-            provider = self._create_provider_instance_from_backing_store(
+            provider = self._create_provider_instance_from_pref_df_backing(
                 ens_storage_key
             )
             if provider:
@@ -236,15 +245,15 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 timer.lap_s()
 
                 ens_path = ensembles[ens_name]
-                ensemble_df = _load_smry_single_dataframe_for_ensemble(
+                ensemble_df = _load_ensemble_smry_dataframe_using_fmu(
                     ens_path, time_index
                 )
                 et_import_smry_s = timer.lap_s()
 
-                self._write_data_to_backing_store(ens_storage_key, ensemble_df)
+                self._write_df_to_pref_df_backing(ens_storage_key, ensemble_df)
                 et_write_s = timer.lap_s()
 
-                provider = self._create_provider_instance_from_backing_store(
+                provider = self._create_provider_instance_from_pref_df_backing(
                     ens_storage_key
                 )
                 if provider:
@@ -262,7 +271,146 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
             )
 
         LOGGER.info(
-            f"create_provider_set_from_ensemble_smry() finished "
+            f"create_provider_set_from_ensemble_smry_fmu() finished "
+            f"- total time: {timer.elapsed_s():.2f}s"
+        )
+
+        return EnsembleSummaryProviderSet(created_providers)
+
+    # -------------------------------------------------------------------------
+    def create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file(
+        self, ensembles: Dict[str, str]
+    ) -> EnsembleSummaryProviderSet:
+
+        LOGGER.info(
+            "create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file() starting..."
+        )
+        timer = PerfTimer()
+
+        created_providers: Dict[str, EnsembleSummaryProvider] = {}
+        missing_storage_keys: Dict[str, str] = {}
+
+        for ens_name, ens_path in ensembles.items():
+            ens_storage_key = f"ens_concat_PRESAMPLED__{_make_hash_string(ens_path)}"
+            provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+                self._storage_dir, ens_storage_key
+            )
+            if provider:
+                created_providers[ens_name] = provider
+                LOGGER.info(
+                    f"Loaded summary provider for {ens_name} from backing store"
+                )
+            else:
+                missing_storage_keys[ens_name] = ens_storage_key
+
+        if missing_storage_keys and self._allow_storage_writes:
+            for ens_name, ens_storage_key in dict(missing_storage_keys).items():
+                LOGGER.info(f"Importing/saving summary data for ensemble: {ens_name}")
+                timer.lap_s()
+
+                ens_path = ensembles[ens_name]
+                per_real_tables = load_per_realization_smry_tables_using_smry2arrow(
+                    ens_path
+                )
+                et_import_smry_s = timer.lap_s()
+
+                per_real_tables = resample_per_real_tables(
+                    per_real_tables, Frequency.DAILY
+                )
+                et_resample_s = timer.lap_s()
+
+                EnsembleSummaryProviderImplArrow.write_backing_store_from_per_realization_tables(
+                    self._storage_dir, ens_storage_key, per_real_tables
+                )
+                et_write_s = timer.lap_s()
+
+                provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+                    self._storage_dir, ens_storage_key
+                )
+
+                if provider:
+                    created_providers[ens_name] = provider
+                    del missing_storage_keys[ens_name]
+                    LOGGER.info(
+                        f"Saved summary provider for {ens_name} to backing store ("
+                        f"import_smry={et_import_smry_s:.2f}s, resample={et_resample_s:.2f}s, write={et_write_s:.2f}s)"
+                    )
+
+        # Should not be any keys missing
+        if missing_storage_keys:
+            raise ValueError(
+                f"Failed to load/create provider(s) for {len(missing_storage_keys)} ensembles"
+            )
+
+        LOGGER.info(
+            f"create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file() finished "
+            f"- total time: {timer.elapsed_s():.2f}s"
+        )
+
+        return EnsembleSummaryProviderSet(created_providers)
+
+    # -------------------------------------------------------------------------
+    def create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(
+        self, ensembles: Dict[str, str]
+    ) -> EnsembleSummaryProviderSet:
+
+        LOGGER.info(
+            "create_provider_set_LAZY_from_FAKE_per_realization_arrow_file() starting..."
+        )
+        timer = PerfTimer()
+
+        created_providers: Dict[str, EnsembleSummaryProvider] = {}
+        missing_storage_keys: Dict[str, str] = {}
+
+        for ens_name, ens_path in ensembles.items():
+            ens_storage_key = f"ens_concat_LAZY__{_make_hash_string(ens_path)}"
+            provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
+                self._storage_dir, ens_storage_key
+            )
+            if provider:
+                created_providers[ens_name] = provider
+                LOGGER.info(
+                    f"Loaded summary provider for {ens_name} from backing store"
+                )
+            else:
+                missing_storage_keys[ens_name] = ens_storage_key
+
+        if missing_storage_keys and self._allow_storage_writes:
+            for ens_name, ens_storage_key in dict(missing_storage_keys).items():
+                LOGGER.info(f"Importing/saving summary data for ensemble: {ens_name}")
+                timer.lap_s()
+
+                ens_path = ensembles[ens_name]
+                per_real_tables = load_per_realization_smry_tables_using_smry2arrow(
+                    ens_path
+                )
+                et_import_smry_s = timer.lap_s()
+
+                EnsembleSummaryProviderImplLAZYArrow.write_backing_store_from_per_realization_tables(
+                    self._storage_dir, ens_storage_key, per_real_tables
+                )
+                et_write_s = timer.lap_s()
+
+                provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
+                    self._storage_dir, ens_storage_key
+                )
+
+                if provider:
+                    created_providers[ens_name] = provider
+                    del missing_storage_keys[ens_name]
+                    LOGGER.info(
+                        f"Saved summary provider for {ens_name} to backing store ("
+                        f"import_smry={et_import_smry_s:.2f}s, write={et_write_s:.2f}s)"
+                    )
+
+        # Should not be any keys missing
+        if missing_storage_keys:
+            raise ValueError(
+                f"Failed to load/create provider(s) for {len(missing_storage_keys)} ensembles"
+            )
+
+        LOGGER.info(
+            f"create_provider_set_LAZY_from_FAKE_per_realization_arrow_file() finished "
             f"- total time: {timer.elapsed_s():.2f}s"
         )
 
@@ -271,58 +419,57 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     # -------------------------------------------------------------------------
     # Simple solution for creating EnsembleSummaryProvider instances from backing store
     # based on the configured backing type.
-    def _create_provider_instance_from_backing_store(
+    def _create_provider_instance_from_pref_df_backing(
         self, storage_key: str
     ) -> Optional[EnsembleSummaryProvider]:
-        if self._backing_type is BackingType.ARROW:
+        if self._pref_df_backing is BackingType.ARROW:
             return EnsembleSummaryProviderImplArrow.from_backing_store(
                 self._storage_dir, storage_key
             )
 
-        if self._backing_type is BackingType.PARQUET:
+        if self._pref_df_backing is BackingType.PARQUET:
             return EnsembleSummaryProviderImplParquet.from_backing_store(
                 self._storage_dir, storage_key
             )
 
-        if self._backing_type is BackingType.INMEM_PARQUET:
+        if self._pref_df_backing is BackingType.INMEM_PARQUET:
             return EnsembleSummaryProviderImplInMemParquet.from_backing_store(
                 self._storage_dir, storage_key
             )
 
-        raise NotImplementedError("Unhandled backing type")
+        raise NotImplementedError("Unhandled preferred df backing type")
 
     # -------------------------------------------------------------------------
     # Simple solution for writing data to backing store according to the backing
     # type that is configured for the factory
-    def _write_data_to_backing_store(
+    def _write_df_to_pref_df_backing(
         self, storage_key: str, ensemble_df: pd.DataFrame
     ) -> None:
-        if self._backing_type is BackingType.ARROW:
+        if self._pref_df_backing is BackingType.ARROW:
             EnsembleSummaryProviderImplArrow.write_backing_store_from_ensemble_dataframe(
                 self._storage_dir, storage_key, ensemble_df
             )
 
-        elif self._backing_type is BackingType.PARQUET:
+        elif self._pref_df_backing is BackingType.PARQUET:
             EnsembleSummaryProviderImplParquet.write_backing_store_from_ensemble_dataframe(
                 self._storage_dir, storage_key, ensemble_df
             )
 
-        elif self._backing_type is BackingType.INMEM_PARQUET:
+        elif self._pref_df_backing is BackingType.INMEM_PARQUET:
             EnsembleSummaryProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
                 self._storage_dir, storage_key, ensemble_df
             )
 
         else:
-            raise NotImplementedError("Unhandled backing type")
+            raise NotImplementedError("Unhandled preferred df backing type")
 
 
 # -------------------------------------------------------------------------
-# @profile
-def _load_smry_single_dataframe_for_ensemble(
+def _load_ensemble_smry_dataframe_using_fmu(
     ens_path: str, time_index: str
 ) -> pd.DataFrame:
 
-    LOGGER.debug(f"_load_smry_single_dataframe_for_ensemble() starting - {ens_path}")
+    LOGGER.debug(f"_load_ensemble_smry_dataframe_using_fmu() starting - {ens_path}")
     timer = PerfTimer()
 
     scratch_ensemble = ScratchEnsemble("tempEnsName", paths=ens_path)
@@ -332,7 +479,7 @@ def _load_smry_single_dataframe_for_ensemble(
     et_load_smry_s = timer.lap_s()
 
     LOGGER.debug(
-        f"_load_smry_single_dataframe_for_ensemble() "
+        f"_load_ensemble_smry_dataframe_using_fmu() "
         f"finished in: {timer.elapsed_s():.2f}s ("
         f"create_scratch_ens={et_create_scratch_ens_s:.2f}s "
         f"load_smry={et_load_smry_s:.2f}s)"

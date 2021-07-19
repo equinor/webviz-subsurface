@@ -3,6 +3,7 @@ from pathlib import Path
 import datetime
 import time
 import logging
+import json
 
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 from .ensemble_summary_provider_factory import BackingType
@@ -130,38 +131,8 @@ def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> No
 
 
 # -------------------------------------------------------------------------
-def _run_perf_tests(factory: EnsembleSummaryProviderFactory) -> None:
+def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
 
-    ensembles: Dict[str, str] = {
-        "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-0",
-        # "iter-1": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-1",
-        # "iter-2": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-2",
-        # "iter-3": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-3",
-    }
-
-    # print("## ensembles:")
-    # print(json.dumps(ensembles, indent=True))
-
-    print()
-    print("## Creating EnsembleSummaryProviderSet...")
-
-    start_tim = time.perf_counter()
-
-    provider_set: EnsembleSummaryProviderSet = (
-        factory.create_provider_set_from_ensemble_smry(ensembles, "daily")
-    )
-
-    print(
-        "## Done creating EnsembleSummaryProviderSet, elapsed time (s):",
-        time.perf_counter() - start_tim,
-    )
-
-    print()
-    print("## provider_set.ensemble_names()", provider_set.ensemble_names())
-
-    provider = provider_set.provider("iter-0")
     all_vector_names = provider.vector_names()
     all_realizations = provider.realizations()
     all_dates = provider.dates()
@@ -172,7 +143,6 @@ def _run_perf_tests(factory: EnsembleSummaryProviderFactory) -> None:
     print("## num_realizations:", num_realizations)
     print("## num_dates", num_dates)
 
-    print()
     print()
 
     _get_vector_names_filtered_by_value(provider)
@@ -199,28 +169,64 @@ def _run_perf_tests(factory: EnsembleSummaryProviderFactory) -> None:
 if __name__ == "__main__":
     print()
     print("## Running EnsembleSummaryProvider performance tests")
-    print("## ============================================")
+    print("## =================================================")
 
     logging.basicConfig(
         level=logging.WARNING,
         format="%(asctime)s %(levelname)-3s [%(name)s]: %(message)s",
     )
     logging.getLogger("webviz_subsurface").setLevel(level=logging.INFO)
-    # logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
+    logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
 
     ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/webviz_storage_dir")
     # ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
-    BACKING_TYPE: BackingType = BackingType.ARROW
-    # BACKING_TYPE: BackingType = BackingType.PARQUET
-    # BACKING_TYPE: BackingType = BackingType.INMEM_PARQUET
+    PREF_DF_BACKING: BackingType = BackingType.ARROW
+    # PREF_DF_BACKING: BackingType = BackingType.PARQUET
+    # PREF_DF_BACKING: BackingType = BackingType.INMEM_PARQUET
+
+    ENSEMBLES: Dict[str, str] = {
+        "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
+        # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
+        # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-0",
+        # "iter-1": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-1",
+        # "iter-2": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-2",
+        # "iter-3": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-3",
+        # "iter-0": "/home/sigurdp/gitRoot/hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
+    }
 
     print()
     print("## ROOT_STORAGE_DIR:", ROOT_STORAGE_DIR)
-    print("## BACKING_TYPE:", BACKING_TYPE)
+    print("## PREF_DF_BACKING:", PREF_DF_BACKING)
+    print("## ENSEMBLES:", ENSEMBLES)
 
-    factory = EnsembleSummaryProviderFactory(ROOT_STORAGE_DIR, BACKING_TYPE)
+    print()
+    print("## Creating EnsembleSummaryProviderSet...")
 
-    _run_perf_tests(factory)
+    start_tim = time.perf_counter()
+    factory = EnsembleSummaryProviderFactory(ROOT_STORAGE_DIR, PREF_DF_BACKING)
+
+    # provider_set = factory.create_provider_set_from_ensemble_smry_fmu(
+    #     ENSEMBLES, "daily"
+    # )
+
+    # provider_set = (
+    #     factory.create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file(
+    #         ENSEMBLES
+    #     )
+    # )
+
+    provider_set = (
+        factory.create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(ENSEMBLES)
+    )
+
+    print(
+        "## Done creating EnsembleSummaryProviderSet, elapsed time (s):",
+        time.perf_counter() - start_tim,
+    )
+
+    print()
+    print("## Running perf tests...")
+    _run_perf_tests(provider_set.provider("iter-0"))
 
     print("## done")

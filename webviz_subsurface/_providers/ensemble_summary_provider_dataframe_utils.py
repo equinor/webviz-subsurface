@@ -42,7 +42,7 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # -------------------------------------------------------------------------
-def find_min_max_for_numeric_columns(
+def find_min_max_for_numeric_df_columns(
     df: pd.DataFrame,
 ) -> Dict[str, dict]:
 

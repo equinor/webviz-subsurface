@@ -81,7 +81,7 @@ def test_create_from_per_realization_csv_file(
 
 
 # -------------------------------------------------------------------------
-def test_create_from_ensemble_smry(testdata_folder: Path, tmp_path: Path) -> None:
+def test_create_from_ensemble_smry_fmu(testdata_folder: Path, tmp_path: Path) -> None:
 
     factory = EnsembleSummaryProviderFactory(tmp_path, BACKING_TYPE_TO_TEST)
 
@@ -92,7 +92,7 @@ def test_create_from_ensemble_smry(testdata_folder: Path, tmp_path: Path) -> Non
         "iter-3": str(testdata_folder / "reek_history_match/realization-*/iter-3"),
     }
 
-    pset = factory.create_provider_set_from_ensemble_smry(ensembles, "monthly")
+    pset = factory.create_provider_set_from_ensemble_smry_fmu(ensembles, "monthly")
     assert pset.ensemble_names() == ["iter-0", "iter-1", "iter-2", "iter-3"]
 
     p = pset.provider("iter-0")
