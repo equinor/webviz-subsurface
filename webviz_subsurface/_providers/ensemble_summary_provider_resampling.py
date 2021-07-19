@@ -300,3 +300,137 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
     ret_table = pa.table(output_columns_dict, schema=table.schema)
 
     return ret_table
+
+
+# -------------------------------------------------------------------------
+def sample_single_real_table_at_date_NAIVE_SLOW(
+    table: pa.Table, np_datetime: np.datetime64
+) -> pa.Table:
+
+    raw_dates_np = table.column("DATE").to_numpy()
+
+    # last_insertion_index is the last legal insertion index of the queried value
+    last_insertion_index: int = np.searchsorted(raw_dates_np, np_datetime, side="right")
+
+    idx0 = -1
+    idx1 = -1
+
+    if last_insertion_index == len(raw_dates_np):
+        # Either an exact match or outside the range (query date is beyond our last date)
+        if raw_dates_np[last_insertion_index - 1] == np_datetime:
+            idx0 = idx1 = last_insertion_index - 1
+        else:
+            idx0 = last_insertion_index - 1
+            idx1 = -1
+    elif last_insertion_index == 0:
+        # Outside the range (query date is before our first date)
+        idx0 = -1
+        idx1 = 0
+    else:
+        assert raw_dates_np[last_insertion_index] > np_datetime
+        if raw_dates_np[last_insertion_index - 1] == np_datetime:
+            idx0 = idx1 = last_insertion_index - 1
+        else:
+            idx0 = last_insertion_index - 1
+            idx1 = last_insertion_index
+
+    # descr = "N/A"
+    # if idx0 == idx1:
+    #     assert idx0 >= 0
+    #     descr = "exact"
+    # elif idx0 == -1:
+    #     assert idx1 == 0
+    #     descr = "below"
+    # elif idx1 == -1:
+    #     assert idx0 == len(raw_dates_np) - 1
+    #     descr = "above"
+    # else:
+    #     descr = "INTERPOLATE"
+
+    # print(f"lookfor={np_datetime}   idx0={idx0}   idx1={idx1}   descr={descr}")
+
+    row_indices = []
+    if idx0 >= 0:
+        row_indices.append(idx0)
+    if idx1 >= 0 and idx1 != idx0:
+        row_indices.append(idx1)
+
+    records_table = table.take(row_indices)
+    # print(records_table.shape)
+    # print(type(records_table))
+
+    t = 0
+    if records_table.num_rows == 2:
+        d_as_uint = np_datetime.astype(np.uint64)
+        d0_as_uint = table.column("DATE").to_numpy()[0].astype(np.uint64)
+        d1_as_uint = table.column("DATE").to_numpy()[1].astype(np.uint64)
+        t = (d_as_uint - d0_as_uint) / (d1_as_uint - d0_as_uint)
+
+    column_arrays = []
+    for colname in table.schema.names:
+        if colname == "REAL":
+            column_arrays.append(np.array([table.column("REAL")[0].as_py()]))
+        elif colname == "DATE":
+            column_arrays.append(np.array([np_datetime]))
+        else:
+            field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
+            is_rate = field_meta["is_rate"]
+
+            if idx0 == idx1:
+                # Exact hit
+                column_arrays.append(
+                    pa.array([records_table.column(colname)[0].as_py()])
+                )
+            elif idx0 == -1 or idx1 == -1:
+                # below or above (0 for rate, else extrapolate)
+                assert records_table.num_rows is 1
+                if is_rate:
+                    column_arrays.append(pa.array([0.0]))
+                else:
+                    column_arrays.append(
+                        pa.array([records_table.column(colname)[0].as_py()])
+                    )
+            else:
+                # interpolate or backfill
+                assert records_table.num_rows is 2
+                if is_rate:
+                    column_arrays.append(
+                        pa.array([records_table.column(colname)[1].as_py()])
+                    )
+                else:
+                    v0 = records_table.column(colname)[0].as_py()
+                    v1 = records_table.column(colname)[1].as_py()
+                    if v0 is not None and v1 is not None:
+                        column_arrays.append(pa.array([v0 + t * (v1 - v0)]))
+                    else:
+                        column_arrays.append(pa.array([None], pa.float32()))
+
+    ret_table = pa.table(column_arrays, schema=table.schema)
+
+    return ret_table
+
+
+# -------------------------------------------------------------------------
+def sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
+    table: pa.Table, np_datetime: np.datetime64
+) -> pa.Table:
+
+    real_arr_np = table.column("REAL").to_numpy()
+    unique_reals, first_occurence_idx, real_counts = np.unique(
+        real_arr_np, return_index=True, return_counts=True
+    )
+
+    tables_list = []
+
+    for i, _real in enumerate(unique_reals):
+        start_row_idx = first_occurence_idx[i]
+        row_count = real_counts[i]
+        real_table = table.slice(start_row_idx, row_count)
+
+        single_row_table = sample_single_real_table_at_date_NAIVE_SLOW(
+            real_table, np_datetime
+        )
+        tables_list.append(single_row_table)
+
+    ret_table = pa.concat_tables(tables_list)
+    return ret_table
