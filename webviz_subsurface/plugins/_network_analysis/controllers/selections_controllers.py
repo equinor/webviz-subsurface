@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
 from ..figures import make_node_pressure_graph, make_area_graph
-from ..utils.utils import get_upstream_nodes
+from ..utils.utils import get_upstream_nodes, get_node_field
 
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
@@ -58,10 +58,21 @@ def selections_controllers(
             fig.update_layout(plot_bgcolor="white", title="No data")
             return fig, fig
 
-        smry_ens = smry[smry.ENSEMBLE == ensemble]
-        gruptree_ens = get_upstream_nodes(gruptree[gruptree.ENSEMBLE == ensemble], node_type, node)
 
+        smry_ens = smry[smry.ENSEMBLE == ensemble]
+
+        if gruptree.empty or ensemble not in gruptree.ENSEMBLE.unique():
+            upstream_nodes = [
+                {
+                    "start_date": smry_ens.DATE.min(),
+                    "end_date": smry_ens.DATE.max(),
+                    "nodes":[get_node_field(node_type, node)]
+                }
+            ]
+        else:
+            upstream_nodes = get_upstream_nodes(gruptree[gruptree.ENSEMBLE == ensemble], node_type, node)
+        print(upstream_nodes)
         return (
             make_area_graph(node_type, node, smry_ens),
-            make_node_pressure_graph(node_type, node, smry_ens),
+            make_node_pressure_graph(upstream_nodes, smry_ens),
         )

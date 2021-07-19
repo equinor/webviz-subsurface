@@ -1,25 +1,37 @@
+from typing import Dict, Any
 import pandas as pd
 import plotly.graph_objects as go
 
+import numpy as np
+
 
 def make_node_pressure_graph(
-    node_type: str, node: str, smry: pd.DataFrame
+    nodes: Dict[str, Any], smry: pd.DataFrame,
 ) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    sumvec = get_pressure_sumvec(node_type, node)
-    if sumvec not in smry.columns:
-        return go.Figure().update_layout(plot_bgcolor="white")
-    df = smry[["DATE", sumvec]].groupby("DATE").mean().reset_index()
-    fig.add_trace(
-        {
-            "x": list(df["DATE"]),
-            "y": list(df[sumvec]),
-            "name": sumvec,
-            "showlegend": True,
-        }
-    )
+    for node_dict in nodes:
+        start_date = pd.to_datetime(node_dict["start_date"])
+        end_date = pd.to_datetime(node_dict["end_date"])
+        df_filtered = smry[smry.DATE>=start_date]
+        if end_date is not None:
+            df_filtered = df_filtered[df_filtered.DATE<end_date]
+
+        for node in node_dict["nodes"]:
+            sumvec = node["pressure"]
+            if sumvec in df_filtered.columns:
+                fig.add_trace(
+                    {
+                        "x": list(df_filtered["DATE"]),
+                        "y": list(df_filtered[sumvec]),
+                        "name": node["name"],
+                        "showlegend": True
+                    }
+                )
+            else:
+                sumvec
+                print(f"Summary vector {sumvec} not in dataset.")
 
     fig.update_layout(
         title_text="Node Pressures",
@@ -77,17 +89,6 @@ def get_ctrlmode_sumvec(node_type: str, node: str) -> str:
         return f"WMCTL:{node}"
     if node_type == "field_group":
         return f"GMCTP:{node}"
-    raise ValueError(f"Node type {node_type} not implemented")
-
-
-def get_pressure_sumvec(node_type: str, node: str) -> str:
-    """Description"""
-    if node == "FIELD":
-        return "FPR"
-    if node_type == "well":
-        return f"WTHP:{node}"
-    if node_type == "field_group":
-        return f"GPR:{node}"
     raise ValueError(f"Node type {node_type} not implemented")
 
 

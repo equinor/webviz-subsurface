@@ -55,7 +55,6 @@ class NetworkAnalysis(WebvizPluginABC):
         self.smry = self.emodel.get_or_load_smry_cached()
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.gruptree = read_gruptree_files(self.ens_paths, gruptree_file)
-
         self.theme = webviz_settings.theme
 
         self.set_callbacks(app)
