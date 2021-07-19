@@ -82,7 +82,7 @@ def _get_nodelist(df, node_type, node) -> List[Dict[str, str]]:
 def get_node_field(node_type: str, node: str) -> dict:
     """Description"""
     if node == "FIELD":
-        return {"name": node, "type": "field", "pressure": "FPR"}
+        return {"name": node, "type": "field", "pressure": "GPR:FIELD"}
     if node_type == "field_group":
         return {"name": node, "type": "group", "pressure": f"GPR:{node}"}
     if node_type == "well":
