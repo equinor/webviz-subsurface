@@ -1,24 +1,42 @@
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Dict
+import glob
 
 import pandas as pd
 import dash
 import dash_html_components as html
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
+from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 
-# from webviz_config.webviz_store import webvizstore
-# from webviz_config.common_cache import CACHE
-
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
-
+from ..._models import EnsembleSetModel
+from ..._models import caching_ensemble_set_model_factory
 from .views import main_view
 from .controllers import controllers
-from .utils.utils import read_gruptree_files
 
 
 class NetworkAnalysis(WebvizPluginABC):
-    """Description"""
+    """Plugin to analyse network control modes and pressures.
+
+    Uses data from summary keywords:
+    * WMCTL:
+    * GMCTP:
+    * FMCTP
+    * WTHP:
+    * GPR:
+
+    and information about the network tree structure coming from
+    the gruptree export of `ecl2df`.
+
+    ---
+    * **`ensembles`:** Which ensembles in `shared_settings` to include.
+    * **`sampling`:** Frequency for the data sampling.
+    * **`gruptree_file`:** `.csv` with gruptree
+    ---
+
+    Gruptrees changing with time is supported, but trees that are varying
+    over realizations is not supported.
+    """
 
     def __init__(
         self,
@@ -31,6 +49,7 @@ class NetworkAnalysis(WebvizPluginABC):
 
         super().__init__()
         self.time_index = sampling
+        self.gruptree_file = gruptree_file
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -49,21 +68,25 @@ class NetworkAnalysis(WebvizPluginABC):
                     "WTHP:*",
                     "WBHP:*",
                     "GPR:*",
-                    "FPR",
                 ],
             )
         )
         self.smry = self.emodel.get_or_load_smry_cached()
-        # self.smry.to_csv("/private/olind/webviz/jc.csv")
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
-        self.gruptree = read_gruptree_files(self.ens_paths, gruptree_file)
+        self.gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
         self.theme = webviz_settings.theme
+        # self.colors = self.theme["layout"]["colorway"]
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        functions: List[Tuple[Callable, list]] = []
-        functions.extend(self.emodel.webvizstore)
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        functions: List[Tuple[Callable, List[Dict]]] = self.emodel.webvizstore
+        functions.append(
+            (
+                read_gruptree_files,
+                [{"ens_paths": self.ens_paths, "gruptree_file": self.gruptree_file}],
+            )
+        )
         return functions
 
     # @property
@@ -83,3 +106,27 @@ class NetworkAnalysis(WebvizPluginABC):
 
     def set_callbacks(self, app: dash.Dash) -> None:
         controllers(app=app, get_uuid=self.uuid, smry=self.smry, gruptree=self.gruptree)
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.DataFrame:
+    """Searches for gruptree files on the scratch disk. These
+    files can be exported in the FMU workflow using the ECL2CSV
+    forward job with subcommand gruptree
+
+    If one file is found per ensemble this file is assumed to be
+    valid for the whole ensemble.
+
+    If BRANPROP is in the KEYWORDS, GRUPTREE rows are filtered out
+    """
+    df = pd.DataFrame()
+    for ens_name, ens_path in ens_paths.items():
+        for filename in glob.glob(f"{ens_path}/{gruptree_file}"):
+            df_ens = pd.read_csv(filename)
+            df_ens["ENSEMBLE"] = ens_name
+            df = pd.concat([df, df_ens])
+            break
+    if "BRANPROP" in df.KEYWORD.unique():
+        df = df[df.KEYWORD != "GRUPTREE"]
+    return df

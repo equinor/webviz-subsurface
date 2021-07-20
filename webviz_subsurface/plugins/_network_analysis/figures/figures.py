@@ -1,40 +1,44 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import pandas as pd
 import plotly.graph_objects as go
 
-import numpy as np
-
 
 def make_node_pressure_graph(
-    nodes: Dict[str, Any], smry: pd.DataFrame, pressure_plot_options: dict
+    node_networks: List[Dict[str, Any]],
+    node_name: str,
+    smry: pd.DataFrame,
+    pressure_plot_options: dict,
 ) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    for node_dict in nodes:
-        df = get_filtered_smry(node_dict, pressure_plot_options, smry)
+    for node_network in node_networks:
+        df = get_filtered_smry(node_network, pressure_plot_options, smry)
 
-        for node in node_dict["nodes"]:
+        for nodedict in node_network["nodes"]:
             if (
-                node["type"] == "well_bhp"
+                nodedict["type"] == "well_bhp"
                 and "include_bhp" not in pressure_plot_options["include_bhp"]
             ):
                 continue
-            sumvec = node["pressure"]
+            sumvec = nodedict["pressure"]
+            label = nodedict["label"]
             if sumvec in df.columns:
                 fig.add_trace(
                     {
+                        "type": "scatter",
                         "x": list(df["DATE"]),
                         "y": list(df[sumvec]),
-                        "name": node["label"],
+                        "name": label,
                         "showlegend": True,
+                        "hovertext": (f"{label}"),
                     }
                 )
             else:
                 print(f"Summary vector {sumvec} not in dataset.")
 
     fig.update_layout(
-        title_text="Node Pressures",
+        title_text=f"Node Pressures - {node_name}",
         yaxis_title="Pressure",
         plot_bgcolor="white",
     )
@@ -73,7 +77,7 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
         )
 
     fig.update_layout(
-        title_text="Number of realizations on different control modes",
+        title_text=f"Number of realizations on different control modes - {node}",
         yaxis_title="# realizations",
         yaxis=dict(range=[0, smry.REAL.nunique()]),
         plot_bgcolor="white",
@@ -83,15 +87,19 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
 
 
 def get_filtered_smry(
-    node_dict: dict, pressure_plot_options: dict, smry: pd.DataFrame
+    node_network: dict, pressure_plot_options: dict, smry: pd.DataFrame
 ) -> pd.DataFrame:
     """Description"""
-    start_date = pd.to_datetime(node_dict["start_date"])
-    end_date = pd.to_datetime(node_dict["end_date"])
-    sumvecs = ["REAL", "DATE"] + [node["pressure"] for node in node_dict["nodes"]]
-    df = smry[smry.DATE >= start_date]
+    start_date = pd.to_datetime(node_network["start_date"])
+    end_date = pd.to_datetime(node_network["end_date"])
+    sumvecs = ["REAL", "DATE"] + [
+        nodedict["pressure"]
+        for nodedict in node_network["nodes"]
+        if nodedict["pressure"] in smry.columns
+    ]
+    df = smry[smry.DATE >= start_date][sumvecs]
     if end_date is not None:
-        df = df[dfDATE < end_date]
+        df = df[df.DATE < end_date]
     if pressure_plot_options["mean_or_single_real"] == "plot_mean":
         df = df.groupby("DATE").mean().reset_index()
     elif pressure_plot_options["mean_or_single_real"] == "single_real":

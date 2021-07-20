@@ -5,7 +5,8 @@ import webviz_core_components as wcc
 
 def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
     return wcc.Frame(
-        style={"height": "80vh"},
+        id=get_uuid("selections_layout"),
+        style={"height": "82vh"},
         children=[
             plot_controls(get_uuid("plot_controls"), ensembles),
             pressure_plot_options(get_uuid("pressure_plot_options")),
@@ -13,7 +14,7 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
     )
 
 
-def plot_controls(uuid, ensembles: list) -> wcc.Selectors:
+def plot_controls(uuid: str, ensembles: list) -> wcc.Selectors:
     return wcc.Selectors(
         label="Plot Controls",
         children=[
@@ -50,7 +51,7 @@ def plot_controls(uuid, ensembles: list) -> wcc.Selectors:
     )
 
 
-def pressure_plot_options(uuid) -> wcc.Selectors:
+def pressure_plot_options(uuid: str) -> wcc.Selectors:
     """Description"""
     return wcc.Selectors(
         label="Pressure Plot Options",
@@ -59,7 +60,6 @@ def pressure_plot_options(uuid) -> wcc.Selectors:
                 id={"id": uuid, "element": "include_bhp"},
                 options=[{"label": "Include BHP", "value": "include_bhp"}],
                 value=["include_bhp"],
-                # style={"margin-bottom":"1vh"}
             ),
             wcc.RadioItems(
                 label="Mean or realization",

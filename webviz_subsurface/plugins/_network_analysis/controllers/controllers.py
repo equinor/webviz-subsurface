@@ -1,12 +1,12 @@
-from typing import Callable, Optional, Any, Tuple, List
+from typing import Callable, Optional, Any, Tuple, List, Dict
 
 import pandas as pd
 import dash
-from dash.dependencies import Input, Output, ALL
+from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objects as go
 
 from ..figures import make_node_pressure_graph, make_area_graph
-from ..utils.utils import get_upstream_nodes, get_node_field
+from ..utils.utils import get_node_networks
 
 
 def controllers(
@@ -27,12 +27,16 @@ def controllers(
     )
     def _update_dropdowns(
         ensemble: str, node_type: str
-    ) -> Tuple[List[Any], Optional[str]]:
+    ) -> Tuple[
+        List[Dict[str, str]], Optional[str], List[Dict[str, Any]], Optional[int]
+    ]:
         print("update node dropdown")
         smry_ens = smry[smry.ENSEMBLE == ensemble].copy()
         smry_ens.dropna(how="all", axis=1, inplace=True)
 
-        node_options = get_node_dropdown_options(node_type, smry_ens)
+        node_options = get_node_dropdown_options(
+            node_type, smry_ens, list(gruptree.CHILD.unique())
+        )
         realizations = [
             {"label": real, "value": real} for real in sorted(smry_ens.REAL.unique())
         ]
@@ -41,16 +45,16 @@ def controllers(
     @app.callback(
         Output(get_uuid("ctrl_mode_graph"), "figure"),
         Output(get_uuid("pressures_graph"), "figure"),
-        Input({"id": get_uuid("plot_controls"), "element": ALL}, "id"),
         Input({"id": get_uuid("plot_controls"), "element": ALL}, "value"),
-        Input({"id": get_uuid("pressure_plot_options"), "element": ALL}, "id"),
         Input({"id": get_uuid("pressure_plot_options"), "element": ALL}, "value"),
+        State({"id": get_uuid("plot_controls"), "element": ALL}, "id"),
+        State({"id": get_uuid("pressure_plot_options"), "element": ALL}, "id"),
     )
     def _update_graphs(
-        plot_ctrl_ids: list,
         plot_ctrl_vals: list,
-        pr_plot_opts_ids: list,
         pr_plot_opts_vals: list,
+        plot_ctrl_ids: list,
+        pr_plot_opts_ids: list,
     ) -> Tuple[go.Figure, go.Figure]:
         print("make chart")
         plot_ctrl = {
@@ -72,22 +76,14 @@ def controllers(
             return fig, fig
 
         smry_ens = smry[smry.ENSEMBLE == ensemble]
-        if gruptree.empty or ensemble not in gruptree.ENSEMBLE.unique():
-            upstream_nodes = [
-                {
-                    "start_date": smry_ens.DATE.min(),
-                    "end_date": smry_ens.DATE.max(),
-                    "nodes": [get_node_field(node_type, node)],
-                }
-            ]
-        else:
-            upstream_nodes = get_upstream_nodes(
-                gruptree[gruptree.ENSEMBLE == ensemble], node_type, node
-            )
+        gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
+        node_networks = get_node_networks(
+            gruptree_ens, node_type, node, smry_ens.DATE.min()
+        )
 
         return (
             make_area_graph(node_type, node, smry_ens),
-            make_node_pressure_graph(upstream_nodes, smry_ens, pr_plot_opts),
+            make_node_pressure_graph(node_networks, node, smry_ens, pr_plot_opts),
         )
 
     @app.callback(
@@ -104,17 +100,21 @@ def controllers(
         ),
     )
     def _show_hide_realizations_dropdown(mean_or_single_real: str) -> bool:
-        return True if mean_or_single_real == "plot_mean" else False
+        return mean_or_single_real == "plot_mean"
 
 
-def get_node_dropdown_options(node_type: str, smry: pd.DataFrame) -> list:
+def get_node_dropdown_options(
+    node_type: str, smry: pd.DataFrame, tree_nodes: list
+) -> List[Dict[str, str]]:
     """Description"""
 
     if node_type == "well":
         nodes = [vec.split(":")[1] for vec in smry.columns if vec.startswith("WMCTL")]
     elif node_type == "field_group":
         nodes = [
-            vec.split(":")[1] for vec in smry.columns if vec.startswith("GMCTP")
+            vec.split(":")[1]
+            for vec in smry.columns
+            if vec.startswith("GMCTP") and vec.split(":")[1] in tree_nodes
         ] + ["FIELD"]
     else:
         raise ValueError(f"Node type {node_type} not implemented.")
