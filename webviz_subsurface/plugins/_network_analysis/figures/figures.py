@@ -6,31 +6,28 @@ import numpy as np
 
 
 def make_node_pressure_graph(
-    nodes: Dict[str, Any], smry: pd.DataFrame, include_bhp: bool, plot_mean: bool
+    nodes: Dict[str, Any], smry: pd.DataFrame, pressure_plot_options: dict
 ) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
     for node_dict in nodes:
-        start_date = pd.to_datetime(node_dict["start_date"])
-        end_date = pd.to_datetime(node_dict["end_date"])
-        df_filtered = smry[smry.DATE>=start_date]
-        if end_date is not None:
-            df_filtered = df_filtered[df_filtered.DATE<end_date]
-        if plot_mean:
-            df_filtered = df_filtered.groupby("DATE").mean().reset_index()
+        df = get_filtered_smry(node_dict, pressure_plot_options, smry)
 
         for node in node_dict["nodes"]:
-            if node["type"] == "well_bhp" and not include_bhp:
+            if (
+                node["type"] == "well_bhp"
+                and "include_bhp" not in pressure_plot_options["include_bhp"]
+            ):
                 continue
             sumvec = node["pressure"]
-            if sumvec in df_filtered.columns:
+            if sumvec in df.columns:
                 fig.add_trace(
                     {
-                        "x": list(df_filtered["DATE"]),
-                        "y": list(df_filtered[sumvec]),
+                        "x": list(df["DATE"]),
+                        "y": list(df[sumvec]),
                         "name": node["label"],
-                        "showlegend": True
+                        "showlegend": True,
                     }
                 )
             else:
@@ -83,6 +80,23 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
     )
 
     return fig
+
+
+def get_filtered_smry(
+    node_dict: dict, pressure_plot_options: dict, smry: pd.DataFrame
+) -> pd.DataFrame:
+    """Description"""
+    start_date = pd.to_datetime(node_dict["start_date"])
+    end_date = pd.to_datetime(node_dict["end_date"])
+    sumvecs = ["REAL", "DATE"] + [node["pressure"] for node in node_dict["nodes"]]
+    df = smry[smry.DATE >= start_date]
+    if end_date is not None:
+        df = df[dfDATE < end_date]
+    if pressure_plot_options["mean_or_single_real"] == "plot_mean":
+        df = df.groupby("DATE").mean().reset_index()
+    elif pressure_plot_options["mean_or_single_real"] == "single_real":
+        df = df[df.REAL == pressure_plot_options["realization"]]
+    return df
 
 
 def get_ctrlmode_sumvec(node_type: str, node: str) -> str:

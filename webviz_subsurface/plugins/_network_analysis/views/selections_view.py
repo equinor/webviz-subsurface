@@ -2,6 +2,7 @@ from typing import Callable
 
 import webviz_core_components as wcc
 
+
 def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
     return wcc.Frame(
         style={"height": "80vh"},
@@ -45,8 +46,9 @@ def plot_controls(uuid, ensembles: list) -> wcc.Selectors:
                 value=None,
                 multi=False,
             ),
-        ]
+        ],
     )
+
 
 def pressure_plot_options(uuid) -> wcc.Selectors:
     """Description"""
@@ -57,7 +59,7 @@ def pressure_plot_options(uuid) -> wcc.Selectors:
                 id={"id": uuid, "element": "include_bhp"},
                 options=[{"label": "Include BHP", "value": "include_bhp"}],
                 value=["include_bhp"],
-                #style={"margin-bottom":"1vh"}
+                # style={"margin-bottom":"1vh"}
             ),
             wcc.RadioItems(
                 label="Mean or realization",
@@ -75,9 +77,9 @@ def pressure_plot_options(uuid) -> wcc.Selectors:
                 value="plot_mean",
             ),
             wcc.Dropdown(
-                id={"id": uuid, "element": "real_dropdown"},
-                options=[{"label": 0, "value": 0}, {"label": 1, "value": 1}],
-                value=0,
+                id={"id": uuid, "element": "realization"},
+                options=[],
+                value=None,
                 multi=False,
             ),
         ],

@@ -5,6 +5,7 @@ import dash
 import dash_html_components as html
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
+
 # from webviz_config.webviz_store import webvizstore
 # from webviz_config.common_cache import CACHE
 
@@ -53,6 +54,7 @@ class NetworkAnalysis(WebvizPluginABC):
             )
         )
         self.smry = self.emodel.get_or_load_smry_cached()
+        # self.smry.to_csv("/private/olind/webviz/jc.csv")
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.gruptree = read_gruptree_files(self.ens_paths, gruptree_file)
         self.theme = webviz_settings.theme
