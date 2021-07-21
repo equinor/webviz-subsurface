@@ -1,63 +1,49 @@
 from typing import Dict, Any, List
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
-def make_node_pressure_graph(
+def create_figure(
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
     pressure_plot_options: dict,
-) -> go.Figure:
-    """Description"""
-    fig = go.Figure()
-
-    for node_network in node_info["networks"]:
-        df = get_filtered_smry(
-            node_network, node_info["ctrlmode_sumvec"], pressure_plot_options, smry
-        )
-
-        for nodedict in node_network["nodes"]:
-            if (
-                nodedict["type"] == "well_bhp"
-                and "include_bhp" not in pressure_plot_options["include_bhp"]
-            ):
-                continue
-            sumvec = nodedict["pressure"]
-            label = nodedict["label"]
-            if sumvec in df.columns:
-                fig.add_trace(
-                    {
-                        "type": "scatter",
-                        "x": list(df["DATE"]),
-                        "y": list(df[sumvec]),
-                        "name": label,
-                        "showlegend": True,
-                        "hovertext": (f"{label}"),
-                    }
-                )
-            else:
-                print(f"Summary vector {sumvec} not in dataset.")
-
+) -> dict:
     node_name = node_info["name"]
-    fig.update_layout(
-        title_text=f"Network Pressures - {node_name}",
-        yaxis_title="Pressure",
-        plot_bgcolor="white",
+    titles = [
+        f"Number of realizations on different control modes",
+        f"Network Pressures",
+    ]
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=False,
+        vertical_spacing=0.1,
+        subplot_titles=titles if titles else ["No vector selected"],
     )
-    fig.update_yaxes(autorange="reversed")
 
-    return fig
+    add_ctrl_mode_traces(fig, node_info, smry)
+
+    add_network_pressure_traces(fig, node_info, smry, pressure_plot_options)
+
+    fig.update_layout(
+        plot_bgcolor="white", title=f"Network Analysis for node: {node_name}"
+    )
+    fig.update_yaxes(
+        title="# realizations", range=[0, smry.REAL.nunique()], row=1, col=1
+    )
+    fig.update_yaxes(autorange="reversed", title="Pressure", row=2, col=1)
+    return fig.to_dict()
 
 
-def make_area_graph(node_info: dict, smry: pd.DataFrame) -> go.Figure:
+def add_ctrl_mode_traces(fig: go.Figure, node_info: dict, smry: pd.DataFrame):
     """Description"""
-    fig = go.Figure()
 
     sumvec = node_info["ctrlmode_sumvec"]
-    if sumvec not in smry.columns:
-        return go.Figure().update_layout(plot_bgcolor="white")
-    df = smry[["DATE", sumvec]]
-    df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
+    df = smry[["DATE", sumvec]].copy()
+    df[sumvec].clip(-1, None, inplace=True)
+
+    df = df.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
     df["Other"] = 0
     categories = get_ctrlmode_categories(node_info["type"])
 
@@ -78,15 +64,43 @@ def make_area_graph(node_info: dict, smry: pd.DataFrame) -> go.Figure:
             categories["Other"]["color"],
         )
 
-    node_name = node_info["name"]
-    fig.update_layout(
-        title_text=f"Number of realizations on different control modes - {node_name}",
-        yaxis_title="# realizations",
-        yaxis=dict(range=[0, smry.REAL.nunique()]),
-        plot_bgcolor="white",
-    )
 
-    return fig
+def add_network_pressure_traces(
+    fig: go.Figure,
+    node_info: Dict[str, Any],
+    smry: pd.DataFrame,
+    pressure_plot_options: dict,
+) -> go.Figure:
+    """Description"""
+
+    for node_network in node_info["networks"]:
+        df = get_filtered_smry(
+            node_network, node_info["ctrlmode_sumvec"], pressure_plot_options, smry
+        )
+
+        for nodedict in node_network["nodes"]:
+            if (
+                nodedict["type"] == "well_bhp"
+                and "include_bhp" not in pressure_plot_options["include_bhp"]
+            ):
+                continue
+            sumvec = nodedict["pressure"]
+            label = nodedict["label"]
+            if sumvec in df.columns:
+                fig.add_trace(
+                    go.Scatter(
+                        x=list(df["DATE"]),
+                        y=list(df[sumvec]),
+                        name=label,
+                        showlegend=True,
+                        hovertext=(f"{label}"),
+                        legendgroup="Nodes",
+                    ),
+                    row=2,
+                    col=1,
+                )
+            else:
+                print(f"Summary vector {sumvec} not in dataset.")
 
 
 def get_filtered_smry(
@@ -125,13 +139,18 @@ def add_area_trace(
             x=x_series,
             y=y_series,
             hoverinfo="text+x+y",
-            hoveron="points+fills",
+            hoveron="fills",
             mode="lines",
-            line=dict(width=0.5, color=color),
+            # fill="tonexty",
+            # fillcolor=color,
+            line=dict(width=0.2, color=color),
             name=name,
             text=name,
             stackgroup="one",
-        )
+            legendgroup="Ctrl Modes",
+        ),
+        row=1,
+        col=1,
     )
 
 

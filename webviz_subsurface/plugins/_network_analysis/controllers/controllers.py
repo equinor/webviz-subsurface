@@ -5,7 +5,7 @@ import dash
 from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objects as go
 
-from ..figures import make_node_pressure_graph, make_area_graph
+from ..figures import create_figure  # make_node_pressure_graph, make_area_graph
 from ..utils.utils import get_node_info
 
 
@@ -43,8 +43,8 @@ def controllers(
         return node_options, node_options[0]["value"], realizations, 0
 
     @app.callback(
-        Output(get_uuid("ctrl_mode_graph"), "figure"),
-        Output(get_uuid("pressures_graph"), "figure"),
+        Output(get_uuid("graph"), "figure"),
+        # Output(get_uuid("pressures_graph"), "figure"),
         Input({"id": get_uuid("plot_controls"), "element": ALL}, "value"),
         Input({"id": get_uuid("pressure_plot_options"), "element": ALL}, "value"),
         State({"id": get_uuid("plot_controls"), "element": ALL}, "id"),
@@ -73,14 +73,15 @@ def controllers(
         if ensemble is None or node_type is None or node is None:
             fig = go.Figure()
             fig.update_layout(plot_bgcolor="white", title="No data")
-            return fig, fig
+            return fig
 
         smry_ens = smry[smry.ENSEMBLE == ensemble]
         gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
         node_info = get_node_info(gruptree_ens, node_type, node, smry_ens.DATE.min())
         return (
-            make_area_graph(node_info, smry_ens),
-            make_node_pressure_graph(node_info, smry_ens, pr_plot_opts),
+            create_figure(node_info, smry_ens, pr_plot_opts)
+            # make_area_graph(node_info, smry_ens),
+            # make_node_pressure_graph(node_info, smry_ens, pr_plot_opts),
         )
 
     @app.callback(
