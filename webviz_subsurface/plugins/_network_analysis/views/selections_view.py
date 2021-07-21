@@ -66,7 +66,7 @@ def pressure_plot_options(uuid: str) -> wcc.Selectors:
                 id={"id": uuid, "element": "mean_or_single_real"},
                 options=[
                     {
-                        "label": "Plot mean",
+                        "label": "Mean of producing real.",
                         "value": "plot_mean",
                     },
                     {

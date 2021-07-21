@@ -4,16 +4,17 @@ import plotly.graph_objects as go
 
 
 def make_node_pressure_graph(
-    node_networks: List[Dict[str, Any]],
-    node_name: str,
+    node_info: Dict[str, Any],
     smry: pd.DataFrame,
     pressure_plot_options: dict,
 ) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    for node_network in node_networks:
-        df = get_filtered_smry(node_network, pressure_plot_options, smry)
+    for node_network in node_info["networks"]:
+        df = get_filtered_smry(
+            node_network, node_info["ctrlmode_sumvec"], pressure_plot_options, smry
+        )
 
         for nodedict in node_network["nodes"]:
             if (
@@ -37,8 +38,9 @@ def make_node_pressure_graph(
             else:
                 print(f"Summary vector {sumvec} not in dataset.")
 
+    node_name = node_info["name"]
     fig.update_layout(
-        title_text=f"Node Pressures - {node_name}",
+        title_text=f"Network Pressures - {node_name}",
         yaxis_title="Pressure",
         plot_bgcolor="white",
     )
@@ -47,28 +49,28 @@ def make_node_pressure_graph(
     return fig
 
 
-def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
+def make_area_graph(node_info: dict, smry: pd.DataFrame) -> go.Figure:
     """Description"""
     fig = go.Figure()
 
-    sumvec = get_ctrlmode_sumvec(node_type, node)
+    sumvec = node_info["ctrlmode_sumvec"]
     if sumvec not in smry.columns:
         return go.Figure().update_layout(plot_bgcolor="white")
     df = smry[["DATE", sumvec]]
     df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
     df["Other"] = 0
-    categories = get_ctrlmode_categories(node_type)
+    categories = get_ctrlmode_categories(node_info["type"])
 
     for col in [col for col in df.columns if not col in ["DATE", "Other"]]:
         if str(col) in categories:
             name = categories[str(col)]["name"]
             color = categories[str(col)]["color"]
-            add_trace(fig, df.DATE, df[col], name, color)
+            add_area_trace(fig, df.DATE, df[col], name, color)
         else:
             df.Other = df.Other + df[col]
 
     if df.Other.sum() > 0:
-        add_trace(
+        add_area_trace(
             fig,
             df.DATE,
             df.Other,
@@ -76,8 +78,9 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
             categories["Other"]["color"],
         )
 
+    node_name = node_info["name"]
     fig.update_layout(
-        title_text=f"Number of realizations on different control modes - {node}",
+        title_text=f"Number of realizations on different control modes - {node_name}",
         yaxis_title="# realizations",
         yaxis=dict(range=[0, smry.REAL.nunique()]),
         plot_bgcolor="white",
@@ -87,12 +90,15 @@ def make_area_graph(node_type: str, node: str, smry: pd.DataFrame) -> go.Figure:
 
 
 def get_filtered_smry(
-    node_network: dict, pressure_plot_options: dict, smry: pd.DataFrame
+    node_network: dict,
+    ctrlmode_sumvec: str,
+    pressure_plot_options: dict,
+    smry: pd.DataFrame,
 ) -> pd.DataFrame:
     """Description"""
     start_date = pd.to_datetime(node_network["start_date"])
     end_date = pd.to_datetime(node_network["end_date"])
-    sumvecs = ["REAL", "DATE"] + [
+    sumvecs = ["REAL", "DATE", ctrlmode_sumvec] + [
         nodedict["pressure"]
         for nodedict in node_network["nodes"]
         if nodedict["pressure"] in smry.columns
@@ -101,38 +107,29 @@ def get_filtered_smry(
     if end_date is not None:
         df = df[df.DATE < end_date]
     if pressure_plot_options["mean_or_single_real"] == "plot_mean":
+        # Filter out realizations whitout production
+        df = df[df[ctrlmode_sumvec] != 0.0]
+        # Group by date and take the mean of each group
         df = df.groupby("DATE").mean().reset_index()
     elif pressure_plot_options["mean_or_single_real"] == "single_real":
         df = df[df.REAL == pressure_plot_options["realization"]]
     return df
 
 
-def get_ctrlmode_sumvec(node_type: str, node: str) -> str:
-    """Description"""
-    if node == "FIELD":
-        return "FMCTP"
-    if node_type == "well":
-        return f"WMCTL:{node}"
-    if node_type == "field_group":
-        return f"GMCTP:{node}"
-    raise ValueError(f"Node type {node_type} not implemented")
-
-
-def add_trace(
+def add_area_trace(
     fig: go.Figure, x_series: str, y_series: str, name: str, color: str
 ) -> go.Figure:
-    """Description
-    Ikke helt sikker paa om retur-typen er riktig her. kanskje den heller burde
-    returnere en dict?
-    """
+    """Description"""
     fig.add_trace(
         go.Scatter(
             x=x_series,
             y=y_series,
-            hoverinfo="x+y",
+            hoverinfo="text+x+y",
+            hoveron="points+fills",
             mode="lines",
             line=dict(width=0.5, color=color),
             name=name,
+            text=name,
             stackgroup="one",
         )
     )

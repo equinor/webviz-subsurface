@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objects as go
 
 from ..figures import make_node_pressure_graph, make_area_graph
-from ..utils.utils import get_node_networks
+from ..utils.utils import get_node_info
 
 
 def controllers(
@@ -77,13 +77,10 @@ def controllers(
 
         smry_ens = smry[smry.ENSEMBLE == ensemble]
         gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
-        node_networks = get_node_networks(
-            gruptree_ens, node_type, node, smry_ens.DATE.min()
-        )
-
+        node_info = get_node_info(gruptree_ens, node_type, node, smry_ens.DATE.min())
         return (
-            make_area_graph(node_type, node, smry_ens),
-            make_node_pressure_graph(node_networks, node, smry_ens, pr_plot_opts),
+            make_area_graph(node_info, smry_ens),
+            make_node_pressure_graph(node_info, smry_ens, pr_plot_opts),
         )
 
     @app.callback(
