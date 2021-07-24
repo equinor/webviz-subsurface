@@ -4,13 +4,18 @@ import pandas as pd
 import dash
 from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objects as go
+from webviz_config import WebvizConfigTheme
 
-from ..figures import create_figure  # make_node_pressure_graph, make_area_graph
+from ..figures import create_figure
 from ..utils.utils import get_node_info
 
 
 def controllers(
-    app: dash.Dash, get_uuid: Callable, smry: pd.DataFrame, gruptree: pd.DataFrame
+    app: dash.Dash,
+    get_uuid: Callable,
+    smry: pd.DataFrame,
+    gruptree: pd.DataFrame,
+    theme: WebvizConfigTheme,
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("plot_controls"), "element": "node"}, "options"),
@@ -44,21 +49,27 @@ def controllers(
 
     @app.callback(
         Output(get_uuid("graph"), "figure"),
-        # Output(get_uuid("pressures_graph"), "figure"),
         Input({"id": get_uuid("plot_controls"), "element": ALL}, "value"),
+        Input({"id": get_uuid("settings"), "element": ALL}, "value"),
         Input({"id": get_uuid("pressure_plot_options"), "element": ALL}, "value"),
         State({"id": get_uuid("plot_controls"), "element": ALL}, "id"),
+        State({"id": get_uuid("settings"), "element": ALL}, "id"),
         State({"id": get_uuid("pressure_plot_options"), "element": ALL}, "id"),
     )
-    def _update_graphs(
+    def _update_figure(
         plot_ctrl_vals: list,
+        settings_vals: list,
         pr_plot_opts_vals: list,
         plot_ctrl_ids: list,
+        settings_ids: list,
         pr_plot_opts_ids: list,
     ) -> Tuple[go.Figure, go.Figure]:
         print("make chart")
         plot_ctrl = {
             id["element"]: value for id, value in zip(plot_ctrl_ids, plot_ctrl_vals)
+        }
+        settings = {
+            id["element"]: value for id, value in zip(settings_ids, settings_vals)
         }
         pr_plot_opts = {
             id["element"]: value
@@ -79,26 +90,25 @@ def controllers(
         gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
         node_info = get_node_info(gruptree_ens, node_type, node, smry_ens.DATE.min())
         return (
-            create_figure(node_info, smry_ens, pr_plot_opts)
+            create_figure(node_info, smry_ens, settings, pr_plot_opts, theme)
             # make_area_graph(node_info, smry_ens),
             # make_node_pressure_graph(node_info, smry_ens, pr_plot_opts),
         )
 
     @app.callback(
         Output(
-            {
-                "id": get_uuid("pressure_plot_options"),
-                "element": "realization",
-            },
-            "disabled",
+            {"id": get_uuid("pressure_plot_options"), "element": "single_real_options"},
+            component_property="style",
         ),
         Input(
             {"id": get_uuid("pressure_plot_options"), "element": "mean_or_single_real"},
             "value",
         ),
     )
-    def _show_hide_realizations_dropdown(mean_or_single_real: str) -> bool:
-        return mean_or_single_real == "plot_mean"
+    def _show_hide_single_real_options(mean_or_single_real: str) -> bool:
+        if mean_or_single_real == "plot_mean":
+            return {"display": "none"}
+        return {"display": "block"}
 
 
 def get_node_dropdown_options(

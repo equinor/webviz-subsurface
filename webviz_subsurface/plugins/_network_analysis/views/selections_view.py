@@ -1,5 +1,6 @@
 from typing import Callable
 
+import dash_html_components as html
 import webviz_core_components as wcc
 
 
@@ -9,6 +10,7 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
         style={"height": "82vh"},
         children=[
             plot_controls(get_uuid("plot_controls"), ensembles),
+            settings(get_uuid("settings")),
             pressure_plot_options(get_uuid("pressure_plot_options")),
         ],
     )
@@ -51,6 +53,20 @@ def plot_controls(uuid: str, ensembles: list) -> wcc.Selectors:
     )
 
 
+def settings(uuid: str) -> wcc.Selectors:
+    """Description"""
+    return wcc.Selectors(
+        label="⚙️ Settings",
+        children=[
+            wcc.Checklist(
+                id={"id": uuid, "element": "shared_xaxes"},
+                options=[{"label": "Shared x-axis", "value": "shared_xaxes"}],
+                value=["shared_xaxes"],
+            ),
+        ],
+    )
+
+
 def pressure_plot_options(uuid: str) -> wcc.Selectors:
     """Description"""
     return wcc.Selectors(
@@ -76,11 +92,23 @@ def pressure_plot_options(uuid: str) -> wcc.Selectors:
                 ],
                 value="plot_mean",
             ),
-            wcc.Dropdown(
-                id={"id": uuid, "element": "realization"},
-                options=[],
-                value=None,
-                multi=False,
+            html.Div(
+                id={"id": uuid, "element": "single_real_options"},
+                children=[
+                    wcc.Dropdown(
+                        id={"id": uuid, "element": "realization"},
+                        options=[],
+                        value=None,
+                        multi=False,
+                    ),
+                    wcc.Checklist(
+                        id={"id": uuid, "element": "ctrlmode_bar"},
+                        options=[
+                            {"label": "Display ctrl mode bar", "value": "ctrlmode_bar"}
+                        ],
+                        value=["ctrlmode_bar"],
+                    ),
+                ],
             ),
         ],
     )

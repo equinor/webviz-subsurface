@@ -75,7 +75,6 @@ class NetworkAnalysis(WebvizPluginABC):
         self.ensembles = list(self.smry["ENSEMBLE"].unique())
         self.gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
         self.theme = webviz_settings.theme
-        # self.colors = self.theme["layout"]["colorway"]
 
         self.set_callbacks(app)
 
@@ -98,14 +97,18 @@ class NetworkAnalysis(WebvizPluginABC):
         return html.Div(
             children=[
                 # clientside_stores(get_uuid=self.uuid),
-                main_view(
-                    get_uuid=self.uuid, theme=self.theme, ensembles=self.ensembles
-                ),
+                main_view(get_uuid=self.uuid, ensembles=self.ensembles),
             ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        controllers(app=app, get_uuid=self.uuid, smry=self.smry, gruptree=self.gruptree)
+        controllers(
+            app=app,
+            get_uuid=self.uuid,
+            smry=self.smry,
+            gruptree=self.gruptree,
+            theme=self.theme,
+        )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

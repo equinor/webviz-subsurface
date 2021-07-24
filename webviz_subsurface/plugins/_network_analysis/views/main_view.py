@@ -6,9 +6,7 @@ from webviz_config import WebvizConfigTheme
 from .selections_view import selections_layout
 
 
-def main_view(
-    get_uuid: Callable, theme: WebvizConfigTheme, ensembles: list
-) -> wcc.FlexBox:
+def main_view(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
     return wcc.FlexBox(
         id=get_uuid("layout"),
         children=[
