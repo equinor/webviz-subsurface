@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, List, Optional
+from typing import Callable, List, Optional
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
@@ -45,9 +45,6 @@ def distribution_controllers(
         State(get_uuid("page-selected"), "data"),
         State({"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "id"),
         State({"id": get_uuid("main-voldist"), "wrapper": "table", "page": ALL}, "id"),
-        State(
-            {"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "figure"
-        ),
     )
     def _update_page_1p1t_and_custom(
         selections: dict,
@@ -55,21 +52,14 @@ def distribution_controllers(
         page_selected: str,
         figure_ids: list,
         table_wrapper_ids: list,
-        figures: list,
     ) -> tuple:
-        ctx = dash.callback_context.triggered[0]
+
         if page_selected not in ["1p1t", "custom"]:
             raise PreventUpdate
 
         selections = selections[page_selected]
-        table_clicked = "plot-table-select" in ctx["prop_id"]
-        page_figures = {
-            id_value["page"]: figure for id_value, figure in zip(figure_ids, figures)
-        }
-        initial_callback = page_figures[page_selected] is None
-        if not initial_callback and not table_clicked:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         groups = ["REAL"]
         parameters = []
@@ -96,19 +86,7 @@ def distribution_controllers(
             filters=selections["filters"], groups=groups, parameters=parameters
         )
 
-        prevent_fig_update = (
-            (page_selected == "custom" and plot_table_select == "table")
-            or "Table type" in selections["ctx_clicked"]
-            or (
-                not selections["sync_table"]
-                and any(
-                    x in selections["ctx_clicked"]
-                    for x in ["Group by", "table_responses"]
-                )
-            )
-        )
-
-        if not prevent_fig_update:
+        if not (plot_table_select == "table" and page_selected == "custom"):
             df_for_figure = (
                 dframe
                 if not (selections["Plot type"] == "bar" and groups != ["REAL"])
@@ -139,6 +117,7 @@ def distribution_controllers(
                             )
                         ),
                         x=0.5,
+                        xref="paper",
                         font=dict(size=18),
                     ),
                 ),
@@ -160,28 +139,15 @@ def distribution_controllers(
 
         # Make tables
         if not (plot_table_select == "graph" and page_selected == "custom"):
-            if not selections["sync_table"]:
-                table_groups = ["ENSEMBLE", "REAL"]
-                if selections["Group by"] is not None:
-                    table_groups.extend(
-                        [x for x in selections["Group by"] if x not in table_groups]
-                    )
-                df_for_table = volumemodel.get_df(
-                    filters=selections["filters"],
-                    groups=table_groups,
-                    parameters=parameters,
-                )
-
-                responses = selections["table_responses"]
-                groups = selections["Group by"]
-
             table_wrapper_children = make_table_wrapper_children(
-                dframe=dframe if selections["sync_table"] else df_for_table,
+                dframe=dframe,
                 responses=responses,
                 groups=groups,
                 volumemodel=volumemodel,
                 page_selected=page_selected,
                 selections=selections,
+                table_type="Statistics table",
+                view_height=42 if page_selected == "1p1t" else 86,
             )
         else:
             table_wrapper_children = dash.no_update
@@ -199,6 +165,47 @@ def distribution_controllers(
             for val, id_list in zip(
                 [figure, table_wrapper_children], [figure_ids, table_wrapper_ids]
             )
+        )
+
+    @app.callback(
+        Output(
+            {"id": get_uuid("main-table"), "wrapper": "table", "page": "table"},
+            "children",
+        ),
+        Input(get_uuid("selections"), "data"),
+        State(get_uuid("page-selected"), "data"),
+    )
+    def _update_page_tables(
+        selections: dict,
+        page_selected: str,
+    ) -> list:
+
+        if page_selected != "table":
+            raise PreventUpdate
+
+        selections = selections[page_selected]
+        if not selections["update"]:
+            raise PreventUpdate
+
+        table_groups = ["ENSEMBLE", "REAL"]
+        if selections["Group by"] is not None:
+            table_groups.extend(
+                [x for x in selections["Group by"] if x not in table_groups]
+            )
+        dframe = volumemodel.get_df(
+            filters=selections["filters"],
+            groups=table_groups,
+        )
+
+        return make_table_wrapper_children(
+            dframe=dframe,
+            responses=selections["table_responses"],
+            groups=selections["Group by"],
+            view_height=88,
+            table_type=selections["Table type"],
+            volumemodel=volumemodel,
+            page_selected=page_selected,
+            selections=selections,
         )
 
     @app.callback(
@@ -222,33 +229,18 @@ def distribution_controllers(
             },
             "id",
         ),
-        State(
-            {
-                "id": get_uuid("main-voldist"),
-                "chart": ALL,
-                "selector": ALL,
-                "page": "per_zr",
-            },
-            "figure",
-        ),
     )
     def _update_page_per_zr(
         selections: dict,
         page_selected: str,
         figure_ids: List[dict],
-        figures: list,
     ) -> list:
         if page_selected != "per_zr":
             raise PreventUpdate
 
         selections = selections[page_selected]
-        page_figures = {
-            id_value["page"]: figure for id_value, figure in zip(figure_ids, figures)
-        }
-        initial_callback = page_figures[page_selected] is None
-        if not initial_callback:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         figs = {}
         for selector in [x["selector"] for x in figure_ids]:
@@ -301,23 +293,14 @@ def distribution_controllers(
         ),
         Input(get_uuid("selections"), "data"),
         State(get_uuid("page-selected"), "data"),
-        State(
-            {"id": get_uuid("main-voldist"), "element": "plot", "page": "conv"},
-            "figure",
-        ),
     )
-    def _update_page_conv(
-        selections: dict, page_selected: str, figure: go.Figure
-    ) -> go.Figure:
+    def _update_page_conv(selections: dict, page_selected: str) -> go.Figure:
         if page_selected != "conv":
             raise PreventUpdate
 
         selections = selections[page_selected]
-
-        initial_callback = figure is None
-        if not initial_callback:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         subplots = selections["Subplots"] if selections["Subplots"] is not None else []
         groups = ["REAL"]
@@ -401,27 +384,15 @@ def distribution_controllers(
         ),
         Input(get_uuid("selections"), "data"),
         State(get_uuid("page-selected"), "data"),
-        State(
-            {
-                "id": get_uuid("main-tornado"),
-                "element": "bulktornado",
-                "page": "tornado",
-            },
-            "figure",
-        ),
     )
-    def _update_page_tornado(
-        selections: dict, page_selected: str, figure: go.Figure
-    ) -> go.Figure:
+    def _update_page_tornado(selections: dict, page_selected: str) -> go.Figure:
 
         if page_selected != "tornado":
             raise PreventUpdate
 
         selections = selections[page_selected]
-        initial_callback = figure is None
-        if not initial_callback:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         filters = selections["filters"].copy()
 
@@ -515,13 +486,15 @@ def make_table_wrapper_children(
     responses: list,
     volumemodel: InplaceVolumesModel,
     selections: dict,
+    table_type: str,
+    view_height: float,
     page_selected: str,
     groups: Optional[list] = None,
-) -> Tuple[list, list]:
+) -> html.Div:
 
     groups = groups if groups is not None else []
 
-    if selections["Table type"] == "Statistics table":
+    if table_type == "Statistics table":
         statcols = ["Mean", "Stddev", "P90", "P10", "Minimum", "Maximum"]
         groups = [x for x in groups if x != "REAL"]
         df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
@@ -558,10 +531,8 @@ def make_table_wrapper_children(
                 else:
                     data_properties.append(data)
 
-        if page_selected == "custom":
-            height = "43vh" if all([data_volcols, data_properties]) else "88vh"
-        else:
-            height = "22vh" if all([data_volcols, data_properties]) else "44vh"
+        if data_volcols and data_properties:
+            view_height = view_height / 2
 
         return html.Div(
             children=[
@@ -578,7 +549,7 @@ def make_table_wrapper_children(
                             use_si_format=col == "Response",
                         ),
                         data=data,
-                        height=height,
+                        height=f"{view_height}vh",
                         table_id={"table_id": f"{page_selected}-{col}"},
                     ),
                 )
@@ -616,7 +587,7 @@ def make_table_wrapper_children(
                     volumemodel=volumemodel,
                 ),
                 data=dframe.iloc[::-1].to_dict("records"),
-                height="88vh" if page_selected == "custom" else "44vh",
+                height=f"{view_height}vh",
                 table_id={"table_id": f"{page_selected}-meantable"},
             )
         ]

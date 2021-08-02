@@ -17,12 +17,18 @@ def selections_layout(
     )
     return html.Div(
         children=[
-            button(uuid=uuid, title="1 plot / 1 table", page_id="1p1t"),
-            button(uuid=uuid, title=f"Plots per {selectors}", page_id="per_zr"),
-            button(uuid=uuid, title="Convergence plot mean/p10/p90", page_id="conv"),
-            button(uuid=uuid, title="Custom plotting", page_id="custom"),
+            html.Div(
+                style={"margin-bottom": "20px"},
+                children=[
+                    button(uuid=uuid, title="1 plot / 1 table", page_id="1p1t"),
+                    button(uuid=uuid, title=f"Plots per {selectors}", page_id="per_zr"),
+                    button(
+                        uuid=uuid, title="Convergence plot mean/p10/p90", page_id="conv"
+                    ),
+                    button(uuid=uuid, title="Custom plotting", page_id="custom"),
+                ],
+            ),
             plot_selections_layout(uuid, volumemodel, tab),
-            table_selections_layout(uuid, volumemodel, tab),
             settings_layout(uuid, theme, tab),
         ]
     )
@@ -42,7 +48,7 @@ def button(
 
 def plot_selections_layout(
     uuid: str, volumemodel: InplaceVolumesModel, tab: str
-) -> html.Details:
+) -> wcc.Selectors:
     return wcc.Selectors(
         label="PLOT CONTROLS",
         open_details=True,
@@ -52,13 +58,12 @@ def plot_selections_layout(
 
 def table_selections_layout(
     uuid: str, volumemodel: InplaceVolumesModel, tab: str
-) -> html.Details:
+) -> wcc.Selectors:
     responses = volumemodel.volume_columns + volumemodel.property_columns
     return wcc.Selectors(
         label="TABLE CONTROLS",
         open_details=True,
         children=[
-            table_sync_option(uuid, tab),
             wcc.Dropdown(
                 label="Table type",
                 id={"id": uuid, "tab": tab, "selector": "Table type"},
@@ -66,43 +71,30 @@ def table_selections_layout(
                     {"label": elm, "value": elm}
                     for elm in ["Statistics table", "Mean table"]
                 ],
-                value="Statistics table",
+                value="Mean table",
                 clearable=False,
             ),
-            html.Div(
+            wcc.Dropdown(
+                label="Group by",
+                id={"id": uuid, "tab": tab, "selector": "Group by"},
+                options=[{"label": elm, "value": elm} for elm in volumemodel.selectors],
+                value=None,
+                multi=True,
+                clearable=False,
+            ),
+            wcc.SelectWithLabel(
+                label="Responses",
                 id={
                     "id": uuid,
                     "tab": tab,
-                    "element": "table_response_group_wrapper",
+                    "selector": "table_responses",
                 },
-                style={"display": "None"},
-                children=[
-                    wcc.Dropdown(
-                        label="Group by",
-                        id={"id": uuid, "tab": tab, "selector": "Group by"},
-                        options=[
-                            {"label": elm, "value": elm}
-                            for elm in volumemodel.selectors
-                        ],
-                        value=None,
-                        multi=True,
-                        clearable=False,
-                    ),
-                    wcc.SelectWithLabel(
-                        label="Responses",
-                        id={
-                            "id": uuid,
-                            "tab": tab,
-                            "selector": "table_responses",
-                        },
-                        options=[{"label": i, "value": i} for i in responses],
-                        value=responses,
-                        size=min(
-                            20,
-                            len(responses),
-                        ),
-                    ),
-                ],
+                options=[{"label": i, "value": i} for i in responses],
+                value=responses,
+                size=min(
+                    20,
+                    len(responses),
+                ),
             ),
         ],
     )

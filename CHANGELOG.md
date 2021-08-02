@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#723](https://github.com/equinor/webviz-subsurface/pull/723) - Added custom option to allow free selection of responses shown in the tornadoplots in `VolumetricAnalysis`
 - [#717](https://github.com/equinor/webviz-subsurface/pull/717) - Keep zoom state in `ReservoirSimulationTimeseries` (inc `Regional` and `OneByOne`) and `RelativePermeability` plugins using `uirevision`.
 
+### Changed
+- [#724](https://github.com/equinor/webviz-subsurface/pull/724) - Seperated out Tables as a new tab to `VolumetricAnalysis`
+
 ## [0.2.4] - 2021-07-13
 
 ### Added
