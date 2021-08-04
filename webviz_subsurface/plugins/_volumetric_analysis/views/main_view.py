@@ -77,7 +77,6 @@ def main_view(
                                     "SENSNAME",
                                     "SENSTYPE",
                                     "REAL",
-                                    "FLUID_ZONE",
                                 ]
                             ],
                         ),
