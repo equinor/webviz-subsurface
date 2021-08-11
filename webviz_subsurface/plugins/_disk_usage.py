@@ -178,7 +178,11 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
 
 
 def _get_disk_usage_for_date(scratch_dir: Path, date: str) -> Optional[pd.DataFrame]:
-    csv_file = Path(scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv")
+    csv_file = scratch_dir / ".disk_usage" / f"disk_usage_user_test_{date}.csv"
+    if csv_file.exists():
+        return pd.read_csv(csv_file)
+    # If file does not exist, look for old format
+    csv_file = scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv"
     if csv_file.exists():
         return pd.read_csv(csv_file)
     return None
