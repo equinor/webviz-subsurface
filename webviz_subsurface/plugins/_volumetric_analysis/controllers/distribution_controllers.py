@@ -427,33 +427,23 @@ def distribution_controllers(
 
         figures = []
         tables = []
-        for x in ["BULK", selections["Volume response"]]:
+        for plot_id in ["left", "right"]:
+            response = selections[f"Response {plot_id}"]
+            sensfilter = selections[f"Sensitivities {plot_id}"]
 
-            sensfilter = (
-                selections["Bulk sensitivities"]
-                if x == "BULK"
-                else selections["Volume sensitivities"]
-            )
             if selections["Reference"] not in sensfilter:
                 sensfilter.append(selections["Reference"])
 
-            # filter on correct fluid zone depending on chosen volume response
-            fluid_filter = [
-                "oil" if selections["Volume response"] == "STOIIP" else "gas"
-            ]
-            filters.update(
-                SENSNAME=sensfilter,
-                FLUID_ZONE=fluid_filter,
-            )
+            filters.update(SENSNAME=sensfilter)
 
             groups = ["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE", "SENSTYPE"]
             df_for_tornado = volumemodel.get_df(filters=filters, groups=groups)
-            df_for_tornado.rename(columns={x: "VALUE"}, inplace=True)
+            df_for_tornado.rename(columns={response: "VALUE"}, inplace=True)
 
             tornado_data = TornadoData(
                 dframe=df_for_tornado,
                 reference=selections["Reference"],
-                response_name=x,
+                response_name=response,
                 scale=selections["Scale"],
                 cutbyref=bool(selections["Remove no impact"]),
             )
@@ -474,8 +464,8 @@ def distribution_controllers(
                 title=None,
             ).update_layout(
                 title=dict(
-                    text=f"Tornadoplot for {x} "
-                    + (f"({fluid_filter[0]})" if x == "BULK" else ""),
+                    text=f"Tornadoplot for {response} <br>"
+                    + f"Fluid zone: {(' + ').join(selections['filters']['FLUID_ZONE'])}",
                     font=dict(size=18),
                 ),
                 margin={"t": 70},

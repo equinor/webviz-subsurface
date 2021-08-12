@@ -305,7 +305,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             hillshade,
         ):
 
-            surface = xtgeo.RegularSurface(get_path(surfacepath))
+            surface = xtgeo.surface_from_file(get_path(surfacepath))
             min_val = None
             max_val = None
 
@@ -346,7 +346,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 fence, gridparameter, zincrement=0.5
             )
 
-            surface = xtgeo.RegularSurface(get_path(surfacepath))
+            surface = xtgeo.surface_from_file(get_path(surfacepath))
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,

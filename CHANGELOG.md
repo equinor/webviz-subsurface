@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#708](https://github.com/equinor/webviz-subsurface/pull/708) - Added support for new report format for `DiskUsage`, which improves the estimate of free disk space.
 
+### Changed
+- [#723](https://github.com/equinor/webviz-subsurface/pull/723) - Added custom option to allow free selection of responses shown in the tornadoplots in `VolumetricAnalysis`
+
 ## [0.2.4] - 2021-07-13
 
 ### Added

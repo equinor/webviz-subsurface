@@ -1,4 +1,3 @@
-from typing import Optional, Union
 import dash_html_components as html
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
@@ -22,49 +21,58 @@ def tornado_controls_layout(
 
     return wcc.Selectors(
         label="TORNADO CONTROLS",
-        open_details=True,
         children=[
-            create_dropdown(
-                selector="Volume response",
-                options=[x for x in ["STOIIP", "GIIP"] if x in volumemodel.responses],
-                uuid=uuid,
-                tab=tab,
-            ),
-            create_dropdown(
-                selector="Scale",
+            wcc.RadioItems(
+                label="Mode:",
+                id={"id": uuid, "tab": tab, "selector": "mode"},
                 options=[
-                    {"label": "Relative value (%)", "value": "Percentage"},
-                    {"label": "Relative value", "value": "Absolute"},
-                    {"label": "True value", "value": "True"},
+                    {"label": "Bulk vs STOIIP/GIIP", "value": "locked"},
+                    {"label": "Custom", "value": "custom"},
                 ],
-                uuid=uuid,
-                tab=tab,
+                value="locked",
             ),
-            html.Div(
-                style={"margin-top": "10px"},
-                children=create_select(
-                    selector="Bulk sensitivities",
-                    options=volumemodel.sensitivities,
-                    uuid=uuid,
-                    tab=tab,
-                ),
+            tornado_selection(
+                position="left", uuid=uuid, tab=tab, volumemodel=volumemodel
             ),
-            html.Div(
-                style={"margin-top": "10px"},
-                children=create_select(
-                    selector="Volume sensitivities",
-                    options=volumemodel.sensitivities,
-                    uuid=uuid,
-                    tab=tab,
-                ),
+            tornado_selection(
+                position="right", uuid=uuid, tab=tab, volumemodel=volumemodel
             ),
-            html.Div(
-                style={"margin-top": "10px"},
-                children=wcc.Checklist(
-                    id={"id": uuid, "tab": tab, "selector": "real_scatter"},
-                    options=[{"label": "Show realization points", "value": "Show"}],
-                    value=[],
-                ),
+        ],
+    )
+
+
+def tornado_selection(
+    position: str, uuid: str, tab: str, volumemodel: InplaceVolumesModel
+) -> html.Div:
+    return html.Div(
+        style={"margin-top": "10px"},
+        children=[
+            html.Label(
+                children=f"Tornado ({position})",
+                style={"display": "block"},
+                className="webviz-underlined-label",
+            ),
+            wcc.Dropdown(
+                id={"id": uuid, "tab": tab, "selector": f"Response {position}"},
+                clearable=False,
+            ),
+            html.Details(
+                open=False,
+                children=[
+                    html.Summary("Sensitivity filter"),
+                    wcc.Select(
+                        id={
+                            "id": uuid,
+                            "tab": tab,
+                            "selector": f"Sensitivities {position}",
+                        },
+                        options=[
+                            {"label": i, "value": i} for i in volumemodel.sensitivities
+                        ],
+                        value=volumemodel.sensitivities,
+                        size=min(15, len(volumemodel.sensitivities)),
+                    ),
+                ],
             ),
         ],
     )
@@ -75,64 +83,39 @@ def settings_layout(
 ) -> wcc.Selectors:
     return wcc.Selectors(
         label="⚙️ SETTINGS",
-        open_details=False,
+        open_details=True,
         children=[
+            wcc.Dropdown(
+                label="Scale:",
+                id={"id": uuid, "tab": tab, "selector": "Scale"},
+                options=[
+                    {"label": "Relative value (%)", "value": "Percentage"},
+                    {"label": "Relative value", "value": "Absolute"},
+                    {"label": "True value", "value": "True"},
+                ],
+                value="Percentage",
+                clearable=False,
+            ),
+            html.Div(
+                style={"margin-top": "10px"},
+                children=wcc.Checklist(
+                    id={"id": uuid, "tab": tab, "selector": "real_scatter"},
+                    options=[{"label": "Show realization points", "value": "Show"}],
+                    value=[],
+                ),
+            ),
             cut_by_ref(uuid, tab),
             labels_display(uuid, tab),
-            create_dropdown(
-                selector="Reference",
-                options=volumemodel.sensitivities,
-                value="rms_seed" if "rms_seed" in volumemodel.sensitivities else None,
-                uuid=uuid,
-                tab=tab,
-            ),
-        ],
-    )
-
-
-def create_dropdown(
-    selector: str,
-    options: Union[list, dict],
-    uuid: str,
-    tab: str,
-    value: Optional[str] = None,
-) -> wcc.Dropdown:
-    options = (
-        options
-        if isinstance(options[0], dict)
-        else [{"label": elm, "value": elm} for elm in options]
-    )
-    return wcc.Dropdown(
-        label=selector,
-        id={"id": uuid, "tab": tab, "selector": selector},
-        options=options,
-        value=value if value is not None else options[0]["value"],
-        clearable=False,
-    )
-
-
-def create_select(
-    selector: str, options: list, uuid: str, tab: str, value: Optional[list] = None
-) -> html.Details:
-    return html.Details(
-        open=False,
-        children=[
-            html.Summary(
-                selector,
-                style={"font-weight": "bold"},
-            ),
-            wcc.Select(
-                id={
-                    "id": uuid,
-                    "tab": tab,
-                    "selector": selector,
-                },
-                options=[{"label": i, "value": i} for i in options],
-                value=value if value is not None else options,
-                size=min(
-                    10,
-                    len(options),
-                ),
+            wcc.Dropdown(
+                label="Reference:",
+                id={"id": uuid, "tab": tab, "selector": "Reference"},
+                options=[
+                    {"label": elm, "value": elm} for elm in volumemodel.sensitivities
+                ],
+                value="rms_seed"
+                if "rms_seed" in volumemodel.sensitivities
+                else volumemodel.sensitivities[0],
+                clearable=False,
             ),
         ],
     )
