@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Callable
+from typing import Tuple, Union, Callable, Optional
 from itertools import chain
 
 import numpy as np
@@ -41,6 +41,7 @@ def parameter_response_controller(
             "value",
         ),
         Input({"id": get_uuid("plot-options"), "tab": "response"}, "value"),
+        Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
         State(get_uuid("vector-vs-time-graph"), "figure"),
         State(get_uuid("param-corr-graph"), "figure"),
         State(get_uuid("vector-corr-graph"), "figure"),
@@ -55,6 +56,7 @@ def parameter_response_controller(
         vector_type_filter: list,
         vector_item_filters: list,
         options: str,
+        real_filter: dict,
         timeseries_fig: dict,
         corr_p_fig: dict,
         corr_v_fig: dict,
@@ -73,6 +75,9 @@ def parameter_response_controller(
             raise PreventUpdate
         ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
 
+        if not real_filter[ensemble]:
+            return [empty_figure()] * 4
+
         initial_run = timeseries_fig is None
         color = options["color"] if options["color"] is not None else "#007079"
         daterange = vectormodel.daterange_for_plot(vector=vector)
@@ -84,7 +89,7 @@ def parameter_response_controller(
                 ensemble,
                 vector,
                 xaxisrange=[min(daterange[0], date), max(daterange[1], date)],
-                real_filter=None,
+                real_filter=real_filter[ensemble],
             )
 
         if get_uuid("plot-options") not in ctx or initial_run:
@@ -99,6 +104,7 @@ def parameter_response_controller(
                 ensemble=ensemble,
                 vectors=vectors_filtered,
                 date=date,
+                reals=real_filter[ensemble],
             )
 
         # Make correlation figure for vector
@@ -328,6 +334,14 @@ def parameter_response_controller(
             raise PreventUpdate
         return corr_vector_clickdata.get("points", [{}])[0].get("y")
 
+    @app.callback(
+        Output(get_uuid("param-filter-wrapper"), "style"),
+        Input(get_uuid("display-paramfilter"), "value"),
+    )
+    def _show_hide_parameter_filter(display_param_filter: list):
+        """Display/hide parameter filter"""
+        return {"display": "block" if display_param_filter else "none", "flex": 1}
+
 
 # pylint: disable=inconsistent-return-statements
 def relevant_ctx(get_uuid: Callable, ctx: list, operation: str):
@@ -339,6 +353,9 @@ def relevant_ctx(get_uuid: Callable, ctx: list, operation: str):
     filtered_vectors = (
         get_uuid("vtype-filter") in ctx or get_uuid("vitem-filter") in ctx
     )
+    # if realization filter has changed - update all plots
+    if get_uuid("parameter-filter") in ctx:
+        return True
 
     if operation == "timeseries_fig":
         return any([vector, ensemble])
@@ -381,7 +398,7 @@ def update_timeseries_graph(
     ensemble: str,
     vector: str,
     xaxisrange: list,
-    real_filter: pd.Series = None,
+    real_filter: Optional[list] = None,
 ):
     """Create vector vs time plot"""
     return {
@@ -481,13 +498,12 @@ def merge_parameter_and_vector_df(
     ensemble: str,
     vectors: list,
     date: str,
+    reals: list,
 ):
     """Merge parameter dataframe with vector dataframe on given date"""
     # Get dataframe with vector and REAL
     vector_df = vectormodel.get_ensemble_vectors_for_date(
-        ensemble=ensemble,
-        vectors=vectors,
-        date=date,
+        ensemble=ensemble, vectors=vectors, date=date
     ).copy()
     vector_df["REAL"] = vector_df["REAL"].astype(int)
     # Get dataframe with parameters
@@ -497,7 +513,8 @@ def merge_parameter_and_vector_df(
     # Return merged dataframe
     param_df.set_index("REAL", inplace=True)
     vector_df.set_index("REAL", inplace=True)
-    return vector_df.join(param_df).reset_index()
+    df = vector_df.join(param_df).reset_index()
+    return df.loc[df["REAL"].isin(reals)]
 
 
 def update_scatter_graph(
@@ -590,3 +607,22 @@ def color_corr_bars(
         },
     }
     return figure
+
+
+def empty_figure() -> go.Figure:
+    return go.Figure(
+        layout={
+            "xaxis": {"visible": False},
+            "yaxis": {"visible": False},
+            "plot_bgcolor": "white",
+            "annotations": [
+                {
+                    "text": "No data available for figure",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "showarrow": False,
+                    "font": {"size": 20},
+                }
+            ],
+        }
+    )

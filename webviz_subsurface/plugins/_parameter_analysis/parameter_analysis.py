@@ -7,6 +7,7 @@ from webviz_config import WebvizSettings
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
+from webviz_subsurface._components.parameter_filter import ParameterFilter
 from .views import main_view
 from .models import ParametersModel, SimulationTimeSeriesModel
 from .controllers import (
@@ -125,6 +126,10 @@ slow for large models.
             else:
                 self.vmodel = None
 
+        self._parameter_filter = ParameterFilter(
+            app, self.uuid("parameter-filter"), self.pmodel.dataframe
+        )
+
         self.set_callbacks(app)
 
     @property
@@ -133,6 +138,7 @@ slow for large models.
             get_uuid=self.uuid,
             vectormodel=self.vmodel,
             parametermodel=self.pmodel,
+            parameterfilter_layout=self._parameter_filter.layout,
             theme=self.theme,
         )
 
