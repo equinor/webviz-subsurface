@@ -280,9 +280,14 @@ class PropertyStatisticsModel:
 
     @staticmethod
     def make_table(df: pd.DataFrame) -> Tuple[List[Any], List[Any]]:
-        df.columns = df.columns.map(" | ".join).str.strip(" | ")
+        df.columns = df.columns.map("|".join)
         columns = [
-            {"id": col, "name": col, "type": "numeric", "format": Format(precision=3)}
+            {
+                "id": col,
+                "name": [col.split("|")[0], col.split("|")[1]],
+                "type": "numeric",
+                "format": Format(precision=3),
+            }
             for col in df.columns
         ]
         return columns, df.iloc[::-1].to_dict("records")

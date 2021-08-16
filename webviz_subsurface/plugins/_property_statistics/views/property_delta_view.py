@@ -193,17 +193,14 @@ def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
 
 
 def table_view(data: List[Any], columns: List[Any]) -> html.Div:
-    return html.Div(
-        style={"fontSize": "1rem"},
-        children=dash_table.DataTable(
-            sort_action="native",
-            page_action="native",
-            filter_action="native",
-            style_table={
-                "height": "74vh",
-                "overflow": "auto",
-            },
-            data=data,
-            columns=columns,
-        ),
+    return dash_table.DataTable(
+        sort_action="native",
+        page_action="native",
+        filter_action="native",
+        style_table={"height": "74vh", "overflow": "auto", "fontSize": 13},
+        data=data,
+        columns=columns,
+        style_cell={"textAlign": "center"},
+        style_cell_conditional=[{"if": {"column_id": "label|"}, "textAlign": "left"}],
+        merge_duplicate_headers=True,
     )

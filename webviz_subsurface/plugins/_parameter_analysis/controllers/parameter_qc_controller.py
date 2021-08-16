@@ -34,12 +34,17 @@ def parameter_qc_controller(
                 style_table={
                     "height": "75vh",
                     "overflow": "auto",
-                    "fontSize": "1.5rem",
+                    "fontSize": 15,
                 },
+                style_cell={"textAlign": "center"},
+                style_cell_conditional=[
+                    {"if": {"column_id": "PARAMETER|"}, "textAlign": "left"}
+                ],
                 columns=columns,
                 data=dframe,
                 sort_action="native",
                 filter_action="native",
+                merge_duplicate_headers=True,
             )
         return wcc.Graph(
             id=get_uuid("property-qc-graph"),
