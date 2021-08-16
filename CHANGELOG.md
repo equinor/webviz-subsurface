@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
+- [#733](https://github.com/equinor/webviz-subsurface/pull/733) - Added plugin to visualize well logs from files using [videx-welllog](https://github.com/equinor/videx-wellog).
 - [#708](https://github.com/equinor/webviz-subsurface/pull/708) - Added support for new report format for `DiskUsage`, which improves the estimate of free disk space.
 
 ### Changed
