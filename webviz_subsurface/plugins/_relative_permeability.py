@@ -886,7 +886,12 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
     )
     layout = {}
     layout.update(theme)
-    layout.update({"hovermode": "closest"})
+    layout.update(
+        {
+            "hovermode": "closest",
+            "uirevision": f"sa:{sataxis}_{linlog}_curves:{'_'.join(sorted(curves))}",
+        }
+    )
     # create subplots
     layout.update(
         {

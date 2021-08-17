@@ -33,12 +33,17 @@ def property_qc_controller(parent: "PropertyStatistics", app: dash.Dash) -> None
                 style_table={
                     "height": "75vh",
                     "overflow": "auto",
-                    "fontSize": "1rem",
+                    "fontSize": 15,
                 },
+                style_cell={"textAlign": "center"},
+                style_cell_conditional=[
+                    {"if": {"column_id": "label|"}, "textAlign": "left"}
+                ],
                 columns=columns,
                 data=dframe,
                 sort_action="native",
                 filter_action="native",
+                merge_duplicate_headers=True,
             )
         return wcc.Graph(
             id=parent.uuid("property-qc-graph"),
