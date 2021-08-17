@@ -29,7 +29,7 @@ def ensemble_selector(
             clearable=False,
         )
     )
-    return html.Div(style={"width": "90%"}, children=children)
+    return html.Div(children)
 
 
 def vector_selector(
@@ -41,7 +41,7 @@ def vector_selector(
         else list(vectormodel.vector_groups.keys())[0]
     )
     return html.Div(
-        style={"width": "90%"},
+        style={"margin": "10px 0px"},
         children=[
             html.Span(wcc.Label("Vector type")),
             html.Div(
@@ -150,6 +150,7 @@ def date_selector(
 ) -> html.Div:
     dates = vectormodel.dates
     return html.Div(
+        style={"margin": "10px 0px"},
         children=[
             html.Div(
                 style={"display": "inline-flex"},
@@ -192,7 +193,7 @@ def filter_parameter(
     value: Union[str, float] = None,
 ) -> html.Div:
     return html.Div(
-        style={"margin-top": "10px", "width": "90%"},
+        style={"margin-top": "10px"},
         children=[
             wcc.Label("Select parameters"),
             html.Div(
@@ -225,11 +226,11 @@ def make_filter(
     value: Union[str, float] = None,
     open_details: bool = False,
 ) -> wcc.Selectors:
-    return wcc.Selectors(
-        label=vtype,
+    return html.Details(
         open=open_details,
         children=[
-            wcc.SelectWithLabel(
+            html.Summary(vtype),
+            wcc.Select(
                 id={
                     "id": get_uuid("vitem-filter"),
                     "tab": tab,
@@ -253,7 +254,7 @@ def filter_vector_selector(
     open_details: bool = False,
 ) -> html.Div:
     return html.Div(
-        style={"width": "90%"},
+        style={"margin-top": "10px"},
         children=[
             wcc.Dropdown(
                 label="Vector type",
@@ -268,6 +269,7 @@ def filter_vector_selector(
                 multi=True,
             ),
             html.Div(
+                style={"margin-top": "10px"},
                 children=[
                     make_filter(
                         get_uuid=get_uuid,
@@ -298,7 +300,7 @@ def color_selector(
     height: Optional[float] = None,
 ):
     return html.Div(
-        style={"width": "90%", "margin-top": "5px"},
+        style={"margin-top": "5px"},
         children=[
             wcc.Label("Colors"),
             wcc.Graph(
@@ -316,7 +318,7 @@ def color_selector(
 
 def color_opacity_selector(get_uuid: Callable, tab: str, value: float):
     return html.Div(
-        style={"width": "90%", "margin-top": "5px"},
+        style={"margin-top": "5px"},
         children=[
             "Opacity:",
             dcc.Input(
