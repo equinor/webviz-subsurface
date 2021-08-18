@@ -137,18 +137,27 @@ class ParameterFilter:
     @property
     def layout(self) -> html.Div:
         return html.Div(
+            style={"height": "100%"},
             children=[
-                html.H4(style={"textAlign": "center"}, children="Parameter filter"),
                 html.Div(
-                    style={"fontSize": "0.8em", "height": "80vh", "overflowY": "auto"},
-                    children=[self._range_sliders, self._discrete_selectors],
+                    style={"height": "90%"},
+                    children=[
+                        wcc.Header(
+                            style={"color": "black"},
+                            children="Parameter filter",
+                        ),
+                        html.Div(
+                            style={"overflowY": "auto", "height": "90%"},
+                            children=[self._range_sliders, self._discrete_selectors],
+                        ),
+                    ],
                 ),
                 self.buttons,
                 dcc.Store(
                     id={"id": self._uuid, "type": "data-store"},
                     data=self._initial_store,
                 ),
-            ]
+            ],
         )
 
     @property
@@ -165,7 +174,11 @@ class ParameterFilter:
             children=[
                 dbc.Button(
                     "Reset",
-                    style={"marginLeft": "10px", "float": "right"},
+                    style={
+                        "width": "48%",
+                        "float": "right",
+                        "background-color": "white",
+                    },
                     className="mr-1",
                     id={"id": self._uuid, "type": "button", "element": "reset"},
                 ),
@@ -173,7 +186,11 @@ class ParameterFilter:
                     "Apply",
                     # style={"padding": "0 20px", "visibility": "hidden"}
                     # if apply_disabled
-                    style={"marginLeft": "10px", "float": "right"},
+                    style={
+                        "width": "48%",
+                        "float": "left",
+                        "background-color": "white",
+                    },
                     className="mr-1",
                     id={"id": self._uuid, "type": "button", "element": "apply"},
                 ),
