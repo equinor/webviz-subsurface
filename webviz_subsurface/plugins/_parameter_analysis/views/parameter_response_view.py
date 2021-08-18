@@ -67,26 +67,21 @@ def selector_view(
                 ],
             ),
             wcc.Selectors(
-                label=[
-                    "Filters ",
-                    html.Span(
-                        "(for correlations)",
-                        style={
-                            "float": "right",
-                            "margin-top": "10px",
-                            "fontSize": "13px",
-                            "font-weight": "normal",
-                        },
-                    ),
-                ],
+                label="Filters",
                 children=[
+                    wcc.Checklist(
+                        id=get_uuid("display-paramfilter"),
+                        options=[{"label": "Show parameter filter", "value": "Show"}],
+                        value=[],
+                    ),
                     filter_vector_selector(
                         get_uuid=get_uuid, vectormodel=vectormodel, tab="response"
-                    )
+                    ),
                 ],
             ),
             wcc.Selectors(
                 label="Options",
+                open_details=False,
                 children=[
                     plot_options(get_uuid=get_uuid, tab="response"),
                     color_selector(
@@ -108,13 +103,14 @@ def selector_view(
 def parameter_response_view(
     get_uuid: Callable,
     parametermodel: ParametersModel,
+    parameterfilter_layout: html.Div,
     vectormodel: SimulationTimeSeriesModel,
     theme: WebvizConfigTheme,
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
-        style={"margin": "20px"},
         children=[
             wcc.FlexColumn(
+                flex=1,
                 children=selector_view(
                     get_uuid=get_uuid,
                     parametermodel=parametermodel,
@@ -123,58 +119,72 @@ def parameter_response_view(
                 ),
             ),
             wcc.FlexColumn(
-                flex=2,
-                style={"height": "80vh"},
-                children=[
-                    wcc.Frame(
-                        style={"height": "38.5vh"},
-                        color="white",
-                        highlight=False,
-                        children=timeseries_view(get_uuid=get_uuid),
-                    ),
-                    wcc.Frame(
-                        style={"height": "38.5vh"},
-                        color="white",
-                        highlight=False,
-                        children=[
-                            wcc.Graph(
-                                id=get_uuid("vector-vs-param-scatter"),
-                                config={"displayModeBar": False},
-                                style={"height": "38vh"},
-                            )
-                        ],
-                    ),
-                ],
-            ),
-            wcc.FlexColumn(
-                flex=2,
-                style={"height": "80vh"},
-                children=[
-                    wcc.Frame(
-                        color="white",
-                        highlight=False,
-                        style={"height": "38.5vh"},
-                        children=[
-                            wcc.Graph(
-                                config={"displayModeBar": False},
-                                style={"height": "38vh"},
-                                id=get_uuid("vector-corr-graph"),
+                flex=4,
+                children=wcc.FlexBox(
+                    children=[
+                        wcc.FlexColumn(
+                            flex=2,
+                            children=[
+                                wcc.Frame(
+                                    style={"height": "38.5vh"},
+                                    color="white",
+                                    highlight=False,
+                                    children=timeseries_view(get_uuid=get_uuid),
+                                ),
+                                wcc.Frame(
+                                    style={"height": "38.5vh"},
+                                    color="white",
+                                    highlight=False,
+                                    children=[
+                                        wcc.Graph(
+                                            id=get_uuid("vector-vs-param-scatter"),
+                                            config={"displayModeBar": False},
+                                            style={"height": "38vh"},
+                                        )
+                                    ],
+                                ),
+                            ],
+                        ),
+                        wcc.FlexColumn(
+                            flex=2,
+                            children=[
+                                wcc.Frame(
+                                    color="white",
+                                    highlight=False,
+                                    style={"height": "38.5vh"},
+                                    children=[
+                                        wcc.Graph(
+                                            config={"displayModeBar": False},
+                                            style={"height": "38vh"},
+                                            id=get_uuid("vector-corr-graph"),
+                                        ),
+                                    ],
+                                ),
+                                wcc.Frame(
+                                    color="white",
+                                    highlight=False,
+                                    style={"height": "38.5vh"},
+                                    children=[
+                                        wcc.Graph(
+                                            config={"displayModeBar": False},
+                                            style={"height": "38vh"},
+                                            id=get_uuid("param-corr-graph"),
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        wcc.FlexColumn(
+                            id=get_uuid("param-filter-wrapper"),
+                            style={"display": "none"},
+                            flex=1,
+                            children=wcc.Frame(
+                                style={"height": "80vh"},
+                                children=parameterfilter_layout,
                             ),
-                        ],
-                    ),
-                    wcc.Frame(
-                        color="white",
-                        highlight=False,
-                        style={"height": "38.5vh"},
-                        children=[
-                            wcc.Graph(
-                                config={"displayModeBar": False},
-                                style={"height": "38vh"},
-                                id=get_uuid("param-corr-graph"),
-                            ),
-                        ],
-                    ),
-                ],
+                        ),
+                    ],
+                ),
             ),
         ],
     )
