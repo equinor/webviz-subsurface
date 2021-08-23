@@ -256,7 +256,7 @@ class TornadoBarChart:
         return _layout
 
     @property
-    def figure(self) -> Dict:
+    def figure(self) -> go.Figure:
         data = self.data
 
         fig = go.Figure({"data": data, "layout": self.layout})

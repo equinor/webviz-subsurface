@@ -208,11 +208,8 @@ def selections_controllers(
         Output(
             {"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "children"
         ),
-        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
         Input(get_uuid("page-selected"), "data"),
-        Input(
-            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
-        ),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
         Input({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "value"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State(get_uuid("tabs"), "value"),
@@ -223,9 +220,8 @@ def selections_controllers(
         State({"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "id"),
     )
     def _update_filter_options(
+        _selected_page: str,
         selectors: list,
-        selected_page: str,
-        plot_table_select: str,
         reals: list,
         selector_ids: list,
         selected_tab: str,
@@ -255,20 +251,8 @@ def selections_controllers(
                 page_selections[x]
                 for x in ["Color by", "Subplots", "X Response", "Y Response"]
             ]
-            table_groups = (
-                page_selections["Group by"]
-                if page_selections["Group by"] is not None
-                else []
-            )
-
-            if selected_page == "1p1t" and not page_selections["sync_table"]:
-                selected_data.extend(table_groups)
-            if (
-                selected_page == "custom"
-                and plot_table_select == "table"
-                and not page_selections["sync_table"]
-            ):
-                selected_data = table_groups
+        if selected_tab == "table" and page_selections["Group by"] is not None:
+            selected_data = page_selections["Group by"]
 
         output = {}
         for selector in ["SOURCE", "ENSEMBLE"]:

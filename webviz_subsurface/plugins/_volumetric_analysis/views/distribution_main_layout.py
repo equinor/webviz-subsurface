@@ -30,6 +30,16 @@ def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> ht
     )
 
 
+def table_main_layout(uuid: str) -> html.Div:
+    return wcc.Frame(
+        id={"id": uuid, "wrapper": "table", "page": "table"},
+        color="white",
+        highlight=False,
+        style={"height": "91vh"},
+        children=[],
+    )
+
+
 def convergence_plot_layout(uuid: str) -> html.Div:
     return wcc.Frame(
         color="white",

@@ -91,20 +91,3 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
             else:
                 styles.append({"display": "none"})
         return styles
-
-    @app.callback(
-        Output(
-            {
-                "id": get_uuid("selections"),
-                "tab": "voldist",
-                "element": "table_response_group_wrapper",
-            },
-            "style",
-        ),
-        Input(
-            {"id": get_uuid("selections"), "tab": "voldist", "selector": "sync_table"},
-            "value",
-        ),
-    )
-    def _show_hide_table_response_group_controls(sync_table: list) -> dict:
-        return {"display": "none"} if sync_table else {"display": "block"}

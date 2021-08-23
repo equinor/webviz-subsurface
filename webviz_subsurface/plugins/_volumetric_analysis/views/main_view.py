@@ -6,8 +6,8 @@ import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
 from webviz_subsurface._models import InplaceVolumesModel
 from .filter_view import filter_layout
-from .distribution_main_layout import distributions_main_layout
-from .selections_view import selections_layout
+from .distribution_main_layout import distributions_main_layout, table_main_layout
+from .selections_view import selections_layout, table_selections_layout
 from .tornado_selections_view import tornado_selections_layout
 from .tornado_layout import tornado_main_layout
 
@@ -45,7 +45,32 @@ def main_view(
             ),
         )
     ]
-
+    tabs.append(
+        wcc.Tab(
+            label="Tables",
+            value="table",
+            children=tab_view_layout(
+                main_layout=table_main_layout(
+                    uuid=get_uuid("main-table"),
+                ),
+                sidebar_layout=[
+                    table_selections_layout(
+                        uuid=get_uuid("selections"),
+                        tab="table",
+                        volumemodel=volumemodel,
+                    )
+                ]
+                + [
+                    filter_layout(
+                        open_details=True,
+                        uuid=get_uuid("filters"),
+                        tab="table",
+                        volumemodel=volumemodel,
+                    ),
+                ],
+            ),
+        )
+    )
     if volumemodel.sensrun:
         tabs.append(
             wcc.Tab(
