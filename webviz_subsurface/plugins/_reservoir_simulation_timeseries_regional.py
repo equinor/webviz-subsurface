@@ -1114,7 +1114,7 @@ def filter_and_aggregate_vectors(
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_nodes(groupby: str, fipdesc: pd.DataFrame, fip: str, filters: dict) -> dict:
     df = fipdesc[fipdesc["FIP"] == fip]
-    nodes: dict = dict()
+    nodes: dict = {}
     for node, dfn in df.groupby("NODE"):
         node_inc = True
         node_subgroups = []

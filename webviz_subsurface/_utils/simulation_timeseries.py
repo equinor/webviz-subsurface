@@ -344,7 +344,7 @@ def check_and_format_observations(obsfile: Path) -> dict:
             raise TypeError(
                 "The observation file's smry section must be formatted as a list of dictionaries."
             )
-        observations = dict()
+        observations: dict = {}
 
         # pylint: disable=too-many-nested-blocks
         for item in obslist:
