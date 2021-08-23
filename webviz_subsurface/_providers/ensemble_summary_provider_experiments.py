@@ -6,6 +6,8 @@ import glob
 from dataclasses import dataclass
 from concurrent.futures import ProcessPoolExecutor
 
+# from fmu.ensemble import ScratchEnsemble
+
 import pyarrow as pa
 
 from webviz_subsurface.ert_jobs.smry2arrow import _load_smry_into_table
@@ -58,6 +60,18 @@ def load_per_realization_smry_tables_using_smry2arrow(
                 break
 
     files_to_process = sorted(files_to_process, key=lambda e: e.real)
+
+    # !!!!!!!
+    # !!!!!!!
+    # Test accessing via FMU Ensamble package
+    # scratch_ensemble = ScratchEnsemble(
+    #     "tempEnsName", paths=ens_path, autodiscovery=True
+    # )
+    # for realidx, real in scratch_ensemble.realizations.items():
+    #     files_df = real.files
+    #     print(files_df.head(50))
+
+    # LOGGER.debug(f"file discovery took: {timer.elapsed_s():.2f}s")
 
     # !!!!!!!!!!!!!!!!!!!!!!
     # files_to_process = files_to_process[0:10]
