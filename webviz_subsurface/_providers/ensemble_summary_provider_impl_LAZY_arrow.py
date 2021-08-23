@@ -331,17 +331,19 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
             if realizations:
                 real_mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
                 table = table.filter(real_mask)
+            et_filter_ms = timer.lap_ms()
 
             np_lookup_date = np.datetime64(date, "ms")
             table = sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
                 table, np_lookup_date
             )
+            et_resample_ms = timer.lap_ms()
             table = table.drop(["DATE"])
 
-            et_filter_ms = timer.lap_ms()
-
         else:
-            # Note that we use MS here to be aligned with storage type in arrow file
+            # This scenario, without resampling, might not work very well unless all
+            # the dates in all the realizations are aligned. Does an exact matching
+            # on date, so the returned table may be missing realizations
             pa_lookup_date = pa.scalar(date, type=pa.timestamp("ms"))
             mask = pc.equal(table["DATE"], pa_lookup_date)
 
@@ -350,9 +352,10 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
                 mask = pc.and_(mask, real_mask)
 
             table = table.drop(["DATE"])
-
             table = table.filter(mask)
+
             et_filter_ms = timer.lap_ms()
+            et_resample_ms = 0
 
         df = table.to_pandas()
         et_to_pandas_ms = timer.lap_ms()
@@ -361,6 +364,7 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
             f"get_vectors_for_date_df() took: {timer.elapsed_ms()}ms ("
             f"read={et_read_ms}ms, "
             f"filter={et_filter_ms}ms, "
+            f"resample={et_resample_ms}ms, "
             f"to_pandas={et_to_pandas_ms}ms), "
             f"#vecs={len(vector_names)}, "
             f"#real={len(realizations) if realizations else 'all'}, "

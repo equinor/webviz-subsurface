@@ -3,12 +3,10 @@ from pathlib import Path
 import datetime
 import time
 import logging
-import json
 
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 from .ensemble_summary_provider_factory import BackingType
 from .ensemble_summary_provider import EnsembleSummaryProvider
-from .ensemble_summary_provider_set import EnsembleSummaryProviderSet
 
 
 # -------------------------------------------------------------------------
@@ -153,6 +151,10 @@ def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
     _get_n_vectors_in_batch_all_realizations(provider, 50)
     _get_n_vectors_in_batch_all_realizations(provider, 99999)
 
+    n = 100
+    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 2)])
+    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 4)])
+
     n = 99999
     _get_n_vectors_for_date_all_realizations(provider, n, all_dates[0])
     _get_n_vectors_for_date_all_realizations(provider, n, all_dates[-1])
@@ -161,10 +163,10 @@ def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
 
 
 # Running:
-#   python -m webviz_subsurface._models.ensemble_time_series_perf_testing
+#   python -m webviz_subsurface._providers.ensemble_summary_provider_perf_testing
 #
 # Memory profiling with memory-profiler:
-#   mprof run --python  webviz_subsurface._models.ensemble_time_series_perf_testing
+#   mprof run --python  webviz_subsurface._providers.ensemble_summary_provider_perf_testing
 # -------------------------------------------------------------------------
 if __name__ == "__main__":
     print()
@@ -186,13 +188,13 @@ if __name__ == "__main__":
     # PREF_DF_BACKING: BackingType = BackingType.INMEM_PARQUET
 
     ENSEMBLES: Dict[str, str] = {
-        "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
+        # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
         # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
         # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-0",
         # "iter-1": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-1",
         # "iter-2": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-2",
         # "iter-3": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-3",
-        # "iter-0": "/home/sigurdp/gitRoot/hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
+        "iter-0": "/home/sigurdp/gitRoot/hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
     }
 
     print()
