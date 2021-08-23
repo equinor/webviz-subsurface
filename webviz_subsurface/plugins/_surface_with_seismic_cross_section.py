@@ -294,7 +294,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surfacepath, surface_type, cubepath, color_values, hillshade
         ):
 
-            surface = xtgeo.RegularSurface(get_path(surfacepath))
+            surface = xtgeo.surface_from_file(get_path(surfacepath))
             min_val = None
             max_val = None
             if surface_type == "attribute":
@@ -329,7 +329,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = cube.get_randomline(fence)
 
-            surface = xtgeo.RegularSurface(get_path(surfacepath))
+            surface = xtgeo.surface_from_file(get_path(surfacepath))
             s_arr = get_surface_fence(fence, surface)
             return make_heatmap(
                 values,

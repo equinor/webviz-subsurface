@@ -173,7 +173,7 @@ class SimulationTimeSeriesModel:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def add_realization_traces(
-        self, ensemble: str, vector: str, real_filter: pd.Series = None
+        self, ensemble: str, vector: str, real_filter: Optional[list] = None
     ) -> list:
         """Renders line trace for each realization, includes history line if present"""
         dataframe = self._dataframe[self._dataframe["ENSEMBLE"] == ensemble]

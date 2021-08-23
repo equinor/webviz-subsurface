@@ -25,7 +25,9 @@ def surface_from_zone_prop(
     try:
         return xtgeo.surface_from_file(path.resolve())
     except OSError:
-        surf = xtgeo.RegularSurface()
+        surf = xtgeo.RegularSurface(
+            ncol=1, nrow=1, xinc=1, yinc=1
+        )  # 1's as input is required
         surf.values = 0
         return surf
 

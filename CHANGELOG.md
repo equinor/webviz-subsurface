@@ -5,10 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+### Added
+- [#708](https://github.com/equinor/webviz-subsurface/pull/708) - Added support for new report format for `DiskUsage`, which improves the estimate of free disk space.
+
+### Changed
+- [#723](https://github.com/equinor/webviz-subsurface/pull/723) - Added custom option to allow free selection of responses shown in the tornadoplots in `VolumetricAnalysis`
+- [#717](https://github.com/equinor/webviz-subsurface/pull/717) - Keep zoom state in `ReservoirSimulationTimeseries` (inc `Regional` and `OneByOne`) and `RelativePermeability` plugins using `uirevision`.
+
+## [0.2.4] - 2021-07-13
 
 ### Added
 - [#669](https://github.com/equinor/webviz-subsurface/pull/669) - New generic plugin to visualize tornado plots from a csv file of responses.
-- [#685](https://github.com/equinor/webviz-subsurface/pull/685) - Added ERT forward model to convert from `.UNSMRY` to Arrow IPC file format (`.arrow`)
+- [#685](https://github.com/equinor/webviz-subsurface/pull/685) - Added ERT forward model to convert from `.UNSMRY` to Arrow IPC file format (`.arrow`).
+- [#662](https://github.com/equinor/webviz-subsurface/pull/662) - Added support in `WellCompletion` for connection history from summary data.
 
 ### Changed
 - [#681](https://github.com/equinor/webviz-subsurface/pull/681) - `VolumetricAnalysis` upgrades - added page with tornadoplots to `VolumetricAnalysis`, automatic computation of volumes
@@ -23,9 +32,7 @@ from the water zone if the volumes from the full grid geometry are included, and
 ### Fixed
 - [#666](https://github.com/equinor/webviz-subsurface/pull/666) - Handle operations between surfaces with different topology in `SurfaceViewerFMU`
 - [#675](https://github.com/equinor/webviz-subsurface/pull/675) - Adjust minimum zoom level in surface plugins for visualization of large surfaces.
-
-### Added
-- [#662](https://github.com/equinor/webviz-subsurface/pull/662) - Added support in `WellCompletion` for connection history from summary data.
+- [#715](https://github.com/equinor/webviz-subsurface/pull/715) - After this, the `WellCompletion` plugin finds the kh unit even if the unit system is in an INCLUDE file. Also, `well_connection_status_file` refers to the same variable in the plugin and ert job.
 
 ## [0.2.3] - 2021-06-07
 

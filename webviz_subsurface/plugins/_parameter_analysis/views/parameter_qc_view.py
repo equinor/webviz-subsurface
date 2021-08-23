@@ -55,14 +55,15 @@ def parameter_qc_view(
     get_uuid: Callable, parametermodel: ParametersModel
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
-        style={"margin": "20px"},
         children=[
             wcc.FlexColumn(
-                wcc.Frame(
+                flex=1,
+                children=wcc.Frame(
+                    style={"height": "80vh"},
                     children=selector_view(
                         get_uuid=get_uuid, parametermodel=parametermodel
                     ),
-                )
+                ),
             ),
             wcc.FlexColumn(
                 flex=4,
@@ -84,7 +85,8 @@ def parameter_qc_view(
                             value="distribution",
                         ),
                         html.Div(
-                            style={"height": "75vh"}, id=get_uuid("property-qc-wrapper")
+                            style={"height": "75vh", "margin-top": "20px"},
+                            id=get_uuid("property-qc-wrapper"),
                         ),
                     ],
                 ),

@@ -282,6 +282,15 @@ def selections_controllers(
                 multi = values = dash.no_update
             output[selector] = {"multi": multi, "values": values}
 
+        # filter tornado on correct fluid based on volume response chosen
+        output["FLUID_ZONE"] = {}
+        if selected_tab == "tornado" and page_selections["mode"] == "locked":
+            output["FLUID_ZONE"] = {
+                "values": [
+                    "oil" if page_selections["Response right"] == "STOIIP" else "gas"
+                ]
+            }
+
         # realization
         index = [x["tab"] for x in reals_ids].index(selected_tab)
         real_list = [int(real) for real in reals[index]]
@@ -299,20 +308,20 @@ def selections_controllers(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": output[item].get("multi", dash.no_update),
-                        "conditions": {"tab": selected_tab, "selector": item},
+                        "new_value": values.get("multi", dash.no_update),
+                        "conditions": {"tab": selected_tab, "selector": selector},
                     }
-                    for item in ["SOURCE", "ENSEMBLE", "REAL"]
+                    for selector, values in output.items()
                 ],
             ),
             update_relevant_components(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": output[item].get("values", dash.no_update),
-                        "conditions": {"tab": selected_tab, "selector": item},
+                        "new_value": values.get("values", dash.no_update),
+                        "conditions": {"tab": selected_tab, "selector": selector},
                     }
-                    for item in ["SOURCE", "ENSEMBLE", "REAL"]
+                    for selector, values in output.items()
                 ],
             ),
             update_relevant_components(
@@ -410,25 +419,74 @@ def selections_controllers(
             )
 
         # if input_selector == "select"
-        elements = prev_selection if prev_selection is not None else reals
         return update_relevant_components(
             id_list=wrapper_ids,
             update_info=[
                 {
-                    "new_value": wcc.Select(
+                    "new_value": wcc.SelectWithLabel(
                         id={
                             "id": get_uuid("filters"),
                             "tab": selected_tab,
                             "component_type": page_value[0],
                         },
                         options=[{"label": i, "value": i} for i in reals],
-                        value=elements,
-                        multi=True,
+                        value=prev_selection if prev_selection is not None else reals,
                         size=min(20, len(reals)),
-                        persistence=True,
-                        persistence_type="session",
                     ),
                     "conditions": {"tab": selected_tab},
                 }
             ],
+        )
+
+    @app.callback(
+        Output(
+            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "options"
+        ),
+        Output(
+            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "value"
+        ),
+        Output(
+            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"},
+            "disabled",
+        ),
+        Input(
+            {"id": get_uuid("selections"), "selector": "mode", "tab": "tornado"},
+            "value",
+        ),
+        State({"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "id"),
+    )
+    def _update_tornado_selections_from_mode(mode: str, selector_ids: list) -> tuple:
+        settings = {}
+        if mode == "custom":
+            settings["Response left"] = settings["Response right"] = {
+                "options": [{"label": i, "value": i} for i in volumemodel.responses],
+                "disabled": False,
+            }
+        else:
+            volume_options = [
+                x for x in ["STOIIP", "GIIP"] if x in volumemodel.responses
+            ]
+            settings["Response left"] = {
+                "options": [{"label": "BULK", "value": "BULK"}],
+                "value": "BULK",
+                "disabled": True,
+            }
+            settings["Response right"] = {
+                "options": [{"label": i, "value": i} for i in volume_options],
+                "value": volume_options[0],
+                "disabled": len(volume_options) == 1,
+            }
+
+        return tuple(
+            update_relevant_components(
+                id_list=selector_ids,
+                update_info=[
+                    {
+                        "new_value": values.get(prop, dash.no_update),
+                        "conditions": {"selector": selector},
+                    }
+                    for selector, values in settings.items()
+                ],
+            )
+            for prop in ["options", "value", "disabled"]
         )

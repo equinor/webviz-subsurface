@@ -82,7 +82,9 @@ class SurfaceSetModel:
                 f"No surface found for name: {name}, attribute: {attribute}, date: {date}, "
                 f"realization: {realization}"
             )
-            return xtgeo.RegularSurface()
+            return xtgeo.RegularSurface(
+                ncol=1, nrow=1, xinc=1, yinc=1
+            )  # 1's as input is required
         if len(df.index) > 1:
             warnings.warn(
                 f"Multiple surfaces found for name: {name}, attribute: {attribute}, date: {date}, "
@@ -214,7 +216,9 @@ def save_statistical_surface_no_store(
 
     surfaces = xtgeo.Surfaces([get_stored_surface_path(fn) for fn in fns])
     if len(surfaces.surfaces) == 0:
-        surface = xtgeo.RegularSurface()
+        surface = xtgeo.RegularSurface(
+            ncol=1, nrow=1, xinc=1, yinc=1
+        )  # 1's as input is required
     elif calculation in ["Mean", "StdDev", "Min", "Max", "P10", "P90"]:
         # Suppress numpy warnings when surfaces have undefined z-values
         with warnings.catch_warnings():
@@ -223,7 +227,9 @@ def save_statistical_surface_no_store(
             warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
             surface = get_statistical_surface(surfaces, calculation)
     else:
-        surface = xtgeo.RegularSurface()
+        surface = xtgeo.RegularSurface(
+            ncol=1, nrow=1, xinc=1, yinc=1
+        )  # 1's as input is required
     return io.BytesIO(surface_to_json(surface).encode())
 
 
@@ -232,7 +238,9 @@ def save_statistical_surface(fns: List[str], calculation: str) -> io.BytesIO:
     """Wrapper function to store a calculated surface as BytesIO"""
     surfaces = xtgeo.Surfaces(fns)
     if len(surfaces.surfaces) == 0:
-        surface = xtgeo.RegularSurface()
+        surface = xtgeo.RegularSurface(
+            ncol=1, nrow=1, xinc=1, yinc=1
+        )  # 1's as input is required
     elif calculation in ["Mean", "StdDev", "Min", "Max", "P10", "P90"]:
         # Suppress numpy warnings when surfaces have undefined z-values
         with warnings.catch_warnings():
@@ -241,7 +249,9 @@ def save_statistical_surface(fns: List[str], calculation: str) -> io.BytesIO:
             warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
             surface = get_statistical_surface(surfaces, calculation)
     else:
-        surface = xtgeo.RegularSurface()
+        surface = xtgeo.RegularSurface(
+            ncol=1, nrow=1, xinc=1, yinc=1
+        )  # 1's as input is required
     return io.BytesIO(surface_to_json(surface).encode())
 
 
@@ -262,7 +272,9 @@ def get_statistical_surface(
         return surfaces.apply(np.nanpercentile, 10, axis=0)
     if calculation == "P90":
         return surfaces.apply(np.nanpercentile, 90, axis=0)
-    return xtgeo.RegularSurface()
+    return xtgeo.RegularSurface(
+        ncol=1, nrow=1, xinc=1, yinc=1
+    )  # 1's as input is required
 
 
 def surface_to_json(surface: xtgeo.RegularSurface) -> str:

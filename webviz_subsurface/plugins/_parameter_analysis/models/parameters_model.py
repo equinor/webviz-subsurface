@@ -163,9 +163,14 @@ class ParametersModel:
         """Return format needed for dash table"""
         col_order = ["PARAMETER", "Avg", "Stddev", "P90", "P10", "Min", "Max"]
         df = df.reindex(col_order, axis=1, level=0)
-        df.columns = df.columns.map(" | ".join).str.strip(" | ")
+        df.columns = df.columns.map("|".join)
         columns = [
-            {"id": col, "name": col, "type": "numeric", "format": Format(precision=3)}
+            {
+                "id": col,
+                "name": [col.split("|")[0], col.split("|")[1]],
+                "type": "numeric",
+                "format": Format(precision=3),
+            }
             for col in df.columns
         ]
         return columns, df.to_dict("records")

@@ -810,6 +810,21 @@ folder, to avoid risk of not extracting the right data.
                     for trace in add_observation_trace(self.observations.get(vector)):
                         fig.add_trace(trace, i + 1, 1)
 
+            # Remove linked x-axis for histograms
+            # Keep uirevision (e.g. zoom) for unchanged data.
+            fig.update_xaxes(uirevision="locked")  # Time axis state kept
+            for i, vector in enumerate(vectors, start=1):
+                if "Histogram" in trace_options:
+                    fig.update_xaxes(
+                        row=i,
+                        col=2,
+                        matches=None,
+                        showticklabels=True,
+                        uirevision=vector,
+                    )
+                    fig.update_yaxes(row=i, col=2, uirevision=vector)
+                fig.update_yaxes(row=i, col=1, uirevision=vector)
+
             fig = fig.to_dict()
             fig["layout"].update(
                 barmode="overlay",
@@ -817,18 +832,6 @@ folder, to avoid risk of not extracting the right data.
                 bargroupgap=0.2,
             )
             fig["layout"] = self.theme.create_themed_layout(fig["layout"])
-
-            if "Histogram" in trace_options:
-                # Remove linked x-axis for histograms
-                if "xaxis2" in fig["layout"]:
-                    fig["layout"]["xaxis2"]["matches"] = None
-                    fig["layout"]["xaxis2"]["showticklabels"] = True
-                if "xaxis4" in fig["layout"]:
-                    fig["layout"]["xaxis4"]["matches"] = None
-                    fig["layout"]["xaxis4"]["showticklabels"] = True
-                if "xaxis6" in fig["layout"]:
-                    fig["layout"]["xaxis6"]["matches"] = None
-                    fig["layout"]["xaxis6"]["showticklabels"] = True
             return fig
 
         @app.callback(

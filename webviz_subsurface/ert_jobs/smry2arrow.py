@@ -37,9 +37,9 @@ def _get_parser() -> argparse.ArgumentParser:
         description=DESCRIPTION,
     )
     parser.add_argument(
-        "input",
+        "eclbase",
         type=Path,
-        help="Input file",
+        help="Eclipse base name",
     )
     parser.add_argument(
         "--output",
@@ -163,7 +163,7 @@ def main() -> None:
     # Create the output folder if it doesn't exist
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    smry2arrow(args.input, args.output)
+    smry2arrow(args.eclbase.with_suffix(".UNSMRY"), args.output)
 
 
 if __name__ == "__main__":
