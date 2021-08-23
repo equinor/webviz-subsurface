@@ -18,7 +18,7 @@ class Frequency(Enum):
 # -------------------------------------------------------------------------
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
     # A bit hackish, utilizes the fact that datetime64 is relative to epoch
-    # 1970-01-01 which is a Tursday
+    # 1970-01-01 which is a Thursday
     return datetime_day.astype("datetime64[W]").astype("datetime64[D]") + 4
 
 
@@ -303,6 +303,8 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
 
 
 # -------------------------------------------------------------------------
+# Input table is expected to contain data for only a single
+# realization and MUST be sorted on date
 def sample_single_real_table_at_date_NAIVE_SLOW(
     table: pa.Table, np_datetime: np.datetime64
 ) -> pa.Table:
@@ -373,6 +375,7 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
         elif colname == "DATE":
             column_arrays.append(np.array([np_datetime]))
         else:
+            # This is expensive wrt performance. Should avoid JSON parsing here
             field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
             is_rate = field_meta["is_rate"]
 
@@ -411,6 +414,7 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
 
 
 # -------------------------------------------------------------------------
+# Table must be sorted on real, and then date!!!
 def sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
     table: pa.Table, np_datetime: np.datetime64
 ) -> pa.Table:
