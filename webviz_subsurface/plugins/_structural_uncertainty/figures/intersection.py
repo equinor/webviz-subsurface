@@ -7,6 +7,12 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import SurfaceSetModel
 from webviz_subsurface._utils.colors import hex_to_rgba
 
+from ...._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    MinMaxData,
+    LowHighData,
+)
 
 # pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -37,6 +43,7 @@ def get_plotly_trace_statistical_surface(
         "x": fencexy[:, 0],
         "y": fencexy[:, 1],
         "name": legendname,
+        "legendgroup": name,
         "text": f"{legendname} {calculation}",
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",
@@ -62,91 +69,34 @@ def get_plotly_traces_uncertainty_envelope(
     """Returns a set of plotly traces representing an uncertainty envelope
     for a surface"""
     stat_surfaces = {}
-    traces = []
-    line_color = hex_to_rgba(hex_string=color)
-    fill_color = hex_to_rgba(hex_string=color, opacity=0.3)
     for calculation in ["Mean", "Min", "Max", "P10", "P90"]:
-
         stat_surfaces[calculation] = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
             calculation=calculation,
             realizations=realizations,
         ).get_randomline(fence_spec, sampling=sampling)
-    # Maximum trace (contains hoverinfo)
-    traces.append(
-        {
-            "name": legendname,
-            "y": stat_surfaces["Max"][:, 1],
-            "x": stat_surfaces["Max"][:, 0],
-            "mode": "lines",
-            "hoverinfo": "text+name",
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": name,
-            "showlegend": False,
-        }
+
+    data = FanchartData(
+        samples=stat_surfaces["Min"][:, 0],
+        low_high=LowHighData(
+            low_data=stat_surfaces["P10"][:, 1],
+            low_name="P10",
+            high_data=stat_surfaces["P90"][:, 1],
+            high_name="P90",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=stat_surfaces["Min"][:, 1], maximum=stat_surfaces["Max"][:, 1]
+        ),
     )
-    # P10 trace
-    traces.append(
-        {
-            "name": legendname,
-            "y": stat_surfaces["P10"][:, 1],
-            "x": stat_surfaces["P10"][:, 0],
-            "mode": "lines",
-            "hoverinfo": "skip",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": name,
-            "showlegend": False,
-        }
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=name,
+        legend_name=legendname,
+        show_legend=showlegend,
+        show_hoverinfo=False,
     )
-    # Mean trace
-    traces.append(
-        {
-            "name": legendname,
-            "y": stat_surfaces["Mean"][:, 1],
-            "x": stat_surfaces["Mean"][:, 0],
-            "mode": "lines",
-            "hoverinfo": "skip",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            "legendgroup": name,
-            "showlegend": showlegend,
-        }
-    )
-    # P90 trace
-    traces.append(
-        {
-            "name": legendname,
-            "y": stat_surfaces["P90"][:, 1],
-            "x": stat_surfaces["P90"][:, 0],
-            "mode": "lines",
-            "hoverinfo": "skip",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": name,
-            "showlegend": False,
-        }
-    )
-    # Minimum trace
-    traces.append(
-        {
-            "name": legendname,
-            "y": stat_surfaces["Min"][:, 1],
-            "x": stat_surfaces["Min"][:, 0],
-            "mode": "lines",
-            "hoverinfo": "skip",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": name,
-            "showlegend": False,
-        }
-    )
-    return traces
 
 
 # pylint: disable=too-many-arguments
@@ -171,6 +121,7 @@ def get_plotly_trace_realization_surface(
         "x": fencexy[:, 0],
         "y": fencexy[:, 1],
         "name": legendname,
+        "legendgroup": name,
         "text": f"{legendname} realization: {realization}",
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",

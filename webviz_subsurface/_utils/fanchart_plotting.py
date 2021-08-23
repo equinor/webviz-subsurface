@@ -124,11 +124,13 @@ def get_fanchart_traces(
     data: FanchartData,
     color: str,
     legend_group: str,
+    legend_name: Optional[str] = None,
     line_shape: str = "linear",
     xaxis: str = "x",
     yaxis: str = "y",
     show_legend: bool = True,
     direction: TraceDirection = TraceDirection.HORIZONTAL,
+    show_hoverinfo: bool = True,
     hovertext: str = "",
     hovertemplate: Optional[str] = None,
     hovermode: Optional[str] = None,
@@ -172,7 +174,7 @@ def get_fanchart_traces(
 
     def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
         trace = {
-            "name": legend_group,
+            "name": legend_name if legend_name else legend_group,
             "x": data.samples if direction == TraceDirection.HORIZONTAL else values,
             "y": values if direction == TraceDirection.HORIZONTAL else data.samples,
             "xaxis": xaxis,
@@ -182,6 +184,9 @@ def get_fanchart_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
+        if not show_hoverinfo:
+            trace["hoverinfo"] = "skip"
+            return trace
         if hovertemplate is not None:
             trace["hovertemplate"] = hovertemplate + statistics_name
         else:
