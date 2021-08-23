@@ -1,7 +1,6 @@
 from typing import List, Optional, Sequence, Dict
 import datetime
 from pathlib import Path
-import json
 import logging
 
 import pyarrow as pa

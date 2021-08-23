@@ -290,7 +290,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         timer = PerfTimer()
 
         frequency_enum: Optional[Frequency] = None
-        if sampling_frequency_str is not "raw":
+        if sampling_frequency_str != "raw":
             frequency_enum = Frequency(sampling_frequency_str)
 
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
@@ -340,7 +340,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                     del missing_storage_keys[ens_name]
                     LOGGER.info(
                         f"Saved summary provider for {ens_name} to backing store ("
-                        f"import_smry={et_import_smry_s:.2f}s, resample={et_resample_s:.2f}s, write={et_write_s:.2f}s)"
+                        f"import_smry={et_import_smry_s:.2f}s, "
+                        f"resample={et_resample_s:.2f}s, "
+                        f"write={et_write_s:.2f}s)"
                     )
 
         # Should not be any keys missing
@@ -369,7 +371,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         timer = PerfTimer()
 
         frequency_enum: Optional[Frequency] = None
-        if report_frequency_str is not "raw":
+        if report_frequency_str != "raw":
             frequency_enum = Frequency(report_frequency_str)
 
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
