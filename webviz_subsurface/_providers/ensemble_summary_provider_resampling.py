@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from enum import Enum
 import json
 from dataclasses import dataclass
@@ -312,11 +312,12 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
     raw_dates_np = table.column("DATE").to_numpy()
 
     # last_insertion_index is the last legal insertion index of the queried value
-    last_insertion_index: int = np.searchsorted(raw_dates_np, np_datetime, side="right")
+    last_insertion_index: int = np.searchsorted(
+        raw_dates_np, np_datetime, side="right"
+    ).item()
 
     idx0 = -1
     idx1 = -1
-
     if last_insertion_index == len(raw_dates_np):
         # Either an exact match or outside the range (query date is beyond our last date)
         if raw_dates_np[last_insertion_index - 1] == np_datetime:
@@ -386,7 +387,7 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
                 )
             elif idx0 == -1 or idx1 == -1:
                 # below or above (0 for rate, else extrapolate)
-                assert records_table.num_rows is 1
+                assert records_table.num_rows == 1
                 if is_rate:
                     column_arrays.append(pa.array([0.0]))
                 else:
@@ -395,7 +396,7 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
                     )
             else:
                 # interpolate or backfill
-                assert records_table.num_rows is 2
+                assert records_table.num_rows == 2
                 if is_rate:
                     column_arrays.append(
                         pa.array([records_table.column(colname)[1].as_py()])
