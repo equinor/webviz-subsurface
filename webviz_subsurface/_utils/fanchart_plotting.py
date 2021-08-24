@@ -12,9 +12,9 @@ class FreeLineData:
     """
     Dataclass for defining statistics data for freee line trace in fanchart
 
-    Attributes:
-    name - Name of statistics data
-    data - 1D np.array of statistics value data
+    `Attributes:`
+    * `name` - Name of statistics data
+    * `data` - 1D np.array of statistics value data
     """
 
     name: str
@@ -26,11 +26,11 @@ class LowHighData:
     """
     Definition of paired low and high percentile data for fanchart
 
-    Attributes:
-    low_data  - 1D np.array of low percentile value data
-    low_name  - Name of low percentile
-    high_data - 1D np.array of high percentile value data
-    high_name - Name of high percentile
+    `Attributes:`
+    * `low_data`  - 1D np.array of low percentile value data
+    * `low_name`  - Name of low percentile
+    * `high_data` - 1D np.array of high percentile value data
+    * `high_name` - Name of high percentile
     """
 
     low_data: np.ndarray
@@ -44,9 +44,9 @@ class MinMaxData:
     """
     Definition of paired minimum and maximum data for fanchart
 
-    Attributes:
-    minimum - 1D np.array of minimum value data
-    maximum - 1D np.array of maximum value data
+    `Attributes:`
+    * `minimum` - 1D np.array of minimum value data
+    * `maximum` - 1D np.array of maximum value data
     """
 
     minimum: np.ndarray
@@ -58,12 +58,12 @@ class FanchartData:
     """
     Dataclass defining fanchart data utilized in creation of statistical fanchart traces
 
-    Attributes:
-    samples - Common sample point list for each following value list.
-    free_line - FreeLineData with name and value data for free line trace in fanchart (e.g.
+    `Attributes:`
+    * `samples` - Common sample point list for each following value list.
+    * `free_line` - FreeLineData with name and value data for free line trace in fanchart (e.g.
      mean, median, etc.)
-    minimum_maximum - Paired optional minimum and maximum data for fanchart plotting
-    low_high - Paired optional low and high percentile names and data for fanchart plotting
+    * `minimum_maximum` - Paired optional minimum and maximum data for fanchart plotting
+    * `low_high` - Paired optional low and high percentile names and data for fanchart plotting
 
     """
 
@@ -138,8 +138,8 @@ def get_fanchart_traces(
     """
     Utility function for creating statistical fanchart traces
 
-    Takes 'data' with data for each statistical feature as input, and creates a list of traces for
-    each feature. Plotly plots traces from front to end of the list, thereby the last trace is
+    Takes `data` containing data for each statistical feature as input, and creates a list of traces
+    for each feature. Plotly plots traces from front to end of the list, thereby the last trace is
     plotted on top.
 
     Note that min and max, and high and low percentile are paired optional statistics. This implies
