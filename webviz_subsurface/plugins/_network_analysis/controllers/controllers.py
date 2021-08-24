@@ -47,6 +47,7 @@ def controllers(
         ]
         return node_options, node_options[0]["value"], realizations, 0
 
+    # pylint: disable=too-many-locals
     @app.callback(
         Output(get_uuid("graph"), "figure"),
         Input({"id": get_uuid("plot_controls"), "element": ALL}, "value"),
@@ -63,7 +64,7 @@ def controllers(
         plot_ctrl_ids: list,
         settings_ids: list,
         pr_plot_opts_ids: list,
-    ) -> Tuple[go.Figure, go.Figure]:
+    ) -> go.Figure:
         print("make chart")
         plot_ctrl = {
             id["element"]: value for id, value in zip(plot_ctrl_ids, plot_ctrl_vals)
@@ -89,11 +90,7 @@ def controllers(
         smry_ens = smry[smry.ENSEMBLE == ensemble]
         gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
         node_info = get_node_info(gruptree_ens, node_type, node, smry_ens.DATE.min())
-        return (
-            create_figure(node_info, smry_ens, settings, pr_plot_opts, theme)
-            # make_area_graph(node_info, smry_ens),
-            # make_node_pressure_graph(node_info, smry_ens, pr_plot_opts),
-        )
+        return create_figure(node_info, smry_ens, settings, pr_plot_opts, theme)
 
     @app.callback(
         Output(
@@ -105,7 +102,7 @@ def controllers(
             "value",
         ),
     )
-    def _show_hide_single_real_options(mean_or_single_real: str) -> bool:
+    def _show_hide_single_real_options(mean_or_single_real: str) -> Dict:
         if mean_or_single_real == "plot_mean":
             return {"display": "none"}
         return {"display": "block"}

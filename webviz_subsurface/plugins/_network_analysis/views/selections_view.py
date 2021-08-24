@@ -10,8 +10,8 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
         style={"height": "82vh"},
         children=[
             plot_controls(get_uuid("plot_controls"), ensembles),
-            settings(get_uuid("settings")),
             pressure_plot_options(get_uuid("pressure_plot_options")),
+            settings(get_uuid("settings")),
         ],
     )
 

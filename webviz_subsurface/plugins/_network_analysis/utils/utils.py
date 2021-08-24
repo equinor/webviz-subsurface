@@ -1,4 +1,3 @@
-import glob
 from typing import List, Dict, Any
 
 import pandas as pd
@@ -45,7 +44,7 @@ def get_node_info(
                 {
                     "start_date": start_date,
                     "end_date": None,
-                    "nodes": [get_node_field(node_type, node)],
+                    "nodes": [_get_node_field(node_type, node)],
                 }
             ],
         }
@@ -114,7 +113,6 @@ def _get_node_field(node_type: str, node: str) -> Dict[str, str]:
     * Name
     * Label to be used in pressure plot
     * Type: well, well_bhp or field_group
-
     """
     if node_type in ["field_group", "terminal_node"]:
         return {

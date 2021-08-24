@@ -16,23 +16,34 @@ from .controllers import controllers
 
 
 class NetworkAnalysis(WebvizPluginABC):
-    """Plugin to analyse network control modes and pressures.
+    """This plugins vizualizes network control modes and pressure.
 
-    Uses data from summary keywords:
+    ---
+    * **`ensembles`:** Which ensembles in `shared_settings` to include.
+    * **`sampling`:** Frequency for the data sampling.
+    * **`gruptree_file`:** `.csv` with gruptree information.
+    ---
+
+    **Summary data**
+
+    This plugin uses data from these summary keywords:
     * WMCTL:
     * GMCTP:
     * FMCTP
     * WTHP:
     * GPR:
 
-    and information about the network tree structure coming from
-    the gruptree export of `ecl2df`.
+    It is recommended to use monthly sampling of summary data.
 
-    ---
-    * **`ensembles`:** Which ensembles in `shared_settings` to include.
-    * **`sampling`:** Frequency for the data sampling.
-    * **`gruptree_file`:** `.csv` with gruptree
-    ---
+    **GRUPTREE input**
+
+    `gruptree_file` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/gruptree.csv"`).
+
+    The `gruptree_file` file can be dumped to disk per realization by a forward model in ERT that
+    wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
+    installed).
+    [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html)
 
     Gruptrees changing with time is supported, but trees that are varying
     over realizations is not supported.
@@ -88,9 +99,22 @@ class NetworkAnalysis(WebvizPluginABC):
         )
         return functions
 
-    # @property
-    # def tour_steps(self) -> List[dict]:
-    #     return [{}]
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.uuid("layout"),
+                "content": "Dashboard vizualizing Eclipse network control modes and pressures.",
+            },
+            {
+                "id": self.uuid("selections_layout"),
+                "content": "Menu for selecting ensemble, node and various plotting options.",
+            },
+            {
+                "id": self.uuid("graph"),
+                "content": "Vizualisation of network control modes and pressures.",
+            },
+        ]
 
     @property
     def layout(self) -> html.Div:

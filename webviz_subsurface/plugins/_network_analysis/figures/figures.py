@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 import itertools
 
 import pandas as pd
@@ -13,18 +13,34 @@ def create_figure(
     settings: dict,
     pressure_plot_options: dict,
     theme: WebvizConfigTheme,
-) -> dict:
+) -> Dict:
+    """Creates the plotly figure consisting of multiple subplots, possibly
+    sharing the same x-axis.
+    """
     node_name = node_info["name"]
     titles = [
-        f"Number of realizations on different control modes",
-        f"Network Pressures",
+        "Number of realizations on different control modes",
+        "Network Pressures",
     ]
+    rows = 2
+    display_ctrlmode_bar = False
+    row_heights = [0.5, 0.5]
+    if (
+        pressure_plot_options["mean_or_single_real"] == "single_real"
+        and "ctrlmode_bar" in pressure_plot_options["ctrlmode_bar"]
+    ):
+        rows = 3
+        display_ctrlmode_bar = True
+        row_heights = [0.46, 0.46, 0.08]
+        titles.append("Single realization control modes")
+
     fig = make_subplots(
-        rows=2,
+        rows=rows,
         cols=1,
         shared_xaxes=("shared_xaxes" in settings["shared_xaxes"]),
         vertical_spacing=0.1,
         subplot_titles=titles if titles else ["No vector selected"],
+        row_heights=row_heights,
     )
     theme_colors = theme.plotly_theme["layout"]["colorway"]
 
@@ -35,23 +51,20 @@ def create_figure(
 
     # Add traces
     add_ctrl_mode_traces(fig, node_info, smry_ctrlmodes)
-    max_pressure = add_network_pressure_traces(
+    add_network_pressure_traces(
         fig, node_info, smry, pressure_plot_options, theme_colors
     )
 
-    if (
-        pressure_plot_options["mean_or_single_real"] == "single_real"
-        and "ctrlmode_bar" in pressure_plot_options["ctrlmode_bar"]
-    ):
+    if display_ctrlmode_bar:
         add_ctrlmode_bar(
             fig,
             node_info,
             smry_ctrlmodes,
             pressure_plot_options["realization"],
-            max_pressure,
+            3,
         )
+        fig.update_yaxes(range=[0, 1], row=3, col=1, visible=False)
 
-    # Layout
     fig.update_layout(
         plot_bgcolor="white",
         title=f"Network Analysis for node: {node_name}",
@@ -63,8 +76,8 @@ def create_figure(
     return fig.to_dict()
 
 
-def add_ctrl_mode_traces(fig: go.Figure, node_info: dict, smry: pd.DataFrame):
-    """Description"""
+def add_ctrl_mode_traces(fig: go.Figure, node_info: dict, smry: pd.DataFrame) -> None:
+    """Adding area chart traces to the control modes subplot."""
     sumvec = node_info["ctrlmode_sumvec"]
     df = smry.groupby("DATE")[sumvec].value_counts().unstack().fillna(0).reset_index()
     df["Other"] = 0
@@ -95,9 +108,9 @@ def add_network_pressure_traces(
     smry: pd.DataFrame,
     pressure_plot_options: dict,
     theme_colors: list,
-) -> float:
-    """Description"""
-    max_pressure = 0
+) -> None:
+    """Adding line traces to the network pressures subplot."""
+
     color_iterator = itertools.cycle(theme_colors)
 
     for node_network in node_info["networks"]:
@@ -127,25 +140,23 @@ def add_network_pressure_traces(
                     row=2,
                     col=1,
                 )
-                max_pressure = max(max_pressure, df[sumvec].max())
             else:
                 print(f"Summary vector {sumvec} not in dataset.")
-    return max_pressure
 
 
-def add_ctrlmode_bar(fig, node_info, smry, real, max_pressure):
-    """Description"""
-
+def add_ctrlmode_bar(
+    fig: go.Figure, node_info: Dict, smry: pd.DataFrame, real: int, chart_row: int
+) -> None:
+    # pylint: disable=too-many-locals
+    """Adding area traces to the single realization control mode bar"""
     sumvec = node_info["ctrlmode_sumvec"]
-    node_type = node_info["type"]
-    categories = get_ctrlmode_categories(node_type)
+    categories = get_ctrlmode_categories(node_info["type"])
     df = smry[smry.REAL == real]
 
     prev_ctrlmode = df[df.DATE == df.DATE.min()][sumvec].values[0]
     ctrlmode_startdate = df.DATE.min()
     end_date = df.DATE.max()
     start_date = df.DATE.min()
-    value = max(10, int(max_pressure * 0.1))
 
     for _, row in df.iterrows():
         ctrlmode = row[sumvec]
@@ -161,10 +172,10 @@ def add_ctrlmode_bar(fig, node_info, smry, real, max_pressure):
                     row.DATE,
                     end_date,
                 ],
-                [0, 0, value, value, 0, 0],
+                [0, 0, 1, 1, 0, 0],
                 category["name"],
                 category["color"],
-                row=2,
+                row=chart_row,
                 showlegend=False,
                 linewidth=0,
             )
@@ -178,7 +189,10 @@ def get_filtered_smry(
     pressure_plot_options: dict,
     smry: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Description"""
+    """Filters the summary dataframe according to the valid
+    start and end dates for the network. Removing un-necessary rows/columns
+    and averaging over realizations if that option is selected.
+    """
     start_date = pd.to_datetime(node_network["start_date"])
     end_date = pd.to_datetime(node_network["end_date"])
     sumvecs = ["REAL", "DATE", ctrlmode_sumvec] + [
@@ -207,10 +221,10 @@ def add_area_trace(
     name: str,
     color: str,
     row: int,
-    showlegend=True,
-    linewidth=0.2,
+    showlegend: bool=True,
+    linewidth: float=0.2,
 ) -> go.Figure:
-    """Description"""
+    """Adding single area trace to subplot"""
     fig.add_trace(
         go.Scatter(
             x=x_series,
@@ -233,7 +247,7 @@ def add_area_trace(
 
 
 def get_ctrlmode_categories(node_type: str) -> dict:
-    """Description"""
+    """Returning name and color for the control mode values"""
     if node_type == "well":
         return {
             "0.0": {"name": "SHUT/STOP", "color": "#302f2f"},  # grey
