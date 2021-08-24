@@ -16,8 +16,8 @@ def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
     plotargs = set_default_args(**kwargs)
 
     fig: go.Figure = make_initial_figure(plot_type=plot_type, **plotargs)
-    fig = update_xaxes(fig, **plotargs)
-    fig = update_yaxes(fig, **plotargs)
+    fig = update_xaxes(fig, plot_type=plot_type, **plotargs)
+    fig = update_yaxes(fig, plot_type=plot_type, **plotargs)
     fig = update_layout(fig, **plotargs)
     fig = update_traces(fig, **plotargs)
     fig = for_each_annotation(fig, **plotargs)
@@ -62,7 +62,7 @@ def make_initial_figure(plot_type: str, **plotargs: Any) -> Callable:
     return plotfunc(**plotargs)
 
 
-def update_xaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
+def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
     data_frame = kwargs["data_frame"]
     facet_col = kwargs.get("facet_col")
     return figure.update_xaxes(
@@ -80,10 +80,11 @@ def update_xaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
         tickfont_size=max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
         if facet_col is not None
         else None,
+        fixedrange=plot_type == "distribution",
     ).update_xaxes(**kwargs.get("xaxis", {}))
 
 
-def update_yaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
+def update_yaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
     return figure.update_yaxes(
         showline=True,
         linewidth=2,
@@ -91,14 +92,14 @@ def update_yaxes(figure: go.Figure, **kwargs: Any) -> go.Figure:
         mirror=True,
         gridwidth=1,
         gridcolor="lightgrey",
+        fixedrange=plot_type == "distribution",
+        showticklabels=plot_type != "distribution",
     ).update_yaxes(**kwargs.get("yaxis", {}))
 
 
 def update_layout(figure: go.Figure, **kwargs: Any) -> go.Figure:
-    return (
-        figure.update_layout(plot_bgcolor="white")
-        .update_layout(bargap=0)
-        .update_layout(**kwargs.get("layout", {}))
+    return figure.update_layout(plot_bgcolor="white", bargap=0).update_layout(
+        **kwargs.get("layout", {})
     )
 
 

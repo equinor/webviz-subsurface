@@ -57,8 +57,7 @@ def parameter_qc_view(
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
-                flex=1,
-                children=wcc.Frame(
+                wcc.Frame(
                     style={"height": "80vh"},
                     children=selector_view(
                         get_uuid=get_uuid, parametermodel=parametermodel

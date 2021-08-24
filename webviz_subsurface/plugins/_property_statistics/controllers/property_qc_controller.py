@@ -20,9 +20,14 @@ def property_qc_controller(parent: "PropertyStatistics", app: dash.Dash) -> None
             "value",
         ),
         Input(parent.uuid("property-qc-plot-type"), "value"),
+        Input(parent.uuid("property-qc-axis-match"), "value"),
     )
     def _update_bars(
-        ensembles: Union[str, List[str]], prop: str, selectors: list, plot_type: str
+        ensembles: Union[str, List[str]],
+        prop: str,
+        selectors: list,
+        plot_type: str,
+        match_axis: List[str],
     ) -> Union[dash_table.DataTable, wcc.Graph]:
         ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
         if plot_type == "table":
@@ -54,5 +59,6 @@ def property_qc_controller(parent: "PropertyStatistics", app: dash.Dash) -> None
                 ensembles=ensembles,
                 selector_values=selectors,
                 plot_type=plot_type,
+                match_axis=bool(match_axis),
             ),
         )
