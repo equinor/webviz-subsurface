@@ -1,7 +1,13 @@
-from typing import Optional, Literal
+import sys
 from pathlib import Path
 from datetime import datetime
 from datetime import date
+
+if sys.version_info >= (3, 8):
+    from typing import Optional, Literal
+else:
+    from typing import Optional
+    from typing_extensions import Literal
 
 import pytest
 from _pytest.fixtures import SubRequest

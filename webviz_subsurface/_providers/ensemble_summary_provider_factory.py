@@ -1,10 +1,16 @@
-from typing import Dict, Optional, Literal
+import sys
 from pathlib import Path
 import os
 import hashlib
 import json
 from enum import Enum
 import logging
+
+if sys.version_info >= (3, 8):
+    from typing import Dict, Optional, Literal
+else:
+    from typing import Dict, Optional
+    from typing_extensions import Literal
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
