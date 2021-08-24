@@ -69,7 +69,7 @@ def get_plotly_traces_uncertainty_envelope(
     """Returns a set of plotly traces representing an uncertainty envelope
     for a surface"""
     stat_surfaces = {}
-    for calculation in ["Mean", "Min", "Max", "P10", "P90"]:
+    for calculation in ["Min", "Max", "P10", "P90"]:
         stat_surfaces[calculation] = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
