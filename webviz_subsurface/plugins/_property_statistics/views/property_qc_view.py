@@ -26,6 +26,14 @@ def selector_view(parent: "PropertyStatistics") -> html.Div:
             ],
         ),
         wcc.Selectors(
+            label="Plot options",
+            children=wcc.Checklist(
+                id=parent.uuid("property-qc-axis-match"),
+                options=[{"label": "Shared plot axis", "value": "shared_axis"}],
+                value=[],
+            ),
+        ),
+        wcc.Selectors(
             label="Filters",
             children=filter_selector(
                 parent=parent,
@@ -59,10 +67,9 @@ def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                                     vertical=False,
                                     id=parent.uuid("property-qc-plot-type"),
                                     options=[
-                                        {"label": "Histograms", "value": "histogram"},
                                         {
-                                            "label": "Bar per realization",
-                                            "value": "bar",
+                                            "label": "Distributions",
+                                            "value": "distribution",
                                         },
                                         {
                                             "label": "Point per realization",
@@ -74,7 +81,7 @@ def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                                         },
                                         {"label": "Statistics table", "value": "table"},
                                     ],
-                                    value="histogram",
+                                    value="distribution",
                                     labelStyle={
                                         "display": "inline-block",
                                         "margin": "5px",
