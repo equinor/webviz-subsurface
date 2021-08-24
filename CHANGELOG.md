@@ -10,11 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#708](https://github.com/equinor/webviz-subsurface/pull/708) - Added support for new report format for `DiskUsage`, which improves the estimate of free disk space.
 
 ### Changed
+- [#724](https://github.com/equinor/webviz-subsurface/pull/724) - Seperated out Tables as a new tab to `VolumetricAnalysis`
 - [#723](https://github.com/equinor/webviz-subsurface/pull/723) - Added custom option to allow free selection of responses shown in the tornadoplots in `VolumetricAnalysis`
 - [#717](https://github.com/equinor/webviz-subsurface/pull/717) - Keep zoom state in `ReservoirSimulationTimeseries` (inc `Regional` and `OneByOne`) and `RelativePermeability` plugins using `uirevision`.
-
-### Changed
-- [#724](https://github.com/equinor/webviz-subsurface/pull/724) - Seperated out Tables as a new tab to `VolumetricAnalysis`
+- [#707](https://github.com/equinor/webviz-subsurface/pull/707) - Generalized and improved some plot functions in  `PropertyStatistics`, `ParameterAnalysis` and `VolumetricAnalysis`. Replaced histogram with distribution plot in `PropertyStatistics`.
 
 ## [0.2.4] - 2021-07-13
 
