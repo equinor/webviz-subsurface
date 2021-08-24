@@ -35,9 +35,6 @@ class WellCompletions(WebvizPluginABC):
     """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
 
-    !> The plugin will not see lumps of completions that are shut using the WELOPEN keyword. \
-    This is being worked on and will be fixed in future relases.
-
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
@@ -55,7 +52,7 @@ class WellCompletions(WebvizPluginABC):
     **COMPDAT input**
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/wells/compdat.csv`).
+    `share/results/tables/compdat.csv`).
 
     The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
