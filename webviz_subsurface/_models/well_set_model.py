@@ -115,12 +115,6 @@ def load_well(
     lognames: Optional[List[str]] = None,
 ) -> xtgeo.Well:
     lognames = [] if not lognames else lognames
-    if zonelogname is not None and zonelogname not in lognames:
-        lognames.append(zonelogname)
-    if mdlogname is not None and mdlogname not in lognames:
-        lognames.append(mdlogname)
-    well = xtgeo.Well(
-        wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname, lognames=lognames
-    )
+    well = xtgeo.Well(wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname)
 
     return well
