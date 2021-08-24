@@ -13,7 +13,13 @@ from webviz_config import WebvizSettings
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from .._utils.unique_theming import unique_colors
-from .._utils.colors import hex_to_rgba
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
 
 class BhpQc(WebvizPluginABC):
@@ -238,7 +244,7 @@ class BhpQc(WebvizPluginABC):
             traces = []
             if plot_type == "Fan chart":
                 traces.extend(
-                    add_fanchart_traces(
+                    _get_fanchart_traces(
                         ens_stat_df=stat_df,
                         color=self.ens_colors[ensemble],
                         legend_group=ensemble,
@@ -364,74 +370,33 @@ def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     return stat_df
 
 
-def add_fanchart_traces(
+def _get_fanchart_traces(
     ens_stat_df: pd.DataFrame,
     color: str,
     legend_group: str,
 ) -> List[dict]:
     """Renders a fanchart for an ensemble vector"""
 
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
     x = [vec[5:] for vec in ens_stat_df.index]
 
-    return [
-        {
-            "name": legend_group,
-            "hovertext": "Maximum",
-            "x": x,
-            "y": ens_stat_df["max"],
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P90 (low)",
-            "x": x,
-            "y": ens_stat_df["low_p90"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "P10 (high)",
-            "x": x,
-            "y": ens_stat_df["high_p10"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Mean",
-            "x": x,
-            "y": ens_stat_df["mean"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertext": "Minimum",
-            "x": x,
-            "y": ens_stat_df["min"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
+    data = FanchartData(
+        samples=x,
+        low_high=LowHighData(
+            low_data=ens_stat_df["low_p90"].values,
+            low_name="P90 (low)",
+            high_data=ens_stat_df["high_p10"].values,
+            high_name="P10 (high)",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=ens_stat_df["min"].values,
+            maximum=ens_stat_df["max"].values,
+        ),
+        free_line=FreeLineData("Mean", ens_stat_df["mean"].values),
+    )
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        hovermode="x",
+    )

@@ -68,6 +68,7 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
+            "WellLogViewer = webviz_subsurface.plugins:WellLogViewer",
         ],
         "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
         "console_scripts": [
@@ -79,6 +80,7 @@ setup(
         "dash>=1.20.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
+        "dataclasses>=0.8; python_version<'3.7'",
         "defusedxml>=0.6.0",
         "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
@@ -89,6 +91,7 @@ setup(
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
+        "types-dataclasses>=0.1.5; python_version<'3.7'",
         "webviz-config>=0.3.1",
         "webviz-core-components>=0.5.1",
         "webviz-subsurface-components>=0.4.4",
