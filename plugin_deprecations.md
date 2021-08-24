@@ -1,48 +1,25 @@
-## Deprecated plugins
-### Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.4` of `webviz-subsurface`. 
+### webviz-subsurface package
 
-   
-These are plugins relevant within subsurface workflows. Most of them
-rely on the setting `scratch_ensembles` within
-`shared_settings`. This setting connects ensemble names (user defined)
-with the paths to where the ensembles are stored, either absolute or
-relative to the location of the configuration file.
-I.e. you could have
-```yaml
-title: Reek Webviz Demonstration
-shared_settings:
-  scratch_ensembles:
-    iter-0: /scratch/my_ensemble/realization-*/iter-0
-    iter-1: /scratch/my_ensemble/realization-*/iter-1
-pages:
-  - title: Front page
-    content:
-      - plugin: ReservoirSimulationTimeSeries
-        ensembles:
-          - iter-0
-          - iter-1
-```
+?> :bookmark: This documentation is valid for version `0.2.5rc0` of `webviz-subsurface`.
 
- 
+
 
 ---
 
-
-
 <div class="plugin-doc">
 
-##### HorizonUncertaintyViewer
+#### HorizonUncertaintyViewer
 
-> :warning: Plugin 'HorizonUncertaintyViewer' has been deprecated.
+<details>
+  <summary markdown="span"> :warning: Plugin 'HorizonUncertaintyViewer' has been deprecated.</summary>
 
-Relevant functionality is implemented in the StructuralUncertainty plugin.
-
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -58,27 +35,19 @@ Polylines are drawn interactivly in map view.
 * **`planned_wells_dir`:** Path to folder with planned well files.
    Make sure that all planned wells have format 'ROXAR RMS well'.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`basedir`:** 
-
-*Required, type str (corresponding to a path)*
 
 
----
 
-* **`planned_wells_dir`:** 
 
-*default = null, Optional, type str (corresponding to a path)*
+
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - HorizonUncertaintyViewer:
@@ -86,26 +55,25 @@ How to use in YAML config file:
         planned_wells_dir:  # Optional, type str (corresponding to a path).
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
 
-
-
 <div class="plugin-doc">
 
-##### InplaceVolumes
+#### InplaceVolumes
 
-> :warning: Plugin 'InplaceVolumes' has been deprecated.
+<details>
+  <summary markdown="span"> :warning: Plugin 'InplaceVolumes' has been deprecated.</summary>
 
-Relevant functionality is implemented in the VolumetricAnalysis plugin.
-
+  Relevant functionality is implemented in the VolumetricAnalysis plugin.
+</details>
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -116,48 +84,39 @@ Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file). **Using data stored per realization**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file).
+
+**Using data stored per realization**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`volfiles`:**  Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`.
+Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+* **`volfolder`:** Local folder for the `volfiles`.
 
-*default = null, Optional, type list*
-
-
----
-
-* **`volfiles`:** Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`. Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
-
-*default = null, Optional, type dict*
-
-
----
-
-* **`volfolder`:** Local folder for the `volfiles`. **Common settings for both input options**
-
-*default = "share/results/volumes", Optional, type str*
-
-
----
-
+**Common settings for both input options**
 * **`response`:** Optional volume response to visualize initially.
 
-*default = "STOIIP_OIL", Optional, type str*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - InplaceVolumes:
@@ -168,7 +127,7 @@ How to use in YAML config file:
         response:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -205,26 +164,25 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 * `RECOVERABLE_OIL`: Recoverable Volume (Oil)
 * `RECOVERABLE_GAS`: Recoverable Volume (Gas)
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
 
-
-
 <div class="plugin-doc">
 
-##### InplaceVolumesOneByOne
+#### InplaceVolumesOneByOne
 
-> :warning: Plugin 'InplaceVolumesOneByOne' has been deprecated.
+<details>
+  <summary markdown="span"> :warning: Plugin 'InplaceVolumesOneByOne' has been deprecated.</summary>
 
-Relevant functionality is implemented in the VolumetricAnalysis plugin.
-
+  Relevant functionality is implemented in the VolumetricAnalysis plugin.
+</details>
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -235,55 +193,36 @@ or as ensemble name(s) defined in `shared_settings` and volumetric `csv` files
 stored per realization.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`csvfile_vol`:** Aggregated csvfile for volumes with `REAL`, `ENSEMBLE` and `SOURCE` columns.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`csvfile_parameters`:** Aggregated csvfile of parameters for sensitivity information with `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize (not to be used with `csvfile_vol` and `csvfile_parameters`).
-
-*default = null, Optional, type list*
-
-
----
-
-* **`volfiles`:** Key/value pair of csv files when using `ensembles`. E.g. `{geogrid: geogrid--oil.csv}`.
-
-*default = null, Optional, type dict*
-
-
----
-
+* **`csvfile_parameters`:** Aggregated csvfile of parameters for sensitivity information with   `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns.
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize (not to be used with   `csvfile_vol` and `csvfile_parameters`).
+* **`volfiles`:**  Key/value pair of csv files when using `ensembles`.   E.g. `{geogrid: geogrid--oil.csv}`.
 * **`volfolder`:** Optional local folder for the `volfiles`.
-
-*default = "share/results/volumes", Optional, type str*
-
-
----
-
 * **`response`:** Optional volume response to visualize initially.
 
-*default = "STOIIP_OIL", Optional, type str*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - InplaceVolumesOneByOne:
@@ -295,7 +234,7 @@ How to use in YAML config file:
         response:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -342,26 +281,25 @@ as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.
 An example of an aggregated file to use with `csvfile_parameters`
 [can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
 
-
-
 <div class="plugin-doc">
 
-##### WellCrossSection
+#### WellCrossSection
 
-> :warning: Plugin 'WellCrossSection' has been deprecated.
+<details>
+  <summary markdown="span"> :warning: Plugin 'WellCrossSection' has been deprecated.</summary>
 
-Relevant functionality is implemented in the StructuralUncertainty plugin.
-
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -370,90 +308,50 @@ and optionally seismic cubes.
 
 !> See also WellCrossSectionFMU for additional functionality with FMU ensembles.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`surfacefiles`:** List of file paths to Irap binary surfaces (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
 
 
----
-
-* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
 
 
----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 * **`segyfiles`:** List of file paths to segyfiles (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
+* **`surfacefiles`:** List of file paths to Irap binary surfaces (absolute or relative to config file).
 * **`surfacenames`:** Corresponding list of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`zonelog`:** Name of zonelog (for the RMS wells in `wellfiles`).
-
-*default = null, Optional, type str*
-
-
----
-
+* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional, type str*
-
-
----
-
+* **`zonelog`:** Name of zonelog (for the RMS wells in `wellfiles`).
 * **`zmin`:** Visualized minimum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zmax`:** Visualized maximum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zonemin`:** First zonenumber to draw in log.
-
-*default = 1, Optional, type int*
-
-
----
-
-* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. with distance of sampling=20 and nextend=2: extension=2*20 (nextend*sampling).
-
-*default = 2, Optional, type int*
-
-
----
-
 * **`sampling`:** Sampling interval of well fence.
-
-*default = 40, Optional, type int*
+* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. with distance of sampling=20 and nextend=2: extension=2*20 (nextend*sampling). 
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - WellCrossSection:
@@ -470,7 +368,7 @@ How to use in YAML config file:
         sampling:  # Optional, type int.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -487,26 +385,25 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
 
-
-
 <div class="plugin-doc">
 
-##### WellCrossSectionFMU
+#### WellCrossSectionFMU
 
-> :warning: Plugin 'WellCrossSectionFMU' has been deprecated.
+<details>
+  <summary markdown="span"> :warning: Plugin 'WellCrossSectionFMU' has been deprecated.</summary>
 
-Relevant functionality is implemented in the StructuralUncertainty plugin.
-
+  Relevant functionality is implemented in the StructuralUncertainty plugin.
+</details>
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -516,132 +413,68 @@ Statistical surfaces are calculated automatically from surfaces stored
 per realization.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`surfacefiles`:** Surface file names (without folder).
-
-*Required, type list*
-
-
----
-
 * **`surfacenames`:** List corresponding to `surfacefiles` of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`surfacefolder`:** Realization relative folder containing the `surfacefiles`.
-
-*default = "share/results/maps", Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
 * **`wellfolder`:** Alternative to `wellfiles`: provide a folder with RMS wells. (absolute or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellsuffix`:** File suffix for wells in `wellfolder`.
-
-*default = ".w", Optional, type str*
-
-
----
-
 * **`segyfiles`:** List of file paths to `segyfiles` (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
-* **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
-
-*default = null, Optional, type str*
-
-
----
-
-* **`marginal_logs`:** Logs in `wellfiles` to be displayed in separate horizontal plot.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional, type str*
-
-
----
-
+* **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
+* **`marginal_logs`:** Logs in `wellfiles` to be displayed in separate horizontal plot.
 * **`zmin`:** Visualized minimum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zmax`:** Visualized maximum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zonemin`:** First zonenumber to draw in zone log.
-
-*default = 1, Optional, type int*
-
-
----
-
-* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. `sampling=20` and `nextend=2` results in `extension=20*2`.
-
-*default = 2, Optional, type int*
-
-
----
-
 * **`sampling`:** Horizontal sampling interval.
+* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. `sampling=20` and `nextend=2` results in `extension=20*2`. * **`colors`:** List of hex colors corresponding to surfaces. Note that apostrophies     should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
 
-*default = 40, Optional, type int*
 
 
 ---
-
-* **`colors`:** List of hex colors corresponding to surfaces. Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
-
-*default = null, Optional, type list*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - WellCrossSectionFMU:
@@ -664,7 +497,7 @@ How to use in YAML config file:
         colors:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -681,10 +514,11 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
+
 
 

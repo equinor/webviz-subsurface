@@ -1,12 +1,10 @@
 # Plugin project webviz-config
 
-?> :bookmark: This documentation is valid for version `0.3.3` of `webviz-config`. 
+?> :bookmark: This documentation is valid for version `0.3.4rc0` of `webviz-config`.
 
- 
+
 
 ---
-
-
 
 <div class="plugin-doc">
 
@@ -14,7 +12,7 @@
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -22,48 +20,32 @@ Adds a full width banner image, with an optional overlayed title.
 Useful on e.g. the front page for introducing a field or project.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`image`:** Path to the picture you want to add. Either absolute path or relative to the configuration file.
-
-*Required, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+* **`image`:** Path to the picture you want to add.                Either absolute path or relative to the configuration file.
 * **`title`:** Title which will be overlayed over the banner image.
-
-*default = "", Optional, type str*
-
-
----
-
 * **`color`:** Color to be used for the font.
-
-*default = "white", Optional, type str*
-
-
----
-
 * **`shadow`:** Set to `False` if you do not want text shadow for the title.
-
-*default = true, Optional, type bool*
-
-
----
-
 * **`height`:** Height of the banner image (in pixels).
 
-*default = 300, Optional, type int*
-
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - BannerImage:
@@ -74,13 +56,11 @@ How to use in YAML config file:
         height:  # Optional, type int.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -88,7 +68,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -96,41 +76,29 @@ Adds a table to the webviz instance, using tabular data from a provided csv file
 If feature is requested, the data could also come from a database.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute path or relative to the configuration file.
-
-*Required, type str (corresponding to a path)*
 
 
----
-
-* **`sorting`:** If `True`, the table can be sorted interactively based on data in the individual columns.
-
-*default = true, Optional, type bool*
 
 
----
 
-* **`filtering`:** If `True`, the table can be filtered based on values in the individual columns.
 
-*default = true, Optional, type bool*
+
+
+
+
+
+* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute               path or relative to the configuration file.
+* **`sorting`:** If `True`, the table can be sorted interactively based              on data in the individual columns.
+* **`filtering`:** If `True`, the table can be filtered based on values in the                individual columns.
+* **`pagination`:** If `True`, only a subset of the table is displayed at once.                 Different subsets can be viewed from 'previous/next' buttons
 
 
 ---
-
-* **`pagination`:** If `True`, only a subset of the table is displayed at once. Different subsets can be viewed from 'previous/next' buttons
-
-*default = true, Optional, type bool*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - DataTable:
@@ -140,13 +108,11 @@ How to use in YAML config file:
         pagination:  # Optional, type bool.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -154,7 +120,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -162,34 +128,26 @@ Embeds a given PDF file into the page.
 
 !> Webviz does not scan your PDF for malicious code. Make sure it comes from a trusted source.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`pdf_file`:** Path to the PDF file to include. Either absolute path or relative to the configuration file.
-
-*Required, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+* **`pdf_file`:** Path to the PDF file to include. Either absolute path or   relative to the configuration file.
 * **`height`:** Height of the PDF object (in percent of viewport height).
-
-*default = 80, Optional, type int*
-
-
----
-
 * **`width`:** Width of the PDF object (in percent of available space).
 
-*default = 100, Optional, type int*
-
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - EmbedPdf:
@@ -198,13 +156,11 @@ How to use in YAML config file:
         width:  # Optional, type int.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -212,34 +168,35 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Renders and includes the content from a Markdown file.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`markdown_file`:** Path to the markdown file to render and include. Either absolute path or relative to the configuration file.
 
-*Required, type str (corresponding to a path)*
+
+
+
+
+* **`markdown_file`:** Path to the markdown file to render and include.                         Either absolute path or relative to the configuration file.
+
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - Markdown:
         markdown_file:  # Required, type str (corresponding to a path).
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -252,13 +209,11 @@ relative paths to the markdown file itself, or as absolute paths.
 > ![width=40%,height=300px](./example_banner.png "Some caption")
 > ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -266,34 +221,30 @@ relative paths to the markdown file itself, or as absolute paths.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Adds a pivot table to the webviz instance, using tabular data from a         provided csv file.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute path or relative to the configuration file.
 
-*Required, type str (corresponding to a path)*
+
+
+
+
+
+
+* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute                   path or relative to the configuration file.
+* **`options`:** Additional options for the plot. See [dash-pivottable documentation]    (https://github.com/plotly/dash-pivottable#references) for all possible options.
 
 
 ---
-
-* **`options`:** Additional options for the plot. See [dash-pivottable documentation] (https://github.com/plotly/dash-pivottable#references) for all possible options.
-
-*default = null, Optional, type dict*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - PivotTable:
@@ -301,13 +252,11 @@ How to use in YAML config file:
         options:  # Optional, type dict.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -315,34 +264,30 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Adds support for syntax highlighting of code. Language is automatically detected.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
 * **`filename`:** Path to a file containing the code to highlight.
-
-*Required, type str (corresponding to a path)*
-
-
----
-
-* **`dark_theme`:** If `True`, the code is shown with a dark theme. Default is `False`, giving a light theme.
-
-*default = false, Optional, type bool*
+* **`dark_theme`:** If `True`, the code is shown with a dark theme. Default is                 `False`, giving a light theme.
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SyntaxHighlighter:
@@ -350,13 +295,11 @@ How to use in YAML config file:
         dark_theme:  # Optional, type bool.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -364,7 +307,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -372,55 +315,35 @@ Adds a plotter to the webviz instance, using tabular data from a provided csv fi
 If feature is requested, the data could also come from a database.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csv_file`:** Path to the csv file containing the tabular data. Either absolute path or relative to the configuration file.
-
-*Required, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+
+
+* **`csv_file`:** Path to the csv file containing the tabular data.                   Either absolute path or relative to the configuration file.
 * **`plot_options`:** A dictionary of plot options to initialize the plot with.
-
-*default = null, Optional, type dict*
-
-
----
-
 * **`filter_cols`:** Dataframe columns that can be used to filter data.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`filter_defaults`:** A dictionary with column names as keys, and a list of column values that should be preselected in the filter. If a columm is not defined, all values are preselected for the column.
-
-*default = null, Optional, type dict*
+* **`filter_defaults`:** A dictionary with column names as keys,                          and a list of column values that should be preselected in the filter.                          If a columm is not defined, all values are preselected for the column.
+* **`column_color_discrete_maps`:** A dictionary with column names as keys,                                     each key containing a new dictionary with the columns                                     unique values as keys, and the color they should be                                     plotted with as value. Hex values needs quotes ''                                     to not be read as a comment.
+* **`lock`:** If `True`, only the plot is shown,               all dropdowns for changing plot options are hidden.
 
 
 ---
-
-* **`column_color_discrete_maps`:** A dictionary with column names as keys, each key containing a new dictionary with the columns unique values as keys, and the color they should be plotted with as value. Hex values needs quotes '' to not be read as a comment.
-
-*default = null, Optional, type dict*
-
-
----
-
-* **`lock`:** If `True`, only the plot is shown, all dropdowns for changing plot options are hidden.
-
-*default = false, Optional, type bool*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - TablePlotter:
@@ -432,9 +355,8 @@ How to use in YAML config file:
         lock:  # Optional, type bool.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-

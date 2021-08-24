@@ -1,34 +1,10 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.4` of `webviz-subsurface`. 
+?> :bookmark: This documentation is valid for version `0.2.5rc0` of `webviz-subsurface`.
 
-   
-These are plugins relevant within subsurface workflows. Most of them
-rely on the setting `scratch_ensembles` within
-`shared_settings`. This setting connects ensemble names (user defined)
-with the paths to where the ensembles are stored, either absolute or
-relative to the location of the configuration file.
-I.e. you could have
-```yaml
-title: Reek Webviz Demonstration
-shared_settings:
-  scratch_ensembles:
-    iter-0: /scratch/my_ensemble/realization-*/iter-0
-    iter-1: /scratch/my_ensemble/realization-*/iter-1
-pages:
-  - title: Front page
-    content:
-      - plugin: ReservoirSimulationTimeSeries
-        ensembles:
-          - iter-0
-          - iter-1
-```
 
- 
 
 ---
-
-
 
 <div class="plugin-doc">
 
@@ -36,7 +12,7 @@ pages:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -44,27 +20,24 @@ Visualize parameter distribution change prior to posterior     per observation g
 This is done by using a     [KS (Kolmogorov Smirnov) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test)     matrix, and scatter plot/map for any given pair of parameter/observation.     KS values are between 0 and 1.     The closer to zero the KS value is, the smaller the change in parameter distribution     between prior/posterior and vice-versa.     The top 10 biggest parameters change are also shown in a table.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`input_dir`:** Path to the directory where the `csv` files created by the `AHM_ANALYSIS` ERT postprocess workflow are stored
 
-*Required, type str (corresponding to a path)*
+
+
+
+
+
+
+* **`input_dir`:** Path to the directory where the `csv` files created         by the `AHM_ANALYSIS` ERT postprocess workflow are stored
+* **`ks_filter`:** optional argument to filter output to the data table based on ks value,         only values above entered value will be displayed in the data table.         This can be used if needed to speed-up vizualization of cases with         high number of parameters and/or observations group. Default value is 0.0.
+
 
 
 ---
-
-* **`ks_filter`:** optional argument to filter output to the data table based on ks value, only values above entered value will be displayed in the data table. This can be used if needed to speed-up vizualization of cases with high number of parameters and/or observations group. Default value is 0.0.
-
-*default = 0.0, Optional, type float*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - AssistedHistoryMatchingAnalysis:
@@ -72,7 +45,7 @@ How to use in YAML config file:
         ks_filter:  # Optional, type float.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -81,13 +54,11 @@ How to use in YAML config file:
 ?> The input_dir      is where the results (csv files) from     the ERT `AHM_ANALYSIS` worflow are stored.
 ?> The ks_filter value should typically be between 0 and 0.5.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -95,7 +66,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -105,27 +76,22 @@ Can be used to check if your simulated BHPs are in a realistic range.
 E.g. check if your simulated bottom hole pressures are very low in producers,
 or very high injectors.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 
-*Required, type list*
-
 
 ---
-
-* **`wells`:** 
-
-*default = null, Optional, type Union[typing.List[str], NoneType]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - BhpQc:
@@ -133,7 +99,7 @@ How to use in YAML config file:
         wells:  # Optional, type Union[typing.List[str], NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -143,13 +109,11 @@ might cover extreme BHP values.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the     individual realizations. You should therefore not have more than one `UNSMRY` file in this     folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -157,34 +121,32 @@ might cover extreme BHP values.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Visualize disk usage in a FMU project. It adds a dashboard showing disk usage per user.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
 * **`scratch_dir`:** Path to the scratch directory to show disk usage for.
+* **`date`:** Date as string of form YYYY-MM-DD to request an explisit date. Default is to
+to use the most recent file avaialable, limited to the last week.
 
-*Required, type str (corresponding to a path)*
 
 
 ---
-
-* **`date`:** Date as string of form YYYY-MM-DD to request an explisit date. Default is to to use the most recent file avaialable, limited to the last week.
-
-*default = null, Optional, type Union[_ForwardRef('str'), NoneType]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - DiskUsage:
@@ -192,7 +154,7 @@ How to use in YAML config file:
         date:  # Optional, type Union[_ForwardRef('str'), NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -205,13 +167,11 @@ from the last week.
 The csv file must have the columns `userid` and `usageKB` (where KB means
 [kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -219,34 +179,31 @@ The csv file must have the columns `userid` and `usageKB` (where KB means
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Visualizes the quality of the history match.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
 * **`ensembles`:** List of the ensembles in `shared_settings` to visualize.
-
-*Required, type List[str]*
-
-
----
-
 * **`observation_file`:** Path to the observation `.yaml` file (absolute or relative to config file).
 
-*Required, type str (corresponding to a path)*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - HistoryMatch:
@@ -254,7 +211,7 @@ How to use in YAML config file:
         observation_file:  # Required, type str (corresponding to a path).
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -263,13 +220,11 @@ of the individual realizations of your given `ensembles`, using the `fmu-ensembl
 
 ?> The `observation_file` is a common (optional) file for all ensembles, which can be converted from e.g. ERT and ResInsight formats using the [fmuobs](https://equinor.github.io/subscript/scripts/fmuobs.html) script. [An example of the format can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/observations/observations.yml).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -283,7 +238,7 @@ of the individual realizations of your given `ensembles`, using the `fmu-ensembl
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -299,27 +254,19 @@ Polylines are drawn interactivly in map view.
 * **`planned_wells_dir`:** Path to folder with planned well files.
    Make sure that all planned wells have format 'ROXAR RMS well'.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`basedir`:** 
-
-*Required, type str (corresponding to a path)*
 
 
----
 
-* **`planned_wells_dir`:** 
 
-*default = null, Optional, type str (corresponding to a path)*
+
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - HorizonUncertaintyViewer:
@@ -327,13 +274,11 @@ How to use in YAML config file:
         planned_wells_dir:  # Optional, type str (corresponding to a path).
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -347,7 +292,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -358,48 +303,39 @@ Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file). **Using data stored per realization**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file).
+
+**Using data stored per realization**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`volfiles`:**  Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`.
+Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+* **`volfolder`:** Local folder for the `volfiles`.
 
-*default = null, Optional, type list*
-
-
----
-
-* **`volfiles`:** Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`. Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
-
-*default = null, Optional, type dict*
-
-
----
-
-* **`volfolder`:** Local folder for the `volfiles`. **Common settings for both input options**
-
-*default = "share/results/volumes", Optional, type str*
-
-
----
-
+**Common settings for both input options**
 * **`response`:** Optional volume response to visualize initially.
 
-*default = "STOIIP_OIL", Optional, type str*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - InplaceVolumes:
@@ -410,7 +346,7 @@ How to use in YAML config file:
         response:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -447,13 +383,11 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 * `RECOVERABLE_OIL`: Recoverable Volume (Oil)
 * `RECOVERABLE_GAS`: Recoverable Volume (Gas)
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -467,7 +401,7 @@ All names are allowed (except those mentioned above, in addition to `REAL` and `
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -478,55 +412,36 @@ or as ensemble name(s) defined in `shared_settings` and volumetric `csv` files
 stored per realization.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`csvfile_vol`:** Aggregated csvfile for volumes with `REAL`, `ENSEMBLE` and `SOURCE` columns.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`csvfile_parameters`:** Aggregated csvfile of parameters for sensitivity information with `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize (not to be used with `csvfile_vol` and `csvfile_parameters`).
-
-*default = null, Optional, type list*
-
-
----
-
-* **`volfiles`:** Key/value pair of csv files when using `ensembles`. E.g. `{geogrid: geogrid--oil.csv}`.
-
-*default = null, Optional, type dict*
-
-
----
-
+* **`csvfile_parameters`:** Aggregated csvfile of parameters for sensitivity information with   `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns.
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize (not to be used with   `csvfile_vol` and `csvfile_parameters`).
+* **`volfiles`:**  Key/value pair of csv files when using `ensembles`.   E.g. `{geogrid: geogrid--oil.csv}`.
 * **`volfolder`:** Optional local folder for the `volfiles`.
-
-*default = "share/results/volumes", Optional, type str*
-
-
----
-
 * **`response`:** Optional volume response to visualize initially.
 
-*default = "STOIIP_OIL", Optional, type str*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - InplaceVolumesOneByOne:
@@ -538,7 +453,7 @@ How to use in YAML config file:
         response:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -585,13 +500,11 @@ as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.
 An example of an aggregated file to use with `csvfile_parameters`
 [can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -599,97 +512,55 @@ An example of an aggregated file to use with `csvfile_parameters`
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 General line plotter for FMU data
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile`:** Relative path to Csv file stored per realization
-
-*default = null, Optional, type str*
 
 
----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`aggregated_csvfile`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`aggregated_parameterfile`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`observation_file`:** Yaml file with observations
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
+* **`csvfile`:** Relative path to Csv file stored per realization
+ * **`observation_file`:** Yaml file with observations
 * **`observation_group`:** Top-level key in observation file.
-
-*default = "general", Optional, type str*
-
-
----
-
 * **`remap_observation_keys`:** Remap observation keys to columns in csv file
-
-*default = null, Optional, type Dict[str, str]*
-
-
----
-
 * **`remap_observation_values`:** Remap observation values to columns in csv file
-
-*default = null, Optional, type Dict[str, str]*
-
-
----
-
 * **`colors`:** Set colors for each ensemble
-
-*default = null, Optional, type Dict*
-
-
----
-
 * **`initial_data`:** Initialize data selectors (x,y,ensemble, parameter)
-
-*default = null, Optional, type Dict*
-
-
----
-
 * **`initial_layout`:** Initialize plot layout (x and y axis direction and type)
 
-*default = null, Optional, type Dict*
-
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - LinePlotterFMU:
@@ -706,13 +577,11 @@ How to use in YAML config file:
         initial_layout:  # Optional, type Dict.
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -720,7 +589,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -730,40 +599,39 @@ influence model response, both individually and through interaction
 effect with other parameters.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
 * **`csv_file`:** Input data on csv format.
 
-*Required, type str (corresponding to a path)*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - MorrisPlot:
         csv_file:  # Required, type str (corresponding to a path).
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
 
 [Example of input file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/morris.csv).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -771,7 +639,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -780,55 +648,43 @@ This plugin visualizes parameter distributions and statistics. /
     on reservoir simulation time series data.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
+
+**Using aggregated data**
+* **`csvfile_parameters`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns.     (absolute path or relative to config file).
+* **`csvfile_smry`:** (Optional) Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE`     and vector columns (absolute path or relative to config file).
+
+**Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 
-*default = null, Optional, type Union[list, NoneType]*
+**Common settings for all input options**
+* **`drop_constants`:** Bool used to determine if constant parameters should be dropped.     Default is True.
+
 
 
 ---
-
-* **`csvfile_parameters`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns. (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`csvfile_smry`:** (Optional) Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and vector columns (absolute path or relative to config file). **Using raw ensemble data stored in realization folders**
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or `yearly`. **Common settings for all input options**
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`column_keys`:** List of vectors to extract. If not given, all vectors from the simulations will be extracted. Wild card asterisk `*` can be used.
-
-*default = null, Optional, type Union[list, NoneType]*
-
-
----
-
-* **`drop_constants`:** Bool used to determine if constant parameters should be dropped. Default is True.
-
-*default = true, Optional, type bool*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - ParameterAnalysis:
@@ -840,7 +696,7 @@ How to use in YAML config file:
         drop_constants:  # Optional, type bool.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -860,13 +716,11 @@ realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
 
 ?> Aggregated data may speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -874,7 +728,7 @@ realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -882,27 +736,24 @@ Shows parameter correlations using a correlation matrix,
 and scatter plot for any given pair of parameters.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`drop_constants`:** Drop constant parameters.
 
-*default = true, Optional, type bool*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - ParameterCorrelation:
@@ -910,20 +761,18 @@ How to use in YAML config file:
         drop_constants:  # Optional, type bool.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
 Parameter values are extracted automatically from the `parameters.txt` files in the individual
 realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -931,7 +780,7 @@ realizations of your defined `ensembles`, using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -944,27 +793,27 @@ Input can be given either as an aggregated `csv` file with parameter information
 or as ensemble name(s) defined in `shared_settings`.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns. (absolute path or relative to config file). **Reading data from ensembles**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns.  (absolute path or relative to config file).
+
+**Reading data from ensembles**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 
-*default = null, Optional, type list*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - ParameterDistribution:
@@ -972,7 +821,7 @@ How to use in YAML config file:
         ensembles:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -982,13 +831,11 @@ realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
 When using an aggregated `csvfile`, you need to have the columns `REAL`, `ENSEMBLE`
 and the parameter columns.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -996,7 +843,7 @@ and the parameter columns.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -1009,97 +856,79 @@ Useful to investigate:
 !> At least two parameters have to be selected to make the plot work.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` implies that the input data should be time series data from simulation `.UNSMRY` files, read using `fmu-ensemble`.
-
-*default = null, Optional, type list*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
+
+**Using aggregated data**
 * **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
 
-*default = null, Optional, type str (corresponding to a path)*
+
+**Using a response file per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be                     combined with `response_csv` and `parameter_csv`).
+* Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file`                 implies that the input data should be time series data from simulation `.UNSMRY`                 files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be                 used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from                `.UNSMRY`-files (default is monthly).
+* Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter    of type `single` (as defined below under `response_filters`).
+
+**Using the plugin without responses**
+It is possible to use the plugin with only parameter data, in that case set the option `no_responses` to True, and give either `ensembles` or `parameter_csv` as input as described above. Response coloring and filtering will then not be available.
+
+**Common settings for responses**
+All of these are optional, some have defaults seen in the code snippet below.
+
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation                        vectors) that can be used as row filtering before aggregation.                        Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore                       (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include                        (cannot use with response_ignore).
+* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
+
+Parameter values are extracted automatically from the `parameters.txt` files in the individual
+realizations of your defined `ensembles`, using the `fmu-ensemble` library.
+
 
 
 ---
-
-* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file). **Using a response file per realization**
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be combined with `response_csv` and `parameter_csv`). * Parameter values are extracted automatically from the `parameters.txt` files in the individual realizations of your defined `ensembles`, using the `fmu-ensemble` library. **Using simulation time series data directly from `UNSMRY` files as responses**
-
-*default = null, Optional, type str*
-
-
----
-
-* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation vectors) that can be used as row filtering before aggregation. Valid options: * `single`: Dropdown with single selection. * `multi`: Dropdown with multiple selection. * `range`: Slider with range selection.
-
-*default = null, Optional, type dict*
-
-
----
-
-* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore (cannot use with response_include).
-
-*default = null, Optional, type list*
-
-
----
-
-* **`response_include`:** List of response (columns in csv or simulation vectors) to include (cannot use with response_ignore).
-
-*default = null, Optional, type list*
-
-
----
-
-* **`parameter_ignore`:** 
-
-*default = null, Optional, type list*
-
-
----
-
-* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading from UNSMRY-files in the defined ensembles (default is all vectors). * can be used as wild card.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from `.UNSMRY`-files (default is monthly). * Parameter values are extracted automatically from the `parameters.txt` files in the individual realizations of your defined `ensembles`, using the `fmu-ensemble` library. ?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter of type `single` (as defined below under `response_filters`). **Using the plugin without responses** It is possible to use the plugin with only parameter data, in that case set the option `no_responses` to True, and give either `ensembles` or `parameter_csv` as input as described above. Response coloring and filtering will then not be available. **Common settings for responses** All of these are optional, some have defaults seen in the code snippet below.
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`. Parameter values are extracted automatically from the `parameters.txt` files in the individual realizations of your defined `ensembles`, using the `fmu-ensemble` library.
-
-*default = "sum", Optional, type str*
-
-
----
-
-* **`no_responses`:** 
-
-*default = false, Optional*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - ParameterParallelCoordinates:
@@ -1117,7 +946,7 @@ How to use in YAML config file:
         no_responses:  # Optional.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1153,13 +982,11 @@ using the `fmu-ensemble` library.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1167,97 +994,78 @@ using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Visualizes correlations between numerical input parameters and responses.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
+
+**Using aggregated data**
 * **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file). **Using a response file per realization**
-
-*default = null, Optional, type str (corresponding to a path)*
+* **`response_csv`:** Aggregated csvfile for response parameters with `REAL` and `ENSEMBLE` columns (absolute path or relative to config file).
 
 
----
-
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` implies that the input data should be time series data from simulation `.UNSMRY` files, read using `fmu-ensemble`.
-
-*default = null, Optional, type list*
+**Using a response file per realization**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be                     combined with `response_csv` and `parameter_csv`).
 
 
----
+**Using simulation time series data directly from `UNSMRY` files as responses**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file`                 implies that the input data should be time series data from simulation `.UNSMRY`                 files, read using `fmu-ensemble`.
+* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be                 used as wild card.
+* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from                `.UNSMRY`-files (default is monthly).
 
-* **`response_file`:** Local (per realization) csv file for response parameters (Cannot be combined with `response_csv` and `parameter_csv`). **Using simulation time series data directly from `UNSMRY` files as responses**
-
-*default = null, Optional, type str*
-
-
----
-
-* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation vectors) that can be used as row filtering before aggregation. Valid options: * `single`: Dropdown with single selection. * `multi`: Dropdown with multiple selection. * `range`: Slider with range selection.
-
-*default = null, Optional, type dict*
+?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter    of type `single` (as defined below under `response_filters`).
 
 
----
+**Common settings for all input options**
 
-* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore (cannot use with response_include).
+All of these are optional, some have defaults seen in the code snippet below.
 
-*default = null, Optional, type list*
-
-
----
-
-* **`response_include`:** List of response (columns in csv or simulation vectors) to include (cannot use with response_ignore).
-
-*default = null, Optional, type list*
-
-
----
-
-* **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading from UNSMRY-files in the defined ensembles (default is all vectors). * can be used as wild card.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`sampling`:** (Optional) sampling frequency when reading simulation data directly from `.UNSMRY`-files (default is monthly). ?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter of type `single` (as defined below under `response_filters`). **Common settings for all input options** All of these are optional, some have defaults seen in the code snippet below.
-
-*default = "monthly", Optional, type str*
-
-
----
-
+* **`response_filters`:** Optional dictionary of responses (columns in csv file or simulation                        vectors) that can be used as row filtering before aggregation.                        Valid options:
+    * `single`: Dropdown with single selection.
+    * `multi`: Dropdown with multiple selection.
+    * `range`: Slider with range selection.
+* **`response_ignore`:** List of response (columns in csv or simulation vectors) to ignore                       (cannot use with response_include).
+* **`response_include`:** List of response (columns in csv or simulation vectors) to include                        (cannot use with response_ignore).
 * **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
-
-*default = "sum", Optional, type str*
-
-
----
-
 * **`corr_method`:** Correlation method. Either `pearson` or `spearman`.
 
-*default = "pearson", Optional, type str*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - ParameterResponseCorrelation:
@@ -1274,7 +1082,7 @@ How to use in YAML config file:
         corr_method:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1310,13 +1118,11 @@ using the `fmu-ensemble` library.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1324,69 +1130,54 @@ using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 This plugin visualizes ensemble statistics calculated from grid properties.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**The main input to this plugin is property statistics extracted from grid models.
+See the documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+Additional data includes UNSMRY data and optionally irap binary surfaces stored in standardized FMU format.
+
+**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
+
+**Using aggregated data**
+* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and     vector columns (absolute path or relative to config file).
+* **`csvfile_statistics`:** Aggregated `csv` file for property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+
+**Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`statistic_file`:** Csv file for each realization with property statistics.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
+* **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames     stored on FMU standardized format (zone--property.gri)
 
-*default = null, Optional, type Union[list, NoneType]*
 
 
 ---
-
-* **`statistics_file`:** 
-
-*default = "share/results/tables/gridpropstatistics.csv", Optional, type str*
-
-
----
-
-* **`csvfile_statistics`:** Aggregated `csv` file for property statistics. See the documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data. **Using raw ensemble data stored in realization folders**
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and vector columns (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames stored on FMU standardized format (zone--property.gri)
-
-*default = null, Optional, type Union[dict, NoneType]*
-
-
----
-
-* **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or `yearly`.
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`column_keys`:** List of vectors to extract. If not given, all vectors from the simulations will be extracted. Wild card asterisk `*` can be used.
-
-*default = null, Optional, type Union[list, NoneType]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - PropertyStatistics:
@@ -1399,7 +1190,7 @@ How to use in YAML config file:
         column_keys:  # Optional, type Union[list, NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1423,13 +1214,11 @@ realizations, using the `fmu-ensemble` library.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1437,7 +1226,7 @@ realizations, using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -1445,41 +1234,30 @@ Visualizes formation volume factor and viscosity data     for oil, gas and water
 
 !> The plugin supports variations in PVT between ensembles, but not between     realizations in the same ensemble.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`pvt_relative_file_path`:** Local path to a csv file in each         realization with dumped pvt data.
+* **`read_from_init_file`:** A boolean flag stating if data shall be         read from an Eclipse INIT file instead of an INCLUDE file.         This is only used when **pvt_relative_file_path** is not given.
+* **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles         which are holding duplicate data of other ensembles shall be dropped.         Defaults to False.
 
-*Required, type List[str]*
 
 
 ---
-
-* **`pvt_relative_file_path`:** Local path to a csv file in each realization with dumped pvt data.
-
-*default = null, Optional, type str*
-
-
----
-
-* **`read_from_init_file`:** A boolean flag stating if data shall be read from an Eclipse INIT file instead of an INCLUDE file. This is only used when **pvt_relative_file_path** is not given.
-
-*default = false, Optional, type bool*
-
-
----
-
-* **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles which are holding duplicate data of other ensembles shall be dropped. Defaults to False.
-
-*default = false, Optional, type bool*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - PvtPlot:
@@ -1489,7 +1267,7 @@ How to use in YAML config file:
         drop_ensemble_duplicates:  # Optional, type bool.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1517,13 +1295,11 @@ duplicate data of other ensembles will be dropped.
 The file can e.g. be dumped to disc per realization by a forward model in ERT using
 `ecl2df`.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1531,48 +1307,37 @@ The file can e.g. be dumped to disc per realization by a forward model in ERT us
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Visualizes relative permeability and capillary pressure curves for FMU ensembles.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`relpermfile`:** Local path to a csvfile in each realization with dumped relperm data.
+* **`scalfile`:** Path to a reference file with SCAL recommendationed data.     Path to a single file, **not** per realization/ensemble. The path can be absolute or     relative to the `webviz` configuration.
+* **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an     `xlsx` file (recommended to use csv files with `webviz`).
 
-*default = null, Optional, type str*
 
 
 ---
-
-* **`scalfile`:** Path to a reference file with SCAL recommendationed data. Path to a single file, **not** per realization/ensemble. The path can be absolute or relative to the `webviz` configuration.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an `xlsx` file (recommended to use csv files with `webviz`).
-
-*default = null, Optional, type Union[str, int, list, NoneType]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - RelativePermeability:
@@ -1582,7 +1347,7 @@ How to use in YAML config file:
         sheet_name:  # Optional, type Union[str, int, list, NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1618,13 +1383,11 @@ realizations/ensembles). The file has to be compatible with
 * [Example of relpermfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/relperm.csv).
 * [Example of scalfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.csv).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1632,7 +1395,7 @@ realizations/ensembles). The file has to be compatible with
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -1647,62 +1410,54 @@ Visualizes reservoir simulation time series data for FMU ensembles.
 * Download of visualized data to csv files (except histogram data).
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile`:** Aggregated csv file with `REAL`, `ENSEMBLE`, `DATE` and vector columns. **Using simulation time series data directly from `UNSMRY` files**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Two main options for input data: Aggregated and read from UNSMRY.**
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated csv file with `REAL`, `ENSEMBLE`,     `DATE` and vector columns.
+
+**Using simulation time series data directly from `UNSMRY` files**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 
-*default = null, Optional, type list*
+**Common optional settings for both input options**
+* **`obsfile`**: File with observations to plot together with the relevant time series. (absolute path or relative to config file).
+* **`options`:** Options to initialize plots with:
+    * `vector1` : First vector to display
+    * `vector2` : Second vector to display
+    * `vector3` : Third vector to display
+    * `visualization` : `realizations`, `statistics` or `fanchart`
+    * `date` : Date to show by default in histograms
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are     always linearly interpolated. The rest use the fallback.
+    Supported options:
+    * `linear` (default)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
+
 
 
 ---
-
-* **`obsfile`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`column_keys`:** List of vectors to extract. If not given, all vectors from the simulations will be extracted. Wild card asterisk `*` can be used.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or `yearly`. **Common optional settings for both input options** * **`obsfile`**: File with observations to plot together with the relevant time series. (absolute path or relative to config file).
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`options`:** Options to initialize plots with: * `vector1` : First vector to display * `vector2` : Second vector to display * `vector3` : Third vector to display * `visualization` : `realizations`, `statistics` or `fanchart` * `date` : Date to show by default in histograms
-
-*default = null, Optional, type dict*
-
-
----
-
-* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are always linearly interpolated. The rest use the fallback. Supported options: * `linear` (default) * `backfilled` * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
-
-*default = "linear", Optional, type str*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - ReservoirSimulationTimeSeries:
@@ -1715,7 +1470,7 @@ How to use in YAML config file:
         line_shape_fallback:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1741,13 +1496,11 @@ using the `fmu-ensemble` library.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1755,7 +1508,7 @@ using the `fmu-ensemble` library.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -1766,62 +1519,49 @@ After selecting a date individual sensitivities can be selected to highlight the
 run with that sensitivity.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and vector columns (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
-
-* **`csvfile_parameters`:** Aggregated `csv` file for sensitivity information with `REAL`, `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns (absolute path or relative to config file). **Using simulation time series data directly from `UNSMRY` files**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+
+
+**Two main options for input data: Aggregated and read from UNSMRY.**
+
+**Using aggregated data**
+* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and     vector columns (absolute path or relative to config file).
+* **`csvfile_parameters`:** Aggregated `csv` file for sensitivity information with `REAL`,     `ENSEMBLE`, `SENSNAME` and `SENSCASE` columns (absolute path or relative to config file).
+
+**Using simulation time series data directly from `UNSMRY` files**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 
-*default = null, Optional, type list*
-
-
----
-
-* **`column_keys`:** List of vectors to extract. If not given, all vectors from the simulations will be extracted. Wild card asterisk `*` can be used.
-
-*default = null, Optional, type list*
-
-
----
-
+**Common optional settings for both input options**
 * **`initial_vector`:** Initial vector to display
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are     always linearly interpolated. The rest use the fallback.
+    Supported options:
+    * `linear` (default)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
 
-*default = null, Optional, type str*
 
 
 ---
-
-* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or `yearly`. **Common optional settings for both input options**
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are always linearly interpolated. The rest use the fallback. Supported options: * `linear` (default) * `backfilled` * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
-
-*default = "linear", Optional, type str*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - ReservoirSimulationTimeSeriesOneByOne:
@@ -1834,7 +1574,7 @@ How to use in YAML config file:
         line_shape_fallback:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1860,13 +1600,11 @@ exist. If the `SENSCASE` of a realization is `p10_p90`, the sensitivity case is 
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1874,7 +1612,7 @@ exist. If the `SENSCASE` of a realization is `p10_p90`, the sensitivity case is 
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -1895,55 +1633,47 @@ regions):
 $$\sf Rec(\sf ROIP)_{\sf date} = \frac{\sf ROIP_{\sf init} - \sf ROIP_{\sf date}}{\sf ROIP_{\sf init}}$$
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to include in the plugin.
+* **`fipfile`:** Path to a yaml-file that defines a match between FIPXXX (e.g. FIPNUM) regions
+    and human readable regions, zones and etc to be used as filters. If undefined, the FIPXXX     region numbers will be used for filtering (absolute path or relative to config file).
+* **`initial_vector`:** First vector to plot (default is `ROIP` if it exists, otherwise first     found).
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+Vectors that don't match the following patterns will be filtered out for this plugin:
+    * `R[OGW]IP*` (regional in place),
+    * `R[OGW][IP][RT]*` (regional injection and production rates and cumulatives)
+* **`sampling`:** Time series data will be sampled (and interpolated) at this frequency. Options:
+    * `daily`
+    * `monthly` (default)
+    * `yearly`
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are     always linearly interpolated. The rest use the fallback.
+    Supported options:
+    * `linear` (default)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
 
-*Required, type list*
 
 
 ---
-
-* **`fipfile`:** Path to a yaml-file that defines a match between FIPXXX (e.g. FIPNUM) regions and human readable regions, zones and etc to be used as filters. If undefined, the FIPXXX region numbers will be used for filtering (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`initial_vector`:** First vector to plot (default is `ROIP` if it exists, otherwise first found).
-
-*default = "ROIP", Optional, type str*
-
-
----
-
-* **`column_keys`:** List of vectors to extract. If not given, all vectors from the simulations will be extracted. Wild card asterisk `*` can be used. Vectors that don't match the following patterns will be filtered out for this plugin: * `R[OGW]IP*` (regional in place), * `R[OGW][IP][RT]*` (regional injection and production rates and cumulatives)
-
-*default = null, Optional, type Union[list, NoneType]*
-
-
----
-
-* **`sampling`:** Time series data will be sampled (and interpolated) at this frequency. Options: * `daily` * `monthly` (default) * `yearly`
-
-*default = "monthly", Optional, type str*
-
-
----
-
-* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are always linearly interpolated. The rest use the fallback. Supported options: * `linear` (default) * `backfilled` * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
-
-*default = "linear", Optional, type str*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - ReservoirSimulationTimeSeriesRegional:
@@ -1955,7 +1685,7 @@ How to use in YAML config file:
         line_shape_fallback:  # Optional, type str.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -1984,13 +1714,11 @@ is actively used to decide which vectors that can be used for recovery factors.
 individual realizations. You should therefore not have more than one `UNSMRY` file in this
 folder, to avoid risk of not extracting the right data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -1998,7 +1726,7 @@ folder, to avoid risk of not extracting the right data.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2018,55 +1746,59 @@ Several visualizations are available:
 * Boxplot showing misfit per ERT observation for each ensemble.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`csvfile_rft`:** 
 
-*default = null, Optional, type str (corresponding to a path)*
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Using data per realization**
+
+* **`ensembles`**: Which ensembles in `shared_settings` to visualize.
+
+In addition, you need to have rft-files in your realizations stored at the local path `share/results/tables`. The `rft_ert.csv` is required as input, while the `rft.csv` is optional:
+
+* **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft_ert.csv).
+
+* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
+
+**Using aggregated data**
+
+* **`csvfile_rft`**: Aggregated version of `rft.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv).
+* **`csvfile_rft_ert`**: Aggregated version of `rft_ert.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv).
+
+
+**Optional input for both input options**
+
+* **`obsdata`**: A csv file containing additional RFT observation data not defined in ERT for
+visualization together with simulated RFT.
+Mandatory column names: `WELL`, `DATE` (yyyy-mm-dd), `DEPTH` and `PRESSURE`
+
+* **`formations`**: A csv file containing top and base values for each zone per well.
+Used to visualize zone boundaries together with simulated RFT.
+Mandatory column names: `WELL`, `ZONE`, `TOP_TVD`, `BASE_TVD` [(example file))](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/tables/formations.csv).
+
+* **`faultlines`**: A csv file containing faultpolygons to be visualized together with the map view.
+Export format from [xtgeo.xyz.polygons.dataframe](
+https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe
+) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/polygons/faultpolygons.csv).
+
 
 
 ---
-
-* **`csvfile_rft_ert`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`ensembles`:** 
-
-*default = null, Optional, type Union[typing.List[str], NoneType]*
-
-
----
-
-* **`formations`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`obsdata`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`faultlines`:** 
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - RftPlotter:
@@ -2078,7 +1810,7 @@ How to use in YAML config file:
         faultlines:  # Optional, type str (corresponding to a path).
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2088,13 +1820,11 @@ How to use in YAML config file:
 
 The `rft_ert.csv` file can be generated by running the "MERGE_RFT_ERTOBS" forward model in ERT, this will collect ERT RFT observations and merge with CSV output from the "GENDATA_RFT" forward model. [ERT docs](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2102,7 +1832,7 @@ The `rft_ert.csv` file can be generated by running the "MERGE_RFT_ERTOBS" forwar
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2120,41 +1850,30 @@ Visualizations:
     * Analyze running time and successful/failed run together with input parameters.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to include in check. Only required input.
+* **`filter_shorter`:** Filters jobs with maximum run time in ensemble less than X seconds     (default: 10). Can be checked on/off interactively, this only sets the filtering value.
+* **`status_file`:** Name of json file local per realization with job status     (default: `status.json`).
+* **`visual_parameters`:** List of default visualized parameteres in parallel coordinates plot     (default: all parameters).
 
-*Required, type list*
 
 
 ---
-
-* **`filter_shorter`:** Filters jobs with maximum run time in ensemble less than X seconds (default: 10). Can be checked on/off interactively, this only sets the filtering value.
-
-*default = 10, Optional, type Union[int, float]*
-
-
----
-
-* **`status_file`:** Name of json file local per realization with job status (default: `status.json`).
-
-*default = "status.json", Optional, type str*
-
-
----
-
-* **`visual_parameters`:** List of default visualized parameteres in parallel coordinates plot (default: all parameters).
-
-*default = null, Optional, type Union[list, NoneType]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - RunningTimeAnalysisFMU:
@@ -2164,7 +1883,7 @@ How to use in YAML config file:
         visual_parameters:  # Optional, type Union[list, NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2176,13 +1895,11 @@ The `status.json` file is the standard status file when running
 [`ERT`](https://github.com/Equinor/ert) runs. If defining a different name, it still has to be
 on the same format [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/status.json).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2190,7 +1907,7 @@ on the same format [(example file)](https://github.com/equinor/webviz-subsurface
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2199,34 +1916,27 @@ visualizes seismic 3D cubes with 3 plots (inline, crossline and zslice).
 The plots are linked and updates are done by clicking in the plots.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
 * **`segyfiles`:** List of file paths to `SEGY` files (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
-
-
----
-
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional, type str*
-
-
----
-
 * **`colors`:** List of hex colors use. Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
 
-*default = null, Optional, type list*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SegyViewer:
@@ -2235,7 +1945,7 @@ How to use in YAML config file:
         colors:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2244,13 +1954,11 @@ How to use in YAML config file:
 
 The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2258,7 +1966,7 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2280,97 +1988,91 @@ Surface files must be stored at `share/results/maps` for each ensemble,
 and be named as `surfacename--surfaceattribute.gri`
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`surface_attributes`:** List of surface attributes from surface filenames(FMU standard). All surface_attributes must have the same surface names.
-
-*Required, type list*
-
-
----
-
-* **`surface_name_filter`:** List of the surface names (FMU standard) in stratigraphic order
-
-*default = null, Optional, type List[str]*
-
-
----
-
+ * **`surface_name_filter`:** List of the surface names (FMU standard) in stratigraphic order
 * **`wellfolder`:** A folder with wells on RMS Well format. (absolute or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellsuffix`:** File suffix for wells in `wellfolder`.
-
-*default = ".w", Optional, type str*
-
-
----
-
 * **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
-
-*default = null, Optional, type str*
-
-
----
-
 * **`mdlog`:** Name of mdlog in `wellfiles` (displayed along well trajectory).
-
-*default = null, Optional, type str*
-
-
----
-
 * **`well_tvdmin`:** Truncate well trajectory values above this depth.
-
-*default = null, Optional, type Union[int, float]*
-
-
----
-
 * **`well_tvdmax`:** Truncate well trajectory values below this depth.
-
-*default = null, Optional, type Union[int, float]*
-
-
----
-
 * **`well_downsample_interval`:** Sampling interval used for coarsening a well trajectory
-
-*default = null, Optional, type int*
+* **`calculate_percentiles`:** Only relevant for portable. Calculating P10/90 is
+time consuming and is by default disabled to allow fast generation of portable apps. Activate to precalculate these percentiles for all realizations. * **`initial_settings`:** Configuration for initializing the plugin with various     properties set. All properties are optional.
+    ```yaml
+        initial_settings:
+            intersection_data: # Data to populate the intersection view
+                surface_attribute: ds_extracted_horizons  #name of active attribute
+                surface_names: #list of active surfacenames
+                    - topupperreek
+                    - baselowerreek
+                ensembles: #list of active ensembles
+                    - iter-0
+                    - iter-1
+                calculation: #list of active calculations
+                    - Mean
+                    - Min
+                    - Max
+                    - Realizations
+                    - Uncertainty envelope
+                well: OP_6 #Active well
+                realizations: #List of active realizations
+                    - 0
+                resolution: 20 # Horizontal distance between points in the intersection
+                             # (Usually in meters)
+                extension: 500 # Horizontal extension of the intersection
+                depth_truncations: # Truncations to use for yaxis range
+                    min: 1500
+                    max: 3000
+            colors: # Colors to use for surfaces in the intersection view specified
+                    # for each ensemble
+                topupperreek:
+                    iter-0: '#2C82C9' #hex color code with apostrophies and hash prefix
+            intersection_layout: # The full plotly layout
+                                 # (https://plotly.com/python/reference/layout/) is
+                                 # exposed to allow for customization of e.g. plot title
+                                 # and axis ranges. A small example:
+                yaxis:
+                    title: True vertical depth [m]
+                xaxis:
+                    title: Lateral distance [m]
+    ```
 
 
 ---
-
-* **`calculate_percentiles`:** Only relevant for portable. Calculating P10/90 is time consuming and is by default disabled to allow fast generation of portable apps. Activate to precalculate these percentiles for all realizations.
-
-*default = false, Optional, type bool*
-
-
----
-
-* **`initial_settings`:** Configuration for initializing the plugin with various properties set. All properties are optional. ```yaml initial_settings: intersection_data: # Data to populate the intersection view surface_attribute: ds_extracted_horizons #name of active attribute surface_names: #list of active surfacenames - topupperreek - baselowerreek ensembles: #list of active ensembles - iter-0 - iter-1 calculation: #list of active calculations - Mean - Min - Max - Realizations - Uncertainty envelope well: OP_6 #Active well realizations: #List of active realizations - 0 resolution: 20 # Horizontal distance between points in the intersection # (Usually in meters) extension: 500 # Horizontal extension of the intersection depth_truncations: # Truncations to use for yaxis range min: 1500 max: 3000 colors: # Colors to use for surfaces in the intersection view specified # for each ensemble topupperreek: iter-0: '#2C82C9' #hex color code with apostrophies and hash prefix intersection_layout: # The full plotly layout # (https://plotly.com/python/reference/layout/) is # exposed to allow for customization of e.g. plot title # and axis ranges. A small example: yaxis: title: True vertical depth [m] xaxis: title: Lateral distance [m] ```
-
-*default = null, Optional, type Dict*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - StructuralUncertainty:
@@ -2388,7 +2090,7 @@ How to use in YAML config file:
         initial_settings:  # Optional, type Dict.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2401,13 +2103,11 @@ How to use in YAML config file:
 
 The surfacefiles are on a `Irap binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2415,7 +2115,7 @@ The surfacefiles are on a `Irap binary` format and can be investigated outside `
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2425,48 +2125,38 @@ Input can be either a premade json object or data can be extracted from
 a FMU ensemble.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`jsonfile`:** jsonfile with data, suitable for the corresponding [subsurface map component](https://github.com/equinor/webviz-subsurface-components) (absolute path or relative to config file). **Ensemble data**
-
-*default = null, Optional, type str (corresponding to a path)*
 
 
----
 
+
+
+
+
+
+
+
+
+
+**Two input options: Ensemble data or premade json file**
+
+**json file**
+* **`jsonfile`:** jsonfile with data, suitable for the corresponding [subsurface map component](https://github.com/equinor/webviz-subsurface-components)  (absolute path or relative to config file).
+
+**Ensemble data**
 * **`ensemble`:** Which ensemble in `shared_settings` to visualize (**just one**).
-
-*default = null, Optional, type str*
-
-
----
-
 * **`map_value`:** Which property to show in the map (e.g. `PERMX`).
-
-*default = null, Optional, type str*
-
-
----
-
-* **`flow_value`:** Which property to use for the streamlines animation (e.g. `FLOWAT`).
-
-*default = null, Optional, type str*
-
-
----
-
+* **`flow_value`:** Which property to use for the streamlines animation
+  (e.g. `FLOWAT`).
 * **`time_step`:** Which report or time step to use in the simulation output.
 
-*default = null, Optional, type int*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SubsurfaceMap:
@@ -2477,7 +2167,7 @@ How to use in YAML config file:
         time_step:  # Optional, type int.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2489,13 +2179,11 @@ data deck for flow fields like `FLOWAT` and `FLOOIL` to be included in the data.
 
 !> Using the ensemble method, `UNRST` and `INIT` files are autodetected in the realizations under `eclipse/model`. You should therefore not have more than one of each of these files to make sure that you are reading the correct data.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2503,7 +2191,7 @@ data deck for flow fields like `FLOWAT` and `FLOOIL` to be included in the data.
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2522,55 +2210,42 @@ to run webviz in `portable` mode so that the statistical surfaces are pre-calcul
 and available for instant viewing.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
-* **`attributes`:** List of surface attributes to include, if not given all surface attributes will be included.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`attribute_settings`:** Dictionary with setting for each attribute. Available settings are: * `min`: Truncate colorscale (lower limit). * `max`: Truncate colorscale (upper limit). * `color`: List of hexadecimal colors. * `unit`: Text to display as unit in label.
-
-*default = null, Optional, type dict*
-
-
----
-
+* **`attributes`:** List of surface attributes to include, if not given
+    all surface attributes will be included.
+* **`attribute_settings`:** Dictionary with setting for each attribute.
+    Available settings are:
+    * `min`: Truncate colorscale (lower limit).
+    * `max`: Truncate colorscale (upper limit).
+    * `color`: List of hexadecimal colors.
+    * `unit`: Text to display as unit in label.
 * **`wellfolder`:** Folder with RMS wells.
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellsuffix`:** File suffix for wells in well folder.
-
-*default = ".w", Optional, type str*
-
-
----
-
 * **`map_height`:** Set the height in pixels for the map views.
 
-*default = 600, Optional, type int*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SurfaceViewerFMU:
@@ -2582,7 +2257,7 @@ How to use in YAML config file:
         map_height:  # Optional, type int.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2612,13 +2287,11 @@ attribute_settings:
     - "#781c6d"
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2626,7 +2299,7 @@ attribute_settings:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2635,62 +2308,39 @@ Visualizes surfaces in a map view and grid parameters in a cross section view. T
 !> This is an experimental plugin exploring how we can visualize 3D grid data in Webviz. The performance is currently slow for large grids.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`gridfile`:** Path to grid geometry (`ROFF` format) (absolute or relative to config file).
-
-*Required, type str (corresponding to a path)*
-
-
----
-
-* **`gridparameterfiles`:** List of file paths to grid parameters (`ROFF` format) (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
-
-
----
-
-* **`surfacefiles`:** List of file paths to surfaces (`irap binary` format) (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
-
-
----
-
+* **`gridparameterfiles`:** List of file paths to grid parameters (`ROFF` format)  (absolute or relative to config file).
 * **`gridparameternames`:** List corresponding to filepaths of displayed parameter names.
-
-*default = null, Optional, type list*
-
-
----
-
+* **`surfacefiles`:** List of file paths to surfaces (`irap binary` format)  (absolute or relative to config file).
 * **`surfacenames`:** List corresponding to file paths of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional*
-
-
----
-
 * **`colors`:** List of hex colors to use. Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
 
-*default = null, Optional, type list*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SurfaceWithGridCrossSection:
@@ -2703,7 +2353,7 @@ How to use in YAML config file:
         colors:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2715,13 +2365,11 @@ How to use in YAML config file:
 
 The files above are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2729,7 +2377,7 @@ The files above are on a `ROFF binary` format and can be investigated outside `w
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2737,55 +2385,36 @@ Visualizes surfaces in a map view and seismic in a cross section view.
 The cross section is defined by a polyline interactively edited in the map view.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`segyfiles`:** List of file paths to SEG-Y files (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
-
-
----
-
-* **`surfacefiles`:** List of file paths to Irap Binary surfaces (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
-
-
----
-
-* **`surfacenames`:** Corresponding list of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`segynames`:** Corresponding list of displayed seismic names.
-
-*default = null, Optional, type list*
-
-
----
-
+* **`surfacefiles`:** List of file paths to Irap Binary surfaces (absolute or relative to config file).
+* **`surfacenames`:** Corresponding list of displayed surface names.
 * **`zunit`:** z-unit for display
-
-*default = "depth (m)", Optional*
-
-
----
-
 * **`colors`:** List of hex colors to use. Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
 
-*default = null, Optional, type list*
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - SurfaceWithSeismicCrossSection:
@@ -2797,7 +2426,7 @@ How to use in YAML config file:
         colors:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -2812,13 +2441,11 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2826,68 +2453,55 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 General tornado plotter for FMU data from a csv file of responses.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`csvfile`:** Relative ensemble path to csv file with responses
-
-*default = null, Optional, type str*
-
-
----
-
-* **`ensemble`:** 
-
-*default = null, Optional, type str*
-
-
----
-
-* **`aggregated_csvfile`:** Alternative to ensemble + csvfile with aggregated responses. Requires REAL and ENSEMBLE columns
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`aggregated_parameterfile`:** Necessary when aggregated_csvfile is specified. File with sensitivity specification for each realization. Requires columns REAL, ENSEMBLE, SENSNAME and SENSCASE.
-
-*default = null, Optional, type str (corresponding to a path)*
+* **`aggregated_csvfile`:** Alternative to ensemble + csvfile with
+aggregated responses. Requires REAL and ENSEMBLE columns
+* **`aggregated_parameterfile`:** Necessary when aggregated_csvfile
+is specified. File with sensitivity specification for each realization.
+Requires columns REAL, ENSEMBLE, SENSNAME and SENSCASE.
+* **`initial_response`:** Initialize plugin with this response column
+visualized
+* **`single_value_selectors`:** List of columns in response csv file
+that should be used to select/filter data. E.g. for UNSMRY data the DATE
+column can be used. For each entry a Dropdown is shown with all unique
+values and a single value can be selected at a time.
+* **`multi_value_selectors`:** List of columns in response csv file
+to filter/select data. For each entry a Select is shown with
+all unique values. Multiple values can be selected at a time,
+and a tornado plot will be shown from the matching response rows.
+Used e.g. for volumetrics data, to select a subset of ZONES and
+REGIONS.
 
 
 ---
-
-* **`initial_response`:** Initialize plugin with this response column visualized
-
-*default = null, Optional, type str*
-
-
----
-
-* **`single_value_selectors`:** List of columns in response csv file that should be used to select/filter data. E.g. for UNSMRY data the DATE column can be used. For each entry a Dropdown is shown with all unique values and a single value can be selected at a time.
-
-*default = null, Optional, type List[str]*
-
-
----
-
-* **`multi_value_selectors`:** List of columns in response csv file to filter/select data. For each entry a Select is shown with all unique values. Multiple values can be selected at a time, and a tornado plot will be shown from the matching response rows. Used e.g. for volumetrics data, to select a subset of ZONES and REGIONS.
-
-*default = null, Optional, type List[str]*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - TornadoPlotterFMU:
@@ -2900,13 +2514,11 @@ How to use in YAML config file:
         multi_value_selectors:  # Optional, type List[str].
 ```
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -2914,7 +2526,7 @@ How to use in YAML config file:
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -2936,55 +2548,43 @@ Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Using aggregated data**
 * **`csvfile_vol`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
-* **`csvfile_parameters`:** Aggregated csvfile with parameter data (absolute path or relative to config file).`REAL` and `ENSEMBLE` are mandatory columns. **Using data stored per realization**
-
-*default = null, Optional, type str (corresponding to a path)*
+* **`csvfile_parameters`:** Aggregated csvfile with parameter data (absolute path or relative to config file).`REAL` and `ENSEMBLE` are mandatory columns.
 
 
----
-
+**Using data stored per realization**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`volfiles`:** Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`. Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
-
-*default = null, Optional, type dict*
+* **`volfiles`:**  Key/value pair of csv files E.g. `{geogrid: geogrid--oil.csv}`.
+Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used as `SOURCE`.
+* **`volfolder`:** Local folder for the `volfiles`.
 
 
----
-
-* **`volfolder`:** Local folder for the `volfiles`. **Common settings**
-
-*default = "share/results/volumes", Optional, type str*
-
-
----
-
+**Common settings**
 * **`non_net_facies`:** List of facies which are non-net.
 
-*default = null, Optional, type Union[typing.List[str], NoneType]*
-
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - VolumetricAnalysis:
@@ -2996,7 +2596,7 @@ How to use in YAML config file:
         non_net_facies:  # Optional, type Union[typing.List[str], NoneType].
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -3023,13 +2623,11 @@ For sensitivity runs the sensitivity information is extracted automatically if `
 
 **Remaining columns are seen as volumetric responses.**
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -3037,78 +2635,49 @@ For sensitivity runs the sensitivity information is extracted automatically if `
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
 Visualizes well completions data per well coming from export of the Eclipse COMPDAT output.     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
 
-!> The plugin will not see lumps of completions that are shut using the WELOPEN keyword.     This is being worked on and will be fixed in future relases.
 
 
- 
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`compdat_file`:** `.csv` file with compdat data per realization
-
-*default = "share/results/tables/compdat.csv", Optional, type str*
-
-
----
-
 * **`well_connection_status_file`:** `.parquet` file with well connection status data per realization
-
-*default = "share/results/tables/well_connection_status.parquet", Optional, type str*
-
-
----
-
 * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
-
-*default = "rms/output/zone/simgrid_zone_layer_mapping.lyr", Optional, type str*
-
-
----
-
 * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
-
-*default = "rms/output/zone/stratigraphy.json", Optional, type str*
-
-
----
-
 * **`well_attributes_file`:** `.json` file with categorical well attributes
-
-*default = "rms/output/wells/well_attributes.json", Optional, type str*
-
-
----
-
 * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted
+* **`kh_decimal_places`:**
 
-*default = null, Optional, type str*
 
 
 ---
-
-* **`kh_decimal_places`:** 
-
-*default = 2, Optional, type int*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - WellCompletions:
@@ -3122,7 +2691,7 @@ How to use in YAML config file:
         kh_decimal_places:  # Optional, type int.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -3130,7 +2699,7 @@ The minimum requirement is to define `ensembles`.
 
 **COMPDAT input**
 
-`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/wells/compdat.csv`).
+`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/tables/compdat.csv`).
 
 The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
 wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
@@ -3246,13 +2815,11 @@ The file should be a `.json` file on the following format:
 
 If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file.     The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -3266,7 +2833,7 @@ If defaulted, the plugin will look for the unit system of the Eclipse deck in th
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -3275,90 +2842,50 @@ and optionally seismic cubes.
 
 !> See also WellCrossSectionFMU for additional functionality with FMU ensembles.
 
- 
+
 
 <!-- tab:Arguments -->
 
 
-* **`surfacefiles`:** List of file paths to Irap binary surfaces (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
 
 
----
-
-* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
-
-*Required, type List[str (corresponding to a path)]*
 
 
----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 * **`segyfiles`:** List of file paths to segyfiles (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
+* **`surfacefiles`:** List of file paths to Irap binary surfaces (absolute or relative to config file).
 * **`surfacenames`:** Corresponding list of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
-* **`zonelog`:** Name of zonelog (for the RMS wells in `wellfiles`).
-
-*default = null, Optional, type str*
-
-
----
-
+* **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional, type str*
-
-
----
-
+* **`zonelog`:** Name of zonelog (for the RMS wells in `wellfiles`).
 * **`zmin`:** Visualized minimum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zmax`:** Visualized maximum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zonemin`:** First zonenumber to draw in log.
-
-*default = 1, Optional, type int*
-
-
----
-
-* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. with distance of sampling=20 and nextend=2: extension=2*20 (nextend*sampling).
-
-*default = 2, Optional, type int*
-
-
----
-
 * **`sampling`:** Sampling interval of well fence.
-
-*default = 40, Optional, type int*
+* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. with distance of sampling=20 and nextend=2: extension=2*20 (nextend*sampling). 
 
 
 ---
-
-
-
 How to use in YAML config file:
 ```yaml
     - WellCrossSection:
@@ -3375,7 +2902,7 @@ How to use in YAML config file:
         sampling:  # Optional, type int.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -3392,13 +2919,11 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
-
-
 
 <div class="plugin-doc">
 
@@ -3412,7 +2937,7 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 
 
 <!-- tabs:start -->
-   
+
 
 <!-- tab:Description -->
 
@@ -3422,132 +2947,68 @@ Statistical surfaces are calculated automatically from surfaces stored
 per realization.
 
 
- 
+
 
 <!-- tab:Arguments -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-
-*Required, type list*
-
-
----
-
 * **`surfacefiles`:** Surface file names (without folder).
-
-*Required, type list*
-
-
----
-
 * **`surfacenames`:** List corresponding to `surfacefiles` of displayed surface names.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`surfacefolder`:** Realization relative folder containing the `surfacefiles`.
-
-*default = "share/results/maps", Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellfiles`:** List of file paths to RMS wells (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
 * **`wellfolder`:** Alternative to `wellfiles`: provide a folder with RMS wells. (absolute or relative to config file).
-
-*default = null, Optional, type str (corresponding to a path)*
-
-
----
-
 * **`wellsuffix`:** File suffix for wells in `wellfolder`.
-
-*default = ".w", Optional, type str*
-
-
----
-
 * **`segyfiles`:** List of file paths to `segyfiles` (absolute or relative to config file).
-
-*default = null, Optional, type List[str (corresponding to a path)]*
-
-
----
-
-* **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
-
-*default = null, Optional, type str*
-
-
----
-
-* **`marginal_logs`:** Logs in `wellfiles` to be displayed in separate horizontal plot.
-
-*default = null, Optional, type list*
-
-
----
-
 * **`zunit`:** z-unit for display.
-
-*default = "depth (m)", Optional, type str*
-
-
----
-
+* **`zonelog`:** Name of zonelog in `wellfiles` (displayed along well trajectory).
+* **`marginal_logs`:** Logs in `wellfiles` to be displayed in separate horizontal plot.
 * **`zmin`:** Visualized minimum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zmax`:** Visualized maximum z-value in cross section.
-
-*default = null, Optional, type float*
-
-
----
-
 * **`zonemin`:** First zonenumber to draw in zone log.
-
-*default = 1, Optional, type int*
-
-
----
-
-* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. `sampling=20` and `nextend=2` results in `extension=20*2`.
-
-*default = 2, Optional, type int*
-
-
----
-
 * **`sampling`:** Horizontal sampling interval.
+* **`nextend`:** Number of samples to extend well fence on each side of well, e.g. `sampling=20` and `nextend=2` results in `extension=20*2`. * **`colors`:** List of hex colors corresponding to surfaces. Note that apostrophies     should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
 
-*default = 40, Optional, type int*
 
 
 ---
-
-* **`colors`:** List of hex colors corresponding to surfaces. Note that apostrophies should be used to avoid that hex colors are read as comments. E.g. `'#000000'` for black.
-
-*default = null, Optional, type list*
-
-
----
-
-
-
 How to use in YAML config file:
 ```yaml
     - WellCrossSectionFMU:
@@ -3570,7 +3031,7 @@ How to use in YAML config file:
         colors:  # Optional, type list.
 ```
 
-   
+
 
 <!-- tab:Data input -->
 
@@ -3587,9 +3048,124 @@ The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` u
 
 The surfacefiles are on a `ROFF binary` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
- 
+
 
 <!-- tabs:end -->
 
 </div>
 
+<div class="plugin-doc">
+
+#### WellLogViewer
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+Uses [videx-welllog](https://github.com/equinor/videx-wellog) to visualize well logs
+    from files stored in RMS well format.
+
+?> Currently tracks for visualizing discrete logs are not included. This will
+be added in later releases.
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`wellfolder`:** Path to a folder with well files stored in RMS well format.
+* **`wellsuffix`:** File suffix of well files
+* **`logtemplates`:** List of yaml based log template configurations.     See the data section for description of the format.
+* **`mdlog`:** Name of the md log. If not specified, MD will be calculated.
+* **`well_tvdmin`:** Truncate well data values above this depth.
+* **`well_tvdmax`:** Truncate well data values below this depth.
+* **`well_downsample_interval`:** Sampling interval used for coarsening a well trajectory
+* **`initial_settings`:** Configuration for initializing the plugin with various     properties set. All properties are optional.
+    See the data section for available properties.
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - WellLogViewer:
+        wellfolder:  # Required, type str (corresponding to a path).
+        logtemplates:  # Required, type List[str (corresponding to a path)].
+        wellsuffix:  # Optional, type str.
+        mdlog:  # Optional, type str.
+        well_tvdmin:  # Optional, type Union[int, float].
+        well_tvdmax:  # Optional, type Union[int, float].
+        well_downsample_interval:  # Optional, type int.
+        initial_settings:  # Optional, type Dict.
+```
+
+
+
+<!-- tab:Data input -->
+
+
+?> The format and documentation of the log template configuration will be improved in later releases. A small configuration sample is provided below.
+
+```yaml
+name: All logs # Name of the log template
+scale:
+  primary: MD # Which reference track to visualize as default (MD/TVD)
+  allowSecondary: False # Set to True to show both MD and TVD reference tracks.
+tracks: # The list of log tracks
+  - title: Porosity # Optional title of log track
+    plots: # List of which logs to include in the track
+      - name: PHIT # Upper case name of log
+        type: area # Type of visualiation (area, line, linestep, dot)
+        color: green # Color of log
+      - name: PHIT_ORIG
+        type: line
+  - plots:
+      - name: ZONE
+        type: area
+  - plots:
+      - name: FACIES
+        type: area
+  - plots:
+      - name: VSH
+        type: area
+  - plots:
+      - name: SW
+        type: dot
+styles: # List of styles that can be added to tracks
+```
+
+
+Format of the `initial_settings` argument:
+```yaml
+        initial_settings:
+            well: str # Name of well
+            logtemplate: str # Name of log template
+```
+
+
+
+<!-- tabs:end -->
+
+</div>
