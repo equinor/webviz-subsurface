@@ -124,19 +124,6 @@ def update_intersection(
                 showlegend = True
 
                 if statistics is not None:
-                    if "Uncertainty envelope" in statistics:
-                        envelope_traces = get_plotly_traces_uncertainty_envelope(
-                            surfaceset=surfset,
-                            fence_spec=fence_spec,
-                            legendname=f"{surfacename}({ensemble})",
-                            name=surfacename,
-                            attribute=surfaceattribute,
-                            realizations=realizations,
-                            showlegend=showlegend,
-                            color=color,
-                        )
-                        traces.extend(envelope_traces)
-                        showlegend = False
                     for stat in ["Mean", "Min", "Max"]:
                         if stat in statistics:
                             trace = get_plotly_trace_statistical_surface(
@@ -152,6 +139,19 @@ def update_intersection(
                             )
                             traces.append(trace)
                             showlegend = False
+                    if "Uncertainty envelope" in statistics:
+                        envelope_traces = get_plotly_traces_uncertainty_envelope(
+                            surfaceset=surfset,
+                            fence_spec=fence_spec,
+                            legendname=f"{surfacename}({ensemble})",
+                            name=surfacename,
+                            attribute=surfaceattribute,
+                            realizations=realizations,
+                            showlegend=showlegend,
+                            color=color,
+                        )
+                        traces.extend(envelope_traces)
+                        showlegend = False
                     if "Realizations" in statistics:
                         for real in realizations:
                             trace = get_plotly_trace_realization_surface(
