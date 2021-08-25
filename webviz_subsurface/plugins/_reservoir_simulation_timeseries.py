@@ -7,7 +7,6 @@ import datetime
 import copy
 import warnings
 
-from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
@@ -15,20 +14,17 @@ from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_subsurface_components as wsc
-import webviz_subsurface
-
 from webviz_subsurface_components import (
     ExpressionInfo,
     ExternalParseData,
 )
+import webviz_subsurface
 
 from webviz_subsurface._models import EnsembleSetModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
@@ -458,8 +454,8 @@ folder, to avoid risk of not extracting the right data.
                     "Create mathematical expressions with provided vector time series. "
                     "Parsing of the mathematical expression is handled and will give feedback "
                     "when entering invalid expressions. "
-                    "The expressions are calculated on the fly and can be selected among the time series "
-                    "to be shown in the plots."
+                    "The expressions are calculated on the fly and can be selected among the time "
+                    "series to be shown in the plots."
                 ),
             },
         ]

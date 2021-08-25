@@ -1,28 +1,25 @@
-from typing import List, Dict, Tuple
-from openpyxl.chart.chartspace import ExternalData
-import pandas as pd
+from uuid import uuid4
 import sys
+from typing import List, Dict, Tuple
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8:
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
 
-from uuid import uuid4
-
+import pandas as pd
+import numpy as np
 from webviz_config.common_cache import CACHE
 from webviz_subsurface_components import (
     VectorCalculator,
     ExpressionInfo,
+    ExternalParseData,
     VariableVectorMapInfo,
 )
 
 
-"""
-    JSON Schema for predefined expressions configuration
-
-    Used as schema input for json_schema.validate()
-"""
+# JSON Schema for predefined expressions configuration
+# Used as schema input for json_schema.validate()
 PREDEFINED_EXPRESSIONS_JSON_SCHEMA: dict = {
     "type": "object",
     "additionalProperties": {
@@ -76,21 +73,25 @@ def validate_predefined_expression(
     * Tuple of valid state and validation message. Validation message is empty for valid expression
 
     """
-    parsed_expression: ExternalData = VectorCalculator.external_parse_data(expression)
-    expr = expression["expression"]
-    name = expression["name"]
+    parsed_expression: ExternalParseData = VectorCalculator.external_parse_data(
+        expression
+    )
+    expr: str = expression["expression"]
+    name: str = expression["name"]
 
     # Validate expression string
     if not parsed_expression["isValid"]:
         parse_message = parsed_expression["message"]
-        message = f'Invalid mathematical expression {expr} in predefined expression "{name}". {parse_message}.'
+        message = f'Invalid mathematical expression {expr} in predefined expression "{name}". \
+            {parse_message}.'
         return False, message
 
     # Match variables in expression string and variable names in map
     expression_variables = parsed_expression["variables"]
     map_variables = [elm["variableName"] for elm in expression["variableVectorMap"]]
     if expression_variables != map_variables:
-        message = f'Variables {map_variables} in variableVectorMap is inconsistent with variables {expression_variables} in equation "{expr}" for predefined expression "{name}"'
+        message = f'Variables {map_variables} in variableVectorMap is inconsistent with variables \
+            {expression_variables} in equation "{expr}" for predefined expression "{name}"'
         return False, message
 
     # Validate vector names
@@ -103,10 +104,12 @@ def validate_predefined_expression(
         if not is_vector_name_existing(vector_name, vector_data):
             invalid_vectors.append(vector_name)
     if len(invalid_vectors) > 1:
-        message = f'Vector names {invalid_vectors} in predefined expression "{name}" are not represented in vector data'
+        message = f'Vector names {invalid_vectors} in predefined expression "{name}" are not \
+            represented in vector data'
         return False, message
     if len(invalid_vectors) > 0:
-        message = f'Vector name {invalid_vectors} in predefined expression "{name}" is not represented in vector data'
+        message = f'Vector name {invalid_vectors} in predefined expression "{name}" is not \
+            represented in vector data'
         return False, message
 
     return True, ""
@@ -189,9 +192,9 @@ def get_calculated_vectors(
             elm["variableVectorMap"]
         )
 
-        values: Dict[str, pd.Series] = {}
+        values: Dict[str, np.ndarray] = {}
         for var in var_vec_dict:
-            values[var] = smry[var_vec_dict[var]]
+            values[var] = smry[var_vec_dict[var]].values
 
         evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
         if evaluated_expr is not None:
@@ -228,6 +231,6 @@ def get_calculated_units(
                 )
 
             calculated_units[expression["name"]] = unit_expr
-        except:
+        except ValueError:
             continue
     return calculated_units
