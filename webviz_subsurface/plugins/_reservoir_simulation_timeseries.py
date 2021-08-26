@@ -56,7 +56,8 @@ from .._datainput.from_timeseries_cumulatives import (
 )
 from .._utils.vector_calculator import (
     get_calculated_units,
-    get_calculated_vectors,
+    get_calculated_vector_df,
+    get_expression_from_name,
     get_selected_expressions,
     is_vector_name_existing,
     validate_predefined_expression,
@@ -177,7 +178,6 @@ folder, to avoid risk of not extracting the right data.
         sampling: str = "monthly",
         options: dict = None,
         predefined_expressions: str = None,
-        # predefined_expressions: List[ExpressionInfo] = [],
         line_shape_fallback: str = "linear",
     ):
 
@@ -851,9 +851,8 @@ folder, to avoid risk of not extracting the right data.
             if vectors is None:
                 vectors = self.plot_options.get("vectors", [self.smry_cols[0]])
 
-            # Calculate selected expressions:
+            # Retreive selected expressions
             selected_expressions = get_selected_expressions(expressions, vectors)
-            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
             calculated_units = pd.Series()
             if self.smry_meta is not None:
                 calculated_units = get_calculated_units(
@@ -883,7 +882,7 @@ folder, to avoid risk of not extracting the right data.
                     )
                 if self.smry_meta is None:
                     titles.append(simulation_vector_description(vec))
-                elif vec in calculated_vectors:
+                elif vec in calculated_units:
                     titles.append(f"{vec}" f" [{calculated_units[vec]}]")
                 else:
                     titles.append(
@@ -912,14 +911,12 @@ folder, to avoid risk of not extracting the right data.
             # Loop through each vector and calculate relevant plot
             legends = []
 
-            # Join smry and calculated vectors
-            smry_new = self.smry.join(calculated_vectors)
-
             dfs = calculate_vector_dataframes(
-                smry=smry_new,
+                smry=self.smry,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
+                selected_expressions=selected_expressions,
                 calc_mode=calc_mode,
                 visualization=visualization,
                 time_index=self.time_index,
@@ -1074,16 +1071,13 @@ folder, to avoid risk of not extracting the right data.
 
             # Calculate selected expressions:
             selected_expressions = get_selected_expressions(expressions, vectors)
-            calculated_vectors = get_calculated_vectors(selected_expressions, self.smry)
-
-            # Join smry and calculated vectors
-            smry_new = self.smry.join(calculated_vectors)
 
             dfs = calculate_vector_dataframes(
-                smry=smry_new,
+                smry=self.smry,
                 smry_meta=self.smry_meta,
                 ensembles=ensembles,
                 vectors=vectors,
+                selected_expressions=selected_expressions,
                 calc_mode=calc_mode,
                 visualization=visualization,
                 time_index=self.time_index,
@@ -1284,14 +1278,19 @@ def calculate_vector_dataframes(
     smry_meta: Union[pd.DataFrame, None],
     ensembles: List[str],
     vectors: List[str],
+    selected_expressions: List[ExpressionInfo],
     calc_mode: str,
     visualization: str,
     time_index: str,
     cum_interval: str,
 ) -> dict:
     dfs = {}
+
     for vector in vectors:
-        if vector.startswith("AVG_"):
+        expression = get_expression_from_name(vector, selected_expressions)
+        if expression:
+            data = get_calculated_vector_df(expression, smry, ensembles)
+        elif vector.startswith("AVG_"):
             total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
             data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
             data = calc_from_cumulatives(

@@ -1,6 +1,6 @@
 from uuid import uuid4
 import sys
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8:
     from typing import TypedDict
@@ -165,6 +165,15 @@ def is_vector_name_existing(name: str, vector_data: list) -> bool:
     return found
 
 
+def get_expression_from_name(
+    name: str, expressions: List[ExpressionInfo]
+) -> Union[ExpressionInfo, None]:
+    for expr in expressions:
+        if name == expr["name"]:
+            return expr
+    return None
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_selected_expressions(
     expressions: List[ExpressionInfo], selected_names: List[str]
@@ -180,26 +189,32 @@ def get_selected_expressions(
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_calculated_vectors(
-    expressions: List[ExpressionInfo],
-    smry: pd.DataFrame,
+def get_calculated_vector_df(
+    expression: ExpressionInfo, smry: pd.DataFrame, ensembles: List[str]
 ) -> pd.DataFrame:
-    calculated_vectors: pd.DataFrame = pd.DataFrame()
-    for elm in expressions:
-        name: str = elm["name"]
-        expr: str = elm["expression"]
-        var_vec_dict: Dict[str, str] = VectorCalculator.variable_vector_dict(
-            elm["variableVectorMap"]
-        )
+    columns = ["REAL", "ENSEMBLE", "DATE"]
+    df = smry[smry["ENSEMBLE"].isin(ensembles)][columns].copy()
 
-        values: Dict[str, np.ndarray] = {}
-        for var in var_vec_dict:
-            values[var] = smry[var_vec_dict[var]].values
+    name: str = expression["name"]
+    expr: str = expression["expression"]
 
-        evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
-        if evaluated_expr is not None:
-            calculated_vectors[name] = evaluated_expr
-    return calculated_vectors
+    var_vec_dict: Dict[str, str] = VectorCalculator.variable_vector_dict(
+        expression["variableVectorMap"]
+    )
+    vector_names = var_vec_dict.values()
+
+    # Retreive vectors for calculating expression - filtered on ensembles
+    vector_arrays = smry[smry["ENSEMBLE"].isin(ensembles)][vector_names]
+
+    values: Dict[str, np.ndarray] = {}
+    for var in var_vec_dict:
+        values[var] = vector_arrays[var_vec_dict[var]].values
+
+    evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
+    if evaluated_expr is not None:
+        df[name] = evaluated_expr
+
+    return df
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
