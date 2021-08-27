@@ -1,15 +1,18 @@
+from pathlib import Path
 from uuid import uuid4
 import sys
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple, Union, Optional
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8:
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from webviz_config.common_cache import CACHE
+import yaml
+
 from webviz_subsurface_components import (
     VectorCalculator,
     ExpressionInfo,
@@ -138,9 +141,17 @@ def variable_vector_map_from_dict(
 
 
 def expressions_from_config(
-    expressions: Dict[str, ConfigExpressionData],
+    predefined_expressions: Optional[Path],
 ) -> List[ExpressionInfo]:
     output: List[ExpressionInfo] = []
+
+    if predefined_expressions is None:
+        return output
+
+    expressions: Dict[str, ConfigExpressionData] = yaml.safe_load(
+        predefined_expressions.read_text()
+    )
+
     for expression in expressions:
         output.append(
             {

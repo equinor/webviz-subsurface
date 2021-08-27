@@ -1,12 +1,12 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 import glob
 import pathlib
 import json
-import jsonschema
-import jsonschema.exceptions
 
+import jsonschema
 from pkg_resources import get_distribution, DistributionNotFound
 import webviz_config
+import yaml
 
 from webviz_subsurface_components import ExpressionInfo
 from webviz_subsurface._utils.vector_calculator import (
@@ -50,29 +50,32 @@ def subscribe_scratch_ensembles(
 
 @webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe("predefined_expressions")
 def subcribe_predefined_expressions(
-    predefined_expressions: str,
+    predefined_expressions: Optional[Dict[str, str]],
     config_folder: pathlib.Path,
-) -> List[ExpressionInfo]:
-    predefined_expressions_list: List[ExpressionInfo] = []
+    portable: bool,
+) -> Dict[str, pathlib.Path]:
 
-    if predefined_expressions is not None:
-        if not pathlib.Path(predefined_expressions).is_absolute():
-            predefined_expressions = str(config_folder / predefined_expressions)
+    output: Dict[str, pathlib.Path] = {}
 
-        json_file = open(predefined_expressions)
-        predefined_expressions_data: Dict[str, ConfigExpressionData] = json.load(
-            json_file
-        )
+    if predefined_expressions is None:
+        return output
 
-        try:
-            jsonschema.validate(
-                instance=predefined_expressions_data,
-                schema=PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
-            )
-        except jsonschema.exceptions.ValidationError as err:
-            raise ValueError from err
+    for key, path in predefined_expressions.items():
 
-        predefined_expressions_list = expressions_from_config(
-            predefined_expressions_data
-        )
-    return predefined_expressions_list
+        if not pathlib.Path(path).is_absolute():
+            output[key] = config_folder / path
+
+        if not portable:
+            predefined_expressions_data: Dict[
+                str, ConfigExpressionData
+            ] = yaml.safe_load(output[key].read_text())
+
+            try:
+                jsonschema.validate(
+                    instance=predefined_expressions_data,
+                    schema=PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
+                )
+            except jsonschema.exceptions.ValidationError as err:
+                raise ValueError from err
+
+    return output
