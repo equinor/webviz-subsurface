@@ -5,18 +5,46 @@ import webviz_core_components as wcc
 
 
 def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
+    uuid = get_uuid("controls")
     return wcc.Frame(
         id=get_uuid("selections_layout"),
         style={"height": "82vh"},
         children=[
             wcc.Selectors(
-                label="Ensemble",
+                label="Controls",
                 children=[
                     wcc.Dropdown(
-                        id=get_uuid("ensemble_dropdown"),
+                        label="Ensemble",
+                        id={"id": uuid, "element": "ensemble"},
                         options=[{"label": ens, "value": ens} for ens in ensembles],
                         clearable=False,
                         value=ensembles[0],
+                    ),
+                    wcc.RadioItems(
+                        label="Mean or realization",
+                        id={"id": uuid, "element": "mean_or_single_real"},
+                        options=[
+                            {
+                                "label": "Mean of producing real.",
+                                "value": "plot_mean",
+                            },
+                            {
+                                "label": "Single realization",
+                                "value": "single_real",
+                            },
+                        ],
+                        value="plot_mean",
+                    ),
+                    html.Div(
+                        id={"id": uuid, "element": "single_real_options"},
+                        children=[
+                            wcc.Dropdown(
+                                id={"id": uuid, "element": "realization"},
+                                options=[],
+                                value=None,
+                                multi=False,
+                            )
+                        ],
                     ),
                 ],
             ),

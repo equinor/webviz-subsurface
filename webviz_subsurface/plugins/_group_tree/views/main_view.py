@@ -11,7 +11,7 @@ def main_view(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
         children=[
             wcc.FlexColumn(flex=1, children=selections_layout(get_uuid, ensembles)),
             wcc.FlexColumn(
-                flex=4,
+                flex=5,
                 children=[
                     wcc.Frame(
                         style={"height": "82vh"},

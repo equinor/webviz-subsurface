@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Tuple, Callable, Any, Iterator
 import json
 import io
+import glob
 
 import numpy as np
 import pandas as pd
@@ -15,8 +16,9 @@ from webviz_config import WebvizSettings
 import webviz_subsurface_components
 import webviz_core_components as wcc
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
+from ..._models import EnsembleSetModel
+from ..._models import caching_ensemble_set_model_factory
+from ..._datainput.fmu_input import load_csv
 from .controllers import controllers
 from .views import main_view
 
@@ -29,6 +31,8 @@ Notater:
 - Hva med BHP? egen node eller data pa bronnode
 - Naar tre og data skal skilles, hvordan haandteres manglende verdier i data? frontend eller backend?
 - Maa kunne velge rate istedetfor grupnet info
+- Hva hvis treet ikke er likt over realisasjoner
+- mean av producing real
 """
 
 
@@ -47,15 +51,49 @@ class GroupTree(WebvizPluginABC):
         self.ensembles = ensembles
         self.gruptree_file = gruptree_file
         self.time_index = time_index
-
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 
+        self.emodel: EnsembleSetModel = (
+            caching_ensemble_set_model_factory.get_or_create_model(
+                ensemble_paths={
+                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                    for ens in ensembles
+                },
+                time_index=self.time_index,
+                column_keys=[
+                    "FOPR",
+                    "FGPR",
+                    "FWPR",
+                    "FWIR",
+                    "FPR",
+                    "GOPR:*",
+                    "GGPR:*",
+                    "GWPR:*",
+                    "GPR:*",
+                    "WOPR:*",
+                    "WGPR:*",
+                    "WWPR:*",
+                    "WTHP:*",
+                    "WBHP:*",
+                ],
+            )
+        )
+        self.smry = self.emodel.get_or_load_smry_cached()
+        self.gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
         self.set_callbacks(app)
 
-    # def add_webvizstore()
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        functions: List[Tuple[Callable, List[Dict]]] = self.emodel.webvizstore
+        functions.append(
+            (
+                read_gruptree_files,
+                [{"ens_paths": self.ens_paths, "gruptree_file": self.gruptree_file}],
+            )
+        )
+        return functions
 
     @property
     def layout(self) -> html.Div:
@@ -70,7 +108,28 @@ class GroupTree(WebvizPluginABC):
         controllers(
             app=app,
             get_uuid=self.uuid,
-            ens_paths=self.ens_paths,
-            gruptree_file=self.gruptree_file,
-            time_index=self.time_index,
+            smry=self.smry,
+            gruptree=self.gruptree,
         )
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@webvizstore
+def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.DataFrame:
+    """Searches for gruptree files on the scratch disk. These
+    files can be exported in the FMU workflow using the ECL2CSV
+    forward job with subcommand gruptree
+    If one file is found per ensemble this file is assumed to be
+    valid for the whole ensemble.
+    If BRANPROP is in the KEYWORDS, GRUPTREE rows are filtered out
+    """
+    df = pd.DataFrame()
+    for ens_name, ens_path in ens_paths.items():
+        for filename in glob.glob(f"{ens_path}/{gruptree_file}"):
+            df_ens = pd.read_csv(filename)
+            df_ens["ENSEMBLE"] = ens_name
+            df = pd.concat([df, df_ens])
+            break
+    if "BRANPROP" in df.KEYWORD.unique():
+        df = df[df.KEYWORD != "GRUPTREE"]
+    return df
