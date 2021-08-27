@@ -439,3 +439,124 @@ def sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
 
     ret_table = pa.concat_tables(tables_list)
     return ret_table
+
+
+class Classification(Enum):
+    MUST_INTERPOLATE = 0
+    EXACT_MATCH = 1
+    OUTSIDE_RANGE = 2
+
+
+@dataclass
+class SamplingParams:
+    classification: Classification
+    t: float
+
+
+# -------------------------------------------------------------------------
+# Assumes that input table is sorted on real, and then date!!!
+def sample_sorted_multi_real_table_at_date_OPTIMIZED(
+    table: pa.Table, np_datetime: np.datetime64
+) -> pa.Table:
+
+    full_real_arr_np = table.column("REAL").to_numpy()
+    unique_reals, first_occurence_idx, real_counts = np.unique(
+        full_real_arr_np, return_index=True, return_counts=True
+    )
+
+    all_dates_arr_np = table.column("DATE").to_numpy()
+
+    row_indices = []
+    params_arr: List[SamplingParams] = []
+
+    for i, _real in enumerate(unique_reals):
+        start_row_idx = first_occurence_idx[i]
+        row_count = real_counts[i]
+
+        # Get slice of the dates for just this realization
+        dates_arr_np = all_dates_arr_np[start_row_idx : start_row_idx + row_count]
+        assert len(dates_arr_np) > 0
+
+        if np_datetime < dates_arr_np[0]:
+            # Outside the range (query date is before our first date)
+            row_indices.append(start_row_idx)
+            row_indices.append(start_row_idx)
+            params_arr.append(SamplingParams(Classification.OUTSIDE_RANGE, 0))
+
+        elif np_datetime >= dates_arr_np[-1]:
+            # Either an exact match on the last date or outside the range (query date is beyond our last date)
+            row_indices.append(start_row_idx + row_count - 1)
+            row_indices.append(start_row_idx + row_count - 1)
+            if np_datetime == dates_arr_np[-1]:
+                params_arr.append(SamplingParams(Classification.EXACT_MATCH, 0))
+            else:
+                params_arr.append(SamplingParams(Classification.OUTSIDE_RANGE, 0))
+
+        else:
+            # Search for query date amongst the realization's dates.
+            # last_insertion_index is the last legal insertion index of the queried value
+            last_insertion_index: int = np.searchsorted(
+                dates_arr_np, np_datetime, side="right"
+            ).item()
+
+            assert 0 < last_insertion_index < len(dates_arr_np)
+            assert dates_arr_np[last_insertion_index - 1] <= np_datetime
+            assert dates_arr_np[last_insertion_index] > np_datetime
+
+            if dates_arr_np[last_insertion_index - 1] == np_datetime:
+                row_indices.append(start_row_idx + last_insertion_index - 1)
+                row_indices.append(start_row_idx + last_insertion_index - 1)
+                params_arr.append(SamplingParams(Classification.EXACT_MATCH, 0))
+            else:
+                row_indices.append(start_row_idx + last_insertion_index - 1)
+                row_indices.append(start_row_idx + last_insertion_index)
+                d_as_uint = np_datetime.astype(np.uint64)
+                d0_as_uint = dates_arr_np[last_insertion_index - 1].astype(np.uint64)
+                d1_as_uint = dates_arr_np[last_insertion_index].astype(np.uint64)
+                t = (d_as_uint - d0_as_uint) / (d1_as_uint - d0_as_uint)
+                params_arr.append(SamplingParams(Classification.MUST_INTERPOLATE, t))
+
+    column_arrays = []
+    for colname in table.schema.names:
+        if colname == "REAL":
+            column_arrays.append(unique_reals)
+        elif colname == "DATE":
+            column_arrays.append(np.full(len(unique_reals), np_datetime))
+        else:
+            field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
+            is_rate = field_meta["is_rate"]
+
+            records = table.column(colname).take(row_indices)
+            records_np = records.to_numpy()
+
+            interp_vec_values = []
+
+            record_idx = 0
+            for iparams in params_arr:
+                v0 = records_np[record_idx]
+                v1 = records_np[record_idx + 1]
+                v = None
+
+                if iparams.classification == Classification.MUST_INTERPOLATE:
+                    # Interpolate or backfill
+                    if is_rate:
+                        v = v1
+                    else:
+                        if v0 is not None and v1 is not None:
+                            v = v0 + iparams.t * (v1 - v0)
+                elif iparams.classification == Classification.EXACT_MATCH:
+                    v = v0
+                elif iparams.classification == Classification.OUTSIDE_RANGE:
+                    # Extrapolate or just fill with 0 for rates
+                    if is_rate:
+                        v = 0
+                    else:
+                        v = v0
+
+                interp_vec_values.append(v)
+                record_idx += 2
+
+            column_arrays.append(pa.array(interp_vec_values))
+
+    ret_table = pa.table(column_arrays, schema=table.schema)
+    return ret_table

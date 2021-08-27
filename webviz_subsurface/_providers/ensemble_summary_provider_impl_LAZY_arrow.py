@@ -23,9 +23,15 @@ from .ensemble_summary_provider_resampling import (
     resample_sorted_multi_real_table_NAIVE,
     resample_sorted_multi_real_table,
     sample_sorted_multi_real_table_at_date_NAIVE_SLOW,
+    sample_sorted_multi_real_table_at_date_OPTIMIZED,
 )
 from .._utils.perf_timer import PerfTimer
 
+# !!!!
+# !!!!
+# !!!!
+# Temp for comparing DFs
+# import datacompy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -333,9 +339,24 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
             et_filter_ms = timer.lap_ms()
 
             np_lookup_date = np.datetime64(date, "ms")
-            table = sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
+            table = sample_sorted_multi_real_table_at_date_OPTIMIZED(
                 table, np_lookup_date
             )
+
+            # !!!!!!
+            # !!!!!!
+            # Test code for comparing the two implementations
+            # table_slow = sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
+            #     table, np_lookup_date
+            # )
+
+            # df_opt = table.to_pandas()
+            # df_slow = table_slow.to_pandas()
+            # compare = datacompy.Compare(
+            #     df_slow, df_opt, on_index=True, abs_tol=0.000001
+            # )
+            # print(compare.report())
+
             et_resample_ms = timer.lap_ms()
             table = table.drop(["DATE"])
 
