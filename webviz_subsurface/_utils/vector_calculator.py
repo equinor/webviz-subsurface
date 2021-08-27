@@ -82,16 +82,20 @@ def validate_predefined_expression(
     # Validate expression string
     if not parsed_expression["isValid"]:
         parse_message = parsed_expression["message"]
-        message = f'Invalid mathematical expression {expr} in predefined expression "{name}". \
-            {parse_message}.'
+        message = (
+            f'Invalid mathematical expression {expr} in predefined expression "{name}".'
+            f"{parse_message}."
+        )
         return False, message
 
     # Match variables in expression string and variable names in map
     expression_variables = parsed_expression["variables"]
     map_variables = [elm["variableName"] for elm in expression["variableVectorMap"]]
     if expression_variables != map_variables:
-        message = f'Variables {map_variables} in variableVectorMap is inconsistent with variables \
-            {expression_variables} in equation "{expr}" for predefined expression "{name}"'
+        message = (
+            f"Variables {map_variables} in variableVectorMap is inconsistent with variables "
+            f'{expression_variables} in equation "{expr}" for predefined expression "{name}"'
+        )
         return False, message
 
     # Validate vector names
@@ -104,12 +108,16 @@ def validate_predefined_expression(
         if not is_vector_name_existing(vector_name, vector_data):
             invalid_vectors.append(vector_name)
     if len(invalid_vectors) > 1:
-        message = f'Vector names {invalid_vectors} in predefined expression "{name}" are not \
-            represented in vector data'
+        message = (
+            f'Vector names {invalid_vectors} in predefined expression "{name}" are not'
+            f" represented in vector data"
+        )
         return False, message
     if len(invalid_vectors) > 0:
-        message = f'Vector name {invalid_vectors} in predefined expression "{name}" is not \
-            represented in vector data'
+        message = (
+            f'Vector name {invalid_vectors} in predefined expression "{name}" is not'
+            f" represented in vector data"
+        )
         return False, message
 
     return True, ""
