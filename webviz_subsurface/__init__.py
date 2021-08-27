@@ -3,6 +3,7 @@ import glob
 import pathlib
 import json
 import jsonschema
+import jsonschema.exceptions
 
 from pkg_resources import get_distribution, DistributionNotFound
 import webviz_config
@@ -54,7 +55,6 @@ def subcribe_predefined_expressions(
 ) -> List[ExpressionInfo]:
     predefined_expressions_list: List[ExpressionInfo] = []
 
-    # with open(predefined_expressions) as json_file:
     if predefined_expressions is not None:
         if not pathlib.Path(predefined_expressions).is_absolute():
             predefined_expressions = str(config_folder / predefined_expressions)
@@ -69,8 +69,8 @@ def subcribe_predefined_expressions(
                 instance=predefined_expressions_data,
                 schema=PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
             )
-        except jsonschema.exceptions.ValationError as err:
-            raise ValueError(err)
+        except jsonschema.exceptions.ValidationError as err:
+            raise ValueError from err
 
         predefined_expressions_list = expressions_from_config(
             predefined_expressions_data
