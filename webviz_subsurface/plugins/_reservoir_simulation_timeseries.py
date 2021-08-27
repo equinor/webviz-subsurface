@@ -1290,49 +1290,76 @@ def calculate_vector_dataframes(
     time_index: str,
     cum_interval: str,
 ) -> dict:
-    dfs = {}
+    """Wraps cached function for individual vectors"""
+    return {
+        vector: calculate_vector_dataframe(
+            smry=smry,
+            smry_meta=smry_meta,
+            ensembles=ensembles,
+            vector=vector,
+            selected_expressions=selected_expressions,
+            calc_mode=calc_mode,
+            visualization=visualization,
+            time_index=time_index,
+            cum_interval=cum_interval,
+        )
+        for vector in vectors
+    }
 
-    for vector in vectors:
-        expression = get_expression_from_name(vector, selected_expressions)
-        if expression:
-            data = get_calculated_vector_df(expression, smry, ensembles)
-        elif vector.startswith("AVG_"):
-            total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
-            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
-            data = calc_from_cumulatives(
-                data=data,
-                column_keys=total_vector,
-                time_index=cum_interval,
-                time_index_input=time_index,
-                as_rate=True,
-            )
-            vector = rename_vec_from_cum(vector=vector[4:], as_rate=True)
-        elif vector.startswith("INTVL_"):
-            total_vector = vector.lstrip("INTVL_")
-            data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
-            data = calc_from_cumulatives(
-                data=data,
-                column_keys=total_vector,
-                time_index=cum_interval,
-                time_index_input=time_index,
-                as_rate=False,
-            )
-        else:
-            data = filter_df(smry, ensembles, vector, smry_meta, calc_mode)
 
-        if calc_mode == "delta_ensembles":
-            data = calculate_delta(data, ensembles[0], ensembles[1])
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def calculate_vector_dataframe(
+    smry: pd.DataFrame,
+    smry_meta: Union[pd.DataFrame, None],
+    ensembles: List[str],
+    vector: str,
+    selected_expressions: List[ExpressionInfo],
+    calc_mode: str,
+    visualization: str,
+    time_index: str,
+    cum_interval: str,
+) -> Dict[str, pd.DataFrame]:
+    expression = get_expression_from_name(vector, selected_expressions)
+    if expression:
+        data = get_calculated_vector_df(expression, smry, ensembles)
+    elif vector.startswith("AVG_"):
+        total_vector = f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
+        data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
+        data = calc_from_cumulatives(
+            data=data,
+            column_keys=total_vector,
+            time_index=cum_interval,
+            time_index_input=time_index,
+            as_rate=True,
+        )
+        vector = rename_vec_from_cum(vector=vector[4:], as_rate=True)
+    elif vector.startswith("INTVL_"):
+        total_vector = vector.lstrip("INTVL_")
+        data = filter_df(smry, ensembles, total_vector, smry_meta, calc_mode)
+        data = calc_from_cumulatives(
+            data=data,
+            column_keys=total_vector,
+            time_index=cum_interval,
+            time_index_input=time_index,
+            as_rate=False,
+        )
+    else:
+        data = filter_df(smry, ensembles, vector, smry_meta, calc_mode)
 
-        dfs[vector] = {"data": data}
-        if visualization in [
-            "statistics",
-            "statistics_hist",
-            "fanchart",
-            "fanchart_hist",
-        ]:
-            dfs[vector]["stat"] = calc_series_statistics(data, [vector])
+    if calc_mode == "delta_ensembles":
+        data = calculate_delta(data, ensembles[0], ensembles[1])
 
-    return dfs
+    output: Dict[str, pd.DataFrame] = {"data": data}
+
+    if visualization in [
+        "statistics",
+        "statistics_hist",
+        "fanchart",
+        "fanchart_hist",
+    ]:
+        output["stat"] = calc_series_statistics(data, [vector])
+
+    return output
 
 
 def filter_df(

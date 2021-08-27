@@ -207,12 +207,10 @@ def get_selected_expressions(
     return selected
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_calculated_vector_df(
     expression: ExpressionInfo, smry: pd.DataFrame, ensembles: List[str]
 ) -> pd.DataFrame:
     columns = ["REAL", "ENSEMBLE", "DATE"]
-    df = smry[smry["ENSEMBLE"].isin(ensembles)][columns].copy()
 
     name: str = expression["name"]
     expr: str = expression["expression"]
@@ -223,17 +221,18 @@ def get_calculated_vector_df(
     vector_names = var_vec_dict.values()
 
     # Retreive vectors for calculating expression - filtered on ensembles
-    vector_arrays = smry[smry["ENSEMBLE"].isin(ensembles)][vector_names]
+    df = smry[columns + list(vector_names)].copy()
+    df = df[df["ENSEMBLE"].isin(ensembles)]
 
     values: Dict[str, np.ndarray] = {}
     for var in var_vec_dict:
-        values[var] = vector_arrays[var_vec_dict[var]].values
+        values[var] = df[var_vec_dict[var]].values
 
     evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
     if evaluated_expr is not None:
         df[name] = evaluated_expr
 
-    return df
+    return df[columns + [name]]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
