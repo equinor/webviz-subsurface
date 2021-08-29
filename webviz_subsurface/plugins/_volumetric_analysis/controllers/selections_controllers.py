@@ -23,6 +23,7 @@ def selections_controllers(
         State(get_uuid("page-selected"), "data"),
         State(get_uuid("tabs"), "value"),
         State(get_uuid("selections"), "data"),
+        State(get_uuid("initial-load-info"), "data"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "id"),
     )
@@ -33,6 +34,7 @@ def selections_controllers(
         selected_page: str,
         selected_tab: str,
         previous_selection: dict,
+        initial_load: dict,
         selector_ids: list,
         filter_ids: list,
     ) -> dict:
@@ -57,7 +59,9 @@ def selections_controllers(
         page_selections.update(Colorscale=colorscale)
         page_selections.update(ctx_clicked=ctx["prop_id"])
 
-        if previous_selection.get(selected_page) is None:
+        # check if a page needs to be updated due to page refresh or
+        # change in selections/filters
+        if initial_load[selected_page]:
             page_selections.update(update=True)
         else:
             equal_list = []
@@ -70,6 +74,17 @@ def selections_controllers(
 
         previous_selection[selected_page] = page_selections
         return previous_selection
+
+    @app.callback(
+        Output(get_uuid("initial-load-info"), "data"),
+        Input(get_uuid("page-selected"), "data"),
+        State(get_uuid("initial-load-info"), "data"),
+    )
+    def _store_initial_load_info(page_selected: str, initial_load: dict) -> dict:
+        if initial_load is None:
+            initial_load = {}
+        initial_load[page_selected] = page_selected not in initial_load
+        return initial_load
 
     @app.callback(
         Output(
