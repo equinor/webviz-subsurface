@@ -36,6 +36,7 @@ from ._parameter_correlation import ParameterCorrelation
 from ._parameter_distribution import ParameterDistribution
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._parameter_response_correlation import ParameterResponseCorrelation
+from ._prod_misfit import ProdMisfit
 from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
