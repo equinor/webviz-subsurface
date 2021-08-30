@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#717](https://github.com/equinor/webviz-subsurface/pull/717) - Keep zoom state in `ReservoirSimulationTimeseries` (inc `Regional` and `OneByOne`) and `RelativePermeability` plugins using `uirevision`.
 - [#707](https://github.com/equinor/webviz-subsurface/pull/707) - Generalized and improved some plot functions in  `PropertyStatistics`, `ParameterAnalysis` and `VolumetricAnalysis`. Replaced histogram with distribution plot in `PropertyStatistics`.
 
+### Fixed
+- [#749](https://github.com/equinor/webviz-subsurface/pull/749) - `LinePlotterFMU` check function for `x` axis value alignment across realizations now supports single valued columns.
+
+
 ## [0.2.4] - 2021-07-13
 
 ### Added
