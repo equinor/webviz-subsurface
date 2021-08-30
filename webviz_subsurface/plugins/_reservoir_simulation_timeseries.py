@@ -913,7 +913,6 @@ folder, to avoid risk of not extracting the right data.
 
             # Loop through each vector and calculate relevant plot
             legends = []
-
             dfs = calculate_vector_dataframes(
                 smry=self.smry,
                 smry_meta=self.smry_meta,
@@ -925,7 +924,6 @@ folder, to avoid risk of not extracting the right data.
                 time_index=self.time_index,
                 cum_interval=cum_interval,
             )
-
             for i, vector in enumerate(vectors):
                 if dfs[vector]["data"].empty:
                     continue
@@ -1273,7 +1271,6 @@ folder, to avoid risk of not extracting the right data.
         if self.obsfile:
             functions.append((get_path, [{"path": self.obsfile}]))
         if self.predefined_expressions_path:
-            print("ee")
             functions.append((get_path, [{"path": self.predefined_expressions_path}]))
         return functions
 
@@ -1350,7 +1347,6 @@ def calculate_vector_dataframe(
         data = calculate_delta(data, ensembles[0], ensembles[1])
 
     output: Dict[str, pd.DataFrame] = {"data": data}
-
     if visualization in [
         "statistics",
         "statistics_hist",
@@ -1358,7 +1354,6 @@ def calculate_vector_dataframe(
         "fanchart_hist",
     ]:
         output["stat"] = calc_series_statistics(data, [vector])
-
     return output
 
 
