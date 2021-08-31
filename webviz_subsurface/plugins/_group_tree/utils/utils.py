@@ -1,21 +1,48 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
 import io
 import json
 import pandas as pd
 import numpy as np
-import math
 from webviz_config.common_cache import CACHE
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def create_ensemble_dataset(
-    ensemble: str,
+def get_ensemble_real_options(
+    smry: pd.DataFrame, ensemble_name: str
+) -> List[Dict[str, int]]:
+    """Returns a list of realization dropdown options for an ensemble."""
+    smry_ens = smry[smry.ENSEMBLE == ensemble_name]
+    return [{"label": real, "value": real} for real in sorted(smry_ens.REAL.unique())]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def filter_smry(
+    smry: pd.DataFrame, ensemble_name: str, real: Optional[int] = None
+) -> pd.DataFrame:
+    """Filters the smry dataframe and takes the mean of all summary vectors if no real is given."""
+    smry_ens = smry[smry.ENSEMBLE == ensemble_name].copy()
+    smry_ens.dropna(how="all", axis=1, inplace=True)
+
+    if real is None:
+        return smry_ens.groupby("DATE").mean().reset_index()
+    return smry_ens[smry_ens.REAL == real]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def create_grouptree_dataset(
     smry: pd.DataFrame,
     gruptrees: pd.DataFrame,
 ) -> io.BytesIO:
-    """Description"""
-    t1 = time.time()
+    """This function creates the dataset that is input to the GroupTree
+    component the webviz_subsurface_components.
+
+    A sample dataset can be found here:
+    https://github.com/equinor/webviz-subsurface-components/blob/\
+    master/react/src/demo/example-data/group-tree.json
+
+    """
+    starttime = time.time()
     trees = []
 
     # loop trees
@@ -34,20 +61,17 @@ def create_ensemble_dataset(
             }
         )
 
-    with open(f"/private/olind/webviz/grouptree_{ensemble}.json", "w") as handle:
-        json.dump(trees, handle)
-        print("output exported")
-    print(f"create_ensemble_dataset( run in {round(time.time()-t1, 0)} seconds.")
+    print(f"create_grouptree_dataset used {round(time.time()-starttime, 2)} seconds.")
     return io.BytesIO(json.dumps(trees).encode())
 
 
 def extract_tree(
     df_gruptree: pd.DataFrame, node: str, smry_in_datespan: pd.DataFrame, dates: list
 ) -> dict:
-    """Description"""
+    """Extract the tree part of the GroupTree component dataset. This functions
+    works recursively and is initially called with the top node of the tree: FIELD."""
     nodedict = get_node_data(df_gruptree, node)
     node_values = get_node_smry(node, nodedict["KEYWORD"], smry_in_datespan, dates)
-    grupnet_info = get_grupnet_info(nodedict)
     result = {
         "name": node,
         "pressure": node_values["pressure"],
@@ -66,7 +90,7 @@ def extract_tree(
 
 
 def get_grupnet_info(nodedict: dict) -> str:
-    """Description"""
+    """Returns the VFP table number for the edge if it exists"""
     if "VFP_TABLE" not in nodedict:
         return ""
     if nodedict["VFP_TABLE"] in [None, 9999]:
@@ -75,7 +99,7 @@ def get_grupnet_info(nodedict: dict) -> str:
 
 
 def get_node_data(df_gruptree: pd.DataFrame, node: str) -> dict:
-    """Description"""
+    """Returns the data fields for a specific node as a dictionary"""
     if node not in list(df_gruptree.CHILD):
         raise ValueError(f"Node {node} not found in gruptree table.")
     df_node = df_gruptree[df_gruptree.CHILD == node]
@@ -87,30 +111,10 @@ def get_node_data(df_gruptree: pd.DataFrame, node: str) -> dict:
 def get_node_smry(
     node: str, node_type: str, smry_in_datespan: pd.DataFrame, dates: list
 ) -> Dict[str, List[float]]:
-    """Description"""
-    if node == "FIELD":
-        sumvecs = {
-            "oilrate": "FOPR",
-            "gasrate": "FGPR",
-            "waterrate": "FWPR",
-            "pressure": "GPR:FIELD",
-        }
-    elif node_type in ["GRUPTREE", "BRANPROP"]:
-        sumvecs = {
-            "oilrate": f"GOPR:{node}",
-            "gasrate": f"GGPR:{node}",
-            "waterrate": f"GWPR:{node}",
-            "pressure": f"GPR:{node}",
-        }
-    elif node_type == "WELSPECS":
-        sumvecs = {
-            "oilrate": f"WOPR:{node}",
-            "gasrate": f"WGPR:{node}",
-            "waterrate": f"WWPR:{node}",
-            "pressure": f"WTHP:{node}",
-        }
-    else:
-        raise ValueError(f"Node type {node_type} not implemented")
+    """Returns the node data for all the dates in a period where the tree
+    is constant.
+    """
+    sumvecs = get_sumvecs_for_node(node, node_type)
 
     for sumvec in sumvecs.values():
         if sumvec not in smry_in_datespan.columns:
@@ -123,11 +127,34 @@ def get_node_smry(
         "gasrate": [],
     }
 
-    # sumvecs = {key: value for key, value in sumvecs.items() if key in smry_in_datespan.columns}
-
     for date in dates:
         smry_at_date = smry_in_datespan[smry_in_datespan.DATE == date]
-        # print(smry_at_date)
         for key, sumvec in sumvecs.items():
             output[key].append(round(smry_at_date[sumvec].values[0], 2))
     return output
+
+
+def get_sumvecs_for_node(node: str, node_type: str) -> Dict[str, str]:
+    """Returns the summary vectors for node as a dictionary"""
+    if node == "FIELD":
+        return {
+            "oilrate": "FOPR",
+            "gasrate": "FGPR",
+            "waterrate": "FWPR",
+            "pressure": "GPR:FIELD",
+        }
+    if node_type in ["GRUPTREE", "BRANPROP"]:
+        return {
+            "oilrate": f"GOPR:{node}",
+            "gasrate": f"GGPR:{node}",
+            "waterrate": f"GWPR:{node}",
+            "pressure": f"GPR:{node}",
+        }
+    if node_type == "WELSPECS":
+        return {
+            "oilrate": f"WOPR:{node}",
+            "gasrate": f"WGPR:{node}",
+            "waterrate": f"WWPR:{node}",
+            "pressure": f"WTHP:{node}",
+        }
+    raise ValueError(f"Node type {node_type} not implemented")

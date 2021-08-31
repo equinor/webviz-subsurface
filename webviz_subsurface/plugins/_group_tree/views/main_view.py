@@ -6,6 +6,7 @@ from .selections_view import selections_layout
 
 
 def main_view(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
+    """Main layout"""
     return wcc.FlexBox(
         id=get_uuid("layout"),
         children=[
