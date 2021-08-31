@@ -94,7 +94,7 @@ def validate_predefined_expression(
     # Match variables in expression string and variable names in map
     expression_variables = parsed_expression["variables"]
     map_variables = [elm["variableName"] for elm in expression["variableVectorMap"]]
-    if expression_variables != map_variables:
+    if set(expression_variables) != set(map_variables):
         message = (
             f"Variables {map_variables} in variableVectorMap is inconsistent with variables "
             f'{expression_variables} in equation "{expr}" for predefined expression "{name}"'
