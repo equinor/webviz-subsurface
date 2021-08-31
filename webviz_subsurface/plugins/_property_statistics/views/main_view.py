@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import Dict, Callable, Optional, List
 
 import dash_html_components as html
 import dash_core_components as dcc
@@ -8,34 +8,46 @@ from .property_qc_view import property_qc_view
 from .property_delta_view import property_delta_view
 from .property_response_view import property_response_view
 
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+from ..models import PropertyStatisticsModel
 
 
-def main_view(parent: "PropertyStatistics") -> dcc.Tabs:
+def main_view(
+    get_uuid: Callable,
+    property_model: PropertyStatisticsModel,
+    vector_options: List[Dict],
+    surface_folders: Optional[Dict] = None,
+) -> dcc.Tabs:
     tabs = [
         make_tab(
             label="Property QC",
-            children=property_qc_view(parent=parent),
+            children=property_qc_view(get_uuid=get_uuid, property_model=property_model),
         )
     ]
-    if len(parent.pmodel.ensembles) > 1:
+    if len(property_model.ensembles) > 1:
         tabs.append(
             make_tab(
                 label="AHM impact on property",
-                children=property_delta_view(parent=parent),
+                children=property_delta_view(
+                    get_uuid=get_uuid,
+                    property_model=property_model,
+                    surface_folders=surface_folders,
+                ),
             )
         )
     tabs.append(
         make_tab(
             label="Property impact on simulation profiles",
-            children=property_response_view(parent=parent),
-        )
+            children=property_response_view(
+                get_uuid=get_uuid,
+                property_model=property_model,
+                vector_options=vector_options,
+                surface_folders=surface_folders,
+            ),
+        ),
     )
 
     return html.Div(
-        id=parent.uuid("layout"),
+        id=get_uuid("layout"),
         children=wcc.Tabs(
             style={"width": "100%"},
             children=tabs,

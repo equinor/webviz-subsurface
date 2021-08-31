@@ -1,71 +1,75 @@
-from typing import TYPE_CHECKING
+from typing import Optional, Dict, List
 import pathlib
 
+import pandas as pd
 import xtgeo
 from webviz_config.webviz_store import webvizstore
 
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+
+def make_undefined_surface() -> xtgeo.RegularSurface:
+    surf = xtgeo.RegularSurface(
+        ncol=1, nrow=1, xinc=1, yinc=1
+    )  # 1's as input is required
+    surf.values = 0
+    return surf
 
 
 def surface_from_zone_prop(
-    parent: "PropertyStatistics", zone: str, prop: str, ensemble: str, stype: str
+    surface_table: pd.DataFrame, zone: str, prop: str, ensemble: str, stype: str
 ) -> xtgeo.RegularSurface:
 
-    if not isinstance(parent.surface_folders, dict):
-        raise TypeError("parent.surface_folders must be of type dict")
-
-    path = get_surface_path(
-        ens_path=parent.surface_folders[ensemble],
-        statistic=stype,
-        zone=zone,
-        prop=prop,
-    )
-    try:
-        return xtgeo.surface_from_file(path.resolve())
-    except OSError:
-        surf = xtgeo.RegularSurface(
-            ncol=1, nrow=1, xinc=1, yinc=1
-        )  # 1's as input is required
-        surf.values = 0
-        return surf
+    df = surface_table[
+        (surface_table["zone"] == zone)
+        & (surface_table["prop"] == prop)
+        & (surface_table["ensemble"] == ensemble)
+        & (surface_table["statistic"] == stype)
+    ]
+    if df.empty or len(df["path"].unique()) > 1:
+        return make_undefined_surface()
+    path = get_path(pathlib.Path(df["path"].unique()[0]))
+    return xtgeo.surface_from_file(path.resolve())
 
 
-def surface_store(parent: "PropertyStatistics") -> list:
-    """Function to copy all relevant statistical surfaces
-    to store"""
-
-    if not isinstance(parent.surface_folders, dict):
-        raise TypeError("parent.surface_folders must be of type dict")
-
-    zones = parent.pmodel.dataframe["ZONE"].unique()
-    properties = parent.pmodel.dataframe["PROPERTY"].unique()
-    ensembles = parent.pmodel.ensembles
+@webvizstore
+def generate_surface_table(
+    statistics_dframe: pd.DataFrame,
+    ensembles: List,
+    surface_renaming: Dict,
+    surface_folders: Optional[Dict],
+) -> pd.DataFrame:
+    surface_folders = {} if not surface_folders else surface_folders
+    zones = statistics_dframe["ZONE"].unique()
+    properties = statistics_dframe["PROPERTY"].unique()
     statistics = ["mean", "stddev", "min", "max", "p10", "p90"]
-    store_funcs = []
+    surface_table = []
     for ensemble in ensembles:
         for zone in zones:
             for prop in properties:
                 for statistic in statistics:
-                    store_funcs.append(
-                        (
-                            get_surface_path,
-                            [
-                                {
-                                    "ens_path": parent.surface_folders[ensemble],
-                                    "statistic": statistic,
-                                    "zone": parent.surface_renaming.get(zone, zone),
-                                    "prop": parent.surface_renaming.get(prop, prop),
-                                }
-                            ],
-                        )
+                    zone_in_file = surface_renaming.get(zone, zone)
+                    prop_in_file = surface_renaming.get(prop, prop)
+                    path = (
+                        surface_folders[ensemble]
+                        / statistic
+                        / f"{zone_in_file}--{prop_in_file}.gri"
                     )
-    return store_funcs
+                    if path.exists():
+                        surface_table.append(
+                            {
+                                "ensemble": ensemble,
+                                "zone": zone,
+                                "prop": prop,
+                                "statistic": statistic,
+                                "path": str(path),
+                            }
+                        )
+    return (
+        pd.DataFrame(surface_table)
+        if surface_table
+        else pd.DataFrame(columns=["ensemble", "zone", "prop", "statistic", "path"])
+    )
 
 
 @webvizstore
-def get_surface_path(
-    ens_path: pathlib.Path, statistic: str, zone: str, prop: str
-) -> pathlib.Path:
-    return ens_path / statistic / f"{zone}--{prop}.gri"
+def get_path(path: pathlib.Path) -> pathlib.Path:
+    return path

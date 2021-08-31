@@ -14,7 +14,7 @@ from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
 from .controllers.property_qc_controller import property_qc_controller
 from .controllers.property_delta_controller import property_delta_controller
 from .controllers.property_response_controller import property_response_controller
-from .utils.surface import surface_store
+from .utils.surface import generate_surface_table, get_path
 from .data_loaders import read_csv
 
 
@@ -99,7 +99,7 @@ folder, to avoid risk of not extracting the right data.
         self.ensembles = ensembles
         self.csvfile_statistics = csvfile_statistics
         self.csvfile_smry = csvfile_smry
-        self.surface_folders: Union[dict, None]
+        self._surface_folders: Union[dict, None]
 
         if ensembles is not None:
             self.emodel: EnsembleSetModel = (
@@ -112,42 +112,63 @@ folder, to avoid risk of not extracting the right data.
                     column_keys=self.column_keys,
                 )
             )
-            self.pmodel = PropertyStatisticsModel(
+            self._pmodel = PropertyStatisticsModel(
                 dataframe=self.emodel.load_csv(
                     csv_file=pathlib.Path(self.statistics_file)
                 ),
                 theme=self.theme,
             )
-            self.vmodel = SimulationTimeSeriesModel(
+            self._vmodel = SimulationTimeSeriesModel(
                 dataframe=self.emodel.get_or_load_smry_cached(),
                 theme=self.theme,
             )
-            self.surface_folders = {
+            self._surface_folders = {
                 ens: folder / "share" / "results" / "maps" / ens
                 for ens, folder in self.emodel.ens_folders.items()
             }
         else:
-            self.pmodel = PropertyStatisticsModel(
+            self._pmodel = PropertyStatisticsModel(
                 dataframe=read_csv(csvfile_statistics), theme=self.theme
             )
-            self.vmodel = SimulationTimeSeriesModel(
+            self._vmodel = SimulationTimeSeriesModel(
                 dataframe=read_csv(csvfile_smry), theme=self.theme
             )
-            self.surface_folders = None
+            self._surface_folders = None
 
-        self.surface_renaming = surface_renaming if surface_renaming else {}
-
+        self._surface_renaming = surface_renaming if surface_renaming else {}
+        self._surface_table = generate_surface_table(
+            statistics_dframe=self._pmodel.dataframe,
+            ensembles=self._pmodel.ensembles,
+            surface_folders=self._surface_folders,
+            surface_renaming=self._surface_renaming,
+        )
         self.set_callbacks(app)
 
     @property
     def layout(self) -> dcc.Tabs:
-        return main_view(parent=self)
+        return main_view(
+            get_uuid=self.uuid,
+            property_model=self._pmodel,
+            surface_folders=self._surface_folders,
+            vector_options=self._vmodel.dropdown_options,
+        )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        property_qc_controller(self, app)
-        if len(self.pmodel.ensembles) > 1:
-            property_delta_controller(self, app)
-        property_response_controller(self, app)
+        property_qc_controller(app=app, get_uuid=self.uuid, property_model=self._pmodel)
+        if len(self._pmodel.ensembles) > 1:
+            property_delta_controller(
+                app=app,
+                get_uuid=self.uuid,
+                property_model=self._pmodel,
+                surface_table=self._surface_table,
+            )
+        property_response_controller(
+            app=app,
+            get_uuid=self.uuid,
+            surface_table=self._surface_table,
+            property_model=self._pmodel,
+            timeseries_model=self._vmodel,
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         store: List[Tuple[Callable, list]] = []
@@ -165,6 +186,20 @@ folder, to avoid risk of not extracting the right data.
                     )
                 ]
             )
-        if self.surface_folders is not None:
-            store.extend(surface_store(parent=self))
+        store.append(
+            (
+                generate_surface_table,
+                [
+                    {
+                        "statistics_dframe": self._pmodel.dataframe,
+                        "ensembles": self._pmodel.ensembles,
+                        "surface_folders": self._surface_folders,
+                        "surface_renaming": self._surface_renaming,
+                    }
+                ],
+            )
+        )
+        if self._surface_folders is not None:
+            for path in self._surface_table["path"].unique():
+                store.append((get_path, [{"path": pathlib.Path(path)}]))
         return store

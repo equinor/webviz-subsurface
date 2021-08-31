@@ -1,4 +1,4 @@
-from typing import List, Any, TYPE_CHECKING
+from typing import List, Any, Callable, Dict, Optional
 
 import dash_html_components as html
 import dash_table
@@ -13,18 +13,16 @@ from .selector_view import (
     source_selector,
 )
 
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+from ..models import PropertyStatisticsModel
 
 
-def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
+def surface_select_view(get_uuid: Callable, tab: str) -> html.Div:
     return html.Div(
-        id=parent.uuid("surface-select"),
+        id=get_uuid("surface-select"),
         style={"width": "75%"},
         children=wcc.Dropdown(
             label="Surface statistics",
-            id={"id": parent.uuid("surface-type"), "tab": tab},
+            id={"id": get_uuid("surface-type"), "tab": tab},
             options=[
                 {"label": "Mean", "value": "mean"},
                 {"label": "Standard Deviation", "value": "stddev"},
@@ -40,15 +38,15 @@ def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
 
 
 def surface_view(
-    parent: "PropertyStatistics", ensemble: str, layers: list, synced_ids: list = None
+    get_uuid: Callable, ensemble: str, layers: list, synced_ids: list = None
 ) -> wsc.LeafletMap:
     return html.Div(
         style={"height": "22vh"},
         children=wsc.LeafletMap(
-            id=f"{parent.uuid('surface-view-delta')}{ensemble}",
+            id=f"{get_uuid('surface-view-delta')}{ensemble}",
             layers=layers,
             syncedMaps=[
-                f"{parent.uuid('surface-view-delta')}{s_id}" for s_id in synced_ids
+                f"{get_uuid('surface-view-delta')}{s_id}" for s_id in synced_ids
             ]
             if synced_ids is not None
             else [],
@@ -64,7 +62,7 @@ def surface_view(
 
 # pylint: disable=too-many-arguments
 def surface_views(
-    parent: "PropertyStatistics",
+    get_uuid: Callable,
     ensemble: str,
     delta_ensemble: str,
     ens_layer: dict,
@@ -81,7 +79,7 @@ def surface_views(
                 children=f"{statistic} for {prop}, {zone} in {ensemble}",
             ),
             surface_view(
-                parent=parent,
+                get_uuid=get_uuid,
                 ensemble=ensemble,
                 synced_ids=[delta_ensemble, "diff"],
                 layers=[ens_layer],
@@ -90,7 +88,7 @@ def surface_views(
                 children=f"{statistic} for {prop}, {zone} in {delta_ensemble}",
             ),
             surface_view(
-                parent=parent,
+                get_uuid=get_uuid,
                 ensemble=delta_ensemble,
                 synced_ids=[ensemble, "diff"],
                 layers=[delta_ens_layer],
@@ -99,7 +97,7 @@ def surface_views(
                 children=f"{statistic} for {prop}, {zone} in {ensemble} - {delta_ensemble}",
             ),
             surface_view(
-                parent=parent,
+                get_uuid=get_uuid,
                 ensemble="diff",
                 synced_ids=[delta_ensemble, ensemble],
                 layers=[diff_layer],
@@ -108,21 +106,42 @@ def surface_views(
     )
 
 
-def selector_view(parent: "PropertyStatistics") -> html.Div:
+def selector_view(
+    get_uuid: Callable, property_model: PropertyStatisticsModel
+) -> html.Div:
     return wcc.Frame(
         style={"height": "80vh", "overflowY": "auto"},
         children=[
             wcc.Selectors(
                 label="Selectors",
                 children=[
-                    ensemble_selector(parent=parent, tab="delta"),
-                    delta_ensemble_selector(parent=parent, tab="delta"),
-                    property_selector(parent=parent, tab="delta"),
-                    source_selector(parent=parent, tab="delta"),
+                    ensemble_selector(
+                        get_uuid=get_uuid,
+                        ensembles=property_model.ensembles,
+                        tab="delta",
+                    ),
+                    delta_ensemble_selector(
+                        get_uuid=get_uuid,
+                        ensembles=property_model.ensembles,
+                        tab="delta",
+                    ),
+                    property_selector(
+                        get_uuid=get_uuid,
+                        properties=property_model.properties,
+                        tab="delta",
+                    ),
+                    source_selector(
+                        get_uuid=get_uuid, sources=property_model.sources, tab="delta"
+                    ),
                 ],
             ),
             wcc.Selectors(
-                label="Filters", children=[filter_selector(parent=parent, tab="delta")]
+                label="Filters",
+                children=[
+                    filter_selector(
+                        get_uuid=get_uuid, property_model=property_model, tab="delta"
+                    )
+                ],
             ),
         ],
     )
@@ -134,16 +153,22 @@ def delta_avg_view() -> html.Div:
     )
 
 
-def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
+def property_delta_view(
+    get_uuid: Callable,
+    property_model: PropertyStatisticsModel,
+    surface_folders: Optional[Dict] = None,
+) -> wcc.FlexBox:
     table_surf_options = [{"label": "Table view", "value": "table"}]
-    if parent.surface_folders is not None:
+    if surface_folders is not None:
         table_surf_options.append(
             {"label": "Surface view (click on bar in chart)", "value": "surface"}
         )
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
-            wcc.FlexColumn(children=selector_view(parent=parent)),
+            wcc.FlexColumn(
+                children=selector_view(get_uuid=get_uuid, property_model=property_model)
+            ),
             wcc.FlexColumn(
                 flex=4,
                 children=wcc.Frame(
@@ -153,7 +178,7 @@ def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                     children=[
                         wcc.RadioItems(
                             vertical=False,
-                            id=parent.uuid("delta-sort"),
+                            id=get_uuid("delta-sort"),
                             options=[
                                 {"label": "Sort by Average", "value": "Avg"},
                                 {
@@ -164,7 +189,7 @@ def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                             value="Avg",
                         ),
                         wcc.Graph(
-                            id=parent.uuid("delta-bar-graph"),
+                            id=get_uuid("delta-bar-graph"),
                             config={"displayModeBar": False},
                             style={"height": "75vh"},
                         ),
@@ -179,12 +204,12 @@ def property_delta_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                     highlight=False,
                     children=[
                         wcc.RadioItems(
-                            id=parent.uuid("delta-switch-table-surface"),
+                            id=get_uuid("delta-switch-table-surface"),
                             vertical=False,
                             options=table_surf_options,
                             value="table",
                         ),
-                        html.Div(id=parent.uuid("delta-table-surface-wrapper")),
+                        html.Div(id=get_uuid("delta-table-surface-wrapper")),
                     ],
                 ),
             ),
