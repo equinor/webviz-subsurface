@@ -1,8 +1,10 @@
 from typing import List, Dict
+import time
 import io
 import json
 import pandas as pd
 import numpy as np
+import math
 from webviz_config.common_cache import CACHE
 
 
@@ -13,14 +15,7 @@ def create_ensemble_dataset(
     gruptrees: pd.DataFrame,
 ) -> io.BytesIO:
     """Description"""
-    print("Lager datasett ...")
-
-    # smry = load_smry(ensemble, ensemble_path, time_index)
-    # df_gruptrees = load_csv(
-    #     ensemble_paths={ensemble: ensemble_path}, csv_file=gruptree_file
-    # )
-    # df_gruptrees.DATE = pd.to_datetime(df_gruptrees.DATE).dt.date
-    #
+    t1 = time.time()
     trees = []
 
     # loop trees
@@ -28,14 +23,10 @@ def create_ensemble_dataset(
         next_tree_date = gruptrees[gruptrees.DATE > tree_date].DATE.min()
         if pd.isna(next_tree_date):
             next_tree_date = smry.DATE.max()
-        smry_in_datespan = smry[(smry.DATE >= tree_date) & (smry.DATE < next_tree_date)]
+        smry_in_datespan = smry[
+            (smry.DATE >= tree_date) & (smry.DATE < next_tree_date)
+        ].copy()
         dates = list(smry_in_datespan.DATE.unique())
-        # str_dates = [date.strftime("%Y-%m-%d") for date in dates]
-        # print(
-        #     f"from date: {tree_date} "
-        #     f"next_date: {next_tree_date} "
-        #     f"dates: {str_dates} "
-        # )
         trees.append(
             {
                 "dates": [date.strftime("%Y-%m-%d") for date in dates],
@@ -46,7 +37,7 @@ def create_ensemble_dataset(
     with open(f"/private/olind/webviz/grouptree_{ensemble}.json", "w") as handle:
         json.dump(trees, handle)
         print("output exported")
-
+    print(f"create_ensemble_dataset( run in {round(time.time()-t1, 0)} seconds.")
     return io.BytesIO(json.dumps(trees).encode())
 
 
@@ -54,15 +45,16 @@ def extract_tree(
     df_gruptree: pd.DataFrame, node: str, smry_in_datespan: pd.DataFrame, dates: list
 ) -> dict:
     """Description"""
-    node_type = df_gruptree[df_gruptree.CHILD == node].KEYWORD.iloc[0]
-    node_values = get_node_smry(node, node_type, smry_in_datespan, dates)
+    nodedict = get_node_data(df_gruptree, node)
+    node_values = get_node_smry(node, nodedict["KEYWORD"], smry_in_datespan, dates)
+    grupnet_info = get_grupnet_info(nodedict)
     result = {
         "name": node,
         "pressure": node_values["pressure"],
         "oilrate": node_values["oilrate"],
         "waterrate": node_values["waterrate"],
         "gasrate": node_values["gasrate"],
-        "grupnet": "Grupnet info",
+        "grupnet": get_grupnet_info(nodedict),
     }
     children = list(df_gruptree[df_gruptree.PARENT == node].CHILD.unique())
     if children:
@@ -71,6 +63,25 @@ def extract_tree(
             for child_node in df_gruptree[df_gruptree.PARENT == node].CHILD.unique()
         ]
     return result
+
+
+def get_grupnet_info(nodedict: dict) -> str:
+    """Description"""
+    if "VFP_TABLE" not in nodedict:
+        return ""
+    if nodedict["VFP_TABLE"] in [None, 9999]:
+        return ""
+    return "VFP " + str(int(nodedict["VFP_TABLE"]))
+
+
+def get_node_data(df_gruptree: pd.DataFrame, node: str) -> dict:
+    """Description"""
+    if node not in list(df_gruptree.CHILD):
+        raise ValueError(f"Node {node} not found in gruptree table.")
+    df_node = df_gruptree[df_gruptree.CHILD == node]
+    if df_node.shape[0] > 1:
+        raise ValueError(f"Multiple nodes found for {node} in gruptree table.")
+    return df_node.to_dict("records")[0]
 
 
 def get_node_smry(
@@ -82,9 +93,9 @@ def get_node_smry(
             "oilrate": "FOPR",
             "gasrate": "FGPR",
             "waterrate": "FWPR",
-            "pressure": "FPR",
+            "pressure": "GPR:FIELD",
         }
-    elif node_type == "GRUPTREE":
+    elif node_type in ["GRUPTREE", "BRANPROP"]:
         sumvecs = {
             "oilrate": f"GOPR:{node}",
             "gasrate": f"GGPR:{node}",
@@ -98,6 +109,9 @@ def get_node_smry(
             "waterrate": f"WWPR:{node}",
             "pressure": f"WTHP:{node}",
         }
+    else:
+        raise ValueError(f"Node type {node_type} not implemented")
+
     for sumvec in sumvecs.values():
         if sumvec not in smry_in_datespan.columns:
             smry_in_datespan[sumvec] = np.nan
@@ -108,6 +122,9 @@ def get_node_smry(
         "waterrate": [],
         "gasrate": [],
     }
+
+    # sumvecs = {key: value for key, value in sumvecs.items() if key in smry_in_datespan.columns}
+
     for date in dates:
         smry_at_date = smry_in_datespan[smry_in_datespan.DATE == date]
         # print(smry_at_date)

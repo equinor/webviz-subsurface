@@ -24,15 +24,19 @@ from .views import main_view
 
 """
 Notater:
-- hvordan handtere realisasjoner
-- hvordan handtere historikk vs sim data
-- GPR maa legges til Drogon
-- well attributes filter i frontend
-- Hva med BHP? egen node eller data pa bronnode
-- Naar tre og data skal skilles, hvordan haandteres manglende verdier i data? frontend eller backend?
-- Maa kunne velge rate istedetfor grupnet info
 - Hva hvis treet ikke er likt over realisasjoner
+    - for realisasjon burde man kanskje bruke gruptree-fil fra samme realisasjon
+- hvordan handtere historikk vs sim data
+- hvordan haandteres manglende verdier i data? Nå sendes NaN verdier
+    - frontend eller backend?
 - mean av producing real
+- warning hvis summary-vektoren mangler? kan bli mange warnings
+- hvordan haandtere wefac/gefac ?
+
+Til diskusjon om komponenten:
+- Hva med BHP? egen node eller data pa bronnode
+- well attributes filter i frontend ?
+- Hva med at man kan velge å vise rate som tall istedet for info
 """
 
 
@@ -128,8 +132,9 @@ def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.Dat
         for filename in glob.glob(f"{ens_path}/{gruptree_file}"):
             df_ens = pd.read_csv(filename)
             df_ens["ENSEMBLE"] = ens_name
+            if "BRANPROP" in df_ens.KEYWORD.unique():
+                df_ens = df_ens[df_ens.KEYWORD != "GRUPTREE"]
             df = pd.concat([df, df_ens])
             break
-    if "BRANPROP" in df.KEYWORD.unique():
-        df = df[df.KEYWORD != "GRUPTREE"]
+    df = df.where(pd.notnull(df), None)
     return df

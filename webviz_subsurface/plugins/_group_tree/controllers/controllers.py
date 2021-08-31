@@ -21,11 +21,11 @@ def controllers(
         Output({"id": get_uuid("controls"), "element": "realization"}, "options"),
         Output({"id": get_uuid("controls"), "element": "realization"}, "value"),
         Input({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
-        Input({"id": get_uuid("controls"), "element": "mean_or_single_real"}, "value"),
     )
     def _update_realization_dropdown(
-        ensemble_name: str, mean_or_single_real: str
+        ensemble_name: str,
     ) -> Tuple[List[Dict[str, Any]], Optional[int]]:
+        print("update dropdown")
         smry_ens = smry[smry.ENSEMBLE == ensemble_name].copy()
         smry_ens.dropna(how="all", axis=1, inplace=True)
         realizations = [
@@ -35,14 +35,14 @@ def controllers(
 
     @app.callback(
         Output(get_uuid("grouptree_wrapper"), "children"),
-        Output(get_uuid("grouptree_wrapper"), "style"),
-        Input({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
         Input({"id": get_uuid("controls"), "element": "mean_or_single_real"}, "value"),
         Input({"id": get_uuid("controls"), "element": "realization"}, "value"),
+        State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _render_grouptree(
-        ensemble_name: str, mean_or_single_real: str, real: int
+        mean_or_single_real: str, real: int, ensemble_name: str
     ) -> list:
+        print("render gruptree...")
 
         smry_ens = smry[smry.ENSEMBLE == ensemble_name].copy()
         smry_ens.dropna(how="all", axis=1, inplace=True)
@@ -65,13 +65,12 @@ def controllers(
         )
         return [
             webviz_subsurface_components.GroupTree(id="grouptree", data=data),
-            {"padding": "10px"},
         ]
 
     @app.callback(
         Output(
             {"id": get_uuid("controls"), "element": "single_real_options"},
-            component_property="style",
+            "style",
         ),
         Input(
             {"id": get_uuid("controls"), "element": "mean_or_single_real"},
