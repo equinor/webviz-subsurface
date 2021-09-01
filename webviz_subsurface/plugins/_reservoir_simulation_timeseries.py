@@ -527,7 +527,6 @@ folder, to avoid risk of not extracting the right data.
                             ),
                             wcc.Selectors(
                                 label="Time series",
-                                id=self.uuid("vectors"),
                                 children=wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,

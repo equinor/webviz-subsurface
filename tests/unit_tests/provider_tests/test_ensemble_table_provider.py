@@ -81,7 +81,7 @@ def test_create_from_aggregated_csv_file_smry_csv(
         tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
     )
     providerset = factory.create_provider_set_from_aggregated_csv_file(
-        testdata_folder / "aggregated_data" / "smry.csv"
+        testdata_folder / "reek_test_data" / "aggregated_data" / "smry.csv"
     )
 
     assert providerset.ensemble_names() == ["iter-0"]
@@ -113,7 +113,7 @@ def test_create_from_aggregated_csv_file_smry_hm(
         tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
     )
     providerset = factory.create_provider_set_from_aggregated_csv_file(
-        testdata_folder / "aggregated_data" / "smry_hm.csv"
+        testdata_folder / "reek_test_data" / "aggregated_data" / "smry_hm.csv"
     )
 
     assert providerset.ensemble_names() == ["iter-0", "iter-3"]
@@ -138,10 +138,10 @@ def test_create_from_per_realization_csv_file(
 ) -> None:
 
     ensembles: Dict[str, str] = {
-        "iter-0": str(testdata_folder / "reek_history_match/realization-*/iter-0"),
-        "iter-1": str(testdata_folder / "reek_history_match/realization-*/iter-1"),
-        "iter-2": str(testdata_folder / "reek_history_match/realization-*/iter-2"),
-        "iter-3": str(testdata_folder / "reek_history_match/realization-*/iter-3"),
+        "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
+        "iter-1": str(testdata_folder / "01_drogon_ahm/realization-*/iter-1"),
+        "iter-2": str(testdata_folder / "01_drogon_ahm/realization-*/iter-2"),
+        "iter-3": str(testdata_folder / "01_drogon_ahm/realization-*/iter-3"),
     }
 
     csvfile = "share/results/tables/rft.csv"
@@ -160,12 +160,12 @@ def test_create_from_per_realization_csv_file(
     # print(all_column_names)
     assert len(all_column_names) == 13
 
-    assert len(provider.realizations()) == 10
+    assert len(provider.realizations()) == 100
 
     valdf = provider.get_column_data(["CONIDX"], [2])
-    assert valdf.shape == (49, 2)
+    assert valdf.shape == (218, 2)
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "CONIDX"
     assert valdf["REAL"].unique() == [2]
-    assert valdf["CONIDX"].nunique() == 9
-    assert sorted(valdf["CONIDX"].unique()) == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    assert valdf["CONIDX"].nunique() == 24
+    assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
