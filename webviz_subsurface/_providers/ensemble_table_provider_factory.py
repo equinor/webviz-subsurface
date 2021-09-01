@@ -318,7 +318,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         if key in self._scratch_ensemble_cache:
             return pickle.loads(self._scratch_ensemble_cache[key])  # nosec
 
-        scratch_ensemble = ScratchEnsemble(ens_name, ens_path)
+        scratch_ensemble = ScratchEnsemble(ens_name, ens_path).filter("OK")
         self._scratch_ensemble_cache[key] = pickle.dumps(
             scratch_ensemble, pickle.HIGHEST_PROTOCOL
         )
