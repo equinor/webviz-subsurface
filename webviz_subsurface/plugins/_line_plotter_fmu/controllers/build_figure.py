@@ -194,7 +194,7 @@ def build_figure(
             realizations = list(ens_df["REAL"].unique())
             equal_x = all(
                 (
-                    all(
+                    np.all(
                         ens_df.loc[ens_df["REAL"] == real][x_column_name].values
                         == ens_df.loc[ens_df["REAL"] == realizations[0]][
                             x_column_name
