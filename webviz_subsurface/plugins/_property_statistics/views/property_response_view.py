@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import Callable, List, Optional, Dict
 
 import dash_html_components as html
 import webviz_core_components as wcc
@@ -10,18 +10,16 @@ from .selector_view import (
     source_selector,
 )
 
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+from ..models import PropertyStatisticsModel
 
 
-def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
+def surface_select_view(get_uuid: Callable, tab: str) -> html.Div:
     return html.Div(
-        id=parent.uuid("surface-select"),
+        id=get_uuid("surface-select"),
         style={"width": "75%"},
         children=wcc.Dropdown(
             label="Surface statistics",
-            id={"id": parent.uuid("surface-type"), "tab": tab},
+            id={"id": get_uuid("surface-type"), "tab": tab},
             options=[
                 {"label": "Mean", "value": "mean"},
                 {"label": "Standard Deviation", "value": "stddev"},
@@ -36,16 +34,16 @@ def surface_select_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     )
 
 
-def surface_view(parent: "PropertyStatistics", tab: str) -> html.Div:
+def surface_view(get_uuid: Callable, tab: str) -> html.Div:
     return html.Div(
         style={"height": "35vh"},
         children=[
             wcc.Label(
-                id={"id": parent.uuid("surface-name"), "tab": tab},
+                id={"id": get_uuid("surface-name"), "tab": tab},
                 children="Select vector, then click on a correlation to visualize surface",
             ),
             wsc.LeafletMap(
-                id={"id": parent.uuid("surface-view"), "tab": tab},
+                id={"id": get_uuid("surface-view"), "tab": tab},
                 layers=[],
                 unitScale={},
                 autoScaleMap=True,
@@ -58,22 +56,22 @@ def surface_view(parent: "PropertyStatistics", tab: str) -> html.Div:
     )
 
 
-def timeseries_view(parent: "PropertyStatistics") -> html.Div:
+def timeseries_view(get_uuid: Callable, options: List[Dict]) -> html.Div:
     return html.Div(
         style={"height": "38vh"},
         children=[
             html.Div(
                 children=[
                     wcc.Dropdown(
-                        id=parent.uuid("property-response-vector-select"),
-                        options=parent.vmodel.dropdown_options,
+                        id=get_uuid("property-response-vector-select"),
+                        options=options,
                         clearable=False,
                         placeholder="Select a vector from the list...",
                     ),
                 ]
             ),
             wcc.Graph(
-                id=parent.uuid("property-response-vector-graph"),
+                id=get_uuid("property-response-vector-graph"),
                 config={"displayModeBar": False},
                 style={"height": "35vh"},
             ),
@@ -81,71 +79,93 @@ def timeseries_view(parent: "PropertyStatistics") -> html.Div:
     )
 
 
-def correlation_view(parent: "PropertyStatistics") -> wcc.Graph:
+def correlation_view(get_uuid: Callable) -> wcc.Graph:
     return wcc.Graph(
         style={"height": "78vh"},
-        id=parent.uuid("property-response-correlation-graph"),
+        id=get_uuid("property-response-correlation-graph"),
     )
 
 
-def filter_correlated_parameter(parent: "PropertyStatistics") -> html.Div:
+def filter_correlated_parameter(get_uuid: Callable, labels: List[str]) -> html.Div:
     return html.Div(
         [
             html.Div(
                 style={"marginBottom": "10px"},
                 children=wcc.Dropdown(
                     label="Filter on property",
-                    id=parent.uuid("property-response-correlated-filter"),
-                    options=[
-                        {"label": label, "value": label}
-                        for label in parent.pmodel.get_labels()
-                    ],
+                    id=get_uuid("property-response-correlated-filter"),
+                    options=[{"label": label, "value": label} for label in labels],
                     placeholder="Select a label to filter on...",
                 ),
             ),
             wcc.RangeSlider(
-                id=parent.uuid("property-response-correlated-slider"),
+                id=get_uuid("property-response-correlated-slider"),
                 disabled=True,
             ),
         ]
     )
 
 
-def selector_view(parent: "PropertyStatistics") -> html.Div:
+def selector_view(
+    get_uuid: Callable,
+    property_model: PropertyStatisticsModel,
+    surface_folders: Optional[Dict],
+) -> html.Div:
     return html.Div(
         children=[
             wcc.Selectors(
                 label="Selectors",
                 children=[
-                    ensemble_selector(parent=parent, tab="response"),
-                    source_selector(parent=parent, tab="response"),
+                    ensemble_selector(
+                        get_uuid=get_uuid,
+                        ensembles=property_model.ensembles,
+                        tab="response",
+                    ),
+                    source_selector(
+                        get_uuid=get_uuid,
+                        sources=property_model.sources,
+                        tab="response",
+                    ),
                 ],
             ),
             wcc.Selectors(
                 label="Filters",
                 children=[
-                    filter_selector(parent=parent, tab="response"),
-                    filter_correlated_parameter(parent=parent),
+                    filter_selector(
+                        get_uuid=get_uuid, property_model=property_model, tab="response"
+                    ),
+                    filter_correlated_parameter(
+                        get_uuid=get_uuid, labels=property_model.get_labels()
+                    ),
                 ],
             ),
             wcc.Selectors(
                 label="Surface",
-                children=[surface_select_view(parent=parent, tab="response")]
-                if parent.surface_folders is not None
+                children=[surface_select_view(get_uuid=get_uuid, tab="response")]
+                if surface_folders is not None
                 else [html.Div()],
             ),
         ],
     )
 
 
-def property_response_view(parent: "PropertyStatistics") -> wcc.FlexBox:
+def property_response_view(
+    get_uuid: Callable,
+    property_model: PropertyStatisticsModel,
+    vector_options: List[Dict],
+    surface_folders: Optional[Dict],
+) -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
             wcc.FlexColumn(
                 children=wcc.Frame(
                     style={"height": "80vh", "overflowY": "auto"},
-                    children=selector_view(parent=parent),
+                    children=selector_view(
+                        get_uuid=get_uuid,
+                        property_model=property_model,
+                        surface_folders=surface_folders,
+                    ),
                 )
             ),
             wcc.FlexColumn(
@@ -157,12 +177,14 @@ def property_response_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                     children=[
                         html.Div(
                             style={"height": "38vh"},
-                            children=timeseries_view(parent=parent),
+                            children=timeseries_view(
+                                get_uuid=get_uuid, options=vector_options
+                            ),
                         ),
                         html.Div(
                             style={"height": "39vh"},
-                            children=surface_view(parent=parent, tab="response")
-                            if parent.surface_folders is not None
+                            children=surface_view(get_uuid=get_uuid, tab="response")
+                            if surface_folders is not None
                             else None,
                         ),
                     ],
@@ -174,7 +196,7 @@ def property_response_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                     style={"height": "80vh"},
                     color="white",
                     highlight=False,
-                    children=correlation_view(parent=parent),
+                    children=correlation_view(get_uuid=get_uuid),
                 ),
             ),
         ],

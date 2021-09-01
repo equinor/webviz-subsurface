@@ -26,6 +26,7 @@ class PropertyStatisticsModel:
         "Stddev",
     ]
     REQUIRED_SELECTORS = ["ZONE"]
+    SKIPPED_COLUMNS = ["Count"]
 
     def __init__(self, dataframe: pd.DataFrame, theme: WebvizConfigTheme) -> None:
         self._dataframe = dataframe
@@ -50,6 +51,9 @@ class PropertyStatisticsModel:
                 raise KeyError(
                     f"{column} column is missing from property statistics data"
                 )
+        self._dataframe = self._dataframe.drop(
+            self.SKIPPED_COLUMNS, axis=1, errors="ignore"
+        )
         sources = self.dataframe["SOURCE"].unique()
         if len(sources) > 1:
             raise ValueError(
