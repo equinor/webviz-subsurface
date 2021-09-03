@@ -11,6 +11,7 @@ TESTS_REQUIRE = [
     "mypy",
     "pylint",
     "pytest-rerunfailures",
+    "pytest-xdist",
     "selenium>=3.141",
     "types-dataclasses>=0.1.5; python_version<'3.7'",
     "types-pyyaml",
