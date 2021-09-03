@@ -8,6 +8,7 @@ TESTS_REQUIRE = [
     "black>=21.4b0",
     "dash[testing]",
     "ert",
+    "flaky",
     "mypy",
     "pylint",
     "pytest-xdist",
