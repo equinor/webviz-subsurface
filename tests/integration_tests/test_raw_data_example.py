@@ -2,7 +2,7 @@ import sys
 import subprocess  # nosec
 from pathlib import Path
 
-from flaky import flaky
+import pytest
 from dash.testing.composite import DashComposite
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import (
@@ -11,7 +11,7 @@ from selenium.common.exceptions import (
 )
 
 
-@flaky(max_runs=5)
+@pytest.mark.flaky(reruns=10)
 def test_full_example(
     testdata_folder: Path, dash_duo: DashComposite, tmp_path: Path
 ) -> None:

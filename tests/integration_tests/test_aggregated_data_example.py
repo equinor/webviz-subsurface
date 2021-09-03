@@ -2,6 +2,7 @@ import sys
 import subprocess  # nosec
 from pathlib import Path
 
+import pytest
 from dash.testing.composite import DashComposite
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import (
@@ -10,6 +11,7 @@ from selenium.common.exceptions import (
 )
 
 
+@pytest.mark.flaky(reruns=10)
 def test_basic_example(
     testdata_folder: Path,
     dash_duo: DashComposite,
@@ -88,5 +90,5 @@ def test_basic_example(
                 ]
             )
         ]
-        if logs != []:
-            raise AssertionError(page, logs)
+
+        assert logs == [], f"Console log not empty ({logs}) on page {page}"
