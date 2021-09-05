@@ -3,8 +3,25 @@ import time
 import io
 import json
 import pandas as pd
-import numpy as np
 from webviz_config.common_cache import CACHE
+
+
+def qc_summary(
+    smry: pd.DataFrame, gruptree: pd.DataFrame, ensembles: List[str]
+) -> None:
+    """Description"""
+    missing_sumvecs = []
+    for ensemble in ensembles:
+        smry_ens = smry[smry.ENSEMBLE == ensemble]
+        gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
+
+        for _, row in gruptree_ens.iterrows():
+            sumvecs = get_sumvecs_for_node(row["CHILD"], row["KEYWORD"])
+            for _, sumvec in sumvecs.items():
+                if sumvec not in smry_ens.columns:
+                    missing_sumvecs.append(f"{sumvec}, ens: {ensemble}")
+    if missing_sumvecs:
+        raise ValueError(missing_sumvecs)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -26,7 +43,25 @@ def filter_smry(
 
     if real is None:
         return smry_ens.groupby("DATE").mean().reset_index()
-    return smry_ens[smry_ens.REAL == real]
+    return smry_ens[smry_ens["REAL"] == real]
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def filter_gruptree(
+    gruptree: pd.DataFrame, ensemble_name: str, real: Optional[int] = None
+) -> pd.DataFrame:
+    """Description"""
+
+    gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble_name]
+
+    if real is None or len(gruptree_ens["REAL"].unique()) == 1:
+        # This means that the trees are equal for all realizations
+        # and no further filtering is necessary
+        return gruptree_ens
+
+    # Else: trees are not equal and all trees are stored in the dataframe
+    # Filter on realization
+    return gruptree_ens[gruptree_ens["REAL"] == real]
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -104,6 +139,7 @@ def get_node_data(df_gruptree: pd.DataFrame, node: str) -> dict:
         raise ValueError(f"Node {node} not found in gruptree table.")
     df_node = df_gruptree[df_gruptree.CHILD == node]
     if df_node.shape[0] > 1:
+        df_gruptree.to_csv("/private/olind/webviz/debug.csv")
         raise ValueError(f"Multiple nodes found for {node} in gruptree table.")
     return df_node.to_dict("records")[0]
 
@@ -115,10 +151,6 @@ def get_node_smry(
     is constant.
     """
     sumvecs = get_sumvecs_for_node(node, node_type)
-
-    for sumvec in sumvecs.values():
-        if sumvec not in smry_in_datespan.columns:
-            smry_in_datespan[sumvec] = np.nan
 
     output: Dict[str, List[float]] = {
         "pressure": [],

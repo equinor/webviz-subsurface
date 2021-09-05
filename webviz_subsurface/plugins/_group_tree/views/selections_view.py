@@ -23,18 +23,7 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Frame:
                     ),
                     wcc.RadioItems(
                         label="Mean or realization",
-                        id={"id": controls_uuid, "element": "mean_or_single_real"},
-                        options=[
-                            {
-                                "label": "Mean of producing real.",
-                                "value": "plot_mean",
-                            },
-                            {
-                                "label": "Single realization",
-                                "value": "single_real",
-                            },
-                        ],
-                        value="plot_mean",
+                        id={"id": controls_uuid, "element": "tree_mode"},
                     ),
                     html.Div(
                         id={"id": controls_uuid, "element": "single_real_options"},

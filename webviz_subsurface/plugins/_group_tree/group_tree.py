@@ -1,16 +1,17 @@
 from typing import List, Dict, Tuple, Callable
-import glob
 
 import pandas as pd
 import dash
 import dash_html_components as html
 
+from fmu.ensemble import ScratchEnsemble
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from ..._models import EnsembleSetModel
 from ..._models import caching_ensemble_set_model_factory
+from .utils import qc_summary
 from .controllers import controllers
 from .views import main_view
 
@@ -91,6 +92,8 @@ class GroupTree(WebvizPluginABC):
         self.smry["DATE"] = pd.to_datetime(self.smry["DATE"]).dt.date
         self.gruptree["DATE"] = pd.to_datetime(self.gruptree["DATE"]).dt.date
 
+        qc_summary(self.smry, self.gruptree, self.ensembles)
+
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
@@ -143,20 +146,53 @@ def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.Dat
     """Searches for gruptree files on the scratch disk. These
     files can be exported in the FMU workflow using the ECL2CSV
     forward job with subcommand gruptree.
-
-    If one file is found per ensemble this file is assumed to be
-    valid for the whole ensemble.
-
-    If BRANPROP is in the KEYWORDS, GRUPTREE rows are filtered out
     """
     df = pd.DataFrame()
     for ens_name, ens_path in ens_paths.items():
-        for filename in glob.glob(f"{ens_path}/{gruptree_file}"):
-            df_ens = pd.read_csv(filename)
-            df_ens["ENSEMBLE"] = ens_name
-            if "BRANPROP" in df_ens["KEYWORD"].unique():
-                df_ens = df_ens[df_ens["KEYWORD"] != "GRUPTREE"]
-            df = pd.concat([df, df_ens])
-            break
+        df_ens = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
+        df_ens["ENSEMBLE"] = ens_name
+        df = pd.concat([df, df_ens])
     df = df.where(pd.notnull(df), None)
     return df
+
+
+def read_ensemble_gruptree(
+    ens_name: str, ens_path: str, gruptree_file: str
+) -> pd.DataFrame:
+    """Description
+
+    If BRANPROP is in the KEYWORDS, GRUPTREE rows are filtered out
+    """
+    ens = ScratchEnsemble("ens", ens_path)
+    df_files = ens.find_files(gruptree_file)
+
+    if df_files.empty:
+        raise ValueError(f"No gruptree file available for ensemble: {ens_name}")
+
+    # Load all gruptree dataframes and check if they are equal
+    compare_columns = ["DATE", "CHILD", "KEYWORD", "PARENT"]
+    df_prev = pd.DataFrame()
+    df_all = pd.DataFrame()
+    gruptrees_are_equal = True
+    for i, row in df_files.iterrows():
+        df_real = pd.read_csv(row["FULLPATH"])
+
+        if "BRANPROP" in df_real["KEYWORD"].unique():
+            df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"].reset_index()
+
+        if (
+            i > 0
+            and gruptrees_are_equal
+            and not df_real[compare_columns].equals(df_prev)
+        ):
+            gruptrees_are_equal = False
+        else:
+            df_prev = df_real[compare_columns].copy()
+
+        df_real["REAL"] = row["REAL"]
+        df_all = pd.concat([df_all, df_real])
+
+    # Return either one or all realization in a common dataframe
+    if gruptrees_are_equal:
+        return df_all[df_all["REAL"] == df_all["REAL"].min()]
+    return df_all
