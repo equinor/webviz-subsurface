@@ -129,6 +129,34 @@ def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> No
 
 
 # -------------------------------------------------------------------------
+def _get_meta_for_n_vectors_one_by_one(
+    provider: EnsembleSummaryProvider, num_vectors: int
+) -> None:
+
+    all_vectors = provider.vector_names()
+    num_vectors = min(num_vectors, len(all_vectors))
+    vectors_to_get = all_vectors[0:num_vectors]
+
+    print("## ------------------")
+    print(f"## entering _get_meta_for_n_vectors_one_by_one({num_vectors}) ...")
+
+    start_tim = time.perf_counter()
+
+    for vec_name in vectors_to_get:
+        meta_dict = provider.vector_metadata(vec_name)
+        print(f"metadata for {vec_name}")
+        print(meta_dict)
+
+    elapsed_time_ms = 1000 * (time.perf_counter() - start_tim)
+
+    print(
+        "## finished _get_meta_for_n_vectors_one_by_one(), total time (ms)",
+        elapsed_time_ms,
+    )
+    print("## ------------------")
+
+
+# -------------------------------------------------------------------------
 def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
 
     all_vector_names = provider.vector_names()
@@ -142,6 +170,8 @@ def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
     print("## num_dates", num_dates)
 
     print()
+
+    _get_meta_for_n_vectors_one_by_one(provider, 10)
 
     _get_vector_names_filtered_by_value(provider)
 

@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Dict
+from typing import List, Optional, Sequence, Dict, Any
 import datetime
 from pathlib import Path
 import logging
@@ -8,6 +8,7 @@ import pyarrow.compute as pc
 import pyarrow.feather
 import pandas as pd
 import numpy as np
+import json
 
 from .ensemble_summary_provider import EnsembleSummaryProvider
 from .ensemble_summary_provider_table_utils import (
@@ -277,6 +278,12 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
         )
 
         return unique_date_vals
+
+    # -------------------------------------------------------------------------
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+        schema = self._get_or_read_schema()
+        field_meta = json.loads(schema.field(vector_name).metadata[b"smry_meta"])
+        return field_meta
 
     # -------------------------------------------------------------------------
     def get_vectors_df(

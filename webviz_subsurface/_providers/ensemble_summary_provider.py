@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Dict, Any
 import datetime
 import abc
 
@@ -27,6 +27,10 @@ class EnsembleSummaryProvider(abc.ABC):
     def dates(
         self, realizations: Optional[Sequence[int]] = None
     ) -> List[datetime.datetime]:
+        ...
+
+    @abc.abstractmethod
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
         ...
 
     @abc.abstractmethod

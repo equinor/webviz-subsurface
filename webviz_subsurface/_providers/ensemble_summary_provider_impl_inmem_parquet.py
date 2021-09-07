@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Dict, Any
 import datetime
 from pathlib import Path
 import logging
@@ -131,6 +131,10 @@ class EnsembleSummaryProviderImplInMemParquet(EnsembleSummaryProvider):
 
         unique_date_vals = date_series.unique()
         return unique_date_vals
+
+    # -------------------------------------------------------------------------
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+        return None
 
     # -------------------------------------------------------------------------
     def get_vectors_df(
