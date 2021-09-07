@@ -12,18 +12,14 @@ def test_single_ensemble(testdata_folder):
     emodel = EnsembleSetModel(
         ensemble_paths={
             "iter-0": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-0"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-0")
             )
         }
     )
-    assert emodel.ens_folders == {
-        "iter-0": Path(testdata_folder) / "reek_history_match"
-    }
+    assert emodel.ens_folders == {"iter-0": Path(testdata_folder) / "01_drogon_ahm"}
     smry = emodel.get_or_load_smry_cached()
-    assert len(smry.columns) == 476
-    assert len(smry["DATE"].unique()) == 480
+    assert len(smry.columns) == 923
+    assert len(smry["DATE"].unique()) == 2368
     assert smry["ENSEMBLE"].unique() == ["iter-0"]
     assert smry["ENSEMBLE"].dtype == np.dtype("O")
     assert all(
@@ -35,7 +31,7 @@ def test_single_ensemble(testdata_folder):
     assert all(col in parameters.columns for col in ["ENSEMBLE", "REAL"])
     assert parameters["ENSEMBLE"].dtype == np.dtype("O")
     assert parameters["REAL"].dtype == np.dtype("int64")
-    assert len(parameters.columns) == 28
+    assert len(parameters.columns) == 56
 
 
 @pytest.mark.usefixtures("app")
@@ -44,30 +40,22 @@ def test_smry_load_multiple_ensembles(testdata_folder):
     emodel = EnsembleSetModel(
         ensemble_paths={
             "iter-0": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-0"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-0")
             ),
             "iter-1": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-1"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-1")
             ),
             "iter-2": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-2"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-2")
             ),
             "iter-3": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-3"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-3")
             ),
         }
     )
     smry = emodel.get_or_load_smry_cached()
-    assert len(smry.columns) == 476
-    assert len(smry["DATE"].unique()) == 1141
+    assert len(smry.columns) == 923
+    assert len(smry["DATE"].unique()) == 6773
     assert set(smry["ENSEMBLE"].unique()) == set(
         ["iter-0", "iter-1", "iter-2", "iter-3"]
     )
@@ -82,14 +70,14 @@ def test_smry_load_multiple_ensembles(testdata_folder):
     assert set(smeta.columns) == set(
         ["unit", "is_total", "is_rate", "is_historical", "keyword", "wgname", "get_num"]
     )
-    assert len(smeta) == 473
+    assert len(smeta) == 920
     assert "FOPT" in smeta.index
 
     parameters = emodel.load_parameters()
     assert all(col in parameters.columns for col in ["ENSEMBLE", "REAL"])
     assert parameters["ENSEMBLE"].dtype == np.dtype("O")
     assert parameters["REAL"].dtype == np.dtype("int64")
-    assert len(parameters.columns) == 28
+    assert len(parameters.columns) == 56
 
     dframe = emodel.load_csv(Path("share") / "results" / "tables" / "rft.csv")
     assert "ENSEMBLE" in dframe.columns
@@ -110,24 +98,16 @@ def test_webvizstore(testdata_folder):
     emodel = EnsembleSetModel(
         ensemble_paths={
             "iter-0": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-0"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-0")
             ),
             "iter-1": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-1"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-1")
             ),
             "iter-2": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-2"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-2")
             ),
             "iter-3": str(
-                Path(
-                    testdata_folder / "reek_history_match" / "realization-*" / "iter-3"
-                )
+                Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-3")
             ),
         }
     )

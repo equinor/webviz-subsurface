@@ -34,12 +34,12 @@ def test_export_connection_status(testdata_folder: Path, tmp_path: Path) -> None
 
     eclbase = (
         testdata_folder
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-0"
         / "iter-0"
         / "eclipse"
         / "model"
-        / "5_R001_REEK-0"
+        / "DROGON-0"
     ).resolve()
     assert eclbase.with_suffix(".UNSMRY").exists()
 
@@ -67,12 +67,12 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
 
     eclbase = (
         testdata_folder
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-0"
         / "iter-0"
         / "eclipse"
         / "model"
-        / "5_R001_REEK-0"
+        / "DROGON-0"
     ).resolve()
     assert eclbase.with_suffix(".UNSMRY").exists()
 
@@ -87,7 +87,7 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
     assert output_file.exists()
 
     table = feather.read_table(output_file)
-    assert table.shape == (291, 471)
+    assert table.shape == (243, 921)
 
     sample_date = table["DATE"][0]
     assert sample_date.type == pa.timestamp("ms")

@@ -10,12 +10,7 @@ import webviz_subsurface._datainput.from_timeseries_cumulatives as from_cum
 def get_data_df(testdata_folder: Path) -> pd.DataFrame:
 
     data_df = pd.read_csv(
-        testdata_folder
-        / "reek_history_match"
-        / "share"
-        / "results"
-        / "tables"
-        / "unsmry--monthly.csv"
+        testdata_folder / "reek_test_data" / "aggregated_data" / "unsmry--monthly.csv"
     )
     data_df.DATE = data_df.DATE.astype(str)
     return data_df
