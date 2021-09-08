@@ -1,1 +1,1 @@
-from .utils import qc_summary
+from .utils import add_nodetype, qc_summary

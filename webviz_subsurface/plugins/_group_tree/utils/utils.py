@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Any
 import time
 import io
 import json
@@ -190,3 +190,83 @@ def get_sumvecs_for_node(node: str, node_type: str) -> Dict[str, str]:
             "pressure": f"WTHP:{node}",
         }
     raise ValueError(f"Node type {node_type} not implemented")
+
+
+def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
+    """Adds two columns to the gruptree dataframe: IS_PROD and IS_INJ. These has boolean
+    values and all combinations are possible, f.ex both True or both False.
+
+    Wells are classified as producers and injectors based on the WSTAT summary data.
+
+    Group nodes are classified as producing if they have any producer wells upstream
+    and as injecting if they have any injector wells downstream.
+    """
+    df = pd.DataFrame()
+    for ensemble in gruptree["ENSEMBLE"].unique():
+        gruptree_ens = gruptree[gruptree["ENSEMBLE"] == ensemble]
+        smry_ens = smry[smry["ENSEMBLE"] == ensemble]
+        df_ens = add_nodetype_for_ens(gruptree_ens, smry_ens)
+        df = pd.concat([df, df_ens])
+    return df
+
+
+def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
+    """Adds nodetype IS_PROD and IS_INJ for an ensemble."""
+    nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
+
+    # Tag wells as producers and/or injector (or None)
+    is_prod_map, is_inj_map = get_welltype_maps(
+        nodes[nodes["KEYWORD"] == "WELSPECS"], smry
+    )
+    nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
+    nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
+    groupnodes = nodes[nodes["KEYWORD"] != "WELSPECS"]
+
+    # Recursively find well types of all fields below a group node
+    # Deduce group node type from well types
+    for _, groupnode in groupnodes.iterrows():
+        wells_are_prod, wells_are_inj = get_leaf_well_types(groupnode["CHILD"], nodes)
+        is_prod_map[groupnode["CHILD"]] = any(wells_are_prod)
+        is_inj_map[groupnode["CHILD"]] = any(wells_are_inj)
+
+    # Tag all nodes as producing/injecing nodes
+    gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
+    gruptree["IS_INJ"] = gruptree["CHILD"].map(is_inj_map)
+    return gruptree
+
+
+def get_leaf_well_types(
+    node_name: str, gruptree: pd.DataFrame
+) -> Tuple[List[Any], List[Any]]:
+    """This function finds the IS_PROD and IS_INJ values of all wells
+    producing to or injecting to a group node.
+
+    The function is using recursion to find all wells below the node
+    int the three.
+    """
+    children = gruptree[gruptree["PARENT"] == node_name]
+    wells_are_prod, wells_are_inj = [], []
+    for _, childrow in children.iterrows():
+        if childrow["KEYWORD"] == "WELSPECS":
+            wells_are_prod.append(childrow["IS_PROD"])
+            wells_are_inj.append(childrow["IS_INJ"])
+        else:
+            prod, inj = get_leaf_well_types(childrow["CHILD"], gruptree)
+            wells_are_prod += prod
+            wells_are_inj += inj
+    return wells_are_prod, wells_are_inj
+
+
+def get_welltype_maps(
+    wellnodes: pd.DataFrame, smry: pd.DataFrame
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """This function creates two dictionaries that is classifying each
+    well as producer and/or injector.
+    """
+    is_prod_map, is_inj_map = {}, {}
+    for _, wellnode in wellnodes.iterrows():
+        wellname = wellnode["CHILD"]
+        wstat = smry[f"WSTAT:{wellname}"].unique()
+        is_prod_map[wellname] = 1 in wstat
+        is_inj_map[wellname] = 2 in wstat
+    return is_prod_map, is_inj_map

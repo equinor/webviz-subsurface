@@ -11,7 +11,7 @@ from webviz_config import WebvizSettings
 
 from ..._models import EnsembleSetModel
 from ..._models import caching_ensemble_set_model_factory
-from .utils import qc_summary
+from .utils import add_nodetype, qc_summary
 from .controllers import controllers
 from .views import main_view
 
@@ -74,7 +74,6 @@ class GroupTree(WebvizPluginABC):
                     "FGPR",
                     "FWPR",
                     "FWIR",
-                    "FPR",
                     "GOPR:*",
                     "GGPR:*",
                     "GWPR:*",
@@ -84,6 +83,7 @@ class GroupTree(WebvizPluginABC):
                     "WWPR:*",
                     "WTHP:*",
                     "WBHP:*",
+                    "WSTAT:*",
                 ],
             )
         )
@@ -91,8 +91,11 @@ class GroupTree(WebvizPluginABC):
         self.gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
         self.smry["DATE"] = pd.to_datetime(self.smry["DATE"]).dt.date
         self.gruptree["DATE"] = pd.to_datetime(self.gruptree["DATE"]).dt.date
+        # qc_summary(self.smry, self.gruptree, self.ensembles)
+        self.smry.to_csv("/private/olind/webviz/drogon_smry.csv")
 
-        qc_summary(self.smry, self.gruptree, self.ensembles)
+        self.gruptree = add_nodetype(self.gruptree, self.smry)
+        self.gruptree.to_csv("/private/olind/webviz/debug.csv")
 
         self.set_callbacks(app)
 
