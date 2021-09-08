@@ -30,6 +30,10 @@ PREDEFINED_EXPRESSIONS_JSON_SCHEMA: dict = {
         "required": ["expression", "variableVectorMap"],
         "properties": {
             "expression": {"type": "string", "minLength": 1},
+            "description": {
+                "type": "string",
+                "maxLength": VectorCalculator.max_description_length,
+            },
             "variableVectorMap": {
                 "type": "object",
                 "minProperties": 1,
@@ -42,20 +46,39 @@ PREDEFINED_EXPRESSIONS_JSON_SCHEMA: dict = {
 }
 
 
-class ConfigExpressionData(TypedDict):
-    """Type definition for configuration of pre-defined calculated expressions
+class ConfigExpressionDataBase(TypedDict):
+    """Base definition for configuration of pre-defined calculated expressions
 
-    Simplified data type to pre-define expressions for user.
-
-    The ConfigExpressionData instance name is the name of the expression - i.e.
+    `Description`:
+    * Simplified data type to pre-define expressions for user.
+    * The ConfigExpressionData instance name is the name of the expression - i.e.
     when using a dictionary of ConfigExpressionData the expression name is the dict key
 
-    expression: str, mathematical expression
-    variableVectorMap: Dict[str,str], Dictionary with {key, value} = {variableName, vectorName}
+    `Required keys`:
+    * expression: str, mathematical expression
+    * variableVectorMap: Dict[str,str], Dictionary with {key, value} = {variableName, vectorName}
     """
 
     expression: str
     variableVectorMap: Dict[str, str]
+
+
+class ConfigExpressionData(ConfigExpressionDataBase, total=False):
+    """
+    Type definition for configuration of pre-defined calculated expressions
+
+    `Description`:
+    Dictionary type for pre-defined expressions for user.
+
+    `Required keys`:
+    * expression: str, mathematical expression
+    * variableVectorMap: Dict[str,str], Dictionary with {key, value} = {variableName, vectorName}
+
+    `Non-required keys`:
+    * description: str, description of mathematical expression
+    """
+
+    description: str
 
 
 def validate_predefined_expression(
@@ -153,18 +176,20 @@ def expressions_from_config(
     )
 
     for expression in expressions:
-        output.append(
-            {
-                "name": expression,
-                "expression": expressions[expression]["expression"],
-                "id": f"{uuid4()}",
-                "variableVectorMap": variable_vector_map_from_dict(
-                    expressions[expression]["variableVectorMap"]
-                ),
-                "isValid": False,  # Set default false? And expect seperate validation?
-                "isDeletable": False,
-            }
-        )
+        expression_dict = {
+            "name": expression,
+            "expression": expressions[expression]["expression"],
+            "id": f"{uuid4()}",
+            "variableVectorMap": variable_vector_map_from_dict(
+                expressions[expression]["variableVectorMap"]
+            ),
+            "isValid": False,  # Set False and validate in seperate operation
+            "isDeletable": False,
+        }
+        if "description" in expressions[expression].keys():
+            expression_dict["description"] = expressions[expression]["description"]
+
+        output.append(expression_dict)
     return output
 
 

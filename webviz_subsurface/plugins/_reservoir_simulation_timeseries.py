@@ -385,9 +385,17 @@ folder, to avoid risk of not extracting the right data.
                 current_child_list = children if children is not None else []
 
     @staticmethod
-    def _add_expression(expression_data: list, name: str, expression: str) -> None:
+    def _add_expression(
+        expression_data: list,
+        name: str,
+        description: Optional[str] = None,
+    ) -> None:
+        description_str = description if description is not None else ""
         ReservoirSimulationTimeSeries._add_vector(
-            expression_data, name, expression, True
+            vector_data=expression_data,
+            vector=name,
+            description=description_str,
+            description_at_last_node=True,
         )
 
     @property
@@ -804,9 +812,11 @@ folder, to avoid risk of not extracting the right data.
                 continue
 
             name = expression["name"]
-            expression = expression["expression"]
+            description = None
+            if "description" in expression.keys():
+                description = expression["description"]
 
-            self._add_expression(vector_data, name, expression)
+            self._add_expression(vector_data, name, description)
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: Dash) -> None:
