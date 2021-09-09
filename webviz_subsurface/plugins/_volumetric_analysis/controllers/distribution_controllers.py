@@ -24,7 +24,7 @@ from webviz_subsurface._figures import create_figure
 from ..utils.utils import update_relevant_components
 
 
-# pylint: disable=too-many-statements, too-many-locals, too-many-branches
+# pylint: disable=too-many-statements, too-many-branches
 def distribution_controllers(
     app: dash.Dash,
     get_uuid: Callable,
@@ -622,7 +622,6 @@ def create_table_columns(
     return table_columns
 
 
-# pylint: disable=inconsistent-return-statements
 def create_data_table(
     volumemodel: InplaceVolumesModel,
     columns: list,

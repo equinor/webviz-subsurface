@@ -14,7 +14,6 @@ import dash_core_components as dcc
 
 
 class SurfaceSelector:
-    # pylint: disable=too-many-instance-attributes,too-many-statements
     """### Surface Selector
 
     Creates a widget to select surfaces from a yaml configuration file or dictionary, and
@@ -208,7 +207,6 @@ class SurfaceSelector:
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        # pylint: disable=inconsistent-return-statements
         @app.callback(
             Output(self.attr_id, "value"),
             [

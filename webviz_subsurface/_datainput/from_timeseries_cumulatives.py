@@ -3,7 +3,7 @@ from typing import List, Union
 import pandas as pd
 import numpy as np
 
-# pylint: disable=dangerous-default-value
+
 def calc_from_cumulatives(
     data: pd.DataFrame,
     column_keys: Union[List[str], str],

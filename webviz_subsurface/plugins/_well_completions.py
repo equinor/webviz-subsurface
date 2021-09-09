@@ -32,6 +32,7 @@ WELL_CONNECTION_STATUS_FILE = (
 
 
 class WellCompletions(WebvizPluginABC):
+    # pylint: disable=line-too-long
     """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
 
@@ -39,7 +40,7 @@ class WellCompletions(WebvizPluginABC):
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`well_connection_status_file`:** `.parquet` file with well connection status data per realization
+    * **`well_connection_status_file`:** `.parquet` file with well connection status per realization
     * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
     * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
     * **`well_attributes_file`:** `.json` file with categorical well attributes
@@ -179,9 +180,10 @@ class WellCompletions(WebvizPluginABC):
     If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file. \
     The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
 
-    """  # pylint: disable=line-too-long
+    """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
@@ -194,7 +196,6 @@ class WellCompletions(WebvizPluginABC):
         kh_unit: str = None,
         kh_decimal_places: int = 2,
     ):
-        # pylint: disable=too-many-arguments
         super().__init__()
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
@@ -558,7 +559,6 @@ def format_time_series(
 def calc_over_realizations(
     compl_events: list, kh_values: list, realizations: list
 ) -> tuple:
-    # pylint: disable=assignment-from-no-return
     """Takes in two three dimensional lists where the levels are: 1. realization \
     2. zones and 3. timesteps
 

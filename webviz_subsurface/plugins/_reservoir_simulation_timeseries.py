@@ -148,7 +148,6 @@ folder, to avoid risk of not extracting the right data.
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    # pylint: disable=too-many-statements
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
     def __init__(
@@ -654,7 +653,7 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("stat_options"), "value"),
             ],
         )
-        # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
+        # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
             vectors: List[str],
             ensembles: List[str],
@@ -1004,7 +1003,6 @@ folder, to avoid risk of not extracting the right data.
         return functions
 
 
-# pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_vector_dataframes(
     smry: pd.DataFrame,

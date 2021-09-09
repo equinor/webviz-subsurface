@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 from typing import Optional, Union
 import warnings
 from pathlib import Path
@@ -126,7 +125,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword: "
                     "e.g SWOF, SGOF and etc."
                 )
-            # pylint: disable=literal-comparison
             valid_columns = (
                 ["ENSEMBLE", "REAL", "KEYWORD", "SATNUM"]
                 + RelativePermeability.SATURATIONS
@@ -206,7 +204,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         self.set_callbacks(app)
 
     @property
-    # pylint: disable=consider-iterating-dictionary
     def sat_axes(self):
         """List of all possible saturation axes in dataframe"""
         return [sat for sat in self.sat_axes_maps if sat in self.satfunc.columns]

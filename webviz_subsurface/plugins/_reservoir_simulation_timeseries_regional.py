@@ -46,7 +46,7 @@ from .._utils.fanchart_plotting import (
     LowHighData,
 )
 
-# pylint: disable=too-many-instance-attributes
+
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
     """Aggregates and visualizes regional time series data from simulation ensembles. That
 is: cumulatives, rates and inplace volumes. Allows human friendly filter names, e.g. regions,
@@ -122,7 +122,7 @@ folder, to avoid risk of not extracting the right data.
     TABLE_STATISTICS: List[Tuple[str, dict]] = [("Group", {})] + table_statistics_base()
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    # pylint: disable=dangerous-default-value, too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: dash.Dash,

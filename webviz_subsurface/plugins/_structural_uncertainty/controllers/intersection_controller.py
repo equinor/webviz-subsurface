@@ -397,7 +397,6 @@ def update_intersection(
             "data",
         ),
     )
-    # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
     def _update_apply_button(
         _apply_click: Optional[int],
         surfaceattribute: str,
