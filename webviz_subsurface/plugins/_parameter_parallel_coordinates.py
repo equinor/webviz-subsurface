@@ -129,7 +129,7 @@ folder, to avoid risk of not extracting the right data.
 
 """
 
-    # pylint: disable=too-many-arguments,too-many-branches
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app,

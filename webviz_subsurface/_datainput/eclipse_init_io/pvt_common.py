@@ -86,7 +86,6 @@ class PvxOBase(abc.ABC):
         """
 
     @abc.abstractmethod
-    # pylint: disable=R0201
     def formation_volume_factor(
         self, ratio: np.ndarray, pressure: np.ndarray
     ) -> np.ndarray:
@@ -168,7 +167,6 @@ class PVDx(PVxx):
         raw: EclPropertyTableRawData,
         convert: ConvertUnits,
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Extracts all values of the table with the given index from raw, converts them according
         to the given convert object and stores them as numpy arrays, x and y respectively.
 
@@ -354,7 +352,6 @@ class PVTx(PVxx):
             ConvertUnits,
         ],
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Extracts all values of the table with the given index from raw, converts them according
         to the given convert object and stores them as numpy arrays, keys, x and y respectively.
 
@@ -476,7 +473,6 @@ class PVTx(PVxx):
         return self.__compute_quantity(
             key,
             x,
-            # pylint: disable=unnecessary-lambda
             lambda curve, point: self.__interpolants[0](point)
             if self.__single_key
             else self.__interpolants[0](curve, point),

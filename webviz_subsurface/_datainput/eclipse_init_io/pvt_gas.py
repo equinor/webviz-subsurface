@@ -77,7 +77,6 @@ class WetGas(PvxOBase):
             ConvertUnits,
         ],
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a WetGas object.
 
         Creates an interpolant for wet gas for the Eclipse data given
@@ -177,7 +176,6 @@ class DryGas(PvxOBase):
         surface_mass_density_gas: float,
         convert: ConvertUnits,
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a DryGas object.
 
         Creates an interpolant for dry gas for the Eclipse data given

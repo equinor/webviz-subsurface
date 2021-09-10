@@ -37,7 +37,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
     REGIONS.
     """
 
-    # pylint: disable=too-many-locals, too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: dash.Dash,

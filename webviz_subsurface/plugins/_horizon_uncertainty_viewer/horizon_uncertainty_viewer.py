@@ -46,7 +46,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     * **`planned_wells_dir`:** Path to folder with planned well files.
        Make sure that all planned wells have format 'ROXAR RMS well'."""
 
-    # pylint: disable=too-many-locals,too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         app: dash.Dash,
@@ -495,7 +495,6 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                         "zIndex": -9999,
                     },
                     children=[
-                        # pylint: disable=no-member
                         webviz_subsurface_components.LeafletMap(
                             id=self.ids("layered-map"),
                             layers=[],
@@ -756,7 +755,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                 State(self.ids("columns-checklist"), "value"),
             ],  # columns list
         )
-        # pylint: disable=unused-variable, unused-argument
+        # pylint: disable=unused-argument
         def display_output(n_clicks, column_list):
             """Renders wellpoints table from csv file"""
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)

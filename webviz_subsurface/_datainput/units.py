@@ -472,9 +472,7 @@ class Unit:
     # Permeability
     p_grad = atm / (Prefix.centi * meter)
     area = square.__func__(Prefix.centi * meter)  # type: ignore[attr-defined]
-    # pylint: disable=line-too-long
     flux = cubic.__func__(Prefix.centi * meter) / second  # type: ignore[attr-defined]
-    # pylint: enable=line-too-long
     velocity = flux / area
     visc = Base(Prefix.centi * poise, "cP")
     darcy = Base((velocity * visc) / p_grad, "D")

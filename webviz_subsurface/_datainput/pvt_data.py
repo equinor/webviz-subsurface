@@ -220,7 +220,6 @@ def load_pvt_dataframe(
 
     def init_to_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
         # pylint: disable-msg=too-many-locals
-        # pylint: disable=too-many-nested-blocks
         # pylint: disable=too-many-branches
         check_if_ecl2df_is_installed()
         ecl_init_file = EclFile(

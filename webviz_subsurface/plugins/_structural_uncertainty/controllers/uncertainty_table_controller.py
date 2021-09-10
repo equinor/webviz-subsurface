@@ -9,7 +9,6 @@ from dash.exceptions import PreventUpdate
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 
 
-# pylint: disable=too-many-statements
 def update_uncertainty_table(
     app: dash.Dash,
     get_uuid: Callable,
@@ -61,7 +60,7 @@ def update_uncertainty_table(
         State({"id": get_uuid("intersection-data"), "element": "ensembles"}, "value"),
         State(get_uuid("realization-store"), "data"),
     )
-    # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
+    # pylint: disable=too-many-locals
     def _update_uncertainty_table(
         apply_btn: Optional[int],
         wellname: str,

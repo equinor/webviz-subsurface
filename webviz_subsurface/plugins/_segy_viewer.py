@@ -271,7 +271,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 State(self.uuid("state-storage"), "data"),
             ],
         )
-        # pylint: disable=unused-argument,too-many-arguments
         def _update_state(
             cubepath: str,
             icd: Union[dict, None],
@@ -471,7 +470,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [Input(self.uuid("color-reset"), "n_clicks")],
             [State(self.uuid("state-storage"), "data")],
         )
-        # pylint: disable=unused-argument
         def _reset_color_range(
             _btn_clicked: int, state_data_str: Union[str, None]
         ) -> Tuple[float, float, list, float]:

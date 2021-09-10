@@ -7,7 +7,7 @@ from dash_table.Format import Format
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
 from webviz_subsurface._figures import create_figure
 
-# pylint: disable=too-many-public-methods
+
 class ParametersModel:
     """Class to process and visualize ensemble parameter data"""
 

@@ -496,7 +496,7 @@ def render_parcoord(
         "type": "parcoords",
     }
     if color_col == "STATUS_BOOL":
-        data["line"].update(  # pylint: disable=expression-not-assigned
+        data["line"].update(
             {
                 "cmin": -0.5,
                 "cmax": 1.5,
@@ -511,7 +511,7 @@ def render_parcoord(
             },
         )
     else:
-        data["line"].update(  # pylint: disable=expression-not-assigned
+        data["line"].update(
             {
                 "colorbar": {
                     "title": "Running time",

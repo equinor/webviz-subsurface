@@ -28,7 +28,6 @@ from .._abbreviations.number_formatting import table_statistics_base
     "Relevant functionality is implemented in the VolumetricAnalysis plugin."
 )
 class InplaceVolumesOneByOne(WebvizPluginABC):
-    # pylint: disable=too-many-instance-attributes
     """Visualizes inplace volumetrics related to a FMU ensemble with a design matrix.
 
 Input can be given either as an aggregated `csv` file for volumes and sensitivity information,

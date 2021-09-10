@@ -90,7 +90,7 @@ aggregated_data/parameters.csv)
 
 **Remaining columns are seen as volumetric responses.** """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: dash.Dash,

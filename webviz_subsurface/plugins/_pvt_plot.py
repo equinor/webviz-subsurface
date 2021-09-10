@@ -396,7 +396,6 @@ class PvtPlot(WebvizPluginABC):
             [Input(self.uuid("color_by"), "value")],
         )
         def _set_ensemble_selector(color_by: str) -> Tuple[bool, Union[str, List[str]]]:
-            # pylint: disable=unused-argument
             """If ensemble is selected as color by, set the ensemble
             selector to allow multiple selections
             """
@@ -424,7 +423,6 @@ class PvtPlot(WebvizPluginABC):
         )
         # pylint:
         def _set_pvtnum_selector(color_by: str) -> Tuple[bool, Union[str, List[str]]]:
-            # pylint: disable=unused-argument
             """If pvtnum is selected as color by, set the pvtnum
             selector to allow multiple selections
             """
