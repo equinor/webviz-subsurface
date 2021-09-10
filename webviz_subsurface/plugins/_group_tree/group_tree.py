@@ -11,7 +11,7 @@ from webviz_config import WebvizSettings
 
 from ..._models import EnsembleSetModel
 from ..._models import caching_ensemble_set_model_factory
-from .utils import add_nodetype, qc_summary
+from .group_tree_data import GroupTreeData
 from .controllers import controllers
 from .views import main_view
 
@@ -29,9 +29,13 @@ class GroupTree(WebvizPluginABC):
     **Summary data**
 
     This plugin need the following summary vectors to be exported:
-    * FOPR, FWPR and FGPR
-    * GOPR, GWPR, GGPR and GPR for all nodes in the network
-    * WOPR, WWPR, WGPR, WTHP and WBHP for all wells
+    * FOPR, FWPR, FOPR
+    * FWIR and FGIR if there are injection
+    * GPR for all group nodes in the network
+    * GOPR, GWPR and GGPR for all group nodes with procucing wells
+    * WSTAT, WTHP, WBHP, WMCTL for all wells
+    * WOPR, WWPR, WGPR for all producers
+    * WWIR and WGIR for all injectors
 
     **GRUPTREE input**
 
@@ -74,28 +78,38 @@ class GroupTree(WebvizPluginABC):
                     "FGPR",
                     "FWPR",
                     "FWIR",
+                    "FGIR",
                     "GOPR:*",
                     "GGPR:*",
                     "GWPR:*",
+                    "GWIR:*",
+                    "GGIR:*",
                     "GPR:*",
                     "WOPR:*",
                     "WGPR:*",
                     "WWPR:*",
+                    "WWIR:*",
+                    "WGIR:*",
                     "WTHP:*",
                     "WBHP:*",
+                    "WMCTL:*",
                     "WSTAT:*",
                 ],
             )
         )
-        self.smry = self.emodel.get_or_load_smry_cached()
-        self.gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
-        self.smry["DATE"] = pd.to_datetime(self.smry["DATE"]).dt.date
-        self.gruptree["DATE"] = pd.to_datetime(self.gruptree["DATE"]).dt.date
-        # qc_summary(self.smry, self.gruptree, self.ensembles)
-        self.smry.to_csv("/private/olind/webviz/drogon_smry.csv")
+        smry = self.emodel.get_or_load_smry_cached()
+        gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
+        smry["DATE"] = pd.to_datetime(smry["DATE"]).dt.date
+        gruptree["DATE"] = pd.to_datetime(gruptree["DATE"]).dt.date
 
-        self.gruptree = add_nodetype(self.gruptree, self.smry)
-        self.gruptree.to_csv("/private/olind/webviz/debug.csv")
+        self.grouptreedata = GroupTreeData(smry, gruptree)
+
+        # First check that Field rates and WSTAT is in smry
+        # qc_summary_1(self.smry, self.gruptree)
+        # self.gruptree = add_nodetype(self.gruptree, self.smry)
+
+        # Check that the rest of the summary vectors exists
+        # qc_summary_2(self.smry, self.gruptree)
 
         self.set_callbacks(app)
 
@@ -136,12 +150,7 @@ class GroupTree(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        controllers(
-            app=app,
-            get_uuid=self.uuid,
-            smry=self.smry,
-            gruptree=self.gruptree,
-        )
+        controllers(app=app, get_uuid=self.uuid, grouptreedata=self.grouptreedata)
 
 
 @webvizstore
