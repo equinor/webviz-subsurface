@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
 
+### Changed
+- [#760](https://github.com/equinor/webviz-subsurface/pull/760) - Updated to `Dash 2.0`.
+
 ## [0.2.5] - 2021-09-03
 ### Added
 - [#733](https://github.com/equinor/webviz-subsurface/pull/733) - Added plugin to visualize well logs from files using [videx-welllog](https://github.com/equinor/videx-wellog).

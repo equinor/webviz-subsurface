@@ -3,11 +3,8 @@ from uuid import uuid4
 from pathlib import Path
 
 import pandas as pd
-import dash
+from dash import html, dcc, Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -45,7 +42,7 @@ and the parameter columns.
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile: Path = None,
         ensembles: list = None,
@@ -170,7 +167,7 @@ and the parameter columns.
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.ids("parameter"), "value"),
             [
@@ -183,7 +180,7 @@ and the parameter columns.
             _prev_click: int, _next_click: int, column: str
         ) -> str:
 
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
             if ctx is None:
                 raise PreventUpdate
             callback = ctx[0]["prop_id"]

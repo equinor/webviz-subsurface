@@ -6,11 +6,8 @@ import json
 import yaml
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State
+from dash import html, dcc, Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-import dash_html_components as html
-import dash_core_components as dcc
 
 
 class SurfaceSelector:
@@ -41,7 +38,7 @@ class SurfaceSelector:
             - somedate"""
 
     def __init__(
-        self, app: dash.Dash, config: Union[str, dict], ensembles: pd.DataFrame
+        self, app: Dash, config: Union[str, dict], ensembles: pd.DataFrame
     ) -> None:
 
         self._configuration = self.read_config(config)
@@ -206,7 +203,7 @@ class SurfaceSelector:
             ]
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.attr_id, "value"),
             [
@@ -218,7 +215,7 @@ class SurfaceSelector:
         def _update_attr(
             _n_prev: Optional[int], _n_next: Optional[int], current_value: str
         ) -> str:
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
             if ctx is None or not current_value:
                 raise PreventUpdate
             if not ctx[0]["value"]:
@@ -249,7 +246,7 @@ class SurfaceSelector:
             _n_next: Optional[int],
             current_value: str,
         ) -> Tuple[Optional[List[Dict[str, str]]], Optional[str], Dict[str, str]]:
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
             if ctx is None:
                 raise PreventUpdate
             names = self._names_in_attr(attr)
@@ -285,7 +282,7 @@ class SurfaceSelector:
             _n_next: Optional[int],
             current_value: str,
         ) -> Tuple[List[Dict[str, str]], Optional[str], Dict[str, str]]:
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
 
             if ctx is None:
                 raise PreventUpdate

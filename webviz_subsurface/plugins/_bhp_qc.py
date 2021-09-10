@@ -2,9 +2,7 @@ from typing import List, Optional, Dict, Union, Tuple, Callable
 
 import pandas as pd
 import numpy as np
-import dash
-import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash import html, Dash, Input, Output
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
@@ -43,7 +41,7 @@ class BhpQc(WebvizPluginABC):
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         wells: Optional[List[str]] = None,
@@ -213,7 +211,7 @@ class BhpQc(WebvizPluginABC):
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             Input(self.uuid("ensemble"), "value"),

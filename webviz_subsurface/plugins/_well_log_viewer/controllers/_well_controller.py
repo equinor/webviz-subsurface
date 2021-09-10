@@ -1,12 +1,12 @@
 from typing import List, Dict, Callable, Tuple, Any, Optional
 import xtgeo
-import dash
-from dash.dependencies import Input, Output
+from dash import Dash, Input, Output
+
 from webviz_subsurface._models.well_set_model import WellSetModel
 
 
 def well_controller(
-    app: dash.Dash,
+    app: Dash,
     well_set_model: WellSetModel,
     log_templates: Dict,
     get_uuid: Callable,

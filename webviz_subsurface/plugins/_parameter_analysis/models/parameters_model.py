@@ -3,7 +3,7 @@ from typing import List, Tuple, Any
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash_table.Format import Format
+from dash.dash_table.Format import Format
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
 from webviz_subsurface._figures import create_figure
 

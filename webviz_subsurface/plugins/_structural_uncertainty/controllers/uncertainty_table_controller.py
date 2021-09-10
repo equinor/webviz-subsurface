@@ -2,15 +2,14 @@ from typing import Dict, List, Optional, Callable, Tuple
 
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State
+from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 
 
 def update_uncertainty_table(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,

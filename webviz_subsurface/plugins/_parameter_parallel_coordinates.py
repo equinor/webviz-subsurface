@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pandas as pd
-from dash.dependencies import Input, Output
+from dash import html, Dash, Input, Output
 from dash.exceptions import PreventUpdate
-import dash_html_components as html
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -132,7 +131,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list = None,
         parameter_csv: Path = None,

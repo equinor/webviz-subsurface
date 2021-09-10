@@ -9,13 +9,19 @@ from copy import deepcopy
 import yaml
 import numpy as np
 import pandas as pd
-import dash
-from dash_table import DataTable
-import dash_html_components as html
-import dash_core_components as dcc
-import webviz_core_components as wcc
-from dash.dependencies import Input, Output, State, ALL
+from dash import (
+    html,
+    dcc,
+    Dash,
+    callback_context,
+    dash_table,
+    Input,
+    Output,
+    State,
+    ALL,
+)
 from dash.exceptions import PreventUpdate
+import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
@@ -125,7 +131,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         fipfile: Path = None,
@@ -505,7 +511,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("filters"), "children"),
@@ -626,7 +632,7 @@ folder, to avoid risk of not extracting the right data.
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function
-            inputs = dash.callback_context.inputs
+            inputs = callback_context.inputs
             date = json.loads(inputs.pop(f"{self.uuid('date')}.data"))
             ensembles = inputs.pop(self.selectors_context_string("ensemble", "value"))
             ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
@@ -980,7 +986,7 @@ def render_single_date_graph(
 
 def render_table(
     stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> DataTable:
+) -> dash_table.DataTable:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1042,7 +1048,7 @@ def render_table(
             except KeyError:
                 pass
     return (
-        DataTable(
+        dash_table.DataTable(
             sort_action="native",
             filter_action="native",
             page_action="native",

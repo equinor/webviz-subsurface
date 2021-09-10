@@ -1,7 +1,6 @@
 from typing import Callable, List, Dict
 
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html, dcc
 import webviz_core_components as wcc
 
 from .plot_options_view import plot_options_view

@@ -2,8 +2,8 @@ from typing import Dict, List, Callable, Tuple, Optional, Union, Any
 import warnings
 
 import xtgeo
-import dash
-from dash.dependencies import Input, Output, State
+from dash import Dash, callback_context, no_update, Input, Output, State
+from dash.dash import _NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceSetModel, SurfaceLeafletModel, WellSetModel
@@ -14,7 +14,7 @@ from webviz_subsurface._datainput.well import (
 
 # pylint: disable=too-many-statements
 def update_maps(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
@@ -137,15 +137,15 @@ def update_maps(
     ) -> Tuple[str, List, str, List, str, List]:
         """Generate Leaflet layers for the three map views"""
         realizations = [int(real) for real in real_list]
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if "compute_diff" in ctx["prop_id"]:
             if not compute_diff:
                 return (
-                    dash.no_update,
-                    dash.no_update,
-                    dash.no_update,
-                    dash.no_update,
-                    dash.no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
                     [],
                 )
 
@@ -184,9 +184,9 @@ def update_maps(
                 f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
                 current_map,
                 f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-                dash.no_update,
+                no_update,
                 "Surface A-B",
-                dash.no_update,
+                no_update,
             )
 
         if wellname is not None:
@@ -209,7 +209,7 @@ def update_maps(
                     f"{ensemble_map2} - {calc_map2}",
                     current_map2,
                     "Surface A-B",
-                    dash.no_update,
+                    no_update,
                 )
 
         # Calculate maps
@@ -304,11 +304,11 @@ def update_maps(
 
         return (
             f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
-            surface_layers if update_controls["map1"]["update"] else dash.no_update,
+            surface_layers if update_controls["map1"]["update"] else no_update,
             f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-            surface_layers2 if update_controls["map2"]["update"] else dash.no_update,
+            surface_layers2 if update_controls["map2"]["update"] else no_update,
             "Surface A-B",
-            diff_layers if update_controls["diff_map"]["update"] else dash.no_update,
+            diff_layers if update_controls["diff_map"]["update"] else no_update,
         )
 
     @app.callback(
@@ -340,20 +340,19 @@ def update_maps(
         Input(get_uuid("leaflet-map1"), "clicked_shape"),
         Input(get_uuid("leaflet-map1"), "polyline_points"),
     )
-    # pylint: disable=protected-access
     def _update_from_map_click(
         clicked_shape: Optional[Dict],
         _polyline: List[List[float]],
-    ) -> Tuple[str, Union[dash.dash._NoUpdate, str]]:
+    ) -> Tuple[str, Union[_NoUpdate, str]]:
         """Update intersection source and optionally selected well when
         user clicks a shape in map"""
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if "polyline_points" in ctx["prop_id"]:
-            return "polyline", dash.no_update
+            return "polyline", no_update
         if clicked_shape is None:
             raise PreventUpdate
         if clicked_shape.get("id") == "random_line":
-            return "polyline", dash.no_update
+            return "polyline", no_update
         if clicked_shape.get("id") in well_set_model.well_names:
             return "well", clicked_shape.get("id")
         raise PreventUpdate
@@ -396,7 +395,7 @@ def update_maps(
         clip_max_map2: Optional[float],
         sync_range: list,
     ) -> Tuple[Dict[str, Dict], bool, bool]:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
 
         return (
             {

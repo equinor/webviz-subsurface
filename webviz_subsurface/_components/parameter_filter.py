@@ -2,11 +2,8 @@ from typing import List, Dict, Tuple
 
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import html, dcc, Dash, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
-import dash_html_components as html
 import webviz_core_components as wcc
 import dash_bootstrap_components as dbc
 from webviz_config.utils import calculate_slider_step
@@ -15,7 +12,7 @@ from webviz_config.utils import calculate_slider_step
 class ParameterFilter:
     """Component that can be added to a plugin to filter parameters"""
 
-    def __init__(self, app: dash.Dash, uuid: str, dframe: pd.DataFrame) -> None:
+    def __init__(self, app: Dash, uuid: str, dframe: pd.DataFrame) -> None:
         """
         * **`app`:** The Dash app instance.
         * **`uuid`:** Unique id (use the plugin id).
@@ -197,7 +194,7 @@ class ParameterFilter:
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output({"id": self._uuid, "type": "data-store"}, "data"),
             Input({"id": self._uuid, "type": "button", "element": "apply"}, "n_clicks"),

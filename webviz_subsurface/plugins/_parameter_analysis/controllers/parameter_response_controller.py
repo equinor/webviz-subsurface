@@ -3,10 +3,8 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
-from dash.dependencies import Input, Output, State, ALL
+from dash import dcc, Dash, callback_context, no_update, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
-import dash
-import dash_core_components as dcc
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -17,7 +15,7 @@ from ..models import SimulationTimeSeriesModel, ParametersModel
 
 # pylint: disable=too-many-statements,
 def parameter_response_controller(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     vectormodel: SimulationTimeSeriesModel,
     parametermodel: ParametersModel,
@@ -68,12 +66,12 @@ def parameter_response_controller(
         """
 
         if (
-            dash.callback_context.triggered is None
-            or dash.callback_context.triggered[0]["prop_id"] == "."
+            callback_context.triggered is None
+            or callback_context.triggered[0]["prop_id"] == "."
             or vector is None
         ):
             raise PreventUpdate
-        ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
         if not real_filter[ensemble]:
             return [empty_figure()] * 4
@@ -191,7 +189,7 @@ def parameter_response_controller(
         opacity: float,
     ):
         """Combine plot options in one dictionary"""
-        ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
         if color_clickdata is not None:
             color = color_clickdata["points"][0]["marker.color"]
             if "rgb" in color:
@@ -230,7 +228,7 @@ def parameter_response_controller(
         Update the vector shortname options and selected value from
         selected vector type or clickdata
         """
-        ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
         click_data = get_uuid("param-corr-graph") in ctx
 
         vtype = vtype[0]
@@ -319,7 +317,7 @@ def parameter_response_controller(
                 )
             ]
             if clickdata_vector and clickdata_vector["vtype"] != previous_vtype[0]
-            else dash.no_update,
+            else no_update,
         )
 
     @app.callback(

@@ -3,8 +3,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-import dash_core_components as dcc
-from dash.dependencies import Input, Output, State
+from dash import dcc, Input, Output, State
 from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
 from webviz_config.webviz_assets import WEBVIZ_ASSETS

@@ -1,8 +1,7 @@
 from typing import Optional, Union, List, Tuple, Callable
 import pathlib
 
-import dash
-import dash_core_components as dcc
+from dash import dcc, Dash
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config import WebvizConfigTheme
@@ -81,7 +80,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         statistics_file: str = "share/results/tables/gridpropstatistics.csv",
@@ -153,7 +152,7 @@ folder, to avoid risk of not extracting the right data.
             vector_options=self._vmodel.dropdown_options,
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         property_qc_controller(app=app, get_uuid=self.uuid, property_model=self._pmodel)
         if len(self._pmodel.ensembles) > 1:
             property_delta_controller(

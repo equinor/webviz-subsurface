@@ -3,12 +3,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State
+from dash import html, dcc, dash_table, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_table
 import dash_daq
 import webviz_core_components as wcc
 
@@ -20,7 +16,7 @@ class ColorPicker:
     a color picker for that row to change the color. The current colors can be
     retrieved as a list from a dcc.Store component"""
 
-    def __init__(self, app: dash.Dash, uuid: str, dframe: pd.DataFrame) -> None:
+    def __init__(self, app: Dash, uuid: str, dframe: pd.DataFrame) -> None:
         """
         * **`app`:** The Dash app instance.
         * **`uuid`:** Unique id (use the plugin id).
@@ -154,7 +150,7 @@ class ColorPicker:
         to get the list of current colors"""
         return {"id": self._uuid, "element": "store"}
 
-    def _set_callbacks(self, app: dash.Dash) -> None:
+    def _set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(
                 {"id": self._uuid, "element": "pickerwrapper"},

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
 

@@ -1,7 +1,6 @@
 from typing import Union, Optional, Callable
 
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html, dcc
 import webviz_core_components as wcc
 
 from ..figures.color_figure import color_figure

@@ -2,9 +2,8 @@ from typing import List, Callable, Tuple, Union, Optional, Dict
 
 import numpy as np
 import pandas as pd
-import dash
+from dash import Dash, no_update, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import ObservationModel
@@ -13,7 +12,7 @@ from ..figures.plotly_line_plot import PlotlyLinePlot
 
 
 def build_figure(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     tableproviders: EnsembleTableProviderSet,
     observationmodel: Optional[ObservationModel],
@@ -78,7 +77,7 @@ def build_figure(
             else []
         )
         if not ensemble_names:
-            return [], dash.no_update
+            return [], no_update
         ensemble_names = (
             [ensemble_names] if not isinstance(ensemble_names, list) else ensemble_names
         )

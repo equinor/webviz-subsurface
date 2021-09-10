@@ -3,8 +3,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
-import dash
-import dash_html_components as html
+from dash import html, Dash
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -128,7 +127,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         surface_attributes: list,
@@ -365,7 +364,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         open_modals(app=app, get_uuid=self.uuid)
         update_realizations(app=app, get_uuid=self.uuid)
         update_intersection(
