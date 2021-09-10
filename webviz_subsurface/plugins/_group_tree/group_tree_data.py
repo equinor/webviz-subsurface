@@ -8,9 +8,9 @@ from webviz_config.common_cache import CACHE
 
 
 class GroupTreeData:
-    """ """
+    """Description"""
 
-    def __init__(self, smry, gruptree):
+    def __init__(self, smry: pd.DataFrame, gruptree: pd.DataFrame):
 
         self.smry = smry
         self.gruptree = gruptree
@@ -41,7 +41,7 @@ class GroupTreeData:
         real: int
         # smry: pd.DataFrame,
         # gruptrees: pd.DataFrame,
-    ) -> Dict:
+    ) -> List[dict]:
         """This function creates the dataset that is input to the GroupTree
         component the webviz_subsurface_components.
 
@@ -63,7 +63,7 @@ class GroupTreeData:
             ensemble
         ):
             # Trees are not equal. Filter on realization
-            gruptree_ens[gruptree_ens["REAL"] == real]
+            gruptree_ens = gruptree_ens[gruptree_ens["REAL"] == real]
 
         return create_dataset(smry_ens, gruptree_ens, self.node_sumvecs[ensemble])
 
@@ -96,8 +96,8 @@ class GroupTreeData:
             }
         }
         """
-        sumvecs_dict = {}
-        sumvecs_list = []
+        sumvecs_dict: Dict[str, Dict[str, Dict[str, str]]] = {}
+        sumvecs_list: List[str] = []
         for ensemble in self.ensembles:
             sumvecs_dict[ensemble] = {}
             smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
@@ -112,7 +112,7 @@ class GroupTreeData:
                 sumvecs_list += [sumvec for _, sumvec in node_sumvecs.items()]
         return sumvecs_dict, sumvecs_list
 
-    def check_that_sumvecs_exists(self, sumvecs: list, error_message: str = ""):
+    def check_that_sumvecs_exists(self, sumvecs: list, error_message: str = "") -> None:
         """Descr"""
         for sumvec in sumvecs:
             if sumvec not in self.smry.columns:
@@ -120,8 +120,8 @@ class GroupTreeData:
 
 
 def create_dataset(
-    smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: Dict[str, str]
-) -> List[Dict]:
+    smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: Dict[str, Dict[str, str]]
+) -> List[dict]:
     """Descr"""
     starttime = time.time()
     trees = []
@@ -154,14 +154,13 @@ def extract_tree(
     node: str,
     smry_in_datespan: pd.DataFrame,
     dates: list,
-    sumvecs: Dict[str, str],
+    sumvecs: Dict[str, Dict[str, str]],
 ) -> dict:
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
-    nodedict = get_node_data(gruptree, node)
     node_sumvecs = sumvecs[node]
 
-    result = {"name": node}
+    result: dict = {"name": node}
     for key, sumvec in node_sumvecs.items():
         # her er det optimaliseringsmuligheter
         result[key] = get_smry_in_datespan(smry_in_datespan, dates, sumvec)
@@ -184,18 +183,9 @@ def get_grupnet_info(nodedict: dict) -> str:
     return "VFP " + str(int(nodedict["VFP_TABLE"]))
 
 
-def get_node_data(df_gruptree: pd.DataFrame, node: str) -> dict:
-    """Returns the data fields for a specific node as a dictionary"""
-    if node not in list(df_gruptree.CHILD):
-        raise ValueError(f"Node {node} not found in gruptree table.")
-    df_node = df_gruptree[df_gruptree.CHILD == node]
-    if df_node.shape[0] > 1:
-        # df_gruptree.to_csv("/private/olind/webviz/debug.csv")
-        raise ValueError(f"Multiple nodes found for {node} in gruptree table.")
-    return df_node.to_dict("records")[0]
-
-
-def get_smry_in_datespan(smry_in_datespan, dates, sumvec) -> List[int]:
+def get_smry_in_datespan(
+    smry_in_datespan: pd.DataFrame, dates: list, sumvec: str
+) -> list:
     """Descr"""
     output = []
     for date in dates:
