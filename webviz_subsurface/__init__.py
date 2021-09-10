@@ -8,10 +8,8 @@ from pkg_resources import get_distribution, DistributionNotFound
 import webviz_config
 import yaml
 
-from webviz_subsurface_components import ExpressionInfo
 from webviz_subsurface._utils.vector_calculator import (
     ConfigExpressionData,
-    expressions_from_config,
     PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
 )
 
