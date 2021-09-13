@@ -2,9 +2,7 @@ from typing import Dict, List
 from pathlib import Path
 import json
 
-import dash
-from dash.dependencies import Input, Output, ALL
-import dash_html_components as html
+from dash import html, Dash, callback_context, Input, Output, ALL
 from webviz_config import WebvizPluginABC, WebvizSettings
 import webviz_core_components as wcc
 
@@ -40,7 +38,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile: str = None,
         ensemble: str = None,
@@ -218,7 +216,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             ]
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self._tornado_widget.storage_id, "data"),
             Input(self.uuid("response"), "value"),
@@ -243,12 +241,12 @@ class TornadoPlotterFMU(WebvizPluginABC):
             # Filter data
             if single_filters is not None:
                 for value, input_dict in zip(
-                    single_filters, dash.callback_context.inputs_list[1]
+                    single_filters, callback_context.inputs_list[1]
                 ):
                     data = data.loc[data[input_dict["id"]["name"]] == value]
             if multi_filters is not None:
                 for value, input_dict in zip(
-                    multi_filters, dash.callback_context.inputs_list[2]
+                    multi_filters, callback_context.inputs_list[2]
                 ):
                     data = data.loc[data[input_dict["id"]["name"]].isin(value)]
 

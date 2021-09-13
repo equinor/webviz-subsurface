@@ -1,12 +1,11 @@
 from typing import Optional, List, Dict, Callable
 
 from plotly.graph_objects import Figure
-import dash
-from dash.dependencies import Input, Output, ClientsideFunction, ALL
+from dash import Dash, callback_context, Input, Output, ClientsideFunction, ALL
 from dash.exceptions import PreventUpdate
 
 
-def update_figure_clientside(app: dash.Dash, get_uuid: Callable) -> None:
+def update_figure_clientside(app: Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output(
             {"id": get_uuid("clientside"), "plotly_attribute": "update_layout"}, "data"
@@ -19,7 +18,7 @@ def update_figure_clientside(app: dash.Dash, get_uuid: Callable) -> None:
         if layout_attributes is None:
             return {}
         layout = {}
-        for ctx in dash.callback_context.inputs_list[0]:
+        for ctx in callback_context.inputs_list[0]:
             layout[ctx["id"]["layout_attribute"]] = ctx.get("value", None)
         layout["uirevision"] = str(uirevision) if uirevision else None
         return layout

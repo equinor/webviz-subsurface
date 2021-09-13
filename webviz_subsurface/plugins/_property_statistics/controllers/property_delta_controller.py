@@ -1,9 +1,7 @@
 from typing import Tuple, Callable
 
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, ALL
-import dash_html_components as html
+from dash import html, Dash, Input, Output, ALL
 import plotly.graph_objects as go
 
 from webviz_subsurface._models import SurfaceLeafletModel
@@ -17,7 +15,7 @@ def property_delta_controller(
     get_uuid: Callable,
     property_model: PropertyStatisticsModel,
     surface_table: pd.DataFrame,
-    app: dash.Dash,
+    app: Dash,
 ) -> None:
     @app.callback(
         Output(get_uuid("delta-bar-graph"), "figure"),

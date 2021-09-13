@@ -1,8 +1,9 @@
 from typing import Callable
-import dash_html_components as html
-from webviz_config import WebvizConfigTheme
 
+from dash import html
+from webviz_config import WebvizConfigTheme
 import webviz_core_components as wcc
+
 from .parameter_qc_view import parameter_qc_view
 from .parameter_response_view import parameter_response_view
 from ..models import ParametersModel, SimulationTimeSeriesModel

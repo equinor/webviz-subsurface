@@ -1,8 +1,8 @@
 from typing import List, Tuple, Callable, Optional
 from pathlib import Path
+
 import pandas as pd
-import dash
-import dash_html_components as html
+from dash import html, Dash
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -93,7 +93,7 @@ aggregated_data/parameters.csv)
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
@@ -172,7 +172,7 @@ aggregated_data/parameters.csv)
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         distribution_controllers(
             app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme

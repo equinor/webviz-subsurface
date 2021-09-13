@@ -2,8 +2,7 @@ from typing import List, Dict, Union, Tuple, Callable
 from pathlib import Path
 import json
 
-import dash
-import dash_html_components as html
+from dash import html, Dash
 from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
 from webviz_subsurface_components import WellLogViewer as WellLogViewerComponent
@@ -80,7 +79,7 @@ Format of the `initial_settings` argument:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         wellfolder: Path,
         logtemplates: List[Path],
         wellsuffix: str = ".w",
@@ -158,7 +157,7 @@ Format of the `initial_settings` argument:
             ]
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         well_controller(
             app=app,
             well_set_model=self._well_set_model,

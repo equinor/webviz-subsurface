@@ -3,7 +3,6 @@ import json
 import pandas as pd
 import dash
 from dash.dependencies import Input, Output
-import dash_html_components as html
 
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
@@ -40,8 +39,8 @@ def test_surface_selector(dash_duo: dash.testing.composite.DashComposite) -> Non
     realizations = pd.read_csv("tests/data/realizations.csv")
     surface_selector = SurfaceSelector(app, surface_context, realizations)
 
-    app.layout = html.Div(
-        children=[surface_selector.layout, html.Pre(id="pre", children="ok")]
+    app.layout = dash.html.Div(
+        children=[surface_selector.layout, dash.html.Pre(id="pre", children="ok")]
     )
 
     @app.callback(

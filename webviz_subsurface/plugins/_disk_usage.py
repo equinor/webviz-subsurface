@@ -5,7 +5,7 @@ from pathlib import Path
 import datetime
 
 import pandas as pd
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE

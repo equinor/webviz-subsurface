@@ -1,11 +1,10 @@
 from typing import Dict, Callable, Tuple, Union, List
 
-import dash
-from dash.dependencies import Input, Output, MATCH
+from dash import Dash, Input, Output, MATCH
 
 
 def update_intersection_source(
-    app: dash.Dash, get_uuid: Callable, surface_geometry: Dict
+    app: Dash, get_uuid: Callable, surface_geometry: Dict
 ) -> None:
     @app.callback(
         Output(

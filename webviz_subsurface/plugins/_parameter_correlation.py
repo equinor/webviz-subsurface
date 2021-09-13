@@ -4,10 +4,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import dash
-import dash_html_components as html
+from dash import html, Dash, Input, Output
 import webviz_core_components as wcc
-from dash.dependencies import Input, Output
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
@@ -31,7 +29,7 @@ class ParameterCorrelation(WebvizPluginABC):
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         drop_constants: bool = True,
@@ -175,7 +173,7 @@ class ParameterCorrelation(WebvizPluginABC):
             ]
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.ids("matrix"), "figure"),
             [

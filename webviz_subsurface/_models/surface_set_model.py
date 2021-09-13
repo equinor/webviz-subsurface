@@ -1,7 +1,6 @@
 from typing import List, Tuple, Callable, Optional, Any, Dict
 from pathlib import Path
 import warnings
-import json
 import io
 
 import numpy as np
@@ -132,12 +131,15 @@ class SurfaceSetModel:
         # When portable check if the surface has been stored
         # if not calculate
         try:
-            surface = save_statistical_surface(sorted(list(df["path"])), calculation)
-        except OSError:
-            surface = save_statistical_surface_no_store(
+            surface_stream = save_statistical_surface(
                 sorted(list(df["path"])), calculation
             )
-        return surface_from_json(json.load(surface))
+        except OSError:
+            surface_stream = save_statistical_surface_no_store(
+                sorted(list(df["path"])), calculation
+            )
+
+        return xtgeo.surface_from_file(surface_stream, fformat="irap_binary")
 
     def webviz_store_statistical_calculation(
         self,
@@ -230,7 +232,9 @@ def save_statistical_surface_no_store(
         surface = xtgeo.RegularSurface(
             ncol=1, nrow=1, xinc=1, yinc=1
         )  # 1's as input is required
-    return io.BytesIO(surface_to_json(surface).encode())
+    stream = io.BytesIO()
+    surface.to_file(stream, fformat="irap_binary")
+    return stream
 
 
 @webvizstore
@@ -252,7 +256,9 @@ def save_statistical_surface(fns: List[str], calculation: str) -> io.BytesIO:
         surface = xtgeo.RegularSurface(
             ncol=1, nrow=1, xinc=1, yinc=1
         )  # 1's as input is required
-    return io.BytesIO(surface_to_json(surface).encode())
+    stream = io.BytesIO()
+    surface.to_file(stream, fformat="irap_binary")
+    return stream
 
 
 # pylint: disable=too-many-return-statements
@@ -275,26 +281,3 @@ def get_statistical_surface(
     return xtgeo.RegularSurface(
         ncol=1, nrow=1, xinc=1, yinc=1
     )  # 1's as input is required
-
-
-def surface_to_json(surface: xtgeo.RegularSurface) -> str:
-    """Returns a json represention of a Xtgeo surface instance"""
-    return json.dumps(
-        {
-            "ncol": surface.ncol,
-            "nrow": surface.nrow,
-            "xori": surface.xori,
-            "yori": surface.yori,
-            "rotation": surface.rotation,
-            "xinc": surface.xinc,
-            "yinc": surface.yinc,
-            "values": surface.values.copy().filled(np.nan).tolist(),
-        }
-    )
-
-
-def surface_from_json(surfaceobj: dict) -> xtgeo.RegularSurface:
-    """Returns a Xtgeo surface instance from a json surface representation"""
-    surface = xtgeo.RegularSurface(**surfaceobj)
-    surface.values = surfaceobj["values"]
-    return surface

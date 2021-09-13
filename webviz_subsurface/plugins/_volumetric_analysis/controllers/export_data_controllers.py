@@ -1,12 +1,10 @@
 from typing import Callable
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import dcc, Dash, callback_context, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
 
 
-def export_data_controllers(app: dash.Dash, get_uuid: Callable) -> None:
+def export_data_controllers(app: Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output(get_uuid("download-dataframe"), "data"),
         Input({"request": "table_data", "table_id": ALL}, "data_requested"),
@@ -24,7 +22,7 @@ def export_data_controllers(app: dash.Dash, get_uuid: Callable) -> None:
         table_ids: list,
     ) -> Callable:
 
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         export_clicks = {
             id_value["table_id"]: n_clicks
             for id_value, n_clicks in zip(button_ids, _data_requested)
