@@ -1,4 +1,5 @@
 from typing import Callable, Optional, Any, Tuple, List, Dict
+import json
 import dash
 from dash.dependencies import Input, Output, State
 
@@ -59,7 +60,9 @@ def controllers(
         return [
             webviz_subsurface_components.GroupTree(
                 id="grouptree",
-                data=grouptreedata.create_grouptree_dataset(ensemble, tree_mode, real),
+                data=json.load(
+                    grouptreedata.create_grouptree_dataset(ensemble, tree_mode, real),
+                ),
             ),
         ]
 
