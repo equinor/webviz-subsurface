@@ -1,3 +1,4 @@
+# pylint: disable=protected-access
 import pandas as pd
 import pytest
 
