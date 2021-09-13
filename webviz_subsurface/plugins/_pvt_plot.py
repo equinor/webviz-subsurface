@@ -7,11 +7,8 @@
 from typing import Callable, Dict, List, Tuple, Union, Any
 
 import pandas as pd
-import dash
-import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash import html, dcc, Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config import WebvizPluginABC
@@ -69,7 +66,7 @@ class PvtPlot(WebvizPluginABC):
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
         pvt_relative_file_path: str = None,
@@ -317,7 +314,7 @@ class PvtPlot(WebvizPluginABC):
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("graphs"), "children"),
             [
@@ -400,8 +397,8 @@ class PvtPlot(WebvizPluginABC):
             selector to allow multiple selections
             """
             if (
-                dash.callback_context.triggered is None
-                or not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+                callback_context.triggered is None
+                or not callback_context.triggered[0]["prop_id"].split(".")[0]
             ):
                 raise PreventUpdate
 
@@ -427,8 +424,8 @@ class PvtPlot(WebvizPluginABC):
             selector to allow multiple selections
             """
             if (
-                dash.callback_context.triggered is None
-                or not dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+                callback_context.triggered is None
+                or not callback_context.triggered[0]["prop_id"].split(".")[0]
             ):
                 raise PreventUpdate
 

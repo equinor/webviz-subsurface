@@ -1,7 +1,6 @@
 from typing import List, Any, Callable, Dict, Optional
 
-import dash_html_components as html
-import dash_table
+from dash import html, dash_table
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 

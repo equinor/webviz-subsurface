@@ -8,11 +8,8 @@ import datetime
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
-import dash
+from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
@@ -152,7 +149,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-locals
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile: Path = None,
         ensembles: list = None,
@@ -637,7 +634,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [

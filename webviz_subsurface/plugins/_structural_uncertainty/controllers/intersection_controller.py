@@ -3,8 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import xtgeo
-import dash
-from dash.dependencies import Input, Output, State, ClientsideFunction
+from dash import Dash, callback_context, Input, Output, State, ClientsideFunction
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
@@ -20,7 +19,7 @@ from ..figures.intersection import (
 
 # pylint: disable=too-many-statements
 def update_intersection(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
@@ -214,7 +213,7 @@ def update_intersection(
         wellname: str,
     ) -> Dict:
         """Store intersection layout configuration clientside"""
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if "ui_options" in ctx["prop_id"]:
             raise PreventUpdate
 
@@ -358,7 +357,7 @@ def update_intersection(
         zmin: Optional[float],
         zmax: Optional[float],
     ) -> Tuple[Optional[float], Optional[float]]:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
 
@@ -409,7 +408,7 @@ def update_intersection(
         previous_settings: Dict,
     ) -> Tuple[Dict, Dict]:
 
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
 
         new_settings = {
             "surface_attribute": surfaceattribute,

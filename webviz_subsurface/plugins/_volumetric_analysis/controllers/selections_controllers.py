@@ -1,7 +1,6 @@
 from typing import Callable, Optional, Any
 
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import Dash, callback_context, no_update, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
@@ -10,7 +9,7 @@ from ..utils.utils import create_range_string, update_relevant_components
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
 def selections_controllers(
-    app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
+    app: Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
     @app.callback(
         Output(get_uuid("selections"), "data"),
@@ -38,7 +37,7 @@ def selections_controllers(
         selector_ids: list,
         filter_ids: list,
     ) -> dict:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
 
@@ -127,7 +126,7 @@ def selections_controllers(
         previous_selection: Optional[dict],
         selected_tab: str,
     ) -> tuple:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if (
             selected_tab != "voldist"
             or ("Color by" in ctx["prop_id"] and plot_type not in ["box", "bar"])
@@ -208,7 +207,7 @@ def selections_controllers(
                 id_list=selector_ids,
                 update_info=[
                     {
-                        "new_value": values.get(prop, dash.no_update),
+                        "new_value": values.get(prop, no_update),
                         "conditions": {"selector": selector},
                     }
                     for selector, values in settings.items()
@@ -278,7 +277,7 @@ def selections_controllers(
             elif multi and not selector_is_multi:
                 values = [x["value"] for x in page_filter_settings[selector]["options"]]
             else:
-                multi = values = dash.no_update
+                multi = values = no_update
             output[selector] = {"multi": multi, "values": values}
 
         # filter tornado on correct fluid based on volume response chosen
@@ -307,7 +306,7 @@ def selections_controllers(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": values.get("multi", dash.no_update),
+                        "new_value": values.get("multi", no_update),
                         "conditions": {"tab": selected_tab, "selector": selector},
                     }
                     for selector, values in output.items()
@@ -317,7 +316,7 @@ def selections_controllers(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": values.get("values", dash.no_update),
+                        "new_value": values.get("values", no_update),
                         "conditions": {"tab": selected_tab, "selector": selector},
                     }
                     for selector, values in output.items()
@@ -481,7 +480,7 @@ def selections_controllers(
                 id_list=selector_ids,
                 update_info=[
                     {
-                        "new_value": values.get(prop, dash.no_update),
+                        "new_value": values.get(prop, no_update),
                         "conditions": {"selector": selector},
                     }
                     for selector, values in settings.items()

@@ -1,7 +1,6 @@
 from typing import Dict, Callable, Optional, List
 
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html, dcc
 import webviz_core_components as wcc
 
 from .property_qc_view import property_qc_view

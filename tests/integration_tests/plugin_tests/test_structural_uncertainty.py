@@ -1,7 +1,6 @@
 import json
 
-import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash import html, Input, Output, State
 from webviz_config.themes import default_theme
 from webviz_config import WebvizSettings
 

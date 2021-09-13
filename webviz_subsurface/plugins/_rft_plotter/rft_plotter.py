@@ -1,12 +1,10 @@
 from typing import Optional, List, Dict, Tuple, Callable, Any, Union
 from pathlib import Path
 
-import dash
 import numpy as np
 import pandas as pd
-import dash_html_components as html
+from dash import html, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -103,7 +101,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
@@ -432,9 +430,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             ],
         )
 
-    def filter_layout(
-        self, tab: str
-    ) -> List[dash.development.base_component.Component]:
+    def filter_layout(self, tab: str) -> List[wcc.Selectors]:
         """Layout for shared filters"""
         return wcc.Selectors(
             label="Selectors",
@@ -633,7 +629,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("well"), "value"),
             [

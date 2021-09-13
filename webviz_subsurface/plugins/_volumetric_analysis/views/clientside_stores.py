@@ -1,7 +1,6 @@
 from typing import Callable
 
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import html, dcc
 
 
 def clientside_stores(get_uuid: Callable) -> html.Div:

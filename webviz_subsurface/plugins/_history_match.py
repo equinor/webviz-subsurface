@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2
-import dash_html_components as html
+from dash import html
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings

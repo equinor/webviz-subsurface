@@ -1,10 +1,9 @@
 from typing import Callable, Tuple
 
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import Dash, callback_context, no_update, Input, Output, State, ALL
 
 
-def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
+def layout_controllers(app: Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output({"id": get_uuid("selections"), "button": ALL}, "style"),
         Output(get_uuid("page-selected"), "data"),
@@ -24,7 +23,7 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
         prev_voldist_page: str,
     ) -> Tuple[list, str, list, str]:
 
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
 
         if (
             tab_selected != "voldist"
@@ -32,10 +31,10 @@ def layout_controllers(app: dash.Dash, get_uuid: Callable) -> None:
             and prev_voldist_page is not None
         ):
             return (
-                [dash.no_update] * len(button_ids),
+                [no_update] * len(button_ids),
                 tab_selected if tab_selected != "voldist" else prev_voldist_page,
-                [dash.no_update] * len(main_layout_ids),
-                dash.no_update,
+                [no_update] * len(main_layout_ids),
+                no_update,
             )
 
         button_styles = []

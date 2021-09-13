@@ -2,16 +2,13 @@ from typing import Callable, List, Optional
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import html, Dash, dash_table, no_update, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
-from dash_table.Format import Format
-import dash_html_components as html
-import dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
+
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
@@ -26,7 +23,7 @@ from ..utils.utils import update_relevant_components
 
 # pylint: disable=too-many-statements, too-many-branches
 def distribution_controllers(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     volumemodel: InplaceVolumesModel,
     theme: WebvizConfigTheme,
@@ -136,7 +133,7 @@ def distribution_controllers(
                 if not selections["Y axis matches"]:
                     figure.update_yaxes({"matches": None})
         else:
-            figure = dash.no_update
+            figure = no_update
 
         # Make tables
         if not (plot_table_select == "graph" and page_selected == "custom"):
@@ -151,7 +148,7 @@ def distribution_controllers(
                 view_height=42 if page_selected == "1p1t" else 86,
             )
         else:
-            table_wrapper_children = dash.no_update
+            table_wrapper_children = no_update
 
         return tuple(
             update_relevant_components(
@@ -615,7 +612,7 @@ def create_table_columns(
                     if use_si_format
                     or volumemodel is not None
                     and col in volumemodel.volume_columns
-                    else Format(precision=3),
+                    else dash_table.Format.Format(precision=3),
                 }
             )
         table_columns.append(data)

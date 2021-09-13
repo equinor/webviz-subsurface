@@ -5,11 +5,8 @@ import io
 
 import pandas as pd
 import xtgeo
-import dash
-from dash.dependencies import Input, Output, State
+from dash import html, dcc, Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-import dash_html_components as html
-import dash_core_components as dcc
 from webviz_subsurface_components import LeafletMap
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
@@ -87,7 +84,7 @@ attribute_settings:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         attributes: list = None,
@@ -463,7 +460,7 @@ attribute_settings:
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("map"), "layers"),
@@ -503,7 +500,7 @@ attribute_settings:
             hillshade2: dict,
             hillshade3: dict,
         ) -> Tuple[List[dict], List[dict], List[dict], str]:
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
             if not ctx or not stored_selector_data or not stored_selector2_data:
                 raise PreventUpdate
 
@@ -610,7 +607,7 @@ attribute_settings:
         ) -> str:
             """Updates dropdown value if previous/next btn is clicked"""
             option_values: List[str] = [opt["value"] for opt in options]
-            ctx = dash.callback_context.triggered
+            ctx = callback_context.triggered
             if not ctx or current_value is None:
                 raise PreventUpdate
             if not ctx[0]["value"]:

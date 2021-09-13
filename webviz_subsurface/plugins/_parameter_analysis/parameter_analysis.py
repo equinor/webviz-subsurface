@@ -1,7 +1,7 @@
 import pathlib
 from typing import Optional
 
-import dash_core_components as dcc
+from dash import dcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 

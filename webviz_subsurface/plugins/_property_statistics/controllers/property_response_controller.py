@@ -2,9 +2,9 @@ from typing import Tuple, Union, Callable
 
 import numpy as np
 import pandas as pd
-from dash.dependencies import Input, Output, State, ALL
+from dash import Dash, no_update, callback_context, Input, Output, State, ALL
+from dash.dash import _NoUpdate
 from dash.exceptions import PreventUpdate
-import dash
 
 from webviz_subsurface._models import SurfaceLeafletModel
 from ..utils.colors import find_intermediate_color_rgba
@@ -18,7 +18,7 @@ def property_response_controller(
     surface_table: pd.DataFrame,
     property_model: PropertyStatisticsModel,
     timeseries_model: SimulationTimeSeriesModel,
-    app: dash.Dash,
+    app: Dash,
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("surface-view"), "tab": "response"}, "layers"),
@@ -45,7 +45,7 @@ def property_response_controller(
                 )
             except ValueError:  # Surface does not exist
                 return (
-                    dash.no_update,
+                    no_update,
                     f"No surface found for {stype.capitalize()} for {prop}, {zone}",
                 )
             surface_layer = SurfaceLeafletModel(surface, name="surface").layer
@@ -62,15 +62,14 @@ def property_response_controller(
         Input(get_uuid("property-response-correlated-filter"), "value"),
         Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
     )
-    # pylint: disable=protected-access
     def _update_correlation_figure(
         label: str, ensemble: str
     ) -> Tuple[
-        Union[float, dash.dash._NoUpdate],
-        Union[float, dash.dash._NoUpdate],
-        Union[float, dash.dash._NoUpdate],
+        Union[float, _NoUpdate],
+        Union[float, _NoUpdate],
+        Union[float, _NoUpdate],
         list,
-        Union[dict, dash.dash._NoUpdate],
+        Union[dict, _NoUpdate],
         bool,
     ]:
         if label is not None:
@@ -88,11 +87,11 @@ def property_response_controller(
             )
 
         return (
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
+            no_update,
+            no_update,
+            no_update,
             [None, None],
-            dash.no_update,
+            no_update,
             True,
         )
 
@@ -127,12 +126,12 @@ def property_response_controller(
         label: str,
     ) -> Tuple[dict, dict]:
         if (
-            dash.callback_context.triggered is None
-            or dash.callback_context.triggered[0]["prop_id"] == "."
+            callback_context.triggered is None
+            or callback_context.triggered[0]["prop_id"] == "."
             or vector is None
         ):
             raise PreventUpdate
-        ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
         # Filter realizations if correlation filter is active
         real_filter = (

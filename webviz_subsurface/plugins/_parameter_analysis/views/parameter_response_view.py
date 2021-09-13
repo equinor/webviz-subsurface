@@ -1,7 +1,7 @@
 from typing import Callable
 
+from dash import html
 from webviz_config import WebvizConfigTheme
-import dash_html_components as html
 import webviz_core_components as wcc
 
 from .selector_view import (

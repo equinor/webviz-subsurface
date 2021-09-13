@@ -1,7 +1,6 @@
 from typing import Callable
 
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
 from webviz_subsurface._models import InplaceVolumesModel
