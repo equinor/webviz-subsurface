@@ -218,6 +218,38 @@ def get_expression_from_name(
     return None
 
 
+def get_custom_vector_definitions_from_expressions(
+    expressions: List[ExpressionInfo],
+) -> dict:
+    """
+    Get custom vector definitions for vector selector from list of calculated expressions.
+
+    VectorSelector has VectorDefinitions which is utilized for calculated expressions.
+
+    `VectorDefinitions:`
+        key: str, vector name
+        value: {
+            type: str, defined vector type
+            description: str, description of vector
+        }
+
+    `Note:`
+    Uses expression str as description if optional expression description str does not exist.
+    """
+
+    output: dict = {}
+    for expression in expressions:
+        name = expression["name"]
+        vector_type = "calculated"
+        description = (
+            expression["expression"]
+            if not "description" in dict(expression).keys()
+            else expression["description"]
+        )
+        output[name] = {"type": vector_type, "description": description}
+    return output
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_selected_expressions(
     expressions: List[ExpressionInfo], selected_names: List[str]
