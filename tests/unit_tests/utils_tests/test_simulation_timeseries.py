@@ -1,6 +1,6 @@
 import pytest
 
-import webviz_subsurface._utils.simulation_timeseries as simulation_timeseries
+from webviz_subsurface._utils import simulation_timeseries
 
 
 @pytest.mark.parametrize(
