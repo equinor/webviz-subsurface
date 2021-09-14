@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
 - [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
+- [#765](https://github.com/equinor/webviz-subsurface/pull/765) - Use correct inline/xline ranges for axes in SegyViewer z-slice graph
 
 ### Changed
 - [#760](https://github.com/equinor/webviz-subsurface/pull/760) - Updated to `Dash 2.0`.
