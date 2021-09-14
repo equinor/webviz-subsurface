@@ -32,6 +32,7 @@ def stringify_object_id(uuid) -> str:
     return ("").join(string)
 
 
+# pylint: disable=too-many-locals
 def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     webviz_settings = WebvizSettings(
         shared_settings={

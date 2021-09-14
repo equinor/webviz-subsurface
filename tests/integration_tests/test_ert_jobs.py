@@ -5,7 +5,7 @@ import json
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.feather as feather
+from pyarrow import feather
 import pytest
 from ert_shared.plugins.plugin_manager import ErtPluginManager
 
@@ -97,29 +97,29 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
     field_meta = json.loads(field.metadata[b"smry_meta"])
     assert field.type == pa.float32()
     assert field_meta["unit"] == "SM3"
-    assert field_meta["is_total"] == True
-    assert field_meta["is_rate"] == False
-    assert field_meta["is_historical"] == False
+    assert field_meta["is_total"] is True
+    assert field_meta["is_rate"] is False
+    assert field_meta["is_historical"] is False
 
     field = schema.field("FOPR")
     field_meta = json.loads(field.metadata[b"smry_meta"])
     assert field.type == pa.float32()
     assert field_meta["unit"] == "SM3/DAY"
-    assert field_meta["is_total"] == False
-    assert field_meta["is_rate"] == True
-    assert field_meta["is_historical"] == False
+    assert field_meta["is_total"] is False
+    assert field_meta["is_rate"] is True
+    assert field_meta["is_historical"] is False
 
     field = schema.field("FOPTH")
     field_meta = json.loads(field.metadata[b"smry_meta"])
     assert field.type == pa.float32()
     assert field_meta["unit"] == "SM3"
-    assert field_meta["is_total"] == True
-    assert field_meta["is_rate"] == False
-    assert field_meta["is_historical"] == True
+    assert field_meta["is_total"] is True
+    assert field_meta["is_rate"] is False
+    assert field_meta["is_historical"] is True
 
 
-@pytest.fixture
-def expected_jobs():
+@pytest.fixture(name="expected_jobs")
+def expected_jobs_fixture():
     """dictionary of installed jobs with location to config"""
     config_location = (
         Path(__file__).absolute().parent.parent.parent
