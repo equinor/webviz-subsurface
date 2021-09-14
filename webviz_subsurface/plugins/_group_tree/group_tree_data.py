@@ -46,9 +46,8 @@ class GroupTreeData:
         self,
         ensemble: str,
         tree_mode: str,
-        real: int
-        # smry: pd.DataFrame,
-        # gruptrees: pd.DataFrame,
+        real: int,
+        prodinj: List[str],
     ) -> io.BytesIO:
         """This function creates the dataset that is input to the GroupTree
         component the webviz_subsurface_components.
@@ -73,9 +72,39 @@ class GroupTreeData:
             # Trees are not equal. Filter on realization
             gruptree_ens = gruptree_ens[gruptree_ens["REAL"] == real]
 
+        # Filter production, injection or other
+        if prodinj == ["other"]:
+            # Filter out rows where both IS_PROD and IS_INJ is True
+            gruptree_ens = gruptree_ens[
+                ~((gruptree_ens["IS_PROD"] is True) & (gruptree_ens["IS_INJ"] is True))
+            ]
+        if "prod" not in prodinj:
+            # Filter out rows where IS_PROD=True and IS_INJ=False
+            gruptree_ens = gruptree_ens[
+                ~((gruptree_ens["IS_PROD"] is True) & (gruptree_ens["IS_INJ"] is False))
+            ]
+        if "inj" not in prodinj:
+            # Filter out rows where IS_PROD=False and IS_INJ=True
+            gruptree_ens = gruptree_ens[
+                ~((gruptree_ens["IS_PROD"] is False) & (gruptree_ens["IS_INJ"] is True))
+            ]
+        if "other" not in prodinj:
+            # Filter out rows where both IS_PROD=False and IS_INJ=False
+            gruptree_ens = gruptree_ens[
+                ~(
+                    (gruptree_ens["IS_PROD"] is False)
+                    & (gruptree_ens["IS_INJ"] is False)
+                )
+            ]
+
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
-        # with open("/private/olind/webviz/webviz-subsurface-components/react/src/demo/example-data/grouptree_suggested_format_drogon.json", "r") as handle:
-        #    ex_dataset = json.load(handle)
+        # ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
+
+        # with open(
+        #     "/private/olind/webviz/webviz-subsurface-components/react/src/demo/example-data/grouptree_suggested_format_drogon.json",
+        #     "r",
+        # ) as handle:
+        #     ex_dataset = json.load(handle)
         return io.BytesIO(
             # json.dumps(ex_dataset).encode()
             json.dumps(create_dataset(smry_ens, gruptree_ens, ens_sumvecs)).encode()

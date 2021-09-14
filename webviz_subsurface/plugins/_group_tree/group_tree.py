@@ -104,13 +104,6 @@ class GroupTree(WebvizPluginABC):
 
         self.grouptreedata = GroupTreeData(smry, gruptree)
 
-        # First check that Field rates and WSTAT is in smry
-        # qc_summary_1(self.smry, self.gruptree)
-        # self.gruptree = add_nodetype(self.gruptree, self.smry)
-
-        # Check that the rest of the summary vectors exists
-        # qc_summary_2(self.smry, self.gruptree)
-
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:

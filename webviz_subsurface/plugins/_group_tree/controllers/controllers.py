@@ -53,15 +53,20 @@ def controllers(
         Output(get_uuid("grouptree_wrapper"), "children"),
         Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
         Input({"id": get_uuid("controls"), "element": "realization"}, "value"),
+        Input({"id": get_uuid("filters"), "element": "prodinj"}, "value"),
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
-    def _render_grouptree(tree_mode: str, real: int, ensemble: str) -> list:
+    def _render_grouptree(
+        tree_mode: str, real: int, prodinj: list, ensemble: str
+    ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
         return [
             webviz_subsurface_components.GroupTree(
                 id="grouptree",
                 data=json.load(
-                    grouptreedata.create_grouptree_dataset(ensemble, tree_mode, real),
+                    grouptreedata.create_grouptree_dataset(
+                        ensemble, tree_mode, real, prodinj
+                    ),
                 ),
             ),
         ]
