@@ -350,6 +350,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             fig = make_heatmap(
                 zslice_arr,
                 self.plotly_theme,
+                xaxis=cube.ilines,
+                yaxis=cube.xlines,
                 showscale=True,
                 text=str(state["zslice"]),
                 title=f'Zslice {state["zslice"]} ({self.zunit})',
