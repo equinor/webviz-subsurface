@@ -151,6 +151,14 @@ class InplaceVolumesModel:
         return [x for x in self.POSSIBLE_SELECTORS if x in self._dataframe]
 
     @property
+    def region_selectors(self) -> List[str]:
+        return [
+            x
+            for x in ["FIPNUM", "ZONE", "REGION", "SET", "LICENSE"]
+            if x in self.selectors
+        ]
+
+    @property
     def responses(self) -> List[str]:
         return self.volume_columns + self.property_columns
 

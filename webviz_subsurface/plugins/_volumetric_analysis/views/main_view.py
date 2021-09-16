@@ -31,15 +31,13 @@ def main_view(
                         tab="voldist",
                         volumemodel=volumemodel,
                         theme=theme,
-                    )
-                ]
-                + [
+                    ),
                     filter_layout(
                         uuid=get_uuid("filters"),
                         tab="voldist",
                         volumemodel=volumemodel,
-                        filters=[x for x in volumemodel.selectors if x != "SENSTYPE"],
-                    )
+                        hide_selectors=["SENSTYPE"],
+                    ),
                 ],
             ),
         )
@@ -57,14 +55,13 @@ def main_view(
                         uuid=get_uuid("selections"),
                         tab="table",
                         volumemodel=volumemodel,
-                    )
-                ]
-                + [
+                    ),
                     filter_layout(
                         open_details=True,
                         uuid=get_uuid("filters"),
                         tab="table",
                         volumemodel=volumemodel,
+                        hide_selectors=["SENSTYPE"],
                     ),
                 ],
             ),
@@ -84,25 +81,13 @@ def main_view(
                             uuid=get_uuid("selections"),
                             tab="tornado",
                             volumemodel=volumemodel,
-                        )
-                    ]
-                    + [
+                        ),
                         filter_layout(
                             open_details=True,
                             uuid=get_uuid("filters"),
                             tab="tornado",
                             volumemodel=volumemodel,
-                            filters=[
-                                x
-                                for x in volumemodel.selectors
-                                if x
-                                not in [
-                                    "SENSCASE",
-                                    "SENSNAME",
-                                    "SENSTYPE",
-                                    "REAL",
-                                ]
-                            ],
+                            hide_selectors=["SENSCASE", "SENSNAME", "SENSTYPE"],
                         ),
                     ],
                 ),
