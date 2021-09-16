@@ -14,6 +14,8 @@ class InplaceVolumesModel:
         "SOURCE",
         "ENSEMBLE",
         "REAL",
+        "FIPNUM",
+        "SET",
         "ZONE",
         "REGION",
         "FACIES",
@@ -40,48 +42,48 @@ class InplaceVolumesModel:
         parameter_table: Optional[pd.DataFrame] = None,
         non_net_facies: Optional[List[str]] = None,
         drop_constants: bool = True,
+        volume_type: str = "static",
     ):
+        self._volume_type = volume_type
         self.pmodel = ParametersModel(
             parameter_table, drop_constants=drop_constants, keep_numeric_only=False
         )
         selectors = [x for x in volumes_table.columns if x in self.POSSIBLE_SELECTORS]
 
-        # It is not yet supported to combine sources with different selectors
-        if volumes_table[selectors].isnull().values.any():
-            raise TypeError(
-                f"Selectors {[x for x in selectors if x not in ['ENSEMBLE', 'SOURCE', 'REAL']]} "
-                "needs to be defined for all sources"
-            )
+        if volume_type != "dynamic":
+            # compute water zone volumes if total volumes are present
+            if any(col.endswith("_TOTAL") for col in volumes_table.columns):
+                volumes_table = self._compute_water_zone_volumes(
+                    volumes_table, selectors
+                )
 
-        # compute water zone volumes if total volumes are present
-        if any(col.endswith("_TOTAL") for col in volumes_table.columns):
-            volumes_table = self._compute_water_zone_volumes(volumes_table, selectors)
+            # stack dataframe on fluid zone and add fluid as column istead of a column suffix
+            dfs = []
+            for fluid in ["OIL", "GAS", "WATER"]:
+                fluid_columns = [
+                    x for x in volumes_table.columns if x.endswith(f"_{fluid}")
+                ]
+                if not fluid_columns:
+                    continue
+                df = volumes_table[selectors + fluid_columns].copy()
+                df.columns = df.columns.str.replace(f"_{fluid}", "")
+                df["FLUID_ZONE"] = fluid.lower()
+                dfs.append(df)
+            self._dataframe = pd.concat(dfs)
 
-        # stack dataframe on fluid zone and add fluid as column istead of a column suffix
-        dfs = []
-        for fluid in ["OIL", "GAS", "WATER"]:
-            fluid_columns = [
-                x for x in volumes_table.columns if x.endswith(f"_{fluid}")
-            ]
-            if not fluid_columns:
-                continue
-            df = volumes_table[selectors + fluid_columns].copy()
-            df.columns = df.columns.str.replace(f"_{fluid}", "")
-            df["FLUID_ZONE"] = fluid.lower()
-            # Rename PORE to PORV (PORE will be deprecated..)
-            if "PORE" in df:
-                df.rename(columns={"PORE": "PORV"}, inplace=True)
-            dfs.append(df)
-        self._dataframe = pd.concat(dfs)
+            # Set NET volumes based on facies if non_net_facies in input
+            if non_net_facies is not None and "FACIES" in self._dataframe:
+                self._dataframe["NET"] = self._dataframe["BULK"]
+                self._dataframe.loc[
+                    self._dataframe["FACIES"].isin(non_net_facies), "NET"
+                ] = 0
+        else:
+            self._dataframe = volumes_table
+            # Workaround the FUID ZONE needs to be defined in the
+            # VolumetricAnalysis plugin - this will be fixed later!
+            self._dataframe["FLUID_ZONE"] = "-"
 
-        # Set NET volumes based on facies if non_net_facies in input
-        if non_net_facies is not None and "FACIES" in self._dataframe:
-            self._dataframe["NET"] = self._dataframe["BULK"]
-            self._dataframe.loc[
-                self._dataframe["FACIES"].isin(non_net_facies), "NET"
-            ] = 0
-
-        # If snesitivity run merge sensitivity columns into the dataframe
+        # If sensitivity run merge sensitivity columns into the dataframe
         if self.pmodel.sensrun:
             self._dataframe = pd.merge(
                 self._dataframe, self.pmodel.sens_df, on=["ENSEMBLE", "REAL"]
@@ -111,6 +113,10 @@ class InplaceVolumesModel:
     @property
     def sensrun(self) -> bool:
         return self.pmodel.sensrun
+
+    @property
+    def volume_type(self) -> str:
+        return self._volume_type
 
     @property
     def sensitivities(self) -> List[str]:
@@ -281,15 +287,25 @@ def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
 
 
 def extract_volumes(
-    ensemble_set_model: EnsembleSetModel, volfolder: str, volfiles: Dict[str, Any]
+    ensemble_set_model: EnsembleSetModel,
+    volfolder: str,
+    volfiles: Dict[str, Any],
 ) -> pd.DataFrame:
     """Aggregates volumetric files from an FMU ensemble.
     Files must be stored on standardized csv format.
     """
-
     dfs = []
-    for volname, volfile in volfiles.items():
-        df = ensemble_set_model.load_csv(Path(volfolder) / volfile)
+    for volname, files in volfiles.items():
+        if isinstance(files, list):
+            volframes = [
+                ensemble_set_model.load_csv(Path(volfolder) / volfile)
+                for volfile in files
+            ]
+            df = merge_csv_files(volframes)
+        elif isinstance(files, str):
+            df = ensemble_set_model.load_csv(Path(volfolder) / files)
+        else:
+            raise ValueError("Wrong format of volfile value argument!")
         df["SOURCE"] = volname
         dfs.append(df)
 
@@ -299,3 +315,14 @@ def extract_volumes(
             f"Ensure that the files are present in relative folder {volfolder}"
         )
     return pd.concat(dfs)
+
+
+def merge_csv_files(volframes: List[pd.DataFrame]) -> pd.DataFrame:
+    """Merge csv files on common columns"""
+    common_columns = list(
+        set.intersection(*[set(frame.columns) for frame in volframes])
+    )
+    merged_dframe = pd.DataFrame(columns=common_columns)
+    for frame in volframes:
+        merged_dframe = pd.merge(merged_dframe, frame, on=common_columns, how="outer")
+    return merged_dframe
