@@ -311,9 +311,11 @@ folder, to avoid risk of not extracting the right data.
         )
 
         # Retreive predefined expressions from configuration
-        self.predefined_expressions_path = webviz_settings.shared_settings[
-            "predefined_expressions"
-        ][predefined_expressions]
+        self.predefined_expressions_path = None
+        if "predefined_expressions" in webviz_settings.shared_settings:
+            self.predefined_expressions_path = webviz_settings.shared_settings[
+                "predefined_expressions"
+            ][predefined_expressions]
         self.predefined_expressions = expressions_from_config(
             get_path(self.predefined_expressions_path)
             if self.predefined_expressions_path
