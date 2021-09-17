@@ -63,6 +63,7 @@ from .._utils.vector_calculator import (
     get_selected_expressions,
     is_vector_name_existing,
     validate_predefined_expression,
+    get_custom_vector_definitions_from_expressions,
 )
 
 
@@ -294,11 +295,7 @@ folder, to avoid risk of not extracting the right data.
             self.plot_options["vectors"] = []
         for vector in [
             vector
-            for vector in [
-                "vector1",
-                "vector2",
-                "vector3",
-            ]
+            for vector in ["vector1", "vector2", "vector3"]
             if vector in self.plot_options
         ]:
             self.plot_options["vectors"].append(self.plot_options[vector])
@@ -663,6 +660,9 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     numSecondsUntilSuggestionsAreShown=0.5,
                                     lineBreakAfterTag=True,
+                                    customVectorDefinitions=get_custom_vector_definitions_from_expressions(
+                                        self.predefined_expressions
+                                    ),
                                 ),
                             ),
                             wcc.Selectors(
@@ -1219,12 +1219,14 @@ folder, to avoid risk of not extracting the right data.
                 Output(self.uuid("vector_calculator_expressions"), "data"),
                 Output(self.uuid("vectors"), "data"),
                 Output(self.uuid("vectors"), "selectedTags"),
+                Output(self.uuid("vectors"), "customVectorDefinitions"),
             ],
             Input(self.uuid("modal_vector_calculator"), "is_open"),
             [
                 State(self.uuid("vector_calculator_expressions_modal_open"), "data"),
                 State(self.uuid("vector_calculator_expressions"), "data"),
                 State(self.uuid("vectors"), "selectedNodes"),
+                State(self.uuid("vectors"), "customVectorDefinitions"),
             ],
         )
         def _update_vector_calculator_expressions_actual(
@@ -1232,6 +1234,7 @@ folder, to avoid risk of not extracting the right data.
             new_expressions: List[ExpressionInfo],
             existing_expressions: List[ExpressionInfo],
             selected_vectors: List[str],
+            custom_vector_definitions: dict,
         ) -> list:
             if modal_open or (new_expressions == existing_expressions):
                 raise PreventUpdate
@@ -1248,7 +1251,19 @@ folder, to avoid risk of not extracting the right data.
             if new_selected_vectors == selected_vectors:
                 new_selected_vectors = dash.no_update
 
-            return [new_expressions, vector_data, new_selected_vectors]
+            new_custom_vector_definitions = (
+                get_custom_vector_definitions_from_expressions(new_expressions)
+            )
+
+            if new_custom_vector_definitions == custom_vector_definitions:
+                new_custom_vector_definitions = dash.no_update
+
+            return [
+                new_expressions,
+                vector_data,
+                new_selected_vectors,
+                new_custom_vector_definitions,
+            ]
 
         @app.callback(
             Output(self.uuid("vector_calculator_expressions_modal_open"), "data"),

@@ -238,13 +238,14 @@ def get_custom_vector_definitions_from_expressions(
     output: dict = {}
     for expression in expressions:
         name = expression["name"]
+        key = name.split(":")[0]
         vector_type = "calculated"
         description = (
             expression["expression"]
             if not "description" in dict(expression).keys()
             else expression["description"]
         )
-        output[name] = {"type": vector_type, "description": description}
+        output[key] = {"type": vector_type, "description": description}
     return output
 
 
