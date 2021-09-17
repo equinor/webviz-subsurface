@@ -258,8 +258,12 @@ folder, to avoid risk of not extracting the right data.
             self.plot_options["vectors"] = []
         for vector in [
             vector
-            for vector in ["vector1", "vector2", "vector3"]
-            if vector in self.plot_options.keys()
+            for vector in [
+                "vector1",
+                "vector2",
+                "vector3",
+            ]
+            if vector in self.plot_options
         ]:
             self.plot_options["vectors"].append(self.plot_options[vector])
         self.plot_options["vectors"] = self.plot_options["vectors"][:3]

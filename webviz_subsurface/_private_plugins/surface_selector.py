@@ -297,7 +297,13 @@ class SurfaceSelector:
             elif callback == f"{self.date_id_btn_next}.n_clicks":
                 value = next_value(current_value, dates)
             else:
-                value = current_value if current_value in dates else dates[0]
+                value = (
+                    current_value
+                    if current_value
+                    in dates  # pylint: disable=unsupported-membership-test
+                    else dates[0]  # pylint: disable=unsubscriptable-object
+                )
+            # pylint: disable=not-an-iterable
             options = [{"label": format_date(date), "value": date} for date in dates]
             return options, value, {}
 

@@ -93,7 +93,7 @@ that you are reading the correct data.
                 'Incorrent arguments. Either provide a "jsonfile" or "ensemble", "map_value" '
                 '"flow_value" and "time_step"'
             )
-        self.map_id = "map-{}".format(uuid4())
+        self.map_id = f"map-{uuid4()}"
 
     @property
     def layout(self) -> html.Div:

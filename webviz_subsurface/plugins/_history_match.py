@@ -55,7 +55,7 @@ observations/observations.yml).
         data = extract_mismatch(self.ens_paths, self.observation_file)
         self.hm_data = json.dumps(self._prepare_data(data))
 
-        self.hm_id = "hm-id-{}".format(uuid4())
+        self.hm_id = f"hm-id-{uuid4()}"
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
