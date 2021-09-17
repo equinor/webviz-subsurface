@@ -16,7 +16,7 @@ def filters_layout(get_uuid: Callable) -> wcc.Selectors:
                 options=[
                     {"label": "Production", "value": "prod"},
                     {"label": "Injection", "value": "inj"},
-                    {"label": "Observation", "value": "other"},
+                    {"label": "Other", "value": "other"},
                 ],
                 value=["prod", "inj", "other"],
                 multi=True,
