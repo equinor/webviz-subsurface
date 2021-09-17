@@ -1,7 +1,5 @@
 from typing import List, Dict, Tuple, Any
 import time
-import json
-import io
 
 import pandas as pd
 
@@ -48,7 +46,7 @@ class GroupTreeData:
         tree_mode: str,
         real: int,
         prodinj: List[str],
-    ) -> io.BytesIO:
+    ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]]]:
         """This function creates the dataset that is input to the GroupTree
         component the webviz_subsurface_components.
 
@@ -76,39 +74,35 @@ class GroupTreeData:
         if prodinj == ["other"]:
             # Filter out rows where both IS_PROD and IS_INJ is True
             gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] is True) & (gruptree_ens["IS_INJ"] is True))
+                ~((gruptree_ens["IS_PROD"] == True) & (gruptree_ens["IS_INJ"] == True))
             ]
         if "prod" not in prodinj:
             # Filter out rows where IS_PROD=True and IS_INJ=False
             gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] is True) & (gruptree_ens["IS_INJ"] is False))
+                ~((gruptree_ens["IS_PROD"] == True) & (gruptree_ens["IS_INJ"] == False))
             ]
         if "inj" not in prodinj:
             # Filter out rows where IS_PROD=False and IS_INJ=True
             gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] is False) & (gruptree_ens["IS_INJ"] is True))
+                ~((gruptree_ens["IS_PROD"] == False) & (gruptree_ens["IS_INJ"] == True))
             ]
         if "other" not in prodinj:
             # Filter out rows where both IS_PROD=False and IS_INJ=False
             gruptree_ens = gruptree_ens[
                 ~(
-                    (gruptree_ens["IS_PROD"] is False)
-                    & (gruptree_ens["IS_INJ"] is False)
+                    (gruptree_ens["IS_PROD"] == False)
+                    & (gruptree_ens["IS_INJ"] == False)
                 )
             ]
 
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
-        # ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
+        edge_options = get_edge_options(ens_sumvecs)
+        ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
 
-        # with open(
-        #     "/private/olind/webviz/webviz-subsurface-components/react/src/demo/example-data/grouptree_suggested_format_drogon.json",
-        #     "r",
-        # ) as handle:
+        # with open("/private/olind/webviz/gruptree_testdataset.json", "r") as handle:
         #     ex_dataset = json.load(handle)
-        return io.BytesIO(
-            # json.dumps(ex_dataset).encode()
-            json.dumps(create_dataset(smry_ens, gruptree_ens, ens_sumvecs)).encode()
-        )
+
+        return ens_dataset, edge_options
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_ensemble_real_options(
@@ -138,7 +132,11 @@ class GroupTreeData:
         sumvec
         """
         records = []
-        for _, noderow in self.gruptree.iterrows():
+
+        unique_nodes = self.gruptree.drop_duplicates(
+            subset=["ENSEMBLE", "CHILD", "KEYWORD"]
+        )
+        for _, noderow in unique_nodes.iterrows():
             ensemble = noderow["ENSEMBLE"]
             nodename = noderow["CHILD"]
             keyword = noderow["KEYWORD"]
@@ -168,9 +166,41 @@ class GroupTreeData:
 
     def check_that_sumvecs_exists(self, sumvecs: list, error_message: str = "") -> None:
         """Descr"""
+        # Ma gi liste over alle
         for sumvec in sumvecs:
             if sumvec not in self.smry.columns:
                 raise ValueError(f"{sumvec} missing. {error_message}")
+
+
+def get_edge_options(sumvecs: pd.DataFrame) -> Dict[str, List[Dict[str, str]]]:
+    """
+    [
+        {"name": "oilrate", "label": "Oil Rate"},
+        {"name": "gasrate", "label": "Gas Rate"},
+    ]
+    """
+    edge_options = sumvecs[sumvecs["EDGE_NODE"] == "edge"]["DATATYPE"].unique()
+    return [
+        {"name": edge_option, "label": get_label(edge_option)}
+        for edge_option in edge_options
+    ]
+
+
+def get_label(datatype: str) -> str:
+    """Descr"""
+    labels = {
+        "oilrate": "Oil Rate",
+        "gasrate": "Gas Rate",
+        "waterrate": "Water Rate",
+        "waterinjrate": "Water Inj Rate",
+        "gasinjrate": "Gas Inj Rate",
+        # "pressure": "Pressure",
+        # "bhp": "BHP",
+        # "wmctl": "WMCTL",
+    }
+    if datatype in labels:
+        return labels[datatype]
+    raise ValueError(f"Label for dataype {datatype} not implemented.")
 
 
 def get_sumvec(
@@ -216,7 +246,6 @@ def create_dataset(
     """Descr"""
     starttime = time.time()
     trees = []
-
     # loop trees
     for date, gruptree_date in gruptree.groupby("DATE"):
         next_date = gruptree[gruptree.DATE > date]["DATE"].min()
@@ -226,58 +255,66 @@ def create_dataset(
             (smry["DATE"] >= date) & (smry["DATE"] < next_date)
         ].copy()
         dates = list(smry_in_datespan["DATE"].unique())
-        trees.append(
-            {
-                "dates": [date.strftime("%Y-%m-%d") for date in dates],
-                "tree": extract_tree(
-                    gruptree_date, "FIELD", smry_in_datespan, dates, sumvecs
-                ),
-            }
-        )
-    with open("/private/olind/webviz/grouptree.json", "w") as handle:
-        json.dump(trees, handle)
+        if dates:
+            trees.append(
+                {
+                    "dates": [date.strftime("%Y-%m-%d") for date in dates],
+                    "tree": extract_tree(
+                        gruptree_date, "FIELD", smry_in_datespan, dates, sumvecs
+                    ),
+                }
+            )
+        else:
+            print("warning here")
+            # warning: no summary vectors for tree
+
+    # with open("/private/olind/webviz/grouptree.json", "w") as handle:
+    #     json.dump(trees, handle)
     print(f"create_grouptree_dataset used {round(time.time()-starttime, 2)} seconds.")
     return trees
 
 
 def extract_tree(
     gruptree: pd.DataFrame,
-    node: str,
+    nodename: str,
     smry_in_datespan: pd.DataFrame,
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
-    node_sumvecs = sumvecs[sumvecs["NODENAME"] == node]
-    nodedict = gruptree[gruptree["CHILD"] == node].to_dict("records")[0]
+    node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
+    nodedict = gruptree[gruptree["CHILD"] == nodename].to_dict("records")[0]
     result: dict = {
-        "node_label": node,
+        "node_label": nodename,
         "node_type": "Well" if nodedict["KEYWORD"] == "WELSPECS" else "Group",
         "edge_label": get_edge_label(nodedict),
     }
-    edge_data, node_data = {}, {}
 
-    for _, sumvec_row in node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].iterrows():
-        # her er det optimaliseringsmuligheter
-        edge_data[sumvec_row["DATATYPE"]] = get_smry_in_datespan(
-            smry_in_datespan, dates, sumvec_row["SUMVEC"]
-        )
+    edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
+    nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].to_dict("records")
 
-    for _, sumvec_row in node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].iterrows():
-        # her er det optimaliseringsmuligheter
-        node_data[sumvec_row["DATATYPE"]] = get_smry_in_datespan(
-            smry_in_datespan, dates, sumvec_row["SUMVEC"]
-        )
+    edge_data = {edgedict["DATATYPE"]: [] for edgedict in edges}
+    node_data = {nodedict["DATATYPE"]: [] for nodedict in nodes}
+
+    for _, smry_at_date in smry_in_datespan.groupby("DATE"): #er man sikre pa at datoene er i rett rekkefolge?
+        for edgedict in edges:
+            edge_data[edgedict["DATATYPE"]].append(
+                round(smry_at_date[edgedict["SUMVEC"]].values[0], 2)
+            )
+        for nodedict in nodes:
+            node_data[nodedict["DATATYPE"]].append(
+                round(smry_at_date[nodedict["SUMVEC"]].values[0], 2)
+            )
 
     result["edge_data"] = edge_data
     result["node_data"] = node_data
 
-    children = list(gruptree[gruptree["PARENT"] == node]["CHILD"].unique())
+    children = list(gruptree[gruptree["PARENT"] == nodename]["CHILD"].unique())
     if children:
         result["children"] = [
             extract_tree(gruptree, child_node, smry_in_datespan, dates, sumvecs)
-            for child_node in gruptree[gruptree["PARENT"] == node]["CHILD"].unique()
+            for child_node in gruptree[gruptree["PARENT"] == nodename]["CHILD"].unique()
         ]
     return result
 
@@ -289,17 +326,6 @@ def get_edge_label(nodedict: dict) -> str:
     if nodedict["VFP_TABLE"] in [None, 9999]:
         return ""
     return "VFP " + str(int(nodedict["VFP_TABLE"]))
-
-
-def get_smry_in_datespan(
-    smry_in_datespan: pd.DataFrame, dates: list, sumvec: str
-) -> list:
-    """Descr"""
-    output = []
-    for date in dates:
-        smry_at_date = smry_in_datespan[smry_in_datespan.DATE == date]
-        output.append(round(smry_at_date[sumvec].values[0], 2))
-    return output
 
 
 def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:

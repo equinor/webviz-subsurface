@@ -47,6 +47,7 @@ class GroupTree(WebvizPluginABC):
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html)
 
+    Kommentar om hvordan eksportere sumvecs for branprop-traer
     """
 
     def __init__(

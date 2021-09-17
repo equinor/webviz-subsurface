@@ -1,5 +1,4 @@
 from typing import Callable, Optional, Any, Tuple, List, Dict
-import json
 import dash
 from dash.dependencies import Input, Output, State
 
@@ -60,14 +59,15 @@ def controllers(
         tree_mode: str, real: int, prodinj: list, ensemble: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
+
+        data, edge_options = grouptreedata.create_grouptree_dataset(
+            ensemble, tree_mode, real, prodinj
+        )
+        print("event triggered")
+        # print(data)
         return [
             webviz_subsurface_components.GroupTree(
-                id="grouptree",
-                data=json.load(
-                    grouptreedata.create_grouptree_dataset(
-                        ensemble, tree_mode, real, prodinj
-                    ),
-                ),
+                id="grouptree", data=data, edge_options=edge_options
             ),
         ]
 
