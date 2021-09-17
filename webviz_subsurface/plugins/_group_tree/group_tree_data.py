@@ -10,7 +10,6 @@ class GroupTreeData:
     """Description"""
 
     def __init__(self, smry: pd.DataFrame, gruptree: pd.DataFrame):
-
         self.smry = smry
         self.gruptree = gruptree
         self.ensembles = gruptree["ENSEMBLE"].unique()
@@ -24,14 +23,12 @@ class GroupTreeData:
             [f"WSTAT:{well}" for well in self.wells],
             error_message="WSTAT must be exported for all wells",
         )
-
-        # Checks if the ensembles have waterinj or gasinj
+        # Check if the ensembles have waterinj or gasinj
         self.has_waterinj, self.has_gasinj = {}, {}
         for ensemble in self.ensembles:
             smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
             self.has_waterinj[ensemble] = smry_ens["FWIR"].sum() > 0
             self.has_gasinj[ensemble] = smry_ens["FGIR"].sum() > 0
-
         self.gruptree = add_nodetype(self.gruptree, self.smry)
         self.sumvecs = self.get_sumvecs()
 
@@ -45,7 +42,7 @@ class GroupTreeData:
         ensemble: str,
         tree_mode: str,
         real: int,
-        prodinj: List[str],
+        prod_inj_other: List[str],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]]]:
         """This function creates the dataset that is input to the GroupTree
         component the webviz_subsurface_components.
@@ -62,7 +59,7 @@ class GroupTreeData:
         else:
             smry_ens = smry_ens[smry_ens["REAL"] == real]
 
-        # Filter Gruptree
+        # Filter Gruptree ensemble and realization
         gruptree_ens = self.gruptree[self.gruptree["ENSEMBLE"] == ensemble]
         if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real(
             ensemble
@@ -70,39 +67,23 @@ class GroupTreeData:
             # Trees are not equal. Filter on realization
             gruptree_ens = gruptree_ens[gruptree_ens["REAL"] == real]
 
-        # Filter production, injection or other
-        if prodinj == ["other"]:
-            # Filter out rows where both IS_PROD and IS_INJ is True
-            gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] == True) & (gruptree_ens["IS_INJ"] == True))
-            ]
-        if "prod" not in prodinj:
-            # Filter out rows where IS_PROD=True and IS_INJ=False
-            gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] == True) & (gruptree_ens["IS_INJ"] == False))
-            ]
-        if "inj" not in prodinj:
-            # Filter out rows where IS_PROD=False and IS_INJ=True
-            gruptree_ens = gruptree_ens[
-                ~((gruptree_ens["IS_PROD"] == False) & (gruptree_ens["IS_INJ"] == True))
-            ]
-        if "other" not in prodinj:
-            # Filter out rows where both IS_PROD=False and IS_INJ=False
-            gruptree_ens = gruptree_ens[
-                ~(
-                    (gruptree_ens["IS_PROD"] == False)
-                    & (gruptree_ens["IS_INJ"] == False)
-                )
-            ]
+        # Filter nodetype prod, inj and/or other
+        df = pd.DataFrame()
+        for tpe in ["prod", "inj", "other"]:
+            if tpe in prod_inj_other:
+                df = pd.concat([df, gruptree_ens[gruptree_ens[f"IS_{tpe}".upper()]]])
+        gruptree_ens = df.drop_duplicates()
 
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
-        edge_options = get_edge_options(ens_sumvecs)
         ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
-
         # with open("/private/olind/webviz/gruptree_testdataset.json", "r") as handle:
         #     ex_dataset = json.load(handle)
 
-        return ens_dataset, edge_options
+        return (
+            ens_dataset,
+            get_options(ens_sumvecs, "edge"),
+            get_options(ens_sumvecs, "node"),
+        )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_ensemble_real_options(
@@ -166,24 +147,28 @@ class GroupTreeData:
 
     def check_that_sumvecs_exists(self, sumvecs: list, error_message: str = "") -> None:
         """Descr"""
-        # Ma gi liste over alle
-        for sumvec in sumvecs:
-            if sumvec not in self.smry.columns:
-                raise ValueError(f"{sumvec} missing. {error_message}")
+        missing_sumvecs = [
+            sumvec for sumvec in sumvecs if sumvec not in self.smry.columns
+        ]
+        if missing_sumvecs:
+            str_missing_sumvecs = ", ".join(missing_sumvecs)
+            raise ValueError(
+                "Missing summary vectors for the GroupTree plugin: "
+                f"{str_missing_sumvecs}. {error_message}."
+            )
 
 
-def get_edge_options(sumvecs: pd.DataFrame) -> Dict[str, List[Dict[str, str]]]:
+def get_options(
+    sumvecs: pd.DataFrame, edge_node: str
+) -> Dict[str, List[Dict[str, str]]]:
     """
     [
         {"name": "oilrate", "label": "Oil Rate"},
         {"name": "gasrate", "label": "Gas Rate"},
     ]
     """
-    edge_options = sumvecs[sumvecs["EDGE_NODE"] == "edge"]["DATATYPE"].unique()
-    return [
-        {"name": edge_option, "label": get_label(edge_option)}
-        for edge_option in edge_options
-    ]
+    options = sumvecs[sumvecs["EDGE_NODE"] == edge_node]["DATATYPE"].unique()
+    return [{"name": option, "label": get_label(option)} for option in options]
 
 
 def get_label(datatype: str) -> str:
@@ -194,9 +179,9 @@ def get_label(datatype: str) -> str:
         "waterrate": "Water Rate",
         "waterinjrate": "Water Inj Rate",
         "gasinjrate": "Gas Inj Rate",
-        # "pressure": "Pressure",
-        # "bhp": "BHP",
-        # "wmctl": "WMCTL",
+        "pressure": "Pressure",
+        "bhp": "BHP",
+        "wmctl": "WMCTL",
     }
     if datatype in labels:
         return labels[datatype]
@@ -210,25 +195,47 @@ def get_sumvec(
 ) -> str:
     """Descr"""
     datatype_map = {
-        "oilrate": "OPR",
-        "gasrate": "GPR",
-        "waterrate": "WPR",
-        "waterinjrate": "WIR",
-        "gasinjrate": "GIR",
-        "pressure": "PR",
+        "FIELD": {
+            "oilrate": "FOPR",
+            "gasrate": "FGPR",
+            "waterrate": "FWPR",
+            "waterinjrate": "FWIR",
+            "gasinjrate": "FGIR",
+            "pressure": "GPR",
+        },
+        "GRUPTREE": {
+            "oilrate": "GOPR",
+            "gasrate": "GGPR",
+            "waterrate": "GWPR",
+            "waterinjrate": "GWIR",
+            "gasinjrate": "GGIR",
+            "pressure": "GPR",
+        },
+        "BRANPROP": {
+            "oilrate": "GOPRNB",
+            "gasrate": "GGPRNB",
+            "waterrate": "GWPRNB",
+            "pressure": "GPR",
+        },
+        "WELSPECS": {
+            "oilrate": "WOPR",
+            "gasrate": "WGPR",
+            "waterrate": "WWPR",
+            "waterinjrate": "WWIR",
+            "gasinjrate": "WGIR",
+            "pressure": "WTHP",
+            "bhp": "WBHP",
+            "wmctl": "WMCTL",
+        },
     }
-    datatype_ecl = datatype_map[datatype] if datatype in datatype_map else ""
-    if nodename == "FIELD" and datatype != "pressure":
-        return f"F{datatype_ecl}"
-    if keyword == "WELSPECS":
+
+    if nodename == "FIELD":
+        datatype_ecl = datatype_map["FIELD"][datatype]
         if datatype == "pressure":
-            return f"WTHP:{nodename}"
-        if datatype == "bhp":
-            return f"WBHP:{nodename}"
-        if datatype == "wmctl":
-            return f"WMCTL:{nodename}"
-        return f"W{datatype_ecl}:{nodename}"
-    return f"G{datatype_ecl}:{nodename}"
+            return f"{datatype_ecl}:{nodename}"
+        return datatype_ecl
+    datatype_ecl = datatype_map[keyword][datatype]
+    return f"{datatype_ecl}:{nodename}"
 
 
 def get_edge_node(datatype: str) -> str:
@@ -294,10 +301,12 @@ def extract_tree(
     edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
     nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].to_dict("records")
 
-    edge_data = {edgedict["DATATYPE"]: [] for edgedict in edges}
-    node_data = {nodedict["DATATYPE"]: [] for nodedict in nodes}
+    edge_data: Dict[str, List[float]] = {edgedict["DATATYPE"]: [] for edgedict in edges}
+    node_data: Dict[str, List[float]] = {nodedict["DATATYPE"]: [] for nodedict in nodes}
 
-    for _, smry_at_date in smry_in_datespan.groupby("DATE"): #er man sikre pa at datoene er i rett rekkefolge?
+    for _, smry_at_date in smry_in_datespan.groupby(
+        "DATE"
+    ):  # er man sikre pa at datoene er i rett rekkefolge?
         for edgedict in edges:
             edge_data[edgedict["DATATYPE"]].append(
                 round(smry_at_date[edgedict["SUMVEC"]].values[0], 2)
@@ -347,33 +356,38 @@ def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
-    """Adds nodetype IS_PROD and IS_INJ for an ensemble."""
-    nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
+    """Adds nodetype IS_PROD, IS_INJ and IS_OTHER for an ensemble."""
 
-    # Tag wells as producers and/or injector (or None)
-    is_prod_map, is_inj_map = get_welltype_maps(
+    nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
+    # Tag wells as producers, injector or other well
+    is_prod_map, is_inj_map, is_other_map = get_welltype_maps(
         nodes[nodes["KEYWORD"] == "WELSPECS"], smry
     )
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
+    nodes["IS_OTHER"] = nodes["CHILD"].map(is_other_map)
     groupnodes = nodes[nodes["KEYWORD"] != "WELSPECS"]
 
     # Recursively find well types of all fields below a group node
     # Deduce group node type from well types
     for _, groupnode in groupnodes.iterrows():
-        wells_are_prod, wells_are_inj = get_leaf_well_types(groupnode["CHILD"], nodes)
+        wells_are_prod, wells_are_inj, wells_are_other = get_leaf_well_types(
+            groupnode["CHILD"], nodes
+        )
         is_prod_map[groupnode["CHILD"]] = any(wells_are_prod)
         is_inj_map[groupnode["CHILD"]] = any(wells_are_inj)
+        is_other_map[groupnode["CHILD"]] = any(wells_are_other)
 
     # Tag all nodes as producing/injecing nodes
     gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
     gruptree["IS_INJ"] = gruptree["CHILD"].map(is_inj_map)
+    gruptree["IS_OTHER"] = gruptree["CHILD"].map(is_other_map)
     return gruptree
 
 
 def get_leaf_well_types(
     node_name: str, gruptree: pd.DataFrame
-) -> Tuple[List[Any], List[Any]]:
+) -> Tuple[List[Any], List[Any], List[Any]]:
     """This function finds the IS_PROD and IS_INJ values of all wells
     producing to or injecting to a group node.
 
@@ -381,28 +395,31 @@ def get_leaf_well_types(
     int the three.
     """
     children = gruptree[gruptree["PARENT"] == node_name]
-    wells_are_prod, wells_are_inj = [], []
+    wells_are_prod, wells_are_inj, wells_are_other = [], [], []
     for _, childrow in children.iterrows():
         if childrow["KEYWORD"] == "WELSPECS":
             wells_are_prod.append(childrow["IS_PROD"])
             wells_are_inj.append(childrow["IS_INJ"])
+            wells_are_other.append(childrow["IS_OTHER"])
         else:
-            prod, inj = get_leaf_well_types(childrow["CHILD"], gruptree)
+            prod, inj, other = get_leaf_well_types(childrow["CHILD"], gruptree)
             wells_are_prod += prod
             wells_are_inj += inj
-    return wells_are_prod, wells_are_inj
+            wells_are_other += other
+    return wells_are_prod, wells_are_inj, wells_are_other
 
 
 def get_welltype_maps(
     wellnodes: pd.DataFrame, smry: pd.DataFrame
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """This function creates two dictionaries that is classifying each
-    well as producer and/or injector.
+    well as producer, injector and/or other (f.ex observation well).
     """
-    is_prod_map, is_inj_map = {}, {}
+    is_prod_map, is_inj_map, is_other_map = {}, {}, {}
     for _, wellnode in wellnodes.iterrows():
         wellname = wellnode["CHILD"]
         wstat = smry[f"WSTAT:{wellname}"].unique()
         is_prod_map[wellname] = 1 in wstat
         is_inj_map[wellname] = 2 in wstat
-    return is_prod_map, is_inj_map
+        is_other_map[wellname] = (1 not in wstat) and (2 not in wstat)
+    return is_prod_map, is_inj_map, is_other_map

@@ -10,6 +10,8 @@ from ..group_tree_data import GroupTreeData
 def controllers(
     app: dash.Dash, get_uuid: Callable, grouptreedata: GroupTreeData
 ) -> None:
+    print("her")
+
     @app.callback(
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
@@ -52,19 +54,18 @@ def controllers(
         Output(get_uuid("grouptree_wrapper"), "children"),
         Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
         Input({"id": get_uuid("controls"), "element": "realization"}, "value"),
-        Input({"id": get_uuid("filters"), "element": "prodinj"}, "value"),
+        Input({"id": get_uuid("filters"), "element": "prod_inj_other"}, "value"),
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _render_grouptree(
-        tree_mode: str, real: int, prodinj: list, ensemble: str
+        tree_mode: str, real: int, prod_inj_other: list, ensemble: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
-
-        data, edge_options = grouptreedata.create_grouptree_dataset(
-            ensemble, tree_mode, real, prodinj
-        )
         print("event triggered")
-        # print(data)
+        data, edge_options, node_options = grouptreedata.create_grouptree_dataset(
+            ensemble, tree_mode, real, prod_inj_other
+        )
+
         return [
             webviz_subsurface_components.GroupTree(
                 id="grouptree", data=data, edge_options=edge_options
