@@ -1,18 +1,13 @@
-from pathlib import Path
-from uuid import uuid4
 import sys
 from typing import List, Dict, Tuple, Union, Optional
 
-if sys.version_info[0] == 3 and sys.version_info[1] >= 8:
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
+from pathlib import Path
+from uuid import uuid4
+import yaml
 import numpy as np
 import pandas as pd
-from webviz_config.common_cache import CACHE
-import yaml
 
+from webviz_config.common_cache import CACHE
 from webviz_subsurface_components import (
     VectorCalculator,
     ExpressionInfo,
@@ -20,6 +15,11 @@ from webviz_subsurface_components import (
     VariableVectorMapInfo,
 )
 
+# pylint: disable=ungrouped-imports
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 # JSON Schema for predefined expressions configuration
 # Used as schema input for json_schema.validate()
@@ -129,8 +129,7 @@ def validate_predefined_expression(
         expression["variableVectorMap"]
     )
     invalid_vectors: List[str] = []
-    for variable in variable_vector_dict:
-        vector_name = variable_vector_dict[variable]
+    for vector_name in variable_vector_dict.values():
         if not is_vector_name_existing(vector_name, vector_data):
             invalid_vectors.append(vector_name)
     if len(invalid_vectors) > 1:
@@ -282,8 +281,8 @@ def get_calculated_vector_df(
     df = df[df["ENSEMBLE"].isin(ensembles)]
 
     values: Dict[str, np.ndarray] = {}
-    for var in var_vec_dict:
-        values[var] = df[var_vec_dict[var]].values
+    for variable, vector in var_vec_dict.items():
+        values[variable] = df[vector].values
 
     evaluated_expr = VectorCalculator.evaluate_expression(expr, values)
     if evaluated_expr is not None:

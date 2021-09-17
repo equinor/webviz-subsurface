@@ -87,6 +87,7 @@ setup(
         "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "fmu-tools>=1.8",
+        "jsonschema>=3.2.0",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
         "pillow>=6.1",

@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
+import dash
 from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -76,6 +77,7 @@ def _check_plugin_options(options: Optional[dict]) -> Optional[Tuple[str, str]]:
     return None
 
 
+# pylint: disable = too-many-instance-attributes
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
     """Visualizes reservoir simulation time series data for FMU ensembles.
 
@@ -168,6 +170,7 @@ folder, to avoid risk of not extracting the right data.
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
     def __init__(
         self,
         app: Dash,
@@ -769,8 +772,8 @@ folder, to avoid risk of not extracting the right data.
             ],
         )
 
+    @staticmethod
     def _get_valid_vector_selections(
-        self,
         vector_data: list,
         selected_vectors: List[str],
         new_expressions: List[ExpressionInfo],
@@ -1285,6 +1288,7 @@ folder, to avoid risk of not extracting the right data.
         return functions
 
 
+# pylint: disable = too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_vector_dataframes(
     smry: pd.DataFrame,
@@ -1314,6 +1318,7 @@ def calculate_vector_dataframes(
     }
 
 
+# pylint: disable = too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_vector_dataframe(
     smry: pd.DataFrame,
