@@ -382,7 +382,7 @@ class PvtPlot(WebvizPluginABC):
             visibility_options = self.plot_visibility_options(self.phases[phase])
             return (
                 [{"label": l, "value": v} for v, l in visibility_options.items()],
-                [value for value in values if value in visibility_options.keys()],
+                [value for value in values if value in visibility_options],
             )
 
         @app.callback(
@@ -783,6 +783,7 @@ def create_hovertext(
 ) -> str:
     hovertext: Union[str, list] = ""
     if phase == "OIL":
+        # pylint: disable=consider-using-f-string
         hovertext = "{} Pvtnum: {}<br />Realization: {}, Ensemble: {}".format(
             f"Rs = {ratio_value}" if keyword == "PVTO" else "",
             group if color_by == "PVTNUM" else constant_group,
@@ -790,6 +791,7 @@ def create_hovertext(
             group if color_by == "ENSEMBLE" else constant_group,
         )
     elif phase == "GAS":
+        # pylint: disable=consider-using-f-string
         hovertext = (
             "{}"
             "Pvtnum: "

@@ -13,7 +13,7 @@ def create_range_string(real_list: list) -> str:
             idx += 1
 
     return ", ".join(
-        map(lambda p: "%s-%s" % tuple(p) if p[0] != p[1] else str(p[0]), ranges)
+        map(lambda p: f"{p[0]}-{p[1]}" if p[0] != p[1] else str(p[0]), ranges)
     )
 
 

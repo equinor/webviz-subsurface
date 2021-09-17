@@ -30,8 +30,8 @@ aggregated_data/morris.csv).
 
         super().__init__()
 
-        self.graph_id = "graph-{}".format(uuid4())
-        self.vector_id = "vector-{}".format(uuid4())
+        self.graph_id = f"graph-{uuid4()}"
+        self.vector_id = f"vector-{uuid4()}"
         self.csv_file = csv_file
         self.data = read_csv(self.csv_file)
         self.vector_names = self.data["name"].unique()
