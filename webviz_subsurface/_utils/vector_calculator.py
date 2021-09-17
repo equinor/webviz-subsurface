@@ -15,7 +15,6 @@ from webviz_subsurface_components import (
     VariableVectorMapInfo,
 )
 
-# pylint: disable=ungrouped-imports
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
