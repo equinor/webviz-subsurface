@@ -662,8 +662,10 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     numSecondsUntilSuggestionsAreShown=0.5,
                                     lineBreakAfterTag=True,
-                                    customVectorDefinitions=get_custom_vector_definitions_from_expressions(
-                                        self.predefined_expressions
+                                    customVectorDefinitions=(
+                                        get_custom_vector_definitions_from_expressions(
+                                            self.predefined_expressions
+                                        )
                                     ),
                                 ),
                             ),
