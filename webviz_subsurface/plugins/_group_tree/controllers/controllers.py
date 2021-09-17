@@ -10,8 +10,6 @@ from ..group_tree_data import GroupTreeData
 def controllers(
     app: dash.Dash, get_uuid: Callable, grouptreedata: GroupTreeData
 ) -> None:
-    print("her")
-
     @app.callback(
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
@@ -42,7 +40,6 @@ def controllers(
             tree_mode_value = "single_real"
 
         real_options, real_default = grouptreedata.get_ensemble_real_options(ensemble)
-
         return (
             tree_mode_options,
             tree_mode_value,

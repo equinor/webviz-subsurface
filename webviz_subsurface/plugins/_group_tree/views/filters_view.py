@@ -11,14 +11,14 @@ def filters_layout(get_uuid: Callable) -> wcc.Selectors:
         label="Filters",
         children=[
             wcc.SelectWithLabel(
-                label="Prod/Inj/Obs",
-                id={"id": filters_uuid, "element": "prod_inj_obs"},
+                label="Prod/Inj/Other",
+                id={"id": filters_uuid, "element": "prod_inj_other"},
                 options=[
                     {"label": "Production", "value": "prod"},
                     {"label": "Injection", "value": "inj"},
-                    {"label": "Observation", "value": "obs"},
+                    {"label": "Observation", "value": "other"},
                 ],
-                value=["prod", "inj", "obs"],
+                value=["prod", "inj", "other"],
                 multi=True,
                 size=3,
             )
