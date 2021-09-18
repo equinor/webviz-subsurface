@@ -80,21 +80,21 @@ class GroupTree(WebvizPluginABC):
                     "FWPR",
                     "FWIR",
                     "FGIR",
-                    "GOPR:*",
-                    "GGPR:*",
-                    "GWPR:*",
-                    "GWIR:*",
-                    "GGIR:*",
-                    "GPR:*",
-                    "WOPR:*",
-                    "WGPR:*",
-                    "WWPR:*",
-                    "WWIR:*",
-                    "WGIR:*",
-                    "WTHP:*",
-                    "WBHP:*",
-                    "WMCTL:*",
-                    "WSTAT:*",
+                    "GOPR*",
+                    "GGPR*",
+                    "GWPR*",
+                    "GWIR*",
+                    "GGIR*",
+                    "GPR*",
+                    "WOPR*",
+                    "WGPR*",
+                    "WWPR*",
+                    "WWIR*",
+                    "WGIR*",
+                    "WTHP*",
+                    "WBHP*",
+                    "WMCTL*",
+                    "WSTAT*",
                 ],
             )
         )
@@ -158,8 +158,7 @@ def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.Dat
         df_ens = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
         df_ens["ENSEMBLE"] = ens_name
         df = pd.concat([df, df_ens])
-    df = df.where(pd.notnull(df), None)
-    return df
+    return df.where(pd.notnull(df), None)
 
 
 def read_ensemble_gruptree(
@@ -184,7 +183,7 @@ def read_ensemble_gruptree(
         df_real = pd.read_csv(row["FULLPATH"])
 
         if "BRANPROP" in df_real["KEYWORD"].unique():
-            df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"].reset_index()
+            df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"]
 
         if (
             i > 0

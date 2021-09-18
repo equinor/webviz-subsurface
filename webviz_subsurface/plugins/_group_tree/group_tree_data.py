@@ -2,6 +2,7 @@ from typing import List, Dict, Tuple, Any
 import time
 
 import pandas as pd
+import numpy as np
 
 from webviz_config.common_cache import CACHE
 
@@ -21,7 +22,7 @@ class GroupTreeData:
         )
         self.check_that_sumvecs_exists(
             [f"WSTAT:{well}" for well in self.wells],
-            error_message="WSTAT must be exported for all wells",
+            error_message="WSTAT must be exported for all wells.",
         )
         # Check if the ensembles have waterinj or gasinj
         self.has_waterinj, self.has_gasinj = {}, {}
@@ -29,8 +30,11 @@ class GroupTreeData:
             smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
             self.has_waterinj[ensemble] = smry_ens["FWIR"].sum() > 0
             self.has_gasinj[ensemble] = smry_ens["FGIR"].sum() > 0
+
+        # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
         self.gruptree = add_nodetype(self.gruptree, self.smry)
-        self.sumvecs = self.get_sumvecs()
+
+        self.sumvecs = self.get_sumvecs_with_metadata()
 
         self.check_that_sumvecs_exists(
             list(self.sumvecs["SUMVEC"]),
@@ -73,6 +77,7 @@ class GroupTreeData:
             if tpe in prod_inj_other:
                 df = pd.concat([df, gruptree_ens[gruptree_ens[f"IS_{tpe}".upper()]]])
         gruptree_ens = df.drop_duplicates()
+        gruptree_ens.to_csv("/private/olind/webviz/gruptree_ens.csv")
 
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
         ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
@@ -102,7 +107,7 @@ class GroupTreeData:
         gruptree_ens = self.gruptree[self.gruptree["ENSEMBLE"] == ensemble]
         return gruptree_ens["REAL"].nunique() == 1
 
-    def get_sumvecs(
+    def get_sumvecs_with_metadata(
         self,
     ) -> pd.DataFrame:
         """
@@ -154,7 +159,7 @@ class GroupTreeData:
             str_missing_sumvecs = ", ".join(missing_sumvecs)
             raise ValueError(
                 "Missing summary vectors for the GroupTree plugin: "
-                f"{str_missing_sumvecs}. {error_message}."
+                f"{str_missing_sumvecs}. {error_message}"
             )
 
 
@@ -291,7 +296,8 @@ def extract_tree(
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
-    nodedict = gruptree[gruptree["CHILD"] == nodename].to_dict("records")[0]
+    nodedict = get_nodedict(gruptree, nodename)
+
     result: dict = {
         "node_label": nodename,
         "node_type": "Well" if nodedict["KEYWORD"] == "WELSPECS" else "Group",
@@ -330,11 +336,23 @@ def extract_tree(
 
 def get_edge_label(nodedict: dict) -> str:
     """Returns the VFP table number for the edge if it exists"""
+    import math
+
     if "VFP_TABLE" not in nodedict:
         return ""
-    if nodedict["VFP_TABLE"] in [None, 9999]:
+    if nodedict["VFP_TABLE"] in [None, 9999] or np.isnan(nodedict["VFP_TABLE"]):
         return ""
     return "VFP " + str(int(nodedict["VFP_TABLE"]))
+
+
+def get_nodedict(gruptree: pd.DataFrame, nodename) -> Dict[str, Any]:
+    """Descr"""
+    df = gruptree[gruptree["CHILD"] == nodename]
+    if df.empty:
+        raise ValueError(f"No gruptree row found for node {nodename}")
+    if df.shape[0] > 1:
+        raise ValueError(f"Multiple gruptree rows found for node {nodename}. {df}")
+    return df.to_dict("records")[0]
 
 
 def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
@@ -377,6 +395,11 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
         is_prod_map[groupnode["CHILD"]] = any(wells_are_prod)
         is_inj_map[groupnode["CHILD"]] = any(wells_are_inj)
         is_other_map[groupnode["CHILD"]] = any(wells_are_other)
+
+    # FIELD node must not be filtered out
+    is_prod_map["FIELD"] = True
+    is_inj_map["FIELD"] = True
+    is_other_map["FIELD"] = True
 
     # Tag all nodes as producing/injecing nodes
     gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
