@@ -59,7 +59,7 @@ def controllers(
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
         print("event triggered")
-        data, edge_options, node_options = grouptreedata.create_grouptree_dataset(
+        data, edge_options, _ = grouptreedata.create_grouptree_dataset(
             ensemble, tree_mode, real, prod_inj_other
         )
 

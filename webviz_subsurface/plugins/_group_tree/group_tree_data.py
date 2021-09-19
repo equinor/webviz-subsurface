@@ -34,6 +34,9 @@ class GroupTreeData:
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
         self.gruptree = add_nodetype(self.gruptree, self.smry)
 
+        # Add edge label
+        self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
+
         self.sumvecs = self.get_sumvecs_with_metadata()
 
         self.check_that_sumvecs_exists(
@@ -47,7 +50,7 @@ class GroupTreeData:
         tree_mode: str,
         real: int,
         prod_inj_other: List[str],
-    ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]]]:
+    ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
         """This function creates the dataset that is input to the GroupTree
         component the webviz_subsurface_components.
 
@@ -77,7 +80,6 @@ class GroupTreeData:
             if tpe in prod_inj_other:
                 df = pd.concat([df, gruptree_ens[gruptree_ens[f"IS_{tpe}".upper()]]])
         gruptree_ens = df.drop_duplicates()
-        gruptree_ens.to_csv("/private/olind/webviz/gruptree_ens.csv")
 
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
         ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
@@ -163,9 +165,21 @@ class GroupTreeData:
             )
 
 
+def get_edge_label(row: pd.Series) -> str:
+    """Returns the edge label for a row in the grouptree dataframe"""
+    if (
+        "VFP_TABLE" not in row
+        or row["VFP_TABLE"] in [None, 9999]
+        or np.isnan(row["VFP_TABLE"])
+    ):
+        return ""
+    vfp_nb = row["VFP_TABLE"]
+    return f"VFP {vfp_nb}"
+
+
 def get_options(
     sumvecs: pd.DataFrame, edge_node: str
-) -> Dict[str, List[Dict[str, str]]]:
+) -> List[Dict[str, str]]:
     """
     [
         {"name": "oilrate", "label": "Oil Rate"},
@@ -301,7 +315,7 @@ def extract_tree(
     result: dict = {
         "node_label": nodename,
         "node_type": "Well" if nodedict["KEYWORD"] == "WELSPECS" else "Group",
-        "edge_label": get_edge_label(nodedict),
+        "edge_label": nodedict["EDGE_LABEL"],
     }
 
     edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
@@ -328,24 +342,13 @@ def extract_tree(
     children = list(gruptree[gruptree["PARENT"] == nodename]["CHILD"].unique())
     if children:
         result["children"] = [
-            extract_tree(gruptree, child_node, smry_in_datespan, dates, sumvecs)
-            for child_node in gruptree[gruptree["PARENT"] == nodename]["CHILD"].unique()
+            extract_tree(gruptree, child, smry_in_datespan, dates, sumvecs)
+            for child in children
         ]
     return result
 
 
-def get_edge_label(nodedict: dict) -> str:
-    """Returns the VFP table number for the edge if it exists"""
-    import math
-
-    if "VFP_TABLE" not in nodedict:
-        return ""
-    if nodedict["VFP_TABLE"] in [None, 9999] or np.isnan(nodedict["VFP_TABLE"]):
-        return ""
-    return "VFP " + str(int(nodedict["VFP_TABLE"]))
-
-
-def get_nodedict(gruptree: pd.DataFrame, nodename) -> Dict[str, Any]:
+def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
     """Descr"""
     df = gruptree[gruptree["CHILD"] == nodename]
     if df.empty:
