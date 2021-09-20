@@ -462,7 +462,7 @@ folder, to avoid risk of not extracting the right data.
                 ),
             },
             {
-                "id": self.uuid("vector_calculator_detail"),
+                "id": self.uuid("vector_calculator_selector"),
                 "content": (
                     "Create mathematical expressions with provided vector time series. "
                     "Parsing of the mathematical expression is handled and will give feedback "
@@ -599,20 +599,6 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def open_modal_vector_calculator_layout(self) -> html.Div:
-        return html.Details(
-            id=self.uuid("vector_calculator_detail"),
-            style={"marginTop": "15px"},
-            open=False,
-            children=[
-                html.Summary("Vector Calculator:", style={"font-weight": "bold"}),
-                dbc.Button(
-                    "Vector Calculator", id=self.uuid("vector_calculator_open_btn")
-                ),
-            ],
-        )
-
-    @property
     def modal_vector_calculator_layout(self) -> html.Div:
         return dbc.Modal(
             style={"marginTop": "20vh", "width": "1300px"},
@@ -741,7 +727,17 @@ folder, to avoid risk of not extracting the right data.
                                 label="Calculations",
                                 children=[self.from_cumulatives_layout],
                             ),
-                            self.open_modal_vector_calculator_layout,
+                            wcc.Selectors(
+                                label="Vector Calculator",
+                                id=self.uuid("vector_calculator_selector"),
+                                open=False,
+                                children=[
+                                    dbc.Button(
+                                        "Vector Calculator",
+                                        id=self.uuid("vector_calculator_open_btn"),
+                                    ),
+                                ],
+                            ),
                         ],
                     )
                 ),
