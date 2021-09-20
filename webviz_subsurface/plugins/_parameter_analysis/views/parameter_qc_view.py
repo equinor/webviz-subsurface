@@ -1,6 +1,6 @@
 from typing import Callable
 
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 
 from .selector_view import (
@@ -57,8 +57,7 @@ def parameter_qc_view(
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
-                flex=1,
-                children=wcc.Frame(
+                wcc.Frame(
                     style={"height": "80vh"},
                     children=selector_view(
                         get_uuid=get_uuid, parametermodel=parametermodel

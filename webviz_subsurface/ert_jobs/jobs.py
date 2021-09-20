@@ -4,7 +4,6 @@ from pathlib import Path
 from pkg_resources import resource_filename
 
 try:
-    # pylint: disable=import-error
     from ert_shared.plugins.plugin_manager import (
         hook_implementation,
     )

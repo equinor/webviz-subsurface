@@ -1,7 +1,6 @@
 from typing import Callable, Optional, Any
 
-import dash
-from dash.dependencies import Input, Output, State, ALL
+from dash import Dash, callback_context, no_update, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
@@ -10,7 +9,7 @@ from ..utils.utils import create_range_string, update_relevant_components
 
 # pylint: disable=too-many-statements, too-many-locals, too-many-arguments
 def selections_controllers(
-    app: dash.Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
+    app: Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
     @app.callback(
         Output(get_uuid("selections"), "data"),
@@ -23,6 +22,7 @@ def selections_controllers(
         State(get_uuid("page-selected"), "data"),
         State(get_uuid("tabs"), "value"),
         State(get_uuid("selections"), "data"),
+        State(get_uuid("initial-load-info"), "data"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State({"id": get_uuid("filters"), "tab": ALL, "selector": ALL}, "id"),
     )
@@ -33,10 +33,11 @@ def selections_controllers(
         selected_page: str,
         selected_tab: str,
         previous_selection: dict,
+        initial_load: dict,
         selector_ids: list,
         filter_ids: list,
     ) -> dict:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
 
@@ -57,7 +58,9 @@ def selections_controllers(
         page_selections.update(Colorscale=colorscale)
         page_selections.update(ctx_clicked=ctx["prop_id"])
 
-        if previous_selection.get(selected_page) is None:
+        # check if a page needs to be updated due to page refresh or
+        # change in selections/filters
+        if initial_load[selected_page]:
             page_selections.update(update=True)
         else:
             equal_list = []
@@ -70,6 +73,17 @@ def selections_controllers(
 
         previous_selection[selected_page] = page_selections
         return previous_selection
+
+    @app.callback(
+        Output(get_uuid("initial-load-info"), "data"),
+        Input(get_uuid("page-selected"), "data"),
+        State(get_uuid("initial-load-info"), "data"),
+    )
+    def _store_initial_load_info(page_selected: str, initial_load: dict) -> dict:
+        if initial_load is None:
+            initial_load = {}
+        initial_load[page_selected] = page_selected not in initial_load
+        return initial_load
 
     @app.callback(
         Output(
@@ -112,7 +126,7 @@ def selections_controllers(
         previous_selection: Optional[dict],
         selected_tab: str,
     ) -> tuple:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if (
             selected_tab != "voldist"
             or ("Color by" in ctx["prop_id"] and plot_type not in ["box", "bar"])
@@ -193,7 +207,7 @@ def selections_controllers(
                 id_list=selector_ids,
                 update_info=[
                     {
-                        "new_value": values.get(prop, dash.no_update),
+                        "new_value": values.get(prop, no_update),
                         "conditions": {"selector": selector},
                     }
                     for selector, values in settings.items()
@@ -208,11 +222,8 @@ def selections_controllers(
         Output(
             {"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "children"
         ),
-        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
         Input(get_uuid("page-selected"), "data"),
-        Input(
-            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
-        ),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
         Input({"id": get_uuid("filters"), "tab": ALL, "component_type": ALL}, "value"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State(get_uuid("tabs"), "value"),
@@ -223,9 +234,8 @@ def selections_controllers(
         State({"id": get_uuid("filters"), "tab": ALL, "element": "real_text"}, "id"),
     )
     def _update_filter_options(
+        _selected_page: str,
         selectors: list,
-        selected_page: str,
-        plot_table_select: str,
         reals: list,
         selector_ids: list,
         selected_tab: str,
@@ -255,20 +265,8 @@ def selections_controllers(
                 page_selections[x]
                 for x in ["Color by", "Subplots", "X Response", "Y Response"]
             ]
-            table_groups = (
-                page_selections["Group by"]
-                if page_selections["Group by"] is not None
-                else []
-            )
-
-            if selected_page == "1p1t" and not page_selections["sync_table"]:
-                selected_data.extend(table_groups)
-            if (
-                selected_page == "custom"
-                and plot_table_select == "table"
-                and not page_selections["sync_table"]
-            ):
-                selected_data = table_groups
+        if selected_tab == "table" and page_selections["Group by"] is not None:
+            selected_data = page_selections["Group by"]
 
         output = {}
         for selector in ["SOURCE", "ENSEMBLE"]:
@@ -279,7 +277,7 @@ def selections_controllers(
             elif multi and not selector_is_multi:
                 values = [x["value"] for x in page_filter_settings[selector]["options"]]
             else:
-                multi = values = dash.no_update
+                multi = values = no_update
             output[selector] = {"multi": multi, "values": values}
 
         # filter tornado on correct fluid based on volume response chosen
@@ -308,7 +306,7 @@ def selections_controllers(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": values.get("multi", dash.no_update),
+                        "new_value": values.get("multi", no_update),
                         "conditions": {"tab": selected_tab, "selector": selector},
                     }
                     for selector, values in output.items()
@@ -318,7 +316,7 @@ def selections_controllers(
                 id_list=filter_ids,
                 update_info=[
                     {
-                        "new_value": values.get("values", dash.no_update),
+                        "new_value": values.get("values", no_update),
                         "conditions": {"tab": selected_tab, "selector": selector},
                     }
                     for selector, values in output.items()
@@ -482,7 +480,7 @@ def selections_controllers(
                 id_list=selector_ids,
                 update_info=[
                     {
-                        "new_value": values.get(prop, dash.no_update),
+                        "new_value": values.get(prop, no_update),
                         "conditions": {"selector": selector},
                     }
                     for selector, values in settings.items()

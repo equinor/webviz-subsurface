@@ -78,7 +78,6 @@ class LiveOil(PvxOBase):
             ConvertUnits,
         ],
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a LiveOil object.
 
         Creates an interpolant for live oil for the Eclipse data given
@@ -165,7 +164,6 @@ class DeadOil(PvxOBase):
         surface_mass_density_oil: float,
         convert: ConvertUnits,
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a DeadOil object.
 
         Creates an interpolant for dead oil for the Eclipse data given
@@ -249,7 +247,6 @@ class DeadOilConstCompr(PvxOBase):
         convert: ConvertUnits,
         surface_mass_density_oil: float,
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a DeadOilConstCompr object.
 
         Creates an interpolant for dead oil with constant compressibility for the Eclipse data given

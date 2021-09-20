@@ -3,9 +3,9 @@ from typing import List, Tuple, Any
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
-from dash_table.Format import Format
+from dash.dash_table.Format import Format
 from webviz_config import WebvizConfigTheme
+from webviz_subsurface._figures import create_figure
 
 # pylint: disable=too-many-public-methods
 class PropertyStatisticsModel:
@@ -26,6 +26,7 @@ class PropertyStatisticsModel:
         "Stddev",
     ]
     REQUIRED_SELECTORS = ["ZONE"]
+    SKIPPED_COLUMNS = ["Count"]
 
     def __init__(self, dataframe: pd.DataFrame, theme: WebvizConfigTheme) -> None:
         self._dataframe = dataframe
@@ -50,6 +51,9 @@ class PropertyStatisticsModel:
                 raise KeyError(
                     f"{column} column is missing from property statistics data"
                 )
+        self._dataframe = self._dataframe.drop(
+            self.SKIPPED_COLUMNS, axis=1, errors="ignore"
+        )
         sources = self.dataframe["SOURCE"].unique()
         if len(sources) > 1:
             raise ValueError(
@@ -314,65 +318,31 @@ class PropertyStatisticsModel:
         selector_values: List[Any],
         statistic: str = "Avg",
         plot_type: str = "histogram",
+        match_axis: bool = False,
     ) -> go.Figure:
         sel_length = 1
         for selector in selector_values:
             sel_length *= len(selector)
-        if sel_length > 50 and plot_type != "scatter_ensemble":
-            return {
-                "layout": {
-                    "title": "Reduce number of filter selections to display graph",
-                }
-            }
+
         df = self.dataframe.copy()
         df = df[df["PROPERTY"] == prop]
         if selector_values is not None:
             df = self.filter_dataframe(df, self.selectors, selector_values)
 
         df = df[df["ENSEMBLE"].isin(ensembles)]
-        if plot_type == "histogram":
-            fig = px.histogram(
-                df,
-                x=statistic,
-                nbins=20,
-                facet_col="label",
-                facet_col_wrap=5,
-                color="ENSEMBLE",
-                barmode="stack",
-                color_discrete_sequence=self.colorway,
-            )
 
-        if plot_type == "bar":
-            fig = px.bar(
-                df,
-                y=statistic,
-                x="REAL",
-                facet_col="label",
-                facet_col_wrap=5,
-                color="ENSEMBLE",
-                barmode="group",
-                color_discrete_sequence=self.colorway,
-            )
-        if plot_type == "scatter":
-            fig = px.scatter(
-                df,
-                y=statistic,
-                x="REAL",
-                facet_col="label",
-                facet_col_wrap=5,
-                color="ENSEMBLE",
-                color_discrete_sequence=self.colorway,
-            )
-        if plot_type == "scatter_ensemble":
-            fig = px.scatter(
-                df,
-                y=statistic,
-                x="REAL",
-                facet_col="ENSEMBLE",
-                facet_col_wrap=5,
-                color="label",
-                color_discrete_sequence=self.colorway,
-            )
+        fig = create_figure(
+            plot_type=plot_type if plot_type != "scatter_ensemble" else "scatter",
+            data_frame=df,
+            x="REAL" if plot_type != "distribution" else statistic,
+            y=statistic if plot_type != "distribution" else None,
+            facet_col="label" if plot_type != "scatter_ensemble" else "ENSEMBLE",
+            color="ENSEMBLE" if plot_type != "scatter_ensemble" else "label",
+            color_discrete_sequence=self.colorway,
+        )
+        if not match_axis:
+            fig.update_xaxes(matches=None).update_yaxes(matches=None)
+
         fig = fig.to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return fig

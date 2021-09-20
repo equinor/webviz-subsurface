@@ -3,10 +3,7 @@ from uuid import uuid4
 from pathlib import Path
 
 import pandas as pd
-import dash
-import dash_html_components as html
-import dash_core_components as dcc
-from dash.dependencies import Input, Output
+from dash import html, dcc, Dash, Input, Output
 from webviz_subsurface_components import Morris
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -29,12 +26,12 @@ effect with other parameters.
 aggregated_data/morris.csv).
 """
 
-    def __init__(self, app: dash.Dash, csv_file: Path):
+    def __init__(self, app: Dash, csv_file: Path):
 
         super().__init__()
 
-        self.graph_id = "graph-{}".format(uuid4())
-        self.vector_id = "vector-{}".format(uuid4())
+        self.graph_id = f"graph-{uuid4()}"
+        self.vector_id = f"vector-{uuid4()}"
         self.csv_file = csv_file
         self.data = read_csv(self.csv_file)
         self.vector_names = self.data["name"].unique()
@@ -58,7 +55,7 @@ aggregated_data/morris.csv).
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [(read_csv, [{"csv_file": self.csv_file}])]
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.graph_id, "output"),

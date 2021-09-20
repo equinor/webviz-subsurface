@@ -8,8 +8,6 @@ import numpy as np
 import yaml
 from webviz_config.utils import terminal_colors
 
-from .._utils.colors import hex_to_rgba
-
 
 def set_simulation_line_shape_fallback(line_shape_fallback: str) -> str:
     """
@@ -84,80 +82,6 @@ def calc_series_statistics(
     stat_df.rename(columns=col_stat_label_map, level=1, inplace=True)
 
     return stat_df
-
-
-def add_fanchart_traces(
-    ens_stat_df: pd.DataFrame,
-    vector: str,
-    color: str,
-    legend_group: str,
-    line_shape: str,
-    refaxis: str = "DATE",
-    hovertemplate: str = "(%{x}, %{y})<br>",
-) -> List[Dict[str, Any]]:
-    """Renders a fanchart for an ensemble vector"""
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "Maximum",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "max")],
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "P90",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "low_p90")],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "P10",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "high_p10")],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "Mean",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "mean")],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertemplate": hovertemplate + "Minimum",
-            "x": ens_stat_df[("", refaxis)],
-            "y": ens_stat_df[(vector, "min")],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
 
 
 def add_statistics_traces(

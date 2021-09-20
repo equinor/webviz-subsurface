@@ -2,8 +2,7 @@ from typing import Dict, List, Tuple, Callable
 from pathlib import Path
 
 import pandas as pd
-import dash
-import dash_html_components as html
+from dash import html, Dash
 
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
@@ -38,7 +37,7 @@ class LinePlotterFMU(WebvizPluginABC):
     # pylint: disable=too-many-locals, too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile: str = None,
         ensembles: list = None,
@@ -168,7 +167,7 @@ class LinePlotterFMU(WebvizPluginABC):
             ]
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         build_figure(
             app,
             get_uuid=self.uuid,

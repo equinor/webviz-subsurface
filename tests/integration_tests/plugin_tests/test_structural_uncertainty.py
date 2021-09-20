@@ -1,7 +1,6 @@
 import json
 
-import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash import html, Input, Output, State
 from webviz_config.themes import default_theme
 from webviz_config import WebvizSettings
 
@@ -33,13 +32,12 @@ def stringify_object_id(uuid) -> str:
     return ("").join(string)
 
 
+# pylint: disable=too-many-locals
 def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     webviz_settings = WebvizSettings(
         shared_settings={
             "scratch_ensembles": {
-                "iter-0": str(
-                    testdata_folder / "reek_history_match/realization-*/iter-0"
-                )
+                "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
             }
         },
         theme=default_theme,
@@ -48,13 +46,14 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
         app,
         webviz_settings,
         ensembles=["iter-0"],
-        surface_attributes=["ds_extracted_horizons"],
+        surface_attributes=["ds_extract_postprocess"],
         surface_name_filter=[
-            "topupperreek",
-            "topmidreek",
-            "toplowerreek",
-            "baselowerreek",
+            "topvolon",
+            "toptherys",
+            "topvolantis",
+            "basevolantis",
         ],
+        wellsuffix=".rmswell",
         wellfolder=testdata_folder / "observed_data" / "wells",
     )
 
@@ -66,7 +65,7 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     # Check some initialization
     # Check dropdowns
     for element, return_val in zip(
-        ["well", "surface_attribute"], ["OP_1", "ds_extracted_horizons"]
+        ["well", "surface_attribute"], ["55_33-1", "ds_extract_postprocess"]
     ):
         uuid = stringify_object_id(
             uuid={"element": element, "id": intersection_data_id}
@@ -76,7 +75,7 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     # Check Selects
     for element, return_val in zip(
         ["surface_names"],
-        [["topupperreek", "topmidreek", "toplowerreek", "baselowerreek"]],
+        [["topvolon", "toptherys", "topvolantis", "basevolantis"]],
     ):
         uuid = stringify_object_id(
             uuid={"element": element, "id": intersection_data_id}
@@ -117,18 +116,7 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     ### Open realization filter and check realizations
     dash_duo.wait_for_element_by_id(real_filter_btn_uuid).click()
     real_selector = dash_duo.wait_for_element_by_id(real_uuid)
-    assert real_selector.text.splitlines() == [
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-    ]
+    assert real_selector.text.splitlines() == ["0", "1"]
 
     assert dash_duo.get_logs() == [], "browser console should contain no error"
 
@@ -137,18 +125,7 @@ def test_full_configuration(dash_duo, app, testdata_folder) -> None:
     webviz_settings = WebvizSettings(
         shared_settings={
             "scratch_ensembles": {
-                "iter-0": str(
-                    testdata_folder / "reek_history_match/realization-*/iter-0"
-                ),
-                "iter-1": str(
-                    testdata_folder / "reek_history_match/realization-*/iter-1"
-                ),
-                "iter-2": str(
-                    testdata_folder / "reek_history_match/realization-*/iter-2"
-                ),
-                "iter-3": str(
-                    testdata_folder / "reek_history_match/realization-*/iter-3"
-                ),
+                "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
             }
         },
         theme=default_theme,
@@ -156,37 +133,30 @@ def test_full_configuration(dash_duo, app, testdata_folder) -> None:
     plugin = StructuralUncertainty(
         app,
         webviz_settings,
-        ensembles=["iter-0", "iter-1", "iter-2", "iter-3"],
-        surface_attributes=["ds_extracted_horizons"],
-        surface_name_filter=[
-            "topupperreek",
-            "topmidreek",
-            "toplowerreek",
-            "baselowerreek",
-        ],
+        ensembles=["iter-0"],
+        surface_attributes=["ds_extract_postprocess"],
+        surface_name_filter=["topvolon", "toptherys", "topvolantis", "basevolantis"],
         wellfolder=testdata_folder / "observed_data" / "wells",
-        zonelog="Zonelog",
+        wellsuffix=".rmswell",
+        zonelog="Zone",
         initial_settings={
             "intersection_data": {
-                "surface_names": ["topupperreek", "topmidreek", "baselowerreek"],
-                "surface_attribute": "ds_extracted_horizons",
+                "surface_names": ["topvolon", "toptherys", "topvolantis"],
+                "surface_attribute": "ds_extract_postprocess",
                 "ensembles": [
                     "iter-0",
-                    "iter-1",
                 ],
                 "calculation": ["Mean", "Min", "Max"],
                 # - Uncertainty envelope
-                "well": "OP_6",
-                "realizations": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "well": "55_33-1",
+                "realizations": [0, 1],
                 "colors": {
-                    "topupperreek": {"iter-0": "#2C82C9", "iter-1": "#2CC990"},
-                    "topmidreek": {
+                    "topvolon": {"iter-0": "#2C82C9"},
+                    "toptherys": {
                         "iter-0": "#512E34",
-                        "iter-1": "#7D93C1",
                     },
-                    "baselowerreek": {
+                    "topvolantis": {
                         "iter-0": "#EEE657",
-                        "iter-1": "#FC6042",
                     },
                 },
             },
@@ -230,7 +200,7 @@ def test_full_configuration(dash_duo, app, testdata_folder) -> None:
     # Check some initialization
     # Check dropdowns
     for element, return_val in zip(
-        ["well", "surface_attribute"], ["OP_6", "ds_extracted_horizons"]
+        ["well", "surface_attribute"], ["55_33-1", "ds_extract_postprocess"]
     ):
         uuid = stringify_object_id(
             uuid={"element": element, "id": intersection_data_id}
@@ -239,17 +209,19 @@ def test_full_configuration(dash_duo, app, testdata_folder) -> None:
 
     # Wait for the callbacks to execute
     dash_duo.wait_for_text_to_equal(
-        f'#{plugin.uuid("plot_is_updated")}', "Intersection along well: OP_6"
+        f'#{plugin.uuid("plot_is_updated")}',
+        "Intersection along well: 55_33-1",
+        timeout=30,
     )
 
     # Check that graph data is stored
     graph_data = dash_duo.get_session_storage(plugin.uuid("intersection-graph-data"))
-    assert len(graph_data) == 22
+    assert len(graph_data) == 14
     graph_layout = dash_duo.get_session_storage(
         plugin.uuid("intersection-graph-layout")
     )
     assert isinstance(graph_layout, dict)
-    assert graph_layout.get("title") == "Intersection along well: OP_6"
+    assert graph_layout.get("title") == "Intersection along well: 55_33-1"
 
     ### Change well and check graph
     well_uuid = stringify_object_id(
@@ -260,16 +232,15 @@ def test_full_configuration(dash_duo, app, testdata_folder) -> None:
         plugin.uuid("apply-intersection-data-selections")
     )
     well_dropdown = dash_duo.wait_for_element_by_id(well_uuid)
-    dash_duo.select_dcc_dropdown(well_dropdown, value="OP_1")
+    dash_duo.select_dcc_dropdown(well_dropdown, value="55_33-2")
     apply_btn.click()
 
     # dash_duo.wait_for_text_to_equal(
     #     f'#{plugin.uuid("plot_is_updated")}',
-    #     "Intersection along well: OP_6",
+    #     "Intersection along well: 55_33-1",
     #     timeout=100,
     # )
     graph_layout = dash_duo.get_session_storage(
         plugin.uuid("intersection-graph-layout")
     )
-    # assert graph_layout.get("title") == "Intersection along well: OP_1"
-    assert dash_duo.get_logs() == [], "browser console should contain no error"
+    # assert graph_layout.get("title") == "Intersection along well: 55_33-2"

@@ -8,11 +8,7 @@ import defusedxml.ElementTree as ET
 
 import numpy as np
 import xtgeo
-import dash
-import dash_table
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html, dcc, dash_table, Dash, callback_context, Input, Output, State
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 import webviz_subsurface_components
@@ -46,10 +42,10 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
     * **`planned_wells_dir`:** Path to folder with planned well files.
        Make sure that all planned wells have format 'ROXAR RMS well'."""
 
-    # pylint: disable=too-many-locals,too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         basedir: Path,
         planned_wells_dir: Path = None,
@@ -495,7 +491,6 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                         "zIndex": -9999,
                     },
                     children=[
-                        # pylint: disable=no-member
                         webviz_subsurface_components.LeafletMap(
                             id=self.ids("layered-map"),
                             layers=[],
@@ -574,7 +569,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.ids("layered-map"), "layers"),
             [
@@ -648,7 +643,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         ):
             """Renders cross section view from wellfile or polyline drawn in map view"""
             _ = n_apply_sfc, n_apply_well
-            ctx = dash.callback_context
+            ctx = callback_context
             if wellfile in self.wellfiles:
                 well = self.wells[wellfile]
                 is_planned = False
@@ -756,7 +751,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                 State(self.ids("columns-checklist"), "value"),
             ],  # columns list
         )
-        # pylint: disable=unused-variable, unused-argument
+        # pylint: disable=unused-argument
         def display_output(n_clicks, column_list):
             """Renders wellpoints table from csv file"""
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)

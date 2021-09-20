@@ -5,7 +5,7 @@ from pathlib import Path
 import warnings
 
 import pandas as pd
-import dash_html_components as html
+from dash import html
 from webviz_subsurface_components import Map
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -93,7 +93,7 @@ that you are reading the correct data.
                 'Incorrent arguments. Either provide a "jsonfile" or "ensemble", "map_value" '
                 '"flow_value" and "time_step"'
             )
-        self.map_id = "map-{}".format(uuid4())
+        self.map_id = f"map-{uuid4()}"
 
     @property
     def layout(self) -> html.Div:

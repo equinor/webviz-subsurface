@@ -14,7 +14,7 @@ def rgb_to_hex(color):
     """Converts a rgb color to hex"""
     color = color.strip("rgb()")
     color = color.split(",")
-    return "#%02x%02x%02x" % (int(color[0]), int(color[1]), int(color[2]))
+    return "#" + "".join(f"{int(i):02x}" for i in color)
 
 
 def find_intermediate_color(
@@ -58,7 +58,7 @@ def label_rgba(colors: str) -> str:
     """
     Takes tuple (a, b, c, d) and returns an rgba color 'rgba(a, b, c, d)'
     """
-    return "rgba(%s, %s, %s, %s)" % (colors[0], colors[1], colors[2], colors[3])
+    return f"rgba({colors[0]}, {colors[1]}, {colors[2]}, {colors[3]})"
 
 
 def unlabel_rgba(colors: str) -> Tuple[float, float, float, float]:

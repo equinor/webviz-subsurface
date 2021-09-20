@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING
+from typing import Callable
 
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 
 from .selector_view import (
@@ -10,40 +10,62 @@ from .selector_view import (
     source_selector,
 )
 
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+from ..models import PropertyStatisticsModel
 
 
-def selector_view(parent: "PropertyStatistics") -> html.Div:
+def selector_view(
+    get_uuid: Callable, property_model: PropertyStatisticsModel
+) -> html.Div:
     return [
         wcc.Selectors(
             label="Selectors",
             children=[
-                ensemble_selector(parent=parent, tab="qc", multi=True),
-                source_selector(parent=parent, tab="qc"),
-                property_selector(parent=parent, tab="qc"),
+                ensemble_selector(
+                    get_uuid=get_uuid,
+                    ensembles=property_model.ensembles,
+                    tab="qc",
+                    multi=True,
+                ),
+                source_selector(
+                    get_uuid=get_uuid, sources=property_model.sources, tab="qc"
+                ),
+                property_selector(
+                    get_uuid=get_uuid, properties=property_model.properties, tab="qc"
+                ),
             ],
+        ),
+        wcc.Selectors(
+            label="Plot options",
+            children=wcc.Checklist(
+                id=get_uuid("property-qc-axis-match"),
+                options=[{"label": "Shared plot axis", "value": "shared_axis"}],
+                value=[],
+            ),
         ),
         wcc.Selectors(
             label="Filters",
             children=filter_selector(
-                parent=parent,
+                get_uuid=get_uuid,
+                property_model=property_model,
                 tab="qc",
-                value="Total" if parent.pmodel.selectors_has_value("Total") else None,
+                value="Total" if property_model.selectors_has_value("Total") else None,
             ),
         ),
     ]
 
 
-def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
+def property_qc_view(
+    get_uuid: Callable, property_model: PropertyStatisticsModel
+) -> wcc.FlexBox:
     return wcc.FlexBox(
         style={"margin": "20px"},
         children=[
             wcc.FlexColumn(
                 children=wcc.Frame(
                     style={"height": "80vh", "overflowY": "auto"},
-                    children=selector_view(parent=parent),
+                    children=selector_view(
+                        get_uuid=get_uuid, property_model=property_model
+                    ),
                 )
             ),
             wcc.FlexColumn(
@@ -57,12 +79,11 @@ def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                             children=[
                                 wcc.RadioItems(
                                     vertical=False,
-                                    id=parent.uuid("property-qc-plot-type"),
+                                    id=get_uuid("property-qc-plot-type"),
                                     options=[
-                                        {"label": "Histograms", "value": "histogram"},
                                         {
-                                            "label": "Bar per realization",
-                                            "value": "bar",
+                                            "label": "Distributions",
+                                            "value": "distribution",
                                         },
                                         {
                                             "label": "Point per realization",
@@ -74,7 +95,7 @@ def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                                         },
                                         {"label": "Statistics table", "value": "table"},
                                     ],
-                                    value="histogram",
+                                    value="distribution",
                                     labelStyle={
                                         "display": "inline-block",
                                         "margin": "5px",
@@ -84,7 +105,7 @@ def property_qc_view(parent: "PropertyStatistics") -> wcc.FlexBox:
                         ),
                         html.Div(
                             style={"height": "75vh"},
-                            id=parent.uuid("property-qc-wrapper"),
+                            id=get_uuid("property-qc-wrapper"),
                         ),
                     ],
                 ),

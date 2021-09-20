@@ -10,7 +10,7 @@ from webviz_subsurface._models import WellSetModel
 @pytest.mark.usefixtures("app")
 def test_well_set_model(testdata_folder: Path) -> None:
     wellfiles = [
-        testdata_folder / "observed_data" / "wells" / well
+        testdata_folder / "reek_test_data" / "observed_data" / "wells" / well
         for well in ["OP_1.w", "OP_2.w", "OP_3.w", "OP_4.w", "OP_5.w", "OP_6.w"]
     ]
 
@@ -29,7 +29,9 @@ def test_well_set_model(testdata_folder: Path) -> None:
 @pytest.mark.usefixtures("app")
 def test_logs(testdata_folder: Path) -> None:
     wmodel = WellSetModel(
-        wellfiles=[testdata_folder / "observed_data" / "wells" / "OP_6.w"],
+        wellfiles=[
+            testdata_folder / "reek_test_data" / "observed_data" / "wells" / "OP_6.w"
+        ],
         zonelog="Zonelog",
     )
     well = wmodel.get_well("OP_6")
@@ -39,7 +41,9 @@ def test_logs(testdata_folder: Path) -> None:
 @pytest.mark.usefixtures("app")
 def test_tvd_truncation(testdata_folder: Path) -> None:
     wmodel = WellSetModel(
-        wellfiles=[testdata_folder / "observed_data" / "wells" / "OP_6.w"],
+        wellfiles=[
+            testdata_folder / "reek_test_data" / "observed_data" / "wells" / "OP_6.w"
+        ],
         tvdmin=1000,
         tvdmax=1500,
     )
@@ -51,7 +55,9 @@ def test_tvd_truncation(testdata_folder: Path) -> None:
 @pytest.mark.usefixtures("app")
 def test_get_fence(testdata_folder: Path) -> None:
     wmodel = WellSetModel(
-        wellfiles=[testdata_folder / "observed_data" / "wells" / "OP_6.w"],
+        wellfiles=[
+            testdata_folder / "reek_test_data" / "observed_data" / "wells" / "OP_6.w"
+        ],
         zonelog="Zonelog",
     )
     fence = wmodel.get_fence("OP_6")

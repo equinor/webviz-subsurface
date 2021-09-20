@@ -4,12 +4,18 @@ import json
 from pathlib import Path
 
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State, ClientsideFunction
+from dash import (
+    html,
+    dcc,
+    callback_context,
+    Dash,
+    dash_table,
+    Input,
+    Output,
+    State,
+    ClientsideFunction,
+)
 from dash.exceptions import PreventUpdate
-import dash_table
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -57,7 +63,7 @@ class TornadoWidget:
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         realizations: pd.DataFrame,
         reference: str = "rms_seed",
@@ -333,7 +339,7 @@ class TornadoWidget:
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.ids("label"), "disabled"),
             Input(self.ids("plot-options"), "value"),
@@ -451,10 +457,10 @@ class TornadoWidget:
                 ],
             )
             def _save_click_data(data: dict, nclicks: Optional[int]) -> str:
-                if dash.callback_context.triggered is None:
+                if callback_context.triggered is None:
                     raise PreventUpdate
 
-                ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+                ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
                 if ctx == self.ids("reset") and nclicks:
 
                     return json.dumps(

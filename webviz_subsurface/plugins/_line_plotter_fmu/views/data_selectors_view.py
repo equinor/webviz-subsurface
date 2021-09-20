@@ -1,6 +1,6 @@
 from typing import Callable, Union, List, Dict
 
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 
 

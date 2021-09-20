@@ -1,4 +1,4 @@
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -18,18 +18,17 @@ def tornado_selections_layout(
 def tornado_controls_layout(
     uuid: str, tab: str, volumemodel: InplaceVolumesModel
 ) -> wcc.Selectors:
-
+    mode_options = [{"label": "Custom", "value": "custom"}]
+    if "BULK" in volumemodel.responses:
+        mode_options.append({"label": "Bulk vs STOIIP/GIIP", "value": "locked"})
     return wcc.Selectors(
         label="TORNADO CONTROLS",
         children=[
             wcc.RadioItems(
                 label="Mode:",
                 id={"id": uuid, "tab": tab, "selector": "mode"},
-                options=[
-                    {"label": "Bulk vs STOIIP/GIIP", "value": "locked"},
-                    {"label": "Custom", "value": "custom"},
-                ],
-                value="locked",
+                options=mode_options,
+                value="custom",
             ),
             tornado_selection(
                 position="left", uuid=uuid, tab=tab, volumemodel=volumemodel
@@ -55,6 +54,7 @@ def tornado_selection(
             wcc.Dropdown(
                 id={"id": uuid, "tab": tab, "selector": f"Response {position}"},
                 clearable=False,
+                value=volumemodel.responses[0],
             ),
             html.Details(
                 open=False,

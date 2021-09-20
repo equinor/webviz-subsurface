@@ -62,7 +62,6 @@ class WaterImpl(PvxOBase):
         surface_mass_density_water: float,
         convert: ConvertUnits,
     ) -> None:
-        # pylint: disable=super-init-not-called
         """Initializes a Water object.
 
         Creates an interpolant for Water for the Eclipse data given

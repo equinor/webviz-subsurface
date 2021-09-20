@@ -2,16 +2,14 @@ from typing import Dict, List, Optional, Callable, Tuple
 
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output, State
+from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 
 
-# pylint: disable=too-many-statements
 def update_uncertainty_table(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
@@ -61,7 +59,7 @@ def update_uncertainty_table(
         State({"id": get_uuid("intersection-data"), "element": "ensembles"}, "value"),
         State(get_uuid("realization-store"), "data"),
     )
-    # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
+    # pylint: disable=too-many-locals
     def _update_uncertainty_table(
         apply_btn: Optional[int],
         wellname: str,
