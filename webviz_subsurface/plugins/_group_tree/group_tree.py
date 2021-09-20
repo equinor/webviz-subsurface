@@ -28,14 +28,14 @@ class GroupTree(WebvizPluginABC):
 
     **Summary data**
 
-    This plugin need the following summary vectors to be exported:
-    * FOPR, FWPR, FOPR
-    * FWIR and FGIR if there are injection
+    This plugin needs the following summary vectors to be exported:
+    * FOPR, FWPR, FOPR, FWIR and FGIR
     * GPR for all group nodes in the network
-    * GOPR, GWPR and GGPR for all group nodes with procucing wells
+    * GOPR, GWPR and GGPR for all group nodes in the production network (GOPRNB etc for BRANPROP trees)
+    * GGIR and/or GWIR for all group nodes in the injection network
     * WSTAT, WTHP, WBHP, WMCTL for all wells
     * WOPR, WWPR, WGPR for all producers
-    * WWIR and WGIR for all injectors
+    * WWIR and/or WGIR for all injectors
 
     **GRUPTREE input**
 
@@ -47,7 +47,9 @@ class GroupTree(WebvizPluginABC):
     installed).
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html)
 
-    Kommentar om hvordan eksportere sumvecs for branprop-traer
+    **time_index**
+    This is the sampling interval of the summary data. It is `monthly` by default, but it will in many
+    cases be good to use `yearly` to make plugin faster.
     """
 
     def __init__(
@@ -129,6 +131,10 @@ class GroupTree(WebvizPluginABC):
                 "content": "Menu for selecting ensemble and other options.",
             },
             {
+                "id": self.uuid("filters_layout"),
+                "content": "Menu for filtering options.",
+            },
+            {
                 "id": self.uuid("grouptree_wrapper"),
                 "content": "Vizualisation of network tree.",
             },
@@ -164,9 +170,12 @@ def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.Dat
 def read_ensemble_gruptree(
     ens_name: str, ens_path: str, gruptree_file: str
 ) -> pd.DataFrame:
-    """Description
+    """Reads the gruptree file for and ensemble.
 
-    If BRANPROP is in the KEYWORDS, GRUPTREE rows are filtered out
+    If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
+    are filtered out.
+
+    If the trees are equal in all realization, only one realization is kept.
     """
     ens = ScratchEnsemble("ens", ens_path)
     df_files = ens.find_files(gruptree_file)
@@ -184,7 +193,6 @@ def read_ensemble_gruptree(
 
         if "BRANPROP" in df_real["KEYWORD"].unique():
             df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"]
-
         if (
             i > 0
             and gruptrees_are_equal

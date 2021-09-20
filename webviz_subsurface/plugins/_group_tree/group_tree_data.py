@@ -1,5 +1,5 @@
 from typing import List, Dict, Tuple, Any
-import time
+import logging
 
 import pandas as pd
 import numpy as np
@@ -8,7 +8,9 @@ from webviz_config.common_cache import CACHE
 
 
 class GroupTreeData:
-    """Description"""
+    """This class holds the summary and gruptree datasets and functionality
+    to combine the data and calculate the GroupTree component input dataset.
+    """
 
     def __init__(self, smry: pd.DataFrame, gruptree: pd.DataFrame):
         self.smry = smry
@@ -16,15 +18,13 @@ class GroupTreeData:
         self.ensembles = gruptree["ENSEMBLE"].unique()
         self.wells = gruptree[gruptree["KEYWORD"] == "WELSPECS"]["CHILD"].unique()
 
-        self.check_that_sumvecs_exists(
-            ["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"],
-            error_message="All field rate summary vectors must exist.",
-        )
-        self.check_that_sumvecs_exists(
-            [f"WSTAT:{well}" for well in self.wells],
-            error_message="WSTAT must be exported for all wells.",
-        )
-        # Check if the ensembles have waterinj or gasinj
+        # Check that all field rate summary vectors exist
+        self.check_that_sumvecs_exists(["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"])
+
+        # Check that WSTAT exists for all wells
+        self.check_that_sumvecs_exists([f"WSTAT:{well}" for well in self.wells])
+
+        # Check if the ensembles have waterinj and/or gasinj
         self.has_waterinj, self.has_gasinj = {}, {}
         for ensemble in self.ensembles:
             smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
@@ -37,11 +37,11 @@ class GroupTreeData:
         # Add edge label
         self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
 
+        # Get summary data with metadata (ensemble, nodename, datatype, edge_or_node)
         self.sumvecs = self.get_sumvecs_with_metadata()
 
-        self.check_that_sumvecs_exists(
-            list(self.sumvecs["SUMVEC"]),
-        )
+        # Check that all summary vectors exist
+        self.check_that_sumvecs_exists(list(self.sumvecs["SUMVEC"]))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
@@ -51,11 +51,17 @@ class GroupTreeData:
         real: int,
         prod_inj_other: List[str],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
-        """This function creates the dataset that is input to the GroupTree
-        component the webviz_subsurface_components.
+        """This method is called when an event is triggered to create a new dataset
+        to the GroupTree plugin. First there is a lot of filtering of the smry and
+        grouptree data, before the filtered data is sent to the function that is
+        actually creating the dataset.
 
-        Link to sample dataset
+        Returns the group tree data and two lists with dropdown options for what
+        to display on the edges and nodes.
 
+        A sample data set can be found here:
+        https://github.com/equinor/webviz-subsurface-components/blob/master/react/ \
+        src/demo/example-data/group-tree.json
         """
 
         # Filter smry
@@ -82,21 +88,21 @@ class GroupTreeData:
         gruptree_ens = df.drop_duplicates()
 
         ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
-        ens_dataset = create_dataset(smry_ens, gruptree_ens, ens_sumvecs)
-        # with open("/private/olind/webviz/gruptree_testdataset.json", "r") as handle:
-        #     ex_dataset = json.load(handle)
 
         return (
-            ens_dataset,
-            get_options(ens_sumvecs, "edge"),
-            get_options(ens_sumvecs, "node"),
+            create_dataset(smry_ens, gruptree_ens, ens_sumvecs),
+            self.get_edge_options(ensemble, prod_inj_other),
+            [
+                {"name": option, "label": get_label(option)}
+                for option in ["pressure", "bhp", "wmctl"]
+            ],
         )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_ensemble_real_options(
         self, ensemble: str
     ) -> Tuple[List[Dict[str, int]], int]:
-        """Descr"""
+        """Returns a list of realization dropdown options for an ensemble"""
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
         unique_real = sorted(smry_ens["REAL"].unique())
         return [{"label": real, "value": real} for real in unique_real], min(
@@ -105,19 +111,22 @@ class GroupTreeData:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def tree_is_equivalent_in_all_real(self, ensemble: str) -> bool:
-        """Descr"""
+        """Checks if the group tree is equivalent in all realizations,
+        in which case there is only one REAL number in the dataframe
+        """
         gruptree_ens = self.gruptree[self.gruptree["ENSEMBLE"] == ensemble]
         return gruptree_ens["REAL"].nunique() == 1
 
     def get_sumvecs_with_metadata(
         self,
     ) -> pd.DataFrame:
-        """
-        ensemble
-        node_name
-        datatype
-        edge_node
-        sumvec
+        """Returns a dataframe with the summary vectors that is needed to
+        put together the group tree dataset. The other columns are metadata:
+
+        * ensemble
+        * nodename: name in eclipse network
+        * datatype: oilrate, gasrate, pressure etc
+        * edge_node: whether the datatype is edge (f.ex rates) or node (f.ex pressure)
         """
         records = []
 
@@ -149,11 +158,13 @@ class GroupTreeData:
                         "SUMVEC": get_sumvec(datatype, nodename, keyword),
                     }
                 )
-
         return pd.DataFrame(records)
 
-    def check_that_sumvecs_exists(self, sumvecs: list, error_message: str = "") -> None:
-        """Descr"""
+    def check_that_sumvecs_exists(self, sumvecs: List[str]) -> None:
+        """Takes in a list of summary vectors and checks if they are
+        present in the summary dataset. If any are missing, a ValueError
+        is raised with the list of all missing summary vectors.
+        """
         missing_sumvecs = [
             sumvec for sumvec in sumvecs if sumvec not in self.smry.columns
         ]
@@ -161,8 +172,31 @@ class GroupTreeData:
             str_missing_sumvecs = ", ".join(missing_sumvecs)
             raise ValueError(
                 "Missing summary vectors for the GroupTree plugin: "
-                f"{str_missing_sumvecs}. {error_message}"
+                f"{str_missing_sumvecs}."
             )
+
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    def get_edge_options(
+        self, ensemble: str, prod_inj_other: list
+    ) -> List[Dict[str, str]]:
+        """Returns a list with edge node options for the dropdown
+        menu in the GroupTree component. The output list has the format:
+        [
+            {"name": "oilrate", "label": "Oil Rate"},
+            {"name": "gasrate", "label": "Gas Rate"},
+        ]
+        """
+        options = []
+        if "prod" in prod_inj_other:
+            for rate in ["oilrate", "gasrate", "waterrate"]:
+                options.append({"name": rate, "label": get_label(rate)})
+        if "inj" in prod_inj_other and self.has_waterinj[ensemble]:
+            options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
+        if "inj" in prod_inj_other and self.has_gasinj[ensemble]:
+            options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
+        if options:
+            return options
+        return [{"name": "oilrate", "label": get_label("oilrate")}]
 
 
 def get_edge_label(row: pd.Series) -> str:
@@ -173,25 +207,12 @@ def get_edge_label(row: pd.Series) -> str:
         or np.isnan(row["VFP_TABLE"])
     ):
         return ""
-    vfp_nb = row["VFP_TABLE"]
+    vfp_nb = int(row["VFP_TABLE"])
     return f"VFP {vfp_nb}"
 
 
-def get_options(
-    sumvecs: pd.DataFrame, edge_node: str
-) -> List[Dict[str, str]]:
-    """
-    [
-        {"name": "oilrate", "label": "Oil Rate"},
-        {"name": "gasrate", "label": "Gas Rate"},
-    ]
-    """
-    options = sumvecs[sumvecs["EDGE_NODE"] == edge_node]["DATATYPE"].unique()
-    return [{"name": option, "label": get_label(option)} for option in options]
-
-
 def get_label(datatype: str) -> str:
-    """Descr"""
+    """Returns a more readable label for the summary datatypes"""
     labels = {
         "oilrate": "Oil Rate",
         "gasrate": "Gas Rate",
@@ -212,7 +233,11 @@ def get_sumvec(
     nodename: str,
     keyword: str,
 ) -> str:
-    """Descr"""
+    """Returns the correct summary vector for a given
+    * datatype: oilrate, gasrate etc
+    * nodename: FIELD, well name or group name in Eclipse network
+    * keyword: GRUPTREE, BRANPROP or WELSPECS
+    """
     datatype_map = {
         "FIELD": {
             "oilrate": "FOPR",
@@ -247,7 +272,6 @@ def get_sumvec(
             "wmctl": "WMCTL",
         },
     }
-
     if nodename == "FIELD":
         datatype_ecl = datatype_map["FIELD"][datatype]
         if datatype == "pressure":
@@ -258,7 +282,7 @@ def get_sumvec(
 
 
 def get_edge_node(datatype: str) -> str:
-    """Description"""
+    """Returns if a given datatype is edge (typically rates) or node (f.ex pressures)"""
     if datatype in ["oilrate", "gasrate", "waterrate", "waterinjrate", "gasinjrate"]:
         return "edge"
     if datatype in ["pressure", "bhp", "wmctl"]:
@@ -269,8 +293,13 @@ def get_edge_node(datatype: str) -> str:
 def create_dataset(
     smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: pd.DataFrame
 ) -> List[dict]:
-    """Descr"""
-    starttime = time.time()
+    """The function puts together the GroupTree component input dataset.
+
+    The gruptree dataframe includes complete networks for every time
+    the tree changes (f.ex if a new well is defined). The function loops
+    through the trees and puts together all the summary data that is valid for
+    the time span where the tree is valid, along with the tree structure itself.
+    """
     trees = []
     # loop trees
     for date, gruptree_date in gruptree.groupby("DATE"):
@@ -291,12 +320,10 @@ def create_dataset(
                 }
             )
         else:
-            print("warning here")
-            # warning: no summary vectors for tree
+            logging.getLogger(__name__).warning(
+                f"""No summary data found for gruptree between {date} and {next_date}"""
+            )
 
-    # with open("/private/olind/webviz/grouptree.json", "w") as handle:
-    #     json.dump(trees, handle)
-    print(f"create_grouptree_dataset used {round(time.time()-starttime, 2)} seconds.")
     return trees
 
 
@@ -307,6 +334,7 @@ def extract_tree(
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
+    # pylint: disable=too-many-locals
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
@@ -321,19 +349,18 @@ def extract_tree(
     edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
     nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].to_dict("records")
 
-    edge_data: Dict[str, List[float]] = {edgedict["DATATYPE"]: [] for edgedict in edges}
-    node_data: Dict[str, List[float]] = {nodedict["DATATYPE"]: [] for nodedict in nodes}
+    edge_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in edges}
+    node_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in nodes}
 
-    for _, smry_at_date in smry_in_datespan.groupby(
-        "DATE"
-    ):  # er man sikre pa at datoene er i rett rekkefolge?
-        for edgedict in edges:
-            edge_data[edgedict["DATATYPE"]].append(
-                round(smry_at_date[edgedict["SUMVEC"]].values[0], 2)
+    # Looping the dates only once is very important for the speed of this function
+    for _, smry_at_date in smry_in_datespan.groupby("DATE"):
+        for item in edges:
+            edge_data[item["DATATYPE"]].append(
+                round(smry_at_date[item["SUMVEC"]].values[0], 2)
             )
-        for nodedict in nodes:
-            node_data[nodedict["DATATYPE"]].append(
-                round(smry_at_date[nodedict["SUMVEC"]].values[0], 2)
+        for item in nodes:
+            node_data[item["DATATYPE"]].append(
+                round(smry_at_date[item["SUMVEC"]].values[0], 2)
             )
 
     result["edge_data"] = edge_data
@@ -349,7 +376,9 @@ def extract_tree(
 
 
 def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
-    """Descr"""
+    """Returns the node data from a row in the gruptree dataframe as a dictionary.
+    This function also checks that there is exactly one element with the given name.
+    """
     df = gruptree[gruptree["CHILD"] == nodename]
     if df.empty:
         raise ValueError(f"No gruptree row found for node {nodename}")
@@ -359,13 +388,12 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
 
 
 def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
-    """Adds two columns to the gruptree dataframe: IS_PROD and IS_INJ. These has boolean
-    values and all combinations are possible, f.ex both True or both False.
+    """Adds three columns to the gruptree dataframe: IS_PROD, IS_INJ and IS_OTHER.
 
-    Wells are classified as producers and injectors based on the WSTAT summary data.
+    Wells are classified as producers,  injectors or other based on the WSTAT summary data.
 
-    Group nodes are classified as producing if they have any producer wells upstream
-    and as injecting if they have any injector wells downstream.
+    Group nodes are classified as producing if it has any producing wells upstream and
+    correspondingly for injection and other.
     """
     df = pd.DataFrame()
     for ensemble in gruptree["ENSEMBLE"].unique():
@@ -387,10 +415,10 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
     nodes["IS_OTHER"] = nodes["CHILD"].map(is_other_map)
-    groupnodes = nodes[nodes["KEYWORD"] != "WELSPECS"]
 
-    # Recursively find well types of all fields below a group node
+    # Recursively find well types of all wells connected to the group node
     # Deduce group node type from well types
+    groupnodes = nodes[nodes["KEYWORD"] != "WELSPECS"]
     for _, groupnode in groupnodes.iterrows():
         wells_are_prod, wells_are_inj, wells_are_other = get_leaf_well_types(
             groupnode["CHILD"], nodes
@@ -399,12 +427,12 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
         is_inj_map[groupnode["CHILD"]] = any(wells_are_inj)
         is_other_map[groupnode["CHILD"]] = any(wells_are_other)
 
-    # FIELD node must not be filtered out
+    # FIELD node must not be filtered out, so it is set True for all categories
     is_prod_map["FIELD"] = True
     is_inj_map["FIELD"] = True
     is_other_map["FIELD"] = True
 
-    # Tag all nodes as producing/injecing nodes
+    # Tag all nodes as IS_PROD, IS_INJ and IS_OTHER
     gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
     gruptree["IS_INJ"] = gruptree["CHILD"].map(is_inj_map)
     gruptree["IS_OTHER"] = gruptree["CHILD"].map(is_other_map)
@@ -414,8 +442,8 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
 def get_leaf_well_types(
     node_name: str, gruptree: pd.DataFrame
 ) -> Tuple[List[Any], List[Any], List[Any]]:
-    """This function finds the IS_PROD and IS_INJ values of all wells
-    producing to or injecting to a group node.
+    """This function finds the IS_PROD, IS_INJ and IS_OTHER values of all
+    connected to a group node.
 
     The function is using recursion to find all wells below the node
     int the three.
@@ -438,8 +466,8 @@ def get_leaf_well_types(
 def get_welltype_maps(
     wellnodes: pd.DataFrame, smry: pd.DataFrame
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
-    """This function creates two dictionaries that is classifying each
-    well as producer, injector and/or other (f.ex observation well).
+    """Returns three dictionaries that is classifying wells as producer,
+    injector and/or other (f.ex observation well).
     """
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
     for _, wellnode in wellnodes.iterrows():

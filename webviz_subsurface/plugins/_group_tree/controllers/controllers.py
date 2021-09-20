@@ -21,7 +21,6 @@ def controllers(
         ensemble: str,
     ) -> Tuple[List[Dict[str, Any]], str, List[Dict[str, Any]], Optional[int]]:
         """Updates the selection options when the ensemble value changes"""
-
         tree_mode_options: List[Dict[str, Any]] = [
             {
                 "label": "Ensemble mean",
@@ -58,7 +57,6 @@ def controllers(
         tree_mode: str, real: int, prod_inj_other: list, ensemble: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
-        print("event triggered")
         data, edge_options, _ = grouptreedata.create_grouptree_dataset(
             ensemble, tree_mode, real, prod_inj_other
         )
