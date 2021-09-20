@@ -31,7 +31,8 @@ class GroupTree(WebvizPluginABC):
     This plugin needs the following summary vectors to be exported:
     * FOPR, FWPR, FOPR, FWIR and FGIR
     * GPR for all group nodes in the network
-    * GOPR, GWPR and GGPR for all group nodes in the production network (GOPRNB etc for BRANPROP trees)
+    * GOPR, GWPR and GGPR for all group nodes in the production network \
+    (GOPRNB etc for BRANPROP trees)
     * GGIR and/or GWIR for all group nodes in the injection network
     * WSTAT, WTHP, WBHP, WMCTL for all wells
     * WOPR, WWPR, WGPR for all producers
@@ -48,8 +49,8 @@ class GroupTree(WebvizPluginABC):
     [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html)
 
     **time_index**
-    This is the sampling interval of the summary data. It is `monthly` by default, but it will in many
-    cases be good to use `yearly` to make plugin faster.
+    This is the sampling interval of the summary data. It is `monthly` by default, but it will in
+    many cases be good to use `yearly` to make plugin faster.
     """
 
     def __init__(
