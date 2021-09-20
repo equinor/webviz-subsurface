@@ -12,11 +12,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 import dash
-import dash_html_components as html
-from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
-import dash_core_components as dcc
+from dash import html, dcc, Input, Output
 import webviz_core_components as wcc
 
 from webviz_config import WebvizPluginABC
@@ -1767,7 +1765,6 @@ def update_misfit_plot(
 
 
 # -------------------------------
-# pylint: disable=broad-except
 def update_obsdata_raw(
     df_obs: pd.DataFrame,
     colorby: Optional[str] = None,
