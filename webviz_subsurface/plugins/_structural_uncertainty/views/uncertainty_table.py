@@ -1,5 +1,4 @@
-import dash_html_components as html
-import dash_table
+from dash import html, dash_table
 import webviz_core_components as wcc
 
 

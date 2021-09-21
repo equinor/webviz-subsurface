@@ -5,11 +5,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import dash
+from dash import html, Dash, callback_context, dash_table, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-from dash_table import DataTable
-import dash_html_components as html
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -28,7 +25,6 @@ from .._abbreviations.number_formatting import table_statistics_base
     "Relevant functionality is implemented in the VolumetricAnalysis plugin."
 )
 class InplaceVolumesOneByOne(WebvizPluginABC):
-    # pylint: disable=too-many-instance-attributes
     """Visualizes inplace volumetrics related to a FMU ensemble with a design matrix.
 
 Input can be given either as an aggregated `csv` file for volumes and sensitivity information,
@@ -117,7 +113,7 @@ aggregated_data/parameters.csv)
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
@@ -414,7 +410,7 @@ aggregated_data/parameters.csv)
                                     ),
                                     html.Div(
                                         style={"fontSize": "15px"},
-                                        children=DataTable(
+                                        children=dash_table.DataTable(
                                             id=self.uuid("table"),
                                             sort_action="native",
                                             filter_action="native",
@@ -440,7 +436,7 @@ aggregated_data/parameters.csv)
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.tornadoplot.storage_id, "data"),
@@ -518,14 +514,14 @@ aggregated_data/parameters.csv)
             source: str,
             *filters: Union[str, List[str]],
         ) -> Tuple[Union[wcc.Graph, html.Div], str]:
-            if dash.callback_context.triggered is None:
+            if callback_context.triggered is None:
                 raise PreventUpdate
 
             tornado_click: Union[dict, None] = (
                 json.loads(tornado_click_data_str) if tornado_click_data_str else None
             )
 
-            ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
             if tornado_click:
                 if (
                     high_low_storage is not None

@@ -1,11 +1,9 @@
-# pylint: disable=too-many-lines
 from typing import Optional, Union
 import warnings
 from pathlib import Path
 
 import numpy as np
-import dash_core_components as dcc
-from dash.dependencies import Input, Output, State
+from dash import dcc, Input, Output, State
 from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -16,7 +14,13 @@ from webviz_config import WebvizSettings
 import webviz_subsurface
 from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._datainput.fmu_input import load_csv
-from .._utils.colors import hex_to_rgba
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
 
 class RelativePermeability(WebvizPluginABC):
@@ -120,7 +124,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword: "
                     "e.g SWOF, SGOF and etc."
                 )
-            # pylint: disable=literal-comparison
             valid_columns = (
                 ["ENSEMBLE", "REAL", "KEYWORD", "SATNUM"]
                 + RelativePermeability.SATURATIONS
@@ -200,7 +203,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         self.set_callbacks(app)
 
     @property
-    # pylint: disable=consider-iterating-dictionary
     def sat_axes(self):
         """List of all possible saturation axes in dataframe"""
         return [sat for sat in self.sat_axes_maps if sat in self.satfunc.columns]
@@ -769,7 +771,7 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
                     or bool(color_by == "SATNUM" and curve_no == 0 and ens_no == 0)
                 )
                 traces.extend(
-                    add_fanchart_traces(
+                    _get_fanchart_traces(
                         df_stat[curve],
                         colors.get(legend_group, colors[list(colors.keys())[0]]),
                         xaxis,
@@ -785,7 +787,7 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
 
 
 # pylint: disable=too-many-arguments
-def add_fanchart_traces(
+def _get_fanchart_traces(
     curve_stats,
     color,
     xaxis,
@@ -798,78 +800,34 @@ def add_fanchart_traces(
 ):
     """Renders a fanchart"""
 
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Maximum <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmax"].index.tolist(),
-            "y": curve_stats["nanmax"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} P90 <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["p90"].index.tolist(),
-            "y": curve_stats["p90"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Mean <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmean"].index.tolist(),
-            "y": curve_stats["nanmean"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": show_legend,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} P10 <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["p10"].index.tolist(),
-            "y": curve_stats["p10"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"{curve} Minimum <br>" f"Ensemble: {ens}, Satnum: {satnum}",
-            "x": curve_stats["nanmin"].index.tolist(),
-            "y": curve_stats["nanmin"].values,
-            "xaxis": xaxis,
-            "yaxis": yaxis,
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
+    # Retrieve indices from one of the keys in series
+    x = curve_stats["nanmax"].index.tolist()
+    data = FanchartData(
+        samples=x,
+        low_high=LowHighData(
+            low_data=curve_stats["p90"].values,
+            low_name="P90",
+            high_data=curve_stats["p10"].values,
+            high_name="P10",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=curve_stats["nanmin"].values,
+            maximum=curve_stats["nanmax"].values,
+        ),
+        free_line=FreeLineData("Mean", curve_stats["nanmean"].values),
+    )
+
+    hovertemplate = f"{curve} <br>" f"Ensemble: {ens}, Satnum: {satnum}"
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        xaxis=xaxis,
+        yaxis=yaxis,
+        hovertext=hovertemplate,
+        show_legend=show_legend,
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

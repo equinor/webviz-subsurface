@@ -1,7 +1,9 @@
 from typing import Callable, Optional, List, Dict
-import dash_html_components as html
+
+from dash import html
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
+
 from .uncertainty_table import uncertainty_table_layout
 
 

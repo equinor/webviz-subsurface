@@ -6,10 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import dash
-from dash.dependencies import Input, Output
-import dash_html_components as html
-
+from dash import html, Dash, Input, Output
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
@@ -32,17 +29,15 @@ WELL_CONNECTION_STATUS_FILE = (
 
 
 class WellCompletions(WebvizPluginABC):
+    # pylint: disable=line-too-long
     """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
     Data is grouped per well and zone and can be filtered accoring to flexible well categories.
-
-    !> The plugin will not see lumps of completions that are shut using the WELOPEN keyword. \
-    This is being worked on and will be fixed in future relases.
 
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
     * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`well_connection_status_file`:** `.parquet` file with well connection status data per realization
+    * **`well_connection_status_file`:** `.parquet` file with well connection status per realization
     * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
     * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
     * **`well_attributes_file`:** `.json` file with categorical well attributes
@@ -55,7 +50,7 @@ class WellCompletions(WebvizPluginABC):
     **COMPDAT input**
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/wells/compdat.csv`).
+    `share/results/tables/compdat.csv`).
 
     The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
     wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
@@ -182,11 +177,12 @@ class WellCompletions(WebvizPluginABC):
     If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file. \
     The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
 
-    """  # pylint: disable=line-too-long
+    """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/tables/compdat.csv",
@@ -197,7 +193,6 @@ class WellCompletions(WebvizPluginABC):
         kh_unit: str = None,
         kh_decimal_places: int = 2,
     ):
-        # pylint: disable=too-many-arguments
         super().__init__()
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
@@ -290,7 +285,7 @@ class WellCompletions(WebvizPluginABC):
             ],
         )
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("well_completions_wrapper"), "children"),
             Output(self.uuid("well_completions_wrapper"), "style"),
@@ -561,7 +556,6 @@ def format_time_series(
 def calc_over_realizations(
     compl_events: list, kh_values: list, realizations: list
 ) -> tuple:
-    # pylint: disable=assignment-from-no-return
     """Takes in two three dimensional lists where the levels are: 1. realization \
     2. zones and 3. timesteps
 

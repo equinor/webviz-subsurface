@@ -11,7 +11,7 @@ from webviz_subsurface._datainput.fmu_input import find_surfaces
 def test_surface_set_model(testdata_folder):
     ensemble_paths = {
         "iter-0": str(
-            Path(testdata_folder / "reek_history_match" / "realization-*" / "iter-0")
+            Path(testdata_folder / "01_drogon_ahm" / "realization-*" / "iter-0")
         )
     }
 
@@ -21,42 +21,28 @@ def test_surface_set_model(testdata_folder):
     smodel = SurfaceSetModel(surface_table)
     assert set(smodel.attributes) == set(
         [
-            "average_pressure",
-            "average_swat",
-            "average_permz",
-            "amplitude_max",
-            "average_soil",
-            "average_permx",
-            "average_sgas",
+            "ds_extract_postprocess",
+            "amplitude_mean",
+            "ds_extract_geogrid",
             "amplitude_rms",
-            "amplitude_min",
-            "facies_fraction_channel",
-            "perm_average",
             "oilthickness",
-            "poro_average",
-            "zonethickness_average",
-            "timeshift",
-            "ds_extracted_horizons",
-            "facies_fraction_crevasse",
-            "stoiip",
-            "average_poro",
         ]
     )
-    assert set(smodel.names_in_attribute("ds_extracted_horizons")) == set(
-        ["topupperreek", "baselowerreek", "toplowerreek", "topmidreek"]
+    assert set(smodel.names_in_attribute("ds_extract_postprocess")) == set(
+        ["basevolantis", "topvolantis", "toptherys", "topvolon"]
     )
     real_surf = smodel.get_realization_surface(
-        attribute="ds_extracted_horizons", name="topupperreek", realization=0
+        attribute="ds_extract_postprocess", name="topvolon", realization=0
     )
     assert isinstance(real_surf, xtgeo.RegularSurface)
-    assert real_surf.values.mean() == pytest.approx(1706.35, 0.00001)
+    assert real_surf.values.mean() == pytest.approx(1735.42, 0.00001)
     stat_surf = smodel.calculate_statistical_surface(
-        attribute="ds_extracted_horizons", name="topupperreek"
+        attribute="ds_extract_postprocess", name="topvolon"
     )
     assert isinstance(stat_surf, xtgeo.RegularSurface)
-    assert stat_surf.values.mean() == pytest.approx(1706.42, 0.00001)
+    assert stat_surf.values.mean() == pytest.approx(1741.04, 0.00001)
 
     stat_surf = smodel.calculate_statistical_surface(
-        attribute="ds_extracted_horizons", name="topupperreek", realizations=[2, 4, 5]
+        attribute="ds_extract_postprocess", name="topvolon", realizations=[0, 1]
     )
-    assert stat_surf.values.mean() == pytest.approx(1707.07, 0.00001)
+    assert stat_surf.values.mean() == pytest.approx(1741.04, 0.00001)

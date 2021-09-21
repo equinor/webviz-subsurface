@@ -88,11 +88,9 @@ class XSectionFigure:
     @property
     def data(self) -> Any:
         """The Plotly figure traces"""
-        # pylint: disable=line-too-long
         # TODO: According to
         # https://plotly.com/python-api-reference/generated/plotly.graph_objects.Figure.html
         # this can return very different types.
-        # pylint: enable=line-too-long
         return self._figure.data
 
     @property
@@ -370,7 +368,7 @@ class XSectionFigure:
             1,
         )
 
-    # pylint: disable=too-many-locals, unused-argument
+    # pylint: disable=unused-argument
     def plot_grid3d(
         self,
         vmin: Optional[float] = None,
@@ -430,7 +428,7 @@ class XSectionFigure:
         fill: bool = False,
         surfaces: List[xtgeo.RegularSurface] = None,
         surfacenames: Optional[List[str]] = None,
-    ) -> None:  # pylint: disable=too-many-branches, too-many-statements
+    ) -> None:
 
         """Input a surface list (ordered from top to base) , and plot them."""
 

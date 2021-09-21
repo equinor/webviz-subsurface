@@ -3,8 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import xtgeo
-import dash
-from dash.dependencies import Input, Output, State, ClientsideFunction
+from dash import Dash, callback_context, Input, Output, State, ClientsideFunction
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
@@ -20,7 +19,7 @@ from ..figures.intersection import (
 
 # pylint: disable=too-many-statements
 def update_intersection(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
@@ -124,19 +123,6 @@ def update_intersection(
                 showlegend = True
 
                 if statistics is not None:
-                    if "Uncertainty envelope" in statistics:
-                        envelope_traces = get_plotly_traces_uncertainty_envelope(
-                            surfaceset=surfset,
-                            fence_spec=fence_spec,
-                            legendname=f"{surfacename}({ensemble})",
-                            name=surfacename,
-                            attribute=surfaceattribute,
-                            realizations=realizations,
-                            showlegend=showlegend,
-                            color=color,
-                        )
-                        traces.extend(envelope_traces)
-                        showlegend = False
                     for stat in ["Mean", "Min", "Max"]:
                         if stat in statistics:
                             trace = get_plotly_trace_statistical_surface(
@@ -152,6 +138,19 @@ def update_intersection(
                             )
                             traces.append(trace)
                             showlegend = False
+                    if "Uncertainty envelope" in statistics:
+                        envelope_traces = get_plotly_traces_uncertainty_envelope(
+                            surfaceset=surfset,
+                            fence_spec=fence_spec,
+                            legendname=f"{surfacename}({ensemble})",
+                            name=surfacename,
+                            attribute=surfaceattribute,
+                            realizations=realizations,
+                            showlegend=showlegend,
+                            color=color,
+                        )
+                        traces.extend(envelope_traces)
+                        showlegend = False
                     if "Realizations" in statistics:
                         for real in realizations:
                             trace = get_plotly_trace_realization_surface(
@@ -214,7 +213,7 @@ def update_intersection(
         wellname: str,
     ) -> Dict:
         """Store intersection layout configuration clientside"""
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if "ui_options" in ctx["prop_id"]:
             raise PreventUpdate
 
@@ -358,7 +357,7 @@ def update_intersection(
         zmin: Optional[float],
         zmax: Optional[float],
     ) -> Tuple[Optional[float], Optional[float]]:
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
         if ctx["prop_id"] == ".":
             raise PreventUpdate
 
@@ -397,7 +396,6 @@ def update_intersection(
             "data",
         ),
     )
-    # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
     def _update_apply_button(
         _apply_click: Optional[int],
         surfaceattribute: str,
@@ -410,7 +408,7 @@ def update_intersection(
         previous_settings: Dict,
     ) -> Tuple[Dict, Dict]:
 
-        ctx = dash.callback_context.triggered[0]
+        ctx = callback_context.triggered[0]
 
         new_settings = {
             "surface_attribute": surfaceattribute,

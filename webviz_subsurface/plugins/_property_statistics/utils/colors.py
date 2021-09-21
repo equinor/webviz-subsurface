@@ -38,7 +38,7 @@ def _label_rgba(colors: Tuple[float, float, float, float]) -> str:
     """
     Takes tuple (a, b, c, d) and returns an rgba color 'rgba(a, b, c, d)'
     """
-    return "rgba(%s, %s, %s, %s)" % (colors[0], colors[1], colors[2], colors[3])
+    return f"rgba({colors[0]}, {colors[1]}, {colors[2]}, {colors[3]})"
 
 
 def _unlabel_rgba(colors: str) -> Tuple[float, ...]:

@@ -3,11 +3,8 @@ import json
 from uuid import uuid4
 from pathlib import Path
 
-import dash
+from dash import html, dcc, Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -43,7 +40,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         segyfiles: List[Path],
         zunit: str = "depth (m)",
@@ -253,7 +250,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("state-storage"), "data"),
             [
@@ -271,7 +268,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 State(self.uuid("state-storage"), "data"),
             ],
         )
-        # pylint: disable=unused-argument,too-many-arguments
         def _update_state(
             cubepath: str,
             icd: Union[dict, None],
@@ -287,7 +283,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             """Updates dcc.Store object with active iline, xline, zlayer and color settings."""
 
             store: dict = json.loads(state_data_str)
-            ctx = dash.callback_context.triggered[0]["prop_id"]
+            ctx = callback_context.triggered[0]["prop_id"]
             x_was_clicked = (
                 xcd if xcd and ctx == f"{self.uuid('xline')}.clickData" else None
             )
@@ -354,6 +350,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             fig = make_heatmap(
                 zslice_arr,
                 self.plotly_theme,
+                xaxis=cube.ilines,
+                yaxis=cube.xlines,
                 showscale=True,
                 text=str(state["zslice"]),
                 title=f'Zslice {state["zslice"]} ({self.zunit})',
@@ -471,7 +469,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [Input(self.uuid("color-reset"), "n_clicks")],
             [State(self.uuid("state-storage"), "data")],
         )
-        # pylint: disable=unused-argument
         def _reset_color_range(
             _btn_clicked: int, state_data_str: Union[str, None]
         ) -> Tuple[float, float, list, float]:

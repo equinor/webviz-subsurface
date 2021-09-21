@@ -308,8 +308,8 @@ class HuvXsection:
                         point=(row["X_UTME"], row["Y_UTMN"])
                     )
                     data["Surface name"].append(surface_name)
-                    data["TVD [m]"].append("%.2f" % row["Z_TVDSS"])
-                    data["TVD SD [m]"].append("%.2f" % depth_uncertainty)
+                    data["TVD [m]"].append(f"{row['Z_TVDSS']:.2f}")
+                    data["TVD SD [m]"].append(f"{depth_uncertainty:.2f}")
                     data["Direction"].append(row["DIRECTION"])
         return pd.DataFrame(data=data)
 

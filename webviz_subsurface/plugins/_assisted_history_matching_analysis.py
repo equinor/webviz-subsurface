@@ -5,12 +5,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-import dash_table
-import dash_html_components as html
-import dash_core_components as dcc
-import webviz_core_components as wcc
-from dash.dependencies import Input, Output
+from dash import html, dcc, dash_table, Dash, Input, Output
 from dash.exceptions import PreventUpdate
+import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -49,7 +46,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
     def __init__(
         self,
-        app,
+        app: Dash,
         webviz_settings: WebvizSettings,
         input_dir: Path,
         ks_filter: float = 0.0,

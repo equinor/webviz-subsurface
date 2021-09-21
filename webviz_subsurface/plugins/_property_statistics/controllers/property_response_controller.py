@@ -1,29 +1,31 @@
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, Callable
 
 import numpy as np
 import pandas as pd
-from dash.dependencies import Input, Output, State, ALL
+from dash import Dash, no_update, callback_context, Input, Output, State, ALL
+from dash.dash import _NoUpdate
 from dash.exceptions import PreventUpdate
-import dash
 
 from webviz_subsurface._models import SurfaceLeafletModel
 from ..utils.colors import find_intermediate_color_rgba
 from ..figures.correlation_figure import CorrelationFigure
 from ..utils.surface import surface_from_zone_prop
-from ..models import SimulationTimeSeriesModel
-
-if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
-    from ..property_statistics import PropertyStatistics
+from ..models import PropertyStatisticsModel, SimulationTimeSeriesModel
 
 
-def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -> None:
+def property_response_controller(
+    get_uuid: Callable,
+    surface_table: pd.DataFrame,
+    property_model: PropertyStatisticsModel,
+    timeseries_model: SimulationTimeSeriesModel,
+    app: Dash,
+) -> None:
     @app.callback(
-        Output({"id": parent.uuid("surface-view"), "tab": "response"}, "layers"),
-        Output({"id": parent.uuid("surface-name"), "tab": "response"}, "children"),
-        Input(parent.uuid("property-response-correlation-graph"), "clickData"),
-        Input({"id": parent.uuid("ensemble-selector"), "tab": "response"}, "value"),
-        Input({"id": parent.uuid("surface-type"), "tab": "response"}, "value"),
+        Output({"id": get_uuid("surface-view"), "tab": "response"}, "layers"),
+        Output({"id": get_uuid("surface-name"), "tab": "response"}, "children"),
+        Input(get_uuid("property-response-correlation-graph"), "clickData"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
+        Input({"id": get_uuid("surface-type"), "tab": "response"}, "value"),
     )
     def _update_surface(
         clickdata: Union[None, dict], ensemble: str, stype: str
@@ -32,38 +34,46 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
             label = clickdata["points"][0]["y"]
             prop = label.split(" | ")[0]
             zone = label.split(" | ")[1]
-            sprop = parent.surface_renaming.get(prop, prop)
-            szone = parent.surface_renaming.get(zone, zone)
-            surface = surface_from_zone_prop(
-                parent, zone=szone, prop=sprop, ensemble=ensemble, stype=stype
-            )
+
+            try:
+                surface = surface_from_zone_prop(
+                    surface_table,
+                    zone=zone,
+                    prop=prop,
+                    ensemble=ensemble,
+                    stype=stype,
+                )
+            except ValueError:  # Surface does not exist
+                return (
+                    no_update,
+                    f"No surface found for {stype.capitalize()} for {prop}, {zone}",
+                )
             surface_layer = SurfaceLeafletModel(surface, name="surface").layer
             return [surface_layer], f"{stype.capitalize()} for {prop}, {zone}"
         raise PreventUpdate
 
     @app.callback(
-        Output(parent.uuid("property-response-correlated-slider"), "min"),
-        Output(parent.uuid("property-response-correlated-slider"), "max"),
-        Output(parent.uuid("property-response-correlated-slider"), "step"),
-        Output(parent.uuid("property-response-correlated-slider"), "value"),
-        Output(parent.uuid("property-response-correlated-slider"), "marks"),
-        Output(parent.uuid("property-response-correlated-slider"), "disabled"),
-        Input(parent.uuid("property-response-correlated-filter"), "value"),
-        Input({"id": parent.uuid("ensemble-selector"), "tab": "response"}, "value"),
+        Output(get_uuid("property-response-correlated-slider"), "min"),
+        Output(get_uuid("property-response-correlated-slider"), "max"),
+        Output(get_uuid("property-response-correlated-slider"), "step"),
+        Output(get_uuid("property-response-correlated-slider"), "value"),
+        Output(get_uuid("property-response-correlated-slider"), "marks"),
+        Output(get_uuid("property-response-correlated-slider"), "disabled"),
+        Input(get_uuid("property-response-correlated-filter"), "value"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
     )
-    # pylint: disable=protected-access
     def _update_correlation_figure(
         label: str, ensemble: str
     ) -> Tuple[
-        Union[float, dash.dash._NoUpdate],
-        Union[float, dash.dash._NoUpdate],
-        Union[float, dash.dash._NoUpdate],
+        Union[float, _NoUpdate],
+        Union[float, _NoUpdate],
+        Union[float, _NoUpdate],
         list,
-        Union[dict, dash.dash._NoUpdate],
+        Union[dict, _NoUpdate],
         bool,
     ]:
         if label is not None:
-            values = parent.pmodel.filter_on_label(label=label, ensemble=ensemble)
+            values = property_model.filter_on_label(label=label, ensemble=ensemble)
             return (
                 values.min(),
                 values.max(),
@@ -77,32 +87,32 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
             )
 
         return (
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
+            no_update,
+            no_update,
+            no_update,
             [None, None],
-            dash.no_update,
+            no_update,
             True,
         )
 
     @app.callback(
-        Output(parent.uuid("property-response-vector-graph"), "figure"),
-        Output(parent.uuid("property-response-correlation-graph"), "figure"),
-        Input({"id": parent.uuid("ensemble-selector"), "tab": "response"}, "value"),
-        Input(parent.uuid("property-response-vector-select"), "value"),
-        Input(parent.uuid("property-response-vector-graph"), "clickData"),
-        Input(parent.uuid("property-response-correlation-graph"), "clickData"),
+        Output(get_uuid("property-response-vector-graph"), "figure"),
+        Output(get_uuid("property-response-correlation-graph"), "figure"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
+        Input(get_uuid("property-response-vector-select"), "value"),
+        Input(get_uuid("property-response-vector-graph"), "clickData"),
+        Input(get_uuid("property-response-correlation-graph"), "clickData"),
         Input(
             {
-                "id": parent.uuid("filter-selector"),
+                "id": get_uuid("filter-selector"),
                 "tab": "response",
                 "selector": ALL,
             },
             "value",
         ),
-        Input(parent.uuid("property-response-correlated-slider"), "value"),
-        State(parent.uuid("property-response-vector-graph"), "figure"),
-        State(parent.uuid("property-response-correlated-filter"), "value"),
+        Input(get_uuid("property-response-correlated-slider"), "value"),
+        State(get_uuid("property-response-vector-graph"), "figure"),
+        State(get_uuid("property-response-correlated-filter"), "value"),
     )
     # pylint: disable=too-many-locals
     def _update_graphs(
@@ -116,16 +126,16 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
         label: str,
     ) -> Tuple[dict, dict]:
         if (
-            dash.callback_context.triggered is None
-            or dash.callback_context.triggered[0]["prop_id"] == "."
+            callback_context.triggered is None
+            or callback_context.triggered[0]["prop_id"] == "."
             or vector is None
         ):
             raise PreventUpdate
-        ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
         # Filter realizations if correlation filter is active
         real_filter = (
-            parent.pmodel.filter_reals_on_label_range(ensemble, label, corr_filter)
+            property_model.filter_reals_on_label_range(ensemble, label, corr_filter)
             if corr_filter[0] is not None and corr_filter[1] is not None
             else None
         )
@@ -134,23 +144,23 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
         if any(
             substr in ctx
             for substr in [
-                parent.uuid("property-response-vector-select"),
-                parent.uuid("ensemble-selector"),
-                parent.uuid("property-response-correlated-slider"),
+                get_uuid("property-response-vector-select"),
+                get_uuid("ensemble-selector"),
+                get_uuid("property-response-correlated-slider"),
             ]
         ):
 
             figure = update_timeseries_graph(
-                parent.vmodel, ensemble, vector, real_filter
+                timeseries_model, ensemble, vector, real_filter
             )
 
         # Get clicked data or last available date initially
         date = (
             timeseries_clickdata.get("points", [{}])[0].get(
-                "x", parent.vmodel.get_last_date(ensemble)
+                "x", timeseries_model.get_last_date(ensemble)
             )
             if timeseries_clickdata
-            else parent.vmodel.get_last_date(ensemble)
+            else timeseries_model.get_last_date(ensemble)
         )
 
         # Draw clicked date as a black line
@@ -161,13 +171,13 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
         ]
 
         # Get dataframe with vector and REAL
-        vector_df = parent.vmodel.get_ensemble_vector_for_date(
+        vector_df = timeseries_model.get_ensemble_vector_for_date(
             ensemble=ensemble, vector=vector, date=date
         )
         vector_df["REAL"] = vector_df["REAL"].astype(int)
 
         # Get dataframe with properties per label and REAL
-        prop_df = parent.pmodel.get_ensemble_properties(ensemble, selectors)
+        prop_df = property_model.get_ensemble_properties(ensemble, selectors)
         prop_df["REAL"] = prop_df["REAL"].astype(int)
         prop_df = (
             prop_df[prop_df["REAL"].isin(real_filter)]
@@ -192,7 +202,7 @@ def property_response_controller(parent: "PropertyStatistics", app: dash.Dash) -
 
         # Order realizations sorted on value of property
         real_order = (
-            parent.pmodel.get_real_order(ensemble, series=selected_corr)
+            property_model.get_real_order(ensemble, series=selected_corr)
             if selected_corr is not None
             else None
         )

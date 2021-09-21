@@ -3,10 +3,11 @@ from typing import List, Tuple, Any
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
-from dash_table.Format import Format
+from dash.dash_table.Format import Format
+from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
+from webviz_subsurface._figures import create_figure
 
-# pylint: disable=too-many-public-methods
+
 class ParametersModel:
     """Class to process and visualize ensemble parameter data"""
 
@@ -15,11 +16,13 @@ class ParametersModel:
     def __init__(
         self, dataframe: pd.DataFrame, theme: dict, drop_constants: bool = True
     ) -> None:
-        self._dataframe = dataframe
+        self.pmodel = Pmodel(
+            dataframe=dataframe, drop_constants=drop_constants, keep_numeric_only=True
+        )
+        self._dataframe = self.pmodel.dataframe
+        self._parameters = self.pmodel.parameters
         self.theme = theme
         self.colorway = self.theme.plotly_theme.get("layout", {}).get("colorway", None)
-        self._parameters = []
-        self._prepare_data(drop_constants)
         self._statframe = self._aggregate_ensemble_data(self._dataframe)
         self._statframe_normalized = self._normalize_and_aggregate()
 
@@ -48,61 +51,6 @@ class ParametersModel:
     @property
     def ensembles(self) -> List[str]:
         return list(self.dataframe["ENSEMBLE"].unique())
-
-    def _prepare_data(self, drop_constants):
-        """
-        Different data preparations on the parameters, before storing them as an attribute.
-        Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
-        are removed, in addition parameters with LOG distribution will be kept while the
-        other is dropped.
-        """
-        self._dataframe = self._dataframe.reset_index(drop=True)
-
-        if drop_constants:
-            constant_params = [
-                param
-                for param in [
-                    x for x in self._dataframe.columns if x not in self.REQUIRED_COLUMNS
-                ]
-                if len(self._dataframe[param].unique()) == 1
-            ]
-            self._dataframe = self._dataframe.drop(columns=constant_params)
-
-        # Keep only LOG parameters
-        log_params = [
-            param.replace("LOG10_", "")
-            for param in [
-                x for x in self._dataframe.columns if x not in self.REQUIRED_COLUMNS
-            ]
-            if param.startswith("LOG10_")
-        ]
-        self._dataframe = self._dataframe.drop(columns=log_params)
-        self._dataframe = self._dataframe.rename(
-            columns={
-                col: f"{col} (log)"
-                for col in self._dataframe.columns
-                if col.startswith("LOG10_")
-            }
-        )
-        # Remove prefix on parameter name added by GEN_KW
-        self._dataframe = self._dataframe.rename(
-            columns={
-                col: (col.split(":", 1)[1])
-                for col in self._dataframe.columns
-                if (":" in col and col not in self.REQUIRED_COLUMNS)
-            }
-        )
-        # Drop columns if duplicate names
-        self._dataframe = self._dataframe.loc[:, ~self._dataframe.columns.duplicated()]
-
-        # Only use numeric columns and filter away REQUIRED_COLUMNS
-        self._parameters = [
-            x
-            for x in self._dataframe.columns[
-                [np.issubdtype(dtype, np.number) for dtype in self._dataframe.dtypes]
-            ]
-            if x not in self.REQUIRED_COLUMNS
-        ]
 
     @staticmethod
     def _aggregate_ensemble_data(dframe) -> pd.DataFrame:
@@ -205,94 +153,24 @@ class ParametersModel:
         df = df[df["PARAMETER"].isin(parameters)]
         df = self._sort_parameters_col(df, parameters)
 
-        if plot_type == "distribution":
-            fig = (
-                px.violin(
-                    df,
-                    x="VALUE",
-                    facet_col="PARAMETER",
-                    facet_col_wrap=min(
-                        min(
-                            [x for x in range(100) if (x * (x + 1)) >= len(parameters)]
-                        ),
-                        20,
-                    ),
-                    facet_row_spacing=max((0.08 - (0.00071 * len(parameters))), 0.03),
-                    color="ENSEMBLE",
-                    color_discrete_sequence=self.colorway,
-                    custom_data=["PARAMETER"],
-                )
-                .update_xaxes(
-                    matches=None,
-                    fixedrange=True,
-                    title=None,
-                    showticklabels=len(parameters) <= 100,
-                    tickangle=0,
-                    tickfont_size=max((18 - (0.4 * len(parameters))), 10),
-                )
-                .update_yaxes(showticklabels=False)
-                .for_each_trace(
-                    lambda t: t.update(
-                        y0=0,
-                        hoveron="violins",
-                        hoverinfo="none",
-                        meanline_visible=True,
-                        orientation="h",
-                        side="positive",
-                        width=2,
-                        points=False,
-                    )
-                )
-                .for_each_annotation(
-                    lambda a: a.update(
-                        text=(a.text.split("=")[-1]),
-                        visible=len(parameters) <= 42,
-                        font_size=max((18 - (0.4 * len(parameters))), 10),
-                    )
+        return (
+            create_figure(
+                plot_type=plot_type,
+                data_frame=df,
+                x="VALUE",
+                facet_col="PARAMETER",
+                color="ENSEMBLE",
+                color_discrete_sequence=self.colorway,
+            )
+            .update_xaxes(matches=None)
+            .for_each_trace(
+                lambda t: t.update(
+                    text=t["text"].replace("VALUE", "")
+                    if t["text"] is not None
+                    else None
                 )
             )
-
-        # Create invisible boxes used for hoverinfo on the violin plots
-        # Necessary due to https://github.com/plotly/plotly.js/issues/2145
-        ensembles = df["ENSEMBLE"].unique()
-        hovertraces = []
-        for trace in fig["data"]:
-            parameter = trace["customdata"][0][0]
-            # check of parameter value to determine print formatter
-            value = abs(self.get_stat_value(parameter, ensembles[0], stat_column="Avg"))
-            form = ".1f" if value > 10 else ".2g"
-            hovertraces.append(
-                go.Scatter(
-                    x=[min(trace.x), min(trace.x), max(trace.x), max(trace.x)],
-                    y=[0, 1, 1, 0],
-                    xaxis=trace.xaxis,
-                    yaxis=trace.yaxis,
-                    mode="lines",
-                    fill="toself",
-                    opacity=0,
-                    showlegend=False,
-                    text=(
-                        f"<b>{parameter}</b><br>"
-                        + "<br>".join(
-                            f"<b>{ens}:</b><br>"
-                            "Avg: "
-                            f"{self.get_stat_value(parameter, ens, stat_column='Avg'):{form}}<br>"
-                            "Std: "
-                            f"{self.get_stat_value(parameter, ens, stat_column='Stddev'):{form}}"
-                            for ens in ensembles
-                        )
-                    ),
-                    hoverinfo="text",
-                    hoverlabel=dict(
-                        bgcolor="#E6FAEC", font=dict(color="#243746", size=15)
-                    ),
-                )
-            )
-        fig = fig.to_dict()
-        fig["data"].extend(hovertraces)
-        fig["layout"] = self.theme.create_themed_layout(fig["layout"])
-        fig["layout"].update(paper_bgcolor="white", plot_bgcolor="white")
-        return fig
+        )
 
     def get_stat_value(self, parameter: str, ensemble: str, stat_column: str):
         """

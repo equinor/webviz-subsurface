@@ -1,5 +1,6 @@
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
+
 from webviz_subsurface._models import InplaceVolumesModel
 
 
@@ -27,6 +28,16 @@ def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> ht
                 children=convergence_plot_layout(uuid),
             ),
         ]
+    )
+
+
+def table_main_layout(uuid: str) -> html.Div:
+    return wcc.Frame(
+        id={"id": uuid, "wrapper": "table", "page": "table"},
+        color="white",
+        highlight=False,
+        style={"height": "91vh"},
+        children=[],
     )
 
 

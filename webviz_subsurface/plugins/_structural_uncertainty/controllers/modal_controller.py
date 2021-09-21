@@ -1,12 +1,11 @@
 from typing import Optional, Callable
 
-import dash
+from dash import Dash, Input, Output, State, MATCH
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State, MATCH
 
 
 def open_modals(
-    app: dash.Dash,
+    app: Dash,
     get_uuid: Callable,
 ) -> None:
     @app.callback(

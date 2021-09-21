@@ -1,11 +1,10 @@
 from typing import Dict, List, Callable, Optional, Tuple
 
-import dash
+from dash import Dash, callback_context, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
 
 
-def update_realizations(app: dash.Dash, get_uuid: Callable) -> None:
+def update_realizations(app: Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output(
             {
@@ -95,7 +94,7 @@ def update_realizations(app: dash.Dash, get_uuid: Callable) -> None:
     ) -> List:
         if clear_click is None and all_click is None:
             raise PreventUpdate
-        ctx = dash.callback_context.triggered
+        ctx = callback_context.triggered
         if "clear" in ctx[0]["prop_id"]:
             return []
         if "all" in ctx[0]["prop_id"]:

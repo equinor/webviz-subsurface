@@ -6,11 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
+- [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
+
+### Changed
+- [#760](https://github.com/equinor/webviz-subsurface/pull/760) - Updated to `Dash 2.0`.
+- [#761](https://github.com/equinor/webviz-subsurface/pull/761) - Store `xtgeo.RegularSurface` as bytestream instead of serializing to `json`.
+
+### Fixed
+- [#765](https://github.com/equinor/webviz-subsurface/pull/765) - Use correct inline/xline ranges for axes in `SegyViewer` z-slice graph.
+
+
+## [0.2.5] - 2021-09-03
+### Added
+- [#733](https://github.com/equinor/webviz-subsurface/pull/733) - Added plugin to visualize well logs from files using [videx-welllog](https://github.com/equinor/videx-wellog).
 - [#708](https://github.com/equinor/webviz-subsurface/pull/708) - Added support for new report format for `DiskUsage`, which improves the estimate of free disk space.
 
 ### Changed
+- [#724](https://github.com/equinor/webviz-subsurface/pull/724) - Seperated out Tables as a new tab to `VolumetricAnalysis`
 - [#723](https://github.com/equinor/webviz-subsurface/pull/723) - Added custom option to allow free selection of responses shown in the tornadoplots in `VolumetricAnalysis`
 - [#717](https://github.com/equinor/webviz-subsurface/pull/717) - Keep zoom state in `ReservoirSimulationTimeseries` (inc `Regional` and `OneByOne`) and `RelativePermeability` plugins using `uirevision`.
+- [#707](https://github.com/equinor/webviz-subsurface/pull/707) - Generalized and improved some plot functions in  `PropertyStatistics`, `ParameterAnalysis` and `VolumetricAnalysis`. Replaced histogram with distribution plot in `PropertyStatistics`.
+
+### Fixed
+- [#749](https://github.com/equinor/webviz-subsurface/pull/749) - `LinePlotterFMU` check function for `x` axis value alignment across realizations now supports single valued columns.
+- [#747](https://github.com/equinor/webviz-subsurface/pull/747) - Added missing realization filter on `OK` file in `EnsembleTableProviderFactory`.
+- [#753](https://github.com/equinor/webviz-subsurface/pull/753) - Do not add `Count` column from grid property statistics input data as a selector in `PropertyStatistics`. Handle missing surfaces in `PropertyStatistics`
 
 ## [0.2.4] - 2021-07-13
 

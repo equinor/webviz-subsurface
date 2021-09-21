@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from typing import Optional, List, Tuple, Callable, Union, Any
+from typing import Optional, Dict, List, Tuple, Callable, Union, Any
 from pathlib import Path
 import fnmatch
 import warnings
@@ -9,13 +9,19 @@ from copy import deepcopy
 import yaml
 import numpy as np
 import pandas as pd
-import dash
-from dash_table import DataTable
-import dash_html_components as html
-import dash_core_components as dcc
-import webviz_core_components as wcc
-from dash.dependencies import Input, Output, State, ALL
+from dash import (
+    html,
+    dcc,
+    Dash,
+    callback_context,
+    dash_table,
+    Input,
+    Output,
+    State,
+    ALL,
+)
 from dash.exceptions import PreventUpdate
+import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
@@ -38,9 +44,15 @@ from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
 )
-from .._utils.colors import hex_to_rgba
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
+)
 
-# pylint: disable=too-many-instance-attributes
+
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):
     """Aggregates and visualizes regional time series data from simulation ensembles. That
 is: cumulatives, rates and inplace volumes. Allows human friendly filter names, e.g. regions,
@@ -116,10 +128,10 @@ folder, to avoid risk of not extracting the right data.
     TABLE_STATISTICS: List[Tuple[str, dict]] = [("Group", {})] + table_statistics_base()
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    # pylint: disable=dangerous-default-value, too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         fipfile: Path = None,
@@ -499,7 +511,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.uuid("filters"), "children"),
@@ -620,7 +632,7 @@ folder, to avoid risk of not extracting the right data.
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function
-            inputs = dash.callback_context.inputs
+            inputs = callback_context.inputs
             date = json.loads(inputs.pop(f"{self.uuid('date')}.data"))
             ensembles = inputs.pop(self.selectors_context_string("ensemble", "value"))
             ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
@@ -974,7 +986,7 @@ def render_single_date_graph(
 
 def render_table(
     stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> DataTable:
+) -> dash_table.DataTable:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1036,7 +1048,7 @@ def render_table(
             except KeyError:
                 pass
     return (
-        DataTable(
+        dash_table.DataTable(
             sort_action="native",
             filter_action="native",
             page_action="native",
@@ -1276,9 +1288,9 @@ def add_statistic_traces(
         if groupby == "ENSEMBLE":
             for ens in ensembles:
                 traces.extend(
-                    add_fanchart_traces(
+                    _get_fanchart_traces(
                         stat_df=stat_df[stat_df["ENSEMBLE"] == ens],
-                        col=col,
+                        column=col,
                         legend_group=ens,
                         color=groupby_color[groupby][ens],
                         line_shape=line_shape,
@@ -1286,9 +1298,9 @@ def add_statistic_traces(
                 )
         else:
             traces.extend(
-                add_fanchart_traces(
+                _get_fanchart_traces(
                     stat_df=stat_df,
-                    col=col,
+                    column=col,
                     legend_group=col.split("_filtered_on_")[-1],
                     color=groupby_color[groupby][col.split("_filtered_on_")[-1]],
                     line_shape=line_shape,
@@ -1297,72 +1309,37 @@ def add_statistic_traces(
     return traces
 
 
-def add_fanchart_traces(
-    stat_df: pd.DataFrame, col: str, legend_group: str, color: str, line_shape: str
-) -> List[dict]:
+def _get_fanchart_traces(
+    stat_df: pd.DataFrame, column: str, legend_group: str, color: str, line_shape: str
+) -> List[Dict[str, Any]]:
     """Renders a fanchart"""
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
-    return [
-        {
-            "name": legend_group,
-            "hovertext": f"Maximum {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmax"],
-            "mode": "lines",
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"P90 {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["p90"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"Mean {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmean"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": True,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"P10 {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["p10"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-        {
-            "name": legend_group,
-            "hovertext": f"Minimum {legend_group}",
-            "x": stat_df["DATE"],
-            "y": stat_df[col]["nanmin"],
-            "mode": "lines",
-            "fill": "tonexty",
-            "fillcolor": fill_color,
-            "line": {"width": 0, "color": line_color, "shape": line_shape},
-            "legendgroup": legend_group,
-            "showlegend": False,
-        },
-    ]
+
+    x = stat_df["DATE"].tolist()
+
+    data = FanchartData(
+        samples=x,
+        low_high=LowHighData(
+            low_data=stat_df[column]["p90"].values,
+            low_name="P90",
+            high_data=stat_df[column]["p10"].values,
+            high_name="P10",
+        ),
+        minimum_maximum=MinMaxData(
+            minimum=stat_df[column]["nanmin"].values,
+            maximum=stat_df[column]["nanmax"].values,
+        ),
+        free_line=FreeLineData("Mean", stat_df[column]["nanmean"].values),
+    )
+
+    hovertemplate = f"{legend_group}"
+
+    return get_fanchart_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        line_shape=line_shape,
+        hovertext=hovertemplate,
+    )
 
 
 def get_fip_array_nodes(fip: str, smry_cols: list) -> List[int]:

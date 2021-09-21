@@ -6,12 +6,8 @@ import datetime
 
 import numpy as np
 import pandas as pd
-import dash
+from dash import html, dcc, Dash, callback_context, dash_table, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
-from dash_table import DataTable
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
@@ -124,7 +120,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_smry: Path = None,
         csvfile_parameters: Path = None,
@@ -339,7 +335,7 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     html.Div(
                                         style={"fontSize": "15px"},
-                                        children=DataTable(
+                                        children=dash_table.DataTable(
                                             id=self.ids("table"),
                                             sort_action="native",
                                             filter_action="native",
@@ -366,7 +362,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 # Output(self.ids("date-store"), "children"),
@@ -441,9 +437,9 @@ folder, to avoid risk of not extracting the right data.
             figure: dict,
         ) -> dict:
             """Update graph with line coloring, vertical line and title"""
-            if dash.callback_context.triggered is None:
+            if callback_context.triggered is None:
                 raise PreventUpdate
-            ctx = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+            ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
             tornado_click: Union[dict, None] = (
                 json.loads(tornado_click_data_str) if tornado_click_data_str else None

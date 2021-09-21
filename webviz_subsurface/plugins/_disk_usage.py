@@ -5,7 +5,7 @@ from pathlib import Path
 import datetime
 
 import pandas as pd
-import dash_html_components as html
+from dash import html
 import webviz_core_components as wcc
 from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
@@ -88,7 +88,7 @@ class DiskUsage(WebvizPluginABC):
                     "labels": self.disk_usage["userid"],
                     "pull": (self.disk_usage["userid"].values == "<b>Free space</b>")
                     * 0.05,
-                    "text": (self.disk_usage["usageGiB"]).map("{:.2f} GiB".format),
+                    "text": self.disk_usage["usageGiB"].map(lambda x: f"{x:.2f} GiB"),
                     "textinfo": "label",
                     "textposition": "inside",
                     "hoverinfo": "label+text",
@@ -105,7 +105,7 @@ class DiskUsage(WebvizPluginABC):
                 {
                     "y": self.disk_usage["usageGiB"],
                     "x": self.disk_usage["userid"],
-                    "text": (self.disk_usage["usageGiB"]).map("{:.2f} GiB".format),
+                    "text": self.disk_usage["usageGiB"].map(lambda x: "{x:.2f} GiB"),
                     "hoverinfo": "x+text",
                     "type": "bar",
                 }

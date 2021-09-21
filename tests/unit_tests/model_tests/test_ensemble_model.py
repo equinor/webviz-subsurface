@@ -13,11 +13,11 @@ def test_ensemble_set_init(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
-    assert emodel.ens_folder == {"iter-0": f"{testdata_folder}/reek_history_match/"}
+    assert emodel.ens_folder == {"iter-0": f"{testdata_folder}/01_drogon_ahm/"}
     assert emodel.webviz_store == []
 
 
@@ -38,13 +38,13 @@ def test_smry_load(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
     smry = emodel.load_smry()
-    assert len(smry.columns) == 475
-    assert len(smry["DATE"].unique()) == 480
+    assert len(smry.columns) == 922
+    assert len(smry["DATE"].unique()) == 2368
 
 
 @pytest.mark.usefixtures("app")
@@ -53,7 +53,7 @@ def test_smry_load_filter_and_dtypes(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
@@ -76,11 +76,10 @@ def test_smry_load_filter_and_dtypes(testdata_folder):
     )
     assert set(smry["DATE"].unique()) == set(
         [
-            datetime.date(2000, 1, 1),
-            datetime.date(2001, 1, 1),
-            datetime.date(2002, 1, 1),
-            datetime.date(2003, 1, 1),
-            datetime.date(2004, 1, 1),
+            datetime.date(2021, 1, 1),
+            datetime.date(2019, 1, 1),
+            datetime.date(2020, 1, 1),
+            datetime.date(2018, 1, 1),
         ]
     )
     assert smry["DATE"].dtype == np.dtype("O")
@@ -89,9 +88,7 @@ def test_smry_load_filter_and_dtypes(testdata_folder):
         np.issubdtype(dtype, np.number)
         for dtype in smry.drop(["REAL", "DATE"], axis=1).dtypes
     )
-    smry = emodel.load_smry(
-        column_keys=["F[OGW]P?", "WWCT:OP*", "FOIP"], time_index="yearly"
-    )
+    smry = emodel.load_smry(column_keys=["F[OGW]P?", "FOIP"], time_index="yearly")
     assert set(smry.columns) == set(
         [
             "REAL",
@@ -105,11 +102,6 @@ def test_smry_load_filter_and_dtypes(testdata_folder):
             "FWPP",
             "FWPR",
             "FWPT",
-            "WWCT:OP_1",
-            "WWCT:OP_2",
-            "WWCT:OP_3",
-            "WWCT:OP_4",
-            "WWCT:OP_5",
             "FOIP",
         ]
     )
@@ -120,7 +112,7 @@ def test_smry_meta(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
@@ -128,7 +120,7 @@ def test_smry_meta(testdata_folder):
     assert set(smeta.columns) == set(
         ["unit", "is_total", "is_rate", "is_historical", "keyword", "wgname", "get_num"]
     )
-    assert len(smeta) == 473
+    assert len(smeta) == 920
     assert "FOPT" in smeta.index
 
 
@@ -137,14 +129,14 @@ def test_parameter_loading(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
     parameters = emodel.load_parameters()
     assert "REAL" in parameters.columns
     assert parameters["REAL"].dtype == np.dtype("int64")
-    assert len(parameters.columns) == 27
+    assert len(parameters.columns) == 55
 
 
 @pytest.mark.usefixtures("app")
@@ -152,7 +144,7 @@ def test_load_csv(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )
@@ -167,7 +159,7 @@ def test_webviz_store(testdata_folder):
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
-        / "reek_history_match"
+        / "01_drogon_ahm"
         / "realization-*"
         / "iter-0",
     )

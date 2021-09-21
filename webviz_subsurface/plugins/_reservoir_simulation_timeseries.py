@@ -8,11 +8,8 @@ import datetime
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
-import dash
+from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, EncodedFile
@@ -31,11 +28,17 @@ from .._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
     get_simulation_line_shape,
     calc_series_statistics,
-    add_fanchart_traces,
     add_statistics_traces,
     render_hovertemplate,
     date_to_interval_conversion,
     check_and_format_observations,
+)
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    get_fanchart_traces,
+    FreeLineData,
+    MinMaxData,
+    LowHighData,
 )
 from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
@@ -142,12 +145,11 @@ folder, to avoid risk of not extracting the right data.
 
     ENSEMBLE_COLUMNS = ["REAL", "ENSEMBLE", "DATE"]
 
-    # pylint: disable=too-many-statements
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile: Path = None,
         ensembles: list = None,
@@ -256,8 +258,12 @@ folder, to avoid risk of not extracting the right data.
             self.plot_options["vectors"] = []
         for vector in [
             vector
-            for vector in ["vector1", "vector2", "vector3"]
-            if vector in self.plot_options.keys()
+            for vector in [
+                "vector1",
+                "vector2",
+                "vector3",
+            ]
+            if vector in self.plot_options
         ]:
             self.plot_options["vectors"].append(self.plot_options[vector])
         self.plot_options["vectors"] = self.plot_options["vectors"][:3]
@@ -521,7 +527,6 @@ folder, to avoid risk of not extracting the right data.
                             ),
                             wcc.Selectors(
                                 label="Time series",
-                                id=self.uuid("vectors"),
                                 children=wsc.VectorSelector(
                                     id=self.uuid("vectors"),
                                     maxNumSelectedNodes=3,
@@ -633,7 +638,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             Output(self.uuid("graph"), "figure"),
             [
@@ -649,7 +654,7 @@ folder, to avoid risk of not extracting the right data.
                 Input(self.uuid("stat_options"), "value"),
             ],
         )
-        # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches
+        # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
         def _update_graph(
             vectors: List[str],
             ensembles: List[str],
@@ -742,7 +747,7 @@ folder, to avoid risk of not extracting the right data.
                     smry_meta=self.smry_meta,
                 )
                 if visualization == "fanchart":
-                    traces = _add_fanchart_traces(
+                    traces = _get_fanchart_traces(
                         dfs[vector]["stat"],
                         vector,
                         colors=self.ens_colors,
@@ -999,7 +1004,6 @@ folder, to avoid risk of not extracting the right data.
         return functions
 
 
-# pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def calculate_vector_dataframes(
     smry: pd.DataFrame,
@@ -1188,20 +1192,34 @@ def add_history_trace(dframe: pd.DataFrame, vector: str, line_shape: str) -> dic
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
-def _add_fanchart_traces(
+def _get_fanchart_traces(
     stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
 ) -> list:
     """Add fanchart traces for selected vector"""
     traces = []
     for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
+
+        data = FanchartData(
+            samples=ens_df[("", "DATE")].tolist(),
+            low_high=LowHighData(
+                low_data=ens_df[(vector, "low_p90")].values,
+                low_name="P90",
+                high_data=ens_df[(vector, "high_p10")].values,
+                high_name="P10",
+            ),
+            minimum_maximum=MinMaxData(
+                minimum=ens_df[(vector, "min")].values,
+                maximum=ens_df[(vector, "max")].values,
+            ),
+            free_line=FreeLineData("Mean", ens_df[(vector, "mean")].values),
+        )
         traces.extend(
-            add_fanchart_traces(
-                ens_stat_df=ens_df,
-                vector=vector,
+            get_fanchart_traces(
+                data=data,
                 color=colors.get(ensemble, colors[list(colors.keys())[0]]),
                 legend_group=ensemble,
                 line_shape=line_shape,
-                hovertemplate=render_hovertemplate(vector=vector, interval=interval),
+                hovertemplate=render_hovertemplate(vector, interval),
             )
         )
     return traces

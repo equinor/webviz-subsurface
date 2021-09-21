@@ -8,11 +8,8 @@ from pathlib import Path
 import xtgeo
 import numpy as np
 import pandas as pd
-import dash
+from dash import html, dcc, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import LeafletMap
 from webviz_config import WebvizPluginABC
@@ -84,7 +81,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         surfacefiles: list,
@@ -450,7 +447,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             }
         return {**kwargs}
 
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
                 Output(self.ids("graph"), "figure"),

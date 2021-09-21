@@ -3,19 +3,12 @@ from pathlib import Path
 import warnings
 import numpy as np
 import pandas as pd
-from webviz_subsurface._datainput.fmu_input import find_sens_type
 from .ensemble_set_model import EnsembleSetModel
+from .parameter_model import ParametersModel
 
 
 class InplaceVolumesModel:
 
-    SENS_COLUMNS = [
-        "ENSEMBLE",
-        "REAL",
-        "SENSCASE",
-        "SENSNAME",
-        "SENSTYPE",
-    ]
     POSSIBLE_SELECTORS = [
         "FLUID_ZONE",
         "SOURCE",
@@ -48,11 +41,8 @@ class InplaceVolumesModel:
         non_net_facies: Optional[List[str]] = None,
         drop_constants: bool = True,
     ):
-        self._parameters = []
-        self._sensitivities = []
-        self._sensrun = False
-        self._parameterdf = (
-            parameter_table if parameter_table is not None else pd.DataFrame()
+        self.pmodel = ParametersModel(
+            parameter_table, drop_constants=drop_constants, keep_numeric_only=False
         )
         selectors = [x for x in volumes_table.columns if x in self.POSSIBLE_SELECTORS]
 
@@ -91,18 +81,11 @@ class InplaceVolumesModel:
                 self._dataframe["FACIES"].isin(non_net_facies), "NET"
             ] = 0
 
-        # If parameters present check if the case is a sensitivity run
-        # and merge sensitivity columns into the dataframe
-        if parameter_table is not None:
-            self._parameterdf = self._prepare_parameter_data(
-                parameter_table, drop_constants
+        # If snesitivity run merge sensitivity columns into the dataframe
+        if self.pmodel.sensrun:
+            self._dataframe = pd.merge(
+                self._dataframe, self.pmodel.sens_df, on=["ENSEMBLE", "REAL"]
             )
-            self._parameters = [
-                x for x in self._parameterdf.columns if x not in self.SENS_COLUMNS
-            ]
-            if "SENSNAME" in self._parameterdf:
-                self._add_sensitivity_columns()
-                self._sensitivities = list(self._dataframe["SENSNAME"].unique())
 
         # set column order
         colorder = self.selectors + self.VOLCOL_ORDER
@@ -123,15 +106,15 @@ class InplaceVolumesModel:
 
     @property
     def parameter_df(self) -> pd.DataFrame:
-        return self._parameterdf
+        return self.pmodel.dataframe
 
     @property
     def sensrun(self) -> bool:
-        return self._sensrun
+        return self.pmodel.sensrun
 
     @property
     def sensitivities(self) -> List[str]:
-        return self._sensitivities
+        return self.pmodel.sensitivities
 
     @property
     def sources(self) -> List[str]:
@@ -167,7 +150,7 @@ class InplaceVolumesModel:
 
     @property
     def parameters(self) -> List[str]:
-        return self._parameters
+        return self.pmodel.parameters
 
     @staticmethod
     def _compute_water_zone_volumes(
@@ -216,38 +199,6 @@ class InplaceVolumesModel:
             if all(col in self._dataframe for col in ["HCPV", vol_column]):
                 pvt = "BO" if vol_column == "STOIIP" else "BG"
                 self._property_columns.append(pvt)
-
-    def _add_sensitivity_columns(self) -> None:
-        """Add sensitivity information columns from the parameters to the
-        dataframe, and raise error if not all ensembles have sensitivity data"""
-
-        self._parameterdf["SENSTYPE"] = self._parameterdf.apply(
-            lambda row: find_sens_type(row.SENSCASE)
-            if not pd.isnull(row.SENSCASE)
-            else np.nan,
-            axis=1,
-        )
-        sens_params_table = self._parameterdf[self.SENS_COLUMNS]
-
-        sensruns = []
-        for _, df in sens_params_table.groupby("ENSEMBLE"):
-            is_sensrun = not df["SENSNAME"].isnull().values.all() and (
-                df["SENSNAME"].nunique() > 1
-                or (df["SENSNAME"].nunique() == 1 and df["SENSTYPE"].unique() != ["mc"])
-            )
-            sensruns.append(is_sensrun)
-        self._sensrun = all(sensruns)
-
-        # raise error if mixed ensemble types
-        if not self._sensrun and any(sensruns):
-            raise ValueError(
-                "Ensembles with and without sensitivity data mixed - this is not supported"
-            )
-
-        # Merge into one dataframe
-        self._dataframe = pd.merge(
-            self._dataframe, sens_params_table, on=["ENSEMBLE", "REAL"]
-        )
 
     def compute_property_columns(
         self, dframe: pd.DataFrame, properties: Optional[list] = None
@@ -317,59 +268,6 @@ class InplaceVolumesModel:
             if not filters.get("FLUID_ZONE") == ["gas"]:
                 dframe["BG"] = "NA"
         return dframe
-
-    def _prepare_parameter_data(
-        self, parameter_table: pd.DataFrame, drop_constants: bool
-    ) -> pd.DataFrame:
-        """
-        Different data preparations on the parameters, before storing them as an attribute.
-        Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
-        are removed, in addition parameters with LOG distribution will be kept while the
-        other is dropped.
-        """
-
-        parameter_table = parameter_table.reset_index(drop=True)
-
-        if drop_constants:
-            constant_params = [
-                param
-                for param in [
-                    x for x in parameter_table.columns if x not in self.SENS_COLUMNS
-                ]
-                if len(parameter_table[param].unique()) == 1
-            ]
-            parameter_table = parameter_table.drop(columns=constant_params)
-
-        # Keep only LOG parameters
-        log_params = [
-            param.replace("LOG10_", "")
-            for param in [
-                x for x in parameter_table.columns if x not in self.SENS_COLUMNS
-            ]
-            if param.startswith("LOG10_")
-        ]
-        parameter_table = parameter_table.drop(columns=log_params)
-
-        parameter_table = parameter_table.rename(
-            columns={
-                col: f"{col} (log)"
-                for col in parameter_table.columns
-                if col.startswith("LOG10_")
-            }
-        )
-        # Remove prefix on parameter name added by GEN_KW
-        parameter_table = parameter_table.rename(
-            columns={
-                col: (col.split(":", 1)[1])
-                for col in parameter_table.columns
-                if (":" in col and col not in self.SENS_COLUMNS)
-            }
-        )
-
-        # Drop columns if duplicate names
-        parameter_table = parameter_table.loc[:, ~parameter_table.columns.duplicated()]
-
-        return parameter_table
 
 
 def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
