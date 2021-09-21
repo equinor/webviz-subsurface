@@ -15,6 +15,8 @@ from webviz_subsurface_components import (
     VariableVectorMapInfo,
 )
 
+from .vector_selector import is_vector_name_in_vector_selector_data
+
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
@@ -22,7 +24,7 @@ else:
 
 # JSON Schema for predefined expressions configuration
 # Used as schema input for json_schema.validate()
-PREDEFINED_EXPRESSIONS_JSON_SCHEMA: dict = {
+PREDEFINED_EXPRESSIONS_JSON_SCHEMA = {
     "type": "object",
     "additionalProperties": {
         "type": "object",
@@ -129,7 +131,7 @@ def validate_predefined_expression(
     )
     invalid_vectors: List[str] = []
     for vector_name in variable_vector_dict.values():
-        if not is_vector_name_existing(vector_name, vector_data):
+        if not is_vector_name_in_vector_selector_data(vector_name, vector_data):
             invalid_vectors.append(vector_name)
     if len(invalid_vectors) > 1:
         message = (
@@ -177,34 +179,18 @@ def expressions_from_config(
         expression_dict = {
             "name": expression,
             "expression": expressions[expression]["expression"],
-            "id": f"{uuid4()}",
+            "id": str(uuid4()),
             "variableVectorMap": variable_vector_map_from_dict(
                 expressions[expression]["variableVectorMap"]
             ),
             "isValid": False,  # Set False and validate in seperate operation
             "isDeletable": False,
         }
-        if "description" in expressions[expression].keys():
+        if "description" in expressions[expression]:
             expression_dict["description"] = expressions[expression]["description"]
 
         output.append(expression_dict)
     return output
-
-
-def is_vector_name_existing(name: str, vector_data: list) -> bool:
-    nodes = name.split(":")
-    current_child_list = vector_data
-    for node in nodes:
-        found = False
-        for child in current_child_list:
-            if child["name"] == node:
-                children = child["children"]
-                current_child_list = children if children is not None else []
-                found = True
-                break
-        if not found:
-            return False
-    return found
 
 
 def get_expression_from_name(
@@ -235,14 +221,14 @@ def get_custom_vector_definitions_from_expressions(
     Uses expression str as description if optional expression description str does not exist.
     """
 
-    output: dict = {}
+    output = {}
     for expression in expressions:
         name = expression["name"]
         key = name.split(":")[0]
         vector_type = "calculated"
         description = (
             expression["expression"]
-            if not "description" in dict(expression).keys()
+            if not "description" in expression
             else expression["description"]
         )
         output[key] = {"type": vector_type, "description": description}

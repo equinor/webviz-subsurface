@@ -55,13 +55,17 @@ from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
+
+from .._utils.vector_selector import (
+    add_vector_to_vector_selector_data,
+    is_vector_name_in_vector_selector_data,
+)
 from .._utils.vector_calculator import (
     expressions_from_config,
     get_calculated_units,
     get_calculated_vector_df,
     get_expression_from_name,
     get_selected_expressions,
-    is_vector_name_existing,
     validate_predefined_expression,
     get_custom_vector_definitions_from_expressions,
 )
@@ -195,6 +199,8 @@ folder, to avoid risk of not extracting the right data.
             / "block_options.css"
         )
 
+        # Temporary css, pending on new wcc modal component.
+        # See: https://github.com/equinor/webviz-core-components/issues/163
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
         )
@@ -259,7 +265,7 @@ folder, to avoid risk of not extracting the right data.
         self.vector_data: list = []
         for vec in self.smry_cols:
             split = vec.split(":")
-            self._add_vector(
+            add_vector_to_vector_selector_data(
                 self.vector_data, vec, simulation_vector_description(split[0])
             )
 
@@ -276,12 +282,12 @@ folder, to avoid risk of not extracting the right data.
                 avgrate_split = avgrate_vec.split(":")
                 interval_split = interval_vec.split(":")
 
-                self._add_vector(
+                add_vector_to_vector_selector_data(
                     self.vector_data,
                     avgrate_vec,
                     f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
                 )
-                self._add_vector(
+                add_vector_to_vector_selector_data(
                     self.vector_data,
                     interval_vec,
                     f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
@@ -356,45 +362,14 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @staticmethod
-    def _add_vector(
-        vector_data: list,
-        vector: str,
-        description: str,
-        description_at_last_node: bool = False,
-    ) -> None:
-        nodes = vector.split(":")
-        current_child_list = vector_data
-        for index, node in enumerate(nodes):
-            found = False
-            for child in current_child_list:
-                if child["name"] == node:
-                    children = child["children"]
-                    current_child_list = children if children is not None else []
-                    found = True
-                    break
-            if not found:
-                description_text = description if index == 0 else ""
-                if description_at_last_node:
-                    description_text = description if index == len(nodes) - 1 else ""
-                current_child_list.append(
-                    {
-                        "name": node,
-                        "description": description_text,
-                        "children": [] if index < len(nodes) - 1 else None,
-                    }
-                )
-                children = current_child_list[-1]["children"]
-                current_child_list = children if children is not None else []
-
-    @staticmethod
     def _add_expression(
         expression_data: list,
         name: str,
         description: Optional[str] = None,
     ) -> None:
         description_str = description if description is not None else ""
-        ReservoirSimulationTimeSeries._add_vector(
-            vector_data=expression_data,
+        add_vector_to_vector_selector_data(
+            vector_selector_data=expression_data,
             vector=name,
             description=description_str,
             description_at_last_node=True,
@@ -800,7 +775,7 @@ folder, to avoid risk of not extracting the right data.
                 )
 
             # Append if vector name exist among data
-            if new_vector is not None and is_vector_name_existing(
+            if new_vector is not None and is_vector_name_in_vector_selector_data(
                 new_vector, vector_data
             ):
                 valid_selections.append(new_vector)
