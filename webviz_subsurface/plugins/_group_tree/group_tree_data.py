@@ -308,8 +308,8 @@ def create_dataset(
             next_date = smry["DATE"].max()
         smry_in_datespan = smry[
             (smry["DATE"] >= date) & (smry["DATE"] < next_date)
-        ].copy()
-        dates = list(smry_in_datespan["DATE"].unique())
+        ].groupby("DATE")
+        dates = list(smry_in_datespan.groups)
         if dates:
             trees.append(
                 {
@@ -323,14 +323,13 @@ def create_dataset(
             logging.getLogger(__name__).warning(
                 f"""No summary data found for gruptree between {date} and {next_date}"""
             )
-
     return trees
 
 
 def extract_tree(
     gruptree: pd.DataFrame,
     nodename: str,
-    smry_in_datespan: pd.DataFrame,
+    smry_in_datespan: Dict[pd.datetime, pd.DataFrame],
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
@@ -353,7 +352,7 @@ def extract_tree(
     node_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in nodes}
 
     # Looping the dates only once is very important for the speed of this function
-    for _, smry_at_date in smry_in_datespan.groupby("DATE"):
+    for _, smry_at_date in smry_in_datespan:
         for item in edges:
             edge_data[item["DATATYPE"]].append(
                 round(smry_at_date[item["SUMVEC"]].values[0], 2)
