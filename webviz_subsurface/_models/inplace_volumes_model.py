@@ -205,7 +205,7 @@ class InplaceVolumesModel:
         if all(col in self._dataframe for col in ["BULK", "PORV"]):
             self._property_columns.append("PORO")
         if all(col in self._dataframe for col in ["NET", "PORV"]):
-            self._property_columns.append("PORO (net)")
+            self._property_columns.append("PORO_NET")
         if all(col in self._dataframe for col in ["HCPV", "PORV"]):
             self._property_columns.append("SW")
 
@@ -226,7 +226,7 @@ class InplaceVolumesModel:
             dframe["NTG"] = dframe["NET"] / dframe["BULK"]
         if "PORO" in properties:
             if "NET" in dframe.columns:
-                dframe["PORO (net)"] = dframe["PORV"] / dframe["NET"]
+                dframe["PORO_NET"] = dframe["PORV"] / dframe["NET"]
             dframe["PORO"] = dframe["PORV"] / dframe["BULK"]
         if "SW" in properties:
             dframe["SW"] = 1 - (dframe["HCPV"] / dframe["PORV"])
