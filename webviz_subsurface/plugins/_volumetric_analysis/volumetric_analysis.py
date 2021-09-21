@@ -21,6 +21,7 @@ from .controllers import (
     layout_controllers,
     export_data_controllers,
     comparison_controllers,
+    fipfile_qc_controller,
 )
 
 
@@ -199,7 +200,10 @@ reek_test_data/aggregated_data/parameters.csv)
             children=[
                 clientside_stores(get_uuid=self.uuid),
                 main_view(
-                    get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
+                    get_uuid=self.uuid,
+                    volumemodel=self.volmodel,
+                    theme=self.theme,
+                    disjoint_set_df=self.disjoint_set_df,
                 ),
             ],
         )
@@ -207,14 +211,14 @@ reek_test_data/aggregated_data/parameters.csv)
     def set_callbacks(self, app: Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         distribution_controllers(
-            app=app,
-            get_uuid=self.uuid,
-            volumemodel=self.volmodel,
-            theme=self.theme,
+            app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
         )
         comparison_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         layout_controllers(app=app, get_uuid=self.uuid)
         export_data_controllers(app=app, get_uuid=self.uuid)
+        fipfile_qc_controller(
+            app=app, get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         store_functions = []

@@ -3,3 +3,4 @@ from .selections_controllers import selections_controllers
 from .layout_controllers import layout_controllers
 from .export_data_controllers import export_data_controllers
 from .comparison_controllers import comparison_controllers
+from .fipfile_qc_controller import fipfile_qc_controller

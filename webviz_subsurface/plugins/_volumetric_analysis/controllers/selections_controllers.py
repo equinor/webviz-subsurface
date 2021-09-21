@@ -283,9 +283,9 @@ def selections_controllers(
 
         output = {}
         for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
-            options = [x["value"] for x in page_filter_settings[selector]["options"]]
             if selector not in page_filter_settings:
                 continue
+            options = [x["value"] for x in page_filter_settings[selector]["options"]]
             multi = selector in selected_data
             selector_is_multi = page_filter_settings[selector]["multi"]
             if not multi and selector_is_multi:
@@ -357,6 +357,8 @@ def selections_controllers(
         real_filter_id: list,
     ) -> tuple:
         """Callback that updates the selected relization info and text"""
+        if selected_tab == "fipqc":
+            raise PreventUpdate
 
         index = [x["tab"] for x in reals_ids].index(selected_tab)
         real_list = [int(real) for real in reals[index]]
@@ -425,6 +427,9 @@ def selections_controllers(
         input_ids: list,
         wrapper_ids: list,
     ) -> list:
+        if selected_tab == "fipqc":
+            raise PreventUpdate
+
         reals = volumemodel.realizations
         prev_selection = (
             selections[selected_page]["filters"].get("REAL", [])
