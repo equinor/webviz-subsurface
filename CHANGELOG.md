@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
-- [#709](https://github.com/equinor/webviz-subsurface/pull/709) - Added `VectorCalculator` component in `ReservoirSimulationTimeSeries` plugin for calculation ad graphing of custom simulation time series vectors.
+- [#709](https://github.com/equinor/webviz-subsurface/pull/709) - Added `VectorCalculator` component in `ReservoirSimulationTimeSeries` plugin for calculation and graphing of custom simulation time series vectors.
 - [#770](https://github.com/equinor/webviz-subsurface/pull/770) - Added support for dynamic volumetric files in `VolumetricAnalysis` and possibility of combining static and dynamic volumes on a comparable level. To trigger this behaviour a fipfile with `FIPNUM` to `REGION/ZONE` mapping information needs to be provided. Also added support for giving multiple files as input per source.
 - [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
 
