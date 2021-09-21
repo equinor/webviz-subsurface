@@ -14,6 +14,7 @@ from webviz_subsurface._models import EnsembleSetModel, InplaceVolumesModel
 from webviz_subsurface._models import caching_ensemble_set_model_factory
 from webviz_subsurface._models.inplace_volumes_model import extract_volumes
 
+from .volume_validator_and_combinator import VolumeValidatorAndCombinator
 from .views import clientside_stores, main_view
 from .controllers import (
     distribution_controllers,
@@ -24,19 +25,40 @@ from .controllers import (
 
 
 class VolumetricAnalysis(WebvizPluginABC):
-    """Dashboard to analyze volumetrics results from
-FMU ensembles.
+    """Dashboard to analyze volumetrics results from FMU ensembles, both monte carlo
+and sensitivity runs are supported.
 
-This plugin supports both monte carlo and sensitivity runs, and will automatically detect
-which case has been run.
+This dashboard is built with static volumetric data in mind. However both static and dynamic
+volumefiles are supported as input, and the type is determined by an automatic check. To be
+defined as a static source the standard FMU-format of such files must be followed.
+[see FMU wiki for decription of volumetric standards](https://wiki.equinor.com/wiki/index.php/\
+FMU_standards/Volumetrics)
 
-The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
-is removed and a `FLUID_ZONE` column is added to be used as a filter or selector. Volumes from
-the Water zone will be calculated if Total volumes are included.
+The dashboard can be used as a tool to compare dynamic and static volumes.
+This is done by creating sets of FIPNUM's and REGION∕ZONE's that are comparable
+in volumes, and combining volumes per set. To trigger this behaviour a
+fipfile with FIPNUM to REGION∕ZONE mapping information must be provided. Different formats
+of this fipfile are supported [examples can be seen here](https://fmu-docs.equinor.com/docs/\
+subscript/scripts/rmsecl_volumetrics.html#example).
 
-Property columns (e.g. PORO, SW) are automatically computed from the data as long as
-relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES column
-by defining which facies are non-net.
+The plugin behavoiur is dependent on the input files and their type (static/dynamic):
+* If the input file(s) are static, different input preparations are triggered to enhance the
+  analysis:
+    * The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
+      is removed and a `FLUID_ZONE` column is added to be used as a filter or selector.
+    * If total geometric volumes are included (suffix _TOTAL) they will be used to compute volumes
+      from the water zone and "water" will be added to the `FLUID_ZONE` column.
+    * Property columns (e.g. PORO, SW) are automatically computed from the data as long as
+      relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES
+      column by defining which facies are non-net.
+* If the input file(s) are dynamic these operations are skipped.
+
+!> Be aware that if more than one source is given as input, only common columns between the sources
+   are kept. Hence it is often preferrable to initialize the plugin multiple times dependent on the
+   analysis task in question. E.g. a pure static input will allow for a detailed analysis of
+   volumetric data due to the input preparations mentioned above. While a mix of both static and
+   dynamic data will limit the available columns but enable comparison of these data on a
+   comparable level.
 
 Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
@@ -59,22 +81,38 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 **Common settings**
 * **`non_net_facies`:** List of facies which are non-net.
+* **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
+    and human readable regions, zones and etc to be used as filters.
 ---
 
 ?> The input files must follow FMU standards.
 
+
+The input files are given to the plugin in the 'volfiles' argument. This is a dictionary
+where the key will used in the SOURCE column and the value is the name of a volumetric file,
+or a list of volumetric files belonging to the specific data source (e.g. geogrid).
+If users have multiple csv-files from one data source e.g. geogrid_oil.csv and geogrid_gas.csv,
+it is recommended to put these into a list of files for the source geogrid as such:
+
+```yaml
+volfiles:
+    geogrid:
+        - geogrid_oil.csv
+        - geogrid_gas.csv
+```
+
 * [Example of an aggregated file for `csvfiles`](https://github.com/equinor/\
-webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
+webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/volumes.csv).
 
 * [Example of a file per realization that can be used with `ensembles` and `volfiles`]\
-(https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/\
-realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+(https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/\
+realization-0/iter-0/share/results/volumes/geogrid--vol.csv).
 
 For sensitivity runs the sensitivity information is extracted automatically if `ensembles`\
-is given as input, as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.\
+is given as input, as long as `SENSCASE` and `SENSNAME` are found in `parameters.txt`.\
 * [Example of an aggregated file to use with `csvfile_parameters`]\
 (https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-aggregated_data/parameters.csv)
+reek_test_data/aggregated_data/parameters.csv)
 
 
 **The following columns will be used as available filters, if present:**
@@ -82,8 +120,10 @@ aggregated_data/parameters.csv)
 * `ZONE`
 * `REGION`
 * `FACIES`
+* `FIPNUM`
+* `SET`
 * `LICENSE`
-* `SOURCE` (relevant if calculations are done for multiple grids)
+* `SOURCE`
 * `SENSNAME`
 * `SENSCASE`
 
@@ -101,16 +141,11 @@ aggregated_data/parameters.csv)
         volfiles: dict = None,
         volfolder: str = "share/results/volumes",
         non_net_facies: Optional[List[str]] = None,
+        fipfile: Path = None,
     ):
 
         super().__init__()
 
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "container.css"
-        )
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "_assets"
@@ -120,13 +155,8 @@ aggregated_data/parameters.csv)
 
         self.csvfile_vol = csvfile_vol
         self.csvfile_parameters = csvfile_parameters
-        self.volfiles = volfiles
-        self.volfolder = volfolder
+        self.fipfile = fipfile
 
-        if csvfile_vol and ensembles:
-            raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
-            )
         if csvfile_vol:
             volumes_table = read_csv(csvfile_vol)
             parameters: Optional[pd.DataFrame] = (
@@ -151,10 +181,16 @@ aggregated_data/parameters.csv)
                 'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
             )
 
-        self.volmodel = InplaceVolumesModel(
+        vcomb = VolumeValidatorAndCombinator(
             volumes_table=volumes_table,
+            fipfile=get_path(self.fipfile) if self.fipfile else None,
+        )
+        self.disjoint_set_df = vcomb.disjoint_set_df
+        self.volmodel = InplaceVolumesModel(
+            volumes_table=vcomb.dframe,
             parameter_table=parameters,
             non_net_facies=non_net_facies,
+            volume_type=vcomb.volume_type,
         )
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
@@ -181,15 +217,14 @@ aggregated_data/parameters.csv)
         export_data_controllers(app=app, get_uuid=self.uuid)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        store_functions = []
         if self.csvfile_vol is not None:
-            store_functions = [(read_csv, [{"csv_file": self.csvfile_vol}])]
-            if self.csvfile_parameters is not None:
-                store_functions.append(
-                    (read_csv, [{"csv_file": self.csvfile_parameters}])
-                )
-        else:
-
-            store_functions = self.emodel.webvizstore
+            store_functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
+        if self.fipfile is not None:
+            store_functions.append((get_path, [{"path": self.fipfile}]))
+        if self.csvfile_parameters is not None:
+            store_functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
+        store_functions.extend(self.emodel.webvizstore)
         return store_functions
 
 
@@ -197,3 +232,8 @@ aggregated_data/parameters.csv)
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file)
+
+
+@webvizstore
+def get_path(path: Path) -> Path:
+    return Path(path)
