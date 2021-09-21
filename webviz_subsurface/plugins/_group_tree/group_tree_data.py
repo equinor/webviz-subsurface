@@ -329,7 +329,7 @@ def create_dataset(
 def extract_tree(
     gruptree: pd.DataFrame,
     nodename: str,
-    smry_in_datespan: Dict[pd.datetime, pd.DataFrame],
+    smry_in_datespan: Dict[Any, pd.DataFrame],
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
