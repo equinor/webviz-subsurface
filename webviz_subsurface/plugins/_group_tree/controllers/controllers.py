@@ -1,7 +1,7 @@
 from typing import Callable, Optional, Any, Tuple, List, Dict
+
 import dash
 from dash.dependencies import Input, Output, State
-
 import webviz_subsurface_components
 
 from ..group_tree_data import GroupTreeData

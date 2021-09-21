@@ -43,14 +43,17 @@ class GroupTree(WebvizPluginABC):
     `gruptree_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/gruptree.csv"`).
 
-    The `gruptree_file` file can be dumped to disk per realization by a forward model in ERT that
-    wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
-    installed).
-    [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html)
+    The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
+    model with subcommand `gruptree`:
+    [Link to ECL2CSV](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html).
+
+    The forward model uses `ecl2df` to export a table representation of the Eclipse network:
+    [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
 
     **time_index**
-    This is the sampling interval of the summary data. It is `monthly` by default, but it will in
-    many cases be good to use `yearly` to make plugin faster.
+
+    This is the sampling interval of the summary data. It is `yearly` by default, but can be set
+    to `monthly` if needed.
     """
 
     def __init__(
@@ -59,7 +62,7 @@ class GroupTree(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         gruptree_file: str = "share/results/tables/gruptree.csv",
-        time_index: str = "monthly",
+        time_index: str = "yearly",
     ):
         super().__init__()
         self.ensembles = ensembles
@@ -176,7 +179,7 @@ def read_ensemble_gruptree(
     If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
     are filtered out.
 
-    If the trees are equal in all realization, only one realization is kept.
+    If the trees are equal in every realization, only one realization is kept.
     """
     ens = ScratchEnsemble("ens", ens_path)
     df_files = ens.find_files(gruptree_file)

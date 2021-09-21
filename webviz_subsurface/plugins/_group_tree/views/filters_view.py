@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 
 
 def filters_layout(get_uuid: Callable) -> wcc.Selectors:
-    """Descr"""
+    """The filters part of the menu"""
     filters_uuid = get_uuid("filters")
     return wcc.Selectors(
         id=get_uuid("filters_layout"),
