@@ -5,7 +5,6 @@ import time
 import logging
 
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
-from .ensemble_summary_provider_factory import BackingType
 from .ensemble_summary_provider import EnsembleSummaryProvider
 
 
@@ -181,24 +180,27 @@ def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
     _get_n_vectors_in_batch_all_realizations(provider, 50)
     _get_n_vectors_in_batch_all_realizations(provider, 99999)
 
-    n = 100
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 2)])
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 4)])
+    num_vecs = 100
+    _get_n_vectors_for_date_all_realizations(
+        provider, num_vecs, all_dates[int(num_dates / 2)]
+    )
+    _get_n_vectors_for_date_all_realizations(
+        provider, num_vecs, all_dates[int(num_dates / 4)]
+    )
 
-    n = 99999
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[0])
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[-1])
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 2)])
-    _get_n_vectors_for_date_all_realizations(provider, n, all_dates[int(num_dates / 4)])
+    num_vecs = 99999
+    _get_n_vectors_for_date_all_realizations(provider, num_vecs, all_dates[0])
+    _get_n_vectors_for_date_all_realizations(provider, num_vecs, all_dates[-1])
+    _get_n_vectors_for_date_all_realizations(
+        provider, num_vecs, all_dates[int(num_dates / 2)]
+    )
+    _get_n_vectors_for_date_all_realizations(
+        provider, num_vecs, all_dates[int(num_dates / 4)]
+    )
 
 
-# Running:
-#   python -m webviz_subsurface._providers.ensemble_summary_provider_perf_testing
-#
-# Memory profiling with memory-profiler:
-#   mprof run --python  webviz_subsurface._providers.ensemble_summary_provider_perf_testing
 # -------------------------------------------------------------------------
-if __name__ == "__main__":
+def main() -> None:
     print()
     print("## Running EnsembleSummaryProvider performance tests")
     print("## =================================================")
@@ -210,49 +212,33 @@ if __name__ == "__main__":
     logging.getLogger("webviz_subsurface").setLevel(level=logging.INFO)
     logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
 
-    ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/webviz_storage_dir")
-    # ROOT_STORAGE_DIR = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
+    root_storage_dir = Path("/home/sigurdp/buf/webviz_storage_dir")
+    # root_storage_dir = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
-    PREF_DF_BACKING: BackingType = BackingType.ARROW
-    # PREF_DF_BACKING: BackingType = BackingType.PARQUET
-    # PREF_DF_BACKING: BackingType = BackingType.INMEM_PARQUET
-
-    ENSEMBLES: Dict[str, str] = {
+    ensembles: Dict[str, str] = {
+        "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0",
+        # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
         # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
         # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-0",
-        # "iter-1": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-1",
-        # "iter-2": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-2",
-        # "iter-3": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/reek_history_match/realization-*/iter-3",
-        "iter-0": "/home/sigurdp/gitRoot/hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
     }
 
     print()
-    print("## ROOT_STORAGE_DIR:", ROOT_STORAGE_DIR)
-    print("## PREF_DF_BACKING:", PREF_DF_BACKING)
-    print("## ENSEMBLES:", ENSEMBLES)
+    print("## root_storage_dir:", root_storage_dir)
+    print("## ensembles:", ensembles)
 
     print()
     print("## Creating EnsembleSummaryProviderSet...")
 
     start_tim = time.perf_counter()
-    factory = EnsembleSummaryProviderFactory(ROOT_STORAGE_DIR, PREF_DF_BACKING)
+    factory = EnsembleSummaryProviderFactory(root_storage_dir)
 
-    # provider_set = factory.create_provider_set_from_ensemble_smry_fmu(
-    #     ENSEMBLES, "daily"
-    # )
-
-    # provider_set = (
-    #     factory.create_provider_set_PRESAMPLED_from_FAKE_per_realization_arrow_file(
-    #         ENSEMBLES, "daily"
-    #     )
-    # )
-
-    provider_set = (
-        factory.create_provider_set_LAZY_from_FAKE_per_realization_arrow_file(
-            ENSEMBLES, "daily"
-        )
+    provider_set = factory.create_provider_set_from_arrow_unsmry_lazy(
+        ensembles, "daily"
     )
+
+    # provider_set = factory.create_provider_set_from_arrow_unsmry_presampled(
+    #     ensembles, "daily"
+    # )
 
     print(
         "## Done creating EnsembleSummaryProviderSet, elapsed time (s):",
@@ -264,3 +250,13 @@ if __name__ == "__main__":
     _run_perf_tests(provider_set.provider("iter-0"))
 
     print("## done")
+
+
+# Running:
+#   python -m webviz_subsurface._providers.ensemble_summary_provider.dev_perf_testing
+#
+# Memory profiling with memory-profiler:
+#   mprof run --python  webviz_subsurface._providers.ensemble_summary_provider.dev_perf_testing
+# -------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()

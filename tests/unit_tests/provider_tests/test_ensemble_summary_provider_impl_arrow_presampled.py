@@ -9,53 +9,47 @@ else:
     from typing import Optional
     from typing_extensions import Literal
 
+# pylint: disable=wrong-import-position
 import pytest
 from _pytest.fixtures import SubRequest
-
 import pandas as pd
 
-from webviz_subsurface._providers.ensemble_summary_provider import (
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
 )
-from webviz_subsurface._providers.ensemble_summary_provider_impl_arrow import (
+from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import (
     EnsembleSummaryProviderImplArrow,
-)
-from webviz_subsurface._providers.ensemble_summary_provider_impl_parquet import (
-    EnsembleSummaryProviderImplParquet,
-)
-from webviz_subsurface._providers.ensemble_summary_provider_impl_inmem_parquet import (
-    EnsembleSummaryProviderImplInMemParquet,
 )
 
 
 # fmt: off
 INPUT_DATA_DATETIME = [
-    ["DATE",                          "REAL",  "A",  "C",   "Z"], 
-    [datetime(2021, 12, 20, 23, 59),  0,       10.0,  1.0,  0.0 ], 
-    [datetime(2021, 12, 20, 23, 59),  1,       12.0,  1.0,  0.0 ], 
-    [datetime(2021, 12, 21, 22, 58),  1,       13.0,  1.0,  0.0 ], 
-] 
+    ["DATE",                          "REAL",  "A",  "C",   "Z"],
+    [datetime(2021, 12, 20, 23, 59),  0,       10.0,  1.0,  0.0 ],
+    [datetime(2021, 12, 20, 23, 59),  1,       12.0,  1.0,  0.0 ],
+    [datetime(2021, 12, 21, 22, 58),  1,       13.0,  1.0,  0.0 ],
+]
 
 INPUT_DATA_AFTER_2262 = [
-    ["DATE",                          "REAL",  "A",  "C",   "Z"], 
-    [datetime(2500, 12, 20, 23, 59),  0,       10.0,  1.0,  0.0 ], 
-    [datetime(2500, 12, 20, 23, 59),  1,       12.0,  1.0,  0.0 ], 
-    [datetime(2500, 12, 21, 22, 58),  1,       13.0,  1.0,  0.0 ], 
-] 
+    ["DATE",                          "REAL",  "A",  "C",   "Z"],
+    [datetime(2500, 12, 20, 23, 59),  0,       10.0,  1.0,  0.0 ],
+    [datetime(2500, 12, 20, 23, 59),  1,       12.0,  1.0,  0.0 ],
+    [datetime(2500, 12, 21, 22, 58),  1,       13.0,  1.0,  0.0 ],
+]
 
 INPUT_DATA_DATE = [
-    ["DATE",              "REAL",  "A",  "C",   "Z"], 
-    [date(2022, 12, 20),  0,       10.0,  1.0,  0.0 ], 
-    [date(2022, 12, 20),  1,       12.0,  1.0,  0.0 ], 
-    [date(2022, 12, 21),  1,       13.0,  1.0,  0.0 ], 
+    ["DATE",              "REAL",  "A",  "C",   "Z"],
+    [date(2022, 12, 20),  0,       10.0,  1.0,  0.0 ],
+    [date(2022, 12, 20),  1,       12.0,  1.0,  0.0 ],
+    [date(2022, 12, 21),  1,       13.0,  1.0,  0.0 ],
 ]
 
 INPUT_DATA_STR = [
-    ["DATE",       "REAL",  "A",  "C",   "Z"], 
-    ["2023-12-20",  0,      10.0,  1.0,  0.0 ], 
-    ["2023-12-20",  1,      12.0,  1.0,  0.0 ], 
-    ["2023-12-21",  1,      13.0,  1.0,  0.0 ], 
-] 
+    ["DATE",       "REAL",  "A",  "C",   "Z"],
+    ["2023-12-20",  0,      10.0,  1.0,  0.0 ],
+    ["2023-12-20",  1,      12.0,  1.0,  0.0 ],
+    ["2023-12-21",  1,      13.0,  1.0,  0.0 ],
+]
 # fmt: on
 
 # -------------------------------------------------------------------------
@@ -83,20 +77,20 @@ def _create_provider_obj_with_data(
         new_provider = EnsembleSummaryProviderImplArrow.from_backing_store(
             storage_dir, "dummy_key"
         )
-    elif impl_to_use == "parquet":
-        EnsembleSummaryProviderImplParquet.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        new_provider = EnsembleSummaryProviderImplParquet.from_backing_store(
-            storage_dir, "dummy_key"
-        )
-    elif impl_to_use == "inmem_parquet":
-        EnsembleSummaryProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        new_provider = EnsembleSummaryProviderImplInMemParquet.from_backing_store(
-            storage_dir, "dummy_key"
-        )
+    # elif impl_to_use == "parquet":
+    #     EnsembleSummaryProviderImplParquet.write_backing_store_from_ensemble_dataframe(
+    #         storage_dir, "dummy_key", input_df
+    #     )
+    #     new_provider = EnsembleSummaryProviderImplParquet.from_backing_store(
+    #         storage_dir, "dummy_key"
+    #     )
+    # elif impl_to_use == "inmem_parquet":
+    #     EnsembleSummaryProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
+    #         storage_dir, "dummy_key", input_df
+    #     )
+    #     new_provider = EnsembleSummaryProviderImplInMemParquet.from_backing_store(
+    #         storage_dir, "dummy_key"
+    #     )
 
     if not new_provider:
         raise ValueError("Failed to create EnsembleSummaryProvider")
@@ -105,7 +99,7 @@ def _create_provider_obj_with_data(
 
 
 # -------------------------------------------------------------------------
-@pytest.fixture(params=["arrow", "parquet", "inmem_parquet"])
+@pytest.fixture(params=["arrow"])
 # @pytest.fixture(params=["arrow"])
 def provider(
     request: SubRequest, input_data: list, tmp_path: Path

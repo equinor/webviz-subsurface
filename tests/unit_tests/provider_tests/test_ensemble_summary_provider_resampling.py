@@ -1,7 +1,7 @@
 import numpy as np
 import pyarrow as pa
 
-from webviz_subsurface._providers.ensemble_summary_provider_resampling import (
+from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
     Frequency,
     generate_normalized_sample_dates,
     interpolate_backfill,
@@ -93,26 +93,26 @@ def test_generate_sample_dates_yearly() -> None:
 
 def test_interpolate_backfill() -> None:
 
-    xp = np.array([0, 2, 4, 6])
-    yp = np.array([0, 20, 40, 60])
+    raw_x = np.array([0, 2, 4, 6])
+    raw_y = np.array([0, 20, 40, 60])
 
     x = np.array([0, 2, 4, 6])
-    y = interpolate_backfill(x, xp, yp, -99, 99)
-    assert (y == yp).all()
+    y = interpolate_backfill(x, raw_x, raw_y, -99, 99)
+    assert (y == raw_y).all()
 
     x = np.array([-1, 1, 5, 7])
     expected_y = np.array([-99, 20, 60, 99])
-    y = interpolate_backfill(x, xp, yp, -99, 99)
+    y = interpolate_backfill(x, raw_x, raw_y, -99, 99)
     assert (y == expected_y).all()
 
     x = np.array([-2, -1, 0, 3, 3, 6, 7, 8])
     expected_y = np.array([-99, -99, 0, 40, 40, 60, 99, 99])
-    y = interpolate_backfill(x, xp, yp, -99, 99)
+    y = interpolate_backfill(x, raw_x, raw_y, -99, 99)
     assert (y == expected_y).all()
 
 
 def test_sample_single_real_table_at_date() -> None:
-
+    # pylint: disable=too-many-statements
     date_arr = pa.array(
         [
             np.datetime64("2020-01-01", "ms"),

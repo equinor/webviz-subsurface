@@ -3,7 +3,8 @@ import datetime
 
 import pandas as pd
 import numpy as np
-import dateutil.parser
+
+import dateutil.parser  # type: ignore
 
 
 # -------------------------------------------------------------------------

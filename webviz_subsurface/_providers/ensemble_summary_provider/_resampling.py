@@ -15,14 +15,27 @@ class Frequency(Enum):
     YEARLY = "yearly"
 
 
-# -------------------------------------------------------------------------
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
     # A bit hackish, utilizes the fact that datetime64 is relative to epoch
     # 1970-01-01 which is a Thursday
     return datetime_day.astype("datetime64[W]").astype("datetime64[D]") + 4
 
 
-# -------------------------------------------------------------------------
+def _is_rate_from_field_meta(field: pa.Field) -> bool:
+    """Determine if the field is a rate by querying for the "is_rate" keyword in the
+    field's metadata
+    """
+    # This is expensive wrt performance. Should avoid JSON parsing here
+    if field.metadata:
+        meta_as_str = field.metadata.get(b"smry_meta")
+        if meta_as_str:
+            meta_dict = json.loads(meta_as_str)
+            if meta_dict.get("is_rate") is True:
+                return True
+
+    return False
+
+
 def generate_normalized_sample_dates(
     min_date: np.datetime64, max_date: np.datetime64, freq: Frequency
 ) -> np.ndarray:
@@ -63,7 +76,6 @@ def generate_normalized_sample_dates(
     return sampledates
 
 
-# -------------------------------------------------------------------------
 def interpolate_backfill(
     x: np.ndarray, xp: np.ndarray, yp: np.ndarray, yleft: float, yright: float
 ) -> np.ndarray:
@@ -106,13 +118,14 @@ def interpolate_backfill(
     # return y
 
 
-# -------------------------------------------------------------------------
 def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
-    """Resample table that only contains a single realization"""
+    """Resample table that contains only a single realization.
+    The table must contain a DATE column and it must be sorted on DATE
+    """
 
     # Notes:
-    # Getting meta data using json.loads() takes quite a bit of time, should provide
-    # this info in another way.
+    # Getting meta data using json.loads() takes quite a bit of time!!
+    # We should provide this info in another way.
 
     schema = table.schema
 
@@ -138,9 +151,7 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
             )
         else:
             raw_numpy_arr = table.column(colname).to_numpy()
-
-            field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
-            if field_meta["is_rate"]:
+            if _is_rate_from_field_meta(table.field(colname)):
                 i = interpolate_backfill(
                     sample_dates_np_as_uint, raw_dates_np_as_uint, raw_numpy_arr, 0, 0
                 )
@@ -165,6 +176,7 @@ def resample_multi_real_table_NAIVE(table: pa.Table, freq: Frequency) -> pa.Tabl
     resampled_tables_list = []
 
     for real in unique_reals:
+        # pylint: disable=no-member
         mask = pc.is_in(table["REAL"], value_set=pa.array([real]))
         real_table = table.filter(mask)
 
@@ -228,6 +240,14 @@ def _extract_real_interpolation_info(
 
 # -------------------------------------------------------------------------
 def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
+    """Resample table containing multiple realizations.
+    The table must contain both a REAL and a DATE column.
+    The table must be segmented on REAL (so that all rows from a single
+    realization are contiguous) and within each REAL segment, it must be
+    sorted on DATE.
+    The segmentation is needed since interpolations must be done per realization
+    and we utilize slicing on rows for speed.
+    """
 
     real_arr_np = table.column("REAL").to_numpy()
     unique_reals, first_occurence_idx, real_counts = np.unique(
@@ -242,13 +262,10 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
         if colname in ["DATE", "REAL"]:
             continue
 
-        field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
-        is_rate = field_meta["is_rate"]
-
-        vec_arr_list = []
-
+        is_rate = _is_rate_from_field_meta(table.field(colname))
         raw_whole_numpy_arr = table.column(colname).to_numpy()
 
+        vec_arr_list = []
         for i, real in enumerate(unique_reals):
             start_row_idx = first_occurence_idx[i]
             row_count = real_counts[i]
@@ -302,7 +319,6 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
     return ret_table
 
 
-# -------------------------------------------------------------------------
 # Input table is expected to contain data for only a single
 # realization and MUST be sorted on date
 def sample_single_real_table_at_date_NAIVE_SLOW(
@@ -376,9 +392,8 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
         elif colname == "DATE":
             column_arrays.append(np.array([np_datetime]))
         else:
-            # This is expensive wrt performance. Should avoid JSON parsing here
-            field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
-            is_rate = field_meta["is_rate"]
+            # This is expensive wrt performance. Should optimize the function to avoid JSON parsing
+            is_rate = _is_rate_from_field_meta(table.field(colname))
 
             if idx0 == idx1:
                 # Exact hit
@@ -414,7 +429,6 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
     return ret_table
 
 
-# -------------------------------------------------------------------------
 # Table must be sorted on real, and then date!!!
 def sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
     table: pa.Table, np_datetime: np.datetime64
@@ -453,11 +467,15 @@ class SamplingParams:
     t: float
 
 
-# -------------------------------------------------------------------------
-# Assumes that input table is sorted on real, and then date!!!
-def sample_sorted_multi_real_table_at_date_OPTIMIZED(
+def sample_sorted_multi_real_table_at_date(
     table: pa.Table, np_datetime: np.datetime64
 ) -> pa.Table:
+    """Sample table containing multiple realizations at the specified date.
+    The table must contain both a REAL and a DATE column.
+    The table must be segmented on REAL (so that all rows from a single
+    realization are contiguous) and within each REAL segment, it must be
+    sorted on DATE.
+    """
 
     full_real_arr_np = table.column("REAL").to_numpy()
     unique_reals, first_occurence_idx, real_counts = np.unique(
@@ -484,7 +502,8 @@ def sample_sorted_multi_real_table_at_date_OPTIMIZED(
             params_arr.append(SamplingParams(Classification.OUTSIDE_RANGE, 0))
 
         elif np_datetime >= dates_arr_np[-1]:
-            # Either an exact match on the last date or outside the range (query date is beyond our last date)
+            # Either an exact match on the last date or outside the
+            # range (query date is beyond our last date)
             row_indices.append(start_row_idx + row_count - 1)
             row_indices.append(start_row_idx + row_count - 1)
             if np_datetime == dates_arr_np[-1]:
@@ -523,8 +542,7 @@ def sample_sorted_multi_real_table_at_date_OPTIMIZED(
         elif colname == "DATE":
             column_arrays.append(np.full(len(unique_reals), np_datetime))
         else:
-            field_meta = json.loads(table.field(colname).metadata[b"smry_meta"])
-            is_rate = field_meta["is_rate"]
+            is_rate = _is_rate_from_field_meta(table.field(colname))
 
             records = table.column(colname).take(row_indices)
             records_np = records.to_numpy()

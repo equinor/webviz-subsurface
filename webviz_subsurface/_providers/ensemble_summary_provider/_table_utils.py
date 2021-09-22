@@ -7,7 +7,6 @@ import pyarrow.compute as pc
 _MAIN_WEBVIZ_METADATA_KEY = b"webviz"
 _PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
 
-
 # -------------------------------------------------------------------------
 def find_min_max_for_numeric_table_columns(
     table: pa.Table,
@@ -16,6 +15,7 @@ def find_min_max_for_numeric_table_columns(
     ret_dict = {}
     for field in table.schema:
         if pa.types.is_floating(field.type):
+            # pylint: disable=no-member
             minmax = pc.min_max(table[field.name])
             ret_dict[field.name] = {
                 "min": minmax.get("min").as_py(),
