@@ -259,7 +259,7 @@ class SeismicMisfit(WebvizPluginABC):
             # },
         ]
 
-    def _obs_data_layout(self):
+    def _obs_data_layout(self) -> list:
         children = [
             wcc.FlexBox(
                 id=self.uuid("obsdata-layout"),
@@ -445,7 +445,7 @@ class SeismicMisfit(WebvizPluginABC):
         ]
         return children
 
-    def _misfit_per_real_layout(self):
+    def _misfit_per_real_layout(self) -> list:
         children = [
             wcc.FlexBox(
                 id=self.uuid("misfit-layout"),
@@ -630,7 +630,7 @@ class SeismicMisfit(WebvizPluginABC):
         ]
         return children
 
-    def _crossplot_layout(self):
+    def _crossplot_layout(self) -> list:
         children = [
             wcc.FlexBox(
                 id=self.uuid("crossplot-layout"),
@@ -821,7 +821,7 @@ class SeismicMisfit(WebvizPluginABC):
         ]
         return children
 
-    def _errorbar_plot_layout(self):
+    def _errorbar_plot_layout(self) -> list:
         children = [
             wcc.FlexBox(
                 id=self.uuid("errorbarplot-layout"),
@@ -1051,7 +1051,7 @@ class SeismicMisfit(WebvizPluginABC):
         ]
         return children
 
-    def _map_plot_layout(self):
+    def _map_plot_layout(self) -> list:
         children = [
             wcc.FlexBox(
                 id=self.uuid("map_plot-layout"),
