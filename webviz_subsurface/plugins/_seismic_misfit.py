@@ -1,31 +1,22 @@
-# pylint: disable=line-too-long, too-many-lines
-# pylint: disable=too-many-arguments, too-many-locals
-from typing import List, Dict, Any, Optional, Union, Tuple  # , Callable
+# pylint: disable=too-many-lines, too-many-arguments, too-many-locals
+from typing import List, Dict, Any, Optional, Union, Tuple
 from pathlib import Path
+import logging
 import re
 import glob
 import pandas as pd
 import numpy as np
-
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 import dash
 from dash.exceptions import PreventUpdate
-
 from dash import html, dcc, Input, Output
 import webviz_core_components as wcc
-
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
-# from webviz_subsurface._models import EnsembleSetModel
-# from webviz_subsurface._models import caching_ensemble_set_model_factory
-
-# from webviz_subsurface._datainput.fmu_input import get_realizations
 
 
 class SeismicMisfit(WebvizPluginABC):
@@ -268,6 +259,991 @@ class SeismicMisfit(WebvizPluginABC):
             # },
         ]
 
+    def _obs_data_layout(self):
+        children = [
+            wcc.FlexBox(
+                id=self.uuid("obsdata-layout"),
+                children=[
+                    wcc.Frame(
+                        style={
+                            "flex": 1,
+                            # "height": "55vh",
+                            "maxWidth": "200px",
+                        },
+                        children=[
+                            wcc.Dropdown(
+                                label="Ensemble selector",
+                                id=self.uuid("obsdata-ens_name"),
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ens_names
+                                ],
+                                value=self.ens_names[0],
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Region selector",
+                                id=self.uuid("obsdata-regions"),
+                                options=[
+                                    {"label": regno, "value": regno}
+                                    for regno in self.region_names
+                                ],
+                                size=min([len(self.region_names), 5]),
+                                value=self.region_names,
+                            ),
+                            wcc.Slider(
+                                label="Noise filter",
+                                id=self.uuid("obsdata-noise_filter"),
+                                min=0,
+                                max=0.5
+                                * max(
+                                    abs(self.obs_range[0]),
+                                    abs(self.obs_range[1]),
+                                ),
+                                step=0.5 * self.obs_error_range[0],
+                                value=0,
+                            ),
+                            html.Div(
+                                id=self.uuid("obsdata-noise_filter_text"),
+                                style={
+                                    "color": "blue",
+                                    "font-size": "15px",
+                                },
+                            ),
+                            wcc.Selectors(
+                                label="Raw plot settings",
+                                children=[
+                                    wcc.RadioItems(
+                                        id=self.uuid("obsdata-showerror"),
+                                        label="Obs error",
+                                        options=[
+                                            {
+                                                "label": "On",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "Off",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                    wcc.RadioItems(
+                                        id=self.uuid("obsdata-showhistogram"),
+                                        label="Histogram",
+                                        options=[
+                                            {
+                                                "label": "On",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "Off",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                    wcc.RadioItems(
+                                        id=self.uuid("obsdata-resetindex"),
+                                        label="X-axis settings",
+                                        options=[
+                                            {
+                                                "label": "Reset index/sort by region",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "Original ordering",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Map plot settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Color by",
+                                        id=self.uuid("obsdata-obsmap_colorby"),
+                                        options=[
+                                            {
+                                                "label": "region",
+                                                "value": "region",
+                                            },
+                                            {
+                                                "label": "obs",
+                                                "value": "obs",
+                                            },
+                                            {
+                                                "label": "obs error",
+                                                "value": "obs_error",
+                                            },
+                                        ],
+                                        value="obs",
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Color range scaling",
+                                        id=self.uuid("obsdata-obsmap_scale_col_range"),
+                                        options=[
+                                            {"label": x, "value": x}
+                                            for x in [
+                                                0.1,
+                                                0.2,
+                                                0.3,
+                                                0.4,
+                                                0.5,
+                                                0.6,
+                                                0.7,
+                                                0.8,
+                                                0.9,
+                                                1.0,
+                                            ]
+                                        ],
+                                        style={"display": "block"},
+                                        value=0.6,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Frame(
+                        style={"flex": 5, "minWidth": 500},
+                        children=[
+                            dcc.Graph(
+                                id=self.uuid("obsdata-graph-raw"),
+                                style={"height": "37vh"},
+                            ),
+                            dcc.Graph(
+                                id=self.uuid("obsdata-graph-map"),
+                                style={"height": "52vh"},
+                            ),
+                            wcc.Selectors(
+                                label="Obsdata info",
+                                children=[
+                                    dcc.Textarea(
+                                        id=self.uuid("obsdata-info"),
+                                        value=self.obsinfo,
+                                        style={
+                                            "width": 500,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        return children
+
+    def _misfit_per_real_layout(self):
+        children = [
+            wcc.FlexBox(
+                id=self.uuid("misfit-layout"),
+                children=[
+                    wcc.Frame(
+                        style={
+                            "flex": 1,
+                            "maxWidth": "200px",
+                        },
+                        children=[
+                            wcc.Dropdown(
+                                label="Ensemble selector",
+                                id=self.uuid("misfit-ens_names"),
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ens_names
+                                ],
+                                value=self.ens_names,
+                                multi=True,
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Region selector",
+                                id=self.uuid("misfit-region"),
+                                options=[
+                                    {"label": regno, "value": regno}
+                                    for regno in self.region_names
+                                ],
+                                value=self.region_names,
+                                size=min([len(self.region_names), 5]),
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Realization selector",
+                                id=self.uuid("misfit-realization"),
+                                options=[
+                                    {"label": real, "value": real}
+                                    for real in self.realizations
+                                ],
+                                value=self.realizations,
+                                size=min([len(self.realizations), 5]),
+                            ),
+                            wcc.Selectors(
+                                label="Plot settings and layout",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Sorting/ranking",
+                                        id=self.uuid("misfit-sorting"),
+                                        options=[
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "ascending",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "descending",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Fig layout - height",
+                                        id=self.uuid("misfit-figheight"),
+                                        options=[
+                                            {
+                                                "label": "Very small",
+                                                "value": 250,
+                                            },
+                                            {
+                                                "label": "Small",
+                                                "value": 350,
+                                            },
+                                            {
+                                                "label": "Medium",
+                                                "value": 450,
+                                            },
+                                            {
+                                                "label": "Large",
+                                                "value": 700,
+                                            },
+                                            {
+                                                "label": "Very large",
+                                                "value": 1000,
+                                            },
+                                        ],
+                                        value=350,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Misfit options",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Misfit weight",
+                                        id=self.uuid("misfit-weight"),
+                                        options=[
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "Obs error",
+                                                "value": "obs_error",
+                                            },
+                                        ],
+                                        value="obs_error",
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Misfit exponent",
+                                        id=self.uuid("misfit-exponent"),
+                                        options=[
+                                            {
+                                                "label": "Linear sum",
+                                                "value": 1.0,
+                                            },
+                                            {
+                                                "label": "Squared sum",
+                                                "value": 2.0,
+                                            },
+                                        ],
+                                        value=2.0,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Misfit normalization",
+                                        id=self.uuid("misfit-normalization"),
+                                        options=[
+                                            {
+                                                "label": "Yes",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Frame(
+                        style={
+                            "flex": 5,
+                            "minWidth": "500px",
+                        },
+                        children=[
+                            html.Div(id=self.uuid("misfit-graph")),
+                            wcc.Selectors(
+                                label="Ensemble info",
+                                children=[
+                                    dcc.Textarea(
+                                        id=self.uuid("misfit-ensemble_info"),
+                                        value=self.caseinfo,
+                                        style={
+                                            "width": "500px",
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        return children
+
+    def _crossplot_layout(self):
+        children = [
+            wcc.FlexBox(
+                id=self.uuid("crossplot-layout"),
+                children=[
+                    wcc.Frame(
+                        style={
+                            "flex": 1,
+                            "maxWidth": "200px",
+                        },
+                        children=[
+                            wcc.Dropdown(
+                                label="Ensemble selector",
+                                id=self.uuid("crossplot-ens_names"),
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ens_names
+                                ],
+                                value=self.ens_names,
+                                multi=True,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Region selector",
+                                id=self.uuid("crossplot-region"),
+                                options=[
+                                    {"label": regno, "value": regno}
+                                    for regno in self.region_names
+                                ],
+                                value=self.region_names,
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Realization selector",
+                                id=self.uuid("crossplot-realization"),
+                                options=[
+                                    {"label": real, "value": real}
+                                    for real in self.realizations
+                                ],
+                                value=self.realizations,
+                                size=min([len(self.realizations), 5]),
+                            ),
+                            wcc.Dropdown(
+                                label="Color by",
+                                id=self.uuid("crossplot-colorby"),
+                                options=[
+                                    {
+                                        "label": "none",
+                                        "value": None,
+                                    },
+                                    {
+                                        "label": "region",
+                                        "value": "region",
+                                    },
+                                ],
+                                value="region",
+                                clearable=True,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.Dropdown(
+                                label="Size by",
+                                id=self.uuid("crossplot-sizeby"),
+                                options=[
+                                    {
+                                        "label": "none",
+                                        "value": None,
+                                    },
+                                    {
+                                        "label": "sim_std",
+                                        "value": "sim_std",
+                                    },
+                                    {
+                                        "label": "diff_mean",
+                                        "value": "diff_mean",
+                                    },
+                                    {
+                                        "label": "diff_std",
+                                        "value": "diff_std",
+                                    },
+                                ],
+                                value=None,
+                            ),
+                            wcc.Dropdown(
+                                label="Sim errorbar",
+                                id=self.uuid("crossplot-showerrorbar"),
+                                options=[
+                                    {
+                                        "label": "None",
+                                        "value": None,
+                                    },
+                                    {
+                                        "label": "Sim std",
+                                        "value": "sim_std",
+                                    },
+                                    {
+                                        "label": "Sim p10/p90",
+                                        "value": "sim_p10_p90",
+                                    },
+                                ],
+                                value="None",
+                            ),
+                            wcc.Selectors(
+                                label="Plot settings and layout",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Fig layout - height",
+                                        id=self.uuid("crossplot-figheight"),
+                                        options=[
+                                            {
+                                                "label": "Very small",
+                                                "value": 250,
+                                            },
+                                            {
+                                                "label": "Small",
+                                                "value": 350,
+                                            },
+                                            {
+                                                "label": "Medium",
+                                                "value": 450,
+                                            },
+                                            {
+                                                "label": "Large",
+                                                "value": 700,
+                                            },
+                                            {
+                                                "label": "Very large",
+                                                "value": 1000,
+                                            },
+                                        ],
+                                        value=350,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Fig layout - # columns",
+                                        id=self.uuid("crossplot-figcolumns"),
+                                        options=[
+                                            {
+                                                "label": "One column",
+                                                "value": 1,
+                                            },
+                                            {
+                                                "label": "Two columns",
+                                                "value": 2,
+                                            },
+                                            {
+                                                "label": "Three columns",
+                                                "value": 3,
+                                            },
+                                        ],
+                                        style={"display": "block"},
+                                        value=1,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Frame(
+                        style={
+                            "flex": 4,
+                            # "height": "55vh",
+                            "minWidth": "500px",
+                        },
+                        children=[
+                            wcc.FlexBox(
+                                children=[
+                                    html.Div(
+                                        # style={"flex": 1},
+                                        id=self.uuid("crossplot-graph"),
+                                    ),
+                                    dcc.Textarea(
+                                        id=self.uuid("crossplot-ensembles_info"),
+                                        value=self.caseinfo,
+                                        style={
+                                            "width": "95%",
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        return children
+
+    def _errorbar_plot_layout(self):
+        children = [
+            wcc.FlexBox(
+                id=self.uuid("errorbarplot-layout"),
+                children=[
+                    wcc.Frame(
+                        style={
+                            "flex": 1,
+                            "maxWidth": 200,
+                            "height": "85vh",
+                        },
+                        children=[
+                            wcc.Dropdown(
+                                label="Ensemble selector",
+                                id=self.uuid("errorbarplot-ens_names"),
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ens_names
+                                ],
+                                value=self.ens_names,
+                                multi=True,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Region selector",
+                                id=self.uuid("errorbarplot-region"),
+                                options=[
+                                    {"label": regno, "value": regno}
+                                    for regno in self.region_names
+                                ],
+                                value=self.region_names,
+                                size=min([len(self.region_names), 5]),
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Realization selector",
+                                id=self.uuid("errorbarplot-realization"),
+                                options=[
+                                    {"label": real, "value": real}
+                                    for real in self.realizations
+                                ],
+                                value=self.realizations,
+                                size=min([len(self.realizations), 5]),
+                            ),
+                            wcc.Dropdown(
+                                label="Color by",
+                                id=self.uuid("errorbarplot-colorby"),
+                                options=[
+                                    {
+                                        "label": "none",
+                                        "value": None,
+                                    },
+                                    {
+                                        "label": "region",
+                                        "value": "region",
+                                    },
+                                    {
+                                        "label": "sim_std",
+                                        "value": "sim_std",
+                                    },
+                                    {
+                                        "label": "diff_mean",
+                                        "value": "diff_mean",
+                                    },
+                                    {
+                                        "label": "diff_std",
+                                        "value": "diff_std",
+                                    },
+                                ],
+                                style={"display": "block"},
+                                value="region",
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.Dropdown(
+                                label="Sim errorbar",
+                                id=self.uuid("errorbarplot-showerrorbar"),
+                                options=[
+                                    {
+                                        "label": "Sim std",
+                                        "value": "sim_std",
+                                    },
+                                    {
+                                        "label": "Sim p10/p90",
+                                        "value": "sim_p10_p90",
+                                    },
+                                    {
+                                        "label": "none",
+                                        "value": None,
+                                    },
+                                ],
+                                value="sim_std",
+                                clearable=True,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.Dropdown(
+                                label="Obs errorbar",
+                                id=self.uuid("errorbarplot-showerrorbarobs"),
+                                options=[
+                                    {
+                                        "label": "Obs std",
+                                        "value": "obs_error",
+                                    },
+                                    {
+                                        "label": "none",
+                                        "value": None,
+                                    },
+                                ],
+                                value=None,
+                            ),
+                            wcc.Selectors(
+                                label="Plot settings and layout",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="X axis settings",
+                                        id=self.uuid("errorbarplot-resetindex"),
+                                        options=[
+                                            {
+                                                "label": "Reset index/sort by region",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "Original ordering",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                    wcc.RadioItems(
+                                        label="Superimpose plots",
+                                        id=self.uuid("errorbarplot-superimpose"),
+                                        options=[
+                                            {
+                                                "label": "True",
+                                                "value": True,
+                                            },
+                                            {
+                                                "label": "False",
+                                                "value": False,
+                                            },
+                                        ],
+                                        value=False,
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Fig layout - height",
+                                        id=self.uuid("errorbarplot-figheight"),
+                                        options=[
+                                            {
+                                                "label": "Very small",
+                                                "value": 250,
+                                            },
+                                            {
+                                                "label": "Small",
+                                                "value": 350,
+                                            },
+                                            {
+                                                "label": "Medium",
+                                                "value": 450,
+                                            },
+                                            {
+                                                "label": "Large",
+                                                "value": 700,
+                                            },
+                                            {
+                                                "label": "Very large",
+                                                "value": 1000,
+                                            },
+                                        ],
+                                        value=450,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Fig layout - # columns",
+                                        id=self.uuid("errorbarplot-figcolumns"),
+                                        options=[
+                                            {
+                                                "label": "One column",
+                                                "value": 1,
+                                            },
+                                            {
+                                                "label": "Two columns",
+                                                "value": 2,
+                                            },
+                                            {
+                                                "label": "Three columns",
+                                                "value": 3,
+                                            },
+                                        ],
+                                        style={"display": "block"},
+                                        value=1,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Frame(
+                        style={
+                            "flex": 4,
+                            "minWidth": "500px",
+                        },
+                        children=[
+                            html.Div(
+                                id=self.uuid("errorbarplot-graph"),
+                            ),
+                            wcc.Selectors(
+                                label="Ensemble info",
+                                children=[
+                                    dcc.Textarea(
+                                        id=self.uuid("errorbarplot-ensembles_info"),
+                                        value=self.caseinfo,
+                                        style={
+                                            "width": "95%",
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        return children
+
+    def _map_plot_layout(self):
+        children = [
+            wcc.FlexBox(
+                id=self.uuid("map_plot-layout"),
+                children=[
+                    wcc.Frame(
+                        style={
+                            "flex": 1,
+                            "height": "50vh",
+                            "maxWidth": "200px",
+                        },
+                        children=[
+                            wcc.Dropdown(
+                                label="Ensemble selector",
+                                id=self.uuid("map_plot-ens_name"),
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ens_names
+                                ],
+                                value=self.ens_names[0],
+                                clearable=False,
+                                persistence=True,
+                                persistence_type="memory",
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Region selector",
+                                # className="webviz-select-with-label",
+                                id=self.uuid("map_plot-regions"),
+                                options=[
+                                    {"label": regno, "value": regno}
+                                    for regno in self.region_names
+                                ],
+                                size=min([len(self.region_names), 5]),
+                                value=self.region_names,
+                            ),
+                            wcc.SelectWithLabel(
+                                label="Realization selector",
+                                id=self.uuid("map_plot-realizations"),
+                                options=[
+                                    {"label": real, "value": real}
+                                    for real in self.realizations
+                                ],
+                                size=min([len(self.realizations), 5]),
+                                value=self.realizations,
+                            ),
+                            wcc.Selectors(
+                                label="Map plot settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Show difference or coverage plot",
+                                        id=self.uuid("map_plot-plot_coverage"),
+                                        options=[
+                                            {
+                                                "label": "Difference plot",
+                                                "value": 0,
+                                            },
+                                            {
+                                                "label": "Coverage plot",
+                                                "value": 1,
+                                            },
+                                            {
+                                                "label": "Coverage plot (obs error adjusted)",
+                                                "value": 2,
+                                            },
+                                        ],
+                                        value=0,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Color range scaling - obs and sim",
+                                        id=self.uuid("map_plot-scale_col_range"),
+                                        options=[
+                                            {"label": val, "value": val}
+                                            for val in [
+                                                0.1,
+                                                0.2,
+                                                0.3,
+                                                0.4,
+                                                0.5,
+                                                0.6,
+                                                0.7,
+                                                0.8,
+                                                0.9,
+                                                1.0,
+                                                1.5,
+                                                2,
+                                                5,
+                                                10,
+                                            ]
+                                        ],
+                                        value=0.6,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Marker size",
+                                        id=self.uuid("map_plot-marker_size"),
+                                        options=[
+                                            {"label": val, "value": val}
+                                            for val in [
+                                                5,
+                                                10,
+                                                12,
+                                                14,
+                                                16,
+                                                18,
+                                                20,
+                                                25,
+                                                30,
+                                            ]
+                                        ],
+                                        value=12,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                            wcc.Selectors(
+                                label="Slice settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Slicing accuracy (north ± meters)",
+                                        id=self.uuid("map_plot-slice_accuracy"),
+                                        options=[
+                                            {"label": "± 10m", "value": 10},
+                                            {"label": "± 25m", "value": 25},
+                                            {"label": "± 50m", "value": 50},
+                                            {"label": "± 75m", "value": 75},
+                                            {
+                                                "label": "± 100m",
+                                                "value": 100,
+                                            },
+                                            {
+                                                "label": "± 150m",
+                                                "value": 150,
+                                            },
+                                            {
+                                                "label": "± 200m",
+                                                "value": 200,
+                                            },
+                                            {
+                                                "label": "± 250m",
+                                                "value": 250,
+                                            },
+                                        ],
+                                        value=75,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    wcc.Frame(
+                        # color="lightblue",
+                        style={"flex": 4, "minWidth": "900px"},
+                        children=[
+                            dcc.Graph(
+                                id=self.uuid("map_plot-figs"),
+                                style={"height": 650},
+                            ),
+                            html.P("North position of slice"),
+                            wcc.Slider(
+                                id=self.uuid("map_plot-slice_position"),
+                                min=self.map_y_range[0],
+                                max=self.map_y_range[1],
+                                value=(self.map_y_range[0] + self.map_y_range[1]) / 2,
+                                step=100,
+                                marks={
+                                    self.map_y_range[
+                                        0
+                                    ]: f"min={round(self.map_y_range[0]):,}",
+                                    self.map_y_range[
+                                        1
+                                    ]: f"max={round(self.map_y_range[1]):,}",
+                                },
+                            ),
+                            dcc.Graph(
+                                id=self.uuid("map_plot-slice"),
+                                style={"height": 550},
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        return children
+
     @property
     def layout(self) -> wcc.Tabs:
 
@@ -294,1034 +1270,31 @@ class SeismicMisfit(WebvizPluginABC):
                     label="Seismic obs data",
                     style=tab_style,
                     selected_style=tab_selected_style,
-                    children=[
-                        wcc.FlexBox(
-                            id=self.uuid("obsdata-layout"),
-                            children=[
-                                wcc.Frame(
-                                    style={
-                                        "flex": 1,
-                                        # "height": "55vh",
-                                        "maxWidth": "200px",
-                                    },
-                                    children=[
-                                        wcc.Dropdown(
-                                            label="Ensemble selector",
-                                            id=self.uuid("obsdata-ens_name"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ens_names
-                                            ],
-                                            value=self.ens_names[0],
-                                            clearable=False,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Region selector",
-                                            id=self.uuid("obsdata-regions"),
-                                            options=[
-                                                {"label": regno, "value": regno}
-                                                for regno in self.region_names
-                                            ],
-                                            size=min([len(self.region_names), 5]),
-                                            value=self.region_names,
-                                        ),
-                                        wcc.Slider(
-                                            label="Noise filter",
-                                            id=self.uuid("obsdata-noise_filter"),
-                                            min=0,
-                                            max=0.5
-                                            * max(
-                                                abs(self.obs_range[0]),
-                                                abs(self.obs_range[1]),
-                                            ),
-                                            step=0.5 * self.obs_error_range[0],
-                                            value=0,
-                                        ),
-                                        html.Div(
-                                            id=self.uuid("obsdata-noise_filter_text"),
-                                            style={
-                                                "color": "blue",
-                                                "font-size": "15px",
-                                            },
-                                        ),
-                                        wcc.Selectors(
-                                            label="Raw plot settings",
-                                            children=[
-                                                wcc.RadioItems(
-                                                    id=self.uuid("obsdata-showerror"),
-                                                    label="Obs error",
-                                                    options=[
-                                                        {
-                                                            "label": "On",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "Off",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                                wcc.RadioItems(
-                                                    id=self.uuid(
-                                                        "obsdata-showhistogram"
-                                                    ),
-                                                    label="Histogram",
-                                                    options=[
-                                                        {
-                                                            "label": "On",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "Off",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                                wcc.RadioItems(
-                                                    id=self.uuid("obsdata-resetindex"),
-                                                    label="X-axis settings",
-                                                    options=[
-                                                        {
-                                                            "label": "Reset index/sort by region",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "Original ordering",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                            ],
-                                        ),
-                                        wcc.Selectors(
-                                            label="Map plot settings",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Color by",
-                                                    id=self.uuid(
-                                                        "obsdata-obsmap_colorby"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "region",
-                                                            "value": "region",
-                                                        },
-                                                        {
-                                                            "label": "obs",
-                                                            "value": "obs",
-                                                        },
-                                                        {
-                                                            "label": "obs error",
-                                                            "value": "obs_error",
-                                                        },
-                                                    ],
-                                                    value="obs",
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Color range scaling",
-                                                    id=self.uuid(
-                                                        "obsdata-obsmap_scale_col_range"
-                                                    ),
-                                                    options=[
-                                                        {"label": x, "value": x}
-                                                        for x in [
-                                                            0.1,
-                                                            0.2,
-                                                            0.3,
-                                                            0.4,
-                                                            0.5,
-                                                            0.6,
-                                                            0.7,
-                                                            0.8,
-                                                            0.9,
-                                                            1.0,
-                                                        ]
-                                                    ],
-                                                    style={"display": "block"},
-                                                    value=0.6,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                wcc.Frame(
-                                    style={"flex": 5, "minWidth": 500},
-                                    children=[
-                                        dcc.Graph(
-                                            id=self.uuid("obsdata-graph-raw"),
-                                            style={"height": "37vh"},
-                                        ),
-                                        dcc.Graph(
-                                            id=self.uuid("obsdata-graph-map"),
-                                            style={"height": "52vh"},
-                                        ),
-                                        wcc.Selectors(
-                                            label="Obsdata info",
-                                            children=[
-                                                dcc.Textarea(
-                                                    id=self.uuid("obsdata-info"),
-                                                    value=self.obsinfo,
-                                                    style={
-                                                        "width": 500,
-                                                    },
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
+                    children=self._obs_data_layout(),
                 ),
                 wcc.Tab(
                     label="Seismic misfit per real",
                     style=tab_style,
                     selected_style=tab_selected_style,
-                    children=[
-                        wcc.FlexBox(
-                            id=self.uuid("misfit-layout"),
-                            children=[
-                                wcc.Frame(
-                                    style={
-                                        "flex": 1,
-                                        "maxWidth": "200px",
-                                    },
-                                    children=[
-                                        wcc.Dropdown(
-                                            label="Ensemble selector",
-                                            id=self.uuid("misfit-ens_names"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ens_names
-                                            ],
-                                            value=self.ens_names,
-                                            multi=True,
-                                            clearable=False,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Region selector",
-                                            id=self.uuid("misfit-region"),
-                                            options=[
-                                                {"label": regno, "value": regno}
-                                                for regno in self.region_names
-                                            ],
-                                            value=self.region_names,
-                                            size=min([len(self.region_names), 5]),
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Realization selector",
-                                            id=self.uuid("misfit-realization"),
-                                            options=[
-                                                {"label": real, "value": real}
-                                                for real in self.realizations
-                                            ],
-                                            value=self.realizations,
-                                            size=min([len(self.realizations), 5]),
-                                        ),
-                                        wcc.Selectors(
-                                            label="Plot settings and layout",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Sorting/ranking",
-                                                    id=self.uuid("misfit-sorting"),
-                                                    options=[
-                                                        {
-                                                            "label": "none",
-                                                            "value": None,
-                                                        },
-                                                        {
-                                                            "label": "ascending",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "descending",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Fig layout - height",
-                                                    id=self.uuid("misfit-figheight"),
-                                                    options=[
-                                                        {
-                                                            "label": "Very small",
-                                                            "value": 250,
-                                                        },
-                                                        {
-                                                            "label": "Small",
-                                                            "value": 350,
-                                                        },
-                                                        {
-                                                            "label": "Medium",
-                                                            "value": 450,
-                                                        },
-                                                        {
-                                                            "label": "Large",
-                                                            "value": 700,
-                                                        },
-                                                        {
-                                                            "label": "Very large",
-                                                            "value": 1000,
-                                                        },
-                                                    ],
-                                                    value=350,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                        wcc.Selectors(
-                                            label="Misfit options",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Misfit weight",
-                                                    id=self.uuid("misfit-weight"),
-                                                    options=[
-                                                        {
-                                                            "label": "none",
-                                                            "value": None,
-                                                        },
-                                                        {
-                                                            "label": "Obs error",
-                                                            "value": "obs_error",
-                                                        },
-                                                    ],
-                                                    value="obs_error",
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Misfit exponent",
-                                                    id=self.uuid("misfit-exponent"),
-                                                    options=[
-                                                        {
-                                                            "label": "Linear sum",
-                                                            "value": 1.0,
-                                                        },
-                                                        {
-                                                            "label": "Squared sum",
-                                                            "value": 2.0,
-                                                        },
-                                                    ],
-                                                    value=2.0,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Misfit normalization",
-                                                    id=self.uuid(
-                                                        "misfit-normalization"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "Yes",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "No",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                wcc.Frame(
-                                    style={
-                                        "flex": 5,
-                                        "minWidth": "500px",
-                                    },
-                                    children=[
-                                        html.Div(id=self.uuid("misfit-graph")),
-                                        wcc.Selectors(
-                                            label="Ensemble info",
-                                            children=[
-                                                dcc.Textarea(
-                                                    id=self.uuid(
-                                                        "misfit-ensemble_info"
-                                                    ),
-                                                    value=self.caseinfo,
-                                                    style={
-                                                        "width": "500px",
-                                                    },
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
+                    children=self._misfit_per_real_layout(),
                 ),
                 wcc.Tab(
                     label="Seismic crossplot - sim vs obs",
                     style=tab_style,
                     selected_style=tab_selected_style,
-                    children=[
-                        wcc.FlexBox(
-                            id=self.uuid("crossplot-layout"),
-                            children=[
-                                wcc.Frame(
-                                    style={
-                                        "flex": 1,
-                                        "maxWidth": "200px",
-                                    },
-                                    children=[
-                                        wcc.Dropdown(
-                                            label="Ensemble selector",
-                                            id=self.uuid("crossplot-ens_names"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ens_names
-                                            ],
-                                            value=self.ens_names,
-                                            multi=True,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Region selector",
-                                            id=self.uuid("crossplot-region"),
-                                            options=[
-                                                {"label": regno, "value": regno}
-                                                for regno in self.region_names
-                                            ],
-                                            value=self.region_names,
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Realization selector",
-                                            id=self.uuid("crossplot-realization"),
-                                            options=[
-                                                {"label": real, "value": real}
-                                                for real in self.realizations
-                                            ],
-                                            value=self.realizations,
-                                            size=min([len(self.realizations), 5]),
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Color by",
-                                            id=self.uuid("crossplot-colorby"),
-                                            options=[
-                                                {
-                                                    "label": "none",
-                                                    "value": None,
-                                                },
-                                                {
-                                                    "label": "region",
-                                                    "value": "region",
-                                                },
-                                            ],
-                                            value="region",
-                                            clearable=True,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Size by",
-                                            id=self.uuid("crossplot-sizeby"),
-                                            options=[
-                                                {
-                                                    "label": "none",
-                                                    "value": None,
-                                                },
-                                                {
-                                                    "label": "sim_std",
-                                                    "value": "sim_std",
-                                                },
-                                                {
-                                                    "label": "diff_mean",
-                                                    "value": "diff_mean",
-                                                },
-                                                {
-                                                    "label": "diff_std",
-                                                    "value": "diff_std",
-                                                },
-                                            ],
-                                            value=None,
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Sim errorbar",
-                                            id=self.uuid("crossplot-showerrorbar"),
-                                            options=[
-                                                {
-                                                    "label": "None",
-                                                    "value": None,
-                                                },
-                                                {
-                                                    "label": "Sim std",
-                                                    "value": "sim_std",
-                                                },
-                                                {
-                                                    "label": "Sim p10/p90",
-                                                    "value": "sim_p10_p90",
-                                                },
-                                            ],
-                                            value="None",
-                                        ),
-                                        wcc.Selectors(
-                                            label="Plot settings and layout",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Fig layout - height",
-                                                    id=self.uuid("crossplot-figheight"),
-                                                    options=[
-                                                        {
-                                                            "label": "Very small",
-                                                            "value": 250,
-                                                        },
-                                                        {
-                                                            "label": "Small",
-                                                            "value": 350,
-                                                        },
-                                                        {
-                                                            "label": "Medium",
-                                                            "value": 450,
-                                                        },
-                                                        {
-                                                            "label": "Large",
-                                                            "value": 700,
-                                                        },
-                                                        {
-                                                            "label": "Very large",
-                                                            "value": 1000,
-                                                        },
-                                                    ],
-                                                    value=350,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Fig layout - # columns",
-                                                    id=self.uuid(
-                                                        "crossplot-figcolumns"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "One column",
-                                                            "value": 1,
-                                                        },
-                                                        {
-                                                            "label": "Two columns",
-                                                            "value": 2,
-                                                        },
-                                                        {
-                                                            "label": "Three columns",
-                                                            "value": 3,
-                                                        },
-                                                    ],
-                                                    style={"display": "block"},
-                                                    value=1,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                wcc.Frame(
-                                    style={
-                                        "flex": 4,
-                                        # "height": "55vh",
-                                        "minWidth": "500px",
-                                    },
-                                    children=[
-                                        wcc.FlexBox(
-                                            children=[
-                                                html.Div(
-                                                    # style={"flex": 1},
-                                                    id=self.uuid("crossplot-graph"),
-                                                ),
-                                                dcc.Textarea(
-                                                    id=self.uuid(
-                                                        "crossplot-ensembles_info"
-                                                    ),
-                                                    value=self.caseinfo,
-                                                    style={
-                                                        "width": "95%",
-                                                    },
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
+                    children=self._crossplot_layout(),
                 ),
                 wcc.Tab(
                     label="Seismic errorbar plot - sim vs obs",
                     style=tab_style,
                     selected_style=tab_selected_style,
-                    children=[
-                        wcc.FlexBox(
-                            id=self.uuid("errorbarplot-layout"),
-                            children=[
-                                wcc.Frame(
-                                    style={
-                                        "flex": 1,
-                                        "maxWidth": 200,
-                                        "height": "85vh",
-                                    },
-                                    children=[
-                                        wcc.Dropdown(
-                                            label="Ensemble selector",
-                                            id=self.uuid("errorbarplot-ens_names"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ens_names
-                                            ],
-                                            value=self.ens_names,
-                                            multi=True,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Region selector",
-                                            id=self.uuid("errorbarplot-region"),
-                                            options=[
-                                                {"label": regno, "value": regno}
-                                                for regno in self.region_names
-                                            ],
-                                            value=self.region_names,
-                                            size=min([len(self.region_names), 5]),
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Realization selector",
-                                            id=self.uuid("errorbarplot-realization"),
-                                            options=[
-                                                {"label": real, "value": real}
-                                                for real in self.realizations
-                                            ],
-                                            value=self.realizations,
-                                            size=min([len(self.realizations), 5]),
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Color by",
-                                            id=self.uuid("errorbarplot-colorby"),
-                                            options=[
-                                                {
-                                                    "label": "none",
-                                                    "value": None,
-                                                },
-                                                {
-                                                    "label": "region",
-                                                    "value": "region",
-                                                },
-                                                {
-                                                    "label": "sim_std",
-                                                    "value": "sim_std",
-                                                },
-                                                {
-                                                    "label": "diff_mean",
-                                                    "value": "diff_mean",
-                                                },
-                                                {
-                                                    "label": "diff_std",
-                                                    "value": "diff_std",
-                                                },
-                                            ],
-                                            style={"display": "block"},
-                                            value="region",
-                                            clearable=False,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Sim errorbar",
-                                            id=self.uuid("errorbarplot-showerrorbar"),
-                                            options=[
-                                                {
-                                                    "label": "Sim std",
-                                                    "value": "sim_std",
-                                                },
-                                                {
-                                                    "label": "Sim p10/p90",
-                                                    "value": "sim_p10_p90",
-                                                },
-                                                {
-                                                    "label": "none",
-                                                    "value": None,
-                                                },
-                                            ],
-                                            value="sim_std",
-                                            clearable=True,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.Dropdown(
-                                            label="Obs errorbar",
-                                            id=self.uuid(
-                                                "errorbarplot-showerrorbarobs"
-                                            ),
-                                            options=[
-                                                {
-                                                    "label": "Obs std",
-                                                    "value": "obs_error",
-                                                },
-                                                {
-                                                    "label": "none",
-                                                    "value": None,
-                                                },
-                                            ],
-                                            value=None,
-                                        ),
-                                        wcc.Selectors(
-                                            label="Plot settings and layout",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="X axis settings",
-                                                    id=self.uuid(
-                                                        "errorbarplot-resetindex"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "Reset index/sort by region",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "Original ordering",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                                wcc.RadioItems(
-                                                    label="Superimpose plots",
-                                                    id=self.uuid(
-                                                        "errorbarplot-superimpose"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "True",
-                                                            "value": True,
-                                                        },
-                                                        {
-                                                            "label": "False",
-                                                            "value": False,
-                                                        },
-                                                    ],
-                                                    value=False,
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Fig layout - height",
-                                                    id=self.uuid(
-                                                        "errorbarplot-figheight"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "Very small",
-                                                            "value": 250,
-                                                        },
-                                                        {
-                                                            "label": "Small",
-                                                            "value": 350,
-                                                        },
-                                                        {
-                                                            "label": "Medium",
-                                                            "value": 450,
-                                                        },
-                                                        {
-                                                            "label": "Large",
-                                                            "value": 700,
-                                                        },
-                                                        {
-                                                            "label": "Very large",
-                                                            "value": 1000,
-                                                        },
-                                                    ],
-                                                    value=450,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Fig layout - # columns",
-                                                    id=self.uuid(
-                                                        "errorbarplot-figcolumns"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "One column",
-                                                            "value": 1,
-                                                        },
-                                                        {
-                                                            "label": "Two columns",
-                                                            "value": 2,
-                                                        },
-                                                        {
-                                                            "label": "Three columns",
-                                                            "value": 3,
-                                                        },
-                                                    ],
-                                                    style={"display": "block"},
-                                                    value=1,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                wcc.Frame(
-                                    style={
-                                        "flex": 4,
-                                        "minWidth": "500px",
-                                    },
-                                    children=[
-                                        html.Div(
-                                            id=self.uuid("errorbarplot-graph"),
-                                        ),
-                                        wcc.Selectors(
-                                            label="Ensemble info",
-                                            children=[
-                                                dcc.Textarea(
-                                                    id=self.uuid(
-                                                        "errorbarplot-ensembles_info"
-                                                    ),
-                                                    value=self.caseinfo,
-                                                    style={
-                                                        "width": "95%",
-                                                    },
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
+                    children=self._errorbar_plot_layout(),
                 ),
                 wcc.Tab(
                     label="Seismic map plot - sim vs obs",
                     style=tab_style,
                     selected_style=tab_selected_style,
-                    children=[
-                        wcc.FlexBox(
-                            id=self.uuid("map_plot-layout"),
-                            children=[
-                                wcc.Frame(
-                                    style={
-                                        "flex": 1,
-                                        "height": "50vh",
-                                        "maxWidth": "200px",
-                                    },
-                                    children=[
-                                        wcc.Dropdown(
-                                            label="Ensemble selector",
-                                            id=self.uuid("map_plot-ens_name"),
-                                            options=[
-                                                {"label": ens, "value": ens}
-                                                for ens in self.ens_names
-                                            ],
-                                            value=self.ens_names[0],
-                                            clearable=False,
-                                            persistence=True,
-                                            persistence_type="memory",
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Region selector",
-                                            # className="webviz-select-with-label",
-                                            id=self.uuid("map_plot-regions"),
-                                            options=[
-                                                {"label": regno, "value": regno}
-                                                for regno in self.region_names
-                                            ],
-                                            size=min([len(self.region_names), 5]),
-                                            value=self.region_names,
-                                        ),
-                                        wcc.SelectWithLabel(
-                                            label="Realization selector",
-                                            id=self.uuid("map_plot-realizations"),
-                                            options=[
-                                                {"label": real, "value": real}
-                                                for real in self.realizations
-                                            ],
-                                            size=min([len(self.realizations), 5]),
-                                            value=self.realizations,
-                                        ),
-                                        wcc.Selectors(
-                                            label="Map plot settings",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Show difference or coverage plot",
-                                                    id=self.uuid(
-                                                        "map_plot-plot_coverage"
-                                                    ),
-                                                    options=[
-                                                        {
-                                                            "label": "Difference plot",
-                                                            "value": 0,
-                                                        },
-                                                        {
-                                                            "label": "Coverage plot",
-                                                            "value": 1,
-                                                        },
-                                                        {
-                                                            "label": "Coverage plot (obs error adjusted)",
-                                                            "value": 2,
-                                                        },
-                                                    ],
-                                                    value=0,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Color range scaling - obs and sim",
-                                                    id=self.uuid(
-                                                        "map_plot-scale_col_range"
-                                                    ),
-                                                    options=[
-                                                        {"label": val, "value": val}
-                                                        for val in [
-                                                            0.1,
-                                                            0.2,
-                                                            0.3,
-                                                            0.4,
-                                                            0.5,
-                                                            0.6,
-                                                            0.7,
-                                                            0.8,
-                                                            0.9,
-                                                            1.0,
-                                                            1.5,
-                                                            2,
-                                                            5,
-                                                            10,
-                                                        ]
-                                                    ],
-                                                    value=0.6,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                                wcc.Dropdown(
-                                                    label="Marker size",
-                                                    id=self.uuid(
-                                                        "map_plot-marker_size"
-                                                    ),
-                                                    options=[
-                                                        {"label": val, "value": val}
-                                                        for val in [
-                                                            5,
-                                                            10,
-                                                            12,
-                                                            14,
-                                                            16,
-                                                            18,
-                                                            20,
-                                                            25,
-                                                            30,
-                                                        ]
-                                                    ],
-                                                    value=12,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                        wcc.Selectors(
-                                            label="Slice settings",
-                                            children=[
-                                                wcc.Dropdown(
-                                                    label="Slicing accuracy (north ± meters)",
-                                                    id=self.uuid(
-                                                        "map_plot-slice_accuracy"
-                                                    ),
-                                                    options=[
-                                                        {"label": "± 10m", "value": 10},
-                                                        {"label": "± 25m", "value": 25},
-                                                        {"label": "± 50m", "value": 50},
-                                                        {"label": "± 75m", "value": 75},
-                                                        {
-                                                            "label": "± 100m",
-                                                            "value": 100,
-                                                        },
-                                                        {
-                                                            "label": "± 150m",
-                                                            "value": 150,
-                                                        },
-                                                        {
-                                                            "label": "± 200m",
-                                                            "value": 200,
-                                                        },
-                                                        {
-                                                            "label": "± 250m",
-                                                            "value": 250,
-                                                        },
-                                                    ],
-                                                    value=75,
-                                                    clearable=False,
-                                                    persistence=True,
-                                                    persistence_type="memory",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                wcc.Frame(
-                                    # color="lightblue",
-                                    style={"flex": 4, "minWidth": "900px"},
-                                    children=[
-                                        dcc.Graph(
-                                            id=self.uuid("map_plot-figs"),
-                                            style={"height": 650},
-                                        ),
-                                        html.P("North position of slice"),
-                                        wcc.Slider(
-                                            id=self.uuid("map_plot-slice_position"),
-                                            min=self.map_y_range[0],
-                                            max=self.map_y_range[1],
-                                            value=(
-                                                self.map_y_range[0]
-                                                + self.map_y_range[1]
-                                            )
-                                            / 2,
-                                            step=100,
-                                            marks={
-                                                self.map_y_range[
-                                                    0
-                                                ]: f"min={round(self.map_y_range[0]):,}",
-                                                self.map_y_range[
-                                                    1
-                                                ]: f"max={round(self.map_y_range[1]):,}",
-                                            },
-                                        ),
-                                        dcc.Graph(
-                                            id=self.uuid("map_plot-slice"),
-                                            style={"height": 550},
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
+                    children=self._map_plot_layout(),
                 ),
             ],
         )
@@ -1697,7 +1670,7 @@ def update_misfit_plot(
     figures = []
 
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
-        print("Seismic misfit plot, updating", ens_name)
+        logging.debug(f"Seismic misfit plot, updating {ens_name}")
 
         # --- drop columns (realizations) with no data
         ensdf = ensdf.dropna(axis="columns")
@@ -1778,7 +1751,7 @@ def update_obsdata_raw(
 
     if colorby not in df_obs.columns and colorby is not None:
         colorby = None
-        print(colorby, " is not included, color by is reset to None")
+        logging.warning(f"{colorby} is not included, colorby is reset to None")
 
     df_obs = df_obs.sort_values(by=["region"])
     df_obs = df_obs.astype({colorby: "string"})
@@ -1841,13 +1814,13 @@ def update_obsdata_map(
     Takes dataframe with obsdata and metadata as input"""
 
     if ("east" not in df_obs.columns) or ("north" not in df_obs.columns):
-        print("-- Do not have necessary data for making map view plot")
-        print("-- Consider adding east/north coordinates to metafile")
+        logging.warning("-- Do not have necessary data for making map view plot")
+        logging.warning("-- Consider adding east/north coordinates to metafile")
         return None
 
     if colorby not in df_obs.columns and colorby is not None:
         colorby = None
-        print(colorby, " is not included, color by is reset to None")
+        logging.warning(f"{colorby} is not included, colorby is reset to None")
 
     if df_obs[colorby].dtype == "int64" or colorby == "region":
         df_obs = df_obs.sort_values(by=[colorby])
@@ -1901,7 +1874,7 @@ def update_obsdata_map(
                     exclude_empty_subplots=True,
                 )
         except Exception as exception:
-            print("Failed to add polygon -- ", exception)
+            logging.warning(f"Failed to add polygon -- {exception}")
 
     fig.update_yaxes(scaleanchor="x")
     fig.update_layout(coloraxis_colorbar_x=0.95)
@@ -1932,13 +1905,13 @@ def update_obs_sim_map_plot(
     """Plot seismic obsdata, simdata and diffdata; side by side map view plots.
     Takes dataframe with obsdata, metadata and simdata as input"""
 
-    print("Seismic obs vs sim map plot, updating", ens_name)
+    logging.debug(f"Seismic obs vs sim map plot, updating {ens_name}")
 
     ensdf = df[df.ENSEMBLE.eq(ens_name)]
 
     if ("east" not in ensdf.columns) or ("north" not in ensdf.columns):
-        print("-- Do not have necessary data for making map view plot")
-        print("-- Consider adding east/north coordinates to metafile")
+        logging.warning("-- Do not have necessary data for making map view plot")
+        logging.warning("-- Consider adding east/north coordinates to metafile")
         return None, None
 
     # --- drop columns (realizations) with no data
@@ -2131,7 +2104,7 @@ def update_obs_sim_map_plot(
                     exclude_empty_subplots=True,
                 )
         except Exception as exception:
-            print("Failed to add polygon -- ", exception)
+            logging.warning(f"Failed to add polygon -- {exception}")
 
     fig.update_xaxes(range=x_range)
     fig.update_yaxes(range=y_range)
@@ -2235,7 +2208,7 @@ def update_crossplot(
     figures = []
     dfs = []
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
-        print("Seismic crossplot; updating", ens_name)
+        logging.debug(f"Seismic crossplot; updating {ens_name}")
 
         # --- drop columns (realizations) with no data
         ensdf = ensdf.dropna(axis="columns")
@@ -2248,9 +2221,9 @@ def update_crossplot(
         # del ensdf
 
         if ensdf_stat["sim_std"].isnull().values.any():
-            print(
+            logging.warning(
                 "Chosen sizeby is ignored and reset to constant "
-                + "for current selections (std = nan)."
+                "for current selections (std = nan)."
             )
             sizeby = None
 
@@ -2352,7 +2325,7 @@ def update_crossplot(
 
 
 # -------------------------------
-# pylint: disable=too-many-statements, simplifiable-if-expression
+# pylint: disable=too-many-statements
 def update_errorbarplot(
     df: pd.DataFrame,
     colorby: Optional[str] = None,
@@ -2371,7 +2344,7 @@ def update_errorbarplot(
     dfs = []
 
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
-        print("Seismic errorbar plot; updating", ens_name)
+        logging.debug(f"Seismic errorbar plot; updating {ens_name}")
 
         # --- drop columns (realizations) with no data
         ensdf = ensdf.dropna(axis="columns")
@@ -2452,7 +2425,7 @@ def update_errorbarplot(
         if showerrorbarobs is not None
         else None
     )
-    obslegend = True if colorby == "region" else False
+    obslegend = colorby == "region"
 
     fig.add_trace(
         go.Scattergl(
@@ -2502,7 +2475,7 @@ def update_errorbarplot_superimpose(
     data_to_plot = False
 
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
-        print("Seismic errorbar plot; updating", ens_name)
+        logging.debug(f"Seismic errorbar plot; updating {ens_name}")
 
         # --- drop columns (realizations) with no data
         ensdf = ensdf.dropna(axis="columns")
@@ -2634,15 +2607,17 @@ def makedf(
     dfs_obs = []
     ens_count = 0
     for ens_name, ens_path in ensemble_set.items():
-        print("Working with", ens_name, ":", ens_path)
-        print("seismic attribute:", attribute_name_sim)
+        logging.info(
+            f"\nWorking with {ens_name}: {ens_path}"
+            f"\nSeismic attribute: {attribute_name_sim}"
+        )
 
         casedir = Path(ens_path).parents[1]  # casedir = 2 levels up from runpath
 
         obsfile = casedir / attribute_obs_path / attribute_name_obs
         metafile = casedir / metadata_path / metadata_name
 
-        df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult, verbose=False)
+        df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult)
 
         df["ENSEMBLE"] = ens_name  # add ENSEBLE column
         dfs_obs.append(df.copy())
@@ -2654,8 +2629,10 @@ def makedf(
                 fromreal = int(realrange[ens_count][0])
                 toreal = int(realrange[ens_count][1])
             except Exception as exception:
-                print("realrange input is assigned wrongly")
-                print(" - continuing without real filter. ", exception)
+                logging.warning(
+                    f"realrange input is assigned wrongly - "
+                    f"continuing without real filter. {exception}"
+                )
 
         df = makedf_seis_addsim(
             df,
@@ -2665,7 +2642,6 @@ def makedf(
             fromreal=fromreal,
             toreal=toreal,
             sim_mult=sim_mult,
-            verbose=False,
         )
         dfs.append(df)
 
@@ -2679,7 +2655,6 @@ def makedf_seis_obs_meta(
     obsfile: Path,
     metafile: Path,
     obs_mult: float = 1.0,
-    verbose: bool = False,
 ) -> pd.DataFrame:
     """Make a merged dataframe of obsdata and metadata.
     Meta file should have a "region" parameter (case insensitive).
@@ -2690,7 +2665,7 @@ def makedf_seis_obs_meta(
     dframe = pd.read_csv(obsfile, sep=r"\s+", header=None, names=["obs", "obs_error"])
     tot_nan_val_obs = dframe.isnull().sum().sum()  # count all nan values
     if tot_nan_val_obs > 0:
-        print("-- WARNING: obsfile contains", tot_nan_val_obs, "NaN values")
+        logging.warning(f"-- obsfile contains {tot_nan_val_obs} NaN values")
 
     # pylint: disable=no-member, unsupported-assignment-operation
     # https://github.com/PyCQA/pylint/issues/4577
@@ -2706,39 +2681,35 @@ def makedf_seis_obs_meta(
         if "east" not in df_meta.columns:
             if "x_utme" in df_meta.columns:
                 df_meta.rename(columns={"x_utme": "east"}, inplace=True)
-                if verbose:
-                    print("INFO: renamed x_utme column to east")
+                logging.debug("renamed x_utme column to east")
             else:
-                if verbose:
-                    print("WARNING: x_utm or east column not included in meta data")
+                logging.warning("x_utm or east column not included in meta data")
 
         if "north" not in df_meta.columns:
             if "y_utmn" in df_meta.columns:
                 df_meta.rename(columns={"y_utmn": "north"}, inplace=True)
-                if verbose:
-                    print("INFO: renamed y_utmn column to north")
+                logging.debug("renamed y_utmn column to north")
             else:
-                if verbose:
-                    print("WARNING: y_utm or north column not included in meta data")
+                logging.warning("y_utm or north column not included in meta data")
 
         tot_nan_val_meta = df_meta.isnull().sum().sum()  # count all nan values
         if tot_nan_val_meta > 0:
-            print("-- WARNING: metafile contains", tot_nan_val_meta, "NaN values")
+            logging.warning(f"-- metafile contains {tot_nan_val_meta} NaN values")
     except IOError as ioe:
-        print("---WARNING. Continuing without metadata due to error:")
-        print(ioe)
+        logging.warning("-- Continuing without metadata due to error:")
+        logging.warning(ioe)
     # pylint: enable=no-member, unsupported-assignment-operation
 
     # --- concat obsdata and metadata ---
     try:
         dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
     except Exception as exception:
-        print(exception)
-        print(
+        logging.warning(exception)
+        logging.warning(
             "---WARNING. Failed to merge obsdata and metadata. "
-            + "Please check consistency or if metadata file exists."
+            "Please check consistency or if metadata file exists."
         )
-        print("Metadata file: ", metafile)
+        logging.warning(f"Metadata file: {metafile}")
 
     # --- apply obs multiplier ---
     dframe["obs"] = dframe["obs"] * obs_mult
@@ -2746,9 +2717,9 @@ def makedf_seis_obs_meta(
 
     # --- add dummy region data if not included ---
     if "region" not in dframe.columns:
-        print(
-            "WARNING: region column not included in meta data. "
-            + "Adding dummy region data with const value = 1"
+        logging.warning(
+            "-- region column not included in meta data. "
+            "Adding dummy region data with const value = 1"
         )
         dframe["region"] = 1
 
@@ -2758,17 +2729,13 @@ def makedf_seis_obs_meta(
     # dframe = dframe.astype({"region": int})
 
     # -------------------------------
-    if verbose:
-        print("Number of seismic data points: ", len(dframe))
-        print(
-            "Obs file: ", obsfile, "\n--> Number of undefined values:", tot_nan_val_obs
-        )
-        print(
-            "Meta file: ",
-            metafile,
-            "\n--> Number of undefined values:",
-            tot_nan_val_meta,
-        )
+    logging.debug(f"Number of seismic data points: {len(dframe)}")
+    logging.debug(
+        f"Obs file: {obsfile} \n--> Number of undefined values: {tot_nan_val_obs}"
+    )
+    logging.debug(
+        f"Meta file: {metafile}" f"\n--> Number of undefined values: {tot_nan_val_meta}"
+    )
 
     return dframe
 
@@ -2782,7 +2749,6 @@ def makedf_seis_addsim(
     fromreal: int = 0,
     toreal: int = 99,
     sim_mult: float = 1.0,
-    verbose: bool = False,
 ) -> pd.DataFrame:
     """Make a merged dataframe of obsdata/metadata and simdata."""
 
@@ -2791,7 +2757,7 @@ def makedf_seis_addsim(
 
     runpaths = glob.glob(ens_path)
     if len(runpaths) == 0:
-        print("No realizations was found, wrong input?: ", ens_path)
+        logging.warning(f"No realizations was found, wrong input?: {ens_path}")
         return pd.DataFrame()
 
     for runpath in runpaths:
@@ -2809,15 +2775,14 @@ def makedf_seis_addsim(
                 data_found.append(real)
             except Exception as exception:
                 no_data_found.append(real)
-                if verbose:
-                    print(exception)  # print("File does not exist: " + str(simfile))
+                logging.debug(exception)
+                # logging.debug(f"File does not exist: {str(simfile)}")
 
-    if verbose:
-        print("Sim values added to dataframe for realizations:", data_found)
-        if len(no_data_found) == 0:
-            print("OK. Found data for all realizations")
-        else:
-            print("No data found for realizations:", no_data_found)
+    logging.debug(f"Sim values added to dataframe for realizations: {data_found}")
+    if len(no_data_found) == 0:
+        logging.debug("OK. Found data for all realizations")
+    else:
+        logging.debug(f"No data found for realizations: {no_data_found}")
 
     return df
 
@@ -2842,7 +2807,7 @@ def df_seis_ens_stat(
         start, end = x[0], x[-1]
         df_sim = df.loc[:, start:end]
     else:
-        print(ens_name, ": no data found for selected realizations.")
+        logging.info(f"{ens_name}: no data found for selected realizations.")
         return pd.DataFrame()
 
     # --- calculate absolute diff, (|sim - obs| / obs_error), and store in new df
