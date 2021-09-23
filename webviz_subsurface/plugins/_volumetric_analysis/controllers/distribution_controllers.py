@@ -188,15 +188,16 @@ def distribution_controllers(
         if not selections["update"]:
             raise PreventUpdate
 
-        table_groups = ["ENSEMBLE", "REAL"]
+        table_groups = (
+            ["ENSEMBLE", "REAL"]
+            if selections["Table type"] == "Statistics table"
+            else ["ENSEMBLE"]
+        )
         if selections["Group by"] is not None:
             table_groups.extend(
                 [x for x in selections["Group by"] if x not in table_groups]
             )
-        dframe = volumemodel.get_df(
-            filters=selections["filters"],
-            groups=table_groups,
-        )
+        dframe = volumemodel.get_df(filters=selections["filters"], groups=table_groups)
 
         return make_table_wrapper_children(
             dframe=dframe,
