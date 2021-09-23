@@ -2,23 +2,16 @@ import sys
 from pathlib import Path
 from datetime import datetime
 from datetime import date
-
-if sys.version_info >= (3, 8):
-    from typing import Optional, Literal
-else:
-    from typing import Optional
-    from typing_extensions import Literal
-
-# pylint: disable=wrong-import-position
 import pytest
 from _pytest.fixtures import SubRequest
+
 import pandas as pd
 
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
 )
 from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import (
-    EnsembleSummaryProviderImplArrow,
+    ProviderImplArrowPresampled,
 )
 
 
@@ -52,63 +45,26 @@ INPUT_DATA_STR = [
 ]
 # fmt: on
 
+
 # -------------------------------------------------------------------------
 @pytest.fixture(
     params=[INPUT_DATA_DATETIME, INPUT_DATA_AFTER_2262, INPUT_DATA_DATE, INPUT_DATA_STR]
 )
-# @pytest.fixture(params=[INPUT_DATA_DATETIME])
-def input_data(request: SubRequest) -> list:
-    return request.param
+def provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
 
+    input_py = request.param
+    storage_dir = tmp_path
 
-# -------------------------------------------------------------------------
-def _create_provider_obj_with_data(
-    impl_to_use: Literal["arrow", "parquet", "inmem_parquet"],
-    input_df: pd.DataFrame,
-    storage_dir: Path,
-) -> EnsembleSummaryProvider:
+    input_df = pd.DataFrame(input_py[1:], columns=input_py[0])
 
-    new_provider: Optional[EnsembleSummaryProvider]
-
-    if impl_to_use == "arrow":
-        EnsembleSummaryProviderImplArrow.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        new_provider = EnsembleSummaryProviderImplArrow.from_backing_store(
-            storage_dir, "dummy_key"
-        )
-    # elif impl_to_use == "parquet":
-    #     EnsembleSummaryProviderImplParquet.write_backing_store_from_ensemble_dataframe(
-    #         storage_dir, "dummy_key", input_df
-    #     )
-    #     new_provider = EnsembleSummaryProviderImplParquet.from_backing_store(
-    #         storage_dir, "dummy_key"
-    #     )
-    # elif impl_to_use == "inmem_parquet":
-    #     EnsembleSummaryProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
-    #         storage_dir, "dummy_key", input_df
-    #     )
-    #     new_provider = EnsembleSummaryProviderImplInMemParquet.from_backing_store(
-    #         storage_dir, "dummy_key"
-    #     )
-
-    if not new_provider:
-        raise ValueError("Failed to create EnsembleSummaryProvider")
+    ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(
+        storage_dir, "dummy_key", input_df
+    )
+    new_provider = ProviderImplArrowPresampled.from_backing_store(
+        storage_dir, "dummy_key"
+    )
 
     return new_provider
-
-
-# -------------------------------------------------------------------------
-@pytest.fixture(params=["arrow"])
-# @pytest.fixture(params=["arrow"])
-def provider(
-    request: SubRequest, input_data: list, tmp_path: Path
-) -> EnsembleSummaryProvider:
-
-    input_df = pd.DataFrame(input_data[1:], columns=input_data[0])
-    impl_to_use = request.param
-
-    return _create_provider_obj_with_data(impl_to_use, input_df, tmp_path)
 
 
 # -------------------------------------------------------------------------
@@ -133,12 +89,12 @@ def test_get_metadata(provider: EnsembleSummaryProvider) -> None:
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
-    all_dates = provider.dates()
+    all_dates = provider.dates(resampling_frequency=None)
     assert len(all_dates) == 2
     assert isinstance(all_dates[0], datetime)
 
-    r0_dates = provider.dates([0])
-    r1_dates = provider.dates([1])
+    r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
+    r1_dates = provider.dates(resampling_frequency=None, realizations=[1])
     assert len(r0_dates) == 1
     assert len(r1_dates) == 2
 
@@ -149,18 +105,20 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 3
 
-    vecdf = provider.get_vectors_df(["A"])
+    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None)
     assert vecdf.shape == (3, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
     sampleddate = vecdf["DATE"][0]
     assert isinstance(sampleddate, datetime)
 
-    vecdf = provider.get_vectors_df(["A"], [1])
+    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None, realizations=[1])
     assert vecdf.shape == (2, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
-    vecdf = provider.get_vectors_df(["C", "A"], [0])
+    vecdf = provider.get_vectors_df(
+        ["C", "A"], resampling_frequency=None, realizations=[0]
+    )
     assert vecdf.shape == (1, 4)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "C", "A"]
 
@@ -168,7 +126,7 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 # -------------------------------------------------------------------------
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
 
-    all_dates = provider.dates()
+    all_dates = provider.dates(resampling_frequency=None)
     assert len(all_dates) == 2
 
     date_to_get = all_dates[0]

@@ -7,12 +7,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import numpy as np
 
-
-class Frequency(Enum):
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
-    YEARLY = "yearly"
+from .ensemble_summary_provider import Frequency
 
 
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:

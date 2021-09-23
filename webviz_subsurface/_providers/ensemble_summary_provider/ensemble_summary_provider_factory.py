@@ -1,16 +1,9 @@
-import sys
+from typing import Dict, Optional
 from pathlib import Path
 import os
 import hashlib
 import logging
 
-if sys.version_info >= (3, 8):
-    from typing import Dict, Optional, Literal
-else:
-    from typing import Dict, Optional
-    from typing_extensions import Literal
-
-# pylint: disable=wrong-import-position
 from fmu.ensemble import ScratchEnsemble
 
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
@@ -19,8 +12,8 @@ from webviz_config.webviz_factory import WebvizFactory
 from webviz_subsurface._utils.perf_timer import PerfTimer
 from .ensemble_summary_provider import EnsembleSummaryProvider
 from .ensemble_summary_provider_set import EnsembleSummaryProviderSet
-from ._provider_impl_arrow_lazy import EnsembleSummaryProviderImplLAZYArrow
-from ._provider_impl_arrow_presampled import EnsembleSummaryProviderImplArrow
+from ._provider_impl_arrow_lazy import ProviderImplArrowLazy
+from ._provider_impl_arrow_presampled import ProviderImplArrowPresampled
 from ._arrow_unsmry_import import load_per_realization_arrow_unsmry_files
 from ._resampling import (
     Frequency,
@@ -77,7 +70,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         # Try and create/load providers from backing store
         for ens_name, ens_path in ensembles.items():
             storage_key = f"ens_csv__{_make_hash_string(ens_path + csv_file_rel_path)}"
-            provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+            provider = ProviderImplArrowPresampled.from_backing_store(
                 self._storage_dir, storage_key
             )
             if provider:
@@ -106,12 +99,12 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                 ensemble_df = scratch_ensemble.load_csv(csv_file_rel_path)
                 et_load_csv_s = timer.lap_s()
 
-                EnsembleSummaryProviderImplArrow.write_backing_store_from_ensemble_dataframe(
+                ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(
                     self._storage_dir, storage_key, ensemble_df
                 )
                 et_write_s = timer.lap_s()
 
-                provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+                provider = ProviderImplArrowPresampled.from_backing_store(
                     self._storage_dir, storage_key
                 )
                 if provider:
@@ -140,23 +133,18 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     def create_provider_set_from_arrow_unsmry_lazy(
         self,
         ensembles: Dict[str, str],
-        report_frequency_str: Literal["daily", "weekly", "monthly", "yearly", "raw"],
     ) -> EnsembleSummaryProviderSet:
 
         LOGGER.info("create_provider_set_from_arrow_unsmry_lazy() starting...")
         timer = PerfTimer()
 
-        frequency_enum: Optional[Frequency] = None
-        if report_frequency_str != "raw":
-            frequency_enum = Frequency(report_frequency_str)
-
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
         missing_storage_keys: Dict[str, str] = {}
 
         for ens_name, ens_path in ensembles.items():
-            ens_storage_key = f"ens_concat_ARR_LAZY__{_make_hash_string(ens_path)}"
-            provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
-                self._storage_dir, ens_storage_key, frequency_enum
+            ens_storage_key = f"arrow_unsmry_lazy__{_make_hash_string(ens_path)}"
+            provider = ProviderImplArrowLazy.from_backing_store(
+                self._storage_dir, ens_storage_key
             )
             if provider:
                 created_providers[ens_name] = provider
@@ -181,13 +169,13 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
                     )
                 et_import_smry_s = timer.lap_s()
 
-                EnsembleSummaryProviderImplLAZYArrow.write_backing_store_from_per_realization_tables(
+                ProviderImplArrowLazy.write_backing_store_from_per_realization_tables(
                     self._storage_dir, ens_storage_key, per_real_tables
                 )
                 et_write_s = timer.lap_s()
 
-                provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
-                    self._storage_dir, ens_storage_key, frequency_enum
+                provider = ProviderImplArrowLazy.from_backing_store(
+                    self._storage_dir, ens_storage_key
                 )
 
                 if provider:
@@ -215,22 +203,22 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     def create_provider_set_from_arrow_unsmry_presampled(
         self,
         ensembles: Dict[str, str],
-        sampling_frequency_str: Literal["daily", "weekly", "monthly", "yearly", "raw"],
+        sampling_frequency: Optional[Frequency],
     ) -> EnsembleSummaryProviderSet:
 
         LOGGER.info("create_provider_set_from_arrow_unsmry_presampled() starting...")
         timer = PerfTimer()
 
-        frequency_enum: Optional[Frequency] = None
-        if sampling_frequency_str != "raw":
-            frequency_enum = Frequency(sampling_frequency_str)
+        freq_str = sampling_frequency.value if sampling_frequency else "raw"
 
         created_providers: Dict[str, EnsembleSummaryProvider] = {}
         missing_storage_keys: Dict[str, str] = {}
 
         for ens_name, ens_path in ensembles.items():
-            ens_storage_key = f"ens_concat_PRESAMPLED_{sampling_frequency_str}__{_make_hash_string(ens_path)}"
-            provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+            ens_storage_key = (
+                f"arrow_unsmry_presampled_{freq_str}__{_make_hash_string(ens_path)}"
+            )
+            provider = ProviderImplArrowPresampled.from_backing_store(
                 self._storage_dir, ens_storage_key
             )
             if provider:
@@ -257,19 +245,19 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
                 et_import_smry_s = timer.lap_s()
 
-                if frequency_enum is not None:
+                if sampling_frequency is not None:
                     for real_num, table in per_real_tables.items():
                         per_real_tables[real_num] = resample_single_real_table(
-                            table, frequency_enum
+                            table, sampling_frequency
                         )
                 et_resample_s = timer.lap_s()
 
-                EnsembleSummaryProviderImplArrow.write_backing_store_from_per_realization_tables(
+                ProviderImplArrowPresampled.write_backing_store_from_per_realization_tables(
                     self._storage_dir, ens_storage_key, per_real_tables
                 )
                 et_write_s = timer.lap_s()
 
-                provider = EnsembleSummaryProviderImplArrow.from_backing_store(
+                provider = ProviderImplArrowPresampled.from_backing_store(
                     self._storage_dir, ens_storage_key
                 )
 

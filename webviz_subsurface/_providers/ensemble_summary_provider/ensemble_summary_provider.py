@@ -1,8 +1,23 @@
 from typing import List, Optional, Sequence, Dict, Any
 import datetime
 import abc
+from enum import Enum
 
 import pandas as pd
+
+
+class Frequency(Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+
+    @classmethod
+    def from_string_value(cls, value: str) -> Optional["Frequency"]:
+        try:
+            return cls(value)
+        except ValueError:
+            return None
 
 
 # Class provides data for ensemble summary (timeseries)
@@ -24,18 +39,27 @@ class EnsembleSummaryProvider(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def dates(
-        self, realizations: Optional[Sequence[int]] = None
-    ) -> List[datetime.datetime]:
-        ...
-
-    @abc.abstractmethod
     def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
         ...
 
     @abc.abstractmethod
+    def supports_resampling(self) -> bool:
+        ...
+
+    @abc.abstractmethod
+    def dates(
+        self,
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> List[datetime.datetime]:
+        ...
+
+    @abc.abstractmethod
     def get_vectors_df(
-        self, vector_names: Sequence[str], realizations: Optional[Sequence[int]] = None
+        self,
+        vector_names: Sequence[str],
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         ...
 

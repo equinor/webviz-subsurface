@@ -1,14 +1,7 @@
-import sys
 from pathlib import Path
 import datetime
 import logging
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
-
-# pylint: disable=wrong-import-position
 import pandas as pd
 import dateutil.parser  # type: ignore
 import datacompy
@@ -16,6 +9,9 @@ import datacompy
 from fmu.ensemble import ScratchEnsemble
 from .ensemble_summary_provider_factory import (
     EnsembleSummaryProviderFactory,
+)
+from .ensemble_summary_provider import (
+    Frequency,
 )
 
 
@@ -64,23 +60,28 @@ def _load_smry_dataframe_using_fmu(ens_path: str, time_index: str) -> pd.DataFra
 def _compare_fmu_smry_to_lazy_provider(
     factory: EnsembleSummaryProviderFactory,
     ens_path: str,
-    frequency: Literal["daily", "weekly", "monthly", "yearly", "raw"],
+    frequency: Frequency,
 ) -> pd.DataFrame:
 
     print("## Loading data into DataFrame using FMU...")
-    fmu_df = _load_smry_dataframe_using_fmu(ens_path, frequency)
+    time_index: str = "raw"
+    if frequency:
+        time_index = frequency.value
+
+    print("time_index", time_index)
+    fmu_df = _load_smry_dataframe_using_fmu(ens_path, time_index)
     fmu_df.sort_values(by=["REAL", "DATE"], inplace=True)
     fmu_df.reset_index(inplace=True, drop=True)
     # print(fmu_df)
 
     print("## Creating provider...")
     providerset = factory.create_provider_set_from_arrow_unsmry_lazy(
-        {"myEnsemble": ens_path}, frequency
+        {"myEnsemble": ens_path}
     )
     provider = providerset.all_providers()[0]
 
     print("## Getting data from provider...")
-    provider_df = provider.get_vectors_df(provider.vector_names())
+    provider_df = provider.get_vectors_df(provider.vector_names(), frequency)
     provider_df.reset_index(inplace=True, drop=True)
     # print(provider_df)
 
@@ -121,23 +122,26 @@ def main() -> None:
     ensemble_path = (
         "../webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0"
     )
-    # ENSEMBLE_PATH = (
+    # ensemble_path = (
     #     "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0"
     # )
 
+    frequency = Frequency.WEEKLY
+
     print()
-    print("## ROOT_STORAGE_DIR:", root_storage_dir)
-    print("## ENSEMBLE_PATH:", ensemble_path)
+    print("## root_storage_dir:", root_storage_dir)
+    print("## ensemble_path:", ensemble_path)
+    print("## frequency:", frequency)
 
     factory = EnsembleSummaryProviderFactory(root_storage_dir)
 
     print("## Loading data and comparing...")
-    _compare_fmu_smry_to_lazy_provider(factory, ensemble_path, "monthly")
+    _compare_fmu_smry_to_lazy_provider(factory, ensemble_path, frequency)
 
     print("## done")
 
 
 # Running:
-#   python -m webviz_subsurface._providers.ensemble_summary_provider.dev_compare_fmu_to_lazy_provider
+# python -m webviz_subsurface._providers.ensemble_summary_provider.dev_compare_fmu_to_lazy_provider
 if __name__ == "__main__":
     main()

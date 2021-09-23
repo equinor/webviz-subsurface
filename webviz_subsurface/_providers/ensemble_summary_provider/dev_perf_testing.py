@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 from pathlib import Path
 import datetime
 import time
@@ -6,11 +6,14 @@ import logging
 
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 from .ensemble_summary_provider import EnsembleSummaryProvider
+from .ensemble_summary_provider import Frequency
 
 
 # -------------------------------------------------------------------------
 def _get_n_vectors_one_by_one_all_realizations(
-    provider: EnsembleSummaryProvider, num_vectors: int
+    provider: EnsembleSummaryProvider,
+    resampling_frequency: Optional[Frequency],
+    num_vectors: int,
 ) -> None:
 
     all_vectors = provider.vector_names()
@@ -18,14 +21,17 @@ def _get_n_vectors_one_by_one_all_realizations(
     vectors_to_get = all_vectors[0:num_vectors]
 
     print("## ------------------")
-    print(f"## entering _get_n_vectors_one_by_one_all_realizations({num_vectors}) ...")
+    print(
+        f"## entering _get_n_vectors_one_by_one_all_realizations("
+        f"{resampling_frequency}, {num_vectors}) ..."
+    )
 
     start_tim = time.perf_counter()
 
     accum_rows = 0
     accum_cols = 0
     for vec_name in vectors_to_get:
-        df = provider.get_vectors_df([vec_name])
+        df = provider.get_vectors_df([vec_name], resampling_frequency)
         accum_rows += df.shape[0]
         accum_cols += df.shape[1]
 
@@ -48,7 +54,9 @@ def _get_n_vectors_one_by_one_all_realizations(
 
 # -------------------------------------------------------------------------
 def _get_n_vectors_in_batch_all_realizations(
-    provider: EnsembleSummaryProvider, num_vectors: int
+    provider: EnsembleSummaryProvider,
+    resampling_frequency: Optional[Frequency],
+    num_vectors: int,
 ) -> None:
 
     all_vectors = provider.vector_names()
@@ -56,11 +64,14 @@ def _get_n_vectors_in_batch_all_realizations(
     vectors_to_get = all_vectors[0:num_vectors]
 
     print("## ------------------")
-    print(f"## entering _get_n_vectors_in_batch_all_realizations({num_vectors}) ...")
+    print(
+        f"## entering _get_n_vectors_in_batch_all_realizations("
+        f"{resampling_frequency}, {num_vectors}) ..."
+    )
 
     start_tim = time.perf_counter()
 
-    df = provider.get_vectors_df(vectors_to_get)
+    df = provider.get_vectors_df(vectors_to_get, resampling_frequency)
 
     elapsed_time_ms = 1000 * (time.perf_counter() - start_tim)
 
@@ -156,17 +167,19 @@ def _get_meta_for_n_vectors_one_by_one(
 
 
 # -------------------------------------------------------------------------
-def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
+def _run_perf_tests(
+    provider: EnsembleSummaryProvider, resampling_frequency: Optional[Frequency]
+) -> None:
 
     all_vector_names = provider.vector_names()
     all_realizations = provider.realizations()
-    all_dates = provider.dates()
+    all_dates = provider.dates(resampling_frequency)
     num_vectors = len(all_vector_names)
     num_realizations = len(all_realizations)
     num_dates = len(all_dates)
     print("## num_vectors:", num_vectors)
-    print("## num_realizations:", num_realizations)
-    print("## num_dates", num_dates)
+    print(f"## num_realizations: {num_realizations}   (head:{all_realizations[0:5]})")
+    print(f"## num_dates: {num_dates}   (head: {all_dates[0:5]})")
 
     print()
 
@@ -174,11 +187,11 @@ def _run_perf_tests(provider: EnsembleSummaryProvider) -> None:
 
     _get_vector_names_filtered_by_value(provider)
 
-    _get_n_vectors_one_by_one_all_realizations(provider, 1)
-    _get_n_vectors_one_by_one_all_realizations(provider, 50)
+    _get_n_vectors_one_by_one_all_realizations(provider, resampling_frequency, 1)
+    _get_n_vectors_one_by_one_all_realizations(provider, resampling_frequency, 50)
 
-    _get_n_vectors_in_batch_all_realizations(provider, 50)
-    _get_n_vectors_in_batch_all_realizations(provider, 99999)
+    _get_n_vectors_in_batch_all_realizations(provider, resampling_frequency, 50)
+    _get_n_vectors_in_batch_all_realizations(provider, resampling_frequency, 99999)
 
     num_vecs = 100
     _get_n_vectors_for_date_all_realizations(
@@ -215,6 +228,7 @@ def main() -> None:
     root_storage_dir = Path("/home/sigurdp/buf/webviz_storage_dir")
     # root_storage_dir = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
+    # pylint: disable=line-too-long
     ensembles: Dict[str, str] = {
         "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0",
         # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
@@ -222,9 +236,12 @@ def main() -> None:
         # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
     }
 
+    frequency: Optional[Frequency] = Frequency.DAILY
+
     print()
     print("## root_storage_dir:", root_storage_dir)
     print("## ensembles:", ensembles)
+    print("## frequency:", frequency)
 
     print()
     print("## Creating EnsembleSummaryProviderSet...")
@@ -232,13 +249,13 @@ def main() -> None:
     start_tim = time.perf_counter()
     factory = EnsembleSummaryProviderFactory(root_storage_dir)
 
-    provider_set = factory.create_provider_set_from_arrow_unsmry_lazy(
-        ensembles, "daily"
-    )
+    # provider_set = factory.create_provider_set_from_arrow_unsmry_lazy(ensembles)
+    # resampling_frequency = frequency
 
-    # provider_set = factory.create_provider_set_from_arrow_unsmry_presampled(
-    #     ensembles, "daily"
-    # )
+    provider_set = factory.create_provider_set_from_arrow_unsmry_presampled(
+        ensembles, frequency
+    )
+    resampling_frequency = None
 
     print(
         "## Done creating EnsembleSummaryProviderSet, elapsed time (s):",
@@ -247,7 +264,7 @@ def main() -> None:
 
     print()
     print("## Running perf tests...")
-    _run_perf_tests(provider_set.provider("iter-0"))
+    _run_perf_tests(provider_set.provider("iter-0"), resampling_frequency)
 
     print("## done")
 

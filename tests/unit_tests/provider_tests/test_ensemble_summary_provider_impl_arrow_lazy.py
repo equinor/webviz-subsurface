@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict
 from pathlib import Path
 from datetime import datetime
 import json
@@ -11,7 +11,7 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
     EnsembleSummaryProvider,
 )
 from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_lazy import (
-    EnsembleSummaryProviderImplLAZYArrow,
+    ProviderImplArrowLazy,
     Frequency,
 )
 
@@ -49,9 +49,8 @@ def _split_into_per_realization_tables(table: pa.Table) -> Dict[int, pa.Table]:
 
 
 def _create_provider_obj_with_data(
-    input_data: List[list],
+    input_data: list,
     storage_dir: Path,
-    temphack_sample_freq: Optional[Frequency] = None,
 ) -> EnsembleSummaryProvider:
 
     # Turn rows into columns
@@ -69,12 +68,10 @@ def _create_provider_obj_with_data(
     # Split into per realization tables
     per_real_tables = _split_into_per_realization_tables(input_table)
 
-    EnsembleSummaryProviderImplLAZYArrow.write_backing_store_from_per_realization_tables(
+    ProviderImplArrowLazy.write_backing_store_from_per_realization_tables(
         storage_dir, "dummy_key", per_real_tables
     )
-    new_provider = EnsembleSummaryProviderImplLAZYArrow.from_backing_store(
-        storage_dir, "dummy_key", sample_freq=temphack_sample_freq
-    )
+    new_provider = ProviderImplArrowLazy.from_backing_store(storage_dir, "dummy_key")
 
     if not new_provider:
         raise ValueError("Failed to create EnsembleSummaryProvider")
@@ -93,7 +90,7 @@ def test_create_with_dates_after_2262(tmp_path: Path) -> None:
     # fmt:on
     provider = _create_provider_obj_with_data(input_data, tmp_path)
 
-    dates = provider.dates()
+    dates = provider.dates(resampling_frequency=None)
     assert len(dates) == 3
     assert dates[0] == datetime(2000, 1, 2, 00, 00)
     assert dates[1] == datetime(2500, 12, 20, 23, 59)
@@ -131,7 +128,7 @@ def test_get_vector_names(tmp_path: Path) -> None:
     assert len(all_realizations) == 2
 
 
-def test_get_dates(tmp_path: Path) -> None:
+def test_get_dates_without_resampling(tmp_path: Path) -> None:
     # fmt:off
     input_data = [
         ["DATE",                            "REAL",  "A"],
@@ -145,14 +142,43 @@ def test_get_dates(tmp_path: Path) -> None:
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
-    all_dates = provider.dates()
+    all_dates = provider.dates(resampling_frequency=None)
     assert len(all_dates) == 2
     assert isinstance(all_dates[0], datetime)
 
-    r0_dates = provider.dates([0])
-    r1_dates = provider.dates([1])
+    r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
+    r1_dates = provider.dates(resampling_frequency=None, realizations=[1])
     assert len(r0_dates) == 1
     assert len(r1_dates) == 2
+
+
+def test_get_dates_with_daily_resampling(tmp_path: Path) -> None:
+    # fmt:off
+    input_data = [
+        ["DATE",                            "REAL",  "A",],
+        [np.datetime64("2020-01-01", "ms"),  0,      10.0],
+        [np.datetime64("2020-01-04", "ms"),  0,      40.0],
+        [np.datetime64("2020-01-06", "ms"),  1,      60.0],
+    ]
+    # fmt:on
+    provider = _create_provider_obj_with_data(input_data, tmp_path)
+
+    all_realizations = provider.realizations()
+    assert len(all_realizations) == 2
+
+    all_dates = provider.dates(resampling_frequency=Frequency.DAILY)
+    assert len(all_dates) == 6
+    assert isinstance(all_dates[0], datetime)
+    assert all_dates[0] == datetime.fromisoformat("2020-01-01")
+    assert all_dates[1] == datetime.fromisoformat("2020-01-02")
+    assert all_dates[4] == datetime.fromisoformat("2020-01-05")
+    assert all_dates[5] == datetime.fromisoformat("2020-01-06")
+
+    r0_dates = provider.dates(resampling_frequency=Frequency.DAILY, realizations=[0])
+    assert len(r0_dates) == 4
+
+    r1_dates = provider.dates(resampling_frequency=Frequency.DAILY, realizations=[1])
+    assert len(r1_dates) == 1
 
 
 def test_get_vector_metadata(tmp_path: Path) -> None:
@@ -170,14 +196,14 @@ def test_get_vector_metadata(tmp_path: Path) -> None:
     assert meta is None
 
     meta = provider.vector_metadata("B_r")
-    assert meta["is_rate"] is True
+    assert meta and meta["is_rate"] is True
 
     meta = provider.vector_metadata("C_t")
-    assert meta["is_total"] is True
+    assert meta and meta["is_total"] is True
 
     meta = provider.vector_metadata("D_r_t")
-    assert meta["is_rate"] is True
-    assert meta["is_total"] is True
+    assert meta and meta["is_rate"] is True
+    assert meta and meta["is_total"] is True
 
 
 def test_get_vectors_without_resampling(tmp_path: Path) -> None:
@@ -194,18 +220,20 @@ def test_get_vectors_without_resampling(tmp_path: Path) -> None:
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 2
 
-    vecdf = provider.get_vectors_df(["A"])
+    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None)
     assert vecdf.shape == (3, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
     sampleddate = vecdf["DATE"][0]
     assert isinstance(sampleddate, datetime)
 
-    vecdf = provider.get_vectors_df(["A"], [1])
+    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None, realizations=[1])
     assert vecdf.shape == (2, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
-    vecdf = provider.get_vectors_df(["B", "A"], [0])
+    vecdf = provider.get_vectors_df(
+        ["B", "A"], resampling_frequency=None, realizations=[0]
+    )
     assert vecdf.shape == (1, 4)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "B", "A"]
 
@@ -219,9 +247,11 @@ def test_get_vectors_with_daily_resampling(tmp_path: Path) -> None:
         [np.datetime64("2020-01-06", "ms"),  1,      60.0,     6.0],
     ]
     # fmt:on
-    provider = _create_provider_obj_with_data(input_data, tmp_path, Frequency.DAILY)
+    provider = _create_provider_obj_with_data(input_data, tmp_path)
 
-    vecdf = provider.get_vectors_df(["TOT_t", "RATE_r"])
+    vecdf = provider.get_vectors_df(
+        ["TOT_t", "RATE_r"], resampling_frequency=Frequency.DAILY
+    )
 
     date_arr = vecdf["DATE"].to_numpy()
     assert date_arr[0] == np.datetime64("2020-01-01", "ms")
@@ -261,7 +291,7 @@ def test_get_vectors_for_date_without_resampling(tmp_path: Path) -> None:
     # fmt:on
     provider = _create_provider_obj_with_data(input_data, tmp_path)
 
-    all_dates = provider.dates()
+    all_dates = provider.dates(resampling_frequency=None)
     assert len(all_dates) == 2
 
     date_to_get = all_dates[0]
@@ -282,7 +312,7 @@ def test_get_vectors_for_date_without_resampling(tmp_path: Path) -> None:
     assert vecdf.columns.tolist() == ["REAL", "A", "C"]
 
 
-def test_get_vectors_for_date_with_daily_resampling(tmp_path: Path) -> None:
+def test_get_vectors_for_date_with_resampling(tmp_path: Path) -> None:
     # fmt:off
     input_data = [
         ["DATE",                            "REAL",  "TOT_t",  "RATE_r"],
@@ -291,7 +321,7 @@ def test_get_vectors_for_date_with_daily_resampling(tmp_path: Path) -> None:
         [np.datetime64("2020-01-06", "ms"),  1,      60.0,     6.0],
     ]
     # fmt:on
-    provider = _create_provider_obj_with_data(input_data, tmp_path, Frequency.DAILY)
+    provider = _create_provider_obj_with_data(input_data, tmp_path)
 
     date_to_get = datetime.fromisoformat("2020-01-03")
 

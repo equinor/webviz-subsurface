@@ -12,6 +12,7 @@ import numpy as np
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 from .ensemble_summary_provider import EnsembleSummaryProvider
+from .ensemble_summary_provider import Frequency
 from ._dataframe_utils import (
     make_date_column_datetime_object,
 )
@@ -64,7 +65,7 @@ def _sort_table_on_date_then_real(table: pa.Table) -> pa.Table:
 
 
 # =============================================================================
-class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
+class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
     # -------------------------------------------------------------------------
     def __init__(self, arrow_file_name: Path) -> None:
@@ -138,13 +139,11 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
         schema_to_use = _set_date_column_type_to_timestamp_ms(default_schema)
 
         # For experimenting with conversion to float
-        do_convert_to_float32 = False
-        if do_convert_to_float32:
-            timer.lap_s()
-            schema_to_use = _create_float_downcasting_schema(schema_to_use)
-            LOGGER.info(
-                f"Created schema for float downcasting in : {timer.lap_s():.2f}s"
-            )
+        # timer.lap_s()
+        # schema_to_use = _create_float_downcasting_schema(schema_to_use)
+        # LOGGER.info(
+        #     f"Created schema for float downcasting in : {timer.lap_s():.2f}s"
+        # )
 
         timer.lap_s()
         table = pa.Table.from_pandas(
@@ -239,11 +238,11 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
     @staticmethod
     def from_backing_store(
         storage_dir: Path, storage_key: str
-    ) -> Optional["EnsembleSummaryProviderImplArrow"]:
+    ) -> Optional["ProviderImplArrowPresampled"]:
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
-            return EnsembleSummaryProviderImplArrow(arrow_file_name)
+            return ProviderImplArrowPresampled(arrow_file_name)
 
         return None
 
@@ -331,9 +330,29 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
         return self._realizations
 
     # -------------------------------------------------------------------------
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+        schema = self._get_or_read_schema()
+        field = schema.field(vector_name)
+        if field.metadata:
+            meta_as_str = field.metadata.get(b"smry_meta")
+            if meta_as_str:
+                return json.loads(meta_as_str)
+
+        return None
+
+    # -------------------------------------------------------------------------
+    def supports_resampling(self) -> bool:
+        return False
+
+    # -------------------------------------------------------------------------
     def dates(
-        self, realizations: Optional[Sequence[int]] = None
+        self,
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
+
+        if resampling_frequency is not None:
+            raise ValueError("Resampling is not supported by this provider")
 
         timer = PerfTimer()
 
@@ -358,20 +377,15 @@ class EnsembleSummaryProviderImplArrow(EnsembleSummaryProvider):
         return unique_date_vals
 
     # -------------------------------------------------------------------------
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
-        schema = self._get_or_read_schema()
-        field = schema.field(vector_name)
-        if field.metadata:
-            meta_as_str = field.metadata.get(b"smry_meta")
-            if meta_as_str:
-                return json.loads(meta_as_str)
-
-        return None
-
-    # -------------------------------------------------------------------------
     def get_vectors_df(
-        self, vector_names: Sequence[str], realizations: Optional[Sequence[int]] = None
+        self,
+        vector_names: Sequence[str],
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
+
+        if resampling_frequency is not None:
+            raise ValueError("Resampling is not supported by this provider")
 
         timer = PerfTimer()
 

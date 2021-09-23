@@ -11,13 +11,13 @@ import numpy as np
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 from .ensemble_summary_provider import EnsembleSummaryProvider
+from .ensemble_summary_provider import Frequency
 from ._table_utils import (
     find_min_max_for_numeric_table_columns,
     add_per_vector_min_max_to_table_schema_metadata,
     get_per_vector_min_max_from_schema_metadata,
 )
 from ._resampling import (
-    Frequency,
     generate_normalized_sample_dates,
     resample_sorted_multi_real_table,
     sample_sorted_multi_real_table_at_date,
@@ -39,15 +39,13 @@ def _sort_table_on_real_then_date(table: pa.Table) -> pa.Table:
 
 
 # =============================================================================
-class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
+class ProviderImplArrowLazy(EnsembleSummaryProvider):
 
     # -------------------------------------------------------------------------
-    def __init__(self, arrow_file_name: Path, sample_freq: Optional[Frequency]) -> None:
+    def __init__(self, arrow_file_name: Path) -> None:
         self._arrow_file_name = str(arrow_file_name)
-        self._sample_freq = sample_freq
 
         LOGGER.debug(f"init with arrow file: {self._arrow_file_name}")
-        LOGGER.debug(f"init sample_freq: {repr(self._sample_freq)}")
         timer = PerfTimer()
 
         source = pa.memory_map(self._arrow_file_name, "r")
@@ -161,12 +159,12 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
     # -------------------------------------------------------------------------
     @staticmethod
     def from_backing_store(
-        storage_dir: Path, storage_key: str, sample_freq: Optional[Frequency]
-    ) -> Optional["EnsembleSummaryProviderImplLAZYArrow"]:
+        storage_dir: Path, storage_key: str
+    ) -> Optional["ProviderImplArrowLazy"]:
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
-            return EnsembleSummaryProviderImplLAZYArrow(arrow_file_name, sample_freq)
+            return ProviderImplArrowLazy(arrow_file_name)
 
         return None
 
@@ -239,8 +237,25 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
         return self._realizations
 
     # -------------------------------------------------------------------------
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+        schema = self._get_or_read_schema()
+        field = schema.field(vector_name)
+        if field.metadata:
+            meta_as_str = field.metadata.get(b"smry_meta")
+            if meta_as_str:
+                return json.loads(meta_as_str)
+
+        return None
+
+    # -------------------------------------------------------------------------
+    def supports_resampling(self) -> bool:
+        return True
+
+    # -------------------------------------------------------------------------
     def dates(
-        self, realizations: Optional[Sequence[int]] = None
+        self,
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
 
         timer = PerfTimer()
@@ -253,12 +268,12 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
 
-        if self._sample_freq is not None:
+        if resampling_frequency is not None:
             unique_dates_np = table.column("DATE").unique().to_numpy()
             min_raw_date = np.min(unique_dates_np)
             max_raw_date = np.max(unique_dates_np)
             sample_dates_np = generate_normalized_sample_dates(
-                min_raw_date, max_raw_date, self._sample_freq
+                min_raw_date, max_raw_date, resampling_frequency
             )
             unique_date_vals = sample_dates_np.astype(datetime.datetime).tolist()
         else:
@@ -266,7 +281,7 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
         et_find_unique_ms = timer.lap_ms()
 
         LOGGER.debug(
-            f"dates() took: {timer.elapsed_ms()}ms ("
+            f"dates({resampling_frequency}) took: {timer.elapsed_ms()}ms ("
             f"read={et_read_ms}ms, "
             f"filter={et_filter_ms}ms, "
             f"find_unique={et_find_unique_ms}ms)"
@@ -275,19 +290,11 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
         return unique_date_vals
 
     # -------------------------------------------------------------------------
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
-        schema = self._get_or_read_schema()
-        field = schema.field(vector_name)
-        if field.metadata:
-            meta_as_str = field.metadata.get(b"smry_meta")
-            if meta_as_str:
-                return json.loads(meta_as_str)
-
-        return None
-
-    # -------------------------------------------------------------------------
     def get_vectors_df(
-        self, vector_names: Sequence[str], realizations: Optional[Sequence[int]] = None
+        self,
+        vector_names: Sequence[str],
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
 
         timer = PerfTimer()
@@ -302,17 +309,17 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
 
-        if self._sample_freq is not None:
-            # table = resample_multi_real_table_NAIVE(table, self._sample_freq)
-            # table = resample_sorted_multi_real_table_NAIVE(table, self._sample_freq)
-            table = resample_sorted_multi_real_table(table, self._sample_freq)
+        if resampling_frequency is not None:
+            # table = resample_multi_real_table_NAIVE(table, resampling_frequency)
+            # table = resample_sorted_multi_real_table_NAIVE(table, resampling_frequency)
+            table = resample_sorted_multi_real_table(table, resampling_frequency)
         et_resample_ms = timer.lap_ms()
 
         df = table.to_pandas(timestamp_as_object=True)
         et_to_pandas_ms = timer.lap_ms()
 
         LOGGER.debug(
-            f"get_vectors_df() took: {timer.elapsed_ms()}ms ("
+            f"get_vectors_df({resampling_frequency}) took: {timer.elapsed_ms()}ms ("
             f"read={et_read_ms}ms, "
             f"filter={et_filter_ms}ms, "
             f"resample={et_resample_ms}ms, "
@@ -339,34 +346,16 @@ class EnsembleSummaryProviderImplLAZYArrow(EnsembleSummaryProvider):
         table = self._get_or_read_table(columns_to_get)
         et_read_ms = timer.lap_ms()
 
-        if self._sample_freq is not None:
-            if realizations:
-                real_mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
-                table = table.filter(real_mask)
-            et_filter_ms = timer.lap_ms()
+        if realizations:
+            real_mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
+            table = table.filter(real_mask)
+        et_filter_ms = timer.lap_ms()
 
-            np_lookup_date = np.datetime64(date, "ms")
-            table = sample_sorted_multi_real_table_at_date(table, np_lookup_date)
+        np_lookup_date = np.datetime64(date, "ms")
+        table = sample_sorted_multi_real_table_at_date(table, np_lookup_date)
 
-            et_resample_ms = timer.lap_ms()
-            table = table.drop(["DATE"])
-
-        else:
-            # This scenario, without resampling, might not work very well unless all
-            # the dates in all the realizations are aligned. Does an exact matching
-            # on date, so the returned table may be missing realizations
-            pa_lookup_date = pa.scalar(date, type=pa.timestamp("ms"))
-            mask = pc.equal(table["DATE"], pa_lookup_date)
-
-            if realizations:
-                real_mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
-                mask = pc.and_(mask, real_mask)
-
-            table = table.drop(["DATE"])
-            table = table.filter(mask)
-
-            et_filter_ms = timer.lap_ms()
-            et_resample_ms = 0
+        et_resample_ms = timer.lap_ms()
+        table = table.drop(["DATE"])
 
         df = table.to_pandas()
         et_to_pandas_ms = timer.lap_ms()
