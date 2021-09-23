@@ -57,13 +57,16 @@ def controllers(
         tree_mode: str, real: int, prod_inj_other: list, ensemble: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
-        data, edge_options, _ = grouptreedata.create_grouptree_dataset(
+        data, edge_options, node_options = grouptreedata.create_grouptree_dataset(
             ensemble, tree_mode, real, prod_inj_other
         )
 
         return [
             webviz_subsurface_components.GroupTree(
-                id="grouptree", data=data, edge_options=edge_options
+                id="grouptree",
+                data=data,
+                edge_options=edge_options,
+                node_options=node_options,
             ),
         ]
 
