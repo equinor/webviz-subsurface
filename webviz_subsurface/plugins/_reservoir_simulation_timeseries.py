@@ -316,12 +316,14 @@ folder, to avoid risk of not extracting the right data.
             line_shape_fallback
         )
 
-        # Retreive predefined expressions from configuration
-        self.predefined_expressions_path = None
-        if "predefined_expressions" in webviz_settings.shared_settings:
-            self.predefined_expressions_path = webviz_settings.shared_settings[
-                "predefined_expressions"
-            ][predefined_expressions]
+        # Retreive predefined expressions from configuration and validate
+        self.predefined_expressions_path = (
+            None
+            if predefined_expressions is None
+            else webviz_settings.shared_settings["predefined_expressions"][
+                predefined_expressions
+            ]
+        )
         self.predefined_expressions = expressions_from_config(
             get_path(self.predefined_expressions_path)
             if self.predefined_expressions_path
