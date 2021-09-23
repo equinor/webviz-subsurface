@@ -606,3 +606,31 @@ def selections_controllers(
                 ],
             ),
         )
+
+    @app.callback(
+        Output(
+            {"id": get_uuid("selections"), "tab": "src-comp", "selector": "Ignore <"},
+            "value",
+        ),
+        Input(
+            {"id": get_uuid("selections"), "tab": "src-comp", "selector": "Response"},
+            "value",
+        ),
+    )
+    def _reset_ignore_value_source_comparison(_response_change: str) -> float:
+        """reset ignore value when new response is selected"""
+        return 0
+
+    @app.callback(
+        Output(
+            {"id": get_uuid("selections"), "tab": "ens-comp", "selector": "Ignore <"},
+            "value",
+        ),
+        Input(
+            {"id": get_uuid("selections"), "tab": "ens-comp", "selector": "Response"},
+            "value",
+        ),
+    )
+    def _reset_ignore_value_ens_comparison(_response_change: str) -> float:
+        """reset ignore value when new response is selected"""
+        return 0

@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
+- [#777](https://github.com/equinor/webviz-subsurface/pull/777) - `VolumetricAnalysis` - added tabs with `Source comparison` and `Ensemble comparison` as QC tools for quick identification of where and why volumetric changes occur across sources (e.g. static vs dynamic) or ensembles (e.g. model revisions or ahm iterations).
 - [#709](https://github.com/equinor/webviz-subsurface/pull/709) - Added `VectorCalculator` component in `ReservoirSimulationTimeSeries` plugin for calculation and graphing of custom simulation time series vectors.
 - [#773](https://github.com/equinor/webviz-subsurface/pull/773) - `VolumetricAnalysis` - added functionality of easy switching bewteen `FIPNUM` and `REGION/ZONE` filter for cases where each fipnum belongs to a unique region and zone.
 - [#770](https://github.com/equinor/webviz-subsurface/pull/770) - Added support for dynamic volumetric files in `VolumetricAnalysis` and possibility of combining static and dynamic volumes on a comparable level. To trigger this behaviour a fipfile with `FIPNUM` to `REGION/ZONE` mapping information needs to be provided. Also added support for giving multiple files as input per source.

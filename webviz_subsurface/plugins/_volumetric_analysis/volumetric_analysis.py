@@ -1,8 +1,8 @@
 from typing import List, Tuple, Callable, Optional
 from pathlib import Path
-
 import pandas as pd
-from dash import html, Dash
+import dash
+import dash_html_components as html
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -21,6 +21,7 @@ from .controllers import (
     selections_controllers,
     layout_controllers,
     export_data_controllers,
+    comparison_controllers,
 )
 
 
@@ -133,7 +134,7 @@ reek_test_data/aggregated_data/parameters.csv)
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
+        app: dash.Dash,
         webviz_settings: WebvizSettings,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
@@ -143,9 +144,7 @@ reek_test_data/aggregated_data/parameters.csv)
         non_net_facies: Optional[List[str]] = None,
         fipfile: Path = None,
     ):
-
         super().__init__()
-
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "_assets"
@@ -178,7 +177,7 @@ reek_test_data/aggregated_data/parameters.csv)
 
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile" or "ensembles" and "volfiles"'
+                'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
             )
 
         vcomb = VolumeValidatorAndCombinator(
@@ -201,18 +200,20 @@ reek_test_data/aggregated_data/parameters.csv)
             children=[
                 clientside_stores(get_uuid=self.uuid),
                 main_view(
-                    get_uuid=self.uuid,
-                    volumemodel=self.volmodel,
-                    theme=self.theme,
+                    get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
                 ),
             ],
         )
 
-    def set_callbacks(self, app: Dash) -> None:
+    def set_callbacks(self, app: dash.Dash) -> None:
         selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         distribution_controllers(
-            app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
+            app=app,
+            get_uuid=self.uuid,
+            volumemodel=self.volmodel,
+            theme=self.theme,
         )
+        comparison_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
         layout_controllers(app=app, get_uuid=self.uuid)
         export_data_controllers(app=app, get_uuid=self.uuid)
 

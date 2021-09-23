@@ -8,6 +8,7 @@ from .filter_view import filter_layout
 from .distribution_main_layout import distributions_main_layout, table_main_layout
 from .selections_view import selections_layout, table_selections_layout
 from .tornado_selections_view import tornado_selections_layout
+from .comparison_layout import comparison_main_layout, comparison_selections
 from .tornado_layout import tornado_main_layout
 
 
@@ -17,7 +18,8 @@ def main_view(
     theme: WebvizConfigTheme,
 ) -> dcc.Tabs:
 
-    tabs = [
+    tabs = []
+    tabs.append(
         wcc.Tab(
             label="Inplace distributions",
             value="voldist",
@@ -41,7 +43,7 @@ def main_view(
                 ],
             ),
         )
-    ]
+    )
     tabs.append(
         wcc.Tab(
             label="Tables",
@@ -57,7 +59,6 @@ def main_view(
                         volumemodel=volumemodel,
                     ),
                     filter_layout(
-                        open_details=True,
                         uuid=get_uuid("filters"),
                         tab="table",
                         volumemodel=volumemodel,
@@ -67,7 +68,7 @@ def main_view(
             ),
         )
     )
-    if volumemodel.sensrun:
+    if volumemodel.sensrun and volumemodel.volume_type != "mixed":
         tabs.append(
             wcc.Tab(
                 label="Tornadoplots",
@@ -83,7 +84,6 @@ def main_view(
                             volumemodel=volumemodel,
                         ),
                         filter_layout(
-                            open_details=True,
                             uuid=get_uuid("filters"),
                             tab="tornado",
                             volumemodel=volumemodel,
@@ -99,19 +99,21 @@ def main_view(
                 label="Source comparison",
                 value="src-comp",
                 children=tab_view_layout(
-                    main_layout=[
-                        html.Div(
-                            "Under development - page for comparing geo/sim/eclipse "
-                            "volumes and identify differences",
-                            style={"margin": "50px", "font-size": "20px"},
-                        )
+                    main_layout=comparison_main_layout(get_uuid("main-src-comp")),
+                    sidebar_layout=[
+                        comparison_selections(
+                            uuid=get_uuid("selections"),
+                            tab="src-comp",
+                            volumemodel=volumemodel,
+                            compare_on="SOURCE",
+                        ),
+                        filter_layout(
+                            uuid=get_uuid("filters"),
+                            tab="src-comp",
+                            volumemodel=volumemodel,
+                            hide_selectors=["SOURCE", "FLUID_ZONE", "SENSTYPE"],
+                        ),
                     ],
-                    sidebar_layout=filter_layout(
-                        open_details=True,
-                        uuid=get_uuid("filters"),
-                        tab="src-comp",
-                        volumemodel=volumemodel,
-                    ),
                 ),
             )
         )
@@ -121,26 +123,33 @@ def main_view(
                 label="Ensemble comparison",
                 value="ens-comp",
                 children=tab_view_layout(
-                    main_layout=[
-                        html.Div(
-                            "Under development - page for analyzing volume changes "
-                            "and causes between ensembles (e.g between two model revision)",
-                            style={"margin": "50px", "font-size": "20px"},
-                        )
+                    main_layout=comparison_main_layout(get_uuid("main-ens-comp")),
+                    sidebar_layout=[
+                        comparison_selections(
+                            uuid=get_uuid("selections"),
+                            tab="ens-comp",
+                            volumemodel=volumemodel,
+                            compare_on="ENSEMBLE",
+                        ),
+                        filter_layout(
+                            uuid=get_uuid("filters"),
+                            tab="ens-comp",
+                            volumemodel=volumemodel,
+                            hide_selectors=["ENSEMBLE", "FLUID_ZONE", "SENSTYPE"],
+                        ),
                     ],
-                    sidebar_layout=filter_layout(
-                        open_details=True,
-                        uuid=get_uuid("filters"),
-                        tab="ens-comp",
-                        volumemodel=volumemodel,
-                    ),
                 ),
             )
         )
+    initial_tab = "voldist"
+    if volumemodel.volume_type == "mixed":
+        initial_tab = "src-comp"
+    elif volumemodel.sensrun:
+        initial_tab = "tornado"
 
     return wcc.Tabs(
         id=get_uuid("tabs"),
-        value="voldist" if not volumemodel.sensrun else "tornado",
+        value=initial_tab,
         style={"width": "100%"},
         persistence=True,
         children=tabs,
