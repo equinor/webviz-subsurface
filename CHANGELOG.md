@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
 
 ### Changed
+- [#788](https://github.com/equinor/webviz-subsurface/pull/788) - Prevent mixing volumes from different sensitivities in `VolumetricAnalysis` by not allowing to select more than one sensitivity as a filter unless SENSNAME has been grouped on by the user.
 - [#760](https://github.com/equinor/webviz-subsurface/pull/760) - Updated to `Dash 2.0`.
 - [#761](https://github.com/equinor/webviz-subsurface/pull/761) - Store `xtgeo.RegularSurface` as bytestream instead of serializing to `json`.
 
