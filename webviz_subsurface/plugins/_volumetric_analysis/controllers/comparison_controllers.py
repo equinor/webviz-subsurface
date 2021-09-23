@@ -131,14 +131,15 @@ def comparison_callback(
             filter_info="SOURCE" if compare_on != "SOURCE" else "ENSEMBLE",
         )
 
-    diffdf_real = create_comparison_df(
-        volumemodel,
-        compare_on=compare_on,
-        selections=selections,
-        responses=[selections["Response"]],
-        groups=groupby + (["REAL"] if "REAL" not in groupby else []),
-        rename_diff_col=True,
-    )
+    if compare_on == "SOURCE" or "REAL" in groupby:
+        diffdf_real = create_comparison_df(
+            volumemodel,
+            compare_on=compare_on,
+            selections=selections,
+            responses=[selections["Response"]],
+            groups=groupby + (["REAL"] if "REAL" not in groupby else []),
+            rename_diff_col=True,
+        )
 
     if "REAL" not in groupby:
         diffdf_group = create_comparison_df(
@@ -149,11 +150,12 @@ def comparison_callback(
             groups=groupby,
             rename_diff_col=True,
         )
-        # Add column with number of highlighted realizations
-        diffdf_group["💡 reals"] = diffdf_group.apply(
-            lambda row: find_higlighted_real_count(row, diffdf_real, groupby),
-            axis=1,
-        )
+        if compare_on == "SOURCE":
+            # Add column with number of highlighted realizations
+            diffdf_group["💡 reals"] = diffdf_group.apply(
+                lambda row: find_higlighted_real_count(row, diffdf_real, groupby),
+                axis=1,
+            )
 
     df = diffdf_group if "REAL" not in groupby else diffdf_real
     if df.empty:
@@ -192,13 +194,17 @@ def comparison_callback(
             groupby=groupby,
             diff_mode=selections["Diff mode"],
         )
-        scatter_diff_vs_real = create_scatterfig(
-            df=diffdf_real,
-            x="REAL",
-            y=selections["Diff mode"],
-            selections=selections,
-            groupby=groupby,
-            diff_mode=selections["Diff mode"],
+        scatter_diff_vs_real = (
+            create_scatterfig(
+                df=diffdf_real,
+                x="REAL",
+                y=selections["Diff mode"],
+                selections=selections,
+                groupby=groupby,
+                diff_mode=selections["Diff mode"],
+            )
+            if compare_on == "SOURCE"
+            else None
         )
         barfig_non_highlighted = create_barfig(
             df=df[df["highlighted"] == "yes"],
