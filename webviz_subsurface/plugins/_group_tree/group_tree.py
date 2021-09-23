@@ -2,7 +2,7 @@ from typing import List, Dict, Tuple, Callable
 
 import pandas as pd
 import dash
-import dash_html_components as html
+from dash import html
 
 from fmu.ensemble import ScratchEnsemble
 from webviz_config.webviz_store import webvizstore
@@ -65,6 +65,10 @@ class GroupTree(WebvizPluginABC):
         time_index: str = "yearly",
     ):
         super().__init__()
+        assert time_index in [
+            "monthly",
+            "yearly",
+        ], "time_index must be monthly or yearly"
         self.ensembles = ensembles
         self.gruptree_file = gruptree_file
         self.time_index = time_index
@@ -78,36 +82,17 @@ class GroupTree(WebvizPluginABC):
                 ensemble_paths={
                     ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
-                },
-                time_index=self.time_index,
-                column_keys=[
-                    "FOPR",
-                    "FGPR",
-                    "FWPR",
-                    "FWIR",
-                    "FGIR",
-                    "GOPR*",
-                    "GGPR*",
-                    "GWPR*",
-                    "GWIR*",
-                    "GGIR*",
-                    "GPR*",
-                    "WOPR*",
-                    "WGPR*",
-                    "WWPR*",
-                    "WWIR*",
-                    "WGIR*",
-                    "WTHP*",
-                    "WBHP*",
-                    "WMCTL*",
-                    "WSTAT*",
-                ],
+                }
             )
         )
         smry = self.emodel.get_or_load_smry_cached()
         gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
-        smry["DATE"] = pd.to_datetime(smry["DATE"]).dt.date
+        smry["DATE"] = pd.to_datetime(smry["DATE"])  # .dt.date
         gruptree["DATE"] = pd.to_datetime(gruptree["DATE"]).dt.date
+
+        if time_index == "yearly":
+            smry = smry[smry["DATE"].dt.is_year_start]
+        smry["DATE"] = smry["DATE"].dt.date
 
         self.grouptreedata = GroupTreeData(smry, gruptree)
 
@@ -190,7 +175,7 @@ def read_ensemble_gruptree(
     # Load all gruptree dataframes and check if they are equal
     compare_columns = ["DATE", "CHILD", "KEYWORD", "PARENT"]
     df_prev = pd.DataFrame()
-    df_all = pd.DataFrame()
+    dataframes = []
     gruptrees_are_equal = True
     for i, row in df_files.iterrows():
         df_real = pd.read_csv(row["FULLPATH"])
@@ -207,7 +192,8 @@ def read_ensemble_gruptree(
             df_prev = df_real[compare_columns].copy()
 
         df_real["REAL"] = row["REAL"]
-        df_all = pd.concat([df_all, df_real])
+        dataframes.append(df_real)
+    df_all = pd.concat(dataframes)
 
     # Return either one or all realization in a common dataframe
     if gruptrees_are_equal:
