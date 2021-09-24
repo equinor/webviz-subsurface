@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.5` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.6a0` of `webviz-subsurface`.
 
 
 
@@ -1431,6 +1431,8 @@ Visualizes reservoir simulation time series data for FMU ensembles.
 
 
 
+
+
 **Two main options for input data: Aggregated and read from UNSMRY.**
 
 **Using aggregated data**
@@ -1455,6 +1457,9 @@ Visualizes reservoir simulation time series data for FMU ensembles.
     * `backfilled`
     * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
 
+**Calculated vector expressions**
+* **`predefined_expressions`:** yaml file with pre-defined expressions
+
 
 
 ---
@@ -1467,6 +1472,7 @@ How to use in YAML config file:
         column_keys:  # Optional, type list.
         sampling:  # Optional, type str.
         options:  # Optional, type dict.
+        predefined_expressions:  # Optional, type str.
         line_shape_fallback:  # Optional, type str.
 ```
 
@@ -2530,19 +2536,38 @@ How to use in YAML config file:
 
 <!-- tab:Description -->
 
-Dashboard to analyze volumetrics results from
-FMU ensembles.
+Dashboard to analyze volumetrics results from FMU ensembles, both monte carlo
+and sensitivity runs are supported.
 
-This plugin supports both monte carlo and sensitivity runs, and will automatically detect
-which case has been run.
+This dashboard is built with static volumetric data in mind. However both static and dynamic
+volumefiles are supported as input, and the type is determined by an automatic check. To be
+defined as a static source the standard FMU-format of such files must be followed.
+[see FMU wiki for decription of volumetric standards](https://wiki.equinor.com/wiki/index.php/FMU_standards/Volumetrics)
 
-The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
-is removed and a `FLUID_ZONE` column is added to be used as a filter or selector. Volumes from
-the Water zone will be calculated if Total volumes are included.
+The dashboard can be used as a tool to compare dynamic and static volumes.
+This is done by creating sets of FIPNUM's and REGION∕ZONE's that are comparable
+in volumes, and combining volumes per set. To trigger this behaviour a
+fipfile with FIPNUM to REGION∕ZONE mapping information must be provided. Different formats
+of this fipfile are supported [examples can be seen here](https://fmu-docs.equinor.com/docs/subscript/scripts/rmsecl_volumetrics.html#example).
 
-Property columns (e.g. PORO, SW) are automatically computed from the data as long as
-relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES column
-by defining which facies are non-net.
+The plugin behavoiur is dependent on the input files and their type (static/dynamic):
+* If the input file(s) are static, different input preparations are triggered to enhance the
+  analysis:
+    * The fluid type is determined by the column name suffixes, either (_OIL or _GAS). This suffix
+      is removed and a `FLUID_ZONE` column is added to be used as a filter or selector.
+    * If total geometric volumes are included (suffix _TOTAL) they will be used to compute volumes
+      from the water zone and "water" will be added to the `FLUID_ZONE` column.
+    * Property columns (e.g. PORO, SW) are automatically computed from the data as long as
+      relevant volumetric columns are present. NET volume and NTG can be computed from a FACIES
+      column by defining which facies are non-net.
+* If the input file(s) are dynamic these operations are skipped.
+
+!> Be aware that if more than one source is given as input, only common columns between the sources
+   are kept. Hence it is often preferrable to initialize the plugin multiple times dependent on the
+   analysis task in question. E.g. a pure static input will allow for a detailed analysis of
+   volumetric data due to the input preparations mentioned above. While a mix of both static and
+   dynamic data will limit the available columns but enable comparison of these data on a
+   comparable level.
 
 Input can be given either as aggregated `csv` files or as ensemble name(s)
 defined in `shared_settings` (with volumetric `csv` files stored per realization).
@@ -2551,6 +2576,8 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 
 
 <!-- tab:Arguments -->
+
+
 
 
 
@@ -2582,6 +2609,8 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 **Common settings**
 * **`non_net_facies`:** List of facies which are non-net.
+* **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
+    and human readable regions, zones and etc to be used as filters.
 
 
 ---
@@ -2594,6 +2623,7 @@ How to use in YAML config file:
         volfiles:  # Optional, type dict.
         volfolder:  # Optional, type str.
         non_net_facies:  # Optional, type Union[typing.List[str], NoneType].
+        fipfile:  # Optional, type str (corresponding to a path).
 ```
 
 
@@ -2603,11 +2633,25 @@ How to use in YAML config file:
 
 ?> The input files must follow FMU standards.
 
-* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/volumes.csv).
 
-* [Example of a file per realization that can be used with `ensembles` and `volfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/volumes/geogrid--oil.csv).
+The input files are given to the plugin in the 'volfiles' argument. This is a dictionary
+where the key will used in the SOURCE column and the value is the name of a volumetric file,
+or a list of volumetric files belonging to the specific data source (e.g. geogrid).
+If users have multiple csv-files from one data source e.g. geogrid_oil.csv and geogrid_gas.csv,
+it is recommended to put these into a list of files for the source geogrid as such:
 
-For sensitivity runs the sensitivity information is extracted automatically if `ensembles`is given as input, as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.* [Example of an aggregated file to use with `csvfile_parameters`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
+```yaml
+volfiles:
+    geogrid:
+        - geogrid_oil.csv
+        - geogrid_gas.csv
+```
+
+* [Example of an aggregated file for `csvfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/volumes.csv).
+
+* [Example of a file per realization that can be used with `ensembles` and `volfiles`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/volumes/geogrid--vol.csv).
+
+For sensitivity runs the sensitivity information is extracted automatically if `ensembles`is given as input, as long as `SENSCASE` and `SENSNAME` are found in `parameters.txt`.* [Example of an aggregated file to use with `csvfile_parameters`](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/parameters.csv)
 
 
 **The following columns will be used as available filters, if present:**
@@ -2615,8 +2659,10 @@ For sensitivity runs the sensitivity information is extracted automatically if `
 * `ZONE`
 * `REGION`
 * `FACIES`
+* `FIPNUM`
+* `SET`
 * `LICENSE`
-* `SOURCE` (relevant if calculations are done for multiple grids)
+* `SOURCE`
 * `SENSNAME`
 * `SENSCASE`
 
@@ -2668,7 +2714,7 @@ Visualizes well completions data per well coming from export of the Eclipse COMP
 
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`compdat_file`:** `.csv` file with compdat data per realization
-* **`well_connection_status_file`:** `.parquet` file with well connection status data per realization
+* **`well_connection_status_file`:** `.parquet` file with well connection status per realization
 * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
 * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
 * **`well_attributes_file`:** `.json` file with categorical well attributes
