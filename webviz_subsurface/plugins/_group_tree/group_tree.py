@@ -87,12 +87,11 @@ class GroupTree(WebvizPluginABC):
         )
         smry = self.emodel.get_or_load_smry_cached()
         gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
-        smry["DATE"] = pd.to_datetime(smry["DATE"])  # .dt.date
-        gruptree["DATE"] = pd.to_datetime(gruptree["DATE"]).dt.date
+        smry["DATE"] = pd.to_datetime(smry["DATE"])
+        gruptree["DATE"] = pd.to_datetime(gruptree["DATE"])
 
         if time_index == "yearly":
             smry = smry[smry["DATE"].dt.is_year_start]
-        smry["DATE"] = smry["DATE"].dt.date
 
         self.grouptreedata = GroupTreeData(smry, gruptree)
 
