@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.6a0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.6rc0` of `webviz-subsurface`.
 
 
 
@@ -166,6 +166,85 @@ from the last week.
 
 The csv file must have the columns `userid` and `usageKB` (where KB means
 [kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### GroupTree
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+This plugin vizualizes the network tree and displays pressures,
+rates and other network related information.
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+* **`ensembles`:** Which ensembles in `shared_settings` to include.
+* **`gruptree_file`:** `.csv` with gruptree information.
+* **`time_index`:** Frequency for the data sampling.
+
+
+---
+How to use in YAML config file:
+```yaml
+    - GroupTree:
+        ensembles:  # Required, type list.
+        gruptree_file:  # Optional, type str.
+        time_index:  # Optional, type str.
+```
+
+
+
+<!-- tab:Data input -->
+
+
+**Summary data**
+
+This plugin needs the following summary vectors to be exported:
+* FOPR, FWPR, FOPR, FWIR and FGIR
+* GPR for all group nodes in the network
+* GOPR, GWPR and GGPR for all group nodes in the production network     (GOPRNB etc for BRANPROP trees)
+* GGIR and/or GWIR for all group nodes in the injection network
+* WSTAT, WTHP, WBHP, WMCTL for all wells
+* WOPR, WWPR, WGPR for all producers
+* WWIR and/or WGIR for all injectors
+
+**GRUPTREE input**
+
+`gruptree_file` is a path to a file stored per realization (e.g. in     `share/results/tables/gruptree.csv"`).
+
+The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
+model with subcommand `gruptree`:
+[Link to ECL2CSV](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html).
+
+The forward model uses `ecl2df` to export a table representation of the Eclipse network:
+[Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+
+**time_index**
+
+This is the sampling interval of the summary data. It is `yearly` by default, but can be set
+to `monthly` if needed.
 
 
 
