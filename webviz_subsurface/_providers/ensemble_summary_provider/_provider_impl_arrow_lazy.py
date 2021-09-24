@@ -297,6 +297,9 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
 
+        if not vector_names:
+            raise ValueError("List of requested vector names is empty")
+
         timer = PerfTimer()
 
         columns_to_get = ["DATE", "REAL"]
@@ -338,6 +341,9 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         vector_names: Sequence[str],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
+
+        if not vector_names:
+            raise ValueError("List of requested vector names is empty")
 
         timer = PerfTimer()
 
