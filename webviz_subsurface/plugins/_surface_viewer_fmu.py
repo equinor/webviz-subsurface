@@ -397,7 +397,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={
@@ -418,7 +418,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={
@@ -439,7 +439,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={
