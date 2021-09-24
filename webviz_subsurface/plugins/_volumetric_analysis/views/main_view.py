@@ -1,5 +1,6 @@
-from typing import Callable
+from typing import Callable, Optional
 
+import pandas as pd
 from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_config import WebvizConfigTheme
@@ -10,12 +11,18 @@ from .selections_view import selections_layout, table_selections_layout
 from .tornado_selections_view import tornado_selections_layout
 from .comparison_layout import comparison_main_layout, comparison_selections
 from .tornado_layout import tornado_main_layout
+from .fipfile_qc_layout import (
+    fipfile_qc_filters,
+    fipfile_qc_main_layout,
+    fipfile_qc_selections,
+)
 
 
 def main_view(
     get_uuid: Callable,
     volumemodel: InplaceVolumesModel,
     theme: WebvizConfigTheme,
+    disjoint_set_df: Optional[pd.DataFrame] = None,
 ) -> dcc.Tabs:
 
     tabs = []
@@ -141,6 +148,25 @@ def main_view(
                 ),
             )
         )
+    if disjoint_set_df is not None:
+        tabs.append(
+            wcc.Tab(
+                label="Fipfile QC",
+                value="fipqc",
+                children=tab_view_layout(
+                    main_layout=fipfile_qc_main_layout(get_uuid("main-fipqc")),
+                    sidebar_layout=[
+                        fipfile_qc_selections(uuid=get_uuid("selections"), tab="fipqc"),
+                        fipfile_qc_filters(
+                            uuid=get_uuid("filters"),
+                            tab="fipqc",
+                            disjoint_set_df=disjoint_set_df,
+                        ),
+                    ],
+                ),
+            )
+        )
+
     initial_tab = "voldist"
     if volumemodel.volume_type == "mixed":
         initial_tab = "src-comp"
