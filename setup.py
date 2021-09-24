@@ -39,6 +39,7 @@ setup(
         "webviz_config_plugins": [
             "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
+            "GroupTree = webviz_subsurface.plugins:GroupTree",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",

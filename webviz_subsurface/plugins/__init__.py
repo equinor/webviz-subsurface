@@ -58,3 +58,4 @@ from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._well_completions import WellCompletions
+from ._group_tree import GroupTree
