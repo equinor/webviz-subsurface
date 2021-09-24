@@ -117,7 +117,7 @@ class SeismicMisfit(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         myensembles: List[str],
         attribute_name_sim: str,
-        attribute_name_obs: Optional[str] = None,
+        attribute_name_obs: str = None,
         metadata_name: str = "metadata.csv",
         attribute_sim_path: Path = Path(
             "sim2seis/output/4d_attribute_maps/"
@@ -130,7 +130,7 @@ class SeismicMisfit(WebvizPluginABC):
         ),  # path relative to <casedir>
         obs_mult: float = 1.0,
         sim_mult: float = 1.0,
-        polygon: Optional[Path] = None,
+        polygon: Path = None,
         realrange: Optional[List[List[int]]] = None,
     ):
         super().__init__()
@@ -1226,12 +1226,12 @@ class SeismicMisfit(WebvizPluginABC):
                                 value=(self.map_y_range[0] + self.map_y_range[1]) / 2,
                                 step=100,
                                 marks={
-                                    self.map_y_range[
-                                        0
-                                    ]: f"min={round(self.map_y_range[0]):,}",
-                                    self.map_y_range[
-                                        1
-                                    ]: f"max={round(self.map_y_range[1]):,}",
+                                    str(
+                                        self.map_y_range[0]
+                                    ): f"min={round(self.map_y_range[0]):,}",
+                                    str(
+                                        self.map_y_range[1]
+                                    ): f"max={round(self.map_y_range[1]):,}",
                                 },
                             ),
                             dcc.Graph(
