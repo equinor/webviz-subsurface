@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#765](https://github.com/equinor/webviz-subsurface/pull/765) - Use correct inline/xline ranges for axes in `SegyViewer` z-slice graph.
 - [#782](https://github.com/equinor/webviz-subsurface/pull/782) - Fixed an issue in `VolumetricAnalysis` when calculating property columns on grouped selections.
+- [#791](https://github.com/equinor/webviz-subsurface/pull/791) - Ensure correct map bounds in `SurfaceViewerFMU` when switching between attributes with different geometry.
 
 ## [0.2.5] - 2021-09-03
 ### Added
