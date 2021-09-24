@@ -1,3 +1,4 @@
+from typing import Optional
 from dash import html, dcc, dash_table
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -38,11 +39,12 @@ def comparison_main_layout(uuid: str) -> html.Div:
 
 
 def comparison_qc_plots_layout(
-    fig_diff_vs_real: go.Figure,
+    fig_diff_vs_real: Optional[go.Figure],
     fig_corr: go.Figure,
     fig_diff_vs_response: go.Figure,
     barfig: go.Figure,
 ) -> html.Div:
+    real_plot = fig_diff_vs_real is not None
     return html.Div(
         children=[
             html.Div(
@@ -51,21 +53,23 @@ def comparison_qc_plots_layout(
                     style={"height": "22vh"},
                     figure=fig_diff_vs_real,
                 )
+                if real_plot
+                else [],
             ),
             wcc.FlexBox(
-                style={"height": "32vh"},
+                style={"height": "32vh" if real_plot else "54vh"},
                 children=[
                     wcc.FlexColumn(
                         children=wcc.Graph(
                             config={"displayModeBar": False},
-                            style={"height": "31vh"},
+                            style={"height": "31vh" if real_plot else "53vh"},
                             figure=fig_diff_vs_response,
                         )
                     ),
                     wcc.FlexColumn(
                         children=wcc.Graph(
                             config={"displayModeBar": False},
-                            style={"height": "31vh"},
+                            style={"height": "31vh" if real_plot else "53vh"},
                             figure=fig_corr,
                         )
                     ),
@@ -152,6 +156,14 @@ def comparison_selections(
                         selector_label="value2",
                         value=elements[1] if compare_on == "SOURCE" else elements[-1],
                         elements=elements,
+                    ),
+                    html.Div(
+                        f"Difference = {compare_on.capitalize()} B - {compare_on.capitalize()} A",
+                        style={
+                            "font-size": "15px",
+                            "margin-top": "5px",
+                            "color": "#007079",
+                        },
                     ),
                     response_selector(volumemodel, uuid, tab),
                     group_by_selector(volumemodel, uuid, tab),
