@@ -278,15 +278,24 @@ def selections_controllers(
             ]
         if selected_tab == "table" and page_selections["Group by"] is not None:
             selected_data = page_selections["Group by"]
+        if selected_tab == "tornado":
+            selected_data = ["SENSNAME"]
 
         output = {}
-        for selector in ["SOURCE", "ENSEMBLE"]:
+        for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
+            options = [x["value"] for x in page_filter_settings[selector]["options"]]
+            if selector not in page_filter_settings:
+                continue
             multi = selector in selected_data
             selector_is_multi = page_filter_settings[selector]["multi"]
             if not multi and selector_is_multi:
-                values = [page_filter_settings[selector]["options"][0]["value"]]
+                values = [
+                    "rms_seed"
+                    if selector == "SENSNAME" and "rms_seed" in options
+                    else options[0]
+                ]
             elif multi and not selector_is_multi:
-                values = [x["value"] for x in page_filter_settings[selector]["options"]]
+                values = options
             else:
                 multi = values = no_update
             output[selector] = {"multi": multi, "values": values}
