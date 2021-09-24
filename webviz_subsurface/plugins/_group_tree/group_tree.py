@@ -4,13 +4,13 @@ import pandas as pd
 import dash
 from dash import html
 
-from fmu.ensemble import ScratchEnsemble
 from webviz_config.webviz_store import webvizstore
 from webviz_config import WebvizPluginABC
 from webviz_config import WebvizSettings
 
 from ..._models import EnsembleSetModel
 from ..._models import caching_ensemble_set_model_factory
+from ..._datainput.fmu_input import scratch_ensemble
 from .group_tree_data import GroupTreeData
 from .controllers import controllers
 from .views import main_view
@@ -146,7 +146,7 @@ class GroupTree(WebvizPluginABC):
 def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.DataFrame:
     """Searches for gruptree files on the scratch disk. These
     files can be exported in the FMU workflow using the ECL2CSV
-    forward job with subcommand gruptree.
+    forward model with subcommand gruptree.
     """
     df = pd.DataFrame()
     for ens_name, ens_path in ens_paths.items():
@@ -159,14 +159,15 @@ def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.Dat
 def read_ensemble_gruptree(
     ens_name: str, ens_path: str, gruptree_file: str
 ) -> pd.DataFrame:
-    """Reads the gruptree file for and ensemble.
+    """Reads the gruptree file for an ensemble.
 
     If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
     are filtered out.
 
     If the trees are equal in every realization, only one realization is kept.
     """
-    ens = ScratchEnsemble("ens", ens_path)
+
+    ens = scratch_ensemble(ens_name, ens_path, filter_file="OK")
     df_files = ens.find_files(gruptree_file)
 
     if df_files.empty:

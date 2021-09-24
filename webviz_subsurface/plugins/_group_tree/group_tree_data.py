@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Set
 import logging
 
 import pandas as pd
@@ -15,8 +15,10 @@ class GroupTreeData:
     def __init__(self, smry: pd.DataFrame, gruptree: pd.DataFrame):
         self.smry = smry
         self.gruptree = gruptree
-        self.ensembles = gruptree["ENSEMBLE"].unique()
-        self.wells = gruptree[gruptree["KEYWORD"] == "WELSPECS"]["CHILD"].unique()
+        self.ensembles: Set[str] = gruptree["ENSEMBLE"].unique()
+        self.wells: Set[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
+            "CHILD"
+        ].unique()
 
         # Check that all field rate summary vectors exist
         self.check_that_sumvecs_exists(["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"])
@@ -38,7 +40,7 @@ class GroupTreeData:
         self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
 
         # Get summary data with metadata (ensemble, nodename, datatype, edge_or_node)
-        self.sumvecs = self.get_sumvecs_with_metadata()
+        self.sumvecs: pd.DataFrame = self.get_sumvecs_with_metadata()
 
         # Check that all summary vectors exist
         self.check_that_sumvecs_exists(list(self.sumvecs["SUMVEC"]))
@@ -60,9 +62,8 @@ class GroupTreeData:
         to display on the edges and nodes.
 
         A sample data set can be found here:
-        https://github.com/equinor/webviz-subsurface-components/blob/master/react/ \
-        src/demo/example-data/group-tree.json
-        """
+        https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/demo/example-data/group-tree.json
+        """  # noqa
 
         # Filter smry
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
