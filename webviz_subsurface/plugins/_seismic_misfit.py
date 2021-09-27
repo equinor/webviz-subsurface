@@ -48,12 +48,10 @@ class SeismicMisfit(WebvizPluginABC):
     *runpath* = path as defined for `myensembles` in shared settings.
 
     * **`attribute_obs_path`:** Path to `attribute_name_obs` file.
-    Path is given as relative to *casedir*,
-    where *casedir* = 2 levels up from *runpath* (fmu standard).
+    Path is given as relative to *runpath*,
 
     * **`metadata_path`:** Path to `metadata_name` file.
-    Path is given as relative to *casedir*,
-    where *casedir* = 2 levels up from *runpath* (fmu standard).
+    Path is given as relative to *runpath*,
 
     * **`obs_mult`:** Multiplier for all observation and observation error data.
     Can be used for calibration purposes.
@@ -123,15 +121,15 @@ class SeismicMisfit(WebvizPluginABC):
             "sim2seis/output/4d_attribute_maps/"
         ),  # path relative to <runpath>
         attribute_obs_path: Path = Path(
-            "share/observations/seismic/"
-        ),  # path relative to <casedir>
+            "../../share/observations/seismic/"
+        ),  # path relative to <runpath>
         metadata_path: Path = Path(
-            "share/observations/seismic/"
-        ),  # path relative to <casedir>
+            "../../share/observations/seismic/"
+        ),  # path relative to <runpath>
         obs_mult: float = 1.0,
         sim_mult: float = 1.0,
         polygon: Path = None,
-        realrange: Optional[List[List[int]]] = None,
+        realrange: List[List[int]] = None,
     ):
         super().__init__()
 
@@ -2613,10 +2611,10 @@ def makedf(
             f"\nSeismic attribute: {attribute_name_sim}"
         )
 
-        casedir = Path(ens_path).parents[1]  # casedir = 2 levels up from runpath
-
-        obsfile = casedir / attribute_obs_path / attribute_name_obs
-        metafile = casedir / metadata_path / metadata_name
+        # grab runpath for one realization and locate obs/meta data relative to it
+        single_runpath = glob.glob(ens_path)[0]
+        obsfile = Path(single_runpath) / attribute_obs_path / attribute_name_obs
+        metafile = Path(single_runpath) / metadata_path / metadata_name
 
         df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult)
 
@@ -2745,8 +2743,8 @@ def makedf_seis_obs_meta(
 def makedf_seis_addsim(
     df: pd.DataFrame,
     ens_path: str,
-    attribute_name: str,
-    attribute_path: Path,
+    attribute_name_sim: str,
+    attribute_sim_path: Path,
     fromreal: int = 0,
     toreal: int = 99,
     sim_mult: float = 1.0,
@@ -2768,7 +2766,9 @@ def makedf_seis_addsim(
     for real in sorted(real_path.keys()):
         if fromreal <= real <= toreal:
 
-            simfile = Path(real_path[real]) / attribute_path / Path(attribute_name)
+            simfile = (
+                Path(real_path[real]) / attribute_sim_path / Path(attribute_name_sim)
+            )
             try:
                 colname = "real-" + str(real)
                 df[colname] = pd.read_csv(simfile, header=None)
