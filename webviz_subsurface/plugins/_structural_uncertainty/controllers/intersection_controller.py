@@ -1,21 +1,23 @@
-from typing import Dict, List, Optional, Callable, Union, Tuple
 import json
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import xtgeo
-from dash import Dash, callback_context, Input, Output, State, ClientsideFunction
+from dash import ClientsideFunction, Dash, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
-from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 from webviz_subsurface._components import ColorPicker
+from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 
 from ..figures.intersection import (
-    get_plotly_trace_statistical_surface,
     get_plotly_trace_realization_surface,
+    get_plotly_trace_statistical_surface,
     get_plotly_trace_well_trajectory,
     get_plotly_traces_uncertainty_envelope,
     get_plotly_zonelog_trace,
 )
+
 
 # pylint: disable=too-many-statements
 def update_intersection(

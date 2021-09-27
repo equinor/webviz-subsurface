@@ -1,18 +1,17 @@
 import sys
-from typing import List, Dict, Tuple, Union, Optional
-
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import uuid4
-import yaml
+
 import numpy as np
 import pandas as pd
-
+import yaml
 from webviz_config.common_cache import CACHE
 from webviz_subsurface_components import (
-    VectorCalculator,
     ExpressionInfo,
     ExternalParseData,
     VariableVectorMapInfo,
+    VectorCalculator,
 )
 
 from .vector_selector import is_vector_name_in_vector_selector_data

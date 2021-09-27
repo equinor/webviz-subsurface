@@ -1,26 +1,25 @@
-from typing import Optional, List, Dict, Tuple, Callable, Any, Iterator
-import json
-import itertools
 import io
+import itertools
+import json
 from pathlib import Path
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from dash import html, Dash, Input, Output
+import webviz_core_components as wcc
+import webviz_subsurface_components
+from dash import Dash, Input, Output, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-import webviz_subsurface_components
-import webviz_core_components as wcc
 
 from .._datainput.fmu_input import load_csv
 from .._datainput.well_completions import (
-    read_zone_layer_mapping,
-    read_well_attributes,
-    read_stratigraphy,
     get_ecl_unit_system,
+    read_stratigraphy,
+    read_well_attributes,
     read_well_connection_status,
+    read_zone_layer_mapping,
 )
 
 WELL_CONNECTION_STATUS_FILE = (

@@ -1,4 +1,4 @@
-from typing import List, Dict, Callable
+from typing import Callable, Dict, List
 
 
 def generate_tour_steps(get_uuid: Callable) -> List[Dict]:

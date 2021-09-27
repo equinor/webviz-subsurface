@@ -1,17 +1,17 @@
-from typing import Tuple, Union, Callable, Optional
 from itertools import chain
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from dash import dcc, Dash, callback_context, no_update, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objects as go
+from dash import ALL, Dash, Input, Output, State, callback_context, dcc, no_update
+from dash.exceptions import PreventUpdate
 
-from ..utils.colors import find_intermediate_color
 from ..figures.correlation_figure import CorrelationFigure
-from ..utils.colors import hex_to_rgb, rgb_to_hex
-from ..models import SimulationTimeSeriesModel, ParametersModel
+from ..models import ParametersModel, SimulationTimeSeriesModel
+from ..utils.colors import find_intermediate_color, hex_to_rgb, rgb_to_hex
+
 
 # pylint: disable=too-many-statements,
 def parameter_response_controller(

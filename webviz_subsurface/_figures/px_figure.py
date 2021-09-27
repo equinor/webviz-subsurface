@@ -1,10 +1,10 @@
-from typing import Callable, Optional, Any, List, Union
 import inspect
+from typing import Any, Callable, List, Optional, Union
 
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 import plotly.graph_objects as go
+from pandas.api.types import is_numeric_dtype
 
 
 def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:

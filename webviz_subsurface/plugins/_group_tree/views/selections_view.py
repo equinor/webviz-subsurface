@@ -1,7 +1,7 @@
 from typing import Callable
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:

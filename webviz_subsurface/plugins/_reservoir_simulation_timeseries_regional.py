@@ -1,56 +1,57 @@
 # pylint: disable=too-many-lines
-from typing import Optional, Dict, List, Tuple, Callable, Union, Any
-from pathlib import Path
 import fnmatch
-import warnings
 import json
+import warnings
 from copy import deepcopy
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import yaml
 import numpy as np
 import pandas as pd
+import webviz_core_components as wcc
+import yaml
 from dash import (
-    html,
-    dcc,
+    ALL,
     Dash,
-    callback_context,
-    dash_table,
     Input,
     Output,
     State,
-    ALL,
+    callback_context,
+    dash_table,
+    dcc,
+    html,
 )
 from dash.exceptions import PreventUpdate
-import webviz_core_components as wcc
+from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizConfigTheme
-from webviz_config import WebvizSettings
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
+
+from .._abbreviations.number_formatting import table_statistics_base
 from .._abbreviations.reservoir_simulation import (
-    simulation_vector_base,
-    simulation_vector_description,
+    historical_vector,
     simulation_region_vector_breakdown,
     simulation_region_vector_recompose,
     simulation_unit_reformat,
-    historical_vector,
-)
-from .._abbreviations.number_formatting import table_statistics_base
-from .._utils.unique_theming import unique_colors
-from .._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
-    get_simulation_line_shape,
+    simulation_vector_base,
+    simulation_vector_description,
 )
 from .._utils.fanchart_plotting import (
     FanchartData,
-    get_fanchart_traces,
     FreeLineData,
-    MinMaxData,
     LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
 )
+from .._utils.simulation_timeseries import (
+    get_simulation_line_shape,
+    set_simulation_line_shape_fallback,
+)
+from .._utils.unique_theming import unique_colors
 
 
 class ReservoirSimulationTimeSeriesRegional(WebvizPluginABC):

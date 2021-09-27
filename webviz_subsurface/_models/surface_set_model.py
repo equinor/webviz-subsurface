@@ -1,13 +1,13 @@
-from typing import List, Tuple, Callable, Optional, Any, Dict
-from pathlib import Path
-import warnings
 import io
+import warnings
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import xtgeo
-from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 
 
 class SurfaceSetModel:

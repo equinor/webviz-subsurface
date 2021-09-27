@@ -1,9 +1,9 @@
 from typing import List, Optional, Union
 
-from dash import dash_table
-from dash.dash_table.Format import Format
 import plotly.graph_objects as go
 import webviz_core_components as wcc
+from dash import dash_table
+from dash.dash_table.Format import Format
 
 
 def create_table_columns(

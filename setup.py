@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -9,13 +9,14 @@ TESTS_REQUIRE = [
     "dash[testing]",
     "ert",
     "flaky",
+    "isort",
     "mypy",
     "pylint",
     "pytest-xdist",
     "selenium>=3.141",
     "types-dataclasses>=0.1.5; python_version<'3.7'",
-    "types-pyyaml",
     "types-pkg-resources",
+    "types-pyyaml",
 ]
 
 # pylint: disable=line-too-long

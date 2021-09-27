@@ -1,12 +1,12 @@
-from typing import List, Dict, Optional
 import warnings
+from typing import Dict, List, Optional
 
+import dash_daq
 import numpy as np
 import pandas as pd
-from dash import html, dcc, dash_table, Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
-import dash_daq
 import webviz_core_components as wcc
+from dash import Dash, Input, Output, State, dash_table, dcc, html
+from dash.exceptions import PreventUpdate
 
 
 class ColorPicker:

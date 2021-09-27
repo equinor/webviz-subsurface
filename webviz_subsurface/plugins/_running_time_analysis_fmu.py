@@ -1,14 +1,13 @@
-from typing import Union, Optional, List, Tuple, Callable
 import json
+from typing import Callable, List, Optional, Tuple, Union
 
-import pandas as pd
 import numpy as np
-from dash import html, Dash, Input, Output
+import pandas as pd
 import webviz_core_components as wcc
-from webviz_config.webviz_store import webvizstore
+from dash import Dash, Input, Output, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config.webviz_store import webvizstore
 
 from .._datainput.fmu_input import load_ensemble_set, load_parameters
 

@@ -2,19 +2,18 @@ import pathlib
 from typing import Optional
 
 from dash import dcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
 from webviz_subsurface._components.parameter_filter import ParameterFilter
-from .views import main_view
-from .models import ParametersModel, SimulationTimeSeriesModel
-from .controllers import (
-    parameter_qc_controller,
-    parameter_response_controller,
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
 )
+
+from .controllers import parameter_qc_controller, parameter_response_controller
 from .data_loaders import read_csv
+from .models import ParametersModel, SimulationTimeSeriesModel
+from .views import main_view
 
 
 class ParameterAnalysis(WebvizPluginABC):

@@ -1,16 +1,11 @@
-from typing import Callable, List, Optional, Dict
+from typing import Callable, Dict, List, Optional
 
-from dash import html
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-
-from .selector_view import (
-    ensemble_selector,
-    filter_selector,
-    source_selector,
-)
+from dash import html
 
 from ..models import PropertyStatisticsModel
+from .selector_view import ensemble_selector, filter_selector, source_selector
 
 
 def surface_select_view(get_uuid: Callable, tab: str) -> html.Div:

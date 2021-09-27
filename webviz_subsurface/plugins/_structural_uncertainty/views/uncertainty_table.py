@@ -1,5 +1,5 @@
-from dash import html, dash_table
 import webviz_core_components as wcc
+from dash import dash_table, html
 
 
 def uncertainty_table_layout(

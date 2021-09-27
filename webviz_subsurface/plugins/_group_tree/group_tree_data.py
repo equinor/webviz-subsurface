@@ -1,9 +1,8 @@
-from typing import List, Dict, Tuple, Any, Set
 import logging
+from typing import Any, Dict, List, Set, Tuple
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from webviz_config.common_cache import CACHE
 
 

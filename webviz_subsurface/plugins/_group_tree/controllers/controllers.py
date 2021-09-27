@@ -1,8 +1,8 @@
-from typing import Callable, Optional, Any, Tuple, List, Dict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import dash
-from dash.dependencies import Input, Output, State
 import webviz_subsurface_components
+from dash.dependencies import Input, Output, State
 
 from ..group_tree_data import GroupTreeData
 

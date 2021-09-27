@@ -1,7 +1,7 @@
-from typing import Callable, Union, List, Dict
+from typing import Callable, Dict, List, Union
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def data_selectors_view(

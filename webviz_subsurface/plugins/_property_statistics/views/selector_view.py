@@ -1,7 +1,7 @@
-from typing import Union, Callable, List
+from typing import Callable, List, Union
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 from ..models import PropertyStatisticsModel
 

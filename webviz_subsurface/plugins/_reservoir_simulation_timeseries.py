@@ -1,73 +1,71 @@
 # pylint: disable=too-many-lines
-from typing import List, Dict, Union, Tuple, Callable, Optional
-import sys
-from pathlib import Path
-import json
-import datetime
 import copy
+import datetime
+import json
+import sys
 import warnings
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
+import dash
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
-from plotly.subplots import make_subplots
-import dash
-from dash import html, dcc, Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
-import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC, EncodedFile
-from webviz_config import WebvizSettings
+import webviz_subsurface_components as wsc
+from dash import Dash, Input, Output, State, dcc, html
+from dash.exceptions import PreventUpdate
+from plotly.subplots import make_subplots
+from webviz_config import EncodedFile, WebvizPluginABC, WebvizSettings
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
-from webviz_config.common_cache import CACHE
-import webviz_subsurface_components as wsc
-from webviz_subsurface_components import (
-    ExpressionInfo,
-    ExternalParseData,
-)
-import webviz_subsurface
+from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
+import webviz_subsurface
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
+
 from .._abbreviations.reservoir_simulation import (
-    simulation_vector_description,
-    simulation_unit_reformat,
     historical_vector,
+    simulation_unit_reformat,
+    simulation_vector_description,
 )
-from .._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
-    get_simulation_line_shape,
-    calc_series_statistics,
-    add_statistics_traces,
-    render_hovertemplate,
-    date_to_interval_conversion,
-    check_and_format_observations,
-)
-from .._utils.fanchart_plotting import (
-    FanchartData,
-    get_fanchart_traces,
-    FreeLineData,
-    MinMaxData,
-    LowHighData,
-)
-from .._utils.unique_theming import unique_colors
 from .._datainput.from_timeseries_cumulatives import (
     calc_from_cumulatives,
     rename_vec_from_cum,
 )
-
-from .._utils.vector_selector import (
-    add_vector_to_vector_selector_data,
-    is_vector_name_in_vector_selector_data,
+from .._utils.fanchart_plotting import (
+    FanchartData,
+    FreeLineData,
+    LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
 )
+from .._utils.simulation_timeseries import (
+    add_statistics_traces,
+    calc_series_statistics,
+    check_and_format_observations,
+    date_to_interval_conversion,
+    get_simulation_line_shape,
+    render_hovertemplate,
+    set_simulation_line_shape_fallback,
+)
+from .._utils.unique_theming import unique_colors
 from .._utils.vector_calculator import (
     expressions_from_config,
     get_calculated_units,
     get_calculated_vector_df,
+    get_custom_vector_definitions_from_expressions,
     get_expression_from_name,
     get_selected_expressions,
     validate_predefined_expression,
-    get_custom_vector_definitions_from_expressions,
+)
+from .._utils.vector_selector import (
+    add_vector_to_vector_selector_data,
+    is_vector_name_in_vector_selector_data,
 )
 
 

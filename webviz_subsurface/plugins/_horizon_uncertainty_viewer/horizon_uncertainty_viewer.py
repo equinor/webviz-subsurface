@@ -1,29 +1,28 @@
 # pylint: disable=too-many-lines
-from typing import List, Tuple, Callable
 import io
 import json
-from uuid import uuid4
 from pathlib import Path
-import defusedxml.ElementTree as ET
+from typing import Callable, List, Tuple
+from uuid import uuid4
 
-import numpy as np
-import xtgeo
-from dash import html, dcc, dash_table, Dash, callback_context, Input, Output, State
 import dash_bootstrap_components as dbc
+import defusedxml.ElementTree as ET
+import numpy as np
 import webviz_core_components as wcc
 import webviz_subsurface_components
-
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_store import webvizstore
+import xtgeo
+from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface
-from webviz_subsurface._models import SurfaceLeafletModel
 from webviz_subsurface._datainput.well import get_well_layers
-from ._huv_xsection import HuvXsection
+from webviz_subsurface._models import SurfaceLeafletModel
+
 from ._huv_table import FilterTable
+from ._huv_xsection import HuvXsection
 
 
 @deprecated_plugin(

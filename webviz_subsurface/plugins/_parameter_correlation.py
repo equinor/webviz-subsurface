@@ -1,15 +1,14 @@
-from typing import List, Union, Tuple, Callable
-from uuid import uuid4
 from pathlib import Path
+from typing import Callable, List, Tuple, Union
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from dash import html, Dash, Input, Output
 import webviz_core_components as wcc
-from webviz_config.webviz_store import webvizstore
+from dash import Dash, Input, Output, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config.webviz_store import webvizstore
 
 from .._datainput.fmu_input import scratch_ensemble
 

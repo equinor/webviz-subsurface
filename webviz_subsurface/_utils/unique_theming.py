@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Optional, Union
 
 from webviz_config._theme_class import WebvizConfigTheme
 

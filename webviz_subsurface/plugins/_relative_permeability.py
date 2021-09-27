@@ -1,25 +1,25 @@
-from typing import Optional, Union
 import warnings
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
-from dash import dcc, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from dash import Input, Output, State, dcc
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
-from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
+
 from .._datainput.fmu_input import load_csv
+from .._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .._utils.fanchart_plotting import (
     FanchartData,
-    get_fanchart_traces,
     FreeLineData,
-    MinMaxData,
     LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
 )
 
 

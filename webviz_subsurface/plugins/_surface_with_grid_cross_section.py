@@ -1,19 +1,19 @@
+from pathlib import Path
 from typing import List
 from uuid import uuid4
-from pathlib import Path
 
 import pandas as pd
-import xtgeo
-from dash import html, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_subsurface_components import LeafletMap
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_store import webvizstore
+import xtgeo
+from dash import Input, Output, State, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import calculate_slider_step
+from webviz_config.webviz_store import webvizstore
+from webviz_subsurface_components import LeafletMap
 
 from webviz_subsurface._models import SurfaceLeafletModel
+
 from .._datainput.grid import load_grid, load_grid_parameter
 from .._datainput.surface import get_surface_fence
 

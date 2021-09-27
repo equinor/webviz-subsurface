@@ -1,7 +1,7 @@
 import json
 
-import pandas as pd
 import dash
+import pandas as pd
 from dash.dependencies import Input, Output
 
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector

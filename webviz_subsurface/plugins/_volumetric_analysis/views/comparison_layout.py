@@ -1,7 +1,9 @@
 from typing import Optional
-from dash import html, dcc, dash_table
+
 import plotly.graph_objects as go
 import webviz_core_components as wcc
+from dash import dash_table, dcc, html
+
 from webviz_subsurface._models import InplaceVolumesModel
 
 

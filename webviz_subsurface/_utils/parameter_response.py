@@ -1,8 +1,8 @@
 from collections.abc import Iterable
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def filter_and_sum_responses(

@@ -1,6 +1,6 @@
-from typing import Optional, Callable
+from typing import Callable, Optional
 
-from dash import Dash, Input, Output, State, MATCH
+from dash import MATCH, Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
 

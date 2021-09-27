@@ -1,7 +1,5 @@
 # pylint: disable=no-name-in-module
-from webviz_config.plugins import (
-    WellLogViewer,
-)
+from webviz_config.plugins import WellLogViewer
 
 
 def test_well_log_viewer(dash_duo, app, testdata_folder) -> None:

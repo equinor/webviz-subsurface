@@ -1,14 +1,10 @@
 from typing import Callable
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
-from .selector_view import (
-    ensemble_selector,
-    filter_parameter,
-    sortby_selector,
-)
 from ..models import ParametersModel
+from .selector_view import ensemble_selector, filter_parameter, sortby_selector
 
 
 def selector_view(get_uuid: Callable, parametermodel: ParametersModel) -> html.Div:

@@ -1,8 +1,8 @@
-from typing import List
 from pathlib import Path
+from typing import List
 
-import pytest
 import pandas as pd
+import pytest
 
 import webviz_subsurface._datainput.from_timeseries_cumulatives as from_cum
 

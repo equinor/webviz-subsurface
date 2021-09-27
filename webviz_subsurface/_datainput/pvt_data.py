@@ -5,8 +5,8 @@
 ########################################
 
 import sys
-from typing import Dict, List, Any
 import warnings
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -27,10 +27,10 @@ except ImportError:
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .fmu_input import load_ensemble_set, load_csv
-from .eclipse_init_io.pvt_oil import Oil
 from .eclipse_init_io.pvt_gas import Gas
+from .eclipse_init_io.pvt_oil import Oil
 from .eclipse_init_io.pvt_water import Water
+from .fmu_input import load_csv, load_ensemble_set
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

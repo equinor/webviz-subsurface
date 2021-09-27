@@ -1,10 +1,11 @@
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import plotly.graph_objects as go
 
 from webviz_subsurface._abbreviations.number_formatting import si_prefixed
 from webviz_subsurface._utils.formatting import printable_int_list
+
 from ._tornado_data import TornadoData
 
 

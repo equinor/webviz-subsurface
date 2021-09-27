@@ -1,15 +1,14 @@
-from typing import Callable, List, Tuple, Dict
 import json
-from uuid import uuid4
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from scipy.stats import chi2
-from dash import html
 import webviz_subsurface_components as wsc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import html
+from scipy.stats import chi2
+from webviz_config import WebvizPluginABC, WebvizSettings
 
 from .._datainput.history_match import extract_mismatch
 

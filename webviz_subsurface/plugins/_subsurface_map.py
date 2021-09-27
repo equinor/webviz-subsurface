@@ -1,16 +1,15 @@
-from typing import Callable, List, Tuple
 import json
-from uuid import uuid4
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Callable, List, Tuple
+from uuid import uuid4
 
 import pandas as pd
 from dash import html
-from webviz_subsurface_components import Map
-from webviz_config.webviz_store import webvizstore
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config.webviz_store import webvizstore
+from webviz_subsurface_components import Map
 
 from .._datainput.fmu_input import scratch_ensemble
 

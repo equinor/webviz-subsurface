@@ -1,6 +1,6 @@
-from pathlib import Path
 import io
 import json
+from pathlib import Path
 
 from webviz_config.webviz_store import webvizstore
 

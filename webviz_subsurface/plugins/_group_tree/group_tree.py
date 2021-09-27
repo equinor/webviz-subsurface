@@ -1,18 +1,15 @@
-from typing import List, Dict, Tuple, Callable
+from typing import Callable, Dict, List, Tuple
 
-import pandas as pd
 import dash
+import pandas as pd
 from dash import html
-
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
 
-from ..._models import EnsembleSetModel
-from ..._models import caching_ensemble_set_model_factory
 from ..._datainput.fmu_input import scratch_ensemble
-from .group_tree_data import GroupTreeData
+from ..._models import EnsembleSetModel, caching_ensemble_set_model_factory
 from .controllers import controllers
+from .group_tree_data import GroupTreeData
 from .views import main_view
 
 

@@ -1,36 +1,36 @@
-from typing import List, Tuple, Callable, Union
-from pathlib import Path
-from uuid import uuid4
-import json
 import datetime
+import json
+from pathlib import Path
+from typing import Callable, List, Tuple, Union
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from dash import html, dcc, Dash, callback_context, dash_table, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
 from webviz_subsurface._components import TornadoWidget
-from .._datainput.fmu_input import (
-    get_realizations,
-    find_sens_type,
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
 )
-from .._abbreviations.reservoir_simulation import (
-    simulation_vector_description,
-    simulation_unit_reformat,
-    historical_vector,
-)
+
 from .._abbreviations.number_formatting import table_statistics_base
-from .._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
-    get_simulation_line_shape,
+from .._abbreviations.reservoir_simulation import (
+    historical_vector,
+    simulation_unit_reformat,
+    simulation_vector_description,
 )
+from .._datainput.fmu_input import find_sens_type, get_realizations
+from .._utils.simulation_timeseries import (
+    get_simulation_line_shape,
+    set_simulation_line_shape_fallback,
+)
+
 
 # pylint: disable=too-many-instance-attributes
 class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):

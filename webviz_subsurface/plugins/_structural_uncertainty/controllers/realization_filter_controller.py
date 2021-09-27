@@ -1,6 +1,6 @@
-from typing import Dict, List, Callable, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
-from dash import Dash, callback_context, Input, Output, State
+from dash import Dash, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 

@@ -2,8 +2,8 @@ import json
 import pathlib
 
 import pandas as pd
-from webviz_config.webviz_store import webvizstore
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

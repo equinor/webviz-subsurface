@@ -1,10 +1,10 @@
-from typing import Optional, List, Dict, Any
 import sys
 import warnings
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import yaml
 from webviz_config.utils import terminal_colors
 

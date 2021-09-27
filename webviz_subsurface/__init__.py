@@ -1,16 +1,16 @@
-from typing import Dict, List, Optional
 import glob
-import pathlib
 import json
+import pathlib
+from typing import Dict, List, Optional
 
 import jsonschema
-from pkg_resources import get_distribution, DistributionNotFound
 import webviz_config
 import yaml
+from pkg_resources import DistributionNotFound, get_distribution
 
 from webviz_subsurface._utils.vector_calculator import (
-    ConfigExpressionData,
     PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
+    ConfigExpressionData,
 )
 
 try:
