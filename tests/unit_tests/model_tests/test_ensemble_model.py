@@ -1,8 +1,8 @@
-from pathlib import Path
 import datetime
+from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
 
 from webviz_subsurface._models.ensemble_model import EnsembleModel
 

@@ -1,5 +1,5 @@
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 from webviz_subsurface._models import InplaceVolumesModel
 

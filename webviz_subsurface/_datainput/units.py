@@ -38,8 +38,8 @@
 #
 ########################################
 
-from typing import Union, Dict, Any
 import re
+from typing import Any, Dict, Union
 
 
 class UnitBase:

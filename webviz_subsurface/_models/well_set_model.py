@@ -1,6 +1,6 @@
-from typing import List, Optional, Dict, Union
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import xtgeo

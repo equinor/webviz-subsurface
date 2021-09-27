@@ -1,28 +1,31 @@
 from typing import Callable, List, Optional
-import pandas as pd
-from pandas.api.types import is_numeric_dtype
+
 import numpy as np
-from dash import html, Dash, no_update, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from dash import ALL, Dash, Input, Output, State, html, no_update
+from dash.exceptions import PreventUpdate
+from pandas.api.types import is_numeric_dtype
 from webviz_config import WebvizConfigTheme
 
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
-from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
-from webviz_subsurface._components.tornado._tornado_table import TornadoTable
-from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._abbreviations.volume_terminology import (
     volume_description,
     volume_unit,
 )
+from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
+from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 from webviz_subsurface._figures import create_figure
-from ..utils.utils import update_relevant_components, move_to_end_of_list
+from webviz_subsurface._models import InplaceVolumesModel
+
 from ..utils.table_and_figure_utils import (
-    fluid_annotation,
     create_data_table,
     create_table_columns,
+    fluid_annotation,
 )
+from ..utils.utils import move_to_end_of_list, update_relevant_components
+
 
 # pylint: disable=too-many-statements, too-many-branches
 def distribution_controllers(

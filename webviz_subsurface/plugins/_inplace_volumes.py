@@ -1,20 +1,19 @@
-from typing import List, Tuple, Callable, Union, Iterable
-from uuid import uuid4
 from pathlib import Path
+from typing import Callable, Iterable, List, Tuple, Union
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from dash import html, dcc, dash_table, Dash, Input, Output
 import webviz_core_components as wcc
+from dash import Dash, Input, Output, dash_table, dcc, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin
+from webviz_config.webviz_store import webvizstore
 
-from .._datainput.inplace_volumes import extract_volumes
-from .._abbreviations.volume_terminology import volume_description, volume_unit
 from .._abbreviations.number_formatting import table_statistics_base
+from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._datainput.inplace_volumes import extract_volumes
 
 
 @deprecated_plugin(

@@ -1,9 +1,11 @@
-from typing import Callable, Optional, Any
+from typing import Any, Callable, Optional
 
-from dash import Dash, callback_context, no_update, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
+from dash import ALL, Dash, Input, Output, State, callback_context, no_update
+from dash.exceptions import PreventUpdate
+
 from webviz_subsurface._models import InplaceVolumesModel
+
 from ..utils.utils import create_range_string, update_relevant_components
 
 

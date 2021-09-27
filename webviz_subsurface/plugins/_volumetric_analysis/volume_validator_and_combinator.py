@@ -1,6 +1,7 @@
-from typing import List, Dict
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Dict, List
+
 import pandas as pd
 from fmu.tools.fipmapper import fipmapper
 

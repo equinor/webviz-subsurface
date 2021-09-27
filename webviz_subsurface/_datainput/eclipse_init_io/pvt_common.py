@@ -36,16 +36,16 @@
 #
 ########################################
 
-from typing import List, Callable, Tuple, Any, Optional, Union
-from enum import Enum
-import warnings
 import abc
+import warnings
+from enum import Enum
+from typing import Any, Callable, List, Optional, Tuple, Union
 
-from scipy import interpolate
 import numpy as np
 from opm.io.ecl import EclFile
+from scipy import interpolate
 
-from ..eclipse_unit import ConvertUnits, EclUnits, EclUnitEnum
+from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
 from ..units import Unit
 
 

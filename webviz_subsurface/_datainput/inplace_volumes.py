@@ -1,5 +1,5 @@
-from typing import Dict
 import os
+from typing import Dict
 
 import pandas as pd
 from webviz_config.common_cache import CACHE

@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 import xtgeo
 
-from webviz_subsurface._models.surface_set_model import SurfaceSetModel
 from webviz_subsurface._datainput.fmu_input import find_surfaces
+from webviz_subsurface._models.surface_set_model import SurfaceSetModel
 
 
 @pytest.mark.usefixtures("app")

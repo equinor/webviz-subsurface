@@ -1,18 +1,17 @@
-from typing import List, Dict, Any, Union, Tuple, Callable
 import json
-from uuid import uuid4
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Tuple, Union
+from uuid import uuid4
 
-from dash import html, dcc, Dash, callback_context, Input, Output, State
-from dash.exceptions import PreventUpdate
-import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_store import webvizstore
-from webviz_config.utils import calculate_slider_step
 import numpy as np
+import webviz_core_components as wcc
+from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import calculate_slider_step
+from webviz_config.webviz_store import webvizstore
 
-from .._datainput.seismic import load_cube_data, get_iline, get_xline, get_zslice
+from .._datainput.seismic import get_iline, get_xline, get_zslice, load_cube_data
 
 
 class SegyViewer(WebvizPluginABC):

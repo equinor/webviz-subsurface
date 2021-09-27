@@ -1,7 +1,7 @@
 from typing import List
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def realization_layout(

@@ -1,13 +1,12 @@
-from typing import List, Dict, Tuple, Callable
-from uuid import uuid4
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+from uuid import uuid4
 
 import pandas as pd
-from dash import html, dcc, Dash, callback_context, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_subsurface_components as wsc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 

@@ -1,8 +1,8 @@
 from typing import List
 
 import pandas as pd
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def fipfile_qc_main_layout(uuid: str) -> wcc.Frame:

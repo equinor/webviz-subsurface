@@ -4,17 +4,16 @@
 #
 ########################################
 
-from typing import Callable, Dict, List, Tuple, Union, Any
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import pandas as pd
-from dash import html, dcc, Dash, callback_context, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
+from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
 
-from .._datainput.pvt_data import load_pvt_dataframe, load_pvt_csv
+from .._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 
 
 class PvtPlot(WebvizPluginABC):

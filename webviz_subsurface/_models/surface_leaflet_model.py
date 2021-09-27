@@ -1,10 +1,10 @@
-from typing import Optional
-import io
 import base64
+import io
+from typing import Optional
 
-from PIL import Image
 import numpy as np
 import xtgeo
+from PIL import Image
 
 from webviz_subsurface._datainput.image_processing import array2d_to_png
 

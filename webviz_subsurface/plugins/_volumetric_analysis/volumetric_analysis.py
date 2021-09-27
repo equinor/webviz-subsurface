@@ -1,28 +1,31 @@
-from typing import List, Tuple, Callable, Optional
 from pathlib import Path
+from typing import Callable, List, Optional, Tuple
+
 import pandas as pd
 from dash import Dash, html
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
-import webviz_subsurface
 
-from webviz_subsurface._models import EnsembleSetModel, InplaceVolumesModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
+import webviz_subsurface
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    InplaceVolumesModel,
+    caching_ensemble_set_model_factory,
+)
 from webviz_subsurface._models.inplace_volumes_model import extract_volumes
 
-from .volume_validator_and_combinator import VolumeValidatorAndCombinator
-from .views import clientside_stores, main_view
 from .controllers import (
-    distribution_controllers,
-    selections_controllers,
-    layout_controllers,
-    export_data_controllers,
     comparison_controllers,
+    distribution_controllers,
+    export_data_controllers,
     fipfile_qc_controller,
+    layout_controllers,
+    selections_controllers,
 )
+from .views import clientside_stores, main_view
+from .volume_validator_and_combinator import VolumeValidatorAndCombinator
 
 
 class VolumetricAnalysis(WebvizPluginABC):

@@ -1,7 +1,7 @@
-from typing import Union, Optional, Callable
+from typing import Callable, Optional, Union
 
-from dash import html, dcc
 import webviz_core_components as wcc
+from dash import dcc, html
 
 from ..figures.color_figure import color_figure
 from ..models import ParametersModel, SimulationTimeSeriesModel

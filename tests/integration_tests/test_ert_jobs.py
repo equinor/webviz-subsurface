@@ -1,13 +1,13 @@
+import json
 import shutil
 import subprocess  # nosec
 from pathlib import Path
-import json
 
 import pandas as pd
 import pyarrow as pa
-from pyarrow import feather
 import pytest
 from ert_shared.plugins.plugin_manager import ErtPluginManager
+from pyarrow import feather
 
 import webviz_subsurface.ert_jobs.jobs
 

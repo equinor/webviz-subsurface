@@ -1,22 +1,21 @@
-from typing import Dict, List, Tuple, Callable
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
-from dash import html, Dash
-
-from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_core_components as wcc
+from dash import Dash, html
+from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._utils.unique_theming import unique_colors
+import webviz_subsurface
+from webviz_subsurface._components.parameter_filter import ParameterFilter
 from webviz_subsurface._models import ObservationModel
 from webviz_subsurface._providers import EnsembleTableProviderFactory
-from webviz_subsurface._components.parameter_filter import ParameterFilter
-import webviz_subsurface
-from .views import main_view
+from webviz_subsurface._utils.unique_theming import unique_colors
+
 from .controllers import build_figure, update_figure_clientside
+from .views import main_view
 
 
 class LinePlotterFMU(WebvizPluginABC):

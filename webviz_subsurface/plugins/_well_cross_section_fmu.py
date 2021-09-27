@@ -1,28 +1,29 @@
-from typing import List, Tuple, Union, Dict, Callable, Any
 import io
-import os
 import json
-from uuid import uuid4
+import os
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Tuple, Union
+from uuid import uuid4
 
-import xtgeo
 import numpy as np
 import pandas as pd
-from dash import html, dcc, Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_subsurface_components import LeafletMap
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config.webviz_store import webvizstore
+import xtgeo
+from dash import Dash, Input, Output, State, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.deprecation_decorators import deprecated_plugin
+from webviz_config.webviz_store import webvizstore
+from webviz_subsurface_components import LeafletMap
 
 from webviz_subsurface._models import SurfaceLeafletModel
+
 from .._datainput.fmu_input import get_realizations
-from .._datainput.xsection import XSectionFigure
 from .._datainput.seismic import load_cube_data
 from .._datainput.well import load_well
+from .._datainput.xsection import XSectionFigure
+
 
 # pylint: disable=too-many-instance-attributes
 @deprecated_plugin(

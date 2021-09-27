@@ -1,9 +1,8 @@
 import json
-from typing import Union, Optional, Dict
 import threading
+from typing import Dict, Optional, Union
 
 from .ensemble_set_model import EnsembleSetModel
-
 
 # Module level globals
 # Do we actually need to consider locking here or will this access always be single threaded?

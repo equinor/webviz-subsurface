@@ -39,7 +39,7 @@
 ########################################
 
 from enum import IntEnum
-from typing import List, Callable
+from typing import Callable, List
 
 from .units import Prefix, Unit, UnitBase
 

@@ -1,10 +1,9 @@
-from typing import Tuple, Optional, cast
 import json
 import pathlib
 import warnings
+from typing import Optional, Tuple, cast
 
 import pandas as pd
-
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 

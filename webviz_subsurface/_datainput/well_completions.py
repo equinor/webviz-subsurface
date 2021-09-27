@@ -1,14 +1,13 @@
-from typing import Optional, Dict, List, Tuple, Any
-import json
-import re
 import glob
-from pathlib import Path
+import json
 import logging
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+from ecl2df import EclFiles, common
 from fmu.ensemble import ScratchEnsemble
-
-from ecl2df import common, EclFiles
 
 
 def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

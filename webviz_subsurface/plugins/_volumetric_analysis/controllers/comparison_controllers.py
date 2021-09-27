@@ -1,24 +1,26 @@
-from typing import Callable, Union, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
-from dash import html, Dash, callback_context, dash_table, Input, Output, State
-from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objects as go
+from dash import Dash, Input, Output, State, callback_context, dash_table, html
+from dash.exceptions import PreventUpdate
 
-from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._figures import create_figure
+from webviz_subsurface._models import InplaceVolumesModel
+
+from ..utils.table_and_figure_utils import (
+    add_correlation_line,
+    create_data_table,
+    create_table_columns,
+)
+from ..utils.utils import move_to_end_of_list
 from ..views.comparison_layout import (
     comparison_qc_plots_layout,
     comparison_table_layout,
 )
-from ..utils.table_and_figure_utils import (
-    add_correlation_line,
-    create_table_columns,
-    create_data_table,
-)
-from ..utils.utils import move_to_end_of_list
+
 
 # pylint: disable=too-many-locals
 def comparison_controllers(

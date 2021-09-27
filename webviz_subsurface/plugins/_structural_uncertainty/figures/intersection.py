@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import xtgeo
@@ -9,10 +9,11 @@ from webviz_subsurface._utils.colors import hex_to_rgba
 
 from ...._utils.fanchart_plotting import (
     FanchartData,
-    get_fanchart_traces,
-    MinMaxData,
     LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
 )
+
 
 # pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

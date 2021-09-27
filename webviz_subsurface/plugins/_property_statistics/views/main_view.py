@@ -1,13 +1,12 @@
-from typing import Dict, Callable, Optional, List
+from typing import Callable, Dict, List, Optional
 
-from dash import html, dcc
 import webviz_core_components as wcc
-
-from .property_qc_view import property_qc_view
-from .property_delta_view import property_delta_view
-from .property_response_view import property_response_view
+from dash import dcc, html
 
 from ..models import PropertyStatisticsModel
+from .property_delta_view import property_delta_view
+from .property_qc_view import property_qc_view
+from .property_response_view import property_response_view
 
 
 def main_view(

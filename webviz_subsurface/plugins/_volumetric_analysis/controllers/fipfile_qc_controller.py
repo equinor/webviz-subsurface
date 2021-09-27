@@ -1,12 +1,13 @@
 from typing import Callable
 
 import pandas as pd
-from dash import Dash, html, Input, Output
-from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from ..utils.table_and_figure_utils import create_table_columns, create_data_table
+from dash import Dash, Input, Output, html
+from dash.exceptions import PreventUpdate
+
+from ..utils.table_and_figure_utils import create_data_table, create_table_columns
 
 
 def fipfile_qc_controller(

@@ -1,16 +1,12 @@
 import importlib
-from typing import Callable, Optional
 from pathlib import Path
+from typing import Callable, Optional
+
 from pkg_resources import resource_filename
 
 try:
-    from ert_shared.plugins.plugin_manager import (
-        hook_implementation,
-    )
-
-    from ert_shared.plugins.plugin_response import (
-        plugin_response,
-    )
+    from ert_shared.plugins.plugin_manager import hook_implementation
+    from ert_shared.plugins.plugin_response import plugin_response
 except ModuleNotFoundError:
     # ert is not installed - use dummy/transparent function decorators.
     def hook_implementation(func: Callable) -> Callable:

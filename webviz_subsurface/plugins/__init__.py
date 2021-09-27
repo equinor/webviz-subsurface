@@ -20,13 +20,15 @@ pages:
 ```
 """
 
+from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
-from ._line_plotter_fmu.line_plotter_fmu import LinePlotterFMU
+from ._group_tree import GroupTree
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 from ._inplace_volumes import InplaceVolumes
 from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
+from ._line_plotter_fmu.line_plotter_fmu import LinePlotterFMU
 from ._morris_plot import MorrisPlot
 from ._parameter_analysis import ParameterAnalysis
 from ._parameter_correlation import ParameterCorrelation
@@ -46,16 +48,14 @@ from ._reservoir_simulation_timeseries_regional import (
 from ._rft_plotter.rft_plotter import RftPlotter
 from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
 from ._segy_viewer import SegyViewer
+from ._structural_uncertainty import StructuralUncertainty
 from ._subsurface_map import SubsurfaceMap
 from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
-from ._structural_uncertainty import StructuralUncertainty
 from ._tornado_plotter_fmu import TornadoPlotterFMU
 from ._volumetric_analysis import VolumetricAnalysis
+from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
-from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
-from ._well_completions import WellCompletions
-from ._group_tree import GroupTree

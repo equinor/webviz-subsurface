@@ -1,21 +1,23 @@
 from typing import Callable, Optional
 
 import pandas as pd
-from dash import html, dcc
 import webviz_core_components as wcc
+from dash import dcc, html
 from webviz_config import WebvizConfigTheme
+
 from webviz_subsurface._models import InplaceVolumesModel
-from .filter_view import filter_layout
-from .distribution_main_layout import distributions_main_layout, table_main_layout
-from .selections_view import selections_layout, table_selections_layout
-from .tornado_selections_view import tornado_selections_layout
+
 from .comparison_layout import comparison_main_layout, comparison_selections
-from .tornado_layout import tornado_main_layout
+from .distribution_main_layout import distributions_main_layout, table_main_layout
+from .filter_view import filter_layout
 from .fipfile_qc_layout import (
     fipfile_qc_filters,
     fipfile_qc_main_layout,
     fipfile_qc_selections,
 )
+from .selections_view import selections_layout, table_selections_layout
+from .tornado_layout import tornado_main_layout
+from .tornado_selections_view import tornado_selections_layout
 
 
 def main_view(

@@ -1,11 +1,11 @@
-from typing import Callable, List, Dict
+from typing import Callable, Dict, List
 
-from dash import html, dcc
 import webviz_core_components as wcc
+from dash import dcc, html
 
-from .plot_options_view import plot_options_view
 from .data_selectors_view import data_selectors_view
-from .plot_traces_view import line_traces_view, highlight_realizations_view
+from .plot_options_view import plot_options_view
+from .plot_traces_view import highlight_realizations_view, line_traces_view
 
 
 def main_view(

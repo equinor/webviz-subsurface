@@ -36,19 +36,19 @@
 #
 ########################################
 
-from typing import Callable, List, Any, Union, Optional
+from typing import Any, Callable, List, Optional, Union
 
 import numpy as np
 from opm.io.ecl import EclFile
 
-from ..eclipse_unit import ConvertUnits, EclUnits, CreateUnitConverter, EclUnitEnum
+from ..eclipse_unit import ConvertUnits, CreateUnitConverter, EclUnitEnum, EclUnits
 from .pvt_common import (
-    surface_mass_density,
-    InitFileDefinitions,
     EclPhaseIndex,
-    PvxOBase,
     EclPropertyTableRawData,
     FluidImplementation,
+    InitFileDefinitions,
+    PvxOBase,
+    surface_mass_density,
 )
 
 

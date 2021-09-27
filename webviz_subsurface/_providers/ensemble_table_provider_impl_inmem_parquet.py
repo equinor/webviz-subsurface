@@ -1,12 +1,11 @@
-from typing import List, Optional, Sequence
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import List, Optional, Sequence
 
 import pandas as pd
 
-from .ensemble_table_provider import EnsembleTableProvider
 from .._utils.perf_timer import PerfTimer
-
+from .ensemble_table_provider import EnsembleTableProvider
 
 LOGGER = logging.getLogger(__name__)
 
