@@ -3,6 +3,7 @@ import json
 
 import pyarrow as pa
 import pyarrow.compute as pc
+import numpy as np
 
 _MAIN_WEBVIZ_METADATA_KEY = b"webviz"
 _PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
@@ -42,3 +43,28 @@ def add_per_vector_min_max_to_table_schema_metadata(
 def get_per_vector_min_max_from_schema_metadata(schema: pa.Schema) -> Dict[str, dict]:
     webviz_meta = json.loads(schema.metadata[_MAIN_WEBVIZ_METADATA_KEY])
     return webviz_meta[_PER_VECTOR_MIN_MAX_KEY]
+
+
+# -------------------------------------------------------------------------
+def find_intersected_dates_between_realizations(table: pa.Table) -> np.ndarray:
+    """Find the intersection of dates present in all the realizations
+    The input table must contain both REAL and DATE columns, but this function makes
+    no assumptions about sorting of either column"""
+
+    unique_reals = table.column("REAL").unique().to_numpy()
+
+    date_intersection = None
+    for real in unique_reals:
+        real_mask = pc.is_in(table["REAL"], value_set=pa.array([real]))
+        dates_in_real = table.filter(real_mask).column("DATE").unique().to_numpy()
+        if date_intersection is None:
+            date_intersection = dates_in_real
+        else:
+            date_intersection = np.intersect1d(
+                date_intersection, dates_in_real, assume_unique=True
+            )
+
+    if date_intersection is not None:
+        return date_intersection
+
+    return np.empty(0, dtype=np.datetime64)

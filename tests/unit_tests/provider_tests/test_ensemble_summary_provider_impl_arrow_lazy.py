@@ -143,7 +143,7 @@ def test_get_dates_without_resampling(tmp_path: Path) -> None:
     assert len(all_realizations) == 2
 
     all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 2
+    assert len(all_dates) == 1
     assert isinstance(all_dates[0], datetime)
 
     r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
@@ -292,7 +292,7 @@ def test_get_vectors_for_date_without_resampling(tmp_path: Path) -> None:
     provider = _create_provider_obj_with_data(input_data, tmp_path)
 
     all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 2
+    assert len(all_dates) == 1
 
     date_to_get = all_dates[0]
     assert isinstance(date_to_get, datetime)

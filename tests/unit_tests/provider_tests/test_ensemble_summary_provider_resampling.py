@@ -75,6 +75,13 @@ def test_generate_sample_dates_monthly() -> None:
 def test_generate_sample_dates_yearly() -> None:
 
     dates = generate_normalized_sample_dates(
+        np.datetime64("2020-01-01"), np.datetime64("2020-01-02"), Frequency.YEARLY
+    )
+    assert len(dates) == 2
+    assert dates[0] == np.datetime64("2020-01-01")
+    assert dates[-1] == np.datetime64("2021-01-01")
+
+    dates = generate_normalized_sample_dates(
         np.datetime64("2020-01-01"), np.datetime64("2022-01-01"), Frequency.YEARLY
     )
     assert len(dates) == 3

@@ -52,6 +52,13 @@ class EnsembleSummaryProvider(abc.ABC):
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
+        """Returns the intersection of available dates.
+        Note that when resampling_frequency is None, the pure intersection of the
+        stored raw dates will be returned. Thus the returned list of dates will not include
+        dates from long running realizations.
+        For other resampling frequencies, the date range will be expanded to cover the entire
+        time range of all the requested realizations before computing the resampled dates.
+        """
         ...
 
     @abc.abstractmethod

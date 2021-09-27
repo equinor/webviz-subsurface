@@ -20,6 +20,7 @@ from ._table_utils import (
     find_min_max_for_numeric_table_columns,
     add_per_vector_min_max_to_table_schema_metadata,
     get_per_vector_min_max_from_schema_metadata,
+    find_intersected_dates_between_realizations,
 )
 
 # Since PyArrow's actual compute functions are not seen by pylint
@@ -364,7 +365,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
 
-        unique_date_vals = table.column("DATE").unique().to_pylist()
+        intersected_dates = find_intersected_dates_between_realizations(table)
         et_find_unique_ms = timer.lap_ms()
 
         LOGGER.debug(
@@ -374,7 +375,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             f"find_unique={et_find_unique_ms}ms)"
         )
 
-        return unique_date_vals
+        return intersected_dates.astype(datetime.datetime).tolist()
 
     # -------------------------------------------------------------------------
     def get_vectors_df(

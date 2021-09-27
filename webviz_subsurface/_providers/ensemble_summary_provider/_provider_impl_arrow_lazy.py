@@ -16,6 +16,7 @@ from ._table_utils import (
     find_min_max_for_numeric_table_columns,
     add_per_vector_min_max_to_table_schema_metadata,
     get_per_vector_min_max_from_schema_metadata,
+    find_intersected_dates_between_realizations,
 )
 from ._resampling import (
     generate_normalized_sample_dates,
@@ -272,12 +273,12 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             unique_dates_np = table.column("DATE").unique().to_numpy()
             min_raw_date = np.min(unique_dates_np)
             max_raw_date = np.max(unique_dates_np)
-            sample_dates_np = generate_normalized_sample_dates(
+            intersected_dates = generate_normalized_sample_dates(
                 min_raw_date, max_raw_date, resampling_frequency
             )
-            unique_date_vals = sample_dates_np.astype(datetime.datetime).tolist()
         else:
-            unique_date_vals = table.column("DATE").unique().to_pylist()
+            intersected_dates = find_intersected_dates_between_realizations(table)
+
         et_find_unique_ms = timer.lap_ms()
 
         LOGGER.debug(
@@ -287,7 +288,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             f"find_unique={et_find_unique_ms}ms)"
         )
 
-        return unique_date_vals
+        return intersected_dates.astype(datetime.datetime).tolist()
 
     # -------------------------------------------------------------------------
     def get_vectors_df(

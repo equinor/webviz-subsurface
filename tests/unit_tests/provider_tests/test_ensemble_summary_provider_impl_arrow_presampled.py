@@ -68,7 +68,7 @@ def provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
 
 
 # -------------------------------------------------------------------------
-def test_get_metadata(provider: EnsembleSummaryProvider) -> None:
+def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
 
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 3
@@ -86,11 +86,19 @@ def test_get_metadata(provider: EnsembleSummaryProvider) -> None:
     assert len(non_zero_vec_names) == 2
     assert non_zero_vec_names == ["A", "C"]
 
+
+# -------------------------------------------------------------------------
+def test_get_realizations(provider: EnsembleSummaryProvider) -> None:
+
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
+
+# -------------------------------------------------------------------------
+def test_get_dates(provider: EnsembleSummaryProvider) -> None:
+
     all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 2
+    assert len(all_dates) == 1
     assert isinstance(all_dates[0], datetime)
 
     r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
@@ -127,7 +135,7 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
 
     all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 2
+    assert len(all_dates) == 1
 
     date_to_get = all_dates[0]
     assert isinstance(date_to_get, datetime)
