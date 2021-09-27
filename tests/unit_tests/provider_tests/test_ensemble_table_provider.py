@@ -139,8 +139,6 @@ def test_create_from_per_realization_csv_file(
 
     ensembles: Dict[str, str] = {
         "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
-        "iter-1": str(testdata_folder / "01_drogon_ahm/realization-*/iter-1"),
-        "iter-2": str(testdata_folder / "01_drogon_ahm/realization-*/iter-2"),
         "iter-3": str(testdata_folder / "01_drogon_ahm/realization-*/iter-3"),
     }
 
@@ -153,7 +151,7 @@ def test_create_from_per_realization_csv_file(
         ensembles, csvfile
     )
 
-    assert providerset.ensemble_names() == ["iter-0", "iter-1", "iter-2", "iter-3"]
+    assert providerset.ensemble_names() == ["iter-0", "iter-3"]
     provider = providerset.ensemble_provider("iter-0")
 
     all_column_names = provider.column_names()
