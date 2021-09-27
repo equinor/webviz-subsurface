@@ -51,13 +51,11 @@ def shared_settings(testdata_folder: pathlib.Path) -> Dict:
             shared_settings={
                 "scratch_ensembles": {
                     "iter-0": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-0",
-                    "iter-1": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-1",
-                    "iter-2": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-2",
                     "iter-3": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-3",
                 }
             },
         ),
-        "HM_ENSEMBLES": ["iter-0", "iter-1", "iter-2", "iter-3"],
+        "HM_ENSEMBLES": ["iter-0", "iter-3"],
         "SENS_SETTINGS": WebvizSettings(
             theme=default_theme,
             shared_settings={
