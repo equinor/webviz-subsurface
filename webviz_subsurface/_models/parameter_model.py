@@ -117,7 +117,7 @@ class ParametersModel:
 
         return not all(
             (
-                (df["SENSNAME"].nunique() == 1 and df["SENSTYPE"].unique() != ["mc"])
+                (df["SENSNAME"].nunique() == 1 and df["SENSTYPE"].unique() == ["mc"])
                 for _, df in self.dataframe.groupby("ENSEMBLE")
             )
         )
