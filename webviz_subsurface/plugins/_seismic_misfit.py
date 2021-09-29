@@ -1,21 +1,20 @@
 # pylint: disable=too-many-lines, too-many-arguments, too-many-locals
-from typing import List, Dict, Any, Optional, Union, Tuple
-from pathlib import Path
+import glob
 import logging
 import re
-import glob
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pandas as pd
+import dash
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import dash
-from dash.exceptions import PreventUpdate
-from dash import html, dcc, Input, Output
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Input, Output, dcc, html
+from dash.exceptions import PreventUpdate
+from plotly.subplots import make_subplots
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
