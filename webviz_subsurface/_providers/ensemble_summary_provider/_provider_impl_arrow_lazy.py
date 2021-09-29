@@ -115,8 +115,9 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             if not np.all(np.diff(dates_np) > np.timedelta64(0)):
                 raise ValueError("DATE column must be sorted")
 
-        LOGGER.info(f"number of unique column names: {len(unique_column_names)}")
-        LOGGER.info(f"number of tables to concatenate: {len(per_real_tables)}")
+        LOGGER.debug(
+            f"Concatenating {len(per_real_tables)} tables with {len(unique_column_names)} unique column names"
+        )
 
         full_table = pa.concat_tables(per_real_tables.values(), promote=True)
         et_concat_tables_s = timer.lap_s()

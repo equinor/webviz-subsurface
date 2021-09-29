@@ -194,8 +194,9 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         unique_column_names = set()
         for table in per_real_tables.values():
             unique_column_names.update(table.schema.names)
-        LOGGER.info(f"number of unique column names: {len(unique_column_names)}")
-        LOGGER.info(f"number of tables to concatenate: {len(per_real_tables)}")
+        LOGGER.debug(
+            f"Concatenating {len(per_real_tables)} tables with {len(unique_column_names)} unique column names"
+        )
 
         timer.lap_s()
         full_table = pa.concat_tables(per_real_tables.values(), promote=True)
