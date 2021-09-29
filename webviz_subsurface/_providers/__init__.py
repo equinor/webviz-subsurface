@@ -1,3 +1,9 @@
 from .ensemble_table_provider import EnsembleTableProvider
 from .ensemble_table_provider import EnsembleTableProviderSet
 from .ensemble_table_provider_factory import EnsembleTableProviderFactory
+
+from .ensemble_summary_provider.ensemble_summary_provider import EnsembleSummaryProvider
+from .ensemble_summary_provider.ensemble_summary_provider import Frequency
+from .ensemble_summary_provider.ensemble_summary_provider_factory import (
+    EnsembleSummaryProviderFactory,
+)
