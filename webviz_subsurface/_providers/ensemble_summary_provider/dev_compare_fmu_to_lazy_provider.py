@@ -75,10 +75,7 @@ def _compare_fmu_smry_to_lazy_provider(
     # print(fmu_df)
 
     print("## Creating provider...")
-    providerset = factory.create_provider_set_from_arrow_unsmry_lazy(
-        {"myEnsemble": ens_path}
-    )
-    provider = providerset.all_providers()[0]
+    provider = factory.create_from_arrow_unsmry_lazy(ens_path)
 
     print("## Getting data from provider...")
     provider_df = provider.get_vectors_df(provider.vector_names(), frequency)

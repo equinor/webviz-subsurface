@@ -229,42 +229,38 @@ def main() -> None:
     # root_storage_dir = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
     # pylint: disable=line-too-long
-    ensembles: Dict[str, str] = {
-        "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0",
-        # "iter-0": "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0",
-    }
+    ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0"
+    # ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
+    # ensemble_path = "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0"
+    # ensemble_path = "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0"
 
     frequency: Optional[Frequency] = Frequency.DAILY
 
     print()
     print("## root_storage_dir:", root_storage_dir)
-    print("## ensembles:", ensembles)
+    print("## ensemble_path:", ensemble_path)
     print("## frequency:", frequency)
 
     print()
-    print("## Creating EnsembleSummaryProviderSet...")
+    print("## Creating EnsembleSummaryProvider...")
 
     start_tim = time.perf_counter()
     factory = EnsembleSummaryProviderFactory(root_storage_dir)
 
-    # provider_set = factory.create_provider_set_from_arrow_unsmry_lazy(ensembles)
-    # resampling_frequency = frequency
+    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
+    resampling_frequency = frequency
 
-    provider_set = factory.create_provider_set_from_arrow_unsmry_presampled(
-        ensembles, frequency
-    )
-    resampling_frequency = None
+    # provider = factory.create_from_arrow_unsmry_presampled(ensemble_path, frequency)
+    # resampling_frequency = None
 
     print(
-        "## Done creating EnsembleSummaryProviderSet, elapsed time (s):",
+        "## Done creating EnsembleSummaryProvider, elapsed time (s):",
         time.perf_counter() - start_tim,
     )
 
     print()
     print("## Running perf tests...")
-    _run_perf_tests(provider_set.provider("iter-0"), resampling_frequency)
+    _run_perf_tests(provider, resampling_frequency)
 
     print("## done")
 
