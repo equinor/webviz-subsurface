@@ -195,7 +195,7 @@ class VolumeValidatorAndCombinator:
             return [x for x in regcols if (df[x] == 1).all()]
         return ["SET"]
 
-    def drop_total_columns(self):
+    def drop_total_columns(self) -> None:
         """Drop columns with "TOTAL" if both static and dynamic volumes in input"""
         total_columns = [col for col in self.dframe if col.endswith("_TOTAL")]
         if total_columns:
@@ -205,7 +205,7 @@ class VolumeValidatorAndCombinator:
             )
             self.dframe.drop(columns=total_columns, inplace=True)
 
-    def drop_rows_with_totals_from_selectors(self):
+    def drop_rows_with_totals_from_selectors(self) -> None:
         """Drop rows containing total volumes ("Totals") if present"""
         for sel in [col for col in self.VALID_STATIC_SELECTORS if col in self.dframe]:
             self.dframe = self.dframe.loc[self.dframe[sel] != "Totals"]
