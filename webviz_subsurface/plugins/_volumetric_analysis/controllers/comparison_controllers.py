@@ -94,7 +94,12 @@ def comparison_callback(
     if selections["value1"] == selections["value2"]:
         return html.Div("Comparison between equal sources")
 
+    # Handle None in highlight criteria input
+    for key in ["Accept value", "Ignore <"]:
+        selections[key] = selections[key] if selections[key] is not None else 0
+
     groupby = selections["Group by"] if selections["Group by"] is not None else []
+    group_on_fluid = "FLUID_ZONE" in groupby
     hc_responses = ["STOIIP", "GIIP", "ASSOCIATEDGAS", "ASSOCIATEDOIL"]
     # for hc responses and bo/bg the data should be grouped
     # on fluid zone to avoid misinterpretations
@@ -210,7 +215,9 @@ def comparison_callback(
         )
         barfig_non_highlighted = create_barfig(
             df=df[df["highlighted"] == "yes"],
-            groupby=groupby,
+            groupby=groupby
+            if group_on_fluid
+            else [x for x in groupby if x != "FLUID_ZONE"],
             diff_mode=selections["Diff mode"],
             colorcol=resp1,
         )
@@ -417,9 +424,7 @@ def create_barfig(
         create_figure(
             plot_type="bar",
             data_frame=df,
-            x=df[[x for x in groupby if x != "FLUID_ZONE"]]
-            .astype(str)
-            .agg(" ".join, axis=1),
+            x=df[groupby].astype(str).agg(" ".join, axis=1) if groupby else ["Total"],
             y=diff_mode,
             color_continuous_scale="teal_r",
             color=df[colorcol],

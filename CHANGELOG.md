@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#761](https://github.com/equinor/webviz-subsurface/pull/761) - Store `xtgeo.RegularSurface` as bytestream instead of serializing to `json`.
 
 ### Fixed
+- [#802](https://github.com/equinor/webviz-subsurface/pull/802) - Removed `BO` or `BG` as response options for the tornados in `VolumetricAnalysis`, selecting them caused an error.
 - [#794](https://github.com/equinor/webviz-subsurface/pull/794) - Fixed an issue in `VolumetricAnalysis` to prevent design matrix runs with only a single montecarlo sensitivity to be interpreted as a sensitivity run.
 - [#765](https://github.com/equinor/webviz-subsurface/pull/765) - Use correct inline/xline ranges for axes in `SegyViewer` z-slice graph.
 - [#782](https://github.com/equinor/webviz-subsurface/pull/782) - Fixed an issue in `VolumetricAnalysis` when calculating property columns on grouped selections.

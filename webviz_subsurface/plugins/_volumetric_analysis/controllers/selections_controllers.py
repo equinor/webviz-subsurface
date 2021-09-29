@@ -494,8 +494,9 @@ def selections_controllers(
     def _update_tornado_selections_from_mode(mode: str, selector_ids: list) -> tuple:
         settings = {}
         if mode == "custom":
+            responses = [x for x in volumemodel.responses if x not in ["BO", "BG"]]
             settings["Response left"] = settings["Response right"] = {
-                "options": [{"label": i, "value": i} for i in volumemodel.responses],
+                "options": [{"label": i, "value": i} for i in responses],
                 "disabled": False,
             }
         else:

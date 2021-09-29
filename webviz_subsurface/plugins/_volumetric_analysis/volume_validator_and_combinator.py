@@ -50,7 +50,11 @@ class VolumeValidatorAndCombinator:
             fipmapper.FipMapper(yamlfile=fipfile).disjoint_sets() if fipfile else None
         )
         self.dframe = self.validate_and_combine_sources(volumes_table)
+        self.drop_rows_with_totals_from_selectors()
         self.volume_type = self.set_volumetric_type()
+
+        if self.volume_type == "mixed":
+            self.drop_total_columns()
 
     @property
     def possible_static_columns(self) -> list:
@@ -136,8 +140,9 @@ class VolumeValidatorAndCombinator:
             warnings.warn(
                 f"The volumetric source {source} is considered a dynamic source due "
                 f"to the presence of columns: {non_static_columns}. "
-                "If this is a static source remove these columns from the input to "
-                "trigger correct plugin mode."
+                "If this is a static source remove or rename these columns to "
+                "trigger correct plugin mode. "
+                f"Valid static columns are: {self.possible_static_columns}"
             )
             return "unknown"
 
@@ -189,3 +194,18 @@ class VolumeValidatorAndCombinator:
         if any((df[x] == 1).all() for x in regcols):
             return [x for x in regcols if (df[x] == 1).all()]
         return ["SET"]
+
+    def drop_total_columns(self):
+        """Drop columns with "TOTAL" if both static and dynamic volumes in input"""
+        total_columns = [col for col in self.dframe if col.endswith("_TOTAL")]
+        if total_columns:
+            warnings.warn(
+                f"Dropping columns {total_columns} to avoid misleading comparison between "
+                "static and dynamic columns with TOTAL."
+            )
+            self.dframe.drop(columns=total_columns, inplace=True)
+
+    def drop_rows_with_totals_from_selectors(self):
+        """Drop rows containing total volumes ("Totals") if present"""
+        for sel in [col for col in self.VALID_STATIC_SELECTORS if col in self.dframe]:
+            self.dframe = self.dframe.loc[self.dframe[sel] != "Totals"]
