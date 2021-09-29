@@ -18,8 +18,16 @@ def _get_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Batch conversion of UNSMRY files to Apache Arrow IPC file format",
     )
+
+    parser.description = (
+        "Batch conversion of UNSMRY files to Apache Arrow IPC file format.\n"
+        "\n"
+        "Note that if the enspath argument includes wildcards you will have to enclose it\n"
+        "in quotes to stop the shell from expanding it, e.g.:\n"
+        '  smry2arrow_batch "my_folder/realization-*/iter-0"'
+    )
+
     parser.add_argument(
         "enspath",
         type=Path,
