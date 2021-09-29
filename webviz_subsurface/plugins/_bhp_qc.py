@@ -1,23 +1,25 @@
-from typing import List, Optional, Dict, Union, Tuple, Callable
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-import pandas as pd
 import numpy as np
-from dash import html, Dash, Input, Output
+import pandas as pd
 import webviz_core_components as wcc
+from dash import Dash, Input, Output, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
-from .._utils.unique_theming import unique_colors
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
+
 from .._utils.fanchart_plotting import (
     FanchartData,
-    get_fanchart_traces,
     FreeLineData,
-    MinMaxData,
     LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
 )
+from .._utils.unique_theming import unique_colors
 
 
 class BhpQc(WebvizPluginABC):

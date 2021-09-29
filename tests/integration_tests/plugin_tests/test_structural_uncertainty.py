@@ -1,13 +1,11 @@
 import json
 
-from dash import html, Input, Output, State
-from webviz_config.themes import default_theme
+from dash import Input, Output, State, html
 from webviz_config import WebvizSettings
 
 # pylint: disable=no-name-in-module
-from webviz_config.plugins import (
-    StructuralUncertainty,
-)
+from webviz_config.plugins import StructuralUncertainty
+from webviz_config.themes import default_theme
 
 # pylint: enable=no-name-in-module
 

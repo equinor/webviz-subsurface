@@ -1,22 +1,21 @@
-from typing import List, Union, Tuple, Callable
-from pathlib import Path
-import json
 import io
+import json
+from pathlib import Path
+from typing import Callable, List, Tuple, Union
 
 import pandas as pd
-import xtgeo
-from dash import html, dcc, Dash, callback_context, Input, Output, State
-from dash.exceptions import PreventUpdate
-from webviz_subsurface_components import LeafletMap
 import webviz_core_components as wcc
+import xtgeo
+from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_store import webvizstore
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_subsurface_components import LeafletMap
 
-from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
+from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizations
 from webviz_subsurface._datainput.well import make_well_layers
-from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 from webviz_subsurface._models import SurfaceLeafletModel, SurfaceSetModel
+from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
 class SurfaceViewerFMU(WebvizPluginABC):
@@ -397,7 +396,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={
@@ -418,7 +417,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={
@@ -439,7 +438,7 @@ attribute_settings:
                                     unitScale={},
                                     autoScaleMap=True,
                                     minZoom=-19,
-                                    updateMode="update",
+                                    updateMode="replace",
                                     mouseCoords={"position": "bottomright"},
                                     colorBar={"position": "bottomleft"},
                                     switch={

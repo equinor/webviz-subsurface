@@ -1,7 +1,7 @@
-from typing import Union, Optional, List, Tuple, Callable, Dict
 import fnmatch
 import pathlib
 import re
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble

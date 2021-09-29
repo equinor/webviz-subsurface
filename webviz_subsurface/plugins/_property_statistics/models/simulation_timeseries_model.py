@@ -1,18 +1,18 @@
 from typing import Optional, Union
 
 import pandas as pd
-from webviz_config.common_cache import CACHE
 from webviz_config import WebvizConfigTheme
+from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._abbreviations.reservoir_simulation import (
-    simulation_vector_description,
     historical_vector,
-)
-from webviz_subsurface._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
-    get_simulation_line_shape,
+    simulation_vector_description,
 )
 from webviz_subsurface._utils.colors import hex_to_rgba
+from webviz_subsurface._utils.simulation_timeseries import (
+    get_simulation_line_shape,
+    set_simulation_line_shape_fallback,
+)
 
 
 class SimulationTimeSeriesModel:

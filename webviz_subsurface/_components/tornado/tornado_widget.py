@@ -1,28 +1,29 @@
-from typing import List, Optional, Dict, Any, Union, Tuple
-from uuid import uuid4
 import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
 
 import pandas as pd
+import webviz_core_components as wcc
 from dash import (
-    html,
-    dcc,
-    callback_context,
+    ClientsideFunction,
     Dash,
-    dash_table,
     Input,
     Output,
     State,
-    ClientsideFunction,
+    callback_context,
+    dash_table,
+    dcc,
+    html,
 )
 from dash.exceptions import PreventUpdate
-import webviz_core_components as wcc
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
-from ._tornado_data import TornadoData
+
 from ._tornado_bar_chart import TornadoBarChart
+from ._tornado_data import TornadoData
 from ._tornado_table import TornadoTable
 
 

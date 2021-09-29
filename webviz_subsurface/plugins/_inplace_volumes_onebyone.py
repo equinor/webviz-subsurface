@@ -1,24 +1,24 @@
-from typing import List, Tuple, Union, Callable, Iterable
 import json
-from uuid import uuid4
 from pathlib import Path
+from typing import Callable, Iterable, List, Tuple, Union
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from dash import html, Dash, callback_context, dash_table, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, Input, Output, State, callback_context, dash_table, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
 from webviz_config.deprecation_decorators import deprecated_plugin
+from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._components import TornadoWidget
-from .._datainput.inplace_volumes import extract_volumes
-from .._datainput.fmu_input import get_realizations, find_sens_type
-from .._abbreviations.volume_terminology import volume_description, volume_unit
+
 from .._abbreviations.number_formatting import table_statistics_base
+from .._abbreviations.volume_terminology import volume_description, volume_unit
+from .._datainput.fmu_input import find_sens_type, get_realizations
+from .._datainput.inplace_volumes import extract_volumes
 
 
 @deprecated_plugin(

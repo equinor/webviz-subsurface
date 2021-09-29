@@ -1,16 +1,17 @@
-from typing import Tuple, Union, Callable
+from typing import Callable, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from dash import Dash, no_update, callback_context, Input, Output, State, ALL
+from dash import ALL, Dash, Input, Output, State, callback_context, no_update
 from dash.dash import _NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceLeafletModel
-from ..utils.colors import find_intermediate_color_rgba
+
 from ..figures.correlation_figure import CorrelationFigure
-from ..utils.surface import surface_from_zone_prop
 from ..models import PropertyStatisticsModel, SimulationTimeSeriesModel
+from ..utils.colors import find_intermediate_color_rgba
+from ..utils.surface import surface_from_zone_prop
 
 
 def property_response_controller(

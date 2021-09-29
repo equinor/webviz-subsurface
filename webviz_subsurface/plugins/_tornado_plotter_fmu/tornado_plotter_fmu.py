@@ -1,14 +1,14 @@
-from typing import Dict, List
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Dict, List
 
-from dash import html, Dash, callback_context, Input, Output, ALL
-from webviz_config import WebvizPluginABC, WebvizSettings
 import webviz_core_components as wcc
+from dash import ALL, Dash, Input, Output, callback_context, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._providers import EnsembleTableProviderFactory
 from webviz_subsurface._components.tornado.tornado_widget import TornadoWidget
 from webviz_subsurface._datainput.fmu_input import find_sens_type
+from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 
 class TornadoPlotterFMU(WebvizPluginABC):

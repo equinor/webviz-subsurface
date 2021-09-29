@@ -1,20 +1,21 @@
-from typing import Optional, Union, List, Tuple, Callable
 import pathlib
+from typing import Callable, List, Optional, Tuple, Union
 
-from dash import dcc, Dash
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
-from webviz_config import WebvizConfigTheme
+from dash import Dash, dcc
+from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
-from .views.main_view import main_view
-from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
-from .controllers.property_qc_controller import property_qc_controller
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
+
 from .controllers.property_delta_controller import property_delta_controller
+from .controllers.property_qc_controller import property_qc_controller
 from .controllers.property_response_controller import property_response_controller
-from .utils.surface import generate_surface_table, get_path
 from .data_loaders import read_csv
+from .models import PropertyStatisticsModel, SimulationTimeSeriesModel
+from .utils.surface import generate_surface_table, get_path
+from .views.main_view import main_view
 
 
 class PropertyStatistics(WebvizPluginABC):

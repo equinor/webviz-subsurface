@@ -1,8 +1,8 @@
-from typing import List, Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 
-from dash import html, dcc
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
+from dash import dcc, html
 
 from .modal import open_modal_layout
 from .uncertainty_table import uncertainty_table_btn

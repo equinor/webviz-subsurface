@@ -2,16 +2,16 @@
 """Convert UNSMRY file to Apache Arrow IPC file format (also known as Feather V2)
 """
 
-from typing import List, Iterable, Dict
 import argparse
-import re
-from pathlib import Path
-import logging
 import json
+import logging
+import re
 import time
+from pathlib import Path
+from typing import Dict, Iterable, List
 
-from ecl.summary import EclSum, EclSumKeyWordVector
 import pyarrow as pa
+from ecl.summary import EclSum, EclSumKeyWordVector
 from pyarrow import feather
 
 logger = logging.getLogger(__name__)

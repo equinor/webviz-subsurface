@@ -1,11 +1,13 @@
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format
 from webviz_config import WebvizConfigTheme
+
 from webviz_subsurface._figures import create_figure
+
 
 # pylint: disable=too-many-public-methods
 class PropertyStatisticsModel:

@@ -1,16 +1,15 @@
-from typing import Optional, List, Tuple, Callable
+import datetime
 import shutil
 import warnings
 from pathlib import Path
-import datetime
+from typing import Callable, List, Optional, Tuple
 
 import pandas as pd
-from dash import html
 import webviz_core_components as wcc
-from webviz_config.webviz_store import webvizstore
+from dash import html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config.webviz_store import webvizstore
 
 
 class DiskUsage(WebvizPluginABC):

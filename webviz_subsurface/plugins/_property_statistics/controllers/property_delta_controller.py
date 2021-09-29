@@ -1,14 +1,14 @@
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import pandas as pd
-from dash import html, Dash, Input, Output, ALL
 import plotly.graph_objects as go
+from dash import ALL, Dash, Input, Output, html
 
 from webviz_subsurface._models import SurfaceLeafletModel
-from ..views.property_delta_view import table_view, surface_views
-from ..utils.surface import surface_from_zone_prop
 
 from ..models import PropertyStatisticsModel
+from ..utils.surface import surface_from_zone_prop
+from ..views.property_delta_view import surface_views, table_view
 
 
 def property_delta_controller(

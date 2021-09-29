@@ -1,9 +1,9 @@
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from numpy import ma
 import numpy as np
 import pandas as pd
 import xtgeo
+from numpy import ma
 from plotly.subplots import make_subplots
 
 from .._utils.colors import hex_to_rgba

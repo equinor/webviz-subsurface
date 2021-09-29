@@ -1,6 +1,6 @@
-from typing import Callable, List, Union, Dict
+from typing import Callable, Dict, List, Union
 
-from dash import html, dcc
+from dash import dcc, html
 
 
 def clientside_stores(

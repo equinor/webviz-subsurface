@@ -1,9 +1,8 @@
-import math
 import json
+import math
 import pathlib
 import warnings
-from typing import Optional, Union, List, Tuple
-
+from typing import List, Optional, Tuple, Union
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 

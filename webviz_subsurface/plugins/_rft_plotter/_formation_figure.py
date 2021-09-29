@@ -1,17 +1,17 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from ._processing import interpolate_depth, filter_frame
 from ..._utils.fanchart_plotting import (
-    TraceDirection,
     FanchartData,
-    get_fanchart_traces,
     FreeLineData,
-    MinMaxData,
     LowHighData,
+    MinMaxData,
+    TraceDirection,
+    get_fanchart_traces,
 )
+from ._processing import filter_frame, interpolate_depth
 
 
 class FormationFigure:

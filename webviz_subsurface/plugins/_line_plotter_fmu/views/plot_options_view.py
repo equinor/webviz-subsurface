@@ -1,7 +1,7 @@
-from typing import List, Dict, Union, Callable
+from typing import Callable, Dict, List, Union
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def plot_options_view(get_uuid: Callable, initial_layout: Dict) -> html.Div:

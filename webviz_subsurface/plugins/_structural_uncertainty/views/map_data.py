@@ -1,8 +1,8 @@
 from typing import List
 
-from dash import html
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
+from dash import html
 
 
 def map_data_layout(

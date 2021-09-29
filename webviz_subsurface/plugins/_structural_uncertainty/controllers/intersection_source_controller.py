@@ -1,6 +1,6 @@
-from typing import Dict, Callable, Tuple, Union, List
+from typing import Callable, Dict, List, Tuple, Union
 
-from dash import Dash, Input, Output, MATCH
+from dash import MATCH, Dash, Input, Output
 
 
 def update_intersection_source(

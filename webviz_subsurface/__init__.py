@@ -1,9 +1,17 @@
 import glob
+import json
 import pathlib
+from typing import Dict, List, Optional
 
-from pkg_resources import get_distribution, DistributionNotFound
+import jsonschema
 import webviz_config
+import yaml
+from pkg_resources import DistributionNotFound, get_distribution
 
+from webviz_subsurface._utils.vector_calculator import (
+    PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
+    ConfigExpressionData,
+)
 
 try:
     __version__ = get_distribution(__name__).version
@@ -13,7 +21,7 @@ except DistributionNotFound:
 
 
 @webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe("scratch_ensembles")
-def subscribe(
+def subscribe_scratch_ensembles(
     scratch_ensembles: dict, config_folder: pathlib.Path, portable: bool
 ) -> dict:
     if scratch_ensembles is not None:
@@ -36,3 +44,36 @@ def subscribe(
                 )
 
     return scratch_ensembles
+
+
+@webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe("predefined_expressions")
+def subcribe_predefined_expressions(
+    predefined_expressions: Optional[Dict[str, str]],
+    config_folder: pathlib.Path,
+    portable: bool,
+) -> Dict[str, pathlib.Path]:
+
+    output: Dict[str, pathlib.Path] = {}
+
+    if predefined_expressions is None:
+        return output
+
+    for key, path in predefined_expressions.items():
+
+        if not pathlib.Path(path).is_absolute():
+            output[key] = config_folder / path
+
+        if not portable:
+            predefined_expressions_data: Dict[
+                str, ConfigExpressionData
+            ] = yaml.safe_load(output[key].read_text())
+
+            try:
+                jsonschema.validate(
+                    instance=predefined_expressions_data,
+                    schema=PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
+                )
+            except jsonschema.exceptions.ValidationError as err:
+                raise ValueError from err
+
+    return output

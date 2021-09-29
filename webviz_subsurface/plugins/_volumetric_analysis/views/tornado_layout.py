@@ -1,5 +1,5 @@
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 
 def tornado_main_layout(uuid: str) -> html.Div:

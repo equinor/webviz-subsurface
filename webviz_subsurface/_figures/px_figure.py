@@ -1,10 +1,10 @@
-from typing import Callable, Optional, Any, List, Union
 import inspect
+from typing import Any, Callable, List, Optional, Union
 
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 import plotly.graph_objects as go
+from pandas.api.types import is_numeric_dtype
 
 
 def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
@@ -72,7 +72,9 @@ def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
         linewidth=2,
         linecolor="black",
         mirror=True,
-        title=None if facet_col is not None else kwargs.get("x"),
+        title=None
+        if facet_col is not None or not isinstance(kwargs.get("x"), str)
+        else kwargs.get("x"),
         showticklabels=(data_frame[facet_col].nunique() <= 100)
         if facet_col is not None
         else None,

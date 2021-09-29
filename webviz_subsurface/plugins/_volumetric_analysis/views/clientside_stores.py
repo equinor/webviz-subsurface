@@ -1,6 +1,6 @@
 from typing import Callable
 
-from dash import html, dcc
+from dash import dcc, html
 
 
 def clientside_stores(get_uuid: Callable) -> html.Div:

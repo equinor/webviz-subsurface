@@ -1,12 +1,12 @@
-from typing import Union, List, Dict, Optional, Tuple
-from datetime import datetime
-from uuid import uuid4
 import json
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Union
+from uuid import uuid4
 
-import yaml
 import numpy as np
 import pandas as pd
-from dash import html, dcc, Dash, callback_context, Input, Output, State
+import yaml
+from dash import Dash, Input, Output, State, callback_context, dcc, html
 from dash.exceptions import PreventUpdate
 
 

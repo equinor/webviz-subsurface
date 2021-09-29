@@ -1,7 +1,7 @@
 from typing import List, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def calc_from_cumulatives(

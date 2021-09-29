@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pandas as pd
 import fmu.ensemble
+import pandas as pd
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 

@@ -6,15 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
+- [#783](https://github.com/equinor/webviz-subsurface/pull/783) - `VolumetricAnalysis` - added tab with Fipfile QC for inspection of which `FIPNUM's` and `REGION∕ZONE's` that have been combined in order to get comparable volumes between dynamic and static sources. This tab is only available if a fipfile is given as input.
+- [#777](https://github.com/equinor/webviz-subsurface/pull/777) - `VolumetricAnalysis` - added tabs with `Source comparison` and `Ensemble comparison` as QC tools for quick identification of where and why volumetric changes occur across sources (e.g. static vs dynamic) or ensembles (e.g. model revisions or ahm iterations).
+- [#709](https://github.com/equinor/webviz-subsurface/pull/709) - Added `VectorCalculator` component in `ReservoirSimulationTimeSeries` plugin for calculation and graphing of custom simulation time series vectors.
+- [#773](https://github.com/equinor/webviz-subsurface/pull/773) - `VolumetricAnalysis` - added functionality of easy switching bewteen `FIPNUM` and `REGION/ZONE` filter for cases where each fipnum belongs to a unique region and zone.
+- [#770](https://github.com/equinor/webviz-subsurface/pull/770) - Added support for dynamic volumetric files in `VolumetricAnalysis` and possibility of combining static and dynamic volumes on a comparable level. To trigger this behaviour a fipfile with `FIPNUM` to `REGION/ZONE` mapping information needs to be provided. Also added support for giving multiple files as input per source.
 - [#755](https://github.com/equinor/webviz-subsurface/pull/755) - Updated existing and added new tests for the Drogon dataset.
 
 ### Changed
+- [#788](https://github.com/equinor/webviz-subsurface/pull/788) - Prevent mixing volumes from different sensitivities in `VolumetricAnalysis` by not allowing to select more than one sensitivity as a filter unless SENSNAME has been grouped on by the user.
 - [#760](https://github.com/equinor/webviz-subsurface/pull/760) - Updated to `Dash 2.0`.
 - [#761](https://github.com/equinor/webviz-subsurface/pull/761) - Store `xtgeo.RegularSurface` as bytestream instead of serializing to `json`.
 
 ### Fixed
+- [#794](https://github.com/equinor/webviz-subsurface/pull/794) - Fixed an issue in `VolumetricAnalysis` to prevent design matrix runs with only a single montecarlo sensitivity to be interpreted as a sensitivity run.
 - [#765](https://github.com/equinor/webviz-subsurface/pull/765) - Use correct inline/xline ranges for axes in `SegyViewer` z-slice graph.
-
+- [#782](https://github.com/equinor/webviz-subsurface/pull/782) - Fixed an issue in `VolumetricAnalysis` when calculating property columns on grouped selections.
+- [#791](https://github.com/equinor/webviz-subsurface/pull/791) - Ensure correct map bounds in `SurfaceViewerFMU` when switching between attributes with different geometry.
 
 ## [0.2.5] - 2021-09-03
 ### Added

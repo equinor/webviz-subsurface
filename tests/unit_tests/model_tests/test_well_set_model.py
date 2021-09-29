@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
 import xtgeo
 
 from webviz_subsurface._models import WellSetModel

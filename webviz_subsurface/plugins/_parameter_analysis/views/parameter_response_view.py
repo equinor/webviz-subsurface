@@ -1,20 +1,20 @@
 from typing import Callable
 
+import webviz_core_components as wcc
 from dash import html
 from webviz_config import WebvizConfigTheme
-import webviz_core_components as wcc
 
+from ..models import ParametersModel, SimulationTimeSeriesModel
 from .selector_view import (
+    color_opacity_selector,
+    color_selector,
+    date_selector,
     ensemble_selector,
     filter_vector_selector,
-    vector_selector,
     parameter_selector,
-    date_selector,
     plot_options,
-    color_selector,
-    color_opacity_selector,
+    vector_selector,
 )
-from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
 def timeseries_view(get_uuid: Callable) -> html.Div:

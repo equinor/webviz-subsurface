@@ -1,11 +1,11 @@
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
-from dash import html, dcc, Dash, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-import dash_bootstrap_components as dbc
+from dash import ALL, Dash, Input, Output, State, dcc, html
+from dash.exceptions import PreventUpdate
 from webviz_config.utils import calculate_slider_step
 
 

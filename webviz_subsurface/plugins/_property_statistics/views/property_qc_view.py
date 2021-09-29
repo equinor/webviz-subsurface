@@ -1,16 +1,15 @@
 from typing import Callable
 
-from dash import html
 import webviz_core_components as wcc
-
-from .selector_view import (
-    ensemble_selector,
-    property_selector,
-    filter_selector,
-    source_selector,
-)
+from dash import html
 
 from ..models import PropertyStatisticsModel
+from .selector_view import (
+    ensemble_selector,
+    filter_selector,
+    property_selector,
+    source_selector,
+)
 
 
 def selector_view(
