@@ -76,12 +76,12 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
     ).resolve()
     assert eclbase.with_suffix(".UNSMRY").exists()
 
-    output_file = tmp_path / "output.arrow"
-
     ert_config_file = _create_minimal_ert_config_file(
         tmp_path, f"SMRY2ARROW(<ECLBASE>={eclbase})"
     )
-    output_file = tmp_path / "output" / "share" / "results" / "tables" / "unsmry.arrow"
+    output_file = (
+        tmp_path / "output" / "share" / "results" / "unsmry" / "DROGON-0.arrow"
+    )
     subprocess.check_output(["ert", "test_run", ert_config_file], cwd=tmp_path)  # nosec
 
     assert output_file.exists()
