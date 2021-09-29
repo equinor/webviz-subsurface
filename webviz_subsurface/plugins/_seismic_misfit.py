@@ -32,7 +32,7 @@ class SeismicMisfit(WebvizPluginABC):
 
     ---
 
-    * **`myensembles`:** Which *scratch_ensembles* in *shared_settings* to include.
+    * **`ensembles`:** Which *scratch_ensembles* in *shared_settings* to include.
     <br>(Note that **realization-** should be part of the paths.)
 
     * **`attribute_name_sim`:** Name of simulated seismic attribute
@@ -45,7 +45,7 @@ class SeismicMisfit(WebvizPluginABC):
 
     * **`attribute_sim_path`:** Path to `attribute_name_sim` file.
     Path is given as relative to *runpath*.<br>
-    *runpath* = path as defined for `myensembles` in shared settings.
+    *runpath* = path as defined for `ensembles` in shared settings.
 
     * **`attribute_obs_path`:** Path to `attribute_name_obs` file.
     Path is given as relative to *runpath*,
@@ -59,8 +59,9 @@ class SeismicMisfit(WebvizPluginABC):
     * **`sim_mult`:** Multiplier for all simulated data.
     Can be used for calibration purposes.
 
-    * **`polygon`:** Full path to csv file containing (fault-) polygons
-    to include in map view plots.
+    * **`polygon`:** Path to csv file containing (fault-) polygons
+    to include in map view plots. Path is given as relative to *runpath*.
+    If there's one csv file per realization only one of them is read and used.
 
     * **`realrange`:** Realization range filter for each of the ensembles.
     Assign as list of two integers (e.g. [0, 99]).
@@ -113,42 +114,44 @@ class SeismicMisfit(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
-        myensembles: List[str],
+        ensembles: List[str],
         attribute_name_sim: str,
         attribute_name_obs: str = None,
         metadata_name: str = "metadata.csv",
-        attribute_sim_path: Path = Path(
-            "sim2seis/output/4d_attribute_maps/"
-        ),  # path relative to <runpath>
-        attribute_obs_path: Path = Path(
-            "../../share/observations/seismic/"
-        ),  # path relative to <runpath>
-        metadata_path: Path = Path(
-            "../../share/observations/seismic/"
-        ),  # path relative to <runpath>
+        attribute_sim_path: str = "sim2seis/output/4d_attribute_maps/",
+        attribute_obs_path: str = "../../share/observations/seismic/",
+        metadata_path: str = "../../share/observations/seismic/",
         obs_mult: float = 1.0,
         sim_mult: float = 1.0,
-        polygon: Path = None,
+        polygon: str = None,
         realrange: List[List[int]] = None,
     ):
         super().__init__()
 
         ensemble_set = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in myensembles
+            for ens in ensembles
         }
-        # self.emodel: EnsembleSetModel = (
-        #    caching_ensemble_set_model_factory.get_or_create_model(
-        #        ensemble_paths=ensemble_set,
-        #    )
-        # )
 
+        poly_file = None
         self.caseinfo = ""
         self.ens_names = []
         for ens_name, ens_path in ensemble_set.items():
             self.caseinfo = self.caseinfo + ens_name + ": \n"
             self.caseinfo = self.caseinfo + ens_path + "\n"
             self.ens_names.append(ens_name)
+
+            # grab polygon file relative to runpath for one realization
+            if polygon and not poly_file:
+                single_runpath = sorted(glob.glob(ens_path))[0]
+                poly_file = Path(single_runpath) / Path(polygon)
+                logging.debug(f"Read polygon file:\n {poly_file}")
+                self.df_polygon = read_csv(poly_file)
+        if not polygon:
+            self.df_polygon = None
+            logging.debug(
+                "Polygon file not assigned in config file - continue without."
+            )
 
         if attribute_name_obs is None:
             attribute_name_obs = attribute_name_sim
@@ -168,8 +171,6 @@ class SeismicMisfit(WebvizPluginABC):
         )
         self.obsinfo = _compare_dfs_obs(self.dframeobs, self.ens_names)
         self.caseinfo = self.caseinfo + self.obsinfo
-
-        self.df_polygon = read_csv(polygon) if polygon else None
 
         # get sorted list of unique region values
         self.region_names = sorted(list(self.dframe["region"].unique()))
@@ -2592,9 +2593,9 @@ def makedf(
     attribute_name_sim: str,
     attribute_name_obs: str,
     metadata_name: str,
-    attribute_sim_path: Path,
-    attribute_obs_path: Path,
-    metadata_path: Path,
+    attribute_sim_path: str,
+    attribute_obs_path: str,
+    metadata_path: str,
     obs_mult: float,
     sim_mult: float,
     realrange: Optional[List[List[int]]],
@@ -2612,9 +2613,9 @@ def makedf(
         )
 
         # grab runpath for one realization and locate obs/meta data relative to it
-        single_runpath = glob.glob(ens_path)[0]
-        obsfile = Path(single_runpath) / attribute_obs_path / attribute_name_obs
-        metafile = Path(single_runpath) / metadata_path / metadata_name
+        single_runpath = sorted(glob.glob(ens_path))[0]
+        obsfile = Path(single_runpath) / Path(attribute_obs_path) / attribute_name_obs
+        metafile = Path(single_runpath) / Path(metadata_path) / metadata_name
 
         df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult)
 
@@ -2744,7 +2745,7 @@ def makedf_seis_addsim(
     df: pd.DataFrame,
     ens_path: str,
     attribute_name_sim: str,
-    attribute_sim_path: Path,
+    attribute_sim_path: str,
     fromreal: int = 0,
     toreal: int = 99,
     sim_mult: float = 1.0,
@@ -2767,7 +2768,9 @@ def makedf_seis_addsim(
         if fromreal <= real <= toreal:
 
             simfile = (
-                Path(real_path[real]) / attribute_sim_path / Path(attribute_name_sim)
+                Path(real_path[real])
+                / Path(attribute_sim_path)
+                / Path(attribute_name_sim)
             )
             try:
                 colname = "real-" + str(real)
