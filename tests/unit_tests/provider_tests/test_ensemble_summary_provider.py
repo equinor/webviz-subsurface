@@ -7,9 +7,10 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
 
 import pandas as pd
 
+from fmu.ensemble import ScratchEnsemble
 from webviz_subsurface._providers import EnsembleSummaryProviderFactory
 
-
+# Helper function for generating per-realization CSV files based on aggregated CSV file
 def _split_aggr_csv_into_per_real(aggr_csvfile: str, output_folder: str) -> None:
     df = pd.read_csv(aggr_csvfile)
     df = df[df["ENSEMBLE"] == "iter-0"]
@@ -24,24 +25,101 @@ def _split_aggr_csv_into_per_real(aggr_csvfile: str, output_folder: str) -> None
         )
 
 
+# Helper function dumping values obtained via fmu to CSV file.
+# Used to find the expected values in "arrow" tests
+def _dump_smry_to_csv_using_fmu(
+    ens_path: str, time_index: str, output_csv_file: str
+) -> None:
+    scratch_ensemble = ScratchEnsemble("tempEnsName", paths=ens_path)
+    df = scratch_ensemble.load_smry(time_index=time_index)
+    df.sort_values(["DATE", "REAL"], inplace=True)
+
+    print("Dataframe shape::", df.shape)
+
+    unique_dates = df["DATE"].unique()
+    print("Num unique dates:", len(unique_dates))
+    print(unique_dates)
+
+    unique_reals = df["REAL"].unique()
+    print("Num unique reals:", len(unique_reals))
+    print(unique_reals)
+
+    df.to_csv(output_csv_file, index=False)
+
+
 def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) -> None:
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
+    ensemble_path = str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
 
-    ensemble_path = testdata_folder / "01_drogon_ahm/realization-*/iter-0"
-    provider = factory.create_from_arrow_unsmry_lazy(str(ensemble_path))
+    # Used to generate test results
+    # _dump_smry_to_csv_using_fmu(ensemble_path, "monthly", "expected_smry.csv")
+
+    factory = EnsembleSummaryProviderFactory(tmp_path)
+    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
+
+    assert provider.supports_resampling()
+
+    assert provider.vector_metadata("FOPT") is not None
+
+    vecnames = provider.vector_names()
+    assert len(vecnames) == 920
+
+    dates = provider.dates(Frequency.MONTHLY)
+    assert len(dates) == 31
+    assert isinstance(dates[0], datetime.datetime)
+    assert dates[0] == datetime.datetime.fromisoformat("2018-01-01")
+    assert dates[-1] == datetime.datetime.fromisoformat("2020-07-01")
+
+    realizations = provider.realizations()
+    assert len(realizations) == 100
+    assert realizations[0] == 0
+    assert realizations[-1] == 99
+
+    vecdf = provider.get_vectors_df(["FOPR"], Frequency.MONTHLY)
+    assert vecdf.shape == (3100, 3)
+    assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
+    assert vecdf["DATE"].nunique() == 31
+    assert vecdf["REAL"].nunique() == 100
+    sampleddate = vecdf["DATE"][0]
+    assert isinstance(sampleddate, datetime.datetime)
 
 
 def test_create_from_arrow_unsmry_presampled_monthly(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
-
     ensemble_path = testdata_folder / "01_drogon_ahm/realization-*/iter-0"
+
+    factory = EnsembleSummaryProviderFactory(tmp_path)
     provider = factory.create_from_arrow_unsmry_presampled(
         str(ensemble_path), Frequency.MONTHLY
     )
+
+    assert not provider.supports_resampling()
+
+    assert provider.vector_metadata("FOPT") is not None
+
+    vecnames = provider.vector_names()
+    assert len(vecnames) == 920
+
+    dates = provider.dates(None)
+    assert len(dates) == 31
+    assert isinstance(dates[0], datetime.datetime)
+    assert dates[0] == datetime.datetime.fromisoformat("2018-01-01")
+    assert dates[-1] == datetime.datetime.fromisoformat("2020-07-01")
+
+    realizations = provider.realizations()
+    assert len(realizations) == 100
+    assert realizations[0] == 0
+    assert realizations[-1] == 99
+
+    vecdf = provider.get_vectors_df(["FOPR"], None)
+    assert vecdf.shape == (3100, 3)
+    assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
+    assert vecdf["DATE"].nunique() == 31
+    assert vecdf["REAL"].nunique() == 100
+    sampleddate = vecdf["DATE"][0]
+    assert isinstance(sampleddate, datetime.datetime)
 
 
 def test_create_from_per_realization_csv_file(
