@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -120,6 +121,15 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
     def write_backing_store_from_ensemble_dataframe(
         storage_dir: Path, storage_key: str, ensemble_df: pd.DataFrame
     ) -> None:
+        @dataclass
+        class Elapsed:
+            convert_date_s: float = -1
+            table_from_pandas_s: float = -1
+            find_and_store_min_max_s: float = -1
+            sorting_s: float = -1
+            write_s: float = -1
+
+        elapsed = Elapsed()
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         LOGGER.debug(
@@ -130,7 +140,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         # Force data type in the incoming DataFrame's DATE column to datetime.datetime objects
         # This is the first step in coercing pyarrow to always store DATEs as timestamps
         ensemble_df = make_date_column_datetime_object(ensemble_df)
-        et_convert_date_s = timer.lap_s()
+        elapsed.convert_date_s = timer.lap_s()
 
         # By default, we'll now end up with a schema that has timestamp[ns] for the DATE column
         # We therefore modify the retrieved schema and specify usage of timestamp[ms] instead
@@ -148,7 +158,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         table = pa.Table.from_pandas(
             ensemble_df, schema=schema_to_use, preserve_index=False
         )
-        et_table_from_pandas_s = timer.lap_s()
+        elapsed.table_from_pandas_s = timer.lap_s()
 
         # We're done with the dataframe
         del ensemble_df
@@ -159,22 +169,22 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         table = add_per_vector_min_max_to_table_schema_metadata(
             table, per_vector_min_max
         )
-        et_find_and_store_min_max_s = timer.lap_s()
+        elapsed.find_and_store_min_max_s = timer.lap_s()
 
         table = _sort_table_on_date_then_real(table)
-        et_sorting_s = timer.lap_s()
+        elapsed.sorting_s = timer.lap_s()
 
         # feather.write_feather(table, dest=arrow_file_name)
         feather.write_feather(table, dest=arrow_file_name, compression="uncompressed")
-        et_write_s = timer.lap_s()
+        elapsed.write_s = timer.lap_s()
 
         LOGGER.debug(
             f"Wrote backing store to arrow file in: {timer.elapsed_s():.2f}s ("
-            f"convert_date={et_convert_date_s:.2f}s, "
-            f"table_from_pandas={et_table_from_pandas_s:.2f}s, "
-            f"find_and_store_min_max={et_find_and_store_min_max_s:.2f}s, "
-            f"sorting={et_sorting_s:.2f}s, "
-            f"write={et_write_s:.2f}s)"
+            f"convert_date={elapsed.convert_date_s:.2f}s, "
+            f"table_from_pandas={elapsed.table_from_pandas_s:.2f}s, "
+            f"find_and_store_min_max={elapsed.find_and_store_min_max_s:.2f}s, "
+            f"sorting={elapsed.sorting_s:.2f}s, "
+            f"write={elapsed.write_s:.2f}s)"
         )
 
     # -------------------------------------------------------------------------
@@ -182,6 +192,15 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
     ) -> None:
+        @dataclass
+        class Elapsed:
+            concat_tables_s: float = -1
+            build_add_real_col_s: float = -1
+            sorting_s: float = -1
+            find_and_store_min_max_s: float = -1
+            write_s: float = -1
+
+        elapsed = Elapsed()
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         LOGGER.debug(
@@ -199,7 +218,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
         timer.lap_s()
         full_table = pa.concat_tables(per_real_tables.values(), promote=True)
-        et_concat_tables_s = timer.lap_s()
+        elapsed.concat_tables_s = timer.lap_s()
 
         real_arr = np.empty(full_table.num_rows, np.int32)
         table_start_idx = 0
@@ -208,31 +227,31 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             table_start_idx += real_table.num_rows
 
         full_table = full_table.add_column(0, "REAL", pa.array(real_arr))
-        et_build_add_real_col_s = timer.lap_s()
+        elapsed.build_add_real_col_s = timer.lap_s()
 
         # Find per column min/max values and then store them as metadata on table's schema
         per_vector_min_max = find_min_max_for_numeric_table_columns(full_table)
         full_table = add_per_vector_min_max_to_table_schema_metadata(
             full_table, per_vector_min_max
         )
-        et_find_and_store_min_max_s = timer.lap_s()
+        elapsed.find_and_store_min_max_s = timer.lap_s()
 
         full_table = _sort_table_on_date_then_real(full_table)
-        et_sorting_s = timer.lap_s()
+        elapsed.sorting_s = timer.lap_s()
 
         # feather.write_feather(full_table, dest=arrow_file_name)
         feather.write_feather(
             full_table, dest=arrow_file_name, compression="uncompressed"
         )
-        et_write_s = timer.lap_s()
+        elapsed.write_s = timer.lap_s()
 
         LOGGER.debug(
             f"Wrote backing store to arrow file in: {timer.elapsed_s():.2f}s ("
-            f"concat_tables={et_concat_tables_s:.2f}s, "
-            f"build_add_real_col={et_build_add_real_col_s:.2f}s, "
-            f"sorting={et_sorting_s:.2f}s, "
-            f"find_and_store_min_max={et_find_and_store_min_max_s:.2f}s, "
-            f"write={et_write_s:.2f}s)"
+            f"concat_tables={elapsed.concat_tables_s:.2f}s, "
+            f"build_add_real_col={elapsed.build_add_real_col_s:.2f}s, "
+            f"sorting={elapsed.sorting_s:.2f}s, "
+            f"find_and_store_min_max={elapsed.find_and_store_min_max_s:.2f}s, "
+            f"write={elapsed.write_s:.2f}s)"
         )
 
     # -------------------------------------------------------------------------

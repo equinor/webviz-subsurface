@@ -228,8 +228,8 @@ def main() -> None:
     # root_storage_dir = Path("/home/sigurdp/buf/blobfuse/mounted/webviz_storage_dir")
 
     # pylint: disable=line-too-long
-    ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0"
-    # ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
+    ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
+    # ensemble_path = "/home/sigurdp/gitRoot/webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0"
     # ensemble_path = "/home/sigurdp/webviz_testdata/reek_history_match_reduced/realization-*/iter-0"
     # ensemble_path = "/home/sigurdp/webviz_testdata/reek_history_match_large/realization-*/iter-0"
 

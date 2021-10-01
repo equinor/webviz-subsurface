@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -102,6 +103,15 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
     ) -> None:
+        @dataclass
+        class Elapsed:
+            concat_tables_s: float = -1
+            build_add_real_col_s: float = -1
+            sorting_s: float = -1
+            find_and_store_min_max_s: float = -1
+            write_s: float = -1
+
+        elapsed = Elapsed()
 
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         LOGGER.debug(f"Writing backing store to arrow file: {arrow_file_name}")
@@ -126,7 +136,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         )
 
         full_table = pa.concat_tables(per_real_tables.values(), promote=True)
-        et_concat_tables_s = timer.lap_s()
+        elapsed.concat_tables_s = timer.lap_s()
 
         real_arr = np.empty(full_table.num_rows, np.int32)
         table_start_idx = 0
@@ -135,33 +145,33 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             table_start_idx += real_table.num_rows
 
         full_table = full_table.add_column(0, "REAL", pa.array(real_arr))
-        et_build_add_real_col_s = timer.lap_s()
+        elapsed.build_add_real_col_s = timer.lap_s()
 
         # Must sort table on real since interpolations work per realization
         # and we utilize slicing for speed
         full_table = _sort_table_on_real_then_date(full_table)
-        et_sorting_s = timer.lap_s()
+        elapsed.sorting_s = timer.lap_s()
 
         # Find per column min/max values and store them as metadata on table's schema
         per_vector_min_max = find_min_max_for_numeric_table_columns(full_table)
         full_table = add_per_vector_min_max_to_table_schema_metadata(
             full_table, per_vector_min_max
         )
-        et_find_and_store_min_max_s = timer.lap_s()
+        elapsed.find_and_store_min_max_s = timer.lap_s()
 
         # feather.write_feather(full_table, dest=arrow_file_name)
         with pa.OSFile(str(arrow_file_name), "wb") as sink:
             with pa.RecordBatchFileWriter(sink, full_table.schema) as writer:
                 writer.write_table(full_table)
-        et_write_s = timer.lap_s()
+        elapsed.write_s = timer.lap_s()
 
         LOGGER.debug(
             f"Wrote backing store to arrow file in: {timer.elapsed_s():.2f}s ("
-            f"concat_tables={et_concat_tables_s:.2f}s, "
-            f"build_add_real_col={et_build_add_real_col_s:.2f}s, "
-            f"sorting={et_sorting_s:.2f}s, "
-            f"find_and_store_min_max={et_find_and_store_min_max_s:.2f}s, "
-            f"write={et_write_s:.2f}s)"
+            f"concat_tables={elapsed.concat_tables_s:.2f}s, "
+            f"build_add_real_col={elapsed.build_add_real_col_s:.2f}s, "
+            f"sorting={elapsed.sorting_s:.2f}s, "
+            f"find_and_store_min_max={elapsed.find_and_store_min_max_s:.2f}s, "
+            f"write={elapsed.write_s:.2f}s)"
         )
 
     # -------------------------------------------------------------------------
