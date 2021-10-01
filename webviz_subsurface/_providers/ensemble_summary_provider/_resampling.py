@@ -231,7 +231,7 @@ def _extract_real_interpolation_info(
     )
 
 
-def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
+def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     """Resample table containing multiple realizations.
     The table must contain both a REAL and a DATE column.
     The table must be segmented on REAL (so that all rows from a single
@@ -461,7 +461,7 @@ class SamplingParams:
     t: float  # pylint: disable=invalid-name
 
 
-def sample_sorted_multi_real_table_at_date(
+def sample_segmented_multi_real_table_at_date(
     table: pa.Table, np_datetime: np.datetime64
 ) -> pa.Table:
     """Sample table containing multiple realizations at the specified date.

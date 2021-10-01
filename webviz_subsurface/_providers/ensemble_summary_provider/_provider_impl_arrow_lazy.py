@@ -14,8 +14,8 @@ from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._resampling import (
     generate_normalized_sample_dates,
-    resample_sorted_multi_real_table,
-    sample_sorted_multi_real_table_at_date,
+    resample_segmented_multi_real_table,
+    sample_segmented_multi_real_table_at_date,
 )
 from ._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
@@ -333,7 +333,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         if resampling_frequency is not None:
             # table = resample_multi_real_table_NAIVE(table, resampling_frequency)
             # table = resample_sorted_multi_real_table_NAIVE(table, resampling_frequency)
-            table = resample_sorted_multi_real_table(table, resampling_frequency)
+            table = resample_segmented_multi_real_table(table, resampling_frequency)
         et_resample_ms = timer.lap_ms()
 
         df = table.to_pandas(timestamp_as_object=True)
@@ -376,7 +376,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         et_filter_ms = timer.lap_ms()
 
         np_lookup_date = np.datetime64(date, "ms")
-        table = sample_sorted_multi_real_table_at_date(table, np_lookup_date)
+        table = sample_segmented_multi_real_table_at_date(table, np_lookup_date)
 
         et_resample_ms = timer.lap_ms()
         table = table.drop(["DATE"])

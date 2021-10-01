@@ -5,8 +5,25 @@ from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
     Frequency,
     generate_normalized_sample_dates,
     interpolate_backfill,
-    sample_single_real_table_at_date_NAIVE_SLOW,
+    sample_segmented_multi_real_table_at_date,
 )
+
+
+def _create_table_from_row_data(
+    per_row_input_data: list, schema: pa.Schema
+) -> pa.Table:
+    # Turn rows into columns
+    columns_with_header = list(zip(*per_row_input_data))
+
+    input_dict = {}
+    for col in columns_with_header:
+        colname = col[0]
+        coldata = col[1:]
+        input_dict[colname] = coldata
+
+    table = pa.Table.from_pydict(input_dict, schema=schema)
+
+    return table
 
 
 def test_generate_sample_dates_daily() -> None:
@@ -118,22 +135,15 @@ def test_interpolate_backfill() -> None:
     assert (y == expected_y).all()
 
 
-def test_sample_single_real_table_at_date() -> None:
-    # pylint: disable=too-many-statements
-    date_arr = pa.array(
-        [
-            np.datetime64("2020-01-01", "ms"),
-            np.datetime64("2020-01-04", "ms"),
-            np.datetime64("2020-01-06", "ms"),
-        ]
-    )
-
-    data = [
-        date_arr,
-        pa.array(np.full(3, 1), type="int64"),
-        pa.array([10, 40, 60], type="float32"),
-        pa.array([1, 4, 6], type="float32"),
+def test_sample_segmented_multi_real_table_at_date_with_single_real() -> None:
+    # fmt:off
+    input_data = [
+        ["DATE",                             "REAL",  "T",   "R"],
+        [np.datetime64("2020-01-01", "ms"),  1,       10.0,  1],
+        [np.datetime64("2020-01-04", "ms"),  1,       40.0,  4],
+        [np.datetime64("2020-01-06", "ms"),  1,       60.0,  6],
     ]
+    # fmt:on
 
     schema = pa.schema(
         [
@@ -144,11 +154,11 @@ def test_sample_single_real_table_at_date() -> None:
         ]
     )
 
-    table = pa.table(data, schema=schema)
+    table = _create_table_from_row_data(per_row_input_data=input_data, schema=schema)
 
     # Exact hit, first actual date
     sampledate = np.datetime64("2020-01-01", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -157,7 +167,7 @@ def test_sample_single_real_table_at_date() -> None:
 
     # Exact hit, last actual date
     sampledate = np.datetime64("2020-01-06", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -166,7 +176,7 @@ def test_sample_single_real_table_at_date() -> None:
 
     # Exact hit, middle date
     sampledate = np.datetime64("2020-01-04", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -175,7 +185,7 @@ def test_sample_single_real_table_at_date() -> None:
 
     # Before first date
     sampledate = np.datetime64("2019-01-01", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -184,7 +194,7 @@ def test_sample_single_real_table_at_date() -> None:
 
     # After last date
     sampledate = np.datetime64("2020-01-10", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -193,7 +203,7 @@ def test_sample_single_real_table_at_date() -> None:
 
     # Interpolated
     sampledate = np.datetime64("2020-01-02", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
@@ -202,9 +212,112 @@ def test_sample_single_real_table_at_date() -> None:
 
     # Interpolated
     sampledate = np.datetime64("2020-01-03", "ms")
-    res = sample_single_real_table_at_date_NAIVE_SLOW(table, sampledate)
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
     assert res.num_rows == 1
     assert res["DATE"].to_numpy()[0] == sampledate
     assert res["REAL"][0].as_py() == 1
     assert res["T"][0].as_py() == 30
     assert res["R"][0].as_py() == 4
+
+
+def test_sample_segmented_multi_real_table_at_date() -> None:
+    # fmt:off
+    input_data = [
+        ["DATE",                             "REAL",  "T",    "R"],
+        [np.datetime64("2020-01-01", "ms"),  0,       10.0,   1],
+        [np.datetime64("2020-01-04", "ms"),  0,       40.0,   4],
+        [np.datetime64("2020-01-06", "ms"),  0,       60.0,   6],
+        [np.datetime64("2020-01-02", "ms"),  1,       2000.0,  200],
+        [np.datetime64("2020-01-05", "ms"),  1,       5000.0,  500],
+        [np.datetime64("2020-01-07", "ms"),  1,       7000.0,  700],
+    ]
+    # fmt:on
+
+    schema = pa.schema(
+        [
+            pa.field("DATE", pa.timestamp("ms")),
+            pa.field("REAL", pa.int64()),
+            pa.field("T", pa.float32(), metadata={b"smry_meta": b'{"is_rate": false}'}),
+            pa.field("R", pa.float32(), metadata={b"smry_meta": b'{"is_rate": true}'}),
+        ]
+    )
+
+    table = _create_table_from_row_data(per_row_input_data=input_data, schema=schema)
+
+    # Exact hit on first date in R=0
+    sampledate = np.datetime64("2020-01-01", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 10
+    assert res["T"][1].as_py() == 2000
+    assert res["R"][0].as_py() == 1
+    assert res["R"][1].as_py() == 0
+
+    # Exact hit on first date in R=1
+    sampledate = np.datetime64("2020-01-02", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 20
+    assert res["T"][1].as_py() == 2000
+    assert res["R"][0].as_py() == 4
+    assert res["R"][1].as_py() == 200
+
+    # Exact hit on last actual date in R=0
+    sampledate = np.datetime64("2020-01-06", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 60
+    assert res["T"][1].as_py() == 6000
+    assert res["R"][0].as_py() == 6
+    assert res["R"][1].as_py() == 700
+
+    # Exact hit on last actual date in R=1
+    sampledate = np.datetime64("2020-01-07", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 60
+    assert res["T"][1].as_py() == 7000
+    assert res["R"][0].as_py() == 0
+    assert res["R"][1].as_py() == 700
+
+    # Interpolated
+    sampledate = np.datetime64("2020-01-02", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 20
+    assert res["T"][1].as_py() == 2000
+    assert res["R"][0].as_py() == 4
+    assert res["R"][1].as_py() == 200
+
+    # Interpolated
+    sampledate = np.datetime64("2020-01-03", "ms")
+    res = sample_segmented_multi_real_table_at_date(table, sampledate)
+    assert res.num_rows == 2
+    assert res["DATE"].to_numpy()[0] == sampledate
+    assert res["DATE"].to_numpy()[1] == sampledate
+    assert res["REAL"][0].as_py() == 0
+    assert res["REAL"][1].as_py() == 1
+    assert res["T"][0].as_py() == 30
+    assert res["T"][1].as_py() == 3000
+    assert res["R"][0].as_py() == 4
+    assert res["R"][1].as_py() == 500
