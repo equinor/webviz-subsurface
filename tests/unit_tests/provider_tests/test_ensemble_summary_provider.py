@@ -83,6 +83,13 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     sampleddate = vecdf["DATE"][0]
     assert isinstance(sampleddate, datetime.datetime)
 
+    vecdf = provider.get_vectors_df(["FOPR"], Frequency.MONTHLY, [5])
+    assert vecdf.shape == (31, 3)
+    assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
+    assert vecdf["DATE"].nunique() == 31
+    assert vecdf["REAL"].nunique() == 1
+    assert vecdf["REAL"][0] == 5
+
 
 def test_create_from_arrow_unsmry_presampled_monthly(
     testdata_folder: Path, tmp_path: Path
