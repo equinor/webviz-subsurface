@@ -30,13 +30,20 @@ from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
 LOGGER = logging.getLogger(__name__)
 
 
-# -------------------------------------------------------------------------
 def _sort_table_on_real_then_date(table: pa.Table) -> pa.Table:
     indices = pc.sort_indices(
         table, sort_keys=[("REAL", "ascending"), ("DATE", "ascending")]
     )
     sorted_table = table.take(indices)
     return sorted_table
+
+
+def _is_date_column_sorted(table: pa.Table) -> bool:
+    dates_np = table.column("DATE").to_numpy()
+    if not np.all(np.diff(dates_np) > np.timedelta64(0)):
+        return False
+
+    return True
 
 
 # =============================================================================
@@ -107,12 +114,10 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             if "REAL" in table.schema.names:
                 raise ValueError("Input tables should not have REAL column")
 
-            date_type = table.schema.field("DATE").type
-            if date_type != pa.timestamp("ms"):
+            if table.schema.field("DATE").type != pa.timestamp("ms"):
                 raise ValueError("DATE column must have timestamp[ms] data type")
 
-            dates_np = table.column("DATE").to_numpy()
-            if not np.all(np.diff(dates_np) > np.timedelta64(0)):
+            if not _is_date_column_sorted(table):
                 raise ValueError("DATE column must be sorted")
 
         LOGGER.debug(
