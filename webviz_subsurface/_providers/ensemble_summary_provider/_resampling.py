@@ -74,6 +74,7 @@ def generate_normalized_sample_dates(
 def interpolate_backfill(
     x: np.ndarray, xp: np.ndarray, yp: np.ndarray, yleft: float, yright: float
 ) -> np.ndarray:
+    # pylint: disable=invalid-name
     """Do back-filling interpolation of the coordinates in xp and yp, evaluated at the
     x-coordinates specified in x.
     Note that xp and yp must be arrays of the same length.
@@ -162,7 +163,6 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     return ret_table
 
 
-# -------------------------------------------------------------------------
 def resample_multi_real_table_NAIVE(table: pa.Table, freq: Frequency) -> pa.Table:
 
     unique_reals = table.column("REAL").unique().to_pylist()
@@ -182,7 +182,6 @@ def resample_multi_real_table_NAIVE(table: pa.Table, freq: Frequency) -> pa.Tabl
     return full_resampled_table
 
 
-# -------------------------------------------------------------------------
 def resample_sorted_multi_real_table_NAIVE(
     table: pa.Table, freq: Frequency
 ) -> pa.Table:
@@ -214,7 +213,6 @@ class RealInterpolationInfo:
     sample_dates_np_as_uint: np.ndarray
 
 
-# -------------------------------------------------------------------------
 def _extract_real_interpolation_info(
     table: pa.Table, start_row_idx: int, row_count: int, freq: Frequency
 ) -> RealInterpolationInfo:
@@ -233,7 +231,6 @@ def _extract_real_interpolation_info(
     )
 
 
-# -------------------------------------------------------------------------
 def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     """Resample table containing multiple realizations.
     The table must contain both a REAL and a DATE column.
@@ -319,6 +316,8 @@ def resample_sorted_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Tab
 def sample_single_real_table_at_date_NAIVE_SLOW(
     table: pa.Table, np_datetime: np.datetime64
 ) -> pa.Table:
+
+    # pylint: disable=invalid-name
 
     raw_dates_np = table.column("DATE").to_numpy()
 
@@ -459,7 +458,7 @@ class Classification(Enum):
 @dataclass
 class SamplingParams:
     classification: Classification
-    t: float
+    t: float  # pylint: disable=invalid-name
 
 
 def sample_sorted_multi_real_table_at_date(
@@ -471,6 +470,7 @@ def sample_sorted_multi_real_table_at_date(
     realization are contiguous) and within each REAL segment, it must be
     sorted on DATE.
     """
+    # pylint: disable=invalid-name
 
     full_real_arr_np = table.column("REAL").to_numpy()
     unique_reals, first_occurence_idx, real_counts = np.unique(
@@ -548,25 +548,25 @@ def sample_sorted_multi_real_table_at_date(
             for iparams in params_arr:
                 v0 = records_np[record_idx]
                 v1 = records_np[record_idx + 1]
-                v = None
+                interp_val = None
 
                 if iparams.classification == Classification.MUST_INTERPOLATE:
                     # Interpolate or backfill
                     if is_rate:
-                        v = v1
+                        interp_val = v1
                     else:
                         if v0 is not None and v1 is not None:
-                            v = v0 + iparams.t * (v1 - v0)
+                            interp_val = v0 + iparams.t * (v1 - v0)
                 elif iparams.classification == Classification.EXACT_MATCH:
-                    v = v0
+                    interp_val = v0
                 elif iparams.classification == Classification.OUTSIDE_RANGE:
                     # Extrapolate or just fill with 0 for rates
                     if is_rate:
-                        v = 0
+                        interp_val = 0
                     else:
-                        v = v0
+                        interp_val = v0
 
-                interp_vec_values.append(v)
+                interp_vec_values.append(interp_val)
                 record_idx += 2
 
             column_arrays.append(pa.array(interp_vec_values))
