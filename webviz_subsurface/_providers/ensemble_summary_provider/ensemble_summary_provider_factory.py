@@ -1,25 +1,23 @@
-from typing import Dict, Optional
-from pathlib import Path
-import os
 import hashlib
 import logging
+import os
+from pathlib import Path
+from typing import Optional
 
-
-from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_factory import WebvizFactory
+from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
-from .ensemble_summary_provider import EnsembleSummaryProvider
+
+from ._arrow_unsmry_import import load_per_realization_arrow_unsmry_files
+from ._csv_import import (
+    load_ensemble_summary_csv_file,
+    load_per_real_csv_file_using_fmu,
+)
 from ._provider_impl_arrow_lazy import ProviderImplArrowLazy
 from ._provider_impl_arrow_presampled import ProviderImplArrowPresampled
-from ._arrow_unsmry_import import load_per_realization_arrow_unsmry_files
-from ._csv_import import load_ensemble_summary_csv_file
-from ._csv_import import load_per_real_csv_file_using_fmu
-from ._resampling import (
-    Frequency,
-    resample_single_real_table,
-)
-
+from ._resampling import Frequency, resample_single_real_table
+from .ensemble_summary_provider import EnsembleSummaryProvider
 
 LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +90,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
             raise ValueError("Import resulted in empty DataFrame")
         if not "DATE" in ensemble_df.columns:
             raise ValueError("No DATE column present in input data")
-        if not "REAL" in ensemble_df.columns:
+        if not "REAL" in ensemble_df.columns:  # pylint: disable=no-member
             raise ValueError("No REAL column present in input data")
 
         ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(

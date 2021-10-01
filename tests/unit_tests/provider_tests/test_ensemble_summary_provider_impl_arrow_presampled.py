@@ -1,19 +1,16 @@
-import sys
+from datetime import date, datetime
 from pathlib import Path
-from datetime import datetime
-from datetime import date
+
+import pandas as pd
 import pytest
 from _pytest.fixtures import SubRequest
 
-import pandas as pd
-
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    EnsembleSummaryProvider,
-)
 from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import (
     ProviderImplArrowPresampled,
 )
-
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+)
 
 # fmt: off
 INPUT_DATA_DATETIME = [
@@ -48,9 +45,15 @@ INPUT_DATA_STR = [
 
 # -------------------------------------------------------------------------
 @pytest.fixture(
-    params=[INPUT_DATA_DATETIME, INPUT_DATA_AFTER_2262, INPUT_DATA_DATE, INPUT_DATA_STR]
+    name="provider",
+    params=[
+        INPUT_DATA_DATETIME,
+        INPUT_DATA_AFTER_2262,
+        INPUT_DATA_DATE,
+        INPUT_DATA_STR,
+    ],
 )
-def provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
+def fixture_provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
 
     input_py = request.param
     storage_dir = tmp_path
@@ -63,6 +66,9 @@ def provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
     new_provider = ProviderImplArrowPresampled.from_backing_store(
         storage_dir, "dummy_key"
     )
+
+    if not new_provider:
+        raise ValueError("Failed to create EnsembleSummaryProvider")
 
     return new_provider
 

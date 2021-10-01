@@ -1,9 +1,9 @@
-from typing import Dict
 import json
+from typing import Dict
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
-import numpy as np
 
 _MAIN_WEBVIZ_METADATA_KEY = b"webviz"
 _PER_VECTOR_MIN_MAX_KEY = "per_vector_min_max"
@@ -55,6 +55,7 @@ def find_intersected_dates_between_realizations(table: pa.Table) -> np.ndarray:
 
     date_intersection = None
     for real in unique_reals:
+        # pylint: disable=no-member
         real_mask = pc.is_in(table["REAL"], value_set=pa.array([real]))
         dates_in_real = table.filter(real_mask).column("DATE").unique().to_numpy()
         if date_intersection is None:

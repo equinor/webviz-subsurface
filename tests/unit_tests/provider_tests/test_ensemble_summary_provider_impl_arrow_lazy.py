@@ -1,18 +1,18 @@
-from typing import Dict
-from pathlib import Path
-from datetime import datetime
 import json
+from datetime import datetime
+from pathlib import Path
+from typing import Dict
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
-import numpy as np
 
+from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_lazy import (
+    Frequency,
+    ProviderImplArrowLazy,
+)
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
-)
-from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_lazy import (
-    ProviderImplArrowLazy,
-    Frequency,
 )
 
 

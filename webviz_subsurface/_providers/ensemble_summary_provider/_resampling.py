@@ -1,11 +1,11 @@
-from typing import Dict, List
-from enum import Enum
 import json
 from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
-import numpy as np
 
 from .ensemble_summary_provider import Frequency
 

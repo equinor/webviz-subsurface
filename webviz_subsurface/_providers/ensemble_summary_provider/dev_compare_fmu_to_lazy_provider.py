@@ -1,18 +1,14 @@
-from pathlib import Path
 import datetime
 import logging
+from pathlib import Path
 
-import pandas as pd
-import dateutil.parser  # type: ignore
 import datacompy
-
+import dateutil.parser  # type: ignore
+import pandas as pd
 from fmu.ensemble import ScratchEnsemble
-from .ensemble_summary_provider_factory import (
-    EnsembleSummaryProviderFactory,
-)
-from .ensemble_summary_provider import (
-    Frequency,
-)
+
+from .ensemble_summary_provider import Frequency
+from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 
 
 def _make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:

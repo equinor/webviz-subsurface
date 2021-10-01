@@ -1,15 +1,14 @@
-from typing import List, Dict, Set
-import os
-import logging
-import re
 import glob
-from dataclasses import dataclass
+import logging
+import os
+import re
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
+from typing import Dict, List, Set
 
 import pyarrow as pa
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
-
 
 LOGGER = logging.getLogger(__name__)
 

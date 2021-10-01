@@ -1,6 +1,6 @@
-from typing import Dict, Optional
 import logging
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -42,6 +42,7 @@ def load_ensemble_summary_csv_file(
                 "Cannot filter on ensemble, no ENSEMBLE column exist in CSV file"
             )
 
+        # pylint: disable=unsubscriptable-object
         df = df[df["ENSEMBLE"] == ensemble_filter]
 
     if "ENSEMBLE" in df.columns:

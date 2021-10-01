@@ -1,28 +1,28 @@
-from typing import List, Optional, Sequence, Dict, Any
 import datetime
-from pathlib import Path
-import logging
 import json
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
 
+import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
-import pandas as pd
-import numpy as np
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
-from .ensemble_summary_provider import EnsembleSummaryProvider
-from .ensemble_summary_provider import Frequency
-from ._table_utils import (
-    find_min_max_for_numeric_table_columns,
-    add_per_vector_min_max_to_table_schema_metadata,
-    get_per_vector_min_max_from_schema_metadata,
-    find_intersected_dates_between_realizations,
-)
+
 from ._resampling import (
     generate_normalized_sample_dates,
     resample_sorted_multi_real_table,
     sample_sorted_multi_real_table_at_date,
 )
+from ._table_utils import (
+    add_per_vector_min_max_to_table_schema_metadata,
+    find_intersected_dates_between_realizations,
+    find_min_max_for_numeric_table_columns,
+    get_per_vector_min_max_from_schema_metadata,
+)
+from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
 
 # Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
@@ -116,7 +116,8 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
                 raise ValueError("DATE column must be sorted")
 
         LOGGER.debug(
-            f"Concatenating {len(per_real_tables)} tables with {len(unique_column_names)} unique column names"
+            f"Concatenating {len(per_real_tables)} tables with "
+            f"{len(unique_column_names)} unique column names"
         )
 
         full_table = pa.concat_tables(per_real_tables.values(), promote=True)

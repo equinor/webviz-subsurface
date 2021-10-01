@@ -1,10 +1,9 @@
-from typing import Dict
 import datetime
-
-import pandas as pd
-import numpy as np
+from typing import Dict
 
 import dateutil.parser  # type: ignore
+import numpy as np
+import pandas as pd
 
 
 # -------------------------------------------------------------------------
