@@ -18,7 +18,7 @@ def test_single_ensemble(testdata_folder):
     )
     assert emodel.ens_folders == {"iter-0": Path(testdata_folder) / "01_drogon_ahm"}
     smry = emodel.get_or_load_smry_cached()
-    assert len(smry.columns) == 923
+    assert len(smry.columns) == 934
     assert len(smry["DATE"].unique()) == 2368
     assert smry["ENSEMBLE"].unique() == ["iter-0"]
     assert smry["ENSEMBLE"].dtype == np.dtype("O")
@@ -48,8 +48,8 @@ def test_smry_load_multiple_ensembles(testdata_folder):
         }
     )
     smry = emodel.get_or_load_smry_cached()
-    assert len(smry.columns) == 923
-    assert len(smry["DATE"].unique()) == 3954
+    assert len(smry.columns) == 934
+    assert len(smry["DATE"].unique()) == 4164
     assert set(smry["ENSEMBLE"].unique()) == set(["iter-0", "iter-3"])
     assert smry["ENSEMBLE"].dtype == np.dtype("O")
     # assert smry["DATE"].dtype == np.dtype("O") # Fails due to wrong input data?
@@ -62,7 +62,7 @@ def test_smry_load_multiple_ensembles(testdata_folder):
     assert set(smeta.columns) == set(
         ["unit", "is_total", "is_rate", "is_historical", "keyword", "wgname", "get_num"]
     )
-    assert len(smeta) == 920
+    assert len(smeta) == 931
     assert "FOPT" in smeta.index
 
     parameters = emodel.load_parameters()
