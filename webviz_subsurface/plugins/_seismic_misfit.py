@@ -3,7 +3,7 @@ import glob
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import dash
 import numpy as np
@@ -15,7 +15,6 @@ from dash import Input, Output, dcc, html
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 
@@ -127,37 +126,29 @@ class SeismicMisfit(WebvizPluginABC):
     ):
         super().__init__()
 
-        ensemble_set = {
+        self.ensemble_set = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 
-        poly_file = None
-        self.caseinfo = ""
-        self.ens_names = []
-        for ens_name, ens_path in ensemble_set.items():
-            self.caseinfo = self.caseinfo + ens_name + ": \n"
-            self.caseinfo = self.caseinfo + ens_path + "\n"
-            self.ens_names.append(ens_name)
+        if attribute_name_obs is None:
+            attribute_name_obs = attribute_name_sim
 
-            # grab polygon file relative to runpath for one realization
-            if polygon and not poly_file:
-                single_runpath = sorted(glob.glob(ens_path))[0]
-                poly_file = Path(single_runpath) / Path(polygon)
-                logging.debug(f"Read polygon file:\n {poly_file}")
-                self.df_polygon = read_csv(poly_file)
+        self.polygon = polygon
+
         if not polygon:
             self.df_polygon = None
             logging.debug(
                 "Polygon file not assigned in config file - continue without."
             )
+        else:  # grab polygon file relative to runpath for one realization
+            self.df_polygon = make_polygon_df(
+                ensemble_set=self.ensemble_set, polygon=self.polygon
+            )
 
-        if attribute_name_obs is None:
-            attribute_name_obs = attribute_name_sim
-
-        # make one dataframe with all data and one with only obs/meta data
-        self.dframe, self.dframeobs = makedf(
-            ensemble_set,
+        # make dataframe with all data
+        self.dframe = makedf(
+            self.ensemble_set,
             attribute_name_sim,
             attribute_name_obs,
             metadata_name,
@@ -168,6 +159,19 @@ class SeismicMisfit(WebvizPluginABC):
             sim_mult,
             realrange,
         )
+        # make dataframe with only obs and meta data
+        self.dframeobs = self.dframe.drop(
+            columns=[col for col in self.dframe if col.startswith("real-")]
+        )
+
+        self.caseinfo = ""
+        self.ens_names = []
+
+        for ens_name, ens_path in self.ensemble_set.items():
+            self.caseinfo = self.caseinfo + ens_name + ": \n"
+            self.caseinfo = self.caseinfo + ens_path + "\n"
+            self.ens_names.append(ens_name)
+
         self.obsinfo = _compare_dfs_obs(self.dframeobs, self.ens_names)
         self.caseinfo = self.caseinfo + self.obsinfo
 
@@ -195,9 +199,41 @@ class SeismicMisfit(WebvizPluginABC):
 
         self.set_callbacks(app)
 
+        self.makedf_args = {  # for add_webvizstore
+            "ensemble_set": self.ensemble_set,
+            "attribute_name_sim": attribute_name_sim,
+            "attribute_name_obs": attribute_name_obs,
+            "metadata_name": metadata_name,
+            "attribute_sim_path": attribute_sim_path,
+            "attribute_obs_path": attribute_obs_path,
+            "metadata_path": metadata_path,
+            "obs_mult": obs_mult,
+            "sim_mult": sim_mult,
+            "realrange": realrange,
+        }
+
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        funcs = [(makedf, [self.makedf_args])]
+        if self.polygon is not None:
+            funcs.append(
+                (
+                    make_polygon_df,
+                    [{"ensemble_set": self.ensemble_set, "polygon": self.polygon}],
+                )
+            )
+        return funcs
+
     @property
     def tour_steps(self) -> List[dict]:
         return [
+            {
+                "id": self.uuid("obsdata-graph-raw"),
+                "content": ("Observation data 'raw' plot."),
+            },
+            {
+                "id": self.uuid("obsdata-graph-map"),
+                "content": ("Observation data map view plot."),
+            },
             {
                 "id": self.uuid("obsdata-ens_name"),
                 "content": ("Select ensemble to view."),
@@ -237,14 +273,6 @@ class SeismicMisfit(WebvizPluginABC):
                 ),
             },
             {
-                "id": self.uuid("obsdata-graph-raw"),
-                "content": ("Observation data 'raw' plot."),
-            },
-            {
-                "id": self.uuid("obsdata-graph-map"),
-                "content": ("Observation data map view plot."),
-            },
-            {
                 "id": self.uuid("obsdata-info"),
                 "content": (
                     "Info of the ensembles observation data comparison. "
@@ -252,10 +280,6 @@ class SeismicMisfit(WebvizPluginABC):
                     + "observation and observation error data."
                 ),
             },
-            # {
-            #    "id": self.uuid(""),
-            #    "content": ("."),
-            # },
         ]
 
     def _obs_data_layout(self) -> list:
@@ -1640,12 +1664,6 @@ class SeismicMisfit(WebvizPluginABC):
             return fig_maps, fig_slice
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def read_csv(csv_file: str) -> pd.DataFrame:
-    return pd.read_csv(csv_file)
-
-
 # ------------------------------------------------------------------------
 # plot, dataframe, support functions, etc below here
 # ------------------------------------------------------------------------
@@ -2587,6 +2605,7 @@ def update_errorbarplot_superimpose(
 
 # -------------------------------
 # pylint: disable=broad-except
+@webvizstore
 def makedf(
     ensemble_set: dict,
     attribute_name_sim: str,
@@ -2598,7 +2617,7 @@ def makedf(
     obs_mult: float,
     sim_mult: float,
     realrange: Optional[List[List[int]]],
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     """Create dataframe of obs, meta and sim data for all ensembles.
     Uses the functions 'makedf_seis_obs_meta' and 'makedf_seis_addsim'."""
 
@@ -2646,7 +2665,7 @@ def makedf(
 
         ens_count += 1
 
-    return pd.concat(dfs), pd.concat(dfs_obs)
+    return pd.concat(dfs)  # , pd.concat(dfs_obs)
 
 
 # -------------------------------
@@ -3024,3 +3043,20 @@ def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[st
         "ax": 20,
         "ay": -25,
     }
+
+
+# --------------------------------
+
+
+@webvizstore
+def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
+    """Read polygon file. If there are one polygon per realization
+    only one will be read (first found)"""
+    for _, ens_path in ensemble_set.items():
+        single_runpath = sorted(glob.glob(ens_path))[0]
+        poly_file = Path(single_runpath) / Path(polygon)
+        if poly_file:
+            logging.debug(f"Read polygon file:\n {poly_file}")
+            return pd.read_csv(poly_file)
+    logging.debug("Polygon file not found - continue without.")
+    return pd.DataFrame()
