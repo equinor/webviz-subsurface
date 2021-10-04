@@ -43,7 +43,7 @@ def test_smry_load(testdata_folder):
         / "iter-0",
     )
     smry = emodel.load_smry()
-    assert len(smry.columns) == 922
+    assert len(smry.columns) == 933
     assert len(smry["DATE"].unique()) == 2368
 
 
@@ -120,7 +120,7 @@ def test_smry_meta(testdata_folder):
     assert set(smeta.columns) == set(
         ["unit", "is_total", "is_rate", "is_historical", "keyword", "wgname", "get_num"]
     )
-    assert len(smeta) == 920
+    assert len(smeta) == 931
     assert "FOPT" in smeta.index
 
 
