@@ -80,7 +80,7 @@ class GroupTree(WebvizPluginABC):
                     ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                     for ens in ensembles
                 },
-                time_index = "monthly"
+                time_index="monthly",
             )
         )
         smry = self.emodel.get_or_load_smry_cached()
