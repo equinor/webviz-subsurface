@@ -5,7 +5,7 @@ from dash import html
 
 
 def options_layout(get_uuid: Callable) -> wcc.Selectors:
-    """The filters part of the menu"""
+    """The options part of the menu"""
     options_uuid = get_uuid("options")
     return wcc.Selectors(
         id=get_uuid("options_layout"),
