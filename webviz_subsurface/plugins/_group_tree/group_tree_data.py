@@ -67,7 +67,7 @@ class GroupTreeData:
 
         # Filter smry
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-        # smry_ens.dropna(how="all", axis=1, inplace=True)
+
         if tree_mode == "statistics":
             if stat_option == "mean":
                 smry_ens = smry_ens.groupby("DATE").mean().reset_index()
