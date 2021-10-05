@@ -1,7 +1,6 @@
 from typing import Callable
 
 import webviz_core_components as wcc
-from dash import html
 
 
 def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:
@@ -21,17 +20,6 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:
             wcc.RadioItems(
                 label="Mean or realization",
                 id={"id": controls_uuid, "element": "tree_mode"},
-            ),
-            html.Div(
-                id={"id": controls_uuid, "element": "single_real_options"},
-                children=[
-                    wcc.Dropdown(
-                        id={"id": controls_uuid, "element": "realization"},
-                        options=[],
-                        value=None,
-                        multi=False,
-                    )
-                ],
             ),
         ],
     )

@@ -13,25 +13,27 @@ def controllers(
     @app.callback(
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
-        Output({"id": get_uuid("controls"), "element": "realization"}, "options"),
-        Output({"id": get_uuid("controls"), "element": "realization"}, "value"),
+        Output({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
+        Output({"id": get_uuid("options"), "element": "realization"}, "options"),
+        Output({"id": get_uuid("options"), "element": "realization"}, "value"),
         Input({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _update_ensemble_options(
         ensemble: str,
-    ) -> Tuple[List[Dict[str, Any]], str, List[Dict[str, Any]], Optional[int]]:
+    ) -> Tuple[List[Dict[str, Any]], str, str, List[Dict[str, Any]], Optional[int]]:
         """Updates the selection options when the ensemble value changes"""
         tree_mode_options: List[Dict[str, Any]] = [
             {
-                "label": "Ensemble mean",
-                "value": "plot_mean",
+                "label": "Statistics",
+                "value": "statistics",
             },
             {
                 "label": "Single realization",
                 "value": "single_real",
             },
         ]
-        tree_mode_value = "plot_mean"
+        tree_mode_value = "statistics"
+        stat_options_default = "mean"
 
         if not grouptreedata.tree_is_equivalent_in_all_real(ensemble):
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
@@ -42,6 +44,7 @@ def controllers(
         return (
             tree_mode_options,
             tree_mode_value,
+            stat_options_default,
             real_options,
             real_default,
         )
@@ -49,7 +52,7 @@ def controllers(
     @app.callback(
         Output(get_uuid("grouptree_wrapper"), "children"),
         Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
-        Input({"id": get_uuid("controls"), "element": "realization"}, "value"),
+        Input({"id": get_uuid("options"), "element": "realization"}, "value"),
         Input({"id": get_uuid("filters"), "element": "prod_inj_other"}, "value"),
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
@@ -72,7 +75,11 @@ def controllers(
 
     @app.callback(
         Output(
-            {"id": get_uuid("controls"), "element": "single_real_options"},
+            {"id": get_uuid("options"), "element": "statistical_options"},
+            "style",
+        ),
+        Output(
+            {"id": get_uuid("options"), "element": "single_real_options"},
             "style",
         ),
         Input(
@@ -80,7 +87,9 @@ def controllers(
             "value",
         ),
     )
-    def _show_hide_single_real_options(tree_mode: str) -> Dict:
-        if tree_mode == "plot_mean":
-            return {"display": "none"}
-        return {"display": "block"}
+    def _show_hide_single_real_options(
+        tree_mode: str,
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        if tree_mode == "statistics":
+            return {"display": "block"}, {"display": "none"}
+        return {"display": "none"}, {"display": "block"}
