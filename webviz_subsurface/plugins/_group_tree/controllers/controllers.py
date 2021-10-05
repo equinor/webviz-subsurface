@@ -52,16 +52,17 @@ def controllers(
     @app.callback(
         Output(get_uuid("grouptree_wrapper"), "children"),
         Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
+        Input({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
         Input({"id": get_uuid("options"), "element": "realization"}, "value"),
         Input({"id": get_uuid("filters"), "element": "prod_inj_other"}, "value"),
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _render_grouptree(
-        tree_mode: str, real: int, prod_inj_other: list, ensemble: str
+        tree_mode: str, stat_option: str, real: int, prod_inj_other: list, ensemble: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
         data, edge_options, node_options = grouptreedata.create_grouptree_dataset(
-            ensemble, tree_mode, real, prod_inj_other
+            ensemble, tree_mode, stat_option, real, prod_inj_other
         )
 
         return [

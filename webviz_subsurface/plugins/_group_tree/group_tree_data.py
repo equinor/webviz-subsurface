@@ -49,6 +49,7 @@ class GroupTreeData:
         self,
         ensemble: str,
         tree_mode: str,
+        stat_option: str,
         real: int,
         prod_inj_other: List[str],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
@@ -68,7 +69,17 @@ class GroupTreeData:
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
         # smry_ens.dropna(how="all", axis=1, inplace=True)
         if tree_mode == "statistics":
-            smry_ens = smry_ens.groupby("DATE").mean().reset_index()
+            if stat_option == "mean":
+                smry_ens = smry_ens.groupby("DATE").mean().reset_index()
+            elif stat_option in ["p50", "p10", "p90"]:
+                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option]
+                smry_ens = smry_ens.groupby("DATE").quantile(quantile).reset_index()
+            elif stat_option == "max":
+                smry_ens = smry_ens.groupby("DATE").max().reset_index()
+            elif stat_option == "min":
+                smry_ens = smry_ens.groupby("DATE").min().reset_index()
+            else:
+                raise ValueError(f"Statistical option: {stat_option} not implemented")
         else:
             smry_ens = smry_ens[smry_ens["REAL"] == real]
 
