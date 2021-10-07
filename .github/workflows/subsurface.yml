@@ -62,29 +62,29 @@ jobs:
     - name: 🧾 List all installed packages
       run: pip freeze
 
-    - name: 🕵️ Check code style & linting
-      run: |
-        black --check webviz_subsurface tests setup.py
-        pylint webviz_subsurface tests setup.py
-        bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-        isort --check-only webviz_subsurface tests setup.py
-        mypy --package webviz_subsurface
+    # - name: 🕵️ Check code style & linting
+      # run: |
+        # black --check webviz_subsurface tests setup.py
+        # pylint webviz_subsurface tests setup.py
+        # bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+        # isort --check-only webviz_subsurface tests setup.py
+        # mypy --package webviz_subsurface
 
     - name: 🤖 Run tests
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
+        TESTDATA_REPO_OWNER: hanskallekleiv
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: master
+        TESTDATA_REPO_BRANCH: new-map-view
       run: |
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-        # Copy any clientside script to the test folder before running tests
-        mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-        pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
-        rm -rf ./tests/assets
-        webviz docs --portable ./docs_build --skip-open
+        # # Copy any clientside script to the test folder before running tests
+        # mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
+        # pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+        # rm -rf ./tests/assets
+        # webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
       run: |
