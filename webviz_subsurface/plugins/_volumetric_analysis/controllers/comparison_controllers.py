@@ -281,9 +281,9 @@ def compute_highlighted_col(
     df: pd.DataFrame, response: str, value1: str, selections: dict
 ) -> list:
     highlight_mask = (df[response][value1] > selections["Ignore <"]) & (
-        df[response]["diff (%)"].abs() < selections["Accept value"]
-    ) | (df[response][value1] <= selections["Ignore <"])
-    return np.where(highlight_mask, "no", "yes")
+        df[response]["diff (%)"].abs() > selections["Accept value"]
+    )
+    return np.where(highlight_mask, "yes", "no")
 
 
 def find_higlighted_real_count(
