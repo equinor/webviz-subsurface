@@ -103,6 +103,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
     ) -> None:
+        # pylint: disable=too-many-locals
         @dataclass
         class Elapsed:
             concat_tables_s: float = -1

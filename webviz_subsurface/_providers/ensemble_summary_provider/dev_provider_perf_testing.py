@@ -266,9 +266,6 @@ def main() -> None:
 
 # Running:
 #   python -m webviz_subsurface._providers.ensemble_summary_provider.dev_provider_perf_testing
-#
-# Memory profiling with memory-profiler:
-#   mprof run --python  webviz_subsurface._providers.ensemble_summary_provider.dev_provider_perf_testing
 # -------------------------------------------------------------------------
 if __name__ == "__main__":
     main()

@@ -43,25 +43,21 @@ def _create_table(
     num_rows = len(real_arr_np)
 
     for colnum in range(0, num_columns):
-        colname = f"c_{colnum}"
-
         # metadata = None
         # metadata = {b"smry_meta": b'{"is_rate": true}'}
+        # metadata = {b"smry_meta": b'{"is_rate": false}'}
         if (colnum % 2) == 0:
             metadata = {b"smry_meta": b'{"is_rate": false}'}
         else:
             metadata = {b"smry_meta": b'{"is_rate": true}'}
 
-        field_list.append(pa.field(colname, pa.float32(), metadata=metadata))
+        field_list.append(pa.field(f"c_{colnum}", pa.float32(), metadata=metadata))
 
         valarr = np.linspace(colnum, colnum + num_rows, num_rows)
         columndata_list.append(pa.array(valarr))
 
     schema = pa.schema(field_list)
-
-    table = pa.table(columndata_list, schema=schema)
-
-    return table
+    return pa.table(columndata_list, schema=schema)
 
 
 # -------------------------------------------------------------------------

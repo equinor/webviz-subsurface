@@ -11,6 +11,8 @@ from .ensemble_summary_provider import Frequency
 from .ensemble_summary_provider_factory import EnsembleSummaryProvider
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 
+# pylint: disable=line-too-long
+
 # Tolerances inspired by
 #   https://numpy.org/doc/stable/reference/generated/numpy.isclose.html
 # and
@@ -105,7 +107,7 @@ def _compare_fmu_df_to_provider_get_vectors_df(
 
 
 def _compare_fmu_df_to_provider_get_vectors_for_date(
-    fmu_df: pd.DataFrame, provider: EnsembleSummaryProvider, frequency: Frequency
+    fmu_df: pd.DataFrame, provider: EnsembleSummaryProvider
 ) -> None:
 
     all_dates = fmu_df["DATE"].unique()
@@ -198,7 +200,7 @@ def main() -> None:
     _compare_fmu_df_to_provider_get_vectors_df(fmu_df, provider, frequency)
 
     print("## Comparing get_vectors_for date...")
-    _compare_fmu_df_to_provider_get_vectors_for_date(fmu_df, provider, frequency)
+    _compare_fmu_df_to_provider_get_vectors_for_date(fmu_df, provider)
 
     print("## done")
 
