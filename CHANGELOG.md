@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+
+## [0.2.6] - 2021-10-08
+
 ### Added
 - [#783](https://github.com/equinor/webviz-subsurface/pull/783) - `VolumetricAnalysis` - added tab with Fipfile QC for inspection of which `FIPNUM's` and `REGION∕ZONE's` that have been combined in order to get comparable volumes between dynamic and static sources. This tab is only available if a fipfile is given as input.
 - [#777](https://github.com/equinor/webviz-subsurface/pull/777) - `VolumetricAnalysis` - added tabs with `Source comparison` and `Ensemble comparison` as QC tools for quick identification of where and why volumetric changes occur across sources (e.g. static vs dynamic) or ensembles (e.g. model revisions or ahm iterations).
