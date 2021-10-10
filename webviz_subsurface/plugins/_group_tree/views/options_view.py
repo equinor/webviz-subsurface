@@ -18,11 +18,11 @@ def options_layout(get_uuid: Callable) -> wcc.Selectors:
                         id={"id": options_uuid, "element": "statistical_option"},
                         options=[
                             {"label": "Mean", "value": "mean"},
-                            {"label": "P50/Median", "value": "p50"},
-                            {"label": "P10", "value": "p10"},
-                            {"label": "P90", "value": "p90"},
-                            {"label": "Max", "value": "max"},
-                            {"label": "Min", "value": "min"},
+                            {"label": "P10 (high)", "value": "p10"},
+                            {"label": "P50 (median)", "value": "p50"},
+                            {"label": "P90 (low)", "value": "p90"},
+                            {"label": "Maximum", "value": "max"},
+                            {"label": "Minimum", "value": "min"},
                         ],
                     )
                 ],

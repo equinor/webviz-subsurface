@@ -17,9 +17,12 @@ def controllers(
         Output({"id": get_uuid("options"), "element": "realization"}, "options"),
         Output({"id": get_uuid("options"), "element": "realization"}, "value"),
         Input({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
+        State({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
+        State({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
+        State({"id": get_uuid("options"), "element": "realization"}, "value"),
     )
     def _update_ensemble_options(
-        ensemble: str,
+        ensemble: str, tree_mode_state: str, stat_option_state: str, real_state: int
     ) -> Tuple[List[Dict[str, Any]], str, str, List[Dict[str, Any]], Optional[int]]:
         """Updates the selection options when the ensemble value changes"""
         tree_mode_options: List[Dict[str, Any]] = [
@@ -32,21 +35,26 @@ def controllers(
                 "value": "single_real",
             },
         ]
-        tree_mode_value = "statistics"
-        stat_options_default = "mean"
+        tree_mode_value = (
+            tree_mode_state if tree_mode_state is not None else "statistics"
+        )
+        stat_option_value = (
+            stat_option_state if stat_option_state is not None else "mean"
+        )
 
         if not grouptreedata.tree_is_equivalent_in_all_real(ensemble):
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
             tree_mode_options[0]["disabled"] = True
             tree_mode_value = "single_real"
 
-        real_options, real_default = grouptreedata.get_ensemble_real_options(ensemble)
+        unique_real = grouptreedata.get_ensemble_unique_real(ensemble)
+
         return (
             tree_mode_options,
             tree_mode_value,
-            stat_options_default,
-            real_options,
-            real_default,
+            stat_option_value,
+            [{"label": real, "value": real} for real in unique_real],
+            real_state if real_state in unique_real else min(unique_real),
         )
 
     @app.callback(

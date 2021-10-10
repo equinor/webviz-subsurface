@@ -110,15 +110,10 @@ class GroupTreeData:
         )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_ensemble_real_options(
-        self, ensemble: str
-    ) -> Tuple[List[Dict[str, int]], int]:
-        """Returns a list of realization dropdown options for an ensemble"""
+    def get_ensemble_unique_real(self, ensemble: str) -> List[int]:
+        """Returns a list of runique realizations for an ensemble"""
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-        unique_real = sorted(smry_ens["REAL"].unique())
-        return [{"label": real, "value": real} for real in unique_real], min(
-            unique_real
-        )
+        return sorted(smry_ens["REAL"].unique())
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def tree_is_equivalent_in_all_real(self, ensemble: str) -> bool:
