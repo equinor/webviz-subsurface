@@ -1,16 +1,17 @@
-from typing import Dict, List, Callable, Tuple, Optional, Union, Any
 import warnings
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import xtgeo
-from dash import Dash, callback_context, no_update, Input, Output, State
+from dash import Dash, Input, Output, State, callback_context, no_update
 from dash.dash import _NoUpdate
 from dash.exceptions import PreventUpdate
 
-from webviz_subsurface._models import SurfaceSetModel, SurfaceLeafletModel, WellSetModel
 from webviz_subsurface._datainput.well import (
-    make_well_layer,
     create_leaflet_well_marker_layer,
+    make_well_layer,
 )
+from webviz_subsurface._models import SurfaceLeafletModel, SurfaceSetModel, WellSetModel
+
 
 # pylint: disable=too-many-statements
 def update_maps(

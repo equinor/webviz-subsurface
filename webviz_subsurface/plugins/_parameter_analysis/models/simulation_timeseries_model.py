@@ -1,15 +1,13 @@
-from typing import List, Dict, Optional, Iterable, Tuple
-
 from itertools import chain
+from typing import Dict, Iterable, List, Optional, Tuple
+
 import pandas as pd
 from webviz_config.common_cache import CACHE
 
-from webviz_subsurface._abbreviations.reservoir_simulation import (
-    historical_vector,
-)
+from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
 from webviz_subsurface._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
     get_simulation_line_shape,
+    set_simulation_line_shape_fallback,
 )
 
 

@@ -1,10 +1,10 @@
-from pathlib import Path
-import warnings
 import glob
-from typing import Union, Optional, List
+import warnings
+from pathlib import Path
+from typing import List, Optional, Union
 
 import pandas as pd
-from fmu.ensemble import ScratchEnsemble, EnsembleSet
+from fmu.ensemble import EnsembleSet, ScratchEnsemble
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 

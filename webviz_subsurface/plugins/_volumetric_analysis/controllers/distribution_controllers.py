@@ -1,24 +1,30 @@
 from typing import Callable, List, Optional
-import pandas as pd
-from pandas.api.types import is_numeric_dtype
+
 import numpy as np
-from dash import html, Dash, dash_table, no_update, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import webviz_core_components as wcc
+from dash import ALL, Dash, Input, Output, State, html, no_update
+from dash.exceptions import PreventUpdate
+from pandas.api.types import is_numeric_dtype
 from webviz_config import WebvizConfigTheme
 
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
-from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
-from webviz_subsurface._components.tornado._tornado_table import TornadoTable
-from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._abbreviations.volume_terminology import (
     volume_description,
     volume_unit,
 )
+from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
+from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 from webviz_subsurface._figures import create_figure
-from ..utils.utils import update_relevant_components
+from webviz_subsurface._models import InplaceVolumesModel
+
+from ..utils.table_and_figure_utils import (
+    create_data_table,
+    create_table_columns,
+    fluid_annotation,
+)
+from ..utils.utils import move_to_end_of_list, update_relevant_components
 
 
 # pylint: disable=too-many-statements, too-many-branches
@@ -185,15 +191,16 @@ def distribution_controllers(
         if not selections["update"]:
             raise PreventUpdate
 
-        table_groups = ["ENSEMBLE", "REAL"]
+        table_groups = (
+            ["ENSEMBLE", "REAL"]
+            if selections["Table type"] == "Statistics table"
+            else ["ENSEMBLE"]
+        )
         if selections["Group by"] is not None:
             table_groups.extend(
                 [x for x in selections["Group by"] if x not in table_groups]
             )
-        dframe = volumemodel.get_df(
-            filters=selections["filters"],
-            groups=table_groups,
-        )
+        dframe = volumemodel.get_df(filters=selections["filters"], groups=table_groups)
 
         return make_table_wrapper_children(
             dframe=dframe,
@@ -460,12 +467,9 @@ def distribution_controllers(
                     html.Div(
                         style={"margin-top": "20px"},
                         children=create_data_table(
-                            volumemodel=volumemodel,
                             columns=tornado_table.columns
                             + create_table_columns(
-                                columns=["Reference"],
-                                format_columns=["Reference"],
-                                use_si_format=True,
+                                columns=["Reference"], use_si_format=["Reference"]
                             ),
                             data=table,
                             height="20vh",
@@ -522,7 +526,7 @@ def make_table_wrapper_children(
 
                 for idx, group in enumerate(groups):
                     data[group] = (
-                        name if isinstance(name, str) == 1 else list(name)[idx]
+                        name if not isinstance(name, tuple) else list(name)[idx]
                     )
                 if response in volumemodel.volume_columns:
                     data_volcols.append(data)
@@ -537,14 +541,13 @@ def make_table_wrapper_children(
                 html.Div(
                     style={"margin-top": "20px"},
                     children=create_data_table(
-                        volumemodel=volumemodel,
+                        selectors=volumemodel.selectors,
                         columns=create_table_columns(
-                            columns=[col]
-                            + [x for x in groups if x != "FLUID_ZONE"]
-                            + statcols
-                            + ["FLUID_ZONE"],
-                            format_columns=statcols,
-                            use_si_format=col == "Response",
+                            columns=move_to_end_of_list(
+                                "FLUID_ZONE", [col] + groups + statcols
+                            ),
+                            text_columns=[col] + groups,
+                            use_si_format=statcols if col == "Response" else None,
                         ),
                         data=data,
                         height=f"{view_height}vh",
@@ -574,126 +577,18 @@ def make_table_wrapper_children(
     if "FLUID_ZONE" not in dframe:
         dframe["FLUID_ZONE"] = (" + ").join(selections["filters"]["FLUID_ZONE"])
 
-    dframe = dframe[[x for x in dframe.columns if x != "FLUID_ZONE"] + ["FLUID_ZONE"]]
+    dframe = dframe[move_to_end_of_list("FLUID_ZONE", dframe.columns)]
     return html.Div(
+        style={"margin-top": "20px"},
         children=[
             create_data_table(
-                volumemodel=volumemodel,
+                selectors=volumemodel.selectors,
                 columns=create_table_columns(
-                    columns=dframe.columns,
-                    format_columns=dframe.columns,
-                    volumemodel=volumemodel,
+                    columns=dframe.columns, use_si_format=volumemodel.volume_columns
                 ),
                 data=dframe.iloc[::-1].to_dict("records"),
                 height=f"{view_height}vh",
                 table_id={"table_id": f"{page_selected}-meantable"},
             )
-        ]
-    )
-
-
-def create_table_columns(
-    columns: list,
-    volumemodel: Optional[InplaceVolumesModel] = None,
-    format_columns: Optional[list] = None,
-    use_si_format: Optional[bool] = None,
-) -> List[dict]:
-
-    format_columns = format_columns if format_columns is not None else []
-
-    table_columns = []
-    for col in columns:
-        data = {"id": col, "name": col}
-        if col in format_columns:
-            data.update(
-                {
-                    "type": "numeric",
-                    "format": {"locale": {"symbol": ["", ""]}, "specifier": "$.4s"}
-                    if use_si_format
-                    or volumemodel is not None
-                    and col in volumemodel.volume_columns
-                    else dash_table.Format.Format(precision=3),
-                }
-            )
-        table_columns.append(data)
-    return table_columns
-
-
-def create_data_table(
-    volumemodel: InplaceVolumesModel,
-    columns: list,
-    height: str,
-    data: List[dict],
-    table_id: dict,
-) -> dash_table.DataTable:
-
-    if not data:
-        return []
-
-    style_cell_conditional = [
-        {"if": {"column_id": c}, "textAlign": "left"}
-        for c in [x for x in volumemodel.selectors if x != "FLUID_ZONE"]
-        + ["Response", "Property", "Sensitivity"]
-    ]
-    style_cell_conditional.extend(
-        [
-            {"if": {"column_id": c}, "width": "10%"}
-            for c in volumemodel.selectors + ["Response", "Property", "Sensitivity"]
-        ]
-    )
-    style_data_conditional = fluid_table_style()
-
-    return wcc.WebvizPluginPlaceholder(
-        id={"request": "table_data", "table_id": table_id["table_id"]},
-        buttons=["expand", "download"],
-        children=dash_table.DataTable(
-            id=table_id,
-            sort_action="native",
-            sort_mode="multi",
-            filter_action="native",
-            columns=columns,
-            data=data,
-            style_as_list_view=True,
-            style_cell_conditional=style_cell_conditional,
-            style_data_conditional=style_data_conditional,
-            style_table={
-                "height": height,
-                "overflowY": "auto",
-            },
-        ),
-    )
-
-
-def fluid_table_style() -> list:
-    fluid_colors = {
-        "oil": "#007079",
-        "gas": "#FF1243",
-        "water": "#ADD8E6",
-    }
-    return [
-        {
-            "if": {
-                "filter_query": "{FLUID_ZONE} = " + f"'{fluid}'",
-                "column_id": "FLUID_ZONE",
-            },
-            "color": color,
-            "fontWeight": "bold",
-        }
-        for fluid, color in fluid_colors.items()
-    ]
-
-
-def fluid_annotation(selections: dict) -> dict:
-    fluid_text = (" + ").join(selections["filters"]["FLUID_ZONE"])
-    return dict(
-        visible=bool(selections["Fluid annotation"])
-        and selections["Subplots"] != "FLUID_ZONE",
-        x=1,
-        y=1,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        text="Fluid zone<br>" + fluid_text,
-        font=dict(size=15, color="black"),
-        bgcolor="#E8E8E8",
+        ],
     )

@@ -1,5 +1,5 @@
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -115,15 +115,19 @@ def one_plot_one_table_layout(uuid: str) -> html.Div:
 def plots_per_zone_region_layout(
     uuid: str, volumemodel: InplaceVolumesModel
 ) -> html.Div:
-    selectors = [x for x in ["ZONE", "REGION", "FACIES"] if x in volumemodel.selectors]
-    height = max(88 / len(selectors), 25)
+    selectors = [
+        x
+        for x in ["ZONE", "REGION", "FACIES", "FIPNUM", "SET"]
+        if x in volumemodel.selectors
+    ]
+    height = "42vh" if len(selectors) < 3 else "25vh"
     layout = []
     for selector in selectors:
         layout.append(
             wcc.Frame(
                 color="white",
                 highlight=False,
-                style={"height": f"{height}vh"},
+                style={"height": height},
                 children=wcc.FlexBox(
                     children=[
                         html.Div(
@@ -136,7 +140,7 @@ def plots_per_zone_region_layout(
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
-                                style={"height": f"{height}vh"},
+                                style={"height": height},
                             ),
                         ),
                         html.Div(
@@ -149,7 +153,7 @@ def plots_per_zone_region_layout(
                                     "page": "per_zr",
                                 },
                                 config={"displayModeBar": False},
-                                style={"height": f"{height}vh"},
+                                style={"height": height},
                             ),
                         ),
                     ]

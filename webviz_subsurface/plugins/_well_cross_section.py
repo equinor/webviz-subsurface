@@ -1,20 +1,21 @@
-from typing import List, Dict, Union, Tuple, Any, Callable
-from uuid import uuid4
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Tuple, Union
+from uuid import uuid4
 
-from dash import html, dcc, Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_subsurface_components import LeafletMap
+from dash import Dash, Input, Output, State, dcc, html
+from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC
-from webviz_config.webviz_store import webvizstore
 from webviz_config.deprecation_decorators import deprecated_plugin
+from webviz_config.webviz_store import webvizstore
+from webviz_subsurface_components import LeafletMap
 
 from webviz_subsurface._models import SurfaceLeafletModel
-from .._datainput.xsection import XSectionFigure
+
 from .._datainput.seismic import load_cube_data
-from .._datainput.well import load_well, make_well_layer
 from .._datainput.surface import load_surface
+from .._datainput.well import load_well, make_well_layer
+from .._datainput.xsection import XSectionFigure
 
 
 @deprecated_plugin(

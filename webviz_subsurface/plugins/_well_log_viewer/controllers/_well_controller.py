@@ -1,4 +1,5 @@
-from typing import List, Dict, Callable, Tuple, Any, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import xtgeo
 from dash import Dash, Input, Output
 

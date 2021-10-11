@@ -10,14 +10,14 @@ The output data set is very sparse compared to the CPI summary data.
 """
 import argparse
 import re
-from typing import List, Tuple, Any, Set
 from pathlib import Path
+from typing import Any, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
 from ecl.summary import EclSum, EclSumKeyWordVector
-from webviz_subsurface.plugins._well_completions import WELL_CONNECTION_STATUS_FILE
 
+from webviz_subsurface.plugins._well_completions import WELL_CONNECTION_STATUS_FILE
 
 DESCRIPTION: str = """
 Export connection status data on sparse form from CPI summary data.

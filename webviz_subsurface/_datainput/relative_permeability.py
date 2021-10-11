@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
 import pandas as pd
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+
 from .fmu_input import load_ensemble_set
 
 try:

@@ -1,16 +1,17 @@
-from typing import List, Dict, Union, Tuple, Callable
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Callable, Dict, List, Tuple, Union
 
-from dash import html, Dash
-from webviz_config import WebvizPluginABC
 import webviz_core_components as wcc
+from dash import Dash, html
+from webviz_config import WebvizPluginABC
 from webviz_subsurface_components import WellLogViewer as WellLogViewerComponent
 
 from webviz_subsurface._models.well_set_model import WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
-from .controllers import well_controller
+
 from ._validate_log_templates import load_and_validate_log_templates
+from .controllers import well_controller
 
 
 class WellLogViewer(WebvizPluginABC):

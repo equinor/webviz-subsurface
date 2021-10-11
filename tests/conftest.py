@@ -1,16 +1,15 @@
-from typing import Any, Dict
 import pathlib
+from typing import Any, Dict
 
-import pytest
 import dash
+import pytest
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import SubRequest
-
-from webviz_config.common_cache import CACHE
 from webviz_config import WebvizSettings
+from webviz_config.common_cache import CACHE
 from webviz_config.themes import default_theme
-from webviz_config.webviz_instance_info import WebvizRunMode, WebvizInstanceInfo
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
+from webviz_config.webviz_instance_info import WebvizInstanceInfo, WebvizRunMode
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -52,13 +51,11 @@ def shared_settings(testdata_folder: pathlib.Path) -> Dict:
             shared_settings={
                 "scratch_ensembles": {
                     "iter-0": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-0",
-                    "iter-1": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-1",
-                    "iter-2": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-2",
                     "iter-3": f"{testdata_folder}/01_drogon_ahm/realization-*/iter-3",
                 }
             },
         ),
-        "HM_ENSEMBLES": ["iter-0", "iter-1", "iter-2", "iter-3"],
+        "HM_ENSEMBLES": ["iter-0", "iter-3"],
         "SENS_SETTINGS": WebvizSettings(
             theme=default_theme,
             shared_settings={

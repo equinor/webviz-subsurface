@@ -1,37 +1,36 @@
-from typing import List, Tuple, Callable, Dict, Union
 import json
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple, Union
 
 import pandas as pd
-from dash import html, Dash
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, html
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
-from webviz_subsurface._models import SurfaceSetModel, WellSetModel
-from webviz_subsurface._datainput.fmu_input import get_realizations, find_surfaces
-from webviz_subsurface._utils.webvizstore_functions import get_path, find_files
 from webviz_subsurface._components import ColorPicker
-from .views import (
-    intersection_data_layout,
-    map_data_layout,
-    realization_layout,
-    intersection_and_map_layout,
-    clientside_stores,
-    modal,
-)
+from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizations
+from webviz_subsurface._models import SurfaceSetModel, WellSetModel
+from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
+
+from ._tour_steps import generate_tour_steps
 from .controllers import (
     open_modals,
     update_intersection,
+    update_intersection_source,
     update_maps,
     update_realizations,
     update_uncertainty_table,
-    update_intersection_source,
 )
-
-from ._tour_steps import generate_tour_steps
+from .views import (
+    clientside_stores,
+    intersection_and_map_layout,
+    intersection_data_layout,
+    map_data_layout,
+    modal,
+    realization_layout,
+)
 
 
 class StructuralUncertainty(WebvizPluginABC):

@@ -1,26 +1,24 @@
-from typing import Dict, Optional
-from pathlib import Path
-import os
 import hashlib
 import json
 import logging
+import os
 import pickle  # nosec
 from enum import Enum
+from pathlib import Path
+from typing import Dict, Optional
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
-
-from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_factory import WebvizFactory
+from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WebvizRunMode
 
-from .ensemble_table_provider import EnsembleTableProvider
-from .ensemble_table_provider import EnsembleTableProviderSet
+from .._utils.perf_timer import PerfTimer
+from .ensemble_table_provider import EnsembleTableProvider, EnsembleTableProviderSet
 from .ensemble_table_provider_impl_arrow import EnsembleTableProviderImplArrow
 from .ensemble_table_provider_impl_inmem_parquet import (
     EnsembleTableProviderImplInMemParquet,
 )
-from .._utils.perf_timer import PerfTimer
 
 
 class BackingType(Enum):

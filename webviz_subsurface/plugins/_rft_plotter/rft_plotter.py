@@ -1,24 +1,24 @@
-from typing import Optional, List, Dict, Tuple, Callable, Any, Union
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from dash import html, Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, Input, Output, State, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._datainput.fmu_input import load_csv
-from ._processing import filter_frame
+from webviz_subsurface._utils.unique_theming import unique_colors
+
+from ._crossplot_figure import update_crossplot
+from ._errorplot_figure import update_errorplot
 from ._formation_figure import FormationFigure
 from ._map_figure import MapFigure
 from ._misfit_figure import update_misfit_plot
-from ._crossplot_figure import update_crossplot
-from ._errorplot_figure import update_errorplot
+from ._processing import filter_frame
 
 
 class RftPlotter(WebvizPluginABC):

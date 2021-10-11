@@ -1,17 +1,18 @@
 from pathlib import Path
 
 import pandas as pd
-from dash import html, Dash, Input, Output
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from dash import Dash, Input, Output, html
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._models import EnsembleSetModel
-from webviz_subsurface._models import caching_ensemble_set_model_factory
 import webviz_subsurface._utils.parameter_response as parresp
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
 
 
 class ParameterParallelCoordinates(WebvizPluginABC):

@@ -1,7 +1,9 @@
 from typing import List, Optional
-from dash import html
+
 import webviz_core_components as wcc
+from dash import html
 from webviz_config import WebvizConfigTheme
+
 from webviz_subsurface._models import InplaceVolumesModel
 
 
@@ -11,9 +13,12 @@ def selections_layout(
     theme: WebvizConfigTheme,
     tab: str,
 ) -> html.Div:
-    """Layout for selecting intersection data"""
     selectors = "/".join(
-        [x.lower() for x in ["ZONE", "REGION", "FACIES"] if x in volumemodel.selectors]
+        [
+            x.lower()
+            for x in ["ZONE", "REGION", "FACIES", "FIPNUM", "SET"]
+            if x in volumemodel.selectors
+        ]
     )
     return html.Div(
         children=[
@@ -29,7 +34,7 @@ def selections_layout(
                 ],
             ),
             plot_selections_layout(uuid, volumemodel, tab),
-            settings_layout(uuid, theme, tab),
+            settings_layout(volumemodel, uuid, theme, tab),
         ]
     )
 
@@ -145,14 +150,16 @@ def plot_selector_dropdowns(
     return dropdowns
 
 
-def settings_layout(uuid: str, theme: WebvizConfigTheme, tab: str) -> wcc.Selectors:
+def settings_layout(
+    volumemodel: InplaceVolumesModel, uuid: str, theme: WebvizConfigTheme, tab: str
+) -> wcc.Selectors:
 
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
     return wcc.Selectors(
         label="⚙️ SETTINGS",
         open_details=False,
         children=[
-            remove_fluid_annotation(uuid=uuid, tab=tab),
+            remove_fluid_annotation(volumemodel, uuid=uuid, tab=tab),
             subplot_xaxis_range(uuid=uuid, tab=tab),
             histogram_options(uuid=uuid, tab=tab),
             html.Span("Colors", style={"font-weight": "bold"}),
@@ -197,13 +204,18 @@ def table_sync_option(uuid: str, tab: str) -> html.Div:
     )
 
 
-def remove_fluid_annotation(uuid: str, tab: str) -> html.Div:
+def remove_fluid_annotation(
+    volumemodel: InplaceVolumesModel, uuid: str, tab: str
+) -> html.Div:
     return html.Div(
-        style={"margin-bottom": "10px"},
+        style={
+            "margin-bottom": "10px",
+            "display": "none" if volumemodel.volume_type == "dynamic" else "block",
+        },
         children=wcc.Checklist(
             id={"id": uuid, "tab": tab, "selector": "Fluid annotation"},
             options=[{"label": "Show fluid annotation", "value": "Show"}],
-            value=["Show"],
+            value=["Show"] if volumemodel.volume_type != "dynamic" else [],
         ),
     )
 

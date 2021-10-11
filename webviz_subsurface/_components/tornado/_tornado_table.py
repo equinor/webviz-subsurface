@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict, List
 
 from ._tornado_data import TornadoData
 

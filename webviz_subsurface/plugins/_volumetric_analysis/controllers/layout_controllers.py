@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-from dash import Dash, callback_context, no_update, Input, Output, State, ALL
+from dash import ALL, Dash, Input, Output, State, callback_context, no_update
 
 
 def layout_controllers(app: Dash, get_uuid: Callable) -> None:

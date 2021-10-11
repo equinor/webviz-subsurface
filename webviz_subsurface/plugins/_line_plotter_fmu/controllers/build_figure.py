@@ -1,13 +1,14 @@
-from typing import List, Callable, Tuple, Union, Optional, Dict
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from dash import Dash, no_update, Input, Output, State
+from dash import Dash, Input, Output, State, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import ObservationModel
 from webviz_subsurface._providers import EnsembleTableProviderSet
+
 from ..figures.plotly_line_plot import PlotlyLinePlot
 
 

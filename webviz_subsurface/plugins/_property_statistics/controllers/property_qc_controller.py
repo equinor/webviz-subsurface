@@ -1,7 +1,7 @@
-from typing import Union, List, Callable
+from typing import Callable, List, Union
 
-from dash import dash_table, Dash, Input, Output, ALL
 import webviz_core_components as wcc
+from dash import ALL, Dash, Input, Output, dash_table
 
 from ..models import PropertyStatisticsModel
 

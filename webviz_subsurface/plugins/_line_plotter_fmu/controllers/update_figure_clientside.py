@@ -1,8 +1,8 @@
-from typing import Optional, List, Dict, Callable
+from typing import Callable, Dict, List, Optional
 
-from plotly.graph_objects import Figure
-from dash import Dash, callback_context, Input, Output, ClientsideFunction, ALL
+from dash import ALL, ClientsideFunction, Dash, Input, Output, callback_context
 from dash.exceptions import PreventUpdate
+from plotly.graph_objects import Figure
 
 
 def update_figure_clientside(app: Dash, get_uuid: Callable) -> None:

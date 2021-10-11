@@ -1,5 +1,5 @@
-from typing import Optional, Dict, List
 import pathlib
+from typing import Dict, List, Optional
 
 import pandas as pd
 import xtgeo

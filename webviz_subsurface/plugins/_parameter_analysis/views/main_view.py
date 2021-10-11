@@ -1,12 +1,12 @@
 from typing import Callable
 
+import webviz_core_components as wcc
 from dash import html
 from webviz_config import WebvizConfigTheme
-import webviz_core_components as wcc
 
+from ..models import ParametersModel, SimulationTimeSeriesModel
 from .parameter_qc_view import parameter_qc_view
 from .parameter_response_view import parameter_response_view
-from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
 def main_view(

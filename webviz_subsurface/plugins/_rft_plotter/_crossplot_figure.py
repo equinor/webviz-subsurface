@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
-import webviz_core_components as wcc
-import pandas as pd
 import numpy as np
+import pandas as pd
+import webviz_core_components as wcc
 
 
 def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Graph]:

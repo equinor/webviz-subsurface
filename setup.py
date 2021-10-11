@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -9,13 +9,14 @@ TESTS_REQUIRE = [
     "dash[testing]",
     "ert",
     "flaky",
+    "isort",
     "mypy",
     "pylint",
     "pytest-xdist",
     "selenium>=3.141",
     "types-dataclasses>=0.1.5; python_version<'3.7'",
-    "types-pyyaml",
     "types-pkg-resources",
+    "types-pyyaml",
 ]
 
 # pylint: disable=line-too-long
@@ -39,6 +40,7 @@ setup(
         "webviz_config_plugins": [
             "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
+            "GroupTree = webviz_subsurface.plugins:GroupTree",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
@@ -86,6 +88,8 @@ setup(
         "defusedxml>=0.6.0",
         "ecl2df>=0.13.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
+        "fmu-tools>=1.8",
+        "jsonschema>=3.2.0",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
         "pillow>=6.1",
@@ -95,7 +99,7 @@ setup(
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.3.1",
         "webviz-core-components>=0.5.1",
-        "webviz-subsurface-components>=0.4.5",
+        "webviz-subsurface-components>=0.4.6",
         "xtgeo>=2.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},
