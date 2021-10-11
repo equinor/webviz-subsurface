@@ -61,6 +61,7 @@ setup(
             "RftPlotter = webviz_subsurface.plugins:RftPlotter",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
+            "SimulationTimeSeries = webviz_subsurface.plugins:SimulationTimeSeries",
             "StructuralUncertainty = webviz_subsurface.plugins:StructuralUncertainty",
             "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
