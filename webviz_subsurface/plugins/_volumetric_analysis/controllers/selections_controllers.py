@@ -24,10 +24,10 @@ def selections_controllers(
             {"id": get_uuid("selections"), "tab": "voldist", "settings": "Colorscale"},
             "colorscale",
         ),
+        Input(get_uuid("initial-load-info"), "data"),
         State(get_uuid("page-selected"), "data"),
         State(get_uuid("tabs"), "value"),
         State(get_uuid("selections"), "data"),
-        State(get_uuid("initial-load-info"), "data"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": ALL}, "id"
@@ -37,10 +37,10 @@ def selections_controllers(
         selectors: list,
         filters: list,
         colorscale: str,
+        initial_load: dict,
         selected_page: str,
         selected_tab: str,
         previous_selection: dict,
-        initial_load: dict,
         selector_ids: list,
         filter_ids: list,
     ) -> dict:

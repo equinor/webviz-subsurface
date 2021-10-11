@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
+
+## [0.2.6] - 2021-10-08
+
 ### Added
 - [#809](https://github.com/equinor/webviz-subsurface/pull/809) - `GroupTree` - added more statistical options (P10, P90, P50/Median, Max, Min). Some improvements to the menu layout and behaviour
 - [#783](https://github.com/equinor/webviz-subsurface/pull/783) - `VolumetricAnalysis` - added tab with Fipfile QC for inspection of which `FIPNUM's` and `REGION∕ZONE's` that have been combined in order to get comparable volumes between dynamic and static sources. This tab is only available if a fipfile is given as input.
