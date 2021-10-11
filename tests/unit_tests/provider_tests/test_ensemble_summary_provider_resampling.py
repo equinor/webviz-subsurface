@@ -136,6 +136,7 @@ def test_interpolate_backfill() -> None:
 
 
 def test_sample_segmented_multi_real_table_at_date_with_single_real() -> None:
+    # pylint: disable=too-many-statements
     # fmt:off
     input_data = [
         ["DATE",                             "REAL",  "T",   "R"],
@@ -221,6 +222,7 @@ def test_sample_segmented_multi_real_table_at_date_with_single_real() -> None:
 
 
 def test_sample_segmented_multi_real_table_at_date() -> None:
+    # pylint: disable=too-many-statements
     # fmt:off
     input_data = [
         ["DATE",                             "REAL",  "T",    "R"],
