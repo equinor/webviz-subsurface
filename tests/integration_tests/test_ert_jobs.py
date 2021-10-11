@@ -87,7 +87,7 @@ def test_smry2arrow(testdata_folder: Path, tmp_path: Path) -> None:
     assert output_file.exists()
 
     table = feather.read_table(output_file)
-    assert table.shape == (243, 921)
+    assert table.shape == (243, 932)
 
     sample_date = table["DATE"][0]
     assert sample_date.type == pa.timestamp("ms")

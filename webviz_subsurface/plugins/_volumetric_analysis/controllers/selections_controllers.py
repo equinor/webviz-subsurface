@@ -24,10 +24,10 @@ def selections_controllers(
             {"id": get_uuid("selections"), "tab": "voldist", "settings": "Colorscale"},
             "colorscale",
         ),
+        Input(get_uuid("initial-load-info"), "data"),
         State(get_uuid("page-selected"), "data"),
         State(get_uuid("tabs"), "value"),
         State(get_uuid("selections"), "data"),
-        State(get_uuid("initial-load-info"), "data"),
         State({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "id"),
         State(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": ALL}, "id"
@@ -37,10 +37,10 @@ def selections_controllers(
         selectors: list,
         filters: list,
         colorscale: str,
+        initial_load: dict,
         selected_page: str,
         selected_tab: str,
         previous_selection: dict,
-        initial_load: dict,
         selector_ids: list,
         filter_ids: list,
     ) -> dict:
@@ -494,8 +494,9 @@ def selections_controllers(
     def _update_tornado_selections_from_mode(mode: str, selector_ids: list) -> tuple:
         settings = {}
         if mode == "custom":
+            responses = [x for x in volumemodel.responses if x not in ["BO", "BG"]]
             settings["Response left"] = settings["Response right"] = {
-                "options": [{"label": i, "value": i} for i in volumemodel.responses],
+                "options": [{"label": i, "value": i} for i in responses],
                 "disabled": False,
             }
         else:
