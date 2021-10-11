@@ -2,7 +2,7 @@ import datetime
 import logging
 from pathlib import Path
 
-import datacompy  # pylint: disable=import-error
+import datacompy  # pylint: disable=import-error, useless-suppression
 import dateutil.parser  # type: ignore
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -193,7 +193,9 @@ def main() -> None:
     print()
 
     print("## Creating provider...")
-    factory = EnsembleSummaryProviderFactory(root_storage_dir)
+    factory = EnsembleSummaryProviderFactory(
+        root_storage_dir, allow_storage_writes=True
+    )
     provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
 
     print("## Loading data into DataFrame using FMU...")

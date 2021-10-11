@@ -5,10 +5,7 @@ from pathlib import Path
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from webviz_subsurface._providers import EnsembleSummaryProviderFactory
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    Frequency,
-)
+from webviz_subsurface._providers import EnsembleSummaryProviderFactory, Frequency
 
 
 # Helper function for generating per-realization CSV files based on aggregated CSV file
@@ -55,7 +52,7 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     # Used to generate test results
     # _dump_smry_to_csv_using_fmu(ensemble_path, "monthly", "expected_smry.csv")
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
+    factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
 
     assert provider.supports_resampling()
@@ -98,7 +95,7 @@ def test_create_from_arrow_unsmry_presampled_monthly(
 
     ensemble_path = testdata_folder / "01_drogon_ahm/realization-*/iter-0"
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
+    factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_presampled(
         str(ensemble_path), Frequency.MONTHLY
     )
@@ -139,7 +136,7 @@ def test_create_from_per_realization_csv_file(
         str(tmp_path / "fake_data"),
     )
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
+    factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
 
     ens_path = tmp_path / "fake_data/realization-*/iter-0"
     csvfile = "smry.csv"
@@ -168,7 +165,7 @@ def test_create_from_per_realization_csv_file(
 
 def test_create_from_ensemble_csv(testdata_folder: Path, tmp_path: Path) -> None:
 
-    factory = EnsembleSummaryProviderFactory(tmp_path)
+    factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
 
     csv_filename = (
         testdata_folder / "reek_test_data" / "aggregated_data" / "smry_hm.csv"

@@ -244,7 +244,9 @@ def main() -> None:
     print("## Creating EnsembleSummaryProvider...")
 
     start_tim = time.perf_counter()
-    factory = EnsembleSummaryProviderFactory(root_storage_dir)
+    factory = EnsembleSummaryProviderFactory(
+        root_storage_dir, allow_storage_writes=True
+    )
 
     provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
     resampling_frequency = frequency
