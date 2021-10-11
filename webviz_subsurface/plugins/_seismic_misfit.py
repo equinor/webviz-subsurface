@@ -39,7 +39,7 @@ class SeismicMisfit(WebvizPluginABC):
     If defaulted, it will be set equal to `attribute_name_sim`.
 
     * **`metadata_name`:** Name of meta data file.
-    Must have east, north and region columns for full utilization of plugin.
+    Must have east, north and region columns.
 
     * **`attribute_sim_path`:** Path to `attribute_name_sim` file.
     Path is given as relative to *runpath*.<br>
@@ -62,7 +62,7 @@ class SeismicMisfit(WebvizPluginABC):
     If there's one csv file per realization only one of them is read and used.
 
     * **`realrange`:** Realization range filter for each of the ensembles.
-    Assign as list of two integers (e.g. [0, 99]).
+    Assign as list of two integers in square brackets (e.g. [0, 99]).
     Realizations outside range will be excluded.
     If `realrange` is omitted, no realization filter will be applied (include all).
 
@@ -191,7 +191,10 @@ class SeismicMisfit(WebvizPluginABC):
         ]
 
         # -- get map east/north ranges
-        self.map_x_range = [self.dframeobs["east"].min(), self.dframeobs["east"].max()]
+        self.map_x_range = [
+            self.dframeobs["east"].min(),
+            self.dframeobs["east"].max(),
+        ]
         self.map_y_range = [
             self.dframeobs["north"].min(),
             self.dframeobs["north"].max(),
@@ -1816,15 +1819,14 @@ def update_obsdata_raw(
 
 
 # -------------------------------
-# pylint: disable=broad-except, dangerous-default-value
 def update_obsdata_map(
     df_obs: pd.DataFrame,
-    x_range: Optional[List[float]] = None,
-    y_range: Optional[List[float]] = None,
-    colorby: Optional[str] = None,
-    df_polygon: Optional[pd.DataFrame] = None,
-    obs_range: List[float] = [-999, 999],
-    obs_err_range: List[float] = [-999, 999],
+    x_range: List[float],
+    y_range: List[float],
+    colorby: str,
+    df_polygon: pd.DataFrame,
+    obs_range: List[float],
+    obs_err_range: List[float],
     scale_col_range: float = 0.6,
 ) -> Optional[px.scatter]:
     """Plot seismic obsdata; map view plot.
@@ -1834,10 +1836,6 @@ def update_obsdata_map(
         logging.warning("-- Do not have necessary data for making map view plot")
         logging.warning("-- Consider adding east/north coordinates to metafile")
         return None
-
-    if colorby not in df_obs.columns and colorby is not None:
-        colorby = None
-        logging.warning(f"{colorby} is not included, colorby is reset to None")
 
     if df_obs[colorby].dtype == "int64" or colorby == "region":
         df_obs = df_obs.sort_values(by=[colorby])
@@ -1874,24 +1872,21 @@ def update_obsdata_map(
     # ----------------------------------------
     # add polygon to map if defined
     if df_polygon is not None:
-        try:
-            for _poly, polydf in df_polygon.groupby("POLY_ID"):
-                poly_id = "pol" + str(_poly)
-                fig.add_trace(
-                    go.Scattergl(
-                        x=polydf["X_UTME"],
-                        y=polydf["Y_UTMN"],
-                        mode="lines",
-                        line_color="gray",
-                        name=poly_id,
-                        showlegend=False,
-                    ),
-                    row="all",
-                    col="all",
-                    exclude_empty_subplots=True,
-                )
-        except Exception as exception:
-            logging.warning(f"Failed to add polygon -- {exception}")
+        for _poly, polydf in df_polygon.groupby("POLY_ID"):
+            poly_id = "pol" + str(_poly)
+            fig.add_trace(
+                go.Scattergl(
+                    x=polydf["X_UTME"],
+                    y=polydf["Y_UTMN"],
+                    mode="lines",
+                    line_color="gray",
+                    name=poly_id,
+                    showlegend=False,
+                ),
+                row="all",
+                col="all",
+                exclude_empty_subplots=True,
+            )
 
     fig.update_yaxes(scaleanchor="x")
     fig.update_layout(coloraxis_colorbar_x=0.95)
@@ -1905,19 +1900,18 @@ def update_obsdata_map(
 
 
 # -------------------------------
-# pylint: disable=broad-except, dangerous-default-value
 def update_obs_sim_map_plot(
     df: pd.DataFrame,
     ens_name: str,
-    df_polygon: Optional[pd.DataFrame] = None,
-    x_range: Optional[List[float]] = None,
-    y_range: Optional[List[float]] = None,
-    obs_range: List[float] = [-999, 999],
+    df_polygon: pd.DataFrame,
+    x_range: List[float],
+    y_range: List[float],
+    obs_range: List[float],
     scale_col_range: float = 0.6,
     slice_accuracy: Union[int, float] = 100,
     slice_position: float = 0.0,
     plot_coverage: int = 0,
-    marker_size: int = 14,
+    marker_size: int = 12,
 ) -> Tuple[Optional[Any], Optional[Any]]:
     """Plot seismic obsdata, simdata and diffdata; side by side map view plots.
     Takes dataframe with obsdata, metadata and simdata as input"""
@@ -2104,24 +2098,21 @@ def update_obs_sim_map_plot(
     # ----------------------------------------
     # add polygon to map if defined
     if df_polygon is not None:
-        try:
-            for _poly, polydf in df_polygon.groupby("POLY_ID"):
-                poly_id = "pol" + str(_poly)
-                fig.add_trace(
-                    go.Scattergl(
-                        x=polydf["X_UTME"],
-                        y=polydf["Y_UTMN"],
-                        mode="lines",
-                        line_color="gray",
-                        name=poly_id,
-                        showlegend=False,
-                    ),
-                    row="all",
-                    col="all",
-                    exclude_empty_subplots=True,
-                )
-        except Exception as exception:
-            logging.warning(f"Failed to add polygon -- {exception}")
+        for _poly, polydf in df_polygon.groupby("POLY_ID"):
+            poly_id = "pol" + str(_poly)
+            fig.add_trace(
+                go.Scattergl(
+                    x=polydf["X_UTME"],
+                    y=polydf["Y_UTMN"],
+                    mode="lines",
+                    line_color="gray",
+                    name=poly_id,
+                    showlegend=False,
+                ),
+                row="all",
+                col="all",
+                exclude_empty_subplots=True,
+            )
 
     fig.update_xaxes(range=x_range)
     fig.update_yaxes(range=y_range)
@@ -2604,7 +2595,6 @@ def update_errorbarplot_superimpose(
 
 
 # -------------------------------
-# pylint: disable=broad-except
 @webvizstore
 def makedf(
     ensemble_set: dict,
@@ -2641,15 +2631,19 @@ def makedf(
         dfs_obs.append(df.copy())
 
         # --- add sim data ---
-        fromreal, toreal = 0, 99999
+        fromreal, toreal = 0, 999
         if realrange is not None:
-            try:
+            if len(realrange[ens_count]) == 2:
                 fromreal = int(realrange[ens_count][0])
                 toreal = int(realrange[ens_count][1])
-            except Exception as exception:
-                logging.warning(
-                    f"realrange input is assigned wrongly - "
-                    f"continuing without real filter. {exception}"
+            else:
+                raise RuntimeError(
+                    "Error in "
+                    + makedf.__name__
+                    + "\nrealrange input is assigned wrongly (in yaml config file).\n"
+                    "Make sure to add 2 integers in square brackets "
+                    "for each of the ensembles. Alternatively, remove this optional "
+                    "argument to use default settings (all realizations included)."
                 )
 
         df = makedf_seis_addsim(
@@ -2690,44 +2684,29 @@ def makedf_seis_obs_meta(
     dframe["data_number"] = dframe.index + 1  # add a simple counter
 
     # --- read metadata into pandas dataframe ---
-    try:
-        df_meta = pd.read_csv(metafile)  # read metafile to dataframe
-        df_meta.columns = (
-            df_meta.columns.str.lower()
-        )  # convert all headers to lower case
+    df_meta = pd.read_csv(metafile)  # read metafile to dataframe
+    df_meta.columns = df_meta.columns.str.lower()  # convert all headers to lower case
 
-        if "east" not in df_meta.columns:
-            if "x_utme" in df_meta.columns:
-                df_meta.rename(columns={"x_utme": "east"}, inplace=True)
-                logging.debug("renamed x_utme column to east")
-            else:
-                logging.warning("x_utm or east column not included in meta data")
+    if "east" not in df_meta.columns:
+        if "x_utme" in df_meta.columns:
+            df_meta.rename(columns={"x_utme": "east"}, inplace=True)
+            logging.debug("renamed x_utme column to east")
+        else:
+            raise RuntimeError("'x_utm' (or 'east') column not included in meta data")
 
-        if "north" not in df_meta.columns:
-            if "y_utmn" in df_meta.columns:
-                df_meta.rename(columns={"y_utmn": "north"}, inplace=True)
-                logging.debug("renamed y_utmn column to north")
-            else:
-                logging.warning("y_utm or north column not included in meta data")
+    if "north" not in df_meta.columns:
+        if "y_utmn" in df_meta.columns:
+            df_meta.rename(columns={"y_utmn": "north"}, inplace=True)
+            logging.debug("renamed y_utmn column to north")
+        else:
+            raise RuntimeError("'y_utm' (or 'north') column not included in meta data")
 
-        tot_nan_val_meta = df_meta.isnull().sum().sum()  # count all nan values
-        if tot_nan_val_meta > 0:
-            logging.warning(f"-- metafile contains {tot_nan_val_meta} NaN values")
-    except IOError as ioe:
-        logging.warning("-- Continuing without metadata due to error:")
-        logging.warning(ioe)
-    # pylint: enable=no-member, unsupported-assignment-operation
+    tot_nan_val_meta = df_meta.isnull().sum().sum()  # count all nan values
+    if tot_nan_val_meta > 0:
+        logging.warning(f"-- metafile contains {tot_nan_val_meta} NaN values")
 
     # --- concat obsdata and metadata ---
-    try:
-        dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
-    except Exception as exception:
-        logging.warning(exception)
-        logging.warning(
-            "---WARNING. Failed to merge obsdata and metadata. "
-            "Please check consistency or if metadata file exists."
-        )
-        logging.warning(f"Metadata file: {metafile}")
+    dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
 
     # --- apply obs multiplier ---
     dframe["obs"] = dframe["obs"] * obs_mult
@@ -2742,23 +2721,17 @@ def makedf_seis_obs_meta(
         dframe["region"] = 1
 
     # -------------------------------
-
-    # force region column to be of type int (if user exported as float)
-    # dframe = dframe.astype({"region": int})
-
-    # -------------------------------
     logging.debug(f"Number of seismic data points: {len(dframe)}")
     logging.debug(
         f"Obs file: {obsfile} \n--> Number of undefined values: {tot_nan_val_obs}"
     )
     logging.debug(
-        f"Meta file: {metafile}" f"\n--> Number of undefined values: {tot_nan_val_meta}"
+        f"Meta file: {metafile} \n--> Number of undefined values: {tot_nan_val_meta}"
     )
 
     return dframe
 
 
-# pylint: disable=broad-except
 def makedf_seis_addsim(
     df: pd.DataFrame,
     ens_path: str,
@@ -2790,15 +2763,14 @@ def makedf_seis_addsim(
                 / Path(attribute_sim_path)
                 / Path(attribute_name_sim)
             )
-            try:
+            if simfile.exists():
                 colname = "real-" + str(real)
                 df[colname] = pd.read_csv(simfile, header=None)
                 df[colname] = df[colname] * sim_mult  # --- apply sim multiplier ---
                 data_found.append(real)
-            except Exception as exception:
+            else:
                 no_data_found.append(real)
-                logging.debug(exception)
-                # logging.debug(f"File does not exist: {str(simfile)}")
+                logging.debug(f"File does not exist: {str(simfile)}")
 
     logging.debug(f"Sim values added to dataframe for realizations: {data_found}")
     if len(no_data_found) == 0:
@@ -3050,13 +3022,35 @@ def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[st
 
 @webvizstore
 def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
-    """Read polygon file. If there are one polygon per realization
-    only one will be read (first found)"""
+    """Read polygon file. If there are one polygon file
+    per realization only one will be read (first found)"""
+
     for _, ens_path in ensemble_set.items():
         single_runpath = sorted(glob.glob(ens_path))[0]
         poly_file = Path(single_runpath) / Path(polygon)
         if poly_file:
             logging.debug(f"Read polygon file:\n {poly_file}")
-            return pd.read_csv(poly_file)
+            df_polygon = pd.read_csv(poly_file)
+            cols = df_polygon.columns
+            if (
+                ("POLY_ID" not in cols)
+                or ("X_UTME" not in cols)
+                or ("Y_UTMN" not in cols)
+            ):
+                raise RuntimeError(
+                    "Error in "
+                    + str(make_polygon_df.__name__)
+                    + "\nThe file assigned to the polygon argument"
+                    " (in yaml config file)"
+                    " must contain the columns 'POLY_ID', 'X_UTME' and 'Y_UTMN' "
+                    "(the column names must match exactly)."
+                    " Please update file or remove polygon argument (default is None)"
+                    "\nPolygon argument (relative to runpath):\n"
+                    + str(polygon)
+                    + "\nFull path to the polygon file that failed:\n"
+                    + str(poly_file)
+                )
+            return df_polygon
+
     logging.debug("Polygon file not found - continue without.")
     return pd.DataFrame()
