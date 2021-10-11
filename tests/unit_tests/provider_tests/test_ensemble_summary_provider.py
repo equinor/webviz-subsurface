@@ -63,7 +63,7 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     assert provider.vector_metadata("FOPT") is not None
 
     vecnames = provider.vector_names()
-    assert len(vecnames) == 920
+    assert len(vecnames) == 931
 
     dates = provider.dates(Frequency.MONTHLY)
     assert len(dates) == 31
@@ -108,7 +108,7 @@ def test_create_from_arrow_unsmry_presampled_monthly(
     assert provider.vector_metadata("FOPT") is not None
 
     vecnames = provider.vector_names()
-    assert len(vecnames) == 920
+    assert len(vecnames) == 931
 
     dates = provider.dates(None)
     assert len(dates) == 31

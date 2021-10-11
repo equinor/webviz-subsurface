@@ -2,7 +2,7 @@ import datetime
 import logging
 from pathlib import Path
 
-import datacompy
+import datacompy  # pylint: disable=import-error
 import dateutil.parser  # type: ignore
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -12,6 +12,9 @@ from .ensemble_summary_provider_factory import EnsembleSummaryProvider
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 
 # pylint: disable=line-too-long
+
+# Note that running this script requires the additional install of datacompy.
+#   pip install datacompy
 
 # Tolerances inspired by
 #   https://numpy.org/doc/stable/reference/generated/numpy.isclose.html
