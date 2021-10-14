@@ -3,7 +3,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
-from plotly.subplots import make_subplots
 
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
@@ -16,15 +15,9 @@ from .types import (
     VisualizationOptions,
 )
 from .data_model import DataModel
+from .graph_figure_builder import GraphFigureBuilder
 
 from .utils.trace_line_shape import get_simulation_line_shape
-
-from .utils.ensemble_vectors_traces import (
-    create_ensemble_vectors_fanchart_traces,
-    create_ensemble_vectors_realizations_traces,
-    create_ensemble_vectors_statistics_traces,
-)
-from .utils.history_vectors_traces import create_historical_vectors_traces
 
 
 from .main_view import ViewElements
@@ -123,19 +116,17 @@ def controller_callbacks(
         ensemble_provider_dict = data_model.get_selected_ensemble_providers(
             selected_ensembles
         )
-        ensemble_colors = data_model.get_unique_ensemble_colors()
 
         # Titles for subplots TODO: Verify vector existing?
-        titles = [data_model.create_vector_plot_title(elm) for elm in vectors]
+        vector_titles: Dict[str, str] = {
+            elm: data_model.create_vector_plot_title(elm) for elm in vectors
+        }
 
-        # TODO: Handle traces with figure/graph utility or handler? See LinePlotterFMU
-        # Make a plotly subplot figure
-        figure = make_subplots(
-            rows=max(1, len(vectors)),
-            cols=1,
-            shared_xaxes=True,
-            vertical_spacing=0.05,
-            subplot_titles=titles if titles else ["No vector selected"],
+        # TODO: Filter with only selected ensembles?
+        ensemble_colors = data_model.get_unique_ensemble_colors()
+
+        figure_builder = GraphFigureBuilder(
+            vectors, vector_titles, ensemble_colors, sampling
         )
 
         # Plotting per ensemble
@@ -155,10 +146,6 @@ def controller_callbacks(
                 vectors_filtered, resampling_freq
             )
 
-            ensemble_color = ensemble_colors.get(
-                ensemble, ensemble_colors[list(ensemble_colors.keys())[0]]
-            )
-
             vector_line_shapes: Dict[str, str] = {
                 vector: get_simulation_line_shape(
                     line_shape_fallback, vector, provider.vector_metadata(vector)
@@ -166,77 +153,57 @@ def controller_callbacks(
                 for vector in vectors_filtered
             }
 
-            # Dictionary with vector name as key and list of ensemble traces as value
-            vector_traces_dict: Dict[str, List[dict]] = {}
             if visualization == VisualizationOptions.REALIZATIONS:
-                vector_traces_dict = create_ensemble_vectors_realizations_traces(
-                    ensemble_vectors_df=ensemble_vectors_df,
-                    color=ensemble_color,
-                    ensemble=ensemble,
-                    vector_line_shapes=vector_line_shapes,
-                    interval=sampling,
+                figure_builder.add_realizations_traces(
+                    ensemble_vectors_df, ensemble, vector_line_shapes
                 )
             if visualization == VisualizationOptions.STATISTICS:
-                vector_traces_dict = create_ensemble_vectors_statistics_traces(
-                    ensemble_vectors_df,
-                    color=ensemble_color,
-                    vector_line_shapes=vector_line_shapes,
-                    ensemble=ensemble,
-                    interval=sampling,
-                    statistics_options=statistics_options,
+                vectors_df = data_model.create_statistics_df(
+                    ensemble, vectors_filtered, resampling_freq
+                )
+                figure_builder.add_statistics_traces(
+                    vectors_df, ensemble, statistics_options, vector_line_shapes
                 )
             if visualization == VisualizationOptions.FANCHART:
-                vector_traces_dict = create_ensemble_vectors_fanchart_traces(
-                    ensemble_vectors_df,
-                    color=ensemble_color,
-                    vector_line_shapes=vector_line_shapes,
-                    ensemble=ensemble,
-                    interval=sampling,
-                    fanchart_options=fanchart_options,
+                vectors_df = data_model.create_statistics_df(
+                    ensemble, vectors_filtered, resampling_freq
                 )
 
-            # Add traces to figure
-            for vector, traces in vector_traces_dict.items():
-                subplot_index = vectors.index(vector) + 1 if vector in vectors else None
-                if subplot_index is None:
-                    continue
-                figure.add_traces(traces, rows=subplot_index, cols=1)
+                figure_builder.add_fanchart_traces(
+                    vectors_df, ensemble, fanchart_options, vector_line_shapes
+                )
 
         # NOTE: Retrieve historical vector from first ensemble
         if TraceOptions.HISTORY in trace_options and len(ensemble_provider_dict) > 0:
-            # Provider from first ensemble
-            provider = list(ensemble_provider_dict.values())[0]
+            # Name and provider from first selected ensemble
+            name, provider = list(ensemble_provider_dict.items())[0]
 
-            history_vector_line_shapes: Dict[str, str] = {
+            vectors_filtered = [
+                elm for elm in vectors if elm in provider.vector_names()
+            ]
+
+            vector_line_shapes_2: Dict[str, str] = {
                 vector: get_simulation_line_shape(
                     line_shape_fallback, vector, provider.vector_metadata(vector)
                 )
-                for vector in vectors
+                for vector in vectors_filtered
             }
+
             resampling_freq = (
                 resampling_frequency if provider.supports_resampling() else None
             )
-            historical_vectors_traces = create_historical_vectors_traces(
-                provider, resampling_freq, vectors, history_vector_line_shapes
+
+            history_vectors_df = data_model.create_history_vectors_df(
+                name, vectors_filtered, resampling_freq
             )
+            figure_builder.add_history_traces(history_vectors_df, vector_line_shapes_2)
 
-            add_legend = True
-            for vector, trace in historical_vectors_traces.items():
-                subplot_index = vectors.index(vector) + 1 if vector in vectors else None
-                if subplot_index is None:
-                    continue
-                # Add legend for one trace
-                if add_legend:
-                    trace["showlegend"] = True
-                    add_legend = False
-                figure.add_trace(trace, row=subplot_index, col=1)
+        # # Keep uirevision (e.g. zoom) for unchanged data.
+        # figure.update_xaxes(uirevision="locked")  # Time axis state kept
+        # for i, vector in enumerate(vectors, start=1):
+        #     figure.update_yaxes(row=i, col=1, uirevision=vector)
 
-        # Keep uirevision (e.g. zoom) for unchanged data.
-        figure.update_xaxes(uirevision="locked")  # Time axis state kept
-        for i, vector in enumerate(vectors, start=1):
-            figure.update_yaxes(row=i, col=1, uirevision=vector)
-
-        return figure.to_dict()
+        return figure_builder.get_figure()
 
     @app.callback(
         [

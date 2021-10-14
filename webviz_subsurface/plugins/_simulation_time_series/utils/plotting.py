@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+import numpy as np
 import pandas as pd
 
 from ..types import FanchartOptions, StatisticsOptions
@@ -9,6 +10,11 @@ from ...._utils.fanchart_plotting import (
     FreeLineData,
     LowHighData,
     MinMaxData,
+)
+from ...._utils.statistics_plotting import (
+    create_statistics_traces,
+    StatisticsData,
+    LineData,
 )
 
 
@@ -37,11 +43,10 @@ def create_vector_realization_traces(
     ]
 
 
-# pylint: disable=too-many-arguments
-# TODO: Possible to refactor? Make utility as for fanchart?
+# TODO: Rename to create_statistics_traces?
+# pylint: disable=too-many-arguments, too-many-locals
 def create_vector_statistics_traces(
-    ensemble_vector_statistic_df: pd.DataFrame,
-    vector: str,
+    vector_statistics_df: pd.DataFrame,
     statistics_options: List[StatisticsOptions],
     color: str,
     legend_group: str,
@@ -51,107 +56,71 @@ def create_vector_statistics_traces(
     show_legend: bool = True,
 ) -> List[Dict[str, Any]]:
     """Renders a statistical lines for each vector"""
-    traces = []
-    for i, option in enumerate(statistics_options):
-        if option == StatisticsOptions.MEAN:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "Mean",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "mean")],
-                    "mode": "lines",
-                    "line": {"color": color, "shape": line_shape, "width": 3},
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-        if option == StatisticsOptions.P10:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "P10",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "high_p10")],
-                    "mode": "lines",
-                    "line": {"color": color, "shape": line_shape, "dash": "dashdot"},
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-        if option == StatisticsOptions.P90:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "P90",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "low_p90")],
-                    "mode": "lines",
-                    "line": {"color": color, "shape": line_shape, "dash": "dashdot"},
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-        if option == StatisticsOptions.P50:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "P50",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "p50")],
-                    "mode": "lines",
-                    "line": {
-                        "color": color,
-                        "shape": line_shape,
-                        "dash": "dot",
-                        "width": 3,
-                    },
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-        if option == StatisticsOptions.MAX:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "Maximum",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "max")],
-                    "mode": "lines",
-                    "line": {
-                        "color": color,
-                        "shape": line_shape,
-                        "dash": "longdash",
-                        "width": 1.5,
-                    },
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-        if option == StatisticsOptions.MIN:
-            traces.append(
-                {
-                    "name": legend_group,
-                    "hovertemplate": hovertemplate + "Minimum",
-                    "x": ensemble_vector_statistic_df[("", refaxis)],
-                    "y": ensemble_vector_statistic_df[(vector, "min")],
-                    "mode": "lines",
-                    "line": {
-                        "color": color,
-                        "shape": line_shape,
-                        "dash": "longdash",
-                        "width": 1.5,
-                    },
-                    "legendgroup": legend_group,
-                    "showlegend": i == 0 and show_legend,
-                }
-            )
-    return traces
+    low_data = (
+        LineData(
+            data=vector_statistics_df[StatisticsOptions.P90].values,
+            name=StatisticsOptions.P90.value,
+        )
+        if StatisticsOptions.P90 in statistics_options
+        else None
+    )
+    mid_data = (
+        LineData(
+            data=vector_statistics_df[StatisticsOptions.P50].values,
+            name=StatisticsOptions.P50.value,
+        )
+        if StatisticsOptions.P50 in statistics_options
+        else None
+    )
+    high_data = (
+        LineData(
+            data=vector_statistics_df[StatisticsOptions.P10].values,
+            name=StatisticsOptions.P10.value,
+        )
+        if StatisticsOptions.P10 in statistics_options
+        else None
+    )
+    mean_data = (
+        LineData(
+            data=vector_statistics_df[StatisticsOptions.MEAN].values,
+            name=StatisticsOptions.MEAN.value,
+        )
+        if StatisticsOptions.MEAN in statistics_options
+        else None
+    )
+    minimum = (
+        vector_statistics_df[StatisticsOptions.MIN].values
+        if StatisticsOptions.MIN in statistics_options
+        else None
+    )
+    maximum = (
+        vector_statistics_df[StatisticsOptions.MAX].values
+        if StatisticsOptions.MAX in statistics_options
+        else None
+    )
+
+    data = StatisticsData(
+        samples=vector_statistics_df["DATE"].values,
+        free_line=mean_data,
+        minimum=minimum,
+        maximum=maximum,
+        low=low_data,
+        mid=mid_data,
+        high=high_data,
+    )
+    return create_statistics_traces(
+        data=data,
+        color=color,
+        legend_group=legend_group,
+        line_shape=line_shape,
+        show_legend=show_legend,
+        hovertemplate=hovertemplate,
+    )
 
 
+# TODO: Rename to create_fanchart_traces?
 def create_vector_fanchart_traces(
-    ensemble_vector_statistic_df: pd.DataFrame,
-    vector: str,
+    vector_statistics_df: pd.DataFrame,
     color: str,
     legend_group: str,
     line_shape: str,
@@ -163,9 +132,9 @@ def create_vector_fanchart_traces(
 
     low_high_data = (
         LowHighData(
-            low_data=ensemble_vector_statistic_df[(vector, "low_p90")].values,
+            low_data=vector_statistics_df[StatisticsOptions.P90].values,
             low_name="P90",
-            high_data=ensemble_vector_statistic_df[(vector, "high_p10")].values,
+            high_data=vector_statistics_df[StatisticsOptions.P10].values,
             high_name="P10",
         )
         if FanchartOptions.P10_P90 in fanchart_options
@@ -173,20 +142,23 @@ def create_vector_fanchart_traces(
     )
     minimum_maximum_data = (
         MinMaxData(
-            minimum=ensemble_vector_statistic_df[(vector, "min")].values,
-            maximum=ensemble_vector_statistic_df[(vector, "max")].values,
+            minimum=vector_statistics_df[StatisticsOptions.MIN].values,
+            maximum=vector_statistics_df[StatisticsOptions.MAX].values,
         )
         if FanchartOptions.MIN_MAX in fanchart_options
         else None
     )
     mean_data = (
-        FreeLineData("Mean", ensemble_vector_statistic_df[(vector, "mean")].values)
+        FreeLineData(
+            "Mean",
+            vector_statistics_df[StatisticsOptions.MEAN].values,
+        )
         if FanchartOptions.MEAN in fanchart_options
         else None
     )
 
     data = FanchartData(
-        samples=ensemble_vector_statistic_df[("", "DATE")].tolist(),
+        samples=vector_statistics_df["DATE"].tolist(),
         low_high=low_high_data,
         minimum_maximum=minimum_maximum_data,
         free_line=mean_data,
@@ -201,17 +173,21 @@ def create_vector_fanchart_traces(
     )
 
 
+# TODO: Rename to create_history_vector_trace
 def create_vector_history_trace(
-    history_vectors_df: pd.DataFrame,
-    vector: str,
+    samples: list,
+    history_data: np.ndarray,
     line_shape: str,
     show_legend: bool = False,
 ) -> dict:
     """Returns the history trace line"""
+    if len(samples) != len(history_data):
+        raise ValueError(f"Number of samples unequal number of data points!")
+
     return {
         "line": {"shape": line_shape},
-        "x": history_vectors_df["DATE"],
-        "y": history_vectors_df[vector],
+        "x": samples,
+        "y": history_data,
         "hovertext": "History",
         "hoverinfo": "y+x+text",
         "name": "History",
