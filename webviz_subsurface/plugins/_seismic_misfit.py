@@ -1,17 +1,18 @@
 # pylint: disable=too-many-lines, too-many-arguments, too-many-locals
+# pylint: disable=too-many-instance-attributes
 import glob
 import logging
+import math
 import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import dash
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import Input, Output, dcc, html
+from dash import Dash, Input, Output, dcc, html
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -31,25 +32,21 @@ class SeismicMisfit(WebvizPluginABC):
     ---
 
     * **`ensembles`:** Which *scratch_ensembles* in *shared_settings* to include.
-    <br>(Note that **realization-** should be part of the paths.)
+    <br>(Note that **realization-** must be part of the *shared_settings* paths.)
 
-    * **`attribute_name_sim`:** Name of simulated seismic attribute
+    * **`attributes`:** List of attribute file names to include.
+    It is a requirement that the simulated and observed
+    attribute file names are identical.
+    Further, it is required that there exists metadata csv files with
+    the prefix "meta_" + the attribute name as given in the `attributes` list.
 
-    * **`attribute_name_obs`:** Name of observed seismic attribute.
-    If defaulted, it will be set equal to `attribute_name_sim`.
+    * **`attribute_sim_path`:** Path to the `attributes` simulation file.
+    Path is given as relative to *runpath*, where *runpath* = path as defined
+    for `ensembles` in shared settings.
 
-    * **`metadata_name`:** Name of meta data file.
-    Must have east, north and region columns.
-
-    * **`attribute_sim_path`:** Path to `attribute_name_sim` file.
-    Path is given as relative to *runpath*.<br>
-    *runpath* = path as defined for `ensembles` in shared settings.
-
-    * **`attribute_obs_path`:** Path to `attribute_name_obs` file.
-    Path is given as relative to *runpath*,
-
-    * **`metadata_path`:** Path to `metadata_name` file.
-    Path is given as relative to *runpath*,
+    * **`attribute_obs_path`:** Path to the `attributes` observation file.
+    Path is given as relative to *runpath* (path can also be absolute.)
+    The metadata file must also be stored in this folder.
 
     * **`obs_mult`:** Multiplier for all observation and observation error data.
     Can be used for calibration purposes.
@@ -59,66 +56,67 @@ class SeismicMisfit(WebvizPluginABC):
 
     * **`polygon`:** Path to csv file containing (fault-) polygons
     to include in map view plots. Path is given as relative to *runpath*.
-    If there's one csv file per realization only one of them is read and used.
+    (Path can also be absolute.)
+    If there's one csv file per realization, only one of them is read and used.
 
     * **`realrange`:** Realization range filter for each of the ensembles.
     Assign as list of two integers in square brackets (e.g. [0, 99]).
     Realizations outside range will be excluded.
-    If `realrange` is omitted, no realization filter will be applied (include all).
+    If `realrange` is omitted, no realization filter will be applied (i.e. include all).
 
     ---
 
     The input data consists of 3 different file types.<br>
-    1) Observation data file - `attribute_name_obs`: This is a 2 column file,
+    1) Observation data file (one per attribute): This is a 2 column file,
     where the columns are space seperated (ERT compatible format).
     First column is the observed attribute value and the second column
     is the corresponding error. This file has no header.<br>
-    ```
+    ```txt
         0.002072 0.001
         0.001379 0.001
         0.001239 0.001
         ...
         ...
     ```
-    2) Simulation data file (one per realization) - `attribute_name_sim`:
+    2) Simulation data file (one per attribute and realization):
     This is a 1 column file (ERT compatible format).
     The column is the simulated attribute value. This file has no header.
-    ```
+    ```txt
         0.0023456
         0.0012345
         0.0013579
         ...
         ...
     ```
-    3) Metadata file - `metadata_name`: This file must include the
+    3) Metadata file  (one per attribute): This file must include the
     column headers "east" (or x_utme), "north" (or y_utmn) and "region"
-    (case insensitive). The columns are comma seperated.
-    The file can have more columns, but those will be ignored.<br>
+    (case insensitive column names). The columns are comma seperated.
+    The region column values should be integer type.
+    The file can have more columns, but they are ignored. The file must
+    be stored in same folder as the observation file.
     ```csv
         X_UTME,Y_UTMN,Region
-        456166.26,5935963.72,1.0
-        456241.17,5935834.17,1.0
-        456316.08,5935704.57,1.0
+        456166.26,5935963.72,1
+        456241.17,5935834.17,2
+        456316.08,5935704.57,3
         ...
         ...
     ```
 
     It is a requirement that each line of data in these 3 files represent
-    the same data point. I.e. line number N+1 in `metadata_name` corresponds to
-    line N in `attribute_name_obs` and `attribute_name_sim` files.
+    the same data point. I.e. line number N+1 in metadata file corresponds to
+    line N in obs and sim files. The +1 shift for the metadata file
+    is due to that file is the only one with a header.
     """
 
     def __init__(
         self,
-        app: dash.Dash,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
-        attribute_name_sim: str,
-        attribute_name_obs: str = None,
-        metadata_name: str = "metadata.csv",
+        attributes: List[str],
         attribute_sim_path: str = "sim2seis/output/4d_attribute_maps/",
         attribute_obs_path: str = "../../share/observations/seismic/",
-        metadata_path: str = "../../share/observations/seismic/",
         obs_mult: float = 1.0,
         sim_mult: float = 1.0,
         polygon: str = None,
@@ -126,102 +124,134 @@ class SeismicMisfit(WebvizPluginABC):
     ):
         super().__init__()
 
+        self.attributes = attributes
+
         self.ensemble_set = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
 
-        if attribute_name_obs is None:
-            attribute_name_obs = attribute_name_sim
+        self.ens_names = []
+        for ens_name, _ in self.ensemble_set.items():
+            self.ens_names.append(ens_name)
 
         self.polygon = polygon
-
         if not polygon:
             self.df_polygon = None
-            logging.debug(
-                "Polygon file not assigned in config file - continue without."
+            logging.info(
+                "Polygon file not assigned in config file - continue without.\n"
             )
         else:  # grab polygon file relative to runpath for one realization
             self.df_polygon = make_polygon_df(
                 ensemble_set=self.ensemble_set, polygon=self.polygon
             )
 
-        # make dataframe with all data
-        self.dframe = makedf(
-            self.ensemble_set,
-            attribute_name_sim,
-            attribute_name_obs,
-            metadata_name,
-            attribute_sim_path,
-            attribute_obs_path,
-            metadata_path,
-            obs_mult,
-            sim_mult,
-            realrange,
-        )
-        # make dataframe with only obs and meta data
-        self.dframeobs = self.dframe.drop(
-            columns=[col for col in self.dframe if col.startswith("real-")]
-        )
-
         self.caseinfo = ""
-        self.ens_names = []
+        self.dframe = {}
+        self.dframeobs = {}
+        self.makedf_args = {}
+        self.region_names: List[int] = []
 
-        for ens_name, ens_path in self.ensemble_set.items():
-            self.caseinfo = self.caseinfo + ens_name + ": \n"
-            self.caseinfo = self.caseinfo + ens_path + "\n"
-            self.ens_names.append(ens_name)
+        for attribute_name in self.attributes:
+            logging.debug(f"Build dataframe for attribute: \n{attribute_name}\n")
+            metadata_name = "meta_" + str(attribute_name)
+            # make dataframe with all data
+            self.dframe[attribute_name] = makedf(
+                self.ensemble_set,
+                attribute_name,
+                metadata_name,
+                attribute_sim_path,
+                attribute_obs_path,
+                obs_mult,
+                sim_mult,
+                realrange,
+            )
+            # make dataframe with only obs and meta data
+            self.dframeobs[attribute_name] = self.dframe[attribute_name].drop(
+                columns=[
+                    col
+                    for col in self.dframe[attribute_name]
+                    if col.startswith("real-")
+                ]
+            )
 
-        self.obsinfo = _compare_dfs_obs(self.dframeobs, self.ens_names)
-        self.caseinfo = self.caseinfo + self.obsinfo
+            self.makedf_args[attribute_name] = {  # for add_webvizstore
+                "ensemble_set": self.ensemble_set,
+                "attribute_name": attribute_name,
+                "metadata_name": metadata_name,
+                "attribute_sim_path": attribute_sim_path,
+                "attribute_obs_path": attribute_obs_path,
+                "obs_mult": obs_mult,
+                "sim_mult": sim_mult,
+                "realrange": realrange,
+            }
 
-        # get sorted list of unique region values
-        self.region_names = sorted(list(self.dframe["region"].unique()))
+            obsinfo = _compare_dfs_obs(self.dframeobs[attribute_name], self.ens_names)
+            self.caseinfo = (
+                f"{self.caseinfo}Attribute: {attribute_name}"
+                f"\n{obsinfo}\n-----------\n"
+            )
 
-        # get list of all realizations in dataframe (based on column names real-x)
+            # get sorted list of unique region values
+            # simplified approach: union across all attributes/metafiles
+            if not self.region_names:
+                self.region_names = sorted(
+                    list(self.dframeobs[attribute_name]["region"].unique())
+                )
+            else:
+                for regname in self.dframeobs[attribute_name]["region"].unique():
+                    if regname not in self.region_names:
+                        self.region_names.append(regname)
+                self.region_names = sorted(self.region_names)
+
+            # -- get obs data range
+            self.obs_range = [
+                self.dframeobs[attribute_name]["obs"].min(),
+                self.dframeobs[attribute_name]["obs"].max(),
+            ]
+            self.obs_error_range = [
+                self.dframeobs[attribute_name]["obs_error"].min(),
+                self.dframeobs[attribute_name]["obs_error"].max(),
+            ]
+
+            # -- get map east/north ranges
+            self.map_x_range = [
+                self.dframeobs[attribute_name]["east"].min(),
+                self.dframeobs[attribute_name]["east"].max(),
+            ]
+            self.map_y_range = [
+                self.dframeobs[attribute_name]["north"].min(),
+                self.dframeobs[attribute_name]["north"].max(),
+            ]
+
+        # get list of all realizations (based on column names real-x)
         self.realizations = [
-            col.replace("real-", "") for col in self.dframe if col.startswith("real")
+            col.replace("real-", "")
+            for col in self.dframe[attributes[0]]
+            if col.startswith("real")
         ]
 
-        # -- get obs data range
-        self.obs_range = [self.dframeobs["obs"].min(), self.dframeobs["obs"].max()]
-        self.obs_error_range = [
-            self.dframeobs["obs_error"].min(),
-            self.dframeobs["obs_error"].max(),
-        ]
-
-        # -- get map east/north ranges
-        self.map_x_range = [
-            self.dframeobs["east"].min(),
-            self.dframeobs["east"].max(),
-        ]
-        self.map_y_range = [
-            self.dframeobs["north"].min(),
-            self.dframeobs["north"].max(),
-        ]
+        self.map_intial_marker_size = _map_initial_marker_size(
+            len(self.dframeobs[attributes[0]].index),
+            len(self.ens_names),
+        )
 
         self.set_callbacks(app)
 
-        self.makedf_args = {  # for add_webvizstore
-            "ensemble_set": self.ensemble_set,
-            "attribute_name_sim": attribute_name_sim,
-            "attribute_name_obs": attribute_name_obs,
-            "metadata_name": metadata_name,
-            "attribute_sim_path": attribute_sim_path,
-            "attribute_obs_path": attribute_obs_path,
-            "metadata_path": metadata_path,
-            "obs_mult": obs_mult,
-            "sim_mult": sim_mult,
-            "realrange": realrange,
-        }
-
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        funcs = [(makedf, [self.makedf_args])]
+        funcs = []
+        for attribute_name in self.attributes:
+            funcs.append((makedf, [self.makedf_args[attribute_name]]))
         if self.polygon is not None:
             funcs.append(
                 (
                     make_polygon_df,
-                    [{"ensemble_set": self.ensemble_set, "polygon": self.polygon}],
+                    [
+                        {
+                            "ensemble_set": self.ensemble_set,
+                            "polygon": self.polygon,
+                        }
+                    ],
                 )
             )
         return funcs
@@ -239,7 +269,16 @@ class SeismicMisfit(WebvizPluginABC):
             },
             {
                 "id": self.uuid("obsdata-ens_name"),
-                "content": ("Select ensemble to view."),
+                "content": (
+                    "Select ensemble to view. "
+                    "One can only select one at a time in this tab."
+                ),
+            },
+            {
+                "id": self.uuid("obsdata-attr_name"),
+                "content": (
+                    "Select which attribute to view. One can only select one at a time."
+                ),
             },
             {
                 "id": self.uuid("obsdata-regions"),
@@ -297,49 +336,78 @@ class SeismicMisfit(WebvizPluginABC):
                             "maxWidth": "200px",
                         },
                         children=[
-                            wcc.Dropdown(
-                                label="Ensemble selector",
-                                id=self.uuid("obsdata-ens_name"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ens_names
+                            wcc.Selectors(
+                                label="Case settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Attribute selector",
+                                        id=self.uuid("obsdata-attr_name"),
+                                        optionHeight=60,
+                                        options=[
+                                            {
+                                                "label": attr.replace(".txt", "")
+                                                .replace("_", " ")
+                                                .replace("--", " "),
+                                                "value": attr,
+                                            }
+                                            for attr in self.attributes
+                                        ],
+                                        value=self.attributes[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Ensemble selector",
+                                        id=self.uuid("obsdata-ens_name"),
+                                        options=[
+                                            {"label": ens, "value": ens}
+                                            for ens in self.ens_names
+                                        ],
+                                        value=self.ens_names[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
-                                value=self.ens_names[0],
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="memory",
                             ),
-                            wcc.SelectWithLabel(
-                                label="Region selector",
-                                id=self.uuid("obsdata-regions"),
-                                options=[
-                                    {"label": regno, "value": regno}
-                                    for regno in self.region_names
+                            wcc.Selectors(
+                                label="Filter settings",
+                                children=[
+                                    wcc.SelectWithLabel(
+                                        label="Region selector",
+                                        id=self.uuid("obsdata-regions"),
+                                        options=[
+                                            {"label": regno, "value": regno}
+                                            for regno in self.region_names
+                                        ],
+                                        size=min([len(self.region_names), 5]),
+                                        value=self.region_names,
+                                    ),
+                                    wcc.Slider(
+                                        label="Noise filter",
+                                        id=self.uuid("obsdata-noise_filter"),
+                                        min=0,
+                                        max=0.5
+                                        * max(
+                                            abs(self.obs_range[0]),
+                                            abs(self.obs_range[1]),
+                                        ),
+                                        step=0.5 * self.obs_error_range[0],
+                                        value=0,
+                                    ),
+                                    html.Div(
+                                        id=self.uuid("obsdata-noise_filter_text"),
+                                        style={
+                                            "color": "blue",
+                                            "font-size": "15px",
+                                        },
+                                    ),
                                 ],
-                                size=min([len(self.region_names), 5]),
-                                value=self.region_names,
-                            ),
-                            wcc.Slider(
-                                label="Noise filter",
-                                id=self.uuid("obsdata-noise_filter"),
-                                min=0,
-                                max=0.5
-                                * max(
-                                    abs(self.obs_range[0]),
-                                    abs(self.obs_range[1]),
-                                ),
-                                step=0.5 * self.obs_error_range[0],
-                                value=0,
-                            ),
-                            html.Div(
-                                id=self.uuid("obsdata-noise_filter_text"),
-                                style={
-                                    "color": "blue",
-                                    "font-size": "15px",
-                                },
                             ),
                             wcc.Selectors(
                                 label="Raw plot settings",
+                                open_details=False,
                                 children=[
                                     wcc.RadioItems(
                                         id=self.uuid("obsdata-showerror"),
@@ -390,6 +458,7 @@ class SeismicMisfit(WebvizPluginABC):
                             ),
                             wcc.Selectors(
                                 label="Map plot settings",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Color by",
@@ -414,10 +483,10 @@ class SeismicMisfit(WebvizPluginABC):
                                         persistence_type="memory",
                                     ),
                                     wcc.Dropdown(
-                                        label="Color range scaling",
+                                        label="Color range scaling (relative to max)",
                                         id=self.uuid("obsdata-obsmap_scale_col_range"),
                                         options=[
-                                            {"label": x, "value": x}
+                                            {"label": f"{x:.0%}", "value": x}
                                             for x in [
                                                 0.1,
                                                 0.2,
@@ -433,6 +502,33 @@ class SeismicMisfit(WebvizPluginABC):
                                         ],
                                         style={"display": "block"},
                                         value=0.6,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Marker size",
+                                        id=self.uuid("obsdata-obsmap-marker_size"),
+                                        options=[
+                                            {"label": val, "value": val}
+                                            for val in sorted(
+                                                [
+                                                    self.map_intial_marker_size,
+                                                    2,
+                                                    5,
+                                                    8,
+                                                    10,
+                                                    12,
+                                                    14,
+                                                    16,
+                                                    18,
+                                                    20,
+                                                    25,
+                                                    30,
+                                                ]
+                                            )
+                                        ],
+                                        value=self.map_intial_marker_size,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -457,7 +553,7 @@ class SeismicMisfit(WebvizPluginABC):
                                 children=[
                                     dcc.Textarea(
                                         id=self.uuid("obsdata-info"),
-                                        value=self.obsinfo,
+                                        value=self.caseinfo,
                                         style={
                                             "width": 500,
                                         },
@@ -482,41 +578,70 @@ class SeismicMisfit(WebvizPluginABC):
                             "maxWidth": "200px",
                         },
                         children=[
-                            wcc.Dropdown(
-                                label="Ensemble selector",
-                                id=self.uuid("misfit-ens_names"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ens_names
+                            wcc.Selectors(
+                                label="Case settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Attribute selector",
+                                        id=self.uuid("misfit-attr_name"),
+                                        optionHeight=60,
+                                        options=[
+                                            {
+                                                "label": attr.replace(".txt", "")
+                                                .replace("_", " ")
+                                                .replace("--", " "),
+                                                "value": attr,
+                                            }
+                                            for attr in self.attributes
+                                        ],
+                                        value=self.attributes[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Ensemble selector",
+                                        id=self.uuid("misfit-ens_names"),
+                                        options=[
+                                            {"label": ens, "value": ens}
+                                            for ens in self.ens_names
+                                        ],
+                                        value=self.ens_names,
+                                        multi=True,
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
-                                value=self.ens_names,
-                                multi=True,
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="memory",
                             ),
-                            wcc.SelectWithLabel(
-                                label="Region selector",
-                                id=self.uuid("misfit-region"),
-                                options=[
-                                    {"label": regno, "value": regno}
-                                    for regno in self.region_names
+                            wcc.Selectors(
+                                label="Filter settings",
+                                children=[
+                                    wcc.SelectWithLabel(
+                                        label="Region selector",
+                                        id=self.uuid("misfit-region"),
+                                        options=[
+                                            {"label": regno, "value": regno}
+                                            for regno in self.region_names
+                                        ],
+                                        value=self.region_names,
+                                        size=min([len(self.region_names), 5]),
+                                    ),
+                                    wcc.SelectWithLabel(
+                                        label="Realization selector",
+                                        id=self.uuid("misfit-realization"),
+                                        options=[
+                                            {"label": real, "value": real}
+                                            for real in self.realizations
+                                        ],
+                                        value=self.realizations,
+                                        size=min([len(self.realizations), 5]),
+                                    ),
                                 ],
-                                value=self.region_names,
-                                size=min([len(self.region_names), 5]),
-                            ),
-                            wcc.SelectWithLabel(
-                                label="Realization selector",
-                                id=self.uuid("misfit-realization"),
-                                options=[
-                                    {"label": real, "value": real}
-                                    for real in self.realizations
-                                ],
-                                value=self.realizations,
-                                size=min([len(self.realizations), 5]),
                             ),
                             wcc.Selectors(
                                 label="Plot settings and layout",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Sorting/ranking",
@@ -562,7 +687,7 @@ class SeismicMisfit(WebvizPluginABC):
                                                 "value": 1000,
                                             },
                                         ],
-                                        value=350,
+                                        value=450,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -571,6 +696,7 @@ class SeismicMisfit(WebvizPluginABC):
                             ),
                             wcc.Selectors(
                                 label="Misfit options",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Misfit weight",
@@ -667,99 +793,134 @@ class SeismicMisfit(WebvizPluginABC):
                             "maxWidth": "200px",
                         },
                         children=[
-                            wcc.Dropdown(
-                                label="Ensemble selector",
-                                id=self.uuid("crossplot-ens_names"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ens_names
+                            wcc.Selectors(
+                                label="Case settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Attribute selector",
+                                        id=self.uuid("crossplot-attr_name"),
+                                        optionHeight=60,
+                                        options=[
+                                            {
+                                                "label": attr.replace(".txt", "")
+                                                .replace("_", " ")
+                                                .replace("--", " "),
+                                                "value": attr,
+                                            }
+                                            for attr in self.attributes
+                                        ],
+                                        value=self.attributes[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Ensemble selector",
+                                        id=self.uuid("crossplot-ens_names"),
+                                        options=[
+                                            {"label": ens, "value": ens}
+                                            for ens in self.ens_names
+                                        ],
+                                        value=self.ens_names,
+                                        multi=True,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
-                                value=self.ens_names,
-                                multi=True,
-                                persistence=True,
-                                persistence_type="memory",
                             ),
-                            wcc.SelectWithLabel(
-                                label="Region selector",
-                                id=self.uuid("crossplot-region"),
-                                options=[
-                                    {"label": regno, "value": regno}
-                                    for regno in self.region_names
+                            wcc.Selectors(
+                                label="Filter settings",
+                                children=[
+                                    wcc.SelectWithLabel(
+                                        label="Region selector",
+                                        id=self.uuid("crossplot-region"),
+                                        options=[
+                                            {"label": regno, "value": regno}
+                                            for regno in self.region_names
+                                        ],
+                                        value=self.region_names,
+                                    ),
+                                    wcc.SelectWithLabel(
+                                        label="Realization selector",
+                                        id=self.uuid("crossplot-realization"),
+                                        options=[
+                                            {"label": real, "value": real}
+                                            for real in self.realizations
+                                        ],
+                                        value=self.realizations,
+                                        size=min([len(self.realizations), 5]),
+                                    ),
                                 ],
-                                value=self.region_names,
                             ),
-                            wcc.SelectWithLabel(
-                                label="Realization selector",
-                                id=self.uuid("crossplot-realization"),
-                                options=[
-                                    {"label": real, "value": real}
-                                    for real in self.realizations
+                            wcc.Selectors(
+                                label="Plot options",
+                                open_details=True,
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Color by",
+                                        id=self.uuid("crossplot-colorby"),
+                                        options=[
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "region",
+                                                "value": "region",
+                                            },
+                                        ],
+                                        value="region",
+                                        clearable=True,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Size by",
+                                        id=self.uuid("crossplot-sizeby"),
+                                        options=[
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "sim_std",
+                                                "value": "sim_std",
+                                            },
+                                            {
+                                                "label": "diff_mean",
+                                                "value": "diff_mean",
+                                            },
+                                            {
+                                                "label": "diff_std",
+                                                "value": "diff_std",
+                                            },
+                                        ],
+                                        value=None,
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Sim errorbar",
+                                        id=self.uuid("crossplot-showerrorbar"),
+                                        options=[
+                                            {
+                                                "label": "None",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "Sim std",
+                                                "value": "sim_std",
+                                            },
+                                            {
+                                                "label": "Sim p10/p90",
+                                                "value": "sim_p10_p90",
+                                            },
+                                        ],
+                                        value="None",
+                                    ),
                                 ],
-                                value=self.realizations,
-                                size=min([len(self.realizations), 5]),
-                            ),
-                            wcc.Dropdown(
-                                label="Color by",
-                                id=self.uuid("crossplot-colorby"),
-                                options=[
-                                    {
-                                        "label": "none",
-                                        "value": None,
-                                    },
-                                    {
-                                        "label": "region",
-                                        "value": "region",
-                                    },
-                                ],
-                                value="region",
-                                clearable=True,
-                                persistence=True,
-                                persistence_type="memory",
-                            ),
-                            wcc.Dropdown(
-                                label="Size by",
-                                id=self.uuid("crossplot-sizeby"),
-                                options=[
-                                    {
-                                        "label": "none",
-                                        "value": None,
-                                    },
-                                    {
-                                        "label": "sim_std",
-                                        "value": "sim_std",
-                                    },
-                                    {
-                                        "label": "diff_mean",
-                                        "value": "diff_mean",
-                                    },
-                                    {
-                                        "label": "diff_std",
-                                        "value": "diff_std",
-                                    },
-                                ],
-                                value=None,
-                            ),
-                            wcc.Dropdown(
-                                label="Sim errorbar",
-                                id=self.uuid("crossplot-showerrorbar"),
-                                options=[
-                                    {
-                                        "label": "None",
-                                        "value": None,
-                                    },
-                                    {
-                                        "label": "Sim std",
-                                        "value": "sim_std",
-                                    },
-                                    {
-                                        "label": "Sim p10/p90",
-                                        "value": "sim_p10_p90",
-                                    },
-                                ],
-                                value="None",
                             ),
                             wcc.Selectors(
                                 label="Plot settings and layout",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Fig layout - height",
@@ -786,7 +947,7 @@ class SeismicMisfit(WebvizPluginABC):
                                                 "value": 1000,
                                             },
                                         ],
-                                        value=350,
+                                        value=450,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -825,12 +986,13 @@ class SeismicMisfit(WebvizPluginABC):
                             "minWidth": "500px",
                         },
                         children=[
-                            wcc.FlexBox(
+                            html.Div(
+                                id=self.uuid("crossplot-graph"),
+                            ),
+                            wcc.Selectors(
+                                label="Ensemble info",
+                                open_details=False,
                                 children=[
-                                    html.Div(
-                                        # style={"flex": 1},
-                                        id=self.uuid("crossplot-graph"),
-                                    ),
                                     dcc.Textarea(
                                         id=self.uuid("crossplot-ensembles_info"),
                                         value=self.caseinfo,
@@ -859,108 +1021,143 @@ class SeismicMisfit(WebvizPluginABC):
                             "height": "85vh",
                         },
                         children=[
-                            wcc.Dropdown(
-                                label="Ensemble selector",
-                                id=self.uuid("errorbarplot-ens_names"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ens_names
+                            wcc.Selectors(
+                                label="Case settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Attribute selector",
+                                        id=self.uuid("errorbarplot-attr_name"),
+                                        optionHeight=60,
+                                        options=[
+                                            {
+                                                "label": attr.replace(".txt", "")
+                                                .replace("_", " ")
+                                                .replace("--", " "),
+                                                "value": attr,
+                                            }
+                                            for attr in self.attributes
+                                        ],
+                                        value=self.attributes[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Ensemble selector",
+                                        id=self.uuid("errorbarplot-ens_names"),
+                                        options=[
+                                            {"label": ens, "value": ens}
+                                            for ens in self.ens_names
+                                        ],
+                                        value=self.ens_names,
+                                        multi=True,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
-                                value=self.ens_names,
-                                multi=True,
-                                persistence=True,
-                                persistence_type="memory",
                             ),
-                            wcc.SelectWithLabel(
-                                label="Region selector",
-                                id=self.uuid("errorbarplot-region"),
-                                options=[
-                                    {"label": regno, "value": regno}
-                                    for regno in self.region_names
+                            wcc.Selectors(
+                                label="Filter settings",
+                                children=[
+                                    wcc.SelectWithLabel(
+                                        label="Region selector",
+                                        id=self.uuid("errorbarplot-region"),
+                                        options=[
+                                            {"label": regno, "value": regno}
+                                            for regno in self.region_names
+                                        ],
+                                        value=self.region_names,
+                                        size=min([len(self.region_names), 5]),
+                                    ),
+                                    wcc.SelectWithLabel(
+                                        label="Realization selector",
+                                        id=self.uuid("errorbarplot-realization"),
+                                        options=[
+                                            {"label": real, "value": real}
+                                            for real in self.realizations
+                                        ],
+                                        value=self.realizations,
+                                        size=min([len(self.realizations), 5]),
+                                    ),
                                 ],
-                                value=self.region_names,
-                                size=min([len(self.region_names), 5]),
                             ),
-                            wcc.SelectWithLabel(
-                                label="Realization selector",
-                                id=self.uuid("errorbarplot-realization"),
-                                options=[
-                                    {"label": real, "value": real}
-                                    for real in self.realizations
+                            wcc.Selectors(
+                                label="Plot options",
+                                open_details=True,
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Color by",
+                                        id=self.uuid("errorbarplot-colorby"),
+                                        options=[
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                            {
+                                                "label": "region",
+                                                "value": "region",
+                                            },
+                                            {
+                                                "label": "sim_std",
+                                                "value": "sim_std",
+                                            },
+                                            {
+                                                "label": "diff_mean",
+                                                "value": "diff_mean",
+                                            },
+                                            {
+                                                "label": "diff_std",
+                                                "value": "diff_std",
+                                            },
+                                        ],
+                                        style={"display": "block"},
+                                        value="region",
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Sim errorbar",
+                                        id=self.uuid("errorbarplot-showerrorbar"),
+                                        options=[
+                                            {
+                                                "label": "Sim std",
+                                                "value": "sim_std",
+                                            },
+                                            {
+                                                "label": "Sim p10/p90",
+                                                "value": "sim_p10_p90",
+                                            },
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                        ],
+                                        value="sim_std",
+                                        clearable=True,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Obs errorbar",
+                                        id=self.uuid("errorbarplot-showerrorbarobs"),
+                                        options=[
+                                            {
+                                                "label": "Obs std",
+                                                "value": "obs_error",
+                                            },
+                                            {
+                                                "label": "none",
+                                                "value": None,
+                                            },
+                                        ],
+                                        value=None,
+                                    ),
                                 ],
-                                value=self.realizations,
-                                size=min([len(self.realizations), 5]),
-                            ),
-                            wcc.Dropdown(
-                                label="Color by",
-                                id=self.uuid("errorbarplot-colorby"),
-                                options=[
-                                    {
-                                        "label": "none",
-                                        "value": None,
-                                    },
-                                    {
-                                        "label": "region",
-                                        "value": "region",
-                                    },
-                                    {
-                                        "label": "sim_std",
-                                        "value": "sim_std",
-                                    },
-                                    {
-                                        "label": "diff_mean",
-                                        "value": "diff_mean",
-                                    },
-                                    {
-                                        "label": "diff_std",
-                                        "value": "diff_std",
-                                    },
-                                ],
-                                style={"display": "block"},
-                                value="region",
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="memory",
-                            ),
-                            wcc.Dropdown(
-                                label="Sim errorbar",
-                                id=self.uuid("errorbarplot-showerrorbar"),
-                                options=[
-                                    {
-                                        "label": "Sim std",
-                                        "value": "sim_std",
-                                    },
-                                    {
-                                        "label": "Sim p10/p90",
-                                        "value": "sim_p10_p90",
-                                    },
-                                    {
-                                        "label": "none",
-                                        "value": None,
-                                    },
-                                ],
-                                value="sim_std",
-                                clearable=True,
-                                persistence=True,
-                                persistence_type="memory",
-                            ),
-                            wcc.Dropdown(
-                                label="Obs errorbar",
-                                id=self.uuid("errorbarplot-showerrorbarobs"),
-                                options=[
-                                    {
-                                        "label": "Obs std",
-                                        "value": "obs_error",
-                                    },
-                                    {
-                                        "label": "none",
-                                        "value": None,
-                                    },
-                                ],
-                                value=None,
                             ),
                             wcc.Selectors(
                                 label="Plot settings and layout",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="X axis settings",
@@ -976,6 +1173,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             },
                                         ],
                                         value=False,
+                                        clearable=False,
                                     ),
                                     wcc.RadioItems(
                                         label="Superimpose plots",
@@ -1060,6 +1258,7 @@ class SeismicMisfit(WebvizPluginABC):
                             ),
                             wcc.Selectors(
                                 label="Ensemble info",
+                                open_details=False,
                                 children=[
                                     dcc.Textarea(
                                         id=self.uuid("errorbarplot-ensembles_info"),
@@ -1089,41 +1288,70 @@ class SeismicMisfit(WebvizPluginABC):
                             "maxWidth": "200px",
                         },
                         children=[
-                            wcc.Dropdown(
-                                label="Ensemble selector",
-                                id=self.uuid("map_plot-ens_name"),
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ens_names
+                            wcc.Selectors(
+                                label="Case settings",
+                                children=[
+                                    wcc.Dropdown(
+                                        label="Attribute selector",
+                                        id=self.uuid("map_plot-attr_name"),
+                                        optionHeight=60,
+                                        options=[
+                                            {
+                                                "label": attr.replace(".txt", "")
+                                                .replace("_", " ")
+                                                .replace("--", " "),
+                                                "value": attr,
+                                            }
+                                            for attr in self.attributes
+                                        ],
+                                        value=self.attributes[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Ensemble selector",
+                                        id=self.uuid("map_plot-ens_name"),
+                                        options=[
+                                            {"label": ens, "value": ens}
+                                            for ens in self.ens_names
+                                        ],
+                                        value=self.ens_names[0],
+                                        clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
-                                value=self.ens_names[0],
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="memory",
                             ),
-                            wcc.SelectWithLabel(
-                                label="Region selector",
-                                # className="webviz-select-with-label",
-                                id=self.uuid("map_plot-regions"),
-                                options=[
-                                    {"label": regno, "value": regno}
-                                    for regno in self.region_names
+                            wcc.Selectors(
+                                label="Filter settings",
+                                children=[
+                                    wcc.SelectWithLabel(
+                                        label="Region selector",
+                                        # className="webviz-select-with-label",
+                                        id=self.uuid("map_plot-regions"),
+                                        options=[
+                                            {"label": regno, "value": regno}
+                                            for regno in self.region_names
+                                        ],
+                                        size=min([len(self.region_names), 5]),
+                                        value=self.region_names,
+                                    ),
+                                    wcc.SelectWithLabel(
+                                        label="Realization selector",
+                                        id=self.uuid("map_plot-realizations"),
+                                        options=[
+                                            {"label": real, "value": real}
+                                            for real in self.realizations
+                                        ],
+                                        size=min([len(self.realizations), 5]),
+                                        value=self.realizations,
+                                    ),
                                 ],
-                                size=min([len(self.region_names), 5]),
-                                value=self.region_names,
-                            ),
-                            wcc.SelectWithLabel(
-                                label="Realization selector",
-                                id=self.uuid("map_plot-realizations"),
-                                options=[
-                                    {"label": real, "value": real}
-                                    for real in self.realizations
-                                ],
-                                size=min([len(self.realizations), 5]),
-                                value=self.realizations,
                             ),
                             wcc.Selectors(
                                 label="Map plot settings",
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Show difference or coverage plot",
@@ -1141,6 +1369,10 @@ class SeismicMisfit(WebvizPluginABC):
                                                 "label": "Coverage plot (obs error adjusted)",
                                                 "value": 2,
                                             },
+                                            {
+                                                "label": "Region plot",
+                                                "value": 3,
+                                            },
                                         ],
                                         value=0,
                                         clearable=False,
@@ -1151,7 +1383,7 @@ class SeismicMisfit(WebvizPluginABC):
                                         label="Color range scaling - obs and sim",
                                         id=self.uuid("map_plot-scale_col_range"),
                                         options=[
-                                            {"label": val, "value": val}
+                                            {"label": f"{val:.0%}", "value": val}
                                             for val in [
                                                 0.1,
                                                 0.2,
@@ -1179,19 +1411,24 @@ class SeismicMisfit(WebvizPluginABC):
                                         id=self.uuid("map_plot-marker_size"),
                                         options=[
                                             {"label": val, "value": val}
-                                            for val in [
-                                                5,
-                                                10,
-                                                12,
-                                                14,
-                                                16,
-                                                18,
-                                                20,
-                                                25,
-                                                30,
-                                            ]
+                                            for val in sorted(
+                                                [
+                                                    self.map_intial_marker_size,
+                                                    2,
+                                                    5,
+                                                    8,
+                                                    10,
+                                                    12,
+                                                    14,
+                                                    16,
+                                                    18,
+                                                    20,
+                                                    25,
+                                                    30,
+                                                ]
+                                            )
                                         ],
-                                        value=12,
+                                        value=self.map_intial_marker_size,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -1200,6 +1437,7 @@ class SeismicMisfit(WebvizPluginABC):
                             ),
                             wcc.Selectors(
                                 label="Slice settings",
+                                open_details=False,
                                 children=[
                                     wcc.Dropdown(
                                         label="Slicing accuracy (north ± meters)",
@@ -1326,7 +1564,7 @@ class SeismicMisfit(WebvizPluginABC):
         )
 
     # pylint: disable=too-many-statements
-    def set_callbacks(self, app: dash.Dash) -> None:
+    def set_callbacks(self, app: Dash) -> None:
 
         # --- Seismic obs data ---
         @app.callback(
@@ -1334,6 +1572,7 @@ class SeismicMisfit(WebvizPluginABC):
             Output(self.uuid("obsdata-graph-map"), "figure"),
             Output(self.uuid("obsdata-obsmap_scale_col_range"), "style"),
             Output(self.uuid("obsdata-noise_filter_text"), "children"),
+            Input(self.uuid("obsdata-attr_name"), "value"),
             Input(self.uuid("obsdata-ens_name"), "value"),
             Input(self.uuid("obsdata-regions"), "value"),
             Input(self.uuid("obsdata-noise_filter"), "value"),
@@ -1342,9 +1581,11 @@ class SeismicMisfit(WebvizPluginABC):
             Input(self.uuid("obsdata-resetindex"), "value"),
             Input(self.uuid("obsdata-obsmap_colorby"), "value"),
             Input(self.uuid("obsdata-obsmap_scale_col_range"), "value"),
+            Input(self.uuid("obsdata-obsmap-marker_size"), "value"),
             # prevent_initial_call=True,
         )
         def _update_obsdata_graph(
+            attr_name: str,
             ens_name: str,
             regions: List[Union[int, str]],
             noise_filter: float,
@@ -1353,6 +1594,7 @@ class SeismicMisfit(WebvizPluginABC):
             resetindex: bool,
             obsmap_colorby: str,
             obsmap_scale_col_range: float,
+            obsmap_marker_size: int,
         ) -> Tuple[px.scatter, px.scatter, dict, str]:
 
             if not regions:
@@ -1362,7 +1604,9 @@ class SeismicMisfit(WebvizPluginABC):
             regions = [int(reg) for reg in regions]
 
             # --- apply region filter
-            dframe_obs = self.dframeobs.loc[self.dframeobs["region"].isin(regions)]
+            dframe_obs = self.dframeobs[attr_name].loc[
+                self.dframeobs[attr_name]["region"].isin(regions)
+            ]
 
             # --- apply ensemble filter
             dframe_obs = dframe_obs[dframe_obs.ENSEMBLE.eq(ens_name)]
@@ -1380,6 +1624,7 @@ class SeismicMisfit(WebvizPluginABC):
                 obs_range=self.obs_range,
                 obs_err_range=self.obs_error_range,
                 scale_col_range=obsmap_scale_col_range,
+                marker_size=obsmap_marker_size,
             )
             # if fig_raw is run before fig_map some strange value error
             # my arise at init callback --> unknown reason
@@ -1406,6 +1651,7 @@ class SeismicMisfit(WebvizPluginABC):
         # --- Seismic misfit per real ---
         @app.callback(
             Output(self.uuid("misfit-graph"), "children"),
+            Input(self.uuid("misfit-attr_name"), "value"),
             Input(self.uuid("misfit-ens_names"), "value"),
             Input(self.uuid("misfit-region"), "value"),
             Input(self.uuid("misfit-realization"), "value"),
@@ -1417,6 +1663,7 @@ class SeismicMisfit(WebvizPluginABC):
             # prevent_initial_call=True,
         )
         def _update_misfit_graph(
+            attr_name: str,
             ens_names: List[str],
             regions: List[Union[int, str]],
             realizations: List[Union[int, str]],
@@ -1437,7 +1684,9 @@ class SeismicMisfit(WebvizPluginABC):
             realizations = [int(real) for real in realizations]
 
             # --- apply region filter
-            dframe = self.dframe.loc[self.dframe["region"].isin(regions)]
+            dframe = self.dframe[attr_name].loc[
+                self.dframe[attr_name]["region"].isin(regions)
+            ]
 
             # --- apply realization filter
             col_names = ["real-" + str(real) for real in realizations]
@@ -1464,6 +1713,7 @@ class SeismicMisfit(WebvizPluginABC):
         # --- Seismic crossplot - sim vs obs ---
         @app.callback(
             Output(self.uuid("crossplot-graph"), "children"),
+            Input(self.uuid("crossplot-attr_name"), "value"),
             Input(self.uuid("crossplot-ens_names"), "value"),
             Input(self.uuid("crossplot-region"), "value"),
             Input(self.uuid("crossplot-realization"), "value"),
@@ -1475,6 +1725,7 @@ class SeismicMisfit(WebvizPluginABC):
             # prevent_initial_call=True,
         )
         def _update_crossplot_graph(
+            attr_name: str,
             ens_names: List[str],
             regions: List[Union[int, str]],
             realizations: List[Union[int, str]],
@@ -1495,7 +1746,9 @@ class SeismicMisfit(WebvizPluginABC):
             realizations = [int(real) for real in realizations]
 
             # --- apply region filter
-            dframe = self.dframe.loc[self.dframe["region"].isin(regions)]
+            dframe = self.dframe[attr_name].loc[
+                self.dframe[attr_name]["region"].isin(regions)
+            ]
 
             # --- apply realization filter
             col_names = ["real-" + str(real) for real in realizations]
@@ -1528,6 +1781,7 @@ class SeismicMisfit(WebvizPluginABC):
             Output(self.uuid("errorbarplot-graph"), "children"),
             Output(self.uuid("errorbarplot-figcolumns"), "style"),
             Output(self.uuid("errorbarplot-colorby"), "style"),
+            Input(self.uuid("errorbarplot-attr_name"), "value"),
             Input(self.uuid("errorbarplot-ens_names"), "value"),
             Input(self.uuid("errorbarplot-region"), "value"),
             Input(self.uuid("errorbarplot-realization"), "value"),
@@ -1541,6 +1795,7 @@ class SeismicMisfit(WebvizPluginABC):
             # prevent_initial_call=True,
         )
         def _update_errorbar_graph(
+            attr_name: str,
             ens_names: List[str],
             regions: List[Union[int, str]],
             realizations: List[Union[int, str]],
@@ -1563,7 +1818,9 @@ class SeismicMisfit(WebvizPluginABC):
             realizations = [int(real) for real in realizations]
 
             # --- apply region filter
-            dframe = self.dframe.loc[self.dframe["region"].isin(regions)]
+            dframe = self.dframe[attr_name].loc[
+                self.dframe[attr_name]["region"].isin(regions)
+            ]
             # --- apply realization filter
             col_names = ["real-" + str(real) for real in realizations]
             dframe = dframe.drop(
@@ -1612,6 +1869,7 @@ class SeismicMisfit(WebvizPluginABC):
         @app.callback(
             Output(self.uuid("map_plot-figs"), "figure"),
             Output(self.uuid("map_plot-slice"), "figure"),
+            Input(self.uuid("map_plot-attr_name"), "value"),
             Input(self.uuid("map_plot-ens_name"), "value"),
             Input(self.uuid("map_plot-regions"), "value"),
             Input(self.uuid("map_plot-realizations"), "value"),
@@ -1623,6 +1881,7 @@ class SeismicMisfit(WebvizPluginABC):
             # prevent_initial_call=True,
         )
         def _update_map_plot_obs_and_sim(
+            attr_name: str,
             ens_name: str,
             regions: List[Union[int, str]],
             realizations: List[Union[int, str]],
@@ -1640,7 +1899,9 @@ class SeismicMisfit(WebvizPluginABC):
             regions = [int(reg) for reg in regions]
 
             # --- apply region filter
-            dframe = self.dframe.loc[self.dframe["region"].isin(regions)]
+            dframe = self.dframe[attr_name].loc[
+                self.dframe[attr_name]["region"].isin(regions)
+            ]
 
             # --- apply realization filter
             col_names = ["real-" + str(real) for real in realizations]
@@ -1744,7 +2005,8 @@ def update_misfit_plot(
             range_color=[min_diff * 0.30, max_diff * 1.00],
             color_continuous_scale=px.colors.sequential.amp,
         )
-        fig.update_xaxes(title_text="Realization")
+        fig.update_xaxes(showticklabels=False)
+        fig.update_xaxes(title_text="Realization (hover to see values)")
         fig.update_yaxes(title_text="Cumulative misfit")
         fig.add_hline(mean_diff)
         fig.add_annotation(average_arrow_annotation(mean_diff, "y"))
@@ -1828,6 +2090,7 @@ def update_obsdata_map(
     obs_range: List[float],
     obs_err_range: List[float],
     scale_col_range: float = 0.6,
+    marker_size: int = 10,
 ) -> Optional[px.scatter]:
     """Plot seismic obsdata; map view plot.
     Takes dataframe with obsdata and metadata as input"""
@@ -1842,7 +2105,6 @@ def update_obsdata_map(
         df_obs = df_obs.astype(
             {colorby: "string"}
         )  # define as string to colorby discrete variable
-
     # ----------------------------------------
     color_scale = None
     scale_midpoint = None
@@ -1894,7 +2156,7 @@ def update_obsdata_map(
     fig.update_layout(coloraxis_colorbar_yanchor="top")
     fig.update_layout(coloraxis_colorbar_len=0.9)
     fig.update_layout(coloraxis_colorbar_thickness=20)
-    fig.update_traces(marker=dict(size=12), selector=dict(mode="markers"))
+    fig.update_traces(marker=dict(size=marker_size), selector=dict(mode="markers"))
 
     return fig
 
@@ -1911,7 +2173,7 @@ def update_obs_sim_map_plot(
     slice_accuracy: Union[int, float] = 100,
     slice_position: float = 0.0,
     plot_coverage: int = 0,
-    marker_size: int = 12,
+    marker_size: int = 10,
 ) -> Tuple[Optional[Any], Optional[Any]]:
     """Plot seismic obsdata, simdata and diffdata; side by side map view plots.
     Takes dataframe with obsdata, metadata and simdata as input"""
@@ -1959,11 +2221,17 @@ def update_obs_sim_map_plot(
 
     # ----------------------------------------
 
-    title3 = "Coverage plot" if plot_coverage in [1, 2] else "Diff plot"
+    if plot_coverage == 0:
+        title3 = "Abs diff (mean)"
+    elif plot_coverage in [1, 2]:
+        title3 = "Coverage plot"
+    else:
+        title3 = "Region plot"
+
     fig = make_subplots(
         rows=1,
         cols=3,
-        subplot_titles=("Obs plot", "Sim plot", title3),
+        subplot_titles=("Observed", "Simulated (mean)", title3),
         shared_xaxes=True,
         vertical_spacing=0.02,
         shared_yaxes=True,
@@ -2042,7 +2310,7 @@ def update_obs_sim_map_plot(
             row=1,
             col=3,
         )
-    else:
+    elif plot_coverage in [1, 2]:
         coverage = "sim_coverage" if plot_coverage == 1 else "sim_coverage2"
         fig.add_trace(
             go.Scattergl(
@@ -2078,6 +2346,30 @@ def update_obs_sim_map_plot(
                 showlegend=False,
                 hoverinfo="text",
                 hovertext=ensdf_stat[coverage],
+            ),
+            row=1,
+            col=3,
+        )
+    else:
+        fig.add_trace(
+            go.Scattergl(
+                x=ensdf["east"],
+                y=ensdf["north"],
+                mode="markers",
+                marker=dict(
+                    size=marker_size,
+                    color=ensdf.region,
+                    colorscale=px.colors.qualitative.Plotly,
+                    colorbar_x=0.97,
+                    colorbar_thicknessmode="fraction",
+                    colorbar_thickness=0.02,
+                    colorbar_len=0.9,
+                    showscale=False,
+                ),
+                opacity=0.8,
+                showlegend=False,
+                hoverinfo="text",
+                hovertext=ensdf.region,
             ),
             row=1,
             col=3,
@@ -2598,12 +2890,10 @@ def update_errorbarplot_superimpose(
 @webvizstore
 def makedf(
     ensemble_set: dict,
-    attribute_name_sim: str,
-    attribute_name_obs: str,
+    attribute_name: str,
     metadata_name: str,
     attribute_sim_path: str,
     attribute_obs_path: str,
-    metadata_path: str,
     obs_mult: float,
     sim_mult: float,
     realrange: Optional[List[List[int]]],
@@ -2616,14 +2906,14 @@ def makedf(
     ens_count = 0
     for ens_name, ens_path in ensemble_set.items():
         logging.info(
-            f"\nWorking with {ens_name}: {ens_path}"
-            f"\nSeismic attribute: {attribute_name_sim}"
+            f"Working with ensemble name {ens_name}:\nRunpath: {ens_path}"
+            f"\nAttribute name: {attribute_name}"
         )
 
         # grab runpath for one realization and locate obs/meta data relative to it
         single_runpath = sorted(glob.glob(ens_path))[0]
-        obsfile = Path(single_runpath) / Path(attribute_obs_path) / attribute_name_obs
-        metafile = Path(single_runpath) / Path(metadata_path) / metadata_name
+        obsfile = Path(single_runpath) / Path(attribute_obs_path) / attribute_name
+        metafile = Path(single_runpath) / Path(attribute_obs_path) / metadata_name
 
         df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult)
 
@@ -2649,7 +2939,7 @@ def makedf(
         df = makedf_seis_addsim(
             df,
             ens_path,
-            attribute_name_sim,
+            attribute_name,
             attribute_sim_path,
             fromreal=fromreal,
             toreal=toreal,
@@ -2701,29 +2991,41 @@ def makedf_seis_obs_meta(
         else:
             raise RuntimeError("'y_utm' (or 'north') column not included in meta data")
 
+    if "region" not in df_meta.columns:
+        if "regions" in df_meta.columns:
+            df_meta.rename(columns={"regions": "region"}, inplace=True)
+            logging.debug("renamed regions column to region")
+        else:
+            raise RuntimeError(
+                "'Region' column is not included in meta data"
+                "Please check your yaml config file settings and/or the metadata file."
+            )
+
     tot_nan_val_meta = df_meta.isnull().sum().sum()  # count all nan values
     if tot_nan_val_meta > 0:
         logging.warning(f"-- metafile contains {tot_nan_val_meta} NaN values")
 
     # --- concat obsdata and metadata ---
-    dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
+    if len(df_meta.index) == len(dframe):
+        dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
+    else:
+        raise RuntimeError(
+            f"{obsfile} and {metafile} are inconsistent"
+            " (different number of data points)"
+        )
 
     # --- apply obs multiplier ---
     dframe["obs"] = dframe["obs"] * obs_mult
     dframe["obs_error"] = dframe["obs_error"] * obs_mult
 
-    # --- add dummy region data if not included ---
-    if "region" not in dframe.columns:
-        logging.warning(
-            "-- region column not included in meta data. "
-            "Adding dummy region data with const value = 1"
-        )
-        dframe["region"] = 1
+    # redefine to int if region numbers in metafile is float
+    if dframe.region.dtype == "float64":
+        dframe = dframe.astype({"region": "int64"})
 
     # -------------------------------
-    logging.debug(f"Number of seismic data points: {len(dframe)}")
     logging.debug(
-        f"Obs file: {obsfile} \n--> Number of undefined values: {tot_nan_val_obs}"
+        f"Obs file: {obsfile} \n--> Number of seismic data points: {len(dframe)}"
+        f"\n--> Number of undefined values: {tot_nan_val_obs}"
     )
     logging.debug(
         f"Meta file: {metafile} \n--> Number of undefined values: {tot_nan_val_meta}"
@@ -2735,7 +3037,7 @@ def makedf_seis_obs_meta(
 def makedf_seis_addsim(
     df: pd.DataFrame,
     ens_path: str,
-    attribute_name_sim: str,
+    attribute_name: str,
     attribute_sim_path: str,
     fromreal: int = 0,
     toreal: int = 99,
@@ -2755,22 +3057,23 @@ def makedf_seis_addsim(
         realno = int(re.search(r"(?<=realization-)\d+", runpath).group(0))  # type: ignore
         real_path[realno] = runpath
 
+    sim_df_list = [df]
     for real in sorted(real_path.keys()):
         if fromreal <= real <= toreal:
 
             simfile = (
-                Path(real_path[real])
-                / Path(attribute_sim_path)
-                / Path(attribute_name_sim)
+                Path(real_path[real]) / Path(attribute_sim_path) / Path(attribute_name)
             )
             if simfile.exists():
                 colname = "real-" + str(real)
-                df[colname] = pd.read_csv(simfile, header=None)
-                df[colname] = df[colname] * sim_mult  # --- apply sim multiplier ---
+                sim_df_list.append(
+                    pd.read_csv(simfile, header=None, names=[colname]) * sim_mult
+                )  # ---read sim data and apply sim multiplier ---
                 data_found.append(real)
             else:
                 no_data_found.append(real)
                 logging.debug(f"File does not exist: {str(simfile)}")
+    df_addsim = pd.concat(sim_df_list, axis=1)
 
     logging.debug(f"Sim values added to dataframe for realizations: {data_found}")
     if len(no_data_found) == 0:
@@ -2778,7 +3081,7 @@ def makedf_seis_addsim(
     else:
         logging.debug(f"No data found for realizations: {no_data_found}")
 
-    return df
+    return df_addsim
 
 
 def df_seis_ens_stat(
@@ -3015,6 +3318,22 @@ def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[st
         "ax": 20,
         "ay": -25,
     }
+
+
+def _map_initial_marker_size(total_data_points: int, no_ens: int) -> int:
+    """Calculate marker size based on number of datapoints per ensemble"""
+    if total_data_points < 1:
+        raise ValueError(
+            "No data points found. Something is wrong with your input data."
+            f"Value of total_data_points is {total_data_points}"
+        )
+    data_points_per_ens = int(total_data_points / no_ens)
+    marker_size = int(650 / math.sqrt(data_points_per_ens))
+    if marker_size > 30:
+        marker_size = 30
+    elif marker_size < 2:
+        marker_size = 2
+    return marker_size
 
 
 # --------------------------------
