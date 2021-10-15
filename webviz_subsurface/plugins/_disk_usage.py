@@ -104,7 +104,7 @@ class DiskUsage(WebvizPluginABC):
                 {
                     "y": self.disk_usage["usageGiB"],
                     "x": self.disk_usage["userid"],
-                    "text": self.disk_usage["usageGiB"].map(lambda x: "{x:.2f} GiB"),
+                    "text": self.disk_usage["usageGiB"].map(lambda x: f"{x:.2f} GiB"),
                     "hoverinfo": "x+text",
                     "type": "bar",
                 }
