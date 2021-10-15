@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#734](https://github.com/equinor/webviz-subsurface/pull/645) - New plugin, SeismicMisfit, for comparing observed and modelled seismic attributes. Multiple views, including misfit quantification and coverage plots.
 - [#809](https://github.com/equinor/webviz-subsurface/pull/809) - `GroupTree` - added more statistical options (P10, P90, P50/Median, Max, Min). Some improvements to the menu layout and behaviour
 
+### Fixed
+- [#817](https://github.com/equinor/webviz-subsurface/pull/817) - `DiskUsage` - Fixed formatting error in bar chart tooltip.
+
 ## [0.2.6] - 2021-10-08
 
 ### Added
