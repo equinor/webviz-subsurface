@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [#817](https://github.com/equinor/webviz-subsurface/pull/817) - `DiskUsage` - Fixed formatting error in bar chart tooltip.
+- [#820](https://github.com/equinor/webviz-subsurface/pull/820) - `SurfaceWithGridCrossSection` - Fixed an issue with intersecting grids generated with
+`xtgeo==2.15.2`. Grids exported from RMS with this version of xtgeo should be re-exported using a newer version as the subgrid information is incorrect.
 
 ## [0.2.6] - 2021-10-08
 
