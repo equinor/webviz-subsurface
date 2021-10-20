@@ -60,7 +60,6 @@ def _create_table(
     return pa.table(columndata_list, schema=schema)
 
 
-# -------------------------------------------------------------------------
 def main() -> None:
     print()
     print("## Running resampling performance tests")

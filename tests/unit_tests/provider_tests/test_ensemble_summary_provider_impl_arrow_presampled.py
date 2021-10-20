@@ -43,7 +43,6 @@ INPUT_DATA_STR = [
 # fmt: on
 
 
-# -------------------------------------------------------------------------
 @pytest.fixture(
     name="provider",
     params=[
@@ -73,7 +72,6 @@ def fixture_provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProv
     return new_provider
 
 
-# -------------------------------------------------------------------------
 def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
 
     all_vecnames = provider.vector_names()
@@ -93,14 +91,12 @@ def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
     assert non_zero_vec_names == ["A", "C"]
 
 
-# -------------------------------------------------------------------------
 def test_get_realizations(provider: EnsembleSummaryProvider) -> None:
 
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
 
-# -------------------------------------------------------------------------
 def test_get_dates(provider: EnsembleSummaryProvider) -> None:
 
     all_dates = provider.dates(resampling_frequency=None)
@@ -113,7 +109,6 @@ def test_get_dates(provider: EnsembleSummaryProvider) -> None:
     assert len(r1_dates) == 2
 
 
-# -------------------------------------------------------------------------
 def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 
     all_vecnames = provider.vector_names()
@@ -137,7 +132,6 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
     assert vecdf.columns.tolist() == ["DATE", "REAL", "C", "A"]
 
 
-# -------------------------------------------------------------------------
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
 
     all_dates = provider.dates(resampling_frequency=None)

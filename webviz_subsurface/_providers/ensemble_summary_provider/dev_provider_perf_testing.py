@@ -8,7 +8,6 @@ from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 
 
-# -------------------------------------------------------------------------
 def _get_n_vectors_one_by_one_all_realizations(
     provider: EnsembleSummaryProvider,
     resampling_frequency: Optional[Frequency],
@@ -51,7 +50,6 @@ def _get_n_vectors_one_by_one_all_realizations(
     print("## ------------------")
 
 
-# -------------------------------------------------------------------------
 def _get_n_vectors_in_batch_all_realizations(
     provider: EnsembleSummaryProvider,
     resampling_frequency: Optional[Frequency],
@@ -86,7 +84,6 @@ def _get_n_vectors_in_batch_all_realizations(
     print("## ------------------")
 
 
-# -------------------------------------------------------------------------
 def _get_n_vectors_for_date_all_realizations(
     provider: EnsembleSummaryProvider, num_vectors: int, date: datetime.datetime
 ) -> None:
@@ -115,7 +112,6 @@ def _get_n_vectors_for_date_all_realizations(
     print("## ------------------")
 
 
-# -------------------------------------------------------------------------
 def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> None:
 
     print("## ------------------")
@@ -137,7 +133,6 @@ def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> No
     print("## ------------------")
 
 
-# -------------------------------------------------------------------------
 def _get_meta_for_n_vectors_one_by_one(
     provider: EnsembleSummaryProvider, num_vectors: int
 ) -> None:
@@ -165,7 +160,6 @@ def _get_meta_for_n_vectors_one_by_one(
     print("## ------------------")
 
 
-# -------------------------------------------------------------------------
 def _run_perf_tests(
     provider: EnsembleSummaryProvider, resampling_frequency: Optional[Frequency]
 ) -> None:
@@ -211,7 +205,6 @@ def _run_perf_tests(
     )
 
 
-# -------------------------------------------------------------------------
 def main() -> None:
     print()
     print("## Running EnsembleSummaryProvider performance tests")
