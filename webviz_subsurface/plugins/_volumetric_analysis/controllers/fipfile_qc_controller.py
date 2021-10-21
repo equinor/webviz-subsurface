@@ -4,18 +4,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, html
+from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 
 from ..utils.table_and_figure_utils import create_data_table, create_table_columns
 
 
-def fipfile_qc_controller(
-    app: Dash,
-    get_uuid: Callable,
-    disjoint_set_df: pd.DataFrame,
-) -> None:
-    @app.callback(
+def fipfile_qc_controller(get_uuid: Callable, disjoint_set_df: pd.DataFrame) -> None:
+    @callback(
         Output(get_uuid("main-fipqc"), "children"),
         Input(get_uuid("selections"), "data"),
         Input(get_uuid("page-selected"), "data"),

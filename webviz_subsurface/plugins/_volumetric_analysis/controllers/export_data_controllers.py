@@ -1,12 +1,12 @@
 from typing import Callable
 
 import pandas as pd
-from dash import ALL, Dash, Input, Output, State, callback_context, dcc
+from dash import ALL, Input, Output, State, callback, callback_context, dcc
 from dash.exceptions import PreventUpdate
 
 
-def export_data_controllers(app: Dash, get_uuid: Callable) -> None:
-    @app.callback(
+def export_data_controllers(get_uuid: Callable) -> None:
+    @callback(
         Output(get_uuid("download-dataframe"), "data"),
         Input({"request": "table_data", "table_id": ALL}, "data_requested"),
         State({"table_id": ALL}, "data"),

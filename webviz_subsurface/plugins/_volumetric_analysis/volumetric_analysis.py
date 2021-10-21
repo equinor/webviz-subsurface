@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 import pandas as pd
-from dash import Dash, html
+from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -23,6 +23,7 @@ from .controllers import (
     fipfile_qc_controller,
     layout_controllers,
     selections_controllers,
+    tornado_controllers,
 )
 from .views import clientside_stores, main_view
 from .volume_validator_and_combinator import VolumeValidatorAndCombinator
@@ -137,7 +138,6 @@ reek_test_data/aggregated_data/parameters.csv)
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_vol: Path = None,
         csvfile_parameters: Path = None,
@@ -195,7 +195,7 @@ reek_test_data/aggregated_data/parameters.csv)
             volume_type=vcomb.volume_type,
         )
         self.theme = webviz_settings.theme
-        self.set_callbacks(app)
+        self.set_callbacks()
 
     @property
     def layout(self) -> html.Div:
@@ -211,17 +211,16 @@ reek_test_data/aggregated_data/parameters.csv)
             ],
         )
 
-    def set_callbacks(self, app: Dash) -> None:
-        selections_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
-        distribution_controllers(
-            app=app, get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
+    def set_callbacks(self) -> None:
+        selections_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
+        distribution_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
+        tornado_controllers(
+            get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
         )
-        comparison_controllers(app=app, get_uuid=self.uuid, volumemodel=self.volmodel)
-        layout_controllers(app=app, get_uuid=self.uuid)
-        export_data_controllers(app=app, get_uuid=self.uuid)
-        fipfile_qc_controller(
-            app=app, get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df
-        )
+        comparison_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
+        layout_controllers(get_uuid=self.uuid)
+        export_data_controllers(get_uuid=self.uuid)
+        fipfile_qc_controller(get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         store_functions = []

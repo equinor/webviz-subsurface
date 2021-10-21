@@ -249,6 +249,10 @@ class TornadoWidget:
                                                     "label": "Show realization points",
                                                     "value": "Show realization points",
                                                 },
+                                                {
+                                                    "label": "Color bars by sensitivity",
+                                                    "value": "Color bars by sensitivity",
+                                                },
                                             ],
                                             value=[],
                                             labelStyle={"display": "block"},
@@ -439,6 +443,7 @@ class TornadoWidget:
                 locked_si_prefix=data.get("locked_si_prefix", None),
                 use_true_base=scale == "True value",
                 show_realization_points="Show realization points" in plot_options,
+                color_by_sensitivity="Color bars by sensitivity" in plot_options,
             )
             tornado_table = TornadoTable(tornado_data=tornado_data)
             return (
@@ -455,15 +460,20 @@ class TornadoWidget:
                 [
                     Input(self.ids("tornado-graph"), "clickData"),
                     Input(self.ids("reset"), "n_clicks"),
+                    State(self.ids("high-low-storage"), "data"),
                 ],
             )
-            def _save_click_data(data: dict, nclicks: Optional[int]) -> str:
-                if callback_context.triggered is None:
+            def _save_click_data(
+                data: dict, nclicks: Optional[int], sens_reals: dict
+            ) -> str:
+                if (
+                    callback_context.triggered is None
+                    or sens_reals is None
+                    or data is None
+                ):
                     raise PreventUpdate
-
                 ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
                 if ctx == self.ids("reset") and nclicks:
-
                     return json.dumps(
                         {
                             "real_low": [],
@@ -471,21 +481,13 @@ class TornadoWidget:
                             "sens_name": None,
                         }
                     )
-                try:
-
-                    real_low = next(
-                        x["customdata"] for x in data["points"] if x["curveNumber"] == 0
-                    )
-                    real_high = next(
-                        x["customdata"] for x in data["points"] if x["curveNumber"] == 1
-                    )
-                    sens_name = data["points"][0]["y"]
-                    return json.dumps(
-                        {
-                            "real_low": real_low,
-                            "real_high": real_high,
-                            "sens_name": sens_name,
-                        }
-                    )
-                except TypeError as exc:
-                    raise PreventUpdate from exc
+                sensname = data["points"][0]["y"]
+                real_high = sens_reals[sensname]["real_high"]
+                real_low = sens_reals[sensname]["real_low"]
+                return json.dumps(
+                    {
+                        "real_low": real_low,
+                        "real_high": real_high,
+                        "sens_name": sensname,
+                    }
+                )

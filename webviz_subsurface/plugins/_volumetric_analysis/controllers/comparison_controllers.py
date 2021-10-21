@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, State, callback_context, dash_table, html
+from dash import Input, Output, State, callback, callback_context, dash_table, html
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import create_figure
@@ -24,11 +24,10 @@ from ..views.comparison_layout import (
 
 # pylint: disable=too-many-locals
 def comparison_controllers(
-    app: Dash,
     get_uuid: Callable,
     volumemodel: InplaceVolumesModel,
 ) -> None:
-    @app.callback(
+    @callback(
         Output({"id": get_uuid("main-src-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
         Input({"id": get_uuid("main-src-comp"), "element": "display-option"}, "value"),
@@ -56,7 +55,7 @@ def comparison_controllers(
             display_option=display_option,
         )
 
-    @app.callback(
+    @callback(
         Output({"id": get_uuid("main-ens-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
         Input({"id": get_uuid("main-ens-comp"), "element": "display-option"}, "value"),
