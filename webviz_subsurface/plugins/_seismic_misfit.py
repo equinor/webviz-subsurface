@@ -54,10 +54,15 @@ class SeismicMisfit(WebvizPluginABC):
     * **`sim_mult`:** Multiplier for all simulated data.
     Can be used for calibration purposes.
 
-    * **`polygon`:** Path to csv file containing (fault-) polygons
-    to include in map view plots. Path is given as relative to *runpath*.
-    (Path can also be absolute.)
-    If there's one csv file per realization, only one of them is read and used.
+    * **`polygon`:** Path to a folder or a file containing (fault-) polygons.
+    If value is a folder all csv files in that folder will be included
+    (e.g. "share/results/polygons/").
+    If value is a file, then that file will be read. One can also use r"*"-notation
+    in filename to read filtered list of files
+    (e.g. "share/results/polygons/r"*"faultlinesr"*"csv").
+    Path is either given as relative to *runpath* or as an absolute path.
+    If path is ambigious (e.g. with multi-realization runpath),
+    only the first successful find is used.
 
     * **`realrange`:** Realization range filter for each of the ensembles.
     Assign as list of two integers in square brackets (e.g. [0, 99]).
@@ -71,7 +76,7 @@ class SeismicMisfit(WebvizPluginABC):
     where the columns are space seperated (ERT compatible format).
     First column is the observed attribute value and the second column
     is the corresponding error. This file has no header.<br>
-    ```txt
+    ```
         0.002072 0.001
         0.001379 0.001
         0.001239 0.001
@@ -81,7 +86,7 @@ class SeismicMisfit(WebvizPluginABC):
     2) Simulation data file (one per attribute and realization):
     This is a 1 column file (ERT compatible format).
     The column is the simulated attribute value. This file has no header.
-    ```txt
+    ```
         0.0023456
         0.0012345
         0.0013579
@@ -137,14 +142,14 @@ class SeismicMisfit(WebvizPluginABC):
 
         self.polygon = polygon
         if not polygon:
-            self.df_polygon = None
-            logging.info(
-                "Polygon file not assigned in config file - continue without.\n"
-            )
-        else:  # grab polygon file relative to runpath for one realization
-            self.df_polygon = make_polygon_df(
+            self.df_polygons = None
+            self.polygon_names = ["None"]
+            logging.info("Polygon not assigned in config file - continue without.\n")
+        else:  # grab polygon files and store in dataframe
+            self.df_polygons = make_polygon_df(
                 ensemble_set=self.ensemble_set, polygon=self.polygon
             )
+            self.polygon_names = list(self.df_polygons.name.unique())
 
         self.caseinfo = ""
         self.dframe = {}
@@ -530,6 +535,20 @@ class SeismicMisfit(WebvizPluginABC):
                                         ],
                                         value=self.map_intial_marker_size,
                                         clearable=False,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
+                                    wcc.Dropdown(
+                                        label="Polygons",
+                                        id=self.uuid("obsdata-obsmap-polygon"),
+                                        optionHeight=60,
+                                        options=[
+                                            {"label": polyname, "value": polyname}
+                                            for polyname in self.polygon_names
+                                        ],
+                                        value=[self.polygon_names[0]],
+                                        multi=True,
+                                        clearable=True,
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
@@ -1433,6 +1452,20 @@ class SeismicMisfit(WebvizPluginABC):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
+                                    wcc.Dropdown(
+                                        label="Polygons",
+                                        id=self.uuid("map_plot-obsmap-polygon"),
+                                        optionHeight=60,
+                                        options=[
+                                            {"label": polyname, "value": polyname}
+                                            for polyname in self.polygon_names
+                                        ],
+                                        value=[self.polygon_names[0]],
+                                        multi=True,
+                                        clearable=True,
+                                        persistence=True,
+                                        persistence_type="memory",
+                                    ),
                                 ],
                             ),
                             wcc.Selectors(
@@ -1582,6 +1615,7 @@ class SeismicMisfit(WebvizPluginABC):
             Input(self.uuid("obsdata-obsmap_colorby"), "value"),
             Input(self.uuid("obsdata-obsmap_scale_col_range"), "value"),
             Input(self.uuid("obsdata-obsmap-marker_size"), "value"),
+            Input(self.uuid("obsdata-obsmap-polygon"), "value"),
             # prevent_initial_call=True,
         )
         def _update_obsdata_graph(
@@ -1595,6 +1629,7 @@ class SeismicMisfit(WebvizPluginABC):
             obsmap_colorby: str,
             obsmap_scale_col_range: float,
             obsmap_marker_size: int,
+            obsmap_polygon: List[str],
         ) -> Tuple[px.scatter, px.scatter, dict, str]:
 
             if not regions:
@@ -1614,13 +1649,20 @@ class SeismicMisfit(WebvizPluginABC):
             # --- apply noise filter
             dframe_obs = dframe_obs[abs(dframe_obs.obs).ge(noise_filter)]
 
+            if self.df_polygons is not None:
+                df_poly = self.df_polygons.loc[
+                    self.df_polygons.name.isin(obsmap_polygon)
+                ]
+            else:
+                df_poly = pd.DataFrame()
+
             # --- make graphs
             fig_map = update_obsdata_map(
                 dframe_obs.copy(),
                 x_range=self.map_x_range,
                 y_range=self.map_y_range,
                 colorby=obsmap_colorby,
-                df_polygon=self.df_polygon,
+                df_polygon=df_poly,
                 obs_range=self.obs_range,
                 obs_err_range=self.obs_error_range,
                 scale_col_range=obsmap_scale_col_range,
@@ -1878,6 +1920,7 @@ class SeismicMisfit(WebvizPluginABC):
             Input(self.uuid("map_plot-slice_position"), "value"),
             Input(self.uuid("map_plot-plot_coverage"), "value"),
             Input(self.uuid("map_plot-marker_size"), "value"),
+            Input(self.uuid("map_plot-obsmap-polygon"), "value"),
             # prevent_initial_call=True,
         )
         def _update_map_plot_obs_and_sim(
@@ -1890,6 +1933,7 @@ class SeismicMisfit(WebvizPluginABC):
             slice_position: float,
             plot_coverage: int,
             marker_size: int,
+            map_plot_polygon: List[str],
         ) -> Tuple[Optional[Any], Optional[Any]]:
 
             if not regions:
@@ -1911,10 +1955,17 @@ class SeismicMisfit(WebvizPluginABC):
                 ]
             )
 
+            if self.df_polygons is not None:
+                df_poly = self.df_polygons.loc[
+                    self.df_polygons.name.isin(map_plot_polygon)
+                ]
+            else:
+                df_poly = pd.DataFrame()
+
             fig_maps, fig_slice = update_obs_sim_map_plot(
                 dframe,
                 ens_name,
-                df_polygon=self.df_polygon,
+                df_polygon=df_poly,
                 x_range=self.map_x_range,
                 y_range=self.map_y_range,
                 obs_range=self.obs_range,
@@ -2133,7 +2184,7 @@ def update_obsdata_map(
 
     # ----------------------------------------
     # add polygon to map if defined
-    if df_polygon is not None:
+    if not df_polygon.empty:
         for _poly, polydf in df_polygon.groupby("POLY_ID"):
             poly_id = "pol" + str(_poly)
             fig.add_trace(
@@ -2389,7 +2440,7 @@ def update_obs_sim_map_plot(
 
     # ----------------------------------------
     # add polygon to map if defined
-    if df_polygon is not None:
+    if not df_polygon.empty:
         for _poly, polydf in df_polygon.groupby("POLY_ID"):
             poly_id = "pol" + str(_poly)
             fig.add_trace(
@@ -3344,32 +3395,55 @@ def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
     """Read polygon file. If there are one polygon file
     per realization only one will be read (first found)"""
 
+    df_polygon: pd.DataFrame = pd.DataFrame()
+    df_polygons: pd.DataFrame = pd.DataFrame()
     for _, ens_path in ensemble_set.items():
-        single_runpath = sorted(glob.glob(ens_path))[0]
-        poly_file = Path(single_runpath) / Path(polygon)
-        if poly_file:
-            logging.debug(f"Read polygon file:\n {poly_file}")
-            df_polygon = pd.read_csv(poly_file)
-            cols = df_polygon.columns
-            if (
-                ("POLY_ID" not in cols)
-                or ("X_UTME" not in cols)
-                or ("Y_UTMN" not in cols)
-            ):
-                raise RuntimeError(
-                    "Error in "
-                    + str(make_polygon_df.__name__)
-                    + "\nThe file assigned to the polygon argument"
-                    " (in yaml config file)"
-                    " must contain the columns 'POLY_ID', 'X_UTME' and 'Y_UTMN' "
-                    "(the column names must match exactly)."
-                    " Please update file or remove polygon argument (default is None)"
-                    "\nPolygon argument (relative to runpath):\n"
-                    + str(polygon)
-                    + "\nFull path to the polygon file that failed:\n"
-                    + str(poly_file)
-                )
-            return df_polygon
+        for single_runpath in sorted(glob.glob(ens_path)):
+            poly = Path(single_runpath) / Path(polygon)
+            if poly.is_dir():  # grab all csv files in folder
+                poly_files = glob.glob(str(poly) + "/*csv")
+            else:
+                poly_files = glob.glob(str(poly))
 
-    logging.debug("Polygon file not found - continue without.")
-    return pd.DataFrame()
+            if not poly_files:
+                logging.debug(f"No polygon files found in '{poly}'")
+            else:
+                for poly_file in poly_files:
+                    logging.debug(f"Read polygon file:\n {poly_file}")
+                    df_polygon = pd.read_csv(
+                        poly_file, usecols=["POLY_ID", "X_UTME", "Y_UTMN"]
+                    )
+                    cols = df_polygon.columns
+                    if (
+                        ("POLY_ID" not in cols)
+                        or ("X_UTME" not in cols)
+                        or ("Y_UTMN" not in cols)
+                    ):
+                        logging.debug(
+                            f"The polygon file {poly_file} does not have an expected"
+                            " format. \nThe file must contain the columns "
+                            "'POLY_ID', 'X_UTME' and 'Y_UTMN' "
+                            "(the column names must match exactly)."
+                            " Please update file or edit polygon input argument "
+                            "(default is None)"
+                        )
+                    else:
+                        df_polygon["name"] = str(Path(poly_file).name)
+                        df_polygons = pd.concat([df_polygons, df_polygon])
+                logging.debug(f"Polygon dataframe:\n{df_polygons}")
+                return df_polygons
+
+        if df_polygons.empty():
+            raise RuntimeError(
+                "Error in "
+                + str(make_polygon_df.__name__)
+                + ". Could not find polygon files with a valid format."
+                f" Please update the polygon argument '{polygon}' in "
+                "the config file (default is None) or edit the files in the "
+                "list. The polygon files must contain the columns "
+                "'POLY_ID', 'X_UTME' and 'Y_UTMN' "
+                "(the column names must match exactly)."
+            )
+
+    logging.debug("Polygon file not assigned - continue without.")
+    return df_polygons
