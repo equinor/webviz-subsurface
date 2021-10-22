@@ -239,10 +239,11 @@ class GraphFigureBuilder:
                 add_legend = False
             self.__figure.add_trace(trace, row=subplot_index, col=1)
 
-    def get_figure(self) -> dict:
+    def set_keep_uirevision(self) -> None:
         # Keep uirevision (e.g. zoom) for unchanged data.
         self.__figure.update_xaxes(uirevision="locked")  # Time axis state kept
         for i, vector in enumerate(self.__selected_vectors, start=1):
             self.__figure.update_yaxes(row=i, col=1, uirevision=vector)
 
+    def get_figure(self) -> dict:
         return self.__figure.to_dict()

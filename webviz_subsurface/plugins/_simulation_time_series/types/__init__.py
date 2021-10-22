@@ -8,6 +8,6 @@ from .types import (
 from .delta_ensembles import (
     DeltaEnsemble,
     DeltaEnsembleNamePair,
-    delta_ensemble_name,
-    delta_ensemble_names,
+    create_delta_ensemble_name,
+    create_delta_ensemble_names,
 )

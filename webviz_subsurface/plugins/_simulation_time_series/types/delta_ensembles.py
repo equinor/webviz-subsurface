@@ -11,16 +11,19 @@ class DeltaEnsembleNamePair(TypedDict):
     ensemble_b: str
 
 
-def delta_ensemble_name(ensemble: DeltaEnsembleNamePair) -> str:
+# TODO: Place on class as staticmethod?
+def create_delta_ensemble_name(ensemble: DeltaEnsembleNamePair) -> str:
     name_a = ensemble["ensemble_a"]
     name_b = ensemble["ensemble_b"]
     return f"({name_a})-({name_b})"
 
 
-def delta_ensemble_names(ensembles: List[DeltaEnsembleNamePair]) -> List[str]:
-    return [delta_ensemble_name(elm) for elm in ensembles]
+# TODO: Place on class as staticmethod?
+def create_delta_ensemble_names(ensembles: List[DeltaEnsembleNamePair]) -> List[str]:
+    return [create_delta_ensemble_name(elm) for elm in ensembles]
 
 
+# TODO: Consider renaming class? DeltaEnsembleSummaryProvider/DeltaEnsembleProvider?
 class DeltaEnsemble(EnsembleSummaryProvider):
     """
     Delta ensemble object to define a delta ensemble which represent the

@@ -35,6 +35,8 @@ class StatisticsData:
 
     """
 
+    # TODO: Rename mid percentile, find better name?
+
     samples: list = field(default_factory=list)
     free_line: Optional[LineData] = None
     minimum: Optional[np.ndarray] = None
@@ -211,7 +213,7 @@ def create_statistics_traces(
             statistics_name=data.free_line.name,
             values=data.free_line.data,
         )
-        # Set solid line for mean
+        # Set solid line
         line_trace["line"] = {"color": color, "shape": line_shape}
         traces.append(line_trace)
 

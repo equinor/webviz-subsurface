@@ -18,6 +18,8 @@ from .types import (
 class ViewElements:
     """
     Definition of names of HTML-elements in view
+
+    TODO: Consider ids as in AiO convention https://dash.plotly.com/all-in-one-components
     """
 
     GRAPH = "graph"
@@ -45,7 +47,7 @@ def main_view(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
-    visualization_type: VisualizationOptions,
+    initial_visualization_type: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
@@ -54,11 +56,11 @@ def main_view(
             wcc.FlexColumn(
                 children=wcc.Frame(
                     style={"height": "90vh"},
-                    children=settings_layout(
+                    children=__settings_layout(
                         get_uuid=get_uuid,
                         ensembles=ensemble_names,
                         vector_data=vector_selector_data,
-                        visualization_type=visualization_type,
+                        initial_visualization_type=initial_visualization_type,
                         selected_vectors=selected_vectors,
                     ),
                 )
@@ -82,11 +84,11 @@ def main_view(
     )
 
 
-def settings_layout(
+def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],
     vector_data: list,
-    visualization_type: VisualizationOptions,
+    initial_visualization_type: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
@@ -152,7 +154,7 @@ def settings_layout(
                                 "value": VisualizationOptions.FANCHART.value,
                             },
                         ],
-                        value=visualization_type.value,
+                        value=initial_visualization_type.value,
                     ),
                 ],
             ),
@@ -160,7 +162,7 @@ def settings_layout(
                 label="Options",
                 children=__plot_options_layout(
                     get_uuid=get_uuid,
-                    visualization_type=visualization_type,
+                    initial_visualization_type=initial_visualization_type,
                 ),
             ),
         ]
@@ -237,7 +239,7 @@ def __delta_ensemble_creator_layout(
 
 def __plot_options_layout(
     get_uuid: Callable,
-    visualization_type: VisualizationOptions,
+    initial_visualization_type: VisualizationOptions,
 ) -> html.Div:
     return (
         html.Div(
@@ -250,7 +252,7 @@ def __plot_options_layout(
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
                     style={"display": "block"}
-                    if VisualizationOptions.STATISTICS == visualization_type
+                    if VisualizationOptions.STATISTICS == initial_visualization_type
                     else {"display": "none"},
                     options=[
                         {"label": "Mean", "value": StatisticsOptions.MEAN.value},
@@ -278,19 +280,19 @@ def __plot_options_layout(
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
                     style={"display": "block"}
-                    if VisualizationOptions.FANCHART == visualization_type
+                    if VisualizationOptions.FANCHART == initial_visualization_type
                     else {"display": "none"},
                     options=[
                         {
-                            "label": "Mean",
+                            "label": FanchartOptions.MEAN.value,
                             "value": FanchartOptions.MEAN.value,
                         },
                         {
-                            "label": "P10/P90",
+                            "label": FanchartOptions.P10_P90.value,
                             "value": FanchartOptions.P10_P90.value,
                         },
                         {
-                            "label": "Min/Max",
+                            "label": FanchartOptions.MIN_MAX.value,
                             "value": FanchartOptions.MIN_MAX.value,
                         },
                     ],

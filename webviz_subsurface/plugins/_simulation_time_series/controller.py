@@ -1,37 +1,36 @@
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 from .types import (
     DeltaEnsembleNamePair,
-    delta_ensemble_names,
+    create_delta_ensemble_names,
     FanchartOptions,
     StatisticsOptions,
     TraceOptions,
     VisualizationOptions,
 )
-from .data_model import DataModel
+from .selected_ensembles_model import SelectedEnsemblesModel
 from .graph_figure_builder import GraphFigureBuilder
 
 from .utils.trace_line_shape import get_simulation_line_shape
 
 
 from .main_view import ViewElements
+from .models.ensemble_set_model import EnsembleSetModel
 
 
 # pylint: disable=too-many-statements
 def controller_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
-    provider_set: Dict[str, EnsembleSummaryProvider],
+    ensemble_set_model: EnsembleSetModel,
     theme: WebvizConfigTheme,
     sampling: str,  # TODO: Remove and use only resampling_frequency?
-    resampling_frequency: Optional[Frequency],
-    selected_vectors: List[str],
+    initial_selected_vectors: List[str],
     line_shape_fallback: str = "linear",
 ) -> None:
     @app.callback(
@@ -100,109 +99,91 @@ def controller_callbacks(
             raise TypeError("ensembles should always be of type list")
 
         if vectors is None:
-            vectors = selected_vectors
+            vectors = initial_selected_vectors
 
         # Filter selected delta ensembles
-        # selected_delta_ensembles = [
-        #     elm
-        #     for elm in delta_ensembles
-        #     if delta_ensemble_name(elm) in selected_ensembles
-        # ]
-        # data_model = DataModel(
-        #     provider_set, selected_delta_ensembles, theme
-        # )
-
-        data_model = DataModel(provider_set, delta_ensembles, theme)
-        ensemble_provider_dict = data_model.get_selected_ensemble_providers(
-            selected_ensembles
+        selected_ensembles_model = SelectedEnsemblesModel(
+            ensemble_set_model, selected_ensembles, delta_ensembles
         )
+
+        selected_ensembles_providers = selected_ensembles_model.ensemble_provider_set()
 
         # Titles for subplots TODO: Verify vector existing?
         vector_titles: Dict[str, str] = {
-            elm: data_model.create_vector_plot_title(elm) for elm in vectors
+            elm: selected_ensembles_model.create_vector_plot_title(elm)
+            for elm in vectors
         }
 
-        # TODO: Filter with only selected ensembles?
-        ensemble_colors = data_model.get_unique_ensemble_colors()
+        # TODO: Create unique colors based on all ensembles, i.e. union of
+        # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
+        # Now color can change when chaning selected colors?
+        ensemble_colors = selected_ensembles_model.get_unique_ensemble_colors(theme)
 
         figure_builder = GraphFigureBuilder(
             vectors, vector_titles, ensemble_colors, sampling
         )
 
+        vector_line_shapes: Dict[str, str] = {
+            vector: get_simulation_line_shape(
+                line_shape_fallback,
+                vector,
+                selected_ensembles_model.vector_metadata(vector),
+            )
+            for vector in vectors
+        }
+
         # Plotting per ensemble
-        for ensemble, provider in ensemble_provider_dict.items():
+        for ensemble, provider in selected_ensembles_providers.items():
             # Filter vectors for provider
-            vectors_filtered = [
+            ensemble_vectors = [
                 elm for elm in vectors if elm in provider.vector_names()
             ]
-            if len(vectors_filtered) <= 0:
+            if len(ensemble_vectors) <= 0:
                 continue
 
-            resampling_freq = (
-                resampling_frequency if provider.supports_resampling() else None
-            )
-
-            ensemble_vectors_df = provider.get_vectors_df(
-                vectors_filtered, resampling_freq
-            )
-
-            vector_line_shapes: Dict[str, str] = {
-                vector: get_simulation_line_shape(
-                    line_shape_fallback, vector, provider.vector_metadata(vector)
-                )
-                for vector in vectors_filtered
-            }
-
             if visualization == VisualizationOptions.REALIZATIONS:
+                resampling_freq = (
+                    ensemble_set_model.resampling_frequency()
+                    if provider.supports_resampling()
+                    else None
+                )
+                vectors_df = provider.get_vectors_df(ensemble_vectors, resampling_freq)
                 figure_builder.add_realizations_traces(
-                    ensemble_vectors_df, ensemble, vector_line_shapes
+                    vectors_df, ensemble, vector_line_shapes
                 )
             if visualization == VisualizationOptions.STATISTICS:
-                vectors_df = data_model.create_statistics_df(
-                    ensemble, vectors_filtered, resampling_freq
+                vectors_df = selected_ensembles_model.create_statistics_df(
+                    ensemble, ensemble_vectors
                 )
                 figure_builder.add_statistics_traces(
                     vectors_df, ensemble, statistics_options, vector_line_shapes
                 )
             if visualization == VisualizationOptions.FANCHART:
-                vectors_df = data_model.create_statistics_df(
-                    ensemble, vectors_filtered, resampling_freq
+                vectors_df = selected_ensembles_model.create_statistics_df(
+                    ensemble, ensemble_vectors
                 )
-
                 figure_builder.add_fanchart_traces(
                     vectors_df, ensemble, fanchart_options, vector_line_shapes
                 )
 
         # NOTE: Retrieve historical vector from first ensemble
-        if TraceOptions.HISTORY in trace_options and len(ensemble_provider_dict) > 0:
+        if (
+            TraceOptions.HISTORY in trace_options
+            and len(selected_ensembles_providers) > 0
+        ):
             # Name and provider from first selected ensemble
-            name, provider = list(ensemble_provider_dict.items())[0]
+            ensemble, provider = list(selected_ensembles_providers.items())[0]
 
-            vectors_filtered = [
+            ensemble_vectors = [
                 elm for elm in vectors if elm in provider.vector_names()
             ]
 
-            vector_line_shapes_2: Dict[str, str] = {
-                vector: get_simulation_line_shape(
-                    line_shape_fallback, vector, provider.vector_metadata(vector)
-                )
-                for vector in vectors_filtered
-            }
-
-            resampling_freq = (
-                resampling_frequency if provider.supports_resampling() else None
+            history_vectors_df = selected_ensembles_model.create_history_vectors_df(
+                ensemble, ensemble_vectors
             )
+            figure_builder.add_history_traces(history_vectors_df, vector_line_shapes)
 
-            history_vectors_df = data_model.create_history_vectors_df(
-                name, vectors_filtered, resampling_freq
-            )
-            figure_builder.add_history_traces(history_vectors_df, vector_line_shapes_2)
-
-        # # Keep uirevision (e.g. zoom) for unchanged data.
-        # figure.update_xaxes(uirevision="locked")  # Time axis state kept
-        # for i, vector in enumerate(vectors, start=1):
-        #     figure.update_yaxes(row=i, col=1, uirevision=vector)
-
+        figure_builder.set_keep_uirevision()
         return figure_builder.get_figure()
 
     @app.callback(
@@ -296,7 +277,7 @@ def controller_callbacks(
         new_delta_ensembles.append(delta_ensemble)
 
         # Create delta ensemble names
-        new_delta_ensemble_names = delta_ensemble_names(new_delta_ensembles)
+        new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
 
         table_data = create_delta_ensemble_table_column_data(
             get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN),
@@ -304,7 +285,8 @@ def controller_callbacks(
         )
 
         ensemble_options = [
-            {"label": ensemble, "value": ensemble} for ensemble in provider_set.keys()
+            {"label": ensemble, "value": ensemble}
+            for ensemble in ensemble_set_model.ensemble_names()
         ]
         for elm in new_delta_ensemble_names:
             ensemble_options.append({"label": elm, "value": elm})

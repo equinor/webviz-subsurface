@@ -44,14 +44,12 @@ def create_vector_realization_traces(
 
 
 # TODO: Rename to create_statistics_traces?
-# pylint: disable=too-many-arguments, too-many-locals
 def create_vector_statistics_traces(
     vector_statistics_df: pd.DataFrame,
     statistics_options: List[StatisticsOptions],
     color: str,
     legend_group: str,
     line_shape: str,
-    refaxis: str = "DATE",
     hovertemplate: str = "(%{x}, %{y})<br>",
     show_legend: bool = True,
 ) -> List[Dict[str, Any]]:

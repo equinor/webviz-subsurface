@@ -7,14 +7,11 @@ from webviz_config import WebvizSettings
 import webviz_core_components as wcc
 
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
-from webviz_subsurface._providers import (
-    EnsembleSummaryProviderFactory,
-    EnsembleSummaryProvider,
-    Frequency,
-)
+
 
 from .main_view import main_view
 from .types import VisualizationOptions
+from .models.ensemble_set_model import EnsembleSetModel
 
 from .controller import controller_callbacks
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
@@ -44,20 +41,16 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        self._resampling_freq: Optional[Frequency] = None
-        self._provider_set: Dict[str, EnsembleSummaryProvider] = {}
-
+        self._ensemble_set_model: EnsembleSetModel = None
         if ensembles is not None:
-            provider_factory = EnsembleSummaryProviderFactory.instance()
-
-            self._resampling_freq = Frequency.from_string_value(sampling)
-            for ens_name in ensembles:
-                ens_path = webviz_settings.shared_settings["scratch_ensembles"][
-                    ens_name
+            ensemble_paths: Dict[str, Path] = {
+                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                    ensemble_name
                 ]
-                self._provider_set[
-                    ens_name
-                ] = provider_factory.create_from_arrow_unsmry_lazy(str(ens_path))
+                for ensemble_name in ensembles
+            }
+
+            self._ensemble_set_model = EnsembleSetModel(ensemble_paths, sampling)
         elif self._csvfile_path is not None:
             raise NotImplementedError()
         else:
@@ -66,23 +59,19 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
 
         self._theme = webviz_settings.theme
-        self._ensemble_names = list(self._provider_set.keys())
 
         # NOTE: Initially keep set of all vector names - can make dynamic if wanted?
-        vector_names: List[str] = []
-        for provider in self._provider_set.values():
-            vector_names.extend(provider.vector_names())
-        vector_names = list(sorted(set(vector_names)))  # Remove duplicates
-        self._vector_names = [
-            vec
-            for vec in vector_names
-            if historical_vector(vec, None, False) not in vector_names
+        vector_names = self._ensemble_set_model.vector_names()
+        non_historical_vector_names = [
+            vector
+            for vector in vector_names
+            if historical_vector(vector, None, False) not in vector_names
         ]
 
         # NOTE: Initially: With set of vector names, the vector selector data is static
         # If made dynamic, the vector selector data must be dynamic
         self._vector_selector_data: list = []
-        for vector in self._vector_names:
+        for vector in non_historical_vector_names:
             split = vector.split(":")
             add_vector_to_vector_selector_data(
                 self._vector_selector_data,
@@ -113,9 +102,9 @@ class SimulationTimeSeries(WebvizPluginABC):
     def layout(self) -> wcc.FlexBox:
         return main_view(
             get_uuid=self.uuid,
-            ensemble_names=self._ensemble_names,
+            ensemble_names=self._ensemble_set_model.ensemble_names(),
             vector_selector_data=self._vector_selector_data,
-            visualization_type=self._visualization_type,
+            initial_visualization_type=self._visualization_type,
             selected_vectors=self._initial_vectors,
         )
 
@@ -123,10 +112,9 @@ class SimulationTimeSeries(WebvizPluginABC):
         controller_callbacks(
             app=app,
             get_uuid=self.uuid,
-            provider_set=self._provider_set,
+            ensemble_set_model=self._ensemble_set_model,
             theme=self._theme,
             sampling=self._sampling,
-            resampling_frequency=self._resampling_freq,
-            selected_vectors=self._initial_vectors,
+            initial_selected_vectors=self._initial_vectors,
             line_shape_fallback=self._line_shape_fallback,
         )

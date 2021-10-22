@@ -17,12 +17,12 @@ class StatisticsOptions(str, Enum):
     Type definition for statistics options in simulation time series
     """
 
-    MEAN = "mean"
-    MIN = "min"
-    MAX = "max"
-    P10 = "p10"
-    P90 = "p90"
-    P50 = "p50"
+    MEAN = "Mean"
+    MIN = "Min"
+    MAX = "Max"
+    P10 = "P10"
+    P90 = "P90"
+    P50 = "P50"
 
 
 class TraceOptions(str, Enum):
