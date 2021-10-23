@@ -34,19 +34,20 @@ class SeismicMisfit(WebvizPluginABC):
     * **`ensembles`:** Which *scratch_ensembles* in *shared_settings* to include.
     <br>(Note that **realization-** must be part of the *shared_settings* paths.)
 
-    * **`attributes`:** List of attribute file names to include.
-    It is a requirement that the simulated and observed
-    attribute file names are identical.
-    Further, it is required that there exists metadata csv files with
-    the prefix "meta_" + the attribute name as given in the `attributes` list.
+    * **`attributes`:** List of the simulated attribute file names to include.
+    It is a requirement that there is a corresponding file with the observed
+    and meta data included. This file must have the same name, but with an
+    additional prefix = "meta--". For example, if one includes a file
+    called "my_awesome_attribute.txt" in the attributes list, the corresponding
+    obs/meta file must be called "meta--my_awesome_attribute.txt". See Data Input
+    section for more  details.
 
     * **`attribute_sim_path`:** Path to the `attributes` simulation file.
     Path is given as relative to *runpath*, where *runpath* = path as defined
     for `ensembles` in shared settings.
 
-    * **`attribute_obs_path`:** Path to the `attributes` observation file.
-    Path is given as relative to *runpath* (path can also be absolute.)
-    The metadata file must also be stored in this folder.
+    * **`attribute_obs_path`:** Path to the `attributes` obs/meta file.
+    Path is either given as relative to *runpath* or as an absolute path.
 
     * **`obs_mult`:** Multiplier for all observation and observation error data.
     Can be used for calibration purposes.
@@ -71,15 +72,19 @@ class SeismicMisfit(WebvizPluginABC):
 
     ---
 
-    The input data consists of 3 different file types.<br>
-    1) Observation data file (one per attribute): This is a 2 column file,
-    where the columns are space seperated (ERT compatible format).
-    First column is the observed attribute value and the second column
-    is the corresponding error. This file has no header.<br>
-    ```
-        0.002072 0.001
-        0.001379 0.001
-        0.001239 0.001
+    The input data consists of 2 different file types.<br>
+
+    1) Observation and meta data csv file (one per attribute):
+    This csv file must contain the 5 column headers "EAST" (or "X_UTME"),
+    "NORTH" (or "Y_UTMN"), "REGION", "OBS" and "OBS_ERROR".
+    The column names are case insensitive and can be in any order.
+    "OBS" is the observed attribute value and "OBS_ERROR"
+    is the corresponding error.<br>
+    ```csv
+        X_UTME,Y_UTMN,REGION,OBS,OBS_ERROR
+        456166.26,5935963.72,1,0.002072,0.001
+        456241.17,5935834.17,2,0.001379,0.001
+        456316.08,5935704.57,3,0.001239,0.001
         ...
         ...
     ```
@@ -93,24 +98,10 @@ class SeismicMisfit(WebvizPluginABC):
         ...
         ...
     ```
-    3) Metadata file  (one per attribute): This file must include the
-    column headers "east" (or x_utme), "north" (or y_utmn) and "region"
-    (case insensitive column names). The columns are comma seperated.
-    The region column values should be integer type.
-    The file can have more columns, but they are ignored. The file must
-    be stored in same folder as the observation file.
-    ```csv
-        X_UTME,Y_UTMN,Region
-        456166.26,5935963.72,1
-        456241.17,5935834.17,2
-        456316.08,5935704.57,3
-        ...
-        ...
-    ```
 
-    It is a requirement that each line of data in these 3 files represent
-    the same data point. I.e. line number N+1 in metadata file corresponds to
-    line N in obs and sim files. The +1 shift for the metadata file
+    It is a requirement that each line of data in these 2 files represent
+    the same data point. I.e. line number N+1 in obs/metadata file corresponds to
+    line N in sim files. The +1 shift for the obs/metadata file
     is due to that file is the only one with a header.
     """
 
@@ -159,12 +150,10 @@ class SeismicMisfit(WebvizPluginABC):
 
         for attribute_name in self.attributes:
             logging.debug(f"Build dataframe for attribute: \n{attribute_name}\n")
-            metadata_name = "meta_" + str(attribute_name)
             # make dataframe with all data
             self.dframe[attribute_name] = makedf(
                 self.ensemble_set,
                 attribute_name,
-                metadata_name,
                 attribute_sim_path,
                 attribute_obs_path,
                 obs_mult,
@@ -183,7 +172,6 @@ class SeismicMisfit(WebvizPluginABC):
             self.makedf_args[attribute_name] = {  # for add_webvizstore
                 "ensemble_set": self.ensemble_set,
                 "attribute_name": attribute_name,
-                "metadata_name": metadata_name,
                 "attribute_sim_path": attribute_sim_path,
                 "attribute_obs_path": attribute_obs_path,
                 "obs_mult": obs_mult,
@@ -1303,7 +1291,7 @@ class SeismicMisfit(WebvizPluginABC):
                     wcc.Frame(
                         style={
                             "flex": 1,
-                            "height": "50vh",
+                            "height": "85vh",
                             "maxWidth": "200px",
                         },
                         children=[
@@ -2942,7 +2930,6 @@ def update_errorbarplot_superimpose(
 def makedf(
     ensemble_set: dict,
     attribute_name: str,
-    metadata_name: str,
     attribute_sim_path: str,
     attribute_obs_path: str,
     obs_mult: float,
@@ -2952,6 +2939,7 @@ def makedf(
     """Create dataframe of obs, meta and sim data for all ensembles.
     Uses the functions 'makedf_seis_obs_meta' and 'makedf_seis_addsim'."""
 
+    meta_name = "meta--" + attribute_name
     dfs = []
     dfs_obs = []
     ens_count = 0
@@ -2963,10 +2951,9 @@ def makedf(
 
         # grab runpath for one realization and locate obs/meta data relative to it
         single_runpath = sorted(glob.glob(ens_path))[0]
-        obsfile = Path(single_runpath) / Path(attribute_obs_path) / attribute_name
-        metafile = Path(single_runpath) / Path(attribute_obs_path) / metadata_name
+        obsfile = Path(single_runpath) / Path(attribute_obs_path) / meta_name
 
-        df = makedf_seis_obs_meta(obsfile, metafile, obs_mult=obs_mult)
+        df = makedf_seis_obs_meta(obsfile, obs_mult=obs_mult)
 
         df["ENSEMBLE"] = ens_name  # add ENSEBLE column
         dfs_obs.append(df.copy())
@@ -3006,64 +2993,52 @@ def makedf(
 # -------------------------------
 def makedf_seis_obs_meta(
     obsfile: Path,
-    metafile: Path,
     obs_mult: float = 1.0,
 ) -> pd.DataFrame:
-    """Make a merged dataframe of obsdata and metadata.
-    Meta file should have a "region" parameter (case insensitive).
-    If not included, a region parameter is created with const value = 1.
+    """Make a dataframe of obsdata and metadata.
     (obs data multiplier: optional, default is 1.0")
     """
     # --- read obsfile into pandas dataframe ---
-    dframe = pd.read_csv(obsfile, sep=r"\s+", header=None, names=["obs", "obs_error"])
-    tot_nan_val_obs = dframe.isnull().sum().sum()  # count all nan values
-    if tot_nan_val_obs > 0:
-        logging.warning(f"-- obsfile contains {tot_nan_val_obs} NaN values")
+    df = pd.read_csv(obsfile)
+    dframe = df.copy()  # make a copy to avoid strange pylint errors
+    # for info: https://github.com/PyCQA/pylint/issues/4577
+    dframe.columns = dframe.columns.str.lower()  # convert all headers to lower case
+    logging.debug(
+        f"Obs file: {obsfile} \n--> Number of seismic data points: {len(dframe)}"
+    )
+    tot_nan_val = dframe.isnull().sum().sum()  # count all nan values
+    if tot_nan_val > 0:
+        logging.warning(f"{obsfile} contains {tot_nan_val} NaN values")
 
-    # pylint: disable=no-member, unsupported-assignment-operation
-    # https://github.com/PyCQA/pylint/issues/4577
-    dframe["data_number"] = dframe.index + 1  # add a simple counter
+    if "obs" not in dframe.columns:
+        raise RuntimeError(f"'obs' column not included in {obsfile}")
 
-    # --- read metadata into pandas dataframe ---
-    df_meta = pd.read_csv(metafile)  # read metafile to dataframe
-    df_meta.columns = df_meta.columns.str.lower()  # convert all headers to lower case
+    if "obs_error" not in dframe.columns:
+        raise RuntimeError(f"'obs_error' column not included in {obsfile}")
 
-    if "east" not in df_meta.columns:
-        if "x_utme" in df_meta.columns:
-            df_meta.rename(columns={"x_utme": "east"}, inplace=True)
+    if "east" not in dframe.columns:
+        if "x_utme" in dframe.columns:
+            dframe.rename(columns={"x_utme": "east"}, inplace=True)
             logging.debug("renamed x_utme column to east")
         else:
             raise RuntimeError("'x_utm' (or 'east') column not included in meta data")
 
-    if "north" not in df_meta.columns:
-        if "y_utmn" in df_meta.columns:
-            df_meta.rename(columns={"y_utmn": "north"}, inplace=True)
+    if "north" not in dframe.columns:
+        if "y_utmn" in dframe.columns:
+            dframe.rename(columns={"y_utmn": "north"}, inplace=True)
             logging.debug("renamed y_utmn column to north")
         else:
             raise RuntimeError("'y_utm' (or 'north') column not included in meta data")
 
-    if "region" not in df_meta.columns:
-        if "regions" in df_meta.columns:
-            df_meta.rename(columns={"regions": "region"}, inplace=True)
+    if "region" not in dframe.columns:
+        if "regions" in dframe.columns:
+            dframe.rename(columns={"regions": "region"}, inplace=True)
             logging.debug("renamed regions column to region")
         else:
             raise RuntimeError(
                 "'Region' column is not included in meta data"
                 "Please check your yaml config file settings and/or the metadata file."
             )
-
-    tot_nan_val_meta = df_meta.isnull().sum().sum()  # count all nan values
-    if tot_nan_val_meta > 0:
-        logging.warning(f"-- metafile contains {tot_nan_val_meta} NaN values")
-
-    # --- concat obsdata and metadata ---
-    if len(df_meta.index) == len(dframe):
-        dframe = pd.concat([dframe, df_meta], axis=1, sort=False)
-    else:
-        raise RuntimeError(
-            f"{obsfile} and {metafile} are inconsistent"
-            " (different number of data points)"
-        )
 
     # --- apply obs multiplier ---
     dframe["obs"] = dframe["obs"] * obs_mult
@@ -3073,14 +3048,7 @@ def makedf_seis_obs_meta(
     if dframe.region.dtype == "float64":
         dframe = dframe.astype({"region": "int64"})
 
-    # -------------------------------
-    logging.debug(
-        f"Obs file: {obsfile} \n--> Number of seismic data points: {len(dframe)}"
-        f"\n--> Number of undefined values: {tot_nan_val_obs}"
-    )
-    logging.debug(
-        f"Meta file: {metafile} \n--> Number of undefined values: {tot_nan_val_meta}"
-    )
+    dframe["data_number"] = dframe.index + 1  # add a simple counter
 
     return dframe
 
