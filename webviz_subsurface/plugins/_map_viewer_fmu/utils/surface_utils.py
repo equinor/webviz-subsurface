@@ -19,12 +19,12 @@ def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
     return {"mapBounds": bounds, "mapTarget": view_target, "mapRange": value_range}
 
 
-def surface_spec_to_url(surface_spec: SurfaceContext) -> str:
-    json_dump = json.dumps(asdict(surface_spec))
+def surface_context_to_url(surface_context: SurfaceContext) -> str:
+    json_dump = json.dumps(asdict(surface_context))
     return urllib.parse.quote_plus(json_dump)
 
 
-def surface_spec_from_url(url_string: str) -> SurfaceContext:
+def surface_context_from_url(url_string: str) -> SurfaceContext:
     json_loads = json.loads(urllib.parse.unquote_plus(url_string))
     return SurfaceContext(**json_loads)
 

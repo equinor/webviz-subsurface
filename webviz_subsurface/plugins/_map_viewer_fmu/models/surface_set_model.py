@@ -2,6 +2,8 @@ import io
 import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+from enum import Enum
+from dataclasses import asdict
 
 import numpy as np
 import pandas as pd
@@ -12,9 +14,20 @@ from webviz_config.webviz_store import webvizstore
 from ..classes.surface_context import SurfaceContext
 from ..classes.surface_mode import SurfaceMode
 from ..utils.surface_utils import (
-    surface_spec_to_url,
+    surface_context_to_url,
     surface_to_deckgl_spec,
 )
+
+
+class FMU(str, Enum):
+    ENSEMBLE = "ENSEMBLE"
+    REALIZATION = "REAL"
+
+
+class FMUSurface(str, Enum):
+    ATTRIBUTE = "attribute"
+    NAME = "name"
+    DATE = "date"
 
 
 class SurfaceSetModel:
@@ -26,21 +39,21 @@ class SurfaceSetModel:
     @property
     def realizations(self) -> list:
         """Returns surface attributes"""
-        return sorted(list(self._surface_table["REAL"].unique()))
+        return sorted(list(self._surface_table[FMU.REALIZATION].unique()))
 
     @property
     def attributes(self) -> list:
         """Returns surface attributes"""
-        return sorted(list(self._surface_table["attribute"].unique()))
+        return sorted(list(self._surface_table[FMUSurface.ATTRIBUTE].unique()))
 
     def names_in_attribute(self, attribute: str) -> list:
         """Returns surface names for a given attribute"""
 
         return sorted(
             list(
-                self._surface_table.loc[self._surface_table["attribute"] == attribute][
-                    "name"
-                ].unique()
+                self._surface_table.loc[
+                    self._surface_table[FMUSurface.ATTRIBUTE] == attribute
+                ][FMUSurface.NAME].unique()
             )
         )
 
@@ -48,20 +61,19 @@ class SurfaceSetModel:
         """Returns surface dates for a given attribute"""
         dates = sorted(
             list(
-                self._surface_table.loc[self._surface_table["attribute"] == attribute][
-                    "date"
-                ].unique()
+                self._surface_table.loc[
+                    self._surface_table[FMUSurface.ATTRIBUTE] == attribute
+                ][FMUSurface.DATE].unique()
             )
         )
         if len(dates) == 1 and dates[0] is None:
             dates = None
-        print("dates", dates)
         return dates
 
-    def _get_surface_deckgl_spec(self, surface_spec: SurfaceContext) -> Dict:
-        surface = self.get_surface(surface_spec)
+    def _get_surface_deckgl_spec(self, surface_context: SurfaceContext) -> Dict:
+        surface = self.get_surface(surface_context)
         spec = surface_to_deckgl_spec(surface)
-        url = surface_spec_to_url(surface_spec)
+        url = surface_context_to_url(surface_context)
         spec.update({"mapImage": f"surface/{url}.png"})
         return spec
 
@@ -73,41 +85,33 @@ class SurfaceSetModel:
             return self.calculate_statistical_surface(surface)
 
     def get_realization_surface(
-        self, surface_spec: SurfaceContext
+        self, surface_context: SurfaceContext
     ) -> xtgeo.RegularSurface:
         """Returns a Xtgeo surface instance of a single realization surface"""
-        name = surface_spec.name
-        attribute = surface_spec.attribute
-        realization = surface_spec.realizations[0]
-        date = surface_spec.date
-        columns = ["name", "attribute", "REAL"]
 
-        df = self._filter_surface_table(surface_spec=surface_spec)
+        df = self._filter_surface_table(surface_context=surface_context)
         if len(df.index) == 0:
-            warnings.warn(
-                f"No surface found for name: {name}, attribute: {attribute}, date: {date}, "
-                f"realization: {realization}"
-            )
+            warnings.warn(f"No surface found for {surface_context}")
             return xtgeo.RegularSurface(
                 ncol=1, nrow=1, xinc=1, yinc=1
             )  # 1's as input is required
         if len(df.index) > 1:
             warnings.warn(
-                f"Multiple surfaces found for name: {name}, attribute: {attribute}, date: {date}, "
-                f"realization: {realization}. Returning first surface"
+                f"Multiple surfaces found for: {surface_context}"
+                "Returning first surface."
             )
         return xtgeo.surface_from_file(get_stored_surface_path(df.iloc[0]["path"]))
 
-    def _filter_surface_table(self, surface_spec: SurfaceContext) -> pd.DataFrame:
+    def _filter_surface_table(self, surface_context: SurfaceContext) -> pd.DataFrame:
         """Returns a dataframe of surfaces for the provided filters"""
-        columns: List[str] = ["name", "attribute"]
-        column_values: List[Any] = [surface_spec.name, surface_spec.attribute]
-        if surface_spec.date is not None:
-            columns.append("date")
-            column_values.append(surface_spec.date)
-        if surface_spec.realizations is not None:
-            columns.append("REAL")
-            column_values.append(surface_spec.realizations)
+        columns: List[str] = [FMUSurface.NAME, FMUSurface.ATTRIBUTE]
+        column_values: List[Any] = [surface_context.name, surface_context.attribute]
+        if surface_context.date is not None:
+            columns.append(FMUSurface.DATE)
+            column_values.append(surface_context.date)
+        if surface_context.realizations is not None:
+            columns.append(FMU.REALIZATION)
+            column_values.append(surface_context.realizations)
         df = self._surface_table.copy()
         for filt, col in zip(column_values, columns):
             if isinstance(filt, list):
@@ -118,12 +122,12 @@ class SurfaceSetModel:
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def calculate_statistical_surface(
-        self, surface_spec: SurfaceContext
+        self, surface_context: SurfaceContext
     ) -> xtgeo.RegularSurface:
         """Returns a Xtgeo surface instance for a calculated surface"""
-        calculation = surface_spec.mode
+        calculation = surface_context.mode
 
-        df = self._filter_surface_table(surface_spec)
+        df = self._filter_surface_table(surface_context)
         # When portable check if the surface has been stored
         # if not calculate
         try:
@@ -150,10 +154,10 @@ class SurfaceSetModel:
             else self._surface_table
         )
         stored_functions_args = []
-        for _attr, attr_df in df.groupby("attribute"):
-            for _name, name_df in attr_df.groupby("name"):
+        for _attr, attr_df in df.groupby(FMUSurface.ATTRIBUTE):
+            for _name, name_df in attr_df.groupby(FMUSurface.NAME):
 
-                if name_df["date"].isnull().values.all():
+                if name_df[FMUSurface.DATE].isnull().values.all():
                     stored_functions_args.append(
                         {
                             "fns": sorted(list(name_df["path"].unique())),
@@ -161,7 +165,7 @@ class SurfaceSetModel:
                         }
                     )
                 else:
-                    for _date, date_df in name_df.groupby("date"):
+                    for _date, date_df in name_df.groupby(FMUSurface.DATE):
                         stored_functions_args.append(
                             {
                                 "fns": sorted(list(date_df["path"].unique())),
