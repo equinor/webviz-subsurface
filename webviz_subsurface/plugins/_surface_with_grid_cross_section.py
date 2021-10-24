@@ -1,7 +1,7 @@
+import warnings
 from pathlib import Path
 from typing import List
 from uuid import uuid4
-import warnings
 
 import pandas as pd
 import webviz_core_components as wcc
