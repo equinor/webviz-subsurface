@@ -16,8 +16,7 @@ from .fipfile_qc_layout import (
     fipfile_qc_selections,
 )
 from .selections_view import selections_layout, table_selections_layout
-from .tornado_layout import tornado_main_layout
-from .tornado_selections_view import tornado_selections_layout
+from .tornado_view import tornado_main_layout, tornado_selections_layout
 
 
 def main_view(

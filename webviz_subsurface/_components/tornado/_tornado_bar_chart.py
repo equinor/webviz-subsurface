@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from webviz_subsurface._abbreviations.number_formatting import si_prefixed
-from webviz_subsurface._utils.formatting import printable_int_list
 
 from ._tornado_data import TornadoData
 
@@ -12,7 +11,7 @@ from ._tornado_data import TornadoData
 class TornadoBarChart:
     """Creates a plotly bar figure from a TornadoData instance"""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         tornado_data: TornadoData,
@@ -25,6 +24,9 @@ class TornadoBarChart:
         spaced: bool = True,
         use_true_base: bool = False,
         show_realization_points: bool = True,
+        show_reference: bool = True,
+        color_by_sensitivity: bool = False,
+        sensitivity_color_map: dict = None,
     ) -> None:
         self._tornadotable = tornado_data.tornadotable
         self._realtable = self.make_points(tornado_data.real_df)
@@ -37,6 +39,7 @@ class TornadoBarChart:
         self._locked_si_prefix_relative: Optional[int]
         self._scale = tornado_data.scale
         self._use_true_base = use_true_base
+        self._show_reference = show_reference
         if self._scale == "Percentage":
             self._unit_x = "%"
             self._locked_si_prefix_relative = 0
@@ -46,6 +49,15 @@ class TornadoBarChart:
         self._figure_height = figure_height
         self._label_options = label_options
         self._show_scatter = show_realization_points
+        self._color_by_sens = color_by_sensitivity
+        self._sens_color_map = sensitivity_color_map
+
+    def create_color_list(self, sensitivities: list) -> list:
+        return (
+            [self._sens_color_map.get(sensname, "grey") for sensname in sensitivities]
+            if self._sens_color_map is not None
+            else self._plotly_theme["layout"]["colorway"]
+        )
 
     def make_points(self, realdf: pd.DataFrame) -> pd.DataFrame:
         dfs = []
@@ -105,21 +117,30 @@ class TornadoBarChart:
             return [
                 f"<b>{self._set_si_prefix_relative(x)}</b>, "
                 f"True: {self._set_si_prefix(val)}, "
-                f"<br><b>Case: {label}</b>, "
-                f"Reals: {printable_int_list(reals)}"
-                if reals
-                else None
-                for x, label, val, reals in zip(
+                f"<br><b>Case: {label}</b> "
+                for x, label, val in zip(
                     self._tornadotable[f"{case}_tooltip"],
                     self._tornadotable[f"{case}_label"],
                     self._tornadotable[f"true_{case}"],
-                    self._tornadotable[f"{case}_reals"],
                 )
             ]
         return []
 
+    def hover_label(self) -> List:
+        return [
+            f"<b>Sensname: {sens}</b>:<br>"
+            f"Low: <b>{self._set_si_prefix_relative(low)}</b>, "
+            f"High: <b>{self._set_si_prefix_relative(high)}</b>, "
+            for low, high, sens in zip(
+                self._tornadotable["low"],
+                self._tornadotable["high"],
+                self._tornadotable["sensname"],
+            )
+        ]
+
     @property
     def data(self) -> List:
+        colors = self.create_color_list(self._tornadotable["sensname"].unique())
         return [
             dict(
                 type="bar",
@@ -133,9 +154,13 @@ class TornadoBarChart:
                 text=self.bar_labels("low"),
                 textposition="auto",
                 insidetextanchor="middle",
-                hoverinfo="none",
+                hoverinfo="text",
+                hovertext=self.hover_label(),
                 orientation="h",
-                marker={"line": {"width": 1.5, "color": "black"}},
+                marker={
+                    "line": {"width": 1.5, "color": "black"},
+                    "color": colors if self._color_by_sens else None,
+                },
             ),
             dict(
                 type="bar",
@@ -149,9 +174,13 @@ class TornadoBarChart:
                 text=self.bar_labels("high"),
                 textposition="auto",
                 insidetextanchor="middle",
-                hoverinfo="none",
+                hoverinfo="text",
+                hovertext=self.hover_label(),
                 orientation="h",
-                marker={"line": {"width": 1.5, "color": "black"}},
+                marker={
+                    "line": {"width": 1.5, "color": "black"},
+                    "color": colors if self._color_by_sens else None,
+                },
             ),
         ]
 
@@ -173,7 +202,8 @@ class TornadoBarChart:
                 "y": df["sensname"],
                 "x": self.calculate_scatter_value(df["VALUE"]),
                 "text": df["REAL"],
-                "hoverinfo": "none",
+                "hovertemplate": "REAL: <b>%{text}</b><br>"
+                + "X: <b>%{x:.1f}</b> <extra></extra>",
                 "marker": {
                     "size": 15,
                     "color": self._plotly_theme["layout"]["colorway"][0]
@@ -208,7 +238,9 @@ class TornadoBarChart:
                     "title": self._scale,
                     "range": self.range,
                     "autorange": self._show_scatter or self._tornadotable.empty,
-                    "showgrid": False,
+                    "gridwidth": 1,
+                    "gridcolor": "whitesmoke",
+                    "showgrid": True,
                     "zeroline": False,
                     "linecolor": "black",
                     "showline": True,
@@ -227,7 +259,8 @@ class TornadoBarChart:
                     "tickfont": {"size": 15},
                 },
                 "showlegend": False,
-                "hovermode": "y",
+                "hovermode": "closest",
+                "hoverlabel": {"bgcolor": "white", "font_size": 16},
                 "annotations": [
                     {
                         "x": 0 if not self._use_true_base else self._reference_average,
@@ -239,7 +272,9 @@ class TornadoBarChart:
                         "showarrow": False,
                         "align": "center",
                     }
-                ],
+                ]
+                if self._show_reference
+                else None,
                 "shapes": [
                     {
                         "type": "line",
@@ -258,9 +293,7 @@ class TornadoBarChart:
 
     @property
     def figure(self) -> go.Figure:
-        data = self.data
-
-        fig = go.Figure({"data": data, "layout": self.layout})
+        fig = go.Figure({"data": self.data, "layout": self.layout})
         if self._show_scatter:
             fig.update_traces(marker_opacity=0.4, text=None)
             for trace in self.scatter_data:

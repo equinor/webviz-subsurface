@@ -96,10 +96,7 @@ def table_selections_layout(
                 },
                 options=[{"label": i, "value": i} for i in responses],
                 value=responses,
-                size=min(
-                    20,
-                    len(responses),
-                ),
+                size=min(20, len(responses)),
             ),
         ],
     )
@@ -122,19 +119,19 @@ def plot_selector_dropdowns(
     ]:
         if selector == "Plot type":
             elements = ["histogram", "scatter", "distribution", "box", "bar"]
-            value = elements[0] if not volumemodel.sensrun else "box"
+            value = elements[0]
         if selector == "X Response":
             elements = volumemodel.responses
-            value = elements[0] if not volumemodel.sensrun else "SENSNAME"
+            value = elements[0]
         if selector == "Y Response":
             elements = volumemodel.responses
-            value = None if not volumemodel.sensrun else elements[0]
+            value = None
         if selector == "Subplots":
             elements = [x for x in volumemodel.selectors if x != "REAL"]
             value = None
         if selector == "Color by":
             elements = volumemodel.selectors
-            value = "ENSEMBLE" if not volumemodel.sensrun else "SENSCASE"
+            value = "ENSEMBLE"
 
         dropdowns.append(
             wcc.Dropdown(
@@ -143,8 +140,7 @@ def plot_selector_dropdowns(
                 options=[{"label": elm, "value": elm} for elm in elements],
                 value=value,
                 clearable=selector in ["Subplots", "Color by", "Y Response"],
-                disabled=selector == "Subplots"
-                or (selector == "Y Response" and not volumemodel.sensrun),
+                disabled=selector in ["Subplots", "Y Response"],
             )
         )
     return dropdowns
