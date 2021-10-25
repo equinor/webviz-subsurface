@@ -1,12 +1,14 @@
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
 
-from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
 from webviz_subsurface._providers import EnsembleSummaryProvider
-from webviz_subsurface._utils.unique_theming import unique_colors
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    Frequency,
+)
+from webviz_subsurface.plugins._simulation_time_series.provider_set import ProviderSet
 
 from .types import (
     DeltaEnsemble,
@@ -15,82 +17,64 @@ from .types import (
     StatisticsOptions,
 )
 
-from .models.ensemble_set_model import EnsembleSetModel
-
 from ..._abbreviations.reservoir_simulation import (
     simulation_vector_description,
     simulation_unit_reformat,
 )
 
-# TODO: Check if one single model for graph and settings is good enough?
-# TODO: See if higher level abstraction can be given -  set-functions for attributes and
-#  one single getter-function for graph figure?
-# NOTE:
-# - Should handle data - e.g. provider, delta ensemble, statistics etc. Create data,
-# do not handle any plotting/traces
-class SelectedEnsemblesModel:
+# TODO: Ensure resampling frequency is correct?
+class SelectedProviderSetModel:
     def __init__(
         self,
-        ensemble_set_model: EnsembleSetModel,
+        input_provider_set: ProviderSet,
         selected_ensembles: List[str],
         delta_ensembles: List[DeltaEnsembleNamePair],
+        resampling_frequency: Optional[Frequency] = None,
     ) -> None:
-        self.__selected_ensemble_providers: Dict[str, EnsembleSummaryProvider] = {
-            name: provider
-            for name, provider in ensemble_set_model.ensemble_provider_set().items()
+        _selected_provider_dict: Dict[str, EnsembleSummaryProvider] = {
+            name: input_provider_set.provider(name)
+            for name in input_provider_set.ensemble_names()
             if name in selected_ensembles
         }
         for delta_ensemble in delta_ensembles:
             delta_ensemble_name = create_delta_ensemble_name(delta_ensemble)
             if (
                 delta_ensemble_name in selected_ensembles
-                and delta_ensemble_name not in self.__selected_ensemble_providers
+                and delta_ensemble_name not in _selected_provider_dict
             ):
-                self.__selected_ensemble_providers[
+                _selected_provider_dict[
                     delta_ensemble_name
-                ] = self.__create_delta_ensemble_provider(
-                    delta_ensemble, ensemble_set_model.ensemble_provider_set()
+                ] = self._create_delta_ensemble_provider(
+                    delta_ensemble, input_provider_set
                 )
-        self.__resampling_frequency = ensemble_set_model.resampling_frequency()
+        self._selected_provider_set = ProviderSet(_selected_provider_dict)
+        self._resampling_frequency = resampling_frequency
 
     @staticmethod
-    def __create_delta_ensemble_provider(
+    def _create_delta_ensemble_provider(
         delta_ensemble: DeltaEnsembleNamePair,
-        ensemble_providers: Dict[str, EnsembleSummaryProvider],
+        provider_set: ProviderSet,
     ) -> DeltaEnsemble:
         ensemble_a = delta_ensemble["ensemble_a"]
         ensemble_b = delta_ensemble["ensemble_b"]
-        if ensemble_a not in ensemble_providers or ensemble_b not in ensemble_providers:
+        provider_set_ensembles = provider_set.ensemble_names()
+        if (
+            ensemble_a not in provider_set_ensembles
+            or ensemble_b not in provider_set_ensembles
+        ):
             raise ValueError(
                 f"Request delta ensemble with ensemble {ensemble_a}"
                 f" and ensemble {ensemble_b}. Ensemble {ensemble_a} exists: "
-                f"{ensemble_a in ensemble_providers}, ensemble {ensemble_b} exists: "
-                f"{ensemble_b in ensemble_providers}."
+                f"{ensemble_a in provider_set_ensembles}, ensemble {ensemble_b} exists: "
+                f"{ensemble_b in provider_set_ensembles}."
             )
         return DeltaEnsemble(
-            ensemble_providers[ensemble_a],
-            ensemble_providers[ensemble_b],
+            provider_set.provider(ensemble_a),
+            provider_set.provider(ensemble_b),
         )
 
-    def ensemble_provider_set(self) -> Dict[str, EnsembleSummaryProvider]:
-        return self.__selected_ensemble_providers
-
-    def ensemble_names(self) -> List[str]:
-        return list(self.__selected_ensemble_providers.keys())
-
-    def vector_metadata(self, vector: str) -> Optional[Dict[str, Any]]:
-        """Get vector metadata from first occurence among providers"""
-        # Get from first provider containing vector metadata
-        metadata: Optional[Dict[str, Any]] = next(
-            (
-                provider.vector_metadata(vector)
-                for provider in self.__selected_ensemble_providers.values()
-                if vector in provider.vector_names()
-                and provider.vector_metadata(vector)
-            ),
-            None,
-        )
-        return metadata
+    def provider_set(self) -> ProviderSet:
+        return self._selected_provider_set
 
     # TODO: Consider if function should be a part of model, or change function interface?
     def create_statistics_df(
@@ -112,14 +96,14 @@ class SelectedEnsemblesModel:
         `Input:`
         * vectors: List[str] - List of vector names
         """
-        if ensemble not in self.__selected_ensemble_providers:
+        if ensemble not in self._selected_provider_set.ensemble_names():
             raise ValueError(
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
 
-        provider = self.__selected_ensemble_providers[ensemble]
+        provider = self._selected_provider_set.provider(ensemble)
         resampling_frequency = (
-            self.__resampling_frequency if provider.supports_resampling() else None
+            self._resampling_frequency if provider.supports_resampling() else None
         )
 
         # TODO: Verify that all vectors exist for provider - raise exception on fail
@@ -190,7 +174,7 @@ class SelectedEnsemblesModel:
         * Column names are not the historical vector name, but the original vector name,
         i.e. `WOPTH:OP_1` data is placed in colum with name `WOPT:OP_1`
         """
-        if ensemble not in self.__selected_ensemble_providers:
+        if ensemble not in self._selected_provider_set.ensemble_names():
             raise ValueError(
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
@@ -198,10 +182,10 @@ class SelectedEnsemblesModel:
         if len(vectors) <= 0:
             return pd.DataFrame()
 
-        provider = self.__selected_ensemble_providers[ensemble]
+        provider = self._selected_provider_set.provider(ensemble)
         provider_vectors = provider.vector_names()
         resampling_frequency = (
-            self.__resampling_frequency if provider.supports_resampling() else None
+            self._resampling_frequency if provider.supports_resampling() else None
         )
 
         # Verify for provider
@@ -237,8 +221,7 @@ class SelectedEnsemblesModel:
         )
 
     def create_vector_plot_title(self, vector: str) -> str:
-        # Get first provider containing vector metadata
-        metadata = self.vector_metadata(vector)
+        metadata = self._selected_provider_set.vector_metadata(vector)
 
         if metadata is None:
             return simulation_vector_description(vector)
@@ -250,8 +233,3 @@ class SelectedEnsemblesModel:
                 f" [{simulation_unit_reformat(unit)}]"
             )
         return f"{simulation_vector_description(vector)}"
-
-    # TODO: Verify if method should be a part of data model
-    def get_unique_ensemble_colors(self, theme: WebvizConfigTheme) -> dict:
-        ensembles = list(self.__selected_ensemble_providers.keys())
-        return unique_colors(ensembles, theme)

@@ -180,7 +180,7 @@ def create_vector_history_trace(
 ) -> dict:
     """Returns the history trace line"""
     if len(samples) != len(history_data):
-        raise ValueError(f"Number of samples unequal number of data points!")
+        raise ValueError("Number of samples unequal number of data points!")
 
     return {
         "line": {"shape": line_shape},

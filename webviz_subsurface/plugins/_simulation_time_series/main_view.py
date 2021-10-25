@@ -47,7 +47,7 @@ def main_view(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
-    initial_visualization_type: VisualizationOptions,
+    selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
@@ -60,7 +60,7 @@ def main_view(
                         get_uuid=get_uuid,
                         ensembles=ensemble_names,
                         vector_data=vector_selector_data,
-                        initial_visualization_type=initial_visualization_type,
+                        selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
                     ),
                 )
@@ -88,7 +88,7 @@ def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],
     vector_data: list,
-    initial_visualization_type: VisualizationOptions,
+    selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
@@ -154,7 +154,7 @@ def __settings_layout(
                                 "value": VisualizationOptions.FANCHART.value,
                             },
                         ],
-                        value=initial_visualization_type.value,
+                        value=selected_visualization.value,
                     ),
                 ],
             ),
@@ -162,7 +162,7 @@ def __settings_layout(
                 label="Options",
                 children=__plot_options_layout(
                     get_uuid=get_uuid,
-                    initial_visualization_type=initial_visualization_type,
+                    selected_visualization=selected_visualization,
                 ),
             ),
         ]
@@ -239,7 +239,7 @@ def __delta_ensemble_creator_layout(
 
 def __plot_options_layout(
     get_uuid: Callable,
-    initial_visualization_type: VisualizationOptions,
+    selected_visualization: VisualizationOptions,
 ) -> html.Div:
     return (
         html.Div(
@@ -252,7 +252,7 @@ def __plot_options_layout(
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
                     style={"display": "block"}
-                    if VisualizationOptions.STATISTICS == initial_visualization_type
+                    if VisualizationOptions.STATISTICS == selected_visualization
                     else {"display": "none"},
                     options=[
                         {"label": "Mean", "value": StatisticsOptions.MEAN.value},
@@ -280,7 +280,7 @@ def __plot_options_layout(
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
                     style={"display": "block"}
-                    if VisualizationOptions.FANCHART == initial_visualization_type
+                    if VisualizationOptions.FANCHART == selected_visualization
                     else {"display": "none"},
                     options=[
                         {

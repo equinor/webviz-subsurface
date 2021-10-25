@@ -1,10 +1,16 @@
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
 from webviz_config._theme_class import WebvizConfigTheme
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    Frequency,
+)
+from webviz_subsurface._utils.unique_theming import unique_colors
+from webviz_subsurface.plugins._simulation_time_series.provider_set import ProviderSet
+
 from .types import (
     DeltaEnsembleNamePair,
     create_delta_ensemble_names,
@@ -13,24 +19,22 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-from .selected_ensembles_model import SelectedEnsemblesModel
+from .selected_provider_set_model import SelectedProviderSetModel
 from .graph_figure_builder import GraphFigureBuilder
-
 from .utils.trace_line_shape import get_simulation_line_shape
 
 
 from .main_view import ViewElements
-from .models.ensemble_set_model import EnsembleSetModel
 
 
-# pylint: disable=too-many-statements
 def controller_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
-    ensemble_set_model: EnsembleSetModel,
+    input_provider_set: ProviderSet,
     theme: WebvizConfigTheme,
     sampling: str,  # TODO: Remove and use only resampling_frequency?
     initial_selected_vectors: List[str],
+    resampling_frequency: Optional[Frequency],
     line_shape_fallback: str = "linear",
 ) -> None:
     @app.callback(
@@ -65,7 +69,6 @@ def controller_callbacks(
             )
         ],
     )
-    # pylint: disable=too-many-locals, too-many-branches
     def _update_graph(
         vectors: List[str],
         selected_ensembles: List[str],
@@ -74,6 +77,7 @@ def controller_callbacks(
         fanchart_option_values: List[str],
         trace_option_values: List[str],
         delta_ensembles: List[DeltaEnsembleNamePair],
+        # cumulative_interval: str,
     ) -> dict:
         """Callback to update all graphs based on selections
 
@@ -94,6 +98,7 @@ def controller_callbacks(
 
         # TODO: Add AVG_ and INTVL_ vectors
         # TODO: Add obsevations
+        cumulative_interval = "YYYY"
 
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
@@ -102,11 +107,13 @@ def controller_callbacks(
             vectors = initial_selected_vectors
 
         # Filter selected delta ensembles
-        selected_ensembles_model = SelectedEnsemblesModel(
-            ensemble_set_model, selected_ensembles, delta_ensembles
+        selected_ensembles_model = SelectedProviderSetModel(
+            input_provider_set,
+            selected_ensembles,
+            delta_ensembles,
+            resampling_frequency,
         )
-
-        selected_ensembles_providers = selected_ensembles_model.ensemble_provider_set()
+        selected_provider_set = selected_ensembles_model.provider_set()
 
         # Titles for subplots TODO: Verify vector existing?
         vector_titles: Dict[str, str] = {
@@ -116,24 +123,28 @@ def controller_callbacks(
 
         # TODO: Create unique colors based on all ensembles, i.e. union of
         # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
-        # Now color can change when chaning selected colors?
-        ensemble_colors = selected_ensembles_model.get_unique_ensemble_colors(theme)
+        # Now color can change when changing selected ensembles?
+        ensemble_colors = unique_colors(selected_provider_set.ensemble_names(), theme)
 
         figure_builder = GraphFigureBuilder(
-            vectors, vector_titles, ensemble_colors, sampling
+            vectors, vector_titles, ensemble_colors, sampling, theme
         )
 
+        # TODO: How to handle vector metadata the best way?
         vector_line_shapes: Dict[str, str] = {
             vector: get_simulation_line_shape(
                 line_shape_fallback,
                 vector,
-                selected_ensembles_model.vector_metadata(vector),
+                selected_ensembles_model.provider_set().vector_metadata(vector),
             )
             for vector in vectors
         }
 
         # Plotting per ensemble
-        for ensemble, provider in selected_ensembles_providers.items():
+        # for ensemble, provider in selected_ensembles_providers.items():
+        for ensemble in selected_provider_set.ensemble_names():
+            provider = selected_provider_set.provider(ensemble)
+
             # Filter vectors for provider
             ensemble_vectors = [
                 elm for elm in vectors if elm in provider.vector_names()
@@ -143,9 +154,7 @@ def controller_callbacks(
 
             if visualization == VisualizationOptions.REALIZATIONS:
                 resampling_freq = (
-                    ensemble_set_model.resampling_frequency()
-                    if provider.supports_resampling()
-                    else None
+                    resampling_frequency if provider.supports_resampling() else None
                 )
                 vectors_df = provider.get_vectors_df(ensemble_vectors, resampling_freq)
                 figure_builder.add_realizations_traces(
@@ -169,10 +178,11 @@ def controller_callbacks(
         # NOTE: Retrieve historical vector from first ensemble
         if (
             TraceOptions.HISTORY in trace_options
-            and len(selected_ensembles_providers) > 0
+            and len(selected_provider_set.ensemble_names()) > 0
         ):
             # Name and provider from first selected ensemble
-            ensemble, provider = list(selected_ensembles_providers.items())[0]
+            ensemble = selected_provider_set.ensemble_names()[0]
+            provider = selected_provider_set.provider(ensemble)
 
             ensemble_vectors = [
                 elm for elm in vectors if elm in provider.vector_names()
@@ -183,8 +193,12 @@ def controller_callbacks(
             )
             figure_builder.add_history_traces(history_vectors_df, vector_line_shapes)
 
-        figure_builder.set_keep_uirevision()
         return figure_builder.get_figure()
+
+    # TODO: Implement callback
+    # @app.callback()
+    # def _user_download_data() -> None:
+    #     raise NotImplementedError()
 
     @app.callback(
         [
@@ -286,7 +300,7 @@ def controller_callbacks(
 
         ensemble_options = [
             {"label": ensemble, "value": ensemble}
-            for ensemble in ensemble_set_model.ensemble_names()
+            for ensemble in input_provider_set.ensemble_names()
         ]
         for elm in new_delta_ensemble_names:
             ensemble_options.append({"label": elm, "value": elm})
