@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.6` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.7rc0` of `webviz-subsurface`.
 
 
 
@@ -2038,6 +2038,148 @@ How to use in YAML config file:
 * [Examples of segyfiles](https://github.com/equinor/webviz-subsurface-testdata/tree/master/observed_data/seismic).
 
 The segyfiles are on a `SEG-Y` format and can be investigated outside `webviz` using e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### SeismicMisfit
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+Seismic misfit plotting.
+Consists of several tabs with different plots of
+observed and simulated seismic 4d attribute.
+* Seismic obs data (overview)
+* Seismic misfit per real (misfit quantification and ranking)
+* Seismic crossplot - sim vs obs (data points statistics)
+* Seismic errorbar plot - sim vs obs (data points statistics)
+* Seismic map plot - sim vs obs (data points statistics)
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`ensembles`:** Which *scratch_ensembles* in *shared_settings* to include.
+<br>(Note that **realization-** must be part of the *shared_settings* paths.)
+
+* **`attributes`:** List of the simulated attribute file names to include.
+It is a requirement that there is a corresponding file with the observed
+and meta data included. This file must have the same name, but with an
+additional prefix = "meta--". For example, if one includes a file
+called "my_awesome_attribute.txt" in the attributes list, the corresponding
+obs/meta file must be called "meta--my_awesome_attribute.txt". See Data Input
+section for more  details.
+
+* **`attribute_sim_path`:** Path to the `attributes` simulation file.
+Path is given as relative to *runpath*, where *runpath* = path as defined
+for `ensembles` in shared settings.
+
+* **`attribute_obs_path`:** Path to the `attributes` obs/meta file.
+Path is either given as relative to *runpath* or as an absolute path.
+
+* **`obs_mult`:** Multiplier for all observation and observation error data.
+Can be used for calibration purposes.
+
+* **`sim_mult`:** Multiplier for all simulated data.
+Can be used for calibration purposes.
+
+* **`polygon`:** Path to a folder or a file containing (fault-) polygons.
+If value is a folder all csv files in that folder will be included
+(e.g. "share/results/polygons/").
+If value is a file, then that file will be read. One can also use r"*"-notation
+in filename to read filtered list of files
+(e.g. "share/results/polygons/r"*"faultlinesr"*"csv").
+Path is either given as relative to *runpath* or as an absolute path.
+If path is ambigious (e.g. with multi-realization runpath),
+only the first successful find is used.
+
+* **`realrange`:** Realization range filter for each of the ensembles.
+Assign as list of two integers in square brackets (e.g. [0, 99]).
+Realizations outside range will be excluded.
+If `realrange` is omitted, no realization filter will be applied (i.e. include all).
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - SeismicMisfit:
+        ensembles:  # Required, type List[str].
+        attributes:  # Required, type List[str].
+        attribute_sim_path:  # Optional, type str.
+        attribute_obs_path:  # Optional, type str.
+        obs_mult:  # Optional, type float.
+        sim_mult:  # Optional, type float.
+        polygon:  # Optional, type str.
+        realrange:  # Optional, type List[typing.List[int]].
+```
+
+
+
+<!-- tab:Data input -->
+
+
+The input data consists of 2 different file types.<br>
+
+1) Observation and meta data csv file (one per attribute):
+This csv file must contain the 5 column headers "EAST" (or "X_UTME"),
+"NORTH" (or "Y_UTMN"), "REGION", "OBS" and "OBS_ERROR".
+The column names are case insensitive and can be in any order.
+"OBS" is the observed attribute value and "OBS_ERROR"
+is the corresponding error.<br>
+```csv
+    X_UTME,Y_UTMN,REGION,OBS,OBS_ERROR
+    456166.26,5935963.72,1,0.002072,0.001
+    456241.17,5935834.17,2,0.001379,0.001
+    456316.08,5935704.57,3,0.001239,0.001
+    ...
+    ...
+```
+2) Simulation data file (one per attribute and realization):
+This is a 1 column file (ERT compatible format).
+The column is the simulated attribute value. This file has no header.
+```
+    0.0023456
+    0.0012345
+    0.0013579
+    ...
+    ...
+```
+
+It is a requirement that each line of data in these 2 files represent
+the same data point. I.e. line number N+1 in obs/metadata file corresponds to
+line N in sim files. The +1 shift for the obs/metadata file
+is due to that file is the only one with a header.
 
 
 
