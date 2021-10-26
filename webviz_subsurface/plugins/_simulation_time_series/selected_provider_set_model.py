@@ -1,3 +1,4 @@
+import sys
 from typing import Dict, List, Optional, Sequence
 
 import numpy as np
@@ -33,7 +34,7 @@ class SelectedProviderSetModel:
     ) -> None:
         _selected_provider_dict: Dict[str, EnsembleSummaryProvider] = {
             name: input_provider_set.provider(name)
-            for name in input_provider_set.ensemble_names()
+            for name in input_provider_set.names()
             if name in selected_ensembles
         }
         for delta_ensemble in delta_ensembles:
@@ -57,7 +58,7 @@ class SelectedProviderSetModel:
     ) -> DeltaEnsemble:
         ensemble_a = delta_ensemble["ensemble_a"]
         ensemble_b = delta_ensemble["ensemble_b"]
-        provider_set_ensembles = provider_set.ensemble_names()
+        provider_set_ensembles = provider_set.names()
         if (
             ensemble_a not in provider_set_ensembles
             or ensemble_b not in provider_set_ensembles
@@ -96,7 +97,7 @@ class SelectedProviderSetModel:
         `Input:`
         * vectors: List[str] - List of vector names
         """
-        if ensemble not in self._selected_provider_set.ensemble_names():
+        if ensemble not in self._selected_provider_set.names():
             raise ValueError(
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
@@ -174,7 +175,7 @@ class SelectedProviderSetModel:
         * Column names are not the historical vector name, but the original vector name,
         i.e. `WOPTH:OP_1` data is placed in colum with name `WOPT:OP_1`
         """
-        if ensemble not in self._selected_provider_set.ensemble_names():
+        if ensemble not in self._selected_provider_set.names():
             raise ValueError(
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
@@ -221,7 +222,16 @@ class SelectedProviderSetModel:
         )
 
     def create_vector_plot_title(self, vector: str) -> str:
-        metadata = self._selected_provider_set.vector_metadata(vector)
+        if sys.version_info >= (3, 9):
+            vector_filtered = vector.removeprefix("AVG_").removeprefix("INTVL_")
+        else:
+            vector_filtered = (
+                vector[4:]
+                if vector.startswith("AVG_")
+                else (vector[6:] if vector.startswith("INTVL_") else vector)
+            )
+
+        metadata = self._selected_provider_set.vector_metadata(vector_filtered)
 
         if metadata is None:
             return simulation_vector_description(vector)

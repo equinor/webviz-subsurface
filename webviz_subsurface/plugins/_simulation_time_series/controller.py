@@ -124,7 +124,7 @@ def controller_callbacks(
         # TODO: Create unique colors based on all ensembles, i.e. union of
         # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
         # Now color can change when changing selected ensembles?
-        ensemble_colors = unique_colors(selected_provider_set.ensemble_names(), theme)
+        ensemble_colors = unique_colors(selected_provider_set.names(), theme)
 
         figure_builder = GraphFigureBuilder(
             vectors, vector_titles, ensemble_colors, sampling, theme
@@ -141,10 +141,7 @@ def controller_callbacks(
         }
 
         # Plotting per ensemble
-        # for ensemble, provider in selected_ensembles_providers.items():
-        for ensemble in selected_provider_set.ensemble_names():
-            provider = selected_provider_set.provider(ensemble)
-
+        for ensemble, provider in selected_provider_set.items():
             # Filter vectors for provider
             ensemble_vectors = [
                 elm for elm in vectors if elm in provider.vector_names()
@@ -178,10 +175,10 @@ def controller_callbacks(
         # NOTE: Retrieve historical vector from first ensemble
         if (
             TraceOptions.HISTORY in trace_options
-            and len(selected_provider_set.ensemble_names()) > 0
+            and len(selected_provider_set.names()) > 0
         ):
             # Name and provider from first selected ensemble
-            ensemble = selected_provider_set.ensemble_names()[0]
+            ensemble = selected_provider_set.names()[0]
             provider = selected_provider_set.provider(ensemble)
 
             ensemble_vectors = [
@@ -300,7 +297,7 @@ def controller_callbacks(
 
         ensemble_options = [
             {"label": ensemble, "value": ensemble}
-            for ensemble in input_provider_set.ensemble_names()
+            for ensemble in input_provider_set.names()
         ]
         for elm in new_delta_ensemble_names:
             ensemble_options.append({"label": elm, "value": elm})

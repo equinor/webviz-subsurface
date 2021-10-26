@@ -134,7 +134,7 @@ class SimulationTimeSeries(WebvizPluginABC):
     def layout(self) -> wcc.FlexBox:
         return main_view(
             get_uuid=self.uuid,
-            ensemble_names=self._input_provider_set.ensemble_names(),
+            ensemble_names=self._input_provider_set.names(),
             vector_selector_data=self._vector_selector_data,
             selected_visualization=self._initial_visualization_selection,
             selected_vectors=self._initial_vectors,
