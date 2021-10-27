@@ -55,6 +55,7 @@ from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._tornado_plotter_fmu import TornadoPlotterFMU
+from ._upscaling_qc import UpscalingQC
 from ._volumetric_analysis import VolumetricAnalysis
 from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
