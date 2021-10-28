@@ -14,7 +14,7 @@ from webviz_subsurface._providers import EnsembleTableProviderFactory
 class TornadoPlotterFMU(WebvizPluginABC):
     """General tornado plotter for FMU data from a csv file of responses.
     ---
-    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`ensemble`:** Which ensemble in `shared_settings` to visualize.
     * **`csvfile`:** Relative ensemble path to csv file with responses
     * **`aggregated_csvfile`:** Alternative to ensemble + csvfile with
     aggregated responses. Requires REAL and ENSEMBLE columns
