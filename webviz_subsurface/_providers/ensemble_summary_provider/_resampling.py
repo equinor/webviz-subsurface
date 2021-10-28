@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List
@@ -8,27 +7,13 @@ import pyarrow as pa
 import pyarrow.compute as pc
 
 from .ensemble_summary_provider import Frequency
+from ._field_metadata import is_rate_from_field_meta
 
 
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
     # A bit hackish, utilizes the fact that datetime64 is relative to epoch
     # 1970-01-01 which is a Thursday
     return datetime_day.astype("datetime64[W]").astype("datetime64[D]") + 4
-
-
-def _is_rate_from_field_meta(field: pa.Field) -> bool:
-    """Determine if the field is a rate by querying for the "is_rate" keyword in the
-    field's metadata
-    """
-    # This is expensive wrt performance. Should avoid JSON parsing here
-    if field.metadata:
-        meta_as_str = field.metadata.get(b"smry_meta")
-        if meta_as_str:
-            meta_dict = json.loads(meta_as_str)
-            if meta_dict.get("is_rate") is True:
-                return True
-
-    return False
 
 
 def generate_normalized_sample_dates(
@@ -147,7 +132,7 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
             )
         else:
             raw_numpy_arr = table.column(colname).to_numpy()
-            if _is_rate_from_field_meta(table.field(colname)):
+            if is_rate_from_field_meta(table.field(colname)):
                 i = interpolate_backfill(
                     sample_dates_np_as_uint, raw_dates_np_as_uint, raw_numpy_arr, 0, 0
                 )
@@ -254,7 +239,7 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
         if colname in ["DATE", "REAL"]:
             continue
 
-        is_rate = _is_rate_from_field_meta(table.field(colname))
+        is_rate = is_rate_from_field_meta(table.field(colname))
         raw_whole_numpy_arr = table.column(colname).to_numpy()
 
         vec_arr_list = []
@@ -387,7 +372,7 @@ def sample_single_real_table_at_date_NAIVE_SLOW(
             column_arrays.append(np.array([np_datetime]))
         else:
             # This is expensive wrt performance. Should optimize the function to avoid JSON parsing
-            is_rate = _is_rate_from_field_meta(table.field(colname))
+            is_rate = is_rate_from_field_meta(table.field(colname))
 
             if idx0 == idx1:
                 # Exact hit
@@ -537,7 +522,7 @@ def sample_segmented_multi_real_table_at_date(
         elif colname == "DATE":
             column_arrays.append(np.full(len(unique_reals), np_datetime))
         else:
-            is_rate = _is_rate_from_field_meta(table.field(colname))
+            is_rate = is_rate_from_field_meta(table.field(colname))
 
             records = table.column(colname).take(row_indices)
             records_np = records.to_numpy()
