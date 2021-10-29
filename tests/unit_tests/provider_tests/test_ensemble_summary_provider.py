@@ -99,33 +99,33 @@ def test_arrow_unsmry_lazy_vector_metadata(
 
     meta = provider.vector_metadata("FOPR")
     assert meta is not None
-    assert meta["unit"] == "SM3/DAY"
-    assert meta["is_total"] is False
-    assert meta["is_rate"] is True
-    assert meta["is_historical"] is False
-    assert meta["keyword"] == "FOPR"
-    assert meta["wgname"] is None
-    assert meta["get_num"] == 0
+    assert meta.unit == "SM3/DAY"
+    assert meta.is_total is False
+    assert meta.is_rate is True
+    assert meta.is_historical is False
+    assert meta.keyword == "FOPR"
+    assert meta.wgname is None
+    assert meta.get_num == 0
 
     meta = provider.vector_metadata("WOPTH:A6")
     assert meta is not None
-    assert meta["unit"] == "SM3"
-    assert meta["is_total"] is True
-    assert meta["is_rate"] is False
-    assert meta["is_historical"] is True
-    assert meta["keyword"] == "WOPTH"
-    assert meta["wgname"] == "A6"
-    assert meta["get_num"] == 11
+    assert meta.unit == "SM3"
+    assert meta.is_total is True
+    assert meta.is_rate is False
+    assert meta.is_historical is True
+    assert meta.keyword == "WOPTH"
+    assert meta.wgname == "A6"
+    assert meta.get_num == 11
 
     meta = provider.vector_metadata("FWCT")
     assert meta is not None
-    assert meta["unit"] == ""
-    assert meta["is_total"] is False
-    assert meta["is_rate"] is True
-    assert meta["is_historical"] is False
-    assert meta["keyword"] == "FWCT"
-    assert meta["wgname"] is None
-    assert meta["get_num"] == 0
+    assert meta.unit == ""
+    assert meta.is_total is False
+    assert meta.is_rate is True
+    assert meta.is_historical is False
+    assert meta.keyword == "FWCT"
+    assert meta.wgname is None
+    assert meta.get_num == 0
 
 
 def test_create_from_arrow_unsmry_presampled_monthly(

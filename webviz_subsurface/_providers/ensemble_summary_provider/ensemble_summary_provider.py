@@ -1,7 +1,8 @@
 import abc
 import datetime
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import pandas as pd
 
@@ -18,6 +19,17 @@ class Frequency(Enum):
             return cls(value)
         except ValueError:
             return None
+
+
+@dataclass(frozen=True)
+class VectorMetadata:
+    unit: str
+    is_total: bool
+    is_rate: bool
+    is_historical: bool
+    keyword: str
+    wgname: Optional[str]
+    get_num: Optional[int]
 
 
 # Class provides data for ensemble summary (timeseries)
@@ -39,11 +51,18 @@ class EnsembleSummaryProvider(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
+        """Returns metadata for the specified vector. Returns None if no metadata
+        exists or if any of the non-optional properties of VectorMetadata are missing.
+        """
         ...
 
     @abc.abstractmethod
     def supports_resampling(self) -> bool:
+        """Returns True if this provider supports resampling, otherwise False.
+        A provider that doesn't support resampling will only accept None as value for
+        the resampling_frequency parameter in dates() and get_vectors_df().
+        """
         ...
 
     @abc.abstractmethod

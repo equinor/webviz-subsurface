@@ -2,7 +2,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -13,14 +13,18 @@ from pyarrow import feather
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._dataframe_utils import make_date_column_datetime_object
-from ._field_metadata import create_vector_metadata_dict_from_field_meta
+from ._field_metadata import create_vector_metadata_from_field_meta
 from ._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
     find_intersected_dates_between_realizations,
     find_min_max_for_numeric_table_columns,
     get_per_vector_min_max_from_schema_metadata,
 )
-from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
+from .ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+    Frequency,
+    VectorMetadata,
+)
 
 # Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
@@ -350,10 +354,10 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         return self._realizations
 
     # -------------------------------------------------------------------------
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         schema = self._get_or_read_schema()
         field = schema.field(vector_name)
-        return create_vector_metadata_dict_from_field_meta(field)
+        return create_vector_metadata_from_field_meta(field)
 
     # -------------------------------------------------------------------------
     def supports_resampling(self) -> bool:

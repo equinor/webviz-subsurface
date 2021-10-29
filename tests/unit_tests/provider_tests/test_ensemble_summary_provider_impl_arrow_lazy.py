@@ -19,13 +19,20 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
 def _add_mock_smry_meta_to_table(table: pa.Table) -> pa.Table:
     schema = table.schema
     for colname in schema.names:
-        smry_meta_dict = {}
-        if "_r" in colname:
-            smry_meta_dict["is_rate"] = True
-        if "_t" in colname:
-            smry_meta_dict["is_total"] = True
+        is_rate = bool("_r" in colname)
+        is_total = bool("_t" in colname)
 
-        if len(smry_meta_dict) > 0:
+        smry_meta_dict = None
+        if is_rate or is_total:
+            smry_meta_dict = {
+                "unit": "N/A",
+                "is_rate": is_rate,
+                "is_total": is_total,
+                "is_historical": False,
+                "keyword": "UNKNOWN",
+            }
+
+        if smry_meta_dict:
             idx = schema.get_field_index(colname)
             field = schema.field(idx)
             field_metadata = {b"smry_meta": json.dumps(smry_meta_dict)}
@@ -196,14 +203,14 @@ def test_get_vector_metadata(tmp_path: Path) -> None:
     assert meta is None
 
     meta = provider.vector_metadata("B_r")
-    assert meta and meta["is_rate"] is True
+    assert meta and meta.is_rate is True
 
     meta = provider.vector_metadata("C_t")
-    assert meta and meta["is_total"] is True
+    assert meta and meta.is_total is True
 
     meta = provider.vector_metadata("D_r_t")
-    assert meta and meta["is_rate"] is True
-    assert meta and meta["is_total"] is True
+    assert meta and meta.is_rate is True
+    assert meta and meta.is_total is True
 
 
 def test_get_vectors_without_resampling(tmp_path: Path) -> None:
