@@ -6,8 +6,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from .ensemble_summary_provider import Frequency
 from ._field_metadata import is_rate_from_field_meta
+from .ensemble_summary_provider import Frequency
 
 
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:

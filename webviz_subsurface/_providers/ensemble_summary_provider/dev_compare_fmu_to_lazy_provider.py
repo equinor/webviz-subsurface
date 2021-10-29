@@ -8,8 +8,10 @@ import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
 from .ensemble_summary_provider import Frequency
-from .ensemble_summary_provider_factory import EnsembleSummaryProvider
-from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
+from .ensemble_summary_provider_factory import (
+    EnsembleSummaryProvider,
+    EnsembleSummaryProviderFactory,
+)
 
 # pylint: disable=line-too-long
 

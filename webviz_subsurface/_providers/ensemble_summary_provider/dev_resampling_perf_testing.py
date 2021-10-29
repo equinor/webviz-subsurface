@@ -1,8 +1,8 @@
 import logging
 import time
 
-import pyarrow as pa
 import numpy as np
+import pyarrow as pa
 
 from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
     sample_segmented_multi_real_table_at_date,
