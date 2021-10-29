@@ -60,6 +60,15 @@ def tornado_plots_layout(figures: list, table: list) -> html.Div:
     )
 
 
+def tornado_error_layout(message: str) -> wcc.Frame:
+    return wcc.Frame(
+        color="white",
+        highlight=False,
+        style={"height": "91vh"},
+        children=html.Div(message, style={"margin-top": "40px"}),
+    )
+
+
 def tornado_selections_layout(
     uuid: str, volumemodel: InplaceVolumesModel, tab: str
 ) -> html.Div:

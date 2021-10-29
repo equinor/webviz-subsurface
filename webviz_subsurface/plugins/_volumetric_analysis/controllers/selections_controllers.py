@@ -85,9 +85,23 @@ def selections_controllers(
     @callback(
         Output(get_uuid("initial-load-info"), "data"),
         Input(get_uuid("page-selected"), "data"),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
+        Input(
+            {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": ALL},
+            "value",
+        ),
         State(get_uuid("initial-load-info"), "data"),
     )
-    def _store_initial_load_info(page_selected: str, initial_load: dict) -> dict:
+    def _store_initial_load_info(
+        page_selected: str,
+        _selectors_changed: list,
+        _filters_changed: list,
+        initial_load: dict,
+    ) -> Dict[str, bool]:
+        """
+        Store info (True/False) reagarding if a page is initally loaded.
+        Updating filters or selectors will set the value to False
+        """
         if initial_load is None:
             initial_load = {}
         initial_load[page_selected] = page_selected not in initial_load
@@ -265,7 +279,7 @@ def selections_controllers(
         if selected_tab == "table" and page_selections["Group by"] is not None:
             selected_data = page_selections["Group by"]
         if selected_tab == "tornado":
-            selected_data = ["SENSNAME"]
+            selected_data = ["SENSNAME", page_selections["Subplots"]]
 
         output = {}
         for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
