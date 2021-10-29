@@ -551,6 +551,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             }
                                             for polyname in self.polygon_names
                                         ],
+                                        # value=self.polygon_names[0],
                                         multi=False,
                                         clearable=True,
                                         persistence=True,
@@ -1464,6 +1465,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             {"label": polyname, "value": polyname}
                                             for polyname in self.polygon_names
                                         ],
+                                        # value=self.polygon_names[0],
                                         multi=False,
                                         clearable=True,
                                         persistence=True,
