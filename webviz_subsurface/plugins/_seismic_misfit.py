@@ -551,7 +551,6 @@ class SeismicMisfit(WebvizPluginABC):
                                             }
                                             for polyname in self.polygon_names
                                         ],
-                                        # value=self.polygon_names[0],
                                         multi=False,
                                         clearable=True,
                                         persistence=True,
@@ -1465,7 +1464,6 @@ class SeismicMisfit(WebvizPluginABC):
                                             {"label": polyname, "value": polyname}
                                             for polyname in self.polygon_names
                                         ],
-                                        # value=self.polygon_names[0],
                                         multi=False,
                                         clearable=True,
                                         persistence=True,
@@ -2171,8 +2169,8 @@ def update_obsdata_map(
         df_obs,
         x="east",
         y="north",
-        range_x=x_range,
-        range_y=y_range,
+        # range_x=x_range,  # inactivate when using uirevision
+        # range_y=y_range,  # inactivate when using uirevision
         color=colorby,
         hover_data=list(df_obs.columns),
         color_continuous_scale=color_scale,
@@ -2207,6 +2205,8 @@ def update_obsdata_map(
     fig.update_layout(coloraxis_colorbar_len=0.9)
     fig.update_layout(coloraxis_colorbar_thickness=20)
     fig.update_traces(marker=dict(size=marker_size), selector=dict(mode="markers"))
+
+    fig.update_layout(uirevision='true')  # don't update layout during callbacks
 
     return fig
 
@@ -2456,10 +2456,13 @@ def update_obs_sim_map_plot(
                 exclude_empty_subplots=True,
             )
 
-    fig.update_xaxes(range=x_range)
-    fig.update_yaxes(range=y_range)
+    # fig.update_xaxes(range=x_range)  # inactivate when using uirevision
+    # fig.update_yaxes(range=y_range)  # inactivate when using uirevision
     fig.update_yaxes(scaleanchor="x")
     fig.update_xaxes(scaleanchor="x")
+    fig.update_xaxes(matches="x")  # this solved issue with misaligned zoom/pan
+
+    fig.update_layout(uirevision='true')  # don't update layout during callbacks
 
     # fig.update_layout(template="plotly_dark")
 
