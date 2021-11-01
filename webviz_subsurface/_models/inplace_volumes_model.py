@@ -59,9 +59,7 @@ class InplaceVolumesModel:
         if volume_type != "dynamic":
             # compute water zone volumes if total volumes are present
             if any(col.endswith("_TOTAL") for col in volumes_table.columns):
-                volumes_table = self._compute_water_zone_volumes(
-                    volumes_table, selectors
-                )
+                volumes_table = self._compute_water_zone_volumes(volumes_table)
 
             # stack dataframe on fluid zone and add fluid as column instead of a column suffix
             dfs = []
@@ -201,15 +199,20 @@ class InplaceVolumesModel:
         return self.pmodel.parameters
 
     @staticmethod
-    def _compute_water_zone_volumes(
-        voldf: pd.DataFrame, selectors: list
-    ) -> pd.DataFrame:
+    def _compute_water_zone_volumes(voldf: pd.DataFrame) -> pd.DataFrame:
         """Compute water zone volumes by subtracting HC-zone volumes from
         TOTAL volumes"""
         supported_columns = ["BULK_TOTAL", "NET_TOTAL", "PORE_TOTAL", "PORV_TOTAL"]
+        supported_responses_in_df = [
+            col.replace("_TOTAL", "") for col in supported_columns if col in voldf
+        ]
         # Format check
         for src, df in voldf.groupby("SOURCE"):
-            volcols = [col for col in df if col not in selectors]
+            volcols = [
+                col
+                for col in df
+                if any(col.startswith(resp) for resp in supported_responses_in_df)
+            ]
             if not any(col in volcols for col in supported_columns):
                 continue
             if df[volcols].isnull().values.any():
@@ -221,7 +224,7 @@ class InplaceVolumesModel:
                 )
                 return voldf
 
-        for col in [x.replace("_TOTAL", "") for x in voldf if x in supported_columns]:
+        for col in supported_responses_in_df:
             voldf[f"{col}_WATER"] = (
                 voldf[f"{col}_TOTAL"]
                 - voldf.get(f"{col}_OIL", 0)
@@ -246,6 +249,9 @@ class InplaceVolumesModel:
             self._property_columns.append("PORO_NET")
         if all(col in self._dataframe for col in ["HCPV", "PORV"]):
             self._property_columns.append("SW")
+
+        if "FACIES" in self.selectors and "BULK" in self._dataframe:
+            self._property_columns.append("FACIES_FRACTION")
 
         for vol_column in ["STOIIP", "GIIP"]:
             if all(col in self._dataframe for col in ["HCPV", vol_column]):
@@ -276,11 +282,11 @@ class InplaceVolumesModel:
         dframe.replace(np.inf, np.nan, inplace=True)
         return dframe
 
-    def get_df(
+    def _get_dataframe_with_volumetrics_and_properties(
         self,
-        filters: Optional[Dict[str, list]] = None,
-        groups: Optional[list] = None,
-        parameters: Optional[list] = None,
+        filters: Dict[str, list],
+        groups: list,
+        parameters: list,
         properties: Optional[list] = None,
     ) -> pd.DataFrame:
         """Function to retrieve a dataframe with volumetrics and properties. Parameters
@@ -289,10 +295,6 @@ class InplaceVolumesModel:
         The final dataframe can be grouped by giving in a list of columns to group on.
         """
         dframe = self.dataframe.copy()
-
-        groups = groups if groups is not None else []
-        filters = filters if filters is not None else {}
-        parameters = parameters if parameters is not None else []
 
         if parameters and self.parameters:
             columns = parameters + ["REAL", "ENSEMBLE"]
@@ -319,7 +321,47 @@ class InplaceVolumesModel:
                 dframe["BO"] = np.nan
             if not filters.get("FLUID_ZONE") == ["gas"]:
                 dframe["BG"] = np.nan
+        if "FACIES" not in groups:
+            dframe["FACIES_FRACTION"] = np.nan
+
         return dframe
+
+    def get_df(
+        self,
+        filters: Optional[Dict[str, list]] = None,
+        groups: Optional[list] = None,
+        parameters: Optional[list] = None,
+        properties: Optional[list] = None,
+    ) -> pd.DataFrame:
+        """
+        Function to retrieve a dataframe with volumetrics and properties, using the
+        "_get_dataframe_with_volumetrics_and_properties" method. If FACIES is used as
+        a group selector, the returning dataframe will include facies fractions.
+        Note if FACIES has been included as filter this filter is applied after
+        calculating facies fractions.
+        """
+
+        groups = groups if groups is not None else []
+        filters = filters if filters is not None else {}
+        parameters = parameters if parameters is not None else []
+
+        if "FACIES" not in groups:
+            return self._get_dataframe_with_volumetrics_and_properties(
+                filters, groups, parameters, properties
+            )
+
+        filters_excl_facies = {
+            key: val for key, val in filters.items() if key != "FACIES"
+        }
+        dframe = self._get_dataframe_with_volumetrics_and_properties(
+            filters_excl_facies, groups, parameters, properties
+        )
+        # Remove "FACIES" to compute facies fraction for the individual groups
+        groups = [x for x in groups if x != "FACIES"]
+        df = dframe.groupby(groups) if groups else dframe
+        dframe["FACIES_FRACTION"] = df["BULK"].transform(lambda x: x / x.sum())
+
+        return dframe[dframe["FACIES"].isin(filters["FACIES"])] if filters else dframe
 
 
 def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:

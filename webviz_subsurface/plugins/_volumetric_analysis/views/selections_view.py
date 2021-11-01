@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import webviz_core_components as wcc
-from dash import html
+from dash import dcc, html
 from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._models import InplaceVolumesModel
@@ -167,6 +167,7 @@ def settings_layout(
             remove_fluid_annotation(volumemodel, uuid=uuid, tab=tab),
             subplot_xaxis_range(uuid=uuid, tab=tab),
             histogram_options(uuid=uuid, tab=tab),
+            bar_text_options(uuid=uuid, tab=tab),
             html.Span("Colors", style={"font-weight": "bold"}),
             wcc.ColorScales(
                 id={"id": uuid, "tab": tab, "settings": "Colorscale"},
@@ -227,6 +228,7 @@ def remove_fluid_annotation(
 
 def histogram_options(uuid: str, tab: str) -> html.Div:
     return html.Div(
+        style={"margin-bottom": "10px"},
         children=[
             wcc.RadioItems(
                 label="Barmode:",
@@ -247,6 +249,49 @@ def histogram_options(uuid: str, tab: str) -> html.Div:
                 marks={1: 1, 10: 10, 20: 20, 30: 30},
                 min=1,
                 max=30,
+            ),
+        ],
+    )
+
+
+def bar_text_options(uuid: str, tab: str) -> html.Div:
+    return html.Div(
+        children=[
+            html.Span("Bar label format:", style={"font-weight": "bold"}),
+            html.Div(
+                style={"margin-bottom": "15px"},
+                children=[
+                    wcc.RadioItems(
+                        id={"id": uuid, "tab": tab, "selector": "textformat"},
+                        options=[
+                            {"label": "No label", "value": False},
+                            {"label": "Default", "value": "default"},
+                            {"label": "SI", "value": "s"},
+                            {"label": "Float", "value": "f"},
+                        ],
+                        labelStyle={"display": "inline-flex", "margin-right": "5px"},
+                        value="default",
+                    ),
+                    wcc.FlexBox(
+                        children=[
+                            wcc.Label(
+                                "Label precision:",
+                                style={"flex": 1, "minWidth": "40px"},
+                            ),
+                            dcc.Input(
+                                id={"id": uuid, "tab": tab, "selector": "decimals"},
+                                style={"flex": 1, "minWidth": "40px"},
+                                type="number",
+                                required=True,
+                                value=3,
+                                step=1,
+                                max=6,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
+                    ),
+                ],
             ),
         ]
     )
