@@ -260,6 +260,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
             Output(self.uuid("click_data"), component_property="children"),
             Input(self.uuid("heatmap_id"), component_property="clickData"),
             Input(self.uuid("choice_hist_id"), component_property="value"),
+            prevent_initial_call=True,
         )
         def _display_click_data(celldata, hist_display):
             """render a histogram of parameters distribution prior/posterior or
