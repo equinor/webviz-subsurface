@@ -511,7 +511,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             ]
                                         ],
                                         style={"display": "block"},
-                                        value=0.6,
+                                        value=0.8,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -688,7 +688,7 @@ class SeismicMisfit(WebvizPluginABC):
                                                 "value": False,
                                             },
                                         ],
-                                        value=False,
+                                        value=True,
                                     ),
                                     wcc.Dropdown(
                                         label="Fig layout - height",
@@ -1429,7 +1429,7 @@ class SeismicMisfit(WebvizPluginABC):
                                                 10,
                                             ]
                                         ],
-                                        value=0.6,
+                                        value=0.8,
                                         clearable=False,
                                         persistence=True,
                                         persistence_type="memory",
@@ -1478,7 +1478,7 @@ class SeismicMisfit(WebvizPluginABC):
                             ),
                             wcc.Selectors(
                                 label="Slice settings",
-                                open_details=False,
+                                open_details=True,
                                 children=[
                                     wcc.Dropdown(
                                         label="Slicing accuracy (north ± meters)",
@@ -1656,7 +1656,7 @@ class SeismicMisfit(WebvizPluginABC):
             obsmap_scale_col_range: float,
             obsmap_marker_size: int,
             obsmap_polygon: str,
-        ) -> Tuple[px.scatter, px.scatter, dict, str]:
+        ) -> Tuple[px.scatter, px.scatter, dict, str, float, float]:
 
             if not regions:
                 raise PreventUpdate
@@ -2080,6 +2080,7 @@ def update_misfit_plot(
             color="ABSDIFF",
             range_color=[min_diff * 0.30, max_diff * 1.00],
             color_continuous_scale=px.colors.sequential.amp,
+            hover_data={"ABSDIFF": ":,.3r"},
         )
         fig.update_xaxes(showticklabels=False)
         fig.update_xaxes(title_text="Realization (hover to see values)")
@@ -2139,7 +2140,15 @@ def update_obsdata_raw(
         color=colorby,
         marginal_y=marg_y,
         error_y=err_y,
-        hover_data=list(df_obs.columns),
+        hover_data={
+            "region": True,
+            "data_point": False,
+            "obs": ":.2r",
+            "obs_error": ":.2r",
+            "east": ":,.0f",
+            "north": ":,.0f",
+            "data_number": True,
+        },
         title="obs data raw plot | colorby: " + str(colorby),
     )
     if reset_index:
@@ -2195,7 +2204,15 @@ def update_obsdata_map(
         x="east",
         y="north",
         color=colorby,
-        hover_data=list(df_obs.columns),
+        # hover_data=list(df_obs.columns),
+        hover_data={
+            "east": False,
+            "north": False,
+            "region": True,
+            "obs": ":.2r",
+            "obs_error": ":.2r",
+            "data_number": True,
+        },
         color_continuous_scale=color_scale,
         color_continuous_midpoint=scale_midpoint,
         range_color=range_col,
@@ -2212,9 +2229,10 @@ def update_obsdata_map(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
-                    line_color="Khaki",
+                    line_color="RoyalBlue",
                     name=poly_id,
                     showlegend=False,
+                    hoverinfo="name",
                 ),
                 row="all",
                 col="all",
@@ -2235,6 +2253,7 @@ def update_obsdata_map(
 
 
 # -------------------------------
+# pylint: disable=too-many-statements, too-many-branches
 def update_obs_sim_map_plot(
     df: pd.DataFrame,
     ens_name: str,
@@ -2343,9 +2362,8 @@ def update_obs_sim_map_plot(
             ),
             showlegend=False,
             text=ensdf.obs,
-            hovertemplate="Obs: %{text:.3r}<extra></extra>",
-            # customdata=ensdf_stat.sim_mean,
-            # hovertemplate="Obs: %{text:.2r}<br>Sim_mean: %{customdata:.2r}",
+            customdata=ensdf.region,
+            hovertemplate="Obs: %{text:.2r}<br>Region: %{customdata}<extra></extra>",
         ),
         row=1,
         col=1,
@@ -2369,8 +2387,9 @@ def update_obs_sim_map_plot(
                 showscale=True,
             ),
             showlegend=False,
-            hovertemplate="Sim_mean: %{text:.3r}<extra></extra>",
             text=ensdf_stat.sim_mean,
+            customdata=ensdf.region,
+            hovertemplate="Sim_mean: %{text:.2r}<br>Region: %{customdata}<extra></extra>",
         ),
         row=1,
         col=2,
@@ -2401,8 +2420,9 @@ def update_obs_sim_map_plot(
                     showscale=True,
                 ),
                 showlegend=False,
-                hovertemplate="Diff_mean: %{text:.3r}<extra></extra>",
                 text=ensdf_stat.diff_mean,
+                customdata=ensdf.region,
+                hovertemplate="Diff_mean: %{text:.2r}<br>Region: %{customdata}<extra></extra>",
             ),
             row=1,
             col=3,
@@ -2422,9 +2442,11 @@ def update_obs_sim_map_plot(
                     colorscale=[
                         [0, "blue"],
                         [0.33, "lightblue"],
-                        [0.33, "lightgreen"],
+                        # [0.33, "darkgreen"],
+                        [0.36, "lightgreen"],
                         [0.5, "beige"],
-                        [0.67, "lightgreen"],
+                        [0.64, "lightgreen"],
+                        # [0.67, "darkgreen"],
                         [0.67, "lightcoral"],
                         [1, "red"],
                     ],
@@ -2441,8 +2463,9 @@ def update_obs_sim_map_plot(
                 ),
                 opacity=0.5,
                 showlegend=False,
-                hovertemplate="Coverage value: %{text:.3r}<extra></extra>",
                 text=ensdf_stat[coverage],
+                customdata=ensdf.region,
+                hovertemplate="Coverage value: %{text:.2r}<br>Region: %{customdata}<extra></extra>",
             ),
             row=1,
             col=3,
@@ -2494,9 +2517,10 @@ def update_obs_sim_map_plot(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
-                    line_color="Khaki",
+                    line_color="RoyalBlue",
                     name=poly_id,
                     showlegend=False,
+                    hoverinfo="name",
                 ),
                 row="all",
                 col="all",
@@ -2616,7 +2640,7 @@ def update_obs_sim_map_plot(
                 ),
             ],
         )
-        real_traces = []
+
         for col in df_sliced_reals.columns:
             if col.startswith("real-"):
                 fig_slice_reals.add_trace(
@@ -2628,7 +2652,7 @@ def update_obs_sim_map_plot(
                         line=dict(width=1, dash="dash"),
                         name=col,
                         showlegend=True,
-                        # hoverinfo="name",
+                        hoverinfo="name",
                     )
                 )
 
@@ -2645,9 +2669,10 @@ def update_obs_sim_map_plot(
 
         return fig, fig_slice_reals
 
+    return fig, None
+
 
 # -------------------------------
-# pylint: disable=too-many-statements
 def update_crossplot(
     df: pd.DataFrame,
     colorby: Optional[str] = None,
@@ -2723,7 +2748,19 @@ def update_crossplot(
         color=colorby,
         size=sizeby,
         size_max=20,
-        hover_data=list(df_stat.columns),
+        # hover_data=list(df_stat.columns),
+        hover_data={
+            "region": True,
+            "ENSEMBLE": False,
+            "obs": ":.2r",
+            # "obs_error": ":.2r",
+            "sim_mean": ":.2r",
+            # "sim_std": ":.2r",
+            "diff_mean": ":.2r",
+            # "east": ":,.0f",
+            # "north": ":,.0f",
+            "data_number": True,
+        },
     )
     fig.update_traces(marker=dict(sizemode="area"), error_y_thickness=1.0)
     fig.update_layout(uirevision="true")  # don't update layout during callbacks
@@ -2845,7 +2882,20 @@ def update_errorbarplot(
         error_y_minus=errory_minus,
         color=colorby,
         range_color=[cmin, cmax],
-        hover_data=list(df_stat.columns),
+        # hover_data=list(df_stat.columns),
+        hover_data={
+            "region": True,
+            "ENSEMBLE": False,
+            "counter": False,
+            "obs": ":.2r",
+            # "obs_error": ":.2r",
+            "sim_mean": ":.2r",
+            # "sim_std": ":.2r",
+            "diff_mean": ":.2r",
+            # "east": ":,.0f",
+            # "north": ":,.0f",
+            "data_number": True,
+        },
     )
     fig.update_traces(error_y_thickness=1.0, selector=dict(type="scatter"))
 
@@ -3452,7 +3502,7 @@ def _map_initial_marker_size(total_data_points: int, no_ens: int) -> int:
             f"Value of total_data_points is {total_data_points}"
         )
     data_points_per_ens = int(total_data_points / no_ens)
-    marker_size = int(600 / math.sqrt(data_points_per_ens))
+    marker_size = int(550 / math.sqrt(data_points_per_ens))
     if marker_size > 30:
         marker_size = 30
     elif marker_size < 2:
