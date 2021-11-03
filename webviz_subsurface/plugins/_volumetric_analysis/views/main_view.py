@@ -107,7 +107,7 @@ def main_view(
                             uuid=get_uuid("selections"),
                             tab="src-comp",
                             volumemodel=volumemodel,
-                            compare_on="SOURCE",
+                            compare_on="Source",
                         ),
                         filter_layout(
                             uuid=get_uuid("filters"),
@@ -119,10 +119,11 @@ def main_view(
                 ),
             )
         )
-    if len(volumemodel.ensembles) > 1:
+    if len(volumemodel.ensembles) > 1 or volumemodel.sensrun:
+        compare_on = "Ensemble" if len(volumemodel.ensembles) > 1 else "Sensitivity"
         tabs.append(
             wcc.Tab(
-                label="Ensemble comparison",
+                label=f"{compare_on} comparison",
                 value="ens-comp",
                 children=tab_view_layout(
                     main_layout=comparison_main_layout(get_uuid("main-ens-comp")),
@@ -131,13 +132,13 @@ def main_view(
                             uuid=get_uuid("selections"),
                             tab="ens-comp",
                             volumemodel=volumemodel,
-                            compare_on="ENSEMBLE",
+                            compare_on=compare_on,
                         ),
                         filter_layout(
                             uuid=get_uuid("filters"),
                             tab="ens-comp",
                             volumemodel=volumemodel,
-                            hide_selectors=["ENSEMBLE", "FLUID_ZONE"],
+                            hide_selectors=["ENSEMBLE", "FLUID_ZONE", "SENSNAME_CASE"],
                         ),
                     ],
                 ),
