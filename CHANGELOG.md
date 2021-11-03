@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#809](https://github.com/equinor/webviz-subsurface/pull/809) - `GroupTree` - added more statistical options (P10, P90, P50/Median, Max, Min). Some improvements to the menu layout and behaviour
 
 ### Fixed
+- [#833](https://github.com/equinor/webviz-subsurface/pull/833) - Fixed errors in `VolumetricAnalysis` related to empty/insufficient data after filtering in the `tornadoplots` and `comparison` tabs.
 - [#817](https://github.com/equinor/webviz-subsurface/pull/817) - `DiskUsage` - Fixed formatting error in bar chart tooltip.
 - [#820](https://github.com/equinor/webviz-subsurface/pull/820) - `SurfaceWithGridCrossSection` - Fixed an issue with intersecting grids generated with
 `xtgeo==2.15.2`. Grids exported from RMS with this version of xtgeo should be re-exported using a newer version as the subgrid information is incorrect.
