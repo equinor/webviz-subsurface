@@ -1510,6 +1510,22 @@ class SeismicMisfit(WebvizPluginABC):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
+                                    # wcc.Dropdown(
+                                    wcc.RadioItems(
+                                        label="Plot type",
+                                        id=self.uuid("map_plot-slice_type"),
+                                        options=[
+                                            {"label": "Statistics", "value": "stat"},
+                                            {
+                                                "label": "Individual realizations",
+                                                "value": "reals",
+                                            },
+                                        ],
+                                        value="stat",
+                                        # clearable=False,
+                                        # persistence=True,
+                                        # persistence_type="memory",
+                                    ),
                                 ],
                             ),
                         ],
@@ -1927,6 +1943,7 @@ class SeismicMisfit(WebvizPluginABC):
             Input(self.uuid("map_plot-plot_coverage"), "value"),
             Input(self.uuid("map_plot-marker_size"), "value"),
             Input(self.uuid("map_plot-obsmap-polygon"), "value"),
+            Input(self.uuid("map_plot-slice_type"), "value"),
             # prevent_initial_call=True,
         )
         def _update_map_plot_obs_and_sim(
@@ -1940,6 +1957,7 @@ class SeismicMisfit(WebvizPluginABC):
             plot_coverage: int,
             marker_size: int,
             map_plot_polygon: str,
+            slice_type: str,
         ) -> Tuple[Optional[Any], Optional[Any]]:
 
             if not regions:
@@ -1980,6 +1998,7 @@ class SeismicMisfit(WebvizPluginABC):
                 slice_position=slice_position,
                 plot_coverage=plot_coverage,
                 marker_size=marker_size,
+                slice_type=slice_type,
             )
 
             return fig_maps, fig_slice
@@ -2226,6 +2245,7 @@ def update_obs_sim_map_plot(
     slice_position: float = 0.0,
     plot_coverage: int = 0,
     marker_size: int = 10,
+    slice_type: str = "stat",
 ) -> Tuple[Optional[Any], Optional[Any]]:
     """Plot seismic obsdata, simdata and diffdata; side by side map view plots.
     Takes dataframe with obsdata, metadata and simdata as input"""
@@ -2303,6 +2323,7 @@ def update_obs_sim_map_plot(
         horizontal_spacing=0.02,
     )
 
+    # customdata = np.dstack((ensdf.obs, ensdf_stat.sim_mean))
     fig.add_trace(
         go.Scattergl(
             x=ensdf_stat["east"],
@@ -2321,8 +2342,10 @@ def update_obs_sim_map_plot(
                 showscale=True,
             ),
             showlegend=False,
-            hoverinfo="text",
-            hovertext=ensdf.obs,
+            text=ensdf.obs,
+            hovertemplate="Obs: %{text:.3r}<extra></extra>",
+            # customdata=ensdf_stat.sim_mean,
+            # hovertemplate="Obs: %{text:.2r}<br>Sim_mean: %{customdata:.2r}",
         ),
         row=1,
         col=1,
@@ -2346,8 +2369,8 @@ def update_obs_sim_map_plot(
                 showscale=True,
             ),
             showlegend=False,
-            hoverinfo="text",
-            hovertext=ensdf_stat.sim_mean,
+            hovertemplate="Sim_mean: %{text:.3r}<extra></extra>",
+            text=ensdf_stat.sim_mean,
         ),
         row=1,
         col=2,
@@ -2378,8 +2401,8 @@ def update_obs_sim_map_plot(
                     showscale=True,
                 ),
                 showlegend=False,
-                hoverinfo="text",
-                hovertext=ensdf_stat.diff_mean,
+                hovertemplate="Diff_mean: %{text:.3r}<extra></extra>",
+                text=ensdf_stat.diff_mean,
             ),
             row=1,
             col=3,
@@ -2418,8 +2441,8 @@ def update_obs_sim_map_plot(
                 ),
                 opacity=0.5,
                 showlegend=False,
-                hoverinfo="text",
-                hovertext=ensdf_stat[coverage],
+                hovertemplate="Coverage value: %{text:.3r}<extra></extra>",
+                text=ensdf_stat[coverage],
             ),
             row=1,
             col=3,
@@ -2442,8 +2465,8 @@ def update_obs_sim_map_plot(
                 ),
                 opacity=0.8,
                 showlegend=False,
-                hoverinfo="text",
-                hovertext=ensdf.region,
+                hovertemplate="Region: %{text}<extra></extra>",
+                text=ensdf.region,
             ),
             row=1,
             col=3,
@@ -2486,85 +2509,141 @@ def update_obs_sim_map_plot(
 
     fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
+    fig.update_layout(hovermode="closest")
     # fig.update_layout(template="plotly_dark")
 
     # ----------------------------------------
-    # Create lineplot along slice
+    if slice_type == "stat":
+        # Create lineplot along slice - statistics
 
-    df_sliced = ensdf_stat[
-        (ensdf_stat.north < slice_position + slice_accuracy)
-        & (ensdf_stat.north > slice_position - slice_accuracy)
-    ]
-    df_sliced = df_sliced.sort_values(by="east", ascending=True)
-
-    fig_slice = go.Figure(
-        [
-            go.Scatter(
-                name="Obsdata",
-                x=df_sliced["east"],
-                y=df_sliced["obs"],
-                mode="markers+lines",
-                marker=dict(color="red", size=5),
-                line=dict(width=2, dash="solid"),
-                showlegend=True,
-            ),
-            go.Scatter(
-                name="Sim mean",
-                x=df_sliced["east"],
-                y=df_sliced["sim_mean"],
-                mode="markers+lines",
-                marker=dict(color="green", size=3),
-                line=dict(width=1, dash="dot"),
-                showlegend=True,
-            ),
-            go.Scatter(
-                name="Sim p10",
-                x=df_sliced["east"],
-                y=df_sliced["sim_p10"],
-                mode="lines",
-                marker=dict(color="#444"),
-                line=dict(width=1),
-                showlegend=True,
-            ),
-            go.Scatter(
-                name="Sim p90",
-                x=df_sliced["east"],
-                y=df_sliced["sim_p90"],
-                marker=dict(color="#444"),
-                line=dict(width=1),
-                mode="lines",
-                fillcolor="rgba(68, 68, 68, 0.3)",
-                fill="tonexty",
-                showlegend=True,
-            ),
-            go.Scatter(
-                name="Sim min",
-                x=df_sliced["east"],
-                y=df_sliced["sim_min"],
-                mode="lines",
-                line=dict(width=1, dash="dot", color="grey"),
-                showlegend=True,
-            ),
-            go.Scatter(
-                name="Sim max",
-                x=df_sliced["east"],
-                y=df_sliced["sim_max"],
-                mode="lines",
-                line=dict(width=1, dash="dot", color="grey"),
-                showlegend=True,
-            ),
+        df_sliced_stat = ensdf_stat[
+            (ensdf_stat.north < slice_position + slice_accuracy)
+            & (ensdf_stat.north > slice_position - slice_accuracy)
         ]
-    )
-    fig_slice.update_layout(
-        yaxis_title="Attribute value",
-        xaxis_title="East",
-        title="Attribute values along slice",
-        hovermode="x",
-        # uirevision='true'  # don't update layout during callbacks
-    )
-    fig_slice.update_yaxes(uirevision="true")  # don't update y-range during callbacks
+        df_sliced_stat = df_sliced_stat.sort_values(by="east", ascending=True)
 
-    return fig, fig_slice
+        fig_slice_stat = go.Figure(
+            [
+                go.Scatter(
+                    name="Obsdata",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["obs"],
+                    mode="markers+lines",
+                    marker=dict(color="red", size=5),
+                    line=dict(width=2, dash="solid"),
+                    showlegend=True,
+                ),
+                go.Scatter(
+                    name="Sim mean",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["sim_mean"],
+                    mode="markers+lines",
+                    marker=dict(color="green", size=3),
+                    line=dict(width=1, dash="dot"),
+                    showlegend=True,
+                ),
+                go.Scatter(
+                    name="Sim p10",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["sim_p10"],
+                    mode="lines",
+                    marker=dict(color="#444"),
+                    line=dict(width=1),
+                    showlegend=True,
+                ),
+                go.Scatter(
+                    name="Sim p90",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["sim_p90"],
+                    marker=dict(color="#444"),
+                    line=dict(width=1),
+                    mode="lines",
+                    fillcolor="rgba(68, 68, 68, 0.3)",
+                    fill="tonexty",
+                    showlegend=True,
+                ),
+                go.Scatter(
+                    name="Sim min",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["sim_min"],
+                    mode="lines",
+                    line=dict(width=1, dash="dot", color="grey"),
+                    showlegend=True,
+                ),
+                go.Scatter(
+                    name="Sim max",
+                    x=df_sliced_stat["east"],
+                    y=df_sliced_stat["sim_max"],
+                    mode="lines",
+                    line=dict(width=1, dash="dot", color="grey"),
+                    showlegend=True,
+                ),
+            ]
+        )
+        fig_slice_stat.update_layout(
+            yaxis_title="Attribute value",
+            xaxis_title="East",
+            title="Attribute values along slice",
+            hovermode="x",
+            # uirevision='true'  # don't update layout during callbacks
+        )
+        fig_slice_stat.update_yaxes(
+            uirevision="true"
+        )  # don't update y-range during callbacks
+
+        return fig, fig_slice_stat
+
+    # ----------------------------------------
+    if slice_type == "reals":
+        # Create lineplot along slice - individual realizations
+
+        df_sliced_reals = ensdf[
+            (ensdf.north < slice_position + slice_accuracy)
+            & (ensdf.north > slice_position - slice_accuracy)
+        ]
+        df_sliced_reals = df_sliced_reals.sort_values(by="east", ascending=True)
+
+        fig_slice_reals = go.Figure(
+            [
+                go.Scatter(
+                    name="Obsdata",
+                    x=df_sliced_reals["east"],
+                    y=df_sliced_reals["obs"],
+                    mode="markers+lines",
+                    marker=dict(color="red", size=7),
+                    line=dict(width=5, dash="solid"),
+                    showlegend=True,
+                ),
+            ],
+        )
+        real_traces = []
+        for col in df_sliced_reals.columns:
+            if col.startswith("real-"):
+                fig_slice_reals.add_trace(
+                    go.Scattergl(
+                        x=df_sliced_reals["east"],
+                        y=df_sliced_reals[col],
+                        mode="lines",  # "markers+lines",
+                        line_shape="linear",
+                        line=dict(width=1, dash="dash"),
+                        name=col,
+                        showlegend=True,
+                        # hoverinfo="name",
+                    )
+                )
+
+        fig_slice_reals.update_layout(
+            yaxis_title="Attribute value",
+            xaxis_title="East",
+            title="Attribute values along slice",
+            hovermode="closest",
+            # uirevision='true'  # don't update layout during callbacks
+        )
+        fig_slice_reals.update_yaxes(
+            uirevision="true"
+        )  # don't update y-range during callbacks
+
+        return fig, fig_slice_reals
 
 
 # -------------------------------
