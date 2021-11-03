@@ -152,13 +152,14 @@ class SeismicMisfit(WebvizPluginABC):
             self.df_polygons = make_polygon_df(
                 ensemble_set=self.ensemble_set, polygon=self.polygon
             )
-            self.polygon_names = list(self.df_polygons.name.unique())
+            self.polygon_names = sorted(list(self.df_polygons.name.unique()))
 
         self.caseinfo = ""
         self.dframe = {}
         self.dframeobs = {}
         self.makedf_args = {}
         self.region_names: List[int] = []
+        self.map_y_range: List[float] = []
 
         for attribute_name in self.attributes:
             logging.debug(f"Build dataframe for attribute: \n{attribute_name}\n")
@@ -209,25 +210,29 @@ class SeismicMisfit(WebvizPluginABC):
                         self.region_names.append(regname)
                 self.region_names = sorted(self.region_names)
 
-            # -- get obs data range
-            self.obs_range = [
-                self.dframeobs[attribute_name]["obs"].min(),
-                self.dframeobs[attribute_name]["obs"].max(),
-            ]
-            self.obs_error_range = [
-                self.dframeobs[attribute_name]["obs_error"].min(),
-                self.dframeobs[attribute_name]["obs_error"].max(),
-            ]
+            # -- get map north range
+            if not self.map_y_range:
+                self.map_y_range = [
+                    self.dframeobs[attribute_name]["north"].min(),
+                    self.dframeobs[attribute_name]["north"].max(),
+                ]
+            else:
+                north_min = self.dframeobs[attribute_name]["north"].min()
+                north_max = self.dframeobs[attribute_name]["north"].max()
+                self.map_y_range = [
+                    min(north_min, self.map_y_range[0]),
+                    max(north_max, self.map_y_range[1]),
+                ]
 
-            # -- get map east/north ranges
-            self.map_x_range = [
-                self.dframeobs[attribute_name]["east"].min(),
-                self.dframeobs[attribute_name]["east"].max(),
-            ]
-            self.map_y_range = [
-                self.dframeobs[attribute_name]["north"].min(),
-                self.dframeobs[attribute_name]["north"].max(),
-            ]
+        # -- get initial obs data range
+        self.obs_range_init = [
+            self.dframeobs[attributes[0]]["obs"].min(),
+            self.dframeobs[attributes[0]]["obs"].max(),
+        ]
+        self.obs_error_range_init = [
+            self.dframeobs[attributes[0]]["obs_error"].min(),
+            self.dframeobs[attributes[0]]["obs_error"].max(),
+        ]
 
         # get list of all realizations (based on column names real-x)
         self.realizations = [
@@ -395,10 +400,10 @@ class SeismicMisfit(WebvizPluginABC):
                                         min=0,
                                         max=0.5
                                         * max(
-                                            abs(self.obs_range[0]),
-                                            abs(self.obs_range[1]),
+                                            abs(self.obs_range_init[0]),
+                                            abs(self.obs_range_init[1]),
                                         ),
-                                        step=0.5 * self.obs_error_range[0],
+                                        step=0.5 * self.obs_error_range_init[0],
                                         value=0,
                                     ),
                                     html.Div(
@@ -1608,6 +1613,8 @@ class SeismicMisfit(WebvizPluginABC):
             Output(self.uuid("obsdata-graph-map"), "figure"),
             Output(self.uuid("obsdata-obsmap_scale_col_range"), "style"),
             Output(self.uuid("obsdata-noise_filter_text"), "children"),
+            Output(self.uuid("obsdata-noise_filter"), "max"),
+            Output(self.uuid("obsdata-noise_filter"), "step"),
             Input(self.uuid("obsdata-attr_name"), "value"),
             Input(self.uuid("obsdata-ens_name"), "value"),
             Input(self.uuid("obsdata-regions"), "value"),
@@ -1641,6 +1648,15 @@ class SeismicMisfit(WebvizPluginABC):
             # --- ensure int type
             regions = [int(reg) for reg in regions]
 
+            obs_range = [
+                self.dframeobs[attr_name]["obs"].min(),
+                self.dframeobs[attr_name]["obs"].max(),
+            ]
+            obs_error_range = [
+                self.dframeobs[attr_name]["obs_error"].min(),
+                self.dframeobs[attr_name]["obs_error"].max(),
+            ]
+
             # --- apply region filter
             dframe_obs = self.dframeobs[attr_name].loc[
                 self.dframeobs[attr_name]["region"].isin(regions)
@@ -1659,12 +1675,10 @@ class SeismicMisfit(WebvizPluginABC):
             # --- make graphs
             fig_map = update_obsdata_map(
                 dframe_obs.copy(),
-                x_range=self.map_x_range,
-                y_range=self.map_y_range,
                 colorby=obsmap_colorby,
                 df_polygon=df_poly,
-                obs_range=self.obs_range,
-                obs_err_range=self.obs_error_range,
+                obs_range=obs_range,
+                obs_err_range=obs_error_range,
                 scale_col_range=obsmap_scale_col_range,
                 marker_size=obsmap_marker_size,
             )
@@ -1676,10 +1690,6 @@ class SeismicMisfit(WebvizPluginABC):
                 showerror=showerror,
                 showhistogram=showhistogram,
                 reset_index=resetindex,
-                y_range=[
-                    self.obs_range[0] - self.obs_error_range[1],
-                    self.obs_range[1] + self.obs_error_range[1],
-                ],
             )
 
             show_hide_range_scaling = {"display": "block"}
@@ -1687,8 +1697,16 @@ class SeismicMisfit(WebvizPluginABC):
                 show_hide_range_scaling = {"display": "none"}
 
             noise_filter_text = f"Current noise filter value: {noise_filter}"
-
-            return fig_raw, fig_map, show_hide_range_scaling, noise_filter_text
+            noise_filter_max = 0.5 * max(abs(obs_range[0]), abs(obs_range[1]))
+            noise_filter_step = 0.5 * obs_error_range[0]
+            return (
+                fig_raw,
+                fig_map,
+                show_hide_range_scaling,
+                noise_filter_text,
+                noise_filter_max,
+                noise_filter_step,
+            )
 
         # --- Seismic misfit per real ---
         @app.callback(
@@ -1809,10 +1827,6 @@ class SeismicMisfit(WebvizPluginABC):
                 colorby=colorby,
                 sizeby=sizeby,
                 showerrorbar=showerrbar,
-                plot_range=[
-                    self.obs_range[0] - self.obs_error_range[1],
-                    self.obs_range[1] + self.obs_error_range[1],
-                ],
                 fig_columns=figcols,
                 figheight=figheight,
             )
@@ -1885,10 +1899,6 @@ class SeismicMisfit(WebvizPluginABC):
                     showerrorbar=errbar,
                     showerrorbarobs=errbarobs,
                     reset_index=resetindex,
-                    y_range=[
-                        self.obs_range[0] - self.obs_error_range[1],
-                        self.obs_range[1] + self.obs_error_range[1],
-                    ],
                     figheight=figheight,
                 )
             else:
@@ -1899,10 +1909,6 @@ class SeismicMisfit(WebvizPluginABC):
                     showerrorbarobs=errbarobs,
                     reset_index=resetindex,
                     fig_columns=figcols,
-                    y_range=[
-                        self.obs_range[0] - self.obs_error_range[1],
-                        self.obs_range[1] + self.obs_error_range[1],
-                    ],
                     figheight=figheight,
                 )
             return figures, show_hide_selector, show_hide_selector
@@ -1942,6 +1948,11 @@ class SeismicMisfit(WebvizPluginABC):
             # --- ensure int type
             regions = [int(reg) for reg in regions]
 
+            obs_range = [
+                self.dframeobs[attr_name]["obs"].min(),
+                self.dframeobs[attr_name]["obs"].max(),
+            ]
+
             # --- apply region filter
             dframe = self.dframe[attr_name].loc[
                 self.dframe[attr_name]["region"].isin(regions)
@@ -1963,9 +1974,7 @@ class SeismicMisfit(WebvizPluginABC):
                 dframe,
                 ens_name,
                 df_polygon=df_poly,
-                x_range=self.map_x_range,
-                y_range=self.map_y_range,
-                obs_range=self.obs_range,
+                obs_range=obs_range,
                 scale_col_range=scale_col_range,
                 slice_accuracy=slice_accuracy,
                 slice_position=slice_position,
@@ -2074,7 +2083,6 @@ def update_obsdata_raw(
     showerror: bool = False,
     showhistogram: bool = False,
     reset_index: bool = False,
-    y_range: Optional[List[float]] = None,
 ) -> px.scatter:
     """Plot seismic obsdata; raw plot.
     Takes dataframe with obsdata and metadata as input"""
@@ -2109,7 +2117,6 @@ def update_obsdata_raw(
         df_obs,
         x="data_point",
         y="obs",
-        range_y=y_range,
         color=colorby,
         marginal_y=marg_y,
         error_y=err_y,
@@ -2125,14 +2132,13 @@ def update_obsdata_raw(
     else:
         fig_raw.update_yaxes(title_text="observation value")
 
+    fig_raw.update_yaxes(uirevision="true")  # don't update y-range during callbacks
     return fig_raw
 
 
 # -------------------------------
 def update_obsdata_map(
     df_obs: pd.DataFrame,
-    x_range: List[float],
-    y_range: List[float],
     colorby: str,
     df_polygon: pd.DataFrame,
     obs_range: List[float],
@@ -2169,8 +2175,6 @@ def update_obsdata_map(
         df_obs,
         x="east",
         y="north",
-        # range_x=x_range,  # inactivate when using uirevision
-        # range_y=y_range,  # inactivate when using uirevision
         color=colorby,
         hover_data=list(df_obs.columns),
         color_continuous_scale=color_scale,
@@ -2189,7 +2193,7 @@ def update_obsdata_map(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
-                    line_color="gray",
+                    line_color="Khaki",
                     name=poly_id,
                     showlegend=False,
                 ),
@@ -2206,7 +2210,7 @@ def update_obsdata_map(
     fig.update_layout(coloraxis_colorbar_thickness=20)
     fig.update_traces(marker=dict(size=marker_size), selector=dict(mode="markers"))
 
-    fig.update_layout(uirevision='true')  # don't update layout during callbacks
+    fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
     return fig
 
@@ -2216,8 +2220,6 @@ def update_obs_sim_map_plot(
     df: pd.DataFrame,
     ens_name: str,
     df_polygon: pd.DataFrame,
-    x_range: List[float],
-    y_range: List[float],
     obs_range: List[float],
     scale_col_range: float = 0.6,
     slice_accuracy: Union[int, float] = 100,
@@ -2267,7 +2269,20 @@ def update_obs_sim_map_plot(
         col_max = max(abs(lower), upper)
         upper = col_max * scale_col_range
         lower = -1 * upper
-        color_scale = px.colors.diverging.balance
+        # color_scale = px.colors.diverging.balance_r
+        color_scale = [
+            [0, "yellow"],
+            [0.1, "orangered"],
+            [0.3, "darkred"],
+            [0.4, "dimgrey"],
+            [0.45, "lightgrey"],
+            [0.5, "WhiteSmoke"],
+            [0.55, "lightgrey"],
+            [0.6, "dimgrey"],
+            [0.7, "darkblue"],
+            [0.9, "blue"],
+            [1, "cyan"],
+        ]
 
     # ----------------------------------------
 
@@ -2338,7 +2353,7 @@ def update_obs_sim_map_plot(
         col=2,
     )
 
-    if plot_coverage == 0:
+    if plot_coverage == 0:  # abs diff plot
         fig.add_trace(
             go.Scattergl(
                 x=ensdf_stat["east"],
@@ -2347,6 +2362,15 @@ def update_obs_sim_map_plot(
                 marker=dict(
                     size=marker_size,
                     color=ensdf_stat["diff_mean"],
+                    cmin=0,
+                    cmax=obs_range[1] * scale_col_range,
+                    colorscale=[
+                        [0, "WhiteSmoke"],
+                        [0.1, "lightgrey"],
+                        [0.33, "dimgrey"],
+                        [0.67, "orangered"],
+                        [1, "yellow"],
+                    ],
                     colorbar_x=0.97,
                     colorbar_thicknessmode="fraction",
                     colorbar_thickness=0.02,
@@ -2400,7 +2424,7 @@ def update_obs_sim_map_plot(
             row=1,
             col=3,
         )
-    else:
+    else:  # region plot
         fig.add_trace(
             go.Scattergl(
                 x=ensdf["east"],
@@ -2447,7 +2471,7 @@ def update_obs_sim_map_plot(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
-                    line_color="gray",
+                    line_color="Khaki",
                     name=poly_id,
                     showlegend=False,
                 ),
@@ -2456,13 +2480,11 @@ def update_obs_sim_map_plot(
                 exclude_empty_subplots=True,
             )
 
-    # fig.update_xaxes(range=x_range)  # inactivate when using uirevision
-    # fig.update_yaxes(range=y_range)  # inactivate when using uirevision
     fig.update_yaxes(scaleanchor="x")
     fig.update_xaxes(scaleanchor="x")
     fig.update_xaxes(matches="x")  # this solved issue with misaligned zoom/pan
 
-    fig.update_layout(uirevision='true')  # don't update layout during callbacks
+    fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
     # fig.update_layout(template="plotly_dark")
 
@@ -2481,7 +2503,6 @@ def update_obs_sim_map_plot(
                 name="Obsdata",
                 x=df_sliced["east"],
                 y=df_sliced["obs"],
-                # mode="markers+lines",
                 mode="markers+lines",
                 marker=dict(color="red", size=5),
                 line=dict(width=2, dash="solid"),
@@ -2539,7 +2560,10 @@ def update_obs_sim_map_plot(
         xaxis_title="East",
         title="Attribute values along slice",
         hovermode="x",
+        # uirevision='true'  # don't update layout during callbacks
     )
+    fig_slice.update_yaxes(uirevision="true")  # don't update y-range during callbacks
+
     return fig, fig_slice
 
 
@@ -2550,16 +2574,13 @@ def update_crossplot(
     colorby: Optional[str] = None,
     sizeby: Optional[str] = None,
     showerrorbar: Optional[str] = None,
-    plot_range: Optional[List[float]] = None,
     fig_columns: int = 1,
     figheight: int = 450,
 ) -> Optional[List[wcc.Graph]]:
     """Create crossplot of ensemble average sim versus obs,
     one value per seismic datapoint."""
 
-    first = True
-    figures = []
-    dfs = []
+    dfs, figures = [], []
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
         logging.debug(f"Seismic crossplot; updating {ens_name}")
 
@@ -2573,11 +2594,11 @@ def update_crossplot(
 
         # del ensdf
 
-        if ensdf_stat["sim_std"].isnull().values.any():
-            logging.warning(
-                "Chosen sizeby is ignored and reset to constant "
-                "for current selections (std = nan)."
-            )
+        if (
+            sizeby in ("sim_std", "diff_std")
+            and ensdf_stat["sim_std"].isnull().values.any()
+        ):
+            logging.info("Chosen sizeby is ignored for current selections (std = nan).")
             sizeby = None
 
         errory = None
@@ -2599,23 +2620,6 @@ def update_crossplot(
             ensdf_stat = ensdf_stat.sort_values(by=[colorby])
             ensdf_stat = ensdf_stat.astype({"region": "string"})
 
-        # -------------------------------------------------------------
-        # get color and zeroline ranges from first case
-        if first:
-            rmax = max(ensdf_stat["sim_mean"].max(), ensdf_stat["obs"].max())
-            rmin = min(ensdf_stat["sim_mean"].min(), ensdf_stat["obs"].min())
-            axis_extend = (rmax - rmin) * 0.10
-            xplot_range = [rmin - axis_extend, rmax + axis_extend]
-            cmin = None
-            cmax = None
-            if colorby is not None:
-                cmin = ensdf_stat[colorby].min()
-                if colorby == "region":
-                    cmax = ensdf_stat[colorby].max()
-                else:
-                    cmax = ensdf_stat[colorby].quantile(0.9)
-            first = False
-
         dfs.append(ensdf_stat)
     # -------------------------------------------------------------
     if len(dfs) == 0:
@@ -2633,40 +2637,36 @@ def update_crossplot(
         df_stat,
         facet_col="ENSEMBLE",
         facet_col_wrap=fig_columns,
-        # height=total_height,
         x="obs",
         y="sim_mean",
-        range_x=plot_range,
-        range_y=plot_range,
         error_y=errory,
         error_y_minus=errory_minus,
         color=colorby,
-        range_color=[cmin, cmax],
         size=sizeby,
         size_max=20,
         hover_data=list(df_stat.columns),
     )
     fig.update_traces(marker=dict(sizemode="area"), error_y_thickness=1.0)
+    fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
     # add zero/diagonal line
-    tracelegend = False
-    # if colorby == "region":
-    #    tracelegend = True
+    min_obs = df.obs.min()
+    max_obs = df.obs.max()
     fig.add_trace(
         go.Scattergl(
-            x=xplot_range,
-            y=xplot_range,
+            x=[min_obs, max_obs],  # xplot_range,
+            y=[min_obs, max_obs],  # yplot_range,
             mode="lines",
             line_color="gray",
             name="zeroline",
-            showlegend=tracelegend,
+            showlegend=False,
         ),
         row="all",
         col="all",
         exclude_empty_subplots=True,
     )
 
-    # marker line color, default is white
+    # set marker line color = black (default is white)
     if sizeby is None:
         fig.update_traces(
             marker=dict(line=dict(width=0.4, color="black")),
@@ -2686,7 +2686,6 @@ def update_errorbarplot(
     showerrorbarobs: Optional[str] = None,
     reset_index: bool = False,
     fig_columns: int = 1,
-    y_range: Optional[List[float]] = None,
     figheight: int = 450,
 ) -> Optional[List[wcc.Graph]]:
     """Create errorbar plot of ensemble sim versus obs,
@@ -2763,7 +2762,6 @@ def update_errorbarplot(
         facet_col_wrap=fig_columns,
         x="counter",
         y="sim_mean",
-        range_y=y_range,
         error_y=errory,
         error_y_minus=errory_minus,
         color=colorby,
@@ -2806,6 +2804,7 @@ def update_errorbarplot(
     else:
         fig.update_yaxes(title_text="Simulated mean")
 
+    fig.update_yaxes(uirevision="true")  # don't update y-range during callbacks
     figures.append(wcc.Graph(figure=fig.to_dict(), style={"height": total_height}))
     return figures
 
@@ -2816,7 +2815,6 @@ def update_errorbarplot_superimpose(
     showerrorbar: Optional[str] = None,
     showerrorbarobs: Optional[str] = None,
     reset_index: bool = True,
-    y_range: Optional[List[float]] = None,
     figheight: int = 450,
 ) -> Optional[List[wcc.Graph]]:
     """Create errorbar plot of ensemble sim versus obs,
@@ -2924,7 +2922,6 @@ def update_errorbarplot_superimpose(
         return None
 
     fig.update_layout(hovermode="x")
-    fig.update_yaxes(range=y_range)
 
     if reset_index:
         fig.update_xaxes(title_text="data point (index reset, sorted by region)")
@@ -2935,6 +2932,7 @@ def update_errorbarplot_superimpose(
     else:
         fig.update_yaxes(title_text="Simulated mean")
 
+    fig.update_yaxes(uirevision="true")  # don't update y-range during callbacks
     figures.append(wcc.Graph(figure=fig.to_dict(), style={"height": figheight}))
     return figures
 
@@ -3250,7 +3248,21 @@ def _get_obsdata_col_settings(
             upper = abs_max * scale_col
             lower = -1 * upper
             scale_midpoint = 0.0
-            color_scale = px.colors.diverging.balance
+            # color_scale = px.colors.diverging.balance_r
+            color_scale = [
+                [0, "yellow"],
+                [0.1, "orangered"],
+                [0.3, "darkred"],
+                [0.4, "dimgrey"],
+                [0.45, "lightgrey"],
+                [0.5, "WhiteSmoke"],
+                [0.55, "lightgrey"],
+                [0.6, "dimgrey"],
+                [0.7, "darkblue"],
+                [0.9, "blue"],
+                [1, "cyan"],
+            ]
+
         range_col = [lower, upper]
     else:
         return None, None, None
@@ -3361,7 +3373,7 @@ def _map_initial_marker_size(total_data_points: int, no_ens: int) -> int:
             f"Value of total_data_points is {total_data_points}"
         )
     data_points_per_ens = int(total_data_points / no_ens)
-    marker_size = int(650 / math.sqrt(data_points_per_ens))
+    marker_size = int(600 / math.sqrt(data_points_per_ens))
     if marker_size > 30:
         marker_size = 30
     elif marker_size < 2:
