@@ -107,36 +107,54 @@ class TornadoBarChart:
         )
 
     def bar_labels(self, case: str) -> List:
+        if self._label_options not in ["simple", "detailed"]:
+            return []
 
-        if self._label_options == "simple":
-            return [
-                f"<b>{self._set_si_prefix_relative(x)}</b>, "
-                for x in self._tornadotable[f"{case}_tooltip"]
-            ]
-        if self._label_options == "detailed":
-            return [
-                f"<b>{self._set_si_prefix_relative(x)}</b>, "
-                f"True: {self._set_si_prefix(val)}, "
-                f"<br><b>Case: {label}</b> "
-                for x, label, val in zip(
-                    self._tornadotable[f"{case}_tooltip"],
-                    self._tornadotable[f"{case}_label"],
-                    self._tornadotable[f"true_{case}"],
+        barlabels = []
+        for _, row in self._tornadotable.iterrows():
+            # combine label if both bars on same side of reference
+            comb_label = any((row["low_base"] > 0, row["high_base"] < 0))
+            if comb_label:
+                xvals = "  |  ".join(
+                    [
+                        self._set_si_prefix_relative(row["low_tooltip"]),
+                        self._set_si_prefix_relative(row["high_tooltip"]),
+                    ]
                 )
-            ]
-        return []
+                truevals = "  |  ".join(
+                    [
+                        self._set_si_prefix(row["true_low"]),
+                        self._set_si_prefix(row["true_high"]),
+                    ]
+                )
+                casename = "P90  |  P10"
+            else:
+                xvals = self._set_si_prefix_relative(row[f"{case}_tooltip"])
+                truevals = self._set_si_prefix(row[f"true_{case}"])
+                casename = row[f"{case}_label"]
 
-    def hover_label(self) -> List:
-        return [
-            f"<b>Sensname: {sens}</b>:<br>"
-            f"Low: <b>{self._set_si_prefix_relative(low)}</b>, "
-            f"High: <b>{self._set_si_prefix_relative(high)}</b>, "
-            for low, high, sens in zip(
-                self._tornadotable["low"],
-                self._tornadotable["high"],
-                self._tornadotable["sensname"],
-            )
-        ]
+            text = f"<b>{xvals}</b>, " + ("<br>" if comb_label else "")
+            if self._label_options == "detailed":
+                text += f"True: {truevals}, <br><b>Case: {casename}</b> "
+            barlabels.append(text)
+        return barlabels
+
+    def hover_labels(self) -> List:
+        hovertext = []
+        for _, row in self._tornadotable.iterrows():
+            text = f"<b>Sensname: {row['sensname']}</b><br>"
+            if row["low_label"] is not None:
+                val = row["true_low"] if self._use_true_base else row["low_tooltip"]
+                text += (
+                    f"{row['low_label']}: <b>{self._set_si_prefix_relative(val)}</b> "
+                )
+            if row["high_label"] is not None:
+                val = row["true_high"] if self._use_true_base else row["high_tooltip"]
+                text += (
+                    f"{row['high_label']}: <b>{self._set_si_prefix_relative(val)}</b>"
+                )
+            hovertext.append(text)
+        return hovertext
 
     @property
     def data(self) -> List:
@@ -149,13 +167,13 @@ class TornadoBarChart:
                 name="low",
                 base=self._tornadotable["low_base"]
                 if not self._use_true_base
-                else self._reference_average,
+                else (self._reference_average + self._tornadotable["low_base"]),
                 customdata=self._tornadotable["low_reals"],
                 text=self.bar_labels("low"),
                 textposition="auto",
                 insidetextanchor="middle",
                 hoverinfo="text",
-                hovertext=self.hover_label(),
+                hovertext=self.hover_labels(),
                 orientation="h",
                 marker={
                     "line": {"width": 1.5, "color": "black"},
@@ -169,13 +187,13 @@ class TornadoBarChart:
                 name="high",
                 base=self._tornadotable["high_base"]
                 if not self._use_true_base
-                else self._reference_average,
+                else (self._reference_average + self._tornadotable["high_base"]),
                 customdata=self._tornadotable["high_reals"],
                 text=self.bar_labels("high"),
                 textposition="auto",
                 insidetextanchor="middle",
                 hoverinfo="text",
-                hovertext=self.hover_label(),
+                hovertext=self.hover_labels(),
                 orientation="h",
                 marker={
                     "line": {"width": 1.5, "color": "black"},
@@ -217,7 +235,7 @@ class TornadoBarChart:
     @property
     def range(self) -> List[float]:
         """Calculate x-axis range so that the reference is centered"""
-        max_val = max(self._tornadotable[["low", "high"]].abs().max())
+        max_val = max(self._tornadotable[["low_tooltip", "high_tooltip"]].abs().max())
         if self._use_true_base:
             return [
                 (self._reference_average - max_val) * 0.95,
