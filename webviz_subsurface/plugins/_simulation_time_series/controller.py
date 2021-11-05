@@ -22,6 +22,10 @@ from .types import (
 from .selected_provider_set_model import SelectedProviderSetModel
 from .graph_figure_builder import GraphFigureBuilder
 from .utils.trace_line_shape import get_simulation_line_shape
+from .utils.timeseries_cumulatives import (
+    get_total_vector_from_cumulative,
+    is_cumulative_vector,
+)
 
 
 from .main_view import ViewElements
@@ -107,13 +111,13 @@ def controller_callbacks(
             vectors = initial_selected_vectors
 
         # Filter selected delta ensembles
+        # TODO: Rename to e.g. selected_providers_model?
         selected_ensembles_model = SelectedProviderSetModel(
             input_provider_set,
             selected_ensembles,
             delta_ensembles,
             resampling_frequency,
         )
-        selected_provider_set = selected_ensembles_model.provider_set()
 
         # Titles for subplots TODO: Verify vector existing?
         vector_titles: Dict[str, str] = {
@@ -124,7 +128,9 @@ def controller_callbacks(
         # TODO: Create unique colors based on all ensembles, i.e. union of
         # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
         # Now color can change when changing selected ensembles?
-        ensemble_colors = unique_colors(selected_provider_set.names(), theme)
+        ensemble_colors = unique_colors(
+            selected_ensembles_model.provider_names(), theme
+        )
 
         figure_builder = GraphFigureBuilder(
             vectors, vector_titles, ensemble_colors, sampling, theme
@@ -135,60 +141,124 @@ def controller_callbacks(
             vector: get_simulation_line_shape(
                 line_shape_fallback,
                 vector,
-                selected_ensembles_model.provider_set().vector_metadata(vector),
+                selected_ensembles_model.vector_metadata(vector),
             )
             for vector in vectors
         }
 
         # Plotting per ensemble
-        for ensemble, provider in selected_provider_set.items():
-            # Filter vectors for provider
+        for ensemble in selected_ensembles_model.provider_names():
+            provider_vector_names = selected_ensembles_model.provider_vector_names(
+                ensemble
+            )
+
+            # Separate cumulative and non-cumulative vectors for provider
+            # TODO: Consider creating selected_ensembles_model.set_selected_vectors(vectors: List[str])
+            # and let model handled ensemble vectors and cumulative vectors state internally.
             ensemble_vectors = [
-                elm for elm in vectors if elm in provider.vector_names()
+                elm
+                for elm in vectors
+                if not is_cumulative_vector(elm) and elm in provider_vector_names
             ]
-            if len(ensemble_vectors) <= 0:
+            cumulative_vectors = [
+                elm
+                for elm in vectors
+                if is_cumulative_vector(elm)
+                and get_total_vector_from_cumulative(elm) in provider_vector_names
+            ]
+
+            if not ensemble_vectors and not cumulative_vectors:
                 continue
 
             if visualization == VisualizationOptions.REALIZATIONS:
-                resampling_freq = (
-                    resampling_frequency if provider.supports_resampling() else None
-                )
-                vectors_df = provider.get_vectors_df(ensemble_vectors, resampling_freq)
-                figure_builder.add_realizations_traces(
-                    vectors_df, ensemble, vector_line_shapes
-                )
+                if ensemble_vectors:
+                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
+                        ensemble, ensemble_vectors
+                    )
+                    figure_builder.add_realizations_traces(
+                        vectors_df, ensemble, vector_line_shapes
+                    )
+                if cumulative_vectors:
+                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
+                        ensemble, cumulative_vectors, sampling
+                    )
+                    figure_builder.add_realizations_traces(
+                        vectors_df,
+                        ensemble,
+                        vector_line_shapes,
+                        add_legend=not ensemble_vectors,
+                    )
             if visualization == VisualizationOptions.STATISTICS:
-                vectors_df = selected_ensembles_model.create_statistics_df(
-                    ensemble, ensemble_vectors
-                )
-                figure_builder.add_statistics_traces(
-                    vectors_df, ensemble, statistics_options, vector_line_shapes
-                )
+                if ensemble_vectors:
+                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
+                        ensemble, ensemble_vectors
+                    )
+                    vectors_df = selected_ensembles_model.create_statistics_df(
+                        vectors_df
+                    )
+                    figure_builder.add_statistics_traces(
+                        vectors_df, ensemble, statistics_options, vector_line_shapes
+                    )
+                if cumulative_vectors:
+                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
+                        ensemble, cumulative_vectors, sampling
+                    )
+                    vectors_df = selected_ensembles_model.create_statistics_df(
+                        vectors_df
+                    )
+                    figure_builder.add_statistics_traces(
+                        vectors_df,
+                        ensemble,
+                        statistics_options,
+                        vector_line_shapes,
+                        add_legend=not ensemble_vectors,
+                    )
+
             if visualization == VisualizationOptions.FANCHART:
-                vectors_df = selected_ensembles_model.create_statistics_df(
-                    ensemble, ensemble_vectors
-                )
-                figure_builder.add_fanchart_traces(
-                    vectors_df, ensemble, fanchart_options, vector_line_shapes
-                )
+                if ensemble_vectors:
+                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
+                        ensemble, ensemble_vectors
+                    )
+                    vectors_df = selected_ensembles_model.create_statistics_df(
+                        vectors_df
+                    )
+                    figure_builder.add_fanchart_traces(
+                        vectors_df, ensemble, fanchart_options, vector_line_shapes
+                    )
+                if cumulative_vectors:
+                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
+                        ensemble, cumulative_vectors, sampling
+                    )
+                    vectors_df = selected_ensembles_model.create_statistics_df(
+                        vectors_df
+                    )
+                    figure_builder.add_fanchart_traces(
+                        vectors_df,
+                        ensemble,
+                        fanchart_options,
+                        vector_line_shapes,
+                        add_legend=not ensemble_vectors,
+                    )
 
         # NOTE: Retrieve historical vector from first ensemble
         if (
             TraceOptions.HISTORY in trace_options
-            and len(selected_provider_set.names()) > 0
+            and len(selected_ensembles_model.provider_names()) > 0
         ):
             # Name and provider from first selected ensemble
-            ensemble = selected_provider_set.names()[0]
-            provider = selected_provider_set.provider(ensemble)
+            ensemble = selected_ensembles_model.provider_names()[0]
+            vector_names = selected_ensembles_model.provider_vector_names(ensemble)
 
-            ensemble_vectors = [
-                elm for elm in vectors if elm in provider.vector_names()
-            ]
+            ensemble_vectors = [elm for elm in vectors if elm in vector_names]
 
             history_vectors_df = selected_ensembles_model.create_history_vectors_df(
                 ensemble, ensemble_vectors
             )
-            figure_builder.add_history_traces(history_vectors_df, vector_line_shapes)
+            # TODO: Handle check of non-empty dataframe better!
+            if not history_vectors_df.empty and "DATE" in history_vectors_df.columns:
+                figure_builder.add_history_traces(
+                    history_vectors_df, vector_line_shapes
+                )
 
         return figure_builder.get_figure()
 

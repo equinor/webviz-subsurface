@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,11 @@ from .types import (
     DeltaEnsembleNamePair,
     create_delta_ensemble_name,
     StatisticsOptions,
+)
+from .utils.timeseries_cumulatives import (
+    calculate_cumulative_vectors_df,
+    get_total_vector_from_cumulative,
+    is_cumulative_vector,
 )
 
 from ..._abbreviations.reservoir_simulation import (
@@ -74,14 +79,45 @@ class SelectedProviderSetModel:
             provider_set.provider(ensemble_b),
         )
 
-    def provider_set(self) -> ProviderSet:
-        return self._selected_provider_set
+    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+        return self._selected_provider_set.vector_metadata(vector_name)
 
-    # TODO: Consider if function should be a part of model, or change function interface?
-    def create_statistics_df(
+    def provider_names(self) -> List[str]:
+        return self._selected_provider_set.names()
+
+    def provider_vector_names(self, ensemble: str) -> List[str]:
+        if ensemble not in self._selected_provider_set.names():
+            raise ValueError(
+                f'Ensemble "{ensemble}" not among selected ensembles in model!'
+            )
+        return self._selected_provider_set.provider(ensemble).vector_names()
+
+    def get_provider_vectors_df(
         self,
         ensemble: str,
-        vectors: List[str],
+        vector_names: Sequence[str],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> pd.DataFrame:
+        if ensemble not in self._selected_provider_set.names():
+            raise ValueError(
+                f'Ensemble "{ensemble}" not among selected ensembles in model!'
+            )
+
+        provider = self._selected_provider_set.provider(ensemble)
+        resampling_frequency = (
+            self._resampling_frequency if provider.supports_resampling() else None
+        )
+        return provider.get_vectors_df(
+            vector_names=vector_names,
+            resampling_frequency=resampling_frequency,
+            realizations=realizations,
+        )
+
+    # TODO: Consider if function should be a part of model, or change function interface?
+    def create_statistics_df_old(
+        self,
+        ensemble: str,
+        vector_names: List[str],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         """
@@ -109,7 +145,7 @@ class SelectedProviderSetModel:
 
         # TODO: Verify that all vectors exist for provider - raise exception on fail
         vectors_df = provider.get_vectors_df(
-            vectors, resampling_frequency, realizations
+            vector_names, resampling_frequency, realizations
         )
 
         # Invert p10 and p90 due to oil industry convention.
@@ -130,7 +166,7 @@ class SelectedProviderSetModel:
         #     .reset_index(level=["DATE"], col_level=1)
         # )
         statistics_df: pd.DataFrame = (
-            vectors_df[["DATE"] + vectors]
+            vectors_df[["DATE"] + vector_names]
             .groupby(["DATE"])
             .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90, p50])
             .reset_index(level=["DATE"], col_level=0)
@@ -149,10 +185,149 @@ class SelectedProviderSetModel:
 
         return statistics_df
 
+    # TODO: Consider if function should be a part of model, or change function interface?
+    @staticmethod
+    def create_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create vectors statistics dataframe for given vectors in provided vectors dataframe
+
+        Calculate min, max, mean, p10, p90 and p50 for each vector in dataframe column
+
+        `Returns:`
+        * Dataframe with double column level:\n
+          [            vector1,                        ... vectorN
+            "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+
+        `Input:`
+        * vectors_df: pd.DataFrame - Dataframe for vectors
+        """
+        # TODO: Add verification of format and raise value error - i.e required columns and
+        # "dimension" of vectors_statistics_df
+
+        vector_names = [
+            elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
+        ]
+
+        # Invert p10 and p90 due to oil industry convention.
+        def p10(x: List[float]) -> List[float]:
+            return np.nanpercentile(x, q=90)
+
+        def p90(x: List[float]) -> List[float]:
+            return np.nanpercentile(x, q=10)
+
+        def p50(x: List[float]) -> List[float]:
+            return np.nanpercentile(x, q=50)
+
+        statistics_df: pd.DataFrame = (
+            vectors_df[["DATE"] + vector_names]
+            .groupby(["DATE"])
+            .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90, p50])
+            .reset_index(level=["DATE"], col_level=0)
+        )
+
+        # Rename nanmin, nanmax and nanmean to min, max and mean.
+        col_stat_label_map = {
+            "nanmin": StatisticsOptions.MIN,
+            "nanmax": StatisticsOptions.MAX,
+            "nanmean": StatisticsOptions.MEAN,
+            "p10": StatisticsOptions.P10,
+            "p90": StatisticsOptions.P90,
+            "p50": StatisticsOptions.P50,
+        }
+        statistics_df.rename(columns=col_stat_label_map, level=1, inplace=True)
+
+        return statistics_df
+
+    def create_cumulative_vectors_df(
+        self,
+        ensemble: str,
+        cumulative_vector_names: List[str],
+        sampling_frequency: str,  # TODO: use Frequency enum?
+        realizations: Optional[Sequence[int]] = None,
+    ) -> pd.DataFrame:
+        """Get dataframe with cumulative vector data for provided vectors.
+
+        The returned dataframe contains columns with name of vector and corresponding cumulative
+        data
+
+        `Input:`
+        * ensemble: str - Ensemble name
+        * cumulative_vector_names: List[str] - list of vectors to create cumulative data for
+        [vector1, ... , vectorN]
+
+        `Output:`
+        * dataframe with cumulative vector names in columns and their cumulative data in rows.
+        `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
+
+        ---------------------
+        `TODO:`
+        * Verify calculation of cumulative
+        """
+        if ensemble not in self._selected_provider_set.names():
+            raise ValueError(
+                f'Ensemble "{ensemble}" not among selected ensembles in model!'
+            )
+
+        provider = self._selected_provider_set.provider(ensemble)
+        resampling_frequency = (
+            self._resampling_frequency if provider.supports_resampling() else None
+        )
+
+        if not cumulative_vector_names:
+            raise ValueError("Empty list of cumulative vector names")
+
+        for name in cumulative_vector_names:
+            if not is_cumulative_vector(name):
+                raise ValueError(f"{name} is not a cumulative vector!")
+
+        vector_names = [
+            get_total_vector_from_cumulative(elm)
+            for elm in cumulative_vector_names
+            if is_cumulative_vector(elm)
+        ]
+
+        vectors_df = provider.get_vectors_df(
+            vector_names, resampling_frequency, realizations
+        )
+
+        resampling_frequency_str: str = (
+            str(resampling_frequency.value)
+            if resampling_frequency is not None
+            and resampling_frequency.value is not None
+            else sampling_frequency
+        )
+
+        as_rate = cumulative_vector_names[0].startswith("AVG_")
+        vector_name = get_total_vector_from_cumulative(cumulative_vector_names[0])
+        cumulative_vectors_df = calculate_cumulative_vectors_df(
+            vectors_df[["DATE", "REAL", vector_name]],
+            sampling_frequency=sampling_frequency,
+            resampling_frequency=resampling_frequency_str,
+            as_rate=as_rate,
+        )
+        if len(cumulative_vector_names) == 1:
+            return cumulative_vectors_df
+
+        for cumulative_vector_name in cumulative_vector_names[1:]:
+            as_rate = cumulative_vector_name.startswith("AVG_")
+            vector_name = get_total_vector_from_cumulative(cumulative_vector_name)
+            cumulative_vectors_df = pd.merge(
+                cumulative_vectors_df,
+                calculate_cumulative_vectors_df(
+                    vectors_df[["DATE", "REAL", vector_name]],
+                    sampling_frequency=sampling_frequency,
+                    resampling_frequency=resampling_frequency_str,
+                    as_rate=as_rate,
+                ),
+                how="inner",
+            )
+
+        return cumulative_vectors_df
+
     def create_history_vectors_df(
         self,
         ensemble: str,
-        vectors: List[str],
+        vector_names: List[str],
     ) -> pd.DataFrame:
         """Get dataframe with existing historical vector data for provided vectors.
 
@@ -160,8 +335,8 @@ class SelectedProviderSetModel:
         data
 
         `Input:`
-        * ensenble: str - Ensemble name
-        * vectors: List[str] - list of vectors to get historical data for [vector1, ... , vectorN]
+        * ensemble: str - Ensemble name
+        * vector_names: List[str] - list of vectors to get historical data for [vector1, ... , vectorN]
 
         `Output:`
         * dataframe with non-historical vector names in columns and their historical data in rows.
@@ -180,7 +355,7 @@ class SelectedProviderSetModel:
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
 
-        if len(vectors) <= 0:
+        if len(vector_names) <= 0:
             return pd.DataFrame()
 
         provider = self._selected_provider_set.provider(ensemble)
@@ -190,7 +365,7 @@ class SelectedProviderSetModel:
         )
 
         # Verify for provider
-        for elm in vectors:
+        for elm in vector_names:
             if elm not in provider_vectors:
                 raise ValueError(
                     f'Vector "{elm}" not present among vectors for ensemble provider '
@@ -199,7 +374,7 @@ class SelectedProviderSetModel:
 
         # Dict with historical vector name as key, and non-historical vector name as value
         historical_vector_and_vector_name_dict: Dict[str, str] = {}
-        for vector in vectors:
+        for vector in vector_names:
             # TODO: Create new historical_vector according to new provider metadata?
             historical_vector_name = historical_vector(vector=vector, smry_meta=None)
             if (
@@ -221,25 +396,27 @@ class SelectedProviderSetModel:
             columns=historical_vector_and_vector_name_dict
         )
 
-    def create_vector_plot_title(self, vector: str) -> str:
+    def create_vector_plot_title(self, vector_name: str) -> str:
         if sys.version_info >= (3, 9):
-            vector_filtered = vector.removeprefix("AVG_").removeprefix("INTVL_")
+            vector_filtered = vector_name.removeprefix("AVG_").removeprefix("INTVL_")
         else:
             vector_filtered = (
-                vector[4:]
-                if vector.startswith("AVG_")
-                else (vector[6:] if vector.startswith("INTVL_") else vector)
+                vector_name[4:]
+                if vector_name.startswith("AVG_")
+                else (
+                    vector_name[6:] if vector_name.startswith("INTVL_") else vector_name
+                )
             )
 
         metadata = self._selected_provider_set.vector_metadata(vector_filtered)
 
         if metadata is None:
-            return simulation_vector_description(vector)
+            return simulation_vector_description(vector_name)
 
         unit = metadata.get("unit", "")
         if unit:
             return (
-                f"{simulation_vector_description(vector)}"
+                f"{simulation_vector_description(vector_name)}"
                 f" [{simulation_unit_reformat(unit)}]"
             )
-        return f"{simulation_vector_description(vector)}"
+        return f"{simulation_vector_description(vector_name)}"

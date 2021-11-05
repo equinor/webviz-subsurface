@@ -112,6 +112,7 @@ class GraphFigureBuilder:
         vectors_df: pd.DataFrame,
         ensemble: str,
         vector_line_shapes: Dict[str, str],
+        add_legend: bool = True,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
@@ -135,11 +136,12 @@ class GraphFigureBuilder:
             )
 
         # Add legend for ensemble - utilize one trace dict
-        for traces in vector_traces_set.values():
-            if len(traces) > 0:
-                trace: dict = traces[0]
-                trace["showlegend"] = True
-                break
+        if add_legend:
+            for traces in vector_traces_set.values():
+                if len(traces) > 0:
+                    trace: dict = traces[0]
+                    trace["showlegend"] = add_legend
+                    break
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
@@ -150,6 +152,7 @@ class GraphFigureBuilder:
         ensemble: str,
         statistics_options: List[StatisticsOptions],
         vector_line_shapes: Dict[str, str],
+        add_legend: bool = True,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
@@ -180,11 +183,12 @@ class GraphFigureBuilder:
             )
 
         # Add legend for ensemble - utilize one trace dict
-        for traces in vector_traces_set.values():
-            if len(traces) > 0:
-                trace: dict = traces[0]
-                trace["showlegend"] = True
-                break
+        if add_legend:
+            for traces in vector_traces_set.values():
+                if len(traces) > 0:
+                    trace: dict = traces[0]
+                    trace["showlegend"] = add_legend
+                    break
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
@@ -195,6 +199,7 @@ class GraphFigureBuilder:
         ensemble: str,
         fanchart_options: List[FanchartOptions],
         vector_line_shapes: Dict[str, str],
+        add_legend: bool = True,
     ) -> None:
         """
         Add fanchart traces for vectors in provided vectors statistics dataframe
@@ -204,6 +209,9 @@ class GraphFigureBuilder:
           [            vector1,                        ... vectorN
             "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
         """
+        # TODO: Add verification of format and raise value error - i.e required columns and
+        # "dimension" of vectors_statistics_df
+
         color = self._ensemble_colors.get(ensemble)
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')
@@ -234,15 +242,22 @@ class GraphFigureBuilder:
 
         # Set show legend on last trace in last vector trace list (mean will be last
         # trace with solid line)
-        if len(vector_traces_set) > 0 and len(list(vector_traces_set.values())[-1]) > 0:
+        if (
+            add_legend
+            and len(vector_traces_set) > 0
+            and len(list(vector_traces_set.values())[-1]) > 0
+        ):
             trace = list(vector_traces_set.values())[-1][-1]
-            trace["showlegend"] = True
+            trace["showlegend"] = add_legend
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
 
     def add_history_traces(
-        self, vectors_df: pd.DataFrame, vector_line_shapes: Dict[str, str]
+        self,
+        vectors_df: pd.DataFrame,
+        vector_line_shapes: Dict[str, str],
+        add_legend: bool = True,
     ) -> None:
         """Add traces for historical vectors in dataframe columns
 
@@ -251,6 +266,10 @@ class GraphFigureBuilder:
         historical data in rows.
         `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
         """
+        # TODO: Add verification of format and raise value error - i.e required columns and
+        # "dimension" of vectors_df
+        if "DATE" not in vectors_df.columns and "REAL" not in vectors_df.columns:
+            raise ValueError('vectors_df is missing required columns ["DATE","REAL"]')
 
         vector_names = [
             col for col in vectors_df.columns if col not in ["DATE", "REAL"]
@@ -266,9 +285,9 @@ class GraphFigureBuilder:
                 line_shape=vector_line_shapes.get(vector, self._line_shape_fallback),
             )
 
-        if len(vector_trace_set) > 0:
+        if add_legend and len(vector_trace_set) > 0:
             trace = list(vector_trace_set.values())[0]
-            trace["showlegend"] = True
+            trace["showlegend"] = add_legend
         self._add_vector_trace_set_to_figure(vector_trace_set)
 
     def get_figure(self) -> dict:

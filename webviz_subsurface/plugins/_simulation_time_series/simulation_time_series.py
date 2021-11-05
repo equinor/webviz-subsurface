@@ -11,7 +11,7 @@ from webviz_subsurface._providers import Frequency
 
 from .main_view import main_view
 from .types import VisualizationOptions
-from .provider_set import ProviderSet, create_provider_set_from_paths
+from .provider_set import create_provider_set_from_paths
 
 from .controller import controller_callbacks
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
@@ -42,7 +42,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        self._input_provider_set: ProviderSet
         self._resampling_frequency = Frequency.from_string_value(sampling)
         if ensembles is not None:
             ensemble_paths: Dict[str, Path] = {
@@ -57,7 +56,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             raise NotImplementedError()
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile" or "ensembles"'
+                'Incorrect arguments. Either provide a "csvfile" or "ensembles"'
             )
 
         if not self._input_provider_set:
