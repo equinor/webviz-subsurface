@@ -395,42 +395,50 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
 def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
     """Adds three columns to the gruptree dataframe: IS_PROD, IS_INJ and IS_OTHER.
 
-    Wells are classified as producers,  injectors or other based on the WSTAT summary data.
+    Wells are classified as producers, injectors or other based on the WSTAT summary data.
 
     Group nodes are classified as producing if it has any producing wells upstream and
     correspondingly for injection and other.
     """
-    df = pd.DataFrame()
+
+    ens_list = []
     for ensemble in gruptree["ENSEMBLE"].unique():
         gruptree_ens = gruptree[gruptree["ENSEMBLE"] == ensemble].copy()
         smry_ens = smry[smry["ENSEMBLE"] == ensemble].copy()
-        df_ens = add_nodetype_for_ens(gruptree_ens, smry_ens)
-        df = pd.concat([df, df_ens])
-    return df
+        ens_list.append(add_nodetype_for_ens(gruptree_ens, smry_ens))
+    return pd.concat(ens_list)
 
 
 def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
     """Adds nodetype IS_PROD, IS_INJ and IS_OTHER for an ensemble."""
 
+    # Get all nodes
     nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
-    # Tag wells as producers, injector or other well
-    is_prod_map, is_inj_map, is_other_map = get_welltype_maps(
-        nodes[nodes["KEYWORD"] == "WELSPECS"], smry
+
+    # Identify leaf nodes (group nodes can also be leaf nodes)
+    is_leafnode_map = create_leafnode_map(nodes)
+    nodes["IS_LEAF"] = nodes["CHILD"].map(is_leafnode_map)
+
+    # Classify leaf nodes as producer, injector or other
+    is_prod_map, is_inj_map, is_other_map = create_leafnodetype_maps(
+        nodes[nodes["IS_LEAF"] == True], smry
     )
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
     nodes["IS_OTHER"] = nodes["CHILD"].map(is_other_map)
 
-    # Recursively find well types of all wells connected to the group node
+    nodes.to_csv("/private/olind/webviz/nodes.csv")
+
+    # Recursively find well types of all leaf nodes connected to the group node
     # Deduce group node type from well types
-    groupnodes = nodes[nodes["KEYWORD"] != "WELSPECS"]
-    for _, groupnode in groupnodes.iterrows():
-        wells_are_prod, wells_are_inj, wells_are_other = get_leaf_well_types(
-            groupnode["CHILD"], nodes
+    nonleafs = nodes[nodes["IS_LEAF"] == False]
+    for _, node in nonleafs.iterrows():
+        leafs_are_prod, leafs_are_inj, leafs_are_other = get_leafnode_types(
+            node["CHILD"], nodes
         )
-        is_prod_map[groupnode["CHILD"]] = any(wells_are_prod)
-        is_inj_map[groupnode["CHILD"]] = any(wells_are_inj)
-        is_other_map[groupnode["CHILD"]] = any(wells_are_other)
+        is_prod_map[node["CHILD"]] = any(leafs_are_prod)
+        is_inj_map[node["CHILD"]] = any(leafs_are_inj)
+        is_other_map[node["CHILD"]] = any(leafs_are_other)
 
     # FIELD node must not be filtered out, so it is set True for all categories
     is_prod_map["FIELD"] = True
@@ -444,41 +452,83 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
     return gruptree
 
 
-def get_leaf_well_types(
+def get_leafnode_types(
     node_name: str, gruptree: pd.DataFrame
 ) -> Tuple[List[Any], List[Any], List[Any]]:
     """This function finds the IS_PROD, IS_INJ and IS_OTHER values of all
-    connected to a group node.
+    leaf nodes connected to the input node.
 
     The function is using recursion to find all wells below the node
     int the three.
     """
     children = gruptree[gruptree["PARENT"] == node_name]
-    wells_are_prod, wells_are_inj, wells_are_other = [], [], []
+    leafs_are_prod, leafs_are_inj, leafs_are_other = [], [], []
     for _, childrow in children.iterrows():
         if childrow["KEYWORD"] == "WELSPECS":
-            wells_are_prod.append(childrow["IS_PROD"])
-            wells_are_inj.append(childrow["IS_INJ"])
-            wells_are_other.append(childrow["IS_OTHER"])
+            leafs_are_prod.append(childrow["IS_PROD"])
+            leafs_are_inj.append(childrow["IS_INJ"])
+            leafs_are_other.append(childrow["IS_OTHER"])
         else:
-            prod, inj, other = get_leaf_well_types(childrow["CHILD"], gruptree)
-            wells_are_prod += prod
-            wells_are_inj += inj
-            wells_are_other += other
-    return wells_are_prod, wells_are_inj, wells_are_other
+            prod, inj, other = get_leafnode_types(childrow["CHILD"], gruptree)
+            leafs_are_prod += prod
+            leafs_are_inj += inj
+            leafs_are_other += other
+    return leafs_are_prod, leafs_are_inj, leafs_are_other
 
 
-def get_welltype_maps(
-    wellnodes: pd.DataFrame, smry: pd.DataFrame
+def create_leafnodetype_maps(
+    leafnodes: pd.DataFrame, smry: pd.DataFrame
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
-    """Returns three dictionaries that is classifying wells as producer,
+    """Returns three dictionaries that classifying leaf nodes as producer,
     injector and/or other (f.ex observation well).
     """
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
-    for _, wellnode in wellnodes.iterrows():
-        wellname = wellnode["CHILD"]
-        wstat = smry[f"WSTAT:{wellname}"].unique()
-        is_prod_map[wellname] = 1 in wstat
-        is_inj_map[wellname] = 2 in wstat
-        is_other_map[wellname] = (1 not in wstat) and (2 not in wstat)
+    for _, leafnode in leafnodes.iterrows():
+        nodename = leafnode["CHILD"]
+        nodekeyword = leafnode["KEYWORD"]
+
+        if nodekeyword == "WELSPECS":
+            # The leaf node is a well
+            wstat = smry[f"WSTAT:{nodename}"].unique()
+            is_prod_map[nodename] = 1 in wstat
+            is_inj_map[nodename] = 2 in wstat
+            is_other_map[nodename] = (1 not in wstat) and (2 not in wstat)
+        else:
+            # The leaf node is a group
+            prod_sumvecs = [
+                get_sumvec(datatype, nodename, nodekeyword)
+                for datatype in ["oilrate", "gasrate", "waterrate"]
+            ]
+            inj_sumvecs = [
+                get_sumvec(datatype, nodename, nodekeyword)
+                for datatype in ["waterinjrate", "gasinjrate"]
+            ]
+
+            sumprod = sum(
+                [
+                    smry[sumvec].sum()
+                    for sumvec in prod_sumvecs
+                    if sumvec in smry.columns
+                ]
+            )
+            suminj = sum(
+                [smry[sumvec].sum() for sumvec in inj_sumvecs if sumvec in smry.columns]
+            )
+
+            is_prod_map[nodename] = sumprod > 0
+            is_inj_map[nodename] = suminj > 0
+            is_other_map[nodename] = (sumprod == 0) and (suminj == 0)
     return is_prod_map, is_inj_map, is_other_map
+
+
+def create_leafnode_map(nodes: pd.DataFrame) -> Dict:
+    """Description"""
+    is_leafnode_map = {}
+    for _, node in nodes.iterrows():
+        nodename = node["CHILD"]
+        child_nodes = nodes[nodes["PARENT"] == nodename]
+        if child_nodes.empty:
+            is_leafnode_map[nodename] = True
+        else:
+            is_leafnode_map[nodename] = False
+    return is_leafnode_map
