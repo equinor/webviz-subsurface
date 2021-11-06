@@ -398,7 +398,7 @@ def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
     Wells are classified as producers, injectors or other based on the WSTAT summary data.
 
     Group nodes are classified as producing if it has any producing wells upstream and
-    correspondingly for injection and other.
+    correspondingly for injecting and other.
     """
 
     ens_list = []
@@ -416,8 +416,12 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
     nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
 
     # Identify leaf nodes (group nodes can also be leaf nodes)
-    is_leafnode_map = create_leafnode_map(nodes)
-    nodes["IS_LEAF"] = nodes["CHILD"].map(is_leafnode_map)
+    def is_leafnode(node: pd.Series) -> bool:
+        if nodes[nodes["PARENT"] == node["CHILD"]].empty:
+            return True
+        return False
+
+    nodes["IS_LEAF"] = nodes.apply(is_leafnode, axis=1)
 
     # Classify leaf nodes as producer, injector or other
     is_prod_map, is_inj_map, is_other_map = create_leafnodetype_maps(
@@ -426,8 +430,6 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
     nodes["IS_OTHER"] = nodes["CHILD"].map(is_other_map)
-
-    nodes.to_csv("/private/olind/webviz/nodes.csv")
 
     # Recursively find well types of all leaf nodes connected to the group node
     # Deduce group node type from well types
@@ -479,8 +481,11 @@ def get_leafnode_types(
 def create_leafnodetype_maps(
     leafnodes: pd.DataFrame, smry: pd.DataFrame
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
-    """Returns three dictionaries that classifying leaf nodes as producer,
+    """Returns three dictionaries classifying leaf nodes as producer,
     injector and/or other (f.ex observation well).
+
+    Well leaf nodes are classified using WSTAT and group leaf nodes
+    are classified using summary data.
     """
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
     for _, leafnode in leafnodes.iterrows():
@@ -519,16 +524,3 @@ def create_leafnodetype_maps(
             is_inj_map[nodename] = suminj > 0
             is_other_map[nodename] = (sumprod == 0) and (suminj == 0)
     return is_prod_map, is_inj_map, is_other_map
-
-
-def create_leafnode_map(nodes: pd.DataFrame) -> Dict:
-    """Description"""
-    is_leafnode_map = {}
-    for _, node in nodes.iterrows():
-        nodename = node["CHILD"]
-        child_nodes = nodes[nodes["PARENT"] == nodename]
-        if child_nodes.empty:
-            is_leafnode_map[nodename] = True
-        else:
-            is_leafnode_map[nodename] = False
-    return is_leafnode_map
