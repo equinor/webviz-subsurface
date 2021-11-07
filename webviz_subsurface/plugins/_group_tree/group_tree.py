@@ -42,7 +42,8 @@ class GroupTree(WebvizPluginABC):
 
     The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
     model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
-    representation of the Eclipse network: [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+    representation of the Eclipse network:
+    [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
 
     **time_index**
 
