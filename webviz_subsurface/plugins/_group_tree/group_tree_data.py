@@ -466,7 +466,7 @@ def get_leafnode_types(
     children = gruptree[gruptree["PARENT"] == node_name]
     leafs_are_prod, leafs_are_inj, leafs_are_other = [], [], []
     for _, childrow in children.iterrows():
-        if childrow["KEYWORD"] == "WELSPECS":
+        if childrow["IS_LEAF"]:
             leafs_are_prod.append(childrow["IS_PROD"])
             leafs_are_inj.append(childrow["IS_INJ"])
             leafs_are_other.append(childrow["IS_OTHER"])
