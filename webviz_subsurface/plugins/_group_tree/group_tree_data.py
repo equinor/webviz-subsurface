@@ -425,7 +425,7 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
 
     # Classify leaf nodes as producer, injector or other
     is_prod_map, is_inj_map, is_other_map = create_leafnodetype_maps(
-        nodes[nodes["IS_LEAF"] == True], smry
+        nodes[nodes["IS_LEAF"]], smry
     )
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
@@ -433,7 +433,7 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
 
     # Recursively find well types of all leaf nodes connected to the group node
     # Deduce group node type from well types
-    nonleafs = nodes[nodes["IS_LEAF"] == False]
+    nonleafs = nodes[nodes["IS_LEAF"].isin([False])]
     for _, node in nonleafs.iterrows():
         leafs_are_prod, leafs_are_inj, leafs_are_other = get_leafnode_types(
             node["CHILD"], nodes
