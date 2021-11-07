@@ -1,7 +1,6 @@
 import datetime
 
 import pandas as pd
-from pandas._testing import assert_frame_equal
 import pytest
 
 from webviz_subsurface.plugins._group_tree.group_tree_data import add_nodetype_for_ens
