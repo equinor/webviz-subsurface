@@ -238,10 +238,10 @@ class TornadoBarChart:
         max_val = max(self._tornadotable[["low_tooltip", "high_tooltip"]].abs().max())
         if self._use_true_base:
             return [
-                (self._reference_average - max_val) * 0.95,
-                (self._reference_average + max_val) * 1.05,
+                self._reference_average - (max_val * 1.1),
+                self._reference_average + (max_val * 1.1),
             ]
-        return [-max_val * 1.05, max_val * 1.05]
+        return [-max_val * 1.1, max_val * 1.1]
 
     @property
     def layout(self) -> Dict:
