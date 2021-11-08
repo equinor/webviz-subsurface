@@ -59,28 +59,27 @@ def tornado_controllers(
 
             dframe = volumemodel.get_df(filters=filters, groups=groups)
 
-            ref_in_dframe = selections["Reference"] in dframe["SENSNAME"].unique()
-            if ref_in_dframe and not dframe.empty:
+            if not dframe.empty:
                 dframe.rename(columns={response: "VALUE"}, inplace=True)
                 df_groups = (
                     dframe.groupby(selections["Subplots"])
                     if subplots
                     else [(None, dframe)]
                 )
-
                 for group, df in df_groups:
-                    figure, table, columns = tornado_figure_and_table(
-                        df=df,
-                        response=response,
-                        selections=selections,
-                        theme=theme,
-                        sensitivity_colors=sens_colors(),
-                        font_size=max((20 - (0.4 * len(df_groups))), 10),
-                        group=group,
-                    )
-                    figures.append(figure)
-                    if selections["tornado_table"]:
-                        tables.append(table)
+                    if selections["Reference"] in df["SENSNAME"].unique():
+                        figure, table, columns = tornado_figure_and_table(
+                            df=df,
+                            response=response,
+                            selections=selections,
+                            theme=theme,
+                            sensitivity_colors=sens_colors(),
+                            font_size=max((20 - (0.4 * len(df_groups))), 10),
+                            group=group,
+                        )
+                        figures.append(figure)
+                        if selections["tornado_table"]:
+                            tables.append(table)
 
         if selections["Shared axis"] and selections["Scale"] != "True":
             x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
