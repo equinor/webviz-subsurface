@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.7rc0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.7` of `webviz-subsurface`.
 
 
 
@@ -2097,7 +2097,7 @@ It is a requirement that there is a corresponding file with the observed
 and meta data included. This file must have the same name, but with an
 additional prefix = "meta--". For example, if one includes a file
 called "my_awesome_attribute.txt" in the attributes list, the corresponding
-obs/meta file must be called "meta--my_awesome_attribute.txt". See Data Input
+obs/meta file must be called "meta--my_awesome_attribute.txt". See Data input
 section for more  details.
 
 * **`attribute_sim_path`:** Path to the `attributes` simulation file.
@@ -2116,9 +2116,9 @@ Can be used for calibration purposes.
 * **`polygon`:** Path to a folder or a file containing (fault-) polygons.
 If value is a folder all csv files in that folder will be included
 (e.g. "share/results/polygons/").
-If value is a file, then that file will be read. One can also use r"*"-notation
+If value is a file, then that file will be read. One can also use \*-notation
 in filename to read filtered list of files
-(e.g. "share/results/polygons/r"*"faultlinesr"*"csv").
+(e.g. "share/results/polygons/\*faultlines\*csv").
 Path is either given as relative to *runpath* or as an absolute path.
 If path is ambigious (e.g. with multi-realization runpath),
 only the first successful find is used.
@@ -2149,7 +2149,7 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
-The input data consists of 2 different file types.<br>
+a) The required input data consists of 2 different file types.<br>
 
 1) Observation and meta data csv file (one per attribute):
 This csv file must contain the 5 column headers "EAST" (or "X_UTME"),
@@ -2180,6 +2180,18 @@ It is a requirement that each line of data in these 2 files represent
 the same data point. I.e. line number N+1 in obs/metadata file corresponds to
 line N in sim files. The +1 shift for the obs/metadata file
 is due to that file is the only one with a header.
+
+b) Polygon data is optional to include. Polygons must be stored in
+csv file(s) on the format shown below. A csv file can have multiple
+polygons (e.g. fault polygons), identified with the POLY_ID value.
+```csv
+    X_UTME,Y_UTMN,Z_TVDSS,POLY_ID
+    460606.36,5935605.44,1676.49,0
+    460604.92,5935583.99,1674.84,0
+    460604.33,5935575.08,1674.16,2
+    ...
+    ...
+```
 
 
 
@@ -2707,7 +2719,7 @@ General tornado plotter for FMU data from a csv file of responses.
 
 
 
-* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`ensemble`:** Which ensemble in `shared_settings` to visualize.
 * **`csvfile`:** Relative ensemble path to csv file with responses
 * **`aggregated_csvfile`:** Alternative to ensemble + csvfile with
 aggregated responses. Requires REAL and ENSEMBLE columns
