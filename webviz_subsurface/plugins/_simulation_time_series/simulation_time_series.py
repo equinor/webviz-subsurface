@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import Callable, Dict, List, Optional, Tuple
 from pathlib import Path
 
 import dash
@@ -7,17 +7,21 @@ from webviz_config import WebvizSettings
 import webviz_core_components as wcc
 
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
+from webviz_subsurface._utils.webvizstore_functions import get_path
 from webviz_subsurface._providers import Frequency
 
 from .main_view import main_view
 from .types import VisualizationOptions
 from .provider_set import create_provider_set_from_paths
+from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
 
 from .controller import controller_callbacks
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
-from ..._datainput.from_timeseries_cumulatives import rename_vec_from_cum
 from ..._utils.vector_selector import add_vector_to_vector_selector_data
-from ..._utils.simulation_timeseries import set_simulation_line_shape_fallback
+from ..._utils.simulation_timeseries import (
+    set_simulation_line_shape_fallback,
+    check_and_format_observations,
+)
 
 
 class SimulationTimeSeries(WebvizPluginABC):
@@ -28,6 +32,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         csvfile_path: Optional[Path] = None,
+        obsfile: Path = None,
         options: dict = None,
         sampling: str = "monthly",
         line_shape_fallback: str = "linear",
@@ -37,6 +42,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._webviz_settings = webviz_settings
         self._csvfile_path = csvfile_path
         self._sampling = sampling
+        self._obsfile = obsfile
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
@@ -52,6 +58,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             }
 
             self._input_provider_set = create_provider_set_from_paths(ensemble_paths)
+            self._input_provider_set.verify_consistent_vector_metadata()
         elif self._csvfile_path is not None:
             raise NotImplementedError()
         else:
@@ -66,6 +73,10 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
 
         self._theme = webviz_settings.theme
+
+        self._observations = {}
+        if self._obsfile:
+            self._observations = check_and_format_observations(get_path(self._obsfile))
 
         # NOTE: Initially keep set of all vector names - can make dynamic if wanted?
         vector_names = self._input_provider_set.all_vector_names()
@@ -94,8 +105,10 @@ class SimulationTimeSeries(WebvizPluginABC):
             if metadata and metadata.get("is_total"):
                 # Get the likely name for equivalent rate vector and make dropdown options.
                 # Requires that the time_index was either defined or possible to infer.
-                avgrate_vec = rename_vec_from_cum(vector=vector, as_rate=True)
-                interval_vec = rename_vec_from_cum(vector=vector, as_rate=False)
+                avgrate_vec = rename_vector_from_cumulative(vector=vector, as_rate=True)
+                interval_vec = rename_vector_from_cumulative(
+                    vector=vector, as_rate=False
+                )
 
                 avgrate_split = avgrate_vec.split(":")
                 interval_split = interval_vec.split(":")
@@ -147,6 +160,13 @@ class SimulationTimeSeries(WebvizPluginABC):
             theme=self._theme,
             sampling=self._sampling,
             initial_selected_vectors=self._initial_vectors,
+            observations=self._observations,
             resampling_frequency=self._resampling_frequency,
             line_shape_fallback=self._line_shape_fallback,
         )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        functions: List[Tuple[Callable, list]] = []
+        if self._obsfile:
+            functions.append((get_path, [{"path": self._obsfile}]))
+        return functions

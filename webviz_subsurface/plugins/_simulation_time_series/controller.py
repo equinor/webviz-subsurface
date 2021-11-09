@@ -22,9 +22,9 @@ from .types import (
 from .selected_provider_set_model import SelectedProviderSetModel
 from .graph_figure_builder import GraphFigureBuilder
 from .utils.trace_line_shape import get_simulation_line_shape
-from .utils.timeseries_cumulatives import (
-    get_total_vector_from_cumulative,
-    is_cumulative_vector,
+from .utils.from_timeseries_cumulatives import (
+    get_cumulative_vector_name,
+    is_interval_or_average_vector,
 )
 
 
@@ -38,6 +38,7 @@ def controller_callbacks(
     theme: WebvizConfigTheme,
     sampling: str,  # TODO: Remove and use only resampling_frequency?
     initial_selected_vectors: List[str],
+    observations: dict,
     resampling_frequency: Optional[Frequency],
     line_shape_fallback: str = "linear",
 ) -> None:
@@ -100,10 +101,6 @@ def controller_callbacks(
         fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
         trace_options = [TraceOptions(elm) for elm in trace_option_values]
 
-        # TODO: Add AVG_ and INTVL_ vectors
-        # TODO: Add obsevations
-        cumulative_interval = "YYYY"
-
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
@@ -111,7 +108,6 @@ def controller_callbacks(
             vectors = initial_selected_vectors
 
         # Filter selected delta ensembles
-        # TODO: Rename to e.g. selected_providers_model?
         selected_ensembles_model = SelectedProviderSetModel(
             input_provider_set,
             selected_ensembles,
@@ -152,107 +148,119 @@ def controller_callbacks(
                 ensemble
             )
 
-            # Separate cumulative and non-cumulative vectors for provider
+            # Separate provider vectors and calculation vectors
             # TODO: Consider creating selected_ensembles_model.set_selected_vectors(vectors: List[str])
             # and let model handled ensemble vectors and cumulative vectors state internally.
-            ensemble_vectors = [
+            provider_vectors = [
                 elm
                 for elm in vectors
-                if not is_cumulative_vector(elm) and elm in provider_vector_names
+                if not is_interval_or_average_vector(elm)
+                and elm in provider_vector_names
             ]
-            cumulative_vectors = [
+            interval_and_average_vectors = [
                 elm
                 for elm in vectors
-                if is_cumulative_vector(elm)
-                and get_total_vector_from_cumulative(elm) in provider_vector_names
+                if is_interval_or_average_vector(elm)
+                and get_cumulative_vector_name(elm) in provider_vector_names
             ]
 
-            if not ensemble_vectors and not cumulative_vectors:
+            if not provider_vectors and not interval_and_average_vectors:
                 continue
 
-            if visualization == VisualizationOptions.REALIZATIONS:
-                if ensemble_vectors:
-                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
-                        ensemble, ensemble_vectors
+            vectors_df = None
+            interval_and_average_vectors_df = None
+            if provider_vectors:
+                vectors_df = selected_ensembles_model.get_provider_vectors_df(
+                    ensemble, provider_vectors
+                )
+            if interval_and_average_vectors:
+                interval_and_average_vectors_df = (
+                    selected_ensembles_model.create_interval_and_average_vectors_df(
+                        ensemble, interval_and_average_vectors, sampling
                     )
+                )
+
+            if visualization == VisualizationOptions.REALIZATIONS:
+                if vectors_df is not None:
                     figure_builder.add_realizations_traces(
                         vectors_df, ensemble, vector_line_shapes
                     )
-                if cumulative_vectors:
-                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
-                        ensemble, cumulative_vectors, sampling
-                    )
+                if interval_and_average_vectors_df is not None:
                     figure_builder.add_realizations_traces(
-                        vectors_df,
+                        interval_and_average_vectors_df,
                         ensemble,
                         vector_line_shapes,
-                        add_legend=not ensemble_vectors,
+                        add_legend=not provider_vectors,
                     )
             if visualization == VisualizationOptions.STATISTICS:
-                if ensemble_vectors:
-                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
-                        ensemble, ensemble_vectors
-                    )
-                    vectors_df = selected_ensembles_model.create_statistics_df(
-                        vectors_df
+                if vectors_df is not None:
+                    vectors_statistics_df = (
+                        selected_ensembles_model.create_statistics_df(vectors_df)
                     )
                     figure_builder.add_statistics_traces(
-                        vectors_df, ensemble, statistics_options, vector_line_shapes
-                    )
-                if cumulative_vectors:
-                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
-                        ensemble, cumulative_vectors, sampling
-                    )
-                    vectors_df = selected_ensembles_model.create_statistics_df(
-                        vectors_df
-                    )
-                    figure_builder.add_statistics_traces(
-                        vectors_df,
+                        vectors_statistics_df,
                         ensemble,
                         statistics_options,
                         vector_line_shapes,
-                        add_legend=not ensemble_vectors,
+                    )
+                if interval_and_average_vectors_df is not None:
+                    vectors_statistics_df = (
+                        selected_ensembles_model.create_statistics_df(
+                            interval_and_average_vectors_df
+                        )
+                    )
+                    figure_builder.add_statistics_traces(
+                        vectors_statistics_df,
+                        ensemble,
+                        statistics_options,
+                        vector_line_shapes,
+                        add_legend=not provider_vectors,
                     )
 
             if visualization == VisualizationOptions.FANCHART:
-                if ensemble_vectors:
-                    vectors_df = selected_ensembles_model.get_provider_vectors_df(
-                        ensemble, ensemble_vectors
-                    )
-                    vectors_df = selected_ensembles_model.create_statistics_df(
-                        vectors_df
+                if vectors_df is not None:
+                    vectors_statistics_df = (
+                        selected_ensembles_model.create_statistics_df(vectors_df)
                     )
                     figure_builder.add_fanchart_traces(
-                        vectors_df, ensemble, fanchart_options, vector_line_shapes
-                    )
-                if cumulative_vectors:
-                    vectors_df = selected_ensembles_model.create_cumulative_vectors_df(
-                        ensemble, cumulative_vectors, sampling
-                    )
-                    vectors_df = selected_ensembles_model.create_statistics_df(
-                        vectors_df
-                    )
-                    figure_builder.add_fanchart_traces(
-                        vectors_df,
+                        vectors_statistics_df,
                         ensemble,
                         fanchart_options,
                         vector_line_shapes,
-                        add_legend=not ensemble_vectors,
+                    )
+                if interval_and_average_vectors_df is not None:
+                    vectors_statistics_df = (
+                        selected_ensembles_model.create_statistics_df(
+                            interval_and_average_vectors_df
+                        )
+                    )
+                    figure_builder.add_fanchart_traces(
+                        vectors_statistics_df,
+                        ensemble,
+                        fanchart_options,
+                        vector_line_shapes,
+                        add_legend=not provider_vectors,
                     )
 
-        # NOTE: Retrieve historical vector from first ensemble
+        if TraceOptions.VECTOR_OBSERVATIONS in trace_options:
+            for vector in vectors:
+                vector_observations = observations.get(vector)
+                if vector_observations:
+                    figure_builder.add_vector_observations(vector, vector_observations)
+
         if (
             TraceOptions.HISTORY in trace_options
             and len(selected_ensembles_model.provider_names()) > 0
         ):
+            # NOTE: Retrieve historical vector from first ensemble
             # Name and provider from first selected ensemble
             ensemble = selected_ensembles_model.provider_names()[0]
             vector_names = selected_ensembles_model.provider_vector_names(ensemble)
 
-            ensemble_vectors = [elm for elm in vectors if elm in vector_names]
+            provider_vectors = [elm for elm in vectors if elm in vector_names]
 
             history_vectors_df = selected_ensembles_model.create_history_vectors_df(
-                ensemble, ensemble_vectors
+                ensemble, provider_vectors
             )
             # TODO: Handle check of non-empty dataframe better!
             if not history_vectors_df.empty and "DATE" in history_vectors_df.columns:

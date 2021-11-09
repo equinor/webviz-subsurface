@@ -52,13 +52,13 @@ class DeltaEnsemble(EnsembleSummaryProvider):
             + One can ensure same sampling interval
         - When providing provider A and B:
             + Does not need to provide entire provider_set object
-            - The ensemble names have to be given separately and "linked" to spesific
+            - The ensemble names have to be given separately and "linked" to specific
               provider
 
 
         TODO:
         - Consider:
-            - Pass provider for ensemble A and B and corresponding names inestead?
+            - Pass provider for ensemble A and B and corresponding names instead?
               Can pass ensemble provider and name as pair/dict e.g. typed dict
         """
 
@@ -135,6 +135,7 @@ class DeltaEnsemble(EnsembleSummaryProvider):
              * Is exception the correct solution?
              * Merge units etc and perform "and" on boolean?
              * Always select metadata from one of the providers?
+             * NOTE: As of now metadata consistency is verified in __init__ of plugin
         """
         if self.provider_a.vector_metadata(
             vector_name
@@ -163,7 +164,7 @@ class DeltaEnsemble(EnsembleSummaryProvider):
 
         TODO:
         - Handle invalid realizations? Check if realizations exist for both providers,
-          if not reaise exception?
+          if not raise exception?
         - Ensure if common dates is correct (what happens with missmatching dates?)
 
         """
@@ -206,18 +207,22 @@ class DeltaEnsemble(EnsembleSummaryProvider):
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
-        # Initial test: Assume only requesting for existing vector names and realizations
+        # NOTE: Assuming request for existing vector names and realizations
+        # NOTE: index order ["REAL","DATE"] to obtain grouping by realization
+        # and order by date
         ensemble_a_vectors_df = self.provider_a.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["DATE", "REAL"])
+        ).set_index(["REAL", "DATE"])
         ensemble_b_vectors_df = self.provider_b.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["DATE", "REAL"])
+        ).set_index(["REAL", "DATE"])
 
-        # TODO: Verify reset_index() works?
-        ensembles_delta_vectors_df = ensemble_a_vectors_df.sub(
-            ensemble_b_vectors_df
-        ).reset_index()
+        # Reset index, group by "REAL" and sort groups by "DATE"
+        ensembles_delta_vectors_df = (
+            ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
+            .reset_index()
+            .sort_values(["REAL", "DATE"])
+        )
 
         return ensembles_delta_vectors_df.dropna(axis=0, how="any")
 

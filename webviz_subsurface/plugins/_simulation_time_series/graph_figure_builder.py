@@ -290,5 +290,31 @@ class GraphFigureBuilder:
             trace["showlegend"] = add_legend
         self._add_vector_trace_set_to_figure(vector_trace_set)
 
+    def add_vector_observations(
+        self, vector_name: str, vector_observations: dict
+    ) -> None:
+        if vector_name not in self._selected_vectors:
+            raise ValueError(f"Vector {vector_name} not among selected vectors!")
+
+        observation_traces: List[dict] = []
+        for observation in vector_observations.get("observations", []):
+            observation_traces.append(
+                {
+                    "x": [observation.get("date"), []],
+                    "y": [observation.get("value"), []],
+                    "marker": {"color": "black"},
+                    "text": observation.get("comment", None),
+                    "hoverinfo": "y+x+text",
+                    "showlegend": False,
+                    "error_y": {
+                        "type": "data",
+                        "array": [observation.get("error"), []],
+                        "visible": True,
+                    },
+                }
+            )
+        vector_observations_traces_set = {vector_name: observation_traces}
+        self._add_vector_traces_set_to_figure(vector_observations_traces_set)
+
     def get_figure(self) -> dict:
         return self._figure.to_dict()

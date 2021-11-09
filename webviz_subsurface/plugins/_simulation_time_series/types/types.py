@@ -31,6 +31,7 @@ class TraceOptions(str, Enum):
     """
 
     HISTORY = "history"
+    VECTOR_OBSERVATIONS = "vector observations"
 
 
 class VisualizationOptions(str, Enum):

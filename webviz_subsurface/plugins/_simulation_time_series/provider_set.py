@@ -22,16 +22,16 @@ class ProviderSet:
             list(self._provider_dict.values())
         )
 
-        # Verify consistent vector metadata across providers
-        self._verify_consistent_vector_metadata()
-
-    def _verify_consistent_vector_metadata(self) -> None:
+    def verify_consistent_vector_metadata(self) -> None:
         """
         Verify that vector metadata is consistent across providers, raise exception
         if inconsistency occur.
 
-        TODO: Improve print of inconsistent metadata info - store all inconsistencies
-        and print, do not raise ValueError on first
+        TODO:
+        * Improve print of inconsistent metadata info - store all inconsistencies
+        and print, do not raise ValueError on first.
+        * Replace with vector metadata dataclass object when updated (__eq__ operator
+        for dataclass would be handy)
         """
 
         # Iterate through all vector names for provider set

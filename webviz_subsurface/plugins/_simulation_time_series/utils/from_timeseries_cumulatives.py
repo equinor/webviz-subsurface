@@ -12,31 +12,39 @@ import pandas as pd
 ###################################################################################
 
 
-def is_cumulative_vector(vector: str) -> bool:
+def is_interval_or_average_vector(vector: str) -> bool:
     return vector.startswith("AVG_") or vector.startswith("INTVL_")
 
 
-def get_total_vector_from_cumulative(vector: str) -> str:
-    if not is_cumulative_vector(vector):
-        raise ValueError(f"Expected {vector} to be a cumulative vector!")
+def get_cumulative_vector_name(vector: str) -> str:
+    # TODO: Improve name?
+    if not is_interval_or_average_vector(vector):
+        raise ValueError(
+            f'Expected "{vector}" to be a vector calculated from cumulative!'
+        )
 
     if vector.startswith("AVG_"):
-        return vector.lstrip("AVG_")
+        return f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
     if vector.startswith("INTVL_"):
         return vector.lstrip("INTVL_")
     raise ValueError(f"Expected {vector} to be a cumulative vector!")
 
 
-def calculate_cumulative_vectors_df(
+def calculate_from_cumulative_vectors_df(
     vectors_df: pd.DataFrame,
     sampling_frequency: str,
     resampling_frequency: str,
-    as_rate: bool,
+    as_rate_per_day: bool,
 ) -> pd.DataFrame:
     """
     Interpolation is not performed, and the time interval `resampling_frequency` therefore has to be
     shorter or equal to `sampling_frequency` (e.g. `resampling_frequency` = `yearly` is compatible
     with `sampling_frequency` = `monthly`, but the opposite is invalid).
+
+    `TODO:`
+    * Can sampled data be retrieved from ensemble providers? I.e. do not perform resampling
+    inside this function
+    * IMPROVE FUNCTION NAME!
     """
     vectors_df = vectors_df.copy()
 
@@ -46,17 +54,25 @@ def calculate_cumulative_vectors_df(
     vectors_df.loc[:, ["DATE"]] = pd.to_datetime(vectors_df["DATE"])
     _verify_resampling_frequency(vectors_df, resampling_frequency, sampling_frequency)
 
-    # NOTE: Not creating ensrealuid - no need for uid for reals?
+    # Sort by realizations, thereafter dates
+    vectors_df.sort_values(by=["REAL", "DATE"], inplace=True)
+
+    # Create column of unique id for realizations. .diff() takes diff between an index
+    # and previous index in a column. Thereby if "realuid" is != 0, the .diff() is
+    # between two realizations.
+    # Could alternatively loop over ensembles and realizations, but this is quicker for
+    # larger datasets.
+    vectors_df["realuid"] = vectors_df["REAL"]
 
     vectors_df.set_index(["REAL", "DATE"], inplace=True)
 
     # Resample on DATE frequency
     vectors_df = _resample_dates(vectors_df, resampling_frequency, sampling_frequency)
-
     vectors_df.reset_index(level=["REAL"], inplace=True)
 
     cumulative_name_map = {
-        vector: rename_vector_from_cumulative(vector, as_rate) for vector in column_keys
+        vector: rename_vector_from_cumulative(vector, as_rate_per_day)
+        for vector in column_keys
     }
     cumulative_vectors = list(cumulative_name_map.values())
 
@@ -64,7 +80,7 @@ def calculate_cumulative_vectors_df(
     cumulative_vectors_df = pd.concat(
         [
             vectors_df[["REAL"]],
-            vectors_df[column_keys]
+            vectors_df[["realuid"] + column_keys]
             .diff()
             .shift(-1)
             .rename(
@@ -82,7 +98,7 @@ def calculate_cumulative_vectors_df(
     cumulative_vectors_df.reset_index(inplace=True)
 
     # Convert interval cumulative to daily average rate if requested
-    if as_rate:
+    if as_rate_per_day:
         days = cumulative_vectors_df["DATE"].diff().shift(-1).dt.days.fillna(value=0)
         for vector in column_keys:
             with np.errstate(invalid="ignore"):
@@ -91,11 +107,11 @@ def calculate_cumulative_vectors_df(
                     cumulative_vectors_df[cumulative_vector_name].values / days.values
                 )
 
-    # Set last value of each real to 0 (as we don't loop over the realizations)
-    last_date = max(cumulative_vectors_df["DATE"])
+    # Find .diff() between two realizations and set value = 0
     cumulative_vectors_df.loc[
-        cumulative_vectors_df["DATE"] == last_date, cumulative_vectors
+        cumulative_vectors_df["realuid"] != 0, cumulative_vectors
     ] = 0
+    cumulative_vectors_df.drop("realuid", axis=1, inplace=True)
 
     return cumulative_vectors_df
 

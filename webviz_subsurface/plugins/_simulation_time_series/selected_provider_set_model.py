@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -17,10 +17,10 @@ from .types import (
     create_delta_ensemble_name,
     StatisticsOptions,
 )
-from .utils.timeseries_cumulatives import (
-    calculate_cumulative_vectors_df,
-    get_total_vector_from_cumulative,
-    is_cumulative_vector,
+from .utils.from_timeseries_cumulatives import (
+    calculate_from_cumulative_vectors_df,
+    get_cumulative_vector_name,
+    is_interval_or_average_vector,
 )
 
 from ..._abbreviations.reservoir_simulation import (
@@ -238,56 +238,61 @@ class SelectedProviderSetModel:
 
         return statistics_df
 
-    def create_cumulative_vectors_df(
+    def create_interval_and_average_vectors_df(
         self,
         ensemble: str,
-        cumulative_vector_names: List[str],
+        interval_and_average_vector_names: List[str],
         sampling_frequency: str,  # TODO: use Frequency enum?
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-        """Get dataframe with cumulative vector data for provided vectors.
+        """Get dataframe with interval delta and average rate vector data for provided vectors.
 
-        The returned dataframe contains columns with name of vector and corresponding cumulative
-        data
+        The returned dataframe contains columns with name of vector and corresponding interval delta
+        or average rate data
 
         `Input:`
         * ensemble: str - Ensemble name
-        * cumulative_vector_names: List[str] - list of vectors to create cumulative data for
-        [vector1, ... , vectorN]
+        * interval_and_average_vector_names: List[str] - list of interval delta and average rate vectors
+        to create data for [vector1, ... , vectorN]
 
         `Output:`
-        * dataframe with cumulative vector names in columns and their cumulative data in rows.
+        * dataframe with interval  vector names in columns and their cumulative data in rows.
         `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
 
         ---------------------
         `TODO:`
         * Verify calculation of cumulative
+        * IMPROVE FUNCTION NAME!
         """
         if ensemble not in self._selected_provider_set.names():
             raise ValueError(
                 f'Ensemble "{ensemble}" not among selected ensembles in model!'
             )
+        if not interval_and_average_vector_names:
+            raise ValueError(
+                "Empty list of interval delta and average rate vector names"
+            )
+
+        for name in interval_and_average_vector_names:
+            if not is_interval_or_average_vector(name):
+                raise ValueError(
+                    f"{name} is not an interval delta or average rate vector!"
+                )
 
         provider = self._selected_provider_set.provider(ensemble)
         resampling_frequency = (
             self._resampling_frequency if provider.supports_resampling() else None
         )
 
-        if not cumulative_vector_names:
-            raise ValueError("Empty list of cumulative vector names")
-
-        for name in cumulative_vector_names:
-            if not is_cumulative_vector(name):
-                raise ValueError(f"{name} is not a cumulative vector!")
-
-        vector_names = [
-            get_total_vector_from_cumulative(elm)
-            for elm in cumulative_vector_names
-            if is_cumulative_vector(elm)
+        cumulative_vector_names = [
+            get_cumulative_vector_name(elm)
+            for elm in interval_and_average_vector_names
+            if is_interval_or_average_vector(elm)
         ]
+        cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
         vectors_df = provider.get_vectors_df(
-            vector_names, resampling_frequency, realizations
+            cumulative_vector_names, resampling_frequency, realizations
         )
 
         resampling_frequency_str: str = (
@@ -297,32 +302,25 @@ class SelectedProviderSetModel:
             else sampling_frequency
         )
 
-        as_rate = cumulative_vector_names[0].startswith("AVG_")
-        vector_name = get_total_vector_from_cumulative(cumulative_vector_names[0])
-        cumulative_vectors_df = calculate_cumulative_vectors_df(
-            vectors_df[["DATE", "REAL", vector_name]],
-            sampling_frequency=sampling_frequency,
-            resampling_frequency=resampling_frequency_str,
-            as_rate=as_rate,
-        )
-        if len(cumulative_vector_names) == 1:
-            return cumulative_vectors_df
-
-        for cumulative_vector_name in cumulative_vector_names[1:]:
-            as_rate = cumulative_vector_name.startswith("AVG_")
-            vector_name = get_total_vector_from_cumulative(cumulative_vector_name)
-            cumulative_vectors_df = pd.merge(
-                cumulative_vectors_df,
-                calculate_cumulative_vectors_df(
-                    vectors_df[["DATE", "REAL", vector_name]],
-                    sampling_frequency=sampling_frequency,
-                    resampling_frequency=resampling_frequency_str,
-                    as_rate=as_rate,
-                ),
-                how="inner",
+        interval_and_average_vectors_df = pd.DataFrame()
+        for vector_name in interval_and_average_vector_names:
+            cumulative_vector_name = get_cumulative_vector_name(vector_name)
+            interval_and_average_vector_df = calculate_from_cumulative_vectors_df(
+                vectors_df[["DATE", "REAL", cumulative_vector_name]],
+                sampling_frequency=sampling_frequency,
+                resampling_frequency=resampling_frequency_str,
+                as_rate_per_day=vector_name.startswith("AVG_"),
             )
+            if interval_and_average_vectors_df.empty:
+                interval_and_average_vectors_df = interval_and_average_vector_df
+            else:
+                interval_and_average_vectors_df = pd.merge(
+                    interval_and_average_vectors_df,
+                    interval_and_average_vector_df,
+                    how="inner",
+                )
 
-        return cumulative_vectors_df
+        return interval_and_average_vectors_df
 
     def create_history_vectors_df(
         self,
@@ -336,7 +334,8 @@ class SelectedProviderSetModel:
 
         `Input:`
         * ensemble: str - Ensemble name
-        * vector_names: List[str] - list of vectors to get historical data for [vector1, ... , vectorN]
+        * vector_names: List[str] - list of vectors to get historical data for
+        [vector1, ... , vectorN]
 
         `Output:`
         * dataframe with non-historical vector names in columns and their historical data in rows.

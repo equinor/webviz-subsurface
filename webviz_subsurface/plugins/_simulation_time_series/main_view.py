@@ -246,8 +246,17 @@ def __plot_options_layout(
             children=[
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_TRACE_OPTIONS_CHECKLIST),
-                    options=[{"label": "History", "value": TraceOptions.HISTORY.value}],
-                    value=[TraceOptions.HISTORY.value],
+                    options=[
+                        {"label": "History", "value": TraceOptions.HISTORY.value},
+                        {
+                            "label": "Vector observations",
+                            "value": TraceOptions.VECTOR_OBSERVATIONS.value,
+                        },
+                    ],
+                    value=[
+                        TraceOptions.HISTORY.value,
+                        TraceOptions.VECTOR_OBSERVATIONS.value,
+                    ],
                 ),
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
