@@ -61,6 +61,7 @@ setup(
             "RftPlotter = webviz_subsurface.plugins:RftPlotter",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
+            "SeismicMisfit = webviz_subsurface.plugins:SeismicMisfit",
             "StructuralUncertainty = webviz_subsurface.plugins:StructuralUncertainty",
             "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
@@ -99,7 +100,7 @@ setup(
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.3.1",
         "webviz-core-components>=0.5.1",
-        "webviz-subsurface-components>=0.4.6",
+        "webviz-subsurface-components>=0.4.7",
         "xtgeo>=2.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},

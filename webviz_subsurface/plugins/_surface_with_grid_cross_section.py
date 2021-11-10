@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import List
 from uuid import uuid4
@@ -339,6 +340,21 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             if not coords:
                 raise PreventUpdate
             grid = load_grid(get_path(self.gridfile))
+            if (
+                grid.subgrids is not None
+                and sum([len(subgrid) for subgrid in grid.subgrids.values()])
+                != grid.nlay
+            ):
+                warnings.warn(
+                    (
+                        f"Subgrid information in {self.gridfile} does not correspond "
+                        "with number of grid layers. Subgrid information will be removed. "
+                        "This is a bug in xtgeo==2.15.2 for grids exported from RMS using Xtgeo. "
+                        "Export the grid with xtgeo>2.15.2 to remove this warning. "
+                    ),
+                    FutureWarning,
+                )
+                grid.subgrids = None
             gridparameter = load_grid_parameter(grid, get_path(gridparameter))
             fence = get_fencespec(coords)
             hmin, hmax, vmin, vmax, values = grid.get_randomline(

@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.7] - 2021-11-08
+
+### Added
+- [#825](https://github.com/equinor/webviz-subsurface/pull/825) - Added options to create separate tornado's for e.g Region/Zone in `VolumetricAnalysis`. As well as various improvements to the tornado figure.
+- [#734](https://github.com/equinor/webviz-subsurface/pull/645) - New plugin, `SeismicMisfit`, for comparing observed and modelled seismic attributes. Multiple views, including misfit quantification and coverage plots.
+- [#809](https://github.com/equinor/webviz-subsurface/pull/809) - `GroupTree` - added more statistical options (P10, P90, P50/Median, Max, Min). Some improvements to the menu layout and behaviour
+
+### Fixed
+- [#841](https://github.com/equinor/webviz-subsurface/pull/841) - Bugfixes and improved hoverlabels for `Tornado component`.
+- [#833](https://github.com/equinor/webviz-subsurface/pull/833) - Fixed errors in `VolumetricAnalysis` related to empty/insufficient data after filtering in the `tornadoplots` and `comparison` tabs.
+- [#817](https://github.com/equinor/webviz-subsurface/pull/817) - `DiskUsage` - Fixed formatting error in bar chart tooltip.
+- [#820](https://github.com/equinor/webviz-subsurface/pull/820) - `SurfaceWithGridCrossSection` - Fixed an issue with intersecting grids generated with
+`xtgeo==2.15.2`. Grids exported from RMS with this version of xtgeo should be re-exported using a newer version as the subgrid information is incorrect.
+- [#838](https://github.com/equinor/webviz-subsurface/pull/838) - `AssistedHistoryMatchingAnalysis` - Fixed an issue with output of a callback being used as input in another before the output object was guaranteed to exist.
+
 ## [0.2.6] - 2021-10-08
 
 ### Added
