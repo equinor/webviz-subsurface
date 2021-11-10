@@ -78,7 +78,7 @@ setup(
         "console_scripts": [
             "well_connection_status=webviz_subsurface.ert_jobs.well_connection_status:main",
             "smry2arrow=webviz_subsurface.ert_jobs.smry2arrow:main",
-            "smry2arrow_batch=webviz_subsurface.ert_jobs.smry2arrow_batch:main",
+            "smry2arrow_batch=webviz_subsurface.smry2arrow_batch:main",
         ],
     },
     install_requires=[
