@@ -55,7 +55,8 @@ def _convert_single_smry_file(smry_filename: str, arrow_filename: str) -> None:
     eclfiles = ecl2df.EclFiles(eclbase)
     sum_df = ecl2df.summary.df(eclfiles)
 
-    # Slight hack here, using ecl2df private function to gain access to conversion routine
+    # Slight hack here, using ecl2df protected function to gain access to conversion routine
+    # pylint: disable=protected-access
     sum_table = ecl2df.summary._df2pyarrow(sum_df)
 
     ecl2df.summary.write_dframe_stdout_file(sum_table, arrow_filename)
