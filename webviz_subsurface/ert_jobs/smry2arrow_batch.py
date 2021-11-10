@@ -6,9 +6,10 @@ import argparse
 import glob
 import logging
 import os
+import warnings
 from pathlib import Path
 
-from .smry2arrow import smry2arrow
+import ecl2df
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,24 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _convert_single_smry_file(smry_filename: str, arrow_filename: str) -> None:
+    """Read summary data for single realization from disk and write it out to .arrow
+    file using ecl2df.
+    """
+
+    eclbase = (
+        smry_filename.replace(".DATA", "").replace(".UNSMRY", "").replace(".SMSPEC", "")
+    )
+
+    eclfiles = ecl2df.EclFiles(eclbase)
+    sum_df = ecl2df.summary.df(eclfiles)
+
+    # Slight hack here, using ecl2df private function to gain access to conversion routine
+    sum_table = ecl2df.summary._df2pyarrow(sum_df)
+
+    ecl2df.summary.write_dframe_stdout_file(sum_table, arrow_filename)
+
+
 def _batch_convert_smry2arrow(
     ens_path: Path, ecl_base: Path, relative_output_dir: Path
 ) -> None:
@@ -49,22 +68,19 @@ def _batch_convert_smry2arrow(
     globbed_real_dirs = sorted(glob.glob(str(ens_path)))
 
     for real_dir in globbed_real_dirs:
-        glob_expr = os.path.join(real_dir, ecl_base)
+        glob_expr = str(Path(real_dir) / ecl_base)
         globbed_smry_files = sorted(glob.glob(glob_expr))
         if globbed_smry_files:
-            real_output_dir = os.path.join(real_dir, relative_output_dir)
-            os.makedirs(real_output_dir, exist_ok=True)
+            real_output_dir = Path(real_dir) / relative_output_dir
+            real_output_dir.mkdir(parents=True, exist_ok=True)
 
             for smry_file in globbed_smry_files:
-                basename_without_ext = os.path.basename(os.path.splitext(smry_file)[0])
-                arrow_file = os.path.join(
-                    real_output_dir, basename_without_ext + ".arrow"
-                )
+                basename_without_ext = Path(Path(smry_file).name).stem
+                arrow_file = real_output_dir / (basename_without_ext + ".arrow")
 
                 logger.info(f"input(smry):   {smry_file}")
                 logger.info(f"output(arrow): {arrow_file}")
-
-                smry2arrow(Path(smry_file), Path(arrow_file))
+                _convert_single_smry_file(smry_file, str(arrow_file))
 
 
 def main() -> None:
@@ -73,10 +89,8 @@ def main() -> None:
     parser = _get_parser()
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
-    # logging.basicConfig(level=logging.DEBUG)
-    # logger.debug(f"args.enspath: {args.enspath}")
-    # logger.debug(f"args.eclbase: {args.eclbase}")
+    logging.basicConfig(level=logging.WARNING)
+    logger.setLevel(logging.INFO)
 
     enspath = args.enspath
 
@@ -89,6 +103,13 @@ def main() -> None:
 
     # Output directory relative to each realization's root directory
     relative_output_dir = Path("share/results/unsmry")
+
+    warnings.warn(
+        "This script is a temporary solution for converting existing ensemble summary data "
+        "for usage with webviz-subsurface, and will probably be removed in the future. "
+        "New ensembles should be configured with an ert job for outputting .arrow files directly.",
+        FutureWarning,
+    )
 
     logger.info(f"enspath: {enspath}")
     logger.info(f"eclbase: {eclbase}")
