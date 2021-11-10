@@ -49,6 +49,7 @@ class GroupTreeData:
         self,
         ensemble: str,
         tree_mode: str,
+        stat_option: str,
         real: int,
         prod_inj_other: List[str],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
@@ -66,9 +67,19 @@ class GroupTreeData:
 
         # Filter smry
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-        # smry_ens.dropna(how="all", axis=1, inplace=True)
-        if tree_mode == "plot_mean":
-            smry_ens = smry_ens.groupby("DATE").mean().reset_index()
+
+        if tree_mode == "statistics":
+            if stat_option == "mean":
+                smry_ens = smry_ens.groupby("DATE").mean().reset_index()
+            elif stat_option in ["p50", "p10", "p90"]:
+                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option]
+                smry_ens = smry_ens.groupby("DATE").quantile(quantile).reset_index()
+            elif stat_option == "max":
+                smry_ens = smry_ens.groupby("DATE").max().reset_index()
+            elif stat_option == "min":
+                smry_ens = smry_ens.groupby("DATE").min().reset_index()
+            else:
+                raise ValueError(f"Statistical option: {stat_option} not implemented")
         else:
             smry_ens = smry_ens[smry_ens["REAL"] == real]
 
@@ -99,15 +110,10 @@ class GroupTreeData:
         )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_ensemble_real_options(
-        self, ensemble: str
-    ) -> Tuple[List[Dict[str, int]], int]:
-        """Returns a list of realization dropdown options for an ensemble"""
+    def get_ensemble_unique_real(self, ensemble: str) -> List[int]:
+        """Returns a list of runique realizations for an ensemble"""
         smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-        unique_real = sorted(smry_ens["REAL"].unique())
-        return [{"label": real, "value": real} for real in unique_real], min(
-            unique_real
-        )
+        return sorted(smry_ens["REAL"].unique())
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def tree_is_equivalent_in_all_real(self, ensemble: str) -> bool:

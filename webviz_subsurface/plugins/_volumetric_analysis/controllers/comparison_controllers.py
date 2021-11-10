@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, State, callback_context, dash_table, html
+from dash import Input, Output, State, callback, callback_context, dash_table, html
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import create_figure
@@ -24,11 +24,10 @@ from ..views.comparison_layout import (
 
 # pylint: disable=too-many-locals
 def comparison_controllers(
-    app: Dash,
     get_uuid: Callable,
     volumemodel: InplaceVolumesModel,
 ) -> None:
-    @app.callback(
+    @callback(
         Output({"id": get_uuid("main-src-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
         Input({"id": get_uuid("main-src-comp"), "element": "display-option"}, "value"),
@@ -56,7 +55,7 @@ def comparison_controllers(
             display_option=display_option,
         )
 
-    @app.callback(
+    @callback(
         Output({"id": get_uuid("main-ens-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
         Input({"id": get_uuid("main-ens-comp"), "element": "display-option"}, "value"),
@@ -124,6 +123,9 @@ def comparison_callback(
             abssort_on=f"{selections['Response']} diff (%)",
             groups=groupby,
         )
+        if df.empty:
+            return html.Div("No data left after filtering")
+
         return comparison_table_layout(
             table=create_comaprison_table(
                 tabletype=display_option,
@@ -157,7 +159,7 @@ def comparison_callback(
             groups=groupby,
             rename_diff_col=True,
         )
-        if compare_on == "SOURCE":
+        if compare_on == "SOURCE" and not diffdf_group.empty:
             # Add column with number of highlighted realizations
             diffdf_group["💡 reals"] = diffdf_group.apply(
                 lambda row: find_higlighted_real_count(row, diffdf_real, groupby),
@@ -166,7 +168,7 @@ def comparison_callback(
 
     df = diffdf_group if "REAL" not in groupby else diffdf_real
     if df.empty:
-        return html.Div("Only data with no volume present!")
+        return html.Div("No data left after filtering")
 
     if display_option == "single-response table":
         return comparison_table_layout(
@@ -246,6 +248,11 @@ def create_comparison_df(
 
     groups = groups + ["SOURCE", "ENSEMBLE"]
     df = volumemodel.get_df(selections["filters"], groups=groups)
+
+    # if no data left, or one of the selected SOURCE/ENSEMBLE is not present
+    # in the dataframe after filtering, return empty dataframe
+    if df.empty or any(x not in df[compare_on].values for x in [value1, value2]):
+        return pd.DataFrame()
 
     df = df.loc[:, groups + responses].pivot_table(
         columns=compare_on, index=[x for x in groups if x != compare_on]
