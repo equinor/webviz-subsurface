@@ -22,12 +22,11 @@ Convert UNSMRY file to Apache Arrow IPC file format (also known as Feather V2)
 """
 CATEGORY: str = "utility.eclipse"
 EXAMPLES: str = """
-Convert and output summary data in SOME.UNSMRY file to an Arrow IPC file named SOME.arrow
-by running this in the ert workflow:
+Convert and output summary data in SOME.UNSMRY file to an Arrow IPC file named unsmry.arrow
+this in the ert workflow:
 
     FORWARD_MODEL SMRY2ARROW(<INPUT>=eclipse/model/SOME.UNSMRY)
 
-The default output file is share/results/unsmry/SOME.arrow
 """
 
 
@@ -46,6 +45,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         help="Output file",
+        default=Path() / "share" / "results" / "tables" / "unsmry.arrow",
     )
     return parser
 
@@ -160,17 +160,10 @@ def main() -> None:
     parser = _get_parser()
     args = parser.parse_args()
 
-    smry_filename = args.eclbase.with_suffix(".UNSMRY")
-
-    output_filename = args.output
-    if not output_filename:
-        output_basename = smry_filename.with_suffix(".arrow").name
-        output_filename = Path() / "share" / "results" / "unsmry" / output_basename
-
     # Create the output folder if it doesn't exist
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    smry2arrow(smry_filename, output_filename)
+    smry2arrow(args.eclbase.with_suffix(".UNSMRY"), args.output)
 
 
 if __name__ == "__main__":
