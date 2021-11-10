@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
@@ -22,21 +21,20 @@ def _add_mock_smry_meta_to_table(table: pa.Table) -> pa.Table:
         is_rate = bool("_r" in colname)
         is_total = bool("_t" in colname)
 
-        smry_meta_dict = None
+        metadata = None
         if is_rate or is_total:
-            smry_meta_dict = {
-                "unit": "N/A",
-                "is_rate": is_rate,
-                "is_total": is_total,
-                "is_historical": False,
-                "keyword": "UNKNOWN",
+            metadata = {
+                b"unit": b"N/A",
+                b"is_rate": b"True" if is_rate else b"False",
+                b"is_total": b"True" if is_total else b"False",
+                b"is_historical": b"False",
+                b"keyword": b"UNKNOWN",
             }
 
-        if smry_meta_dict:
+        if metadata:
             idx = schema.get_field_index(colname)
             field = schema.field(idx)
-            field_metadata = {b"smry_meta": json.dumps(smry_meta_dict)}
-            field = field.with_metadata(field_metadata)
+            field = field.with_metadata(metadata)
             schema = schema.set(idx, field)
 
     table = table.cast(schema)

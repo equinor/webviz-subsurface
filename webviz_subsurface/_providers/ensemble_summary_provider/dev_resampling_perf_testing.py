@@ -43,13 +43,10 @@ def _create_table(
     num_rows = len(real_arr_np)
 
     for colnum in range(0, num_columns):
-        # metadata = None
-        # metadata = {b"smry_meta": b'{"is_rate": true}'}
-        # metadata = {b"smry_meta": b'{"is_rate": false}'}
         if (colnum % 2) == 0:
-            metadata = {b"smry_meta": b'{"is_rate": false}'}
+            metadata = {b"is_rate": b'{"is_rate": False}'}
         else:
-            metadata = {b"smry_meta": b'{"is_rate": true}'}
+            metadata = {b"is_rate": b'{"is_rate": True}'}
 
         field_list.append(pa.field(f"c_{colnum}", pa.float32(), metadata=metadata))
 

@@ -266,8 +266,8 @@ def main() -> None:
     # provider = factory.create_from_arrow_unsmry_presampled(ensemble_path, frequency)
 
     print("## Loading data into reference DataFrame...")
-    # reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
-    reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
+    reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
+    # reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
 
     print("## Comparing get_vectors...")
     _compare_reference_df_to_provider_get_vectors_df(reference_df, provider, frequency)

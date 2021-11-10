@@ -150,8 +150,8 @@ def test_sample_segmented_multi_real_table_at_date_with_single_real() -> None:
         [
             pa.field("DATE", pa.timestamp("ms")),
             pa.field("REAL", pa.int64()),
-            pa.field("T", pa.float32(), metadata={b"smry_meta": b'{"is_rate": false}'}),
-            pa.field("R", pa.float32(), metadata={b"smry_meta": b'{"is_rate": true}'}),
+            pa.field("T", pa.float32(), metadata={b"is_rate": b"False"}),
+            pa.field("R", pa.float32(), metadata={b"is_rate": b"True"}),
         ]
     )
 
@@ -239,8 +239,8 @@ def test_sample_segmented_multi_real_table_at_date() -> None:
         [
             pa.field("DATE", pa.timestamp("ms")),
             pa.field("REAL", pa.int64()),
-            pa.field("T", pa.float32(), metadata={b"smry_meta": b'{"is_rate": false}'}),
-            pa.field("R", pa.float32(), metadata={b"smry_meta": b'{"is_rate": true}'}),
+            pa.field("T", pa.float32(), metadata={b"is_rate": b"False"}),
+            pa.field("R", pa.float32(), metadata={b"is_rate": b"True"}),
         ]
     )
 
