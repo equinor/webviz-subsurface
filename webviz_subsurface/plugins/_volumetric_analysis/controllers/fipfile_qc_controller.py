@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import Input, Output, callback, html
+from dash import Input, Output, State, callback, callback_context, html
 from dash.exceptions import PreventUpdate
 
 from ..utils.table_and_figure_utils import create_data_table, create_table_columns
@@ -14,29 +14,28 @@ def fipfile_qc_controller(get_uuid: Callable, disjoint_set_df: pd.DataFrame) -> 
     @callback(
         Output(get_uuid("main-fipqc"), "children"),
         Input(get_uuid("selections"), "data"),
-        Input(get_uuid("page-selected"), "data"),
         Input({"id": get_uuid("main-fipqc"), "element": "display-option"}, "value"),
+        State(get_uuid("page-selected"), "data"),
     )
     def _update_page_fipfileqc(
-        selections: dict, page_selected: str, display_option: str
+        selections: dict, display_option: str, page_selected: str
     ) -> html.Div:
+        ctx = callback_context.triggered[0]
 
         if page_selected != "fipqc":
             raise PreventUpdate
 
         df = disjoint_set_df[["SET", "FIPNUM", "REGION", "ZONE", "REGZONE"]]
 
-        group_table = True
-        if "fipqc" in selections:
-            selections = selections[page_selected]
+        selections = selections[page_selected]
+        if not "display-option" in ctx["prop_id"]:
             if not selections["update"]:
                 raise PreventUpdate
 
-            for filt, values in selections["filters"].items():
-                df = df.loc[df[filt].isin(values)]
-            group_table = selections["Group table"]
+        for filt, values in selections["filters"].items():
+            df = df.loc[df[filt].isin(values)]
 
-        if group_table and display_option == "table":
+        if selections["Group table"] and display_option == "table":
             df["FIPNUM"] = df["FIPNUM"].astype(str)
             df = df.groupby(["SET"]).agg(lambda x: ", ".join(set(x))).reset_index()
 

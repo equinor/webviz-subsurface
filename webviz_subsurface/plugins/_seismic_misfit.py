@@ -39,7 +39,7 @@ class SeismicMisfit(WebvizPluginABC):
     and meta data included. This file must have the same name, but with an
     additional prefix = "meta--". For example, if one includes a file
     called "my_awesome_attribute.txt" in the attributes list, the corresponding
-    obs/meta file must be called "meta--my_awesome_attribute.txt". See Data Input
+    obs/meta file must be called "meta--my_awesome_attribute.txt". See Data input
     section for more  details.
 
     * **`attribute_sim_path`:** Path to the `attributes` simulation file.
@@ -58,9 +58,9 @@ class SeismicMisfit(WebvizPluginABC):
     * **`polygon`:** Path to a folder or a file containing (fault-) polygons.
     If value is a folder all csv files in that folder will be included
     (e.g. "share/results/polygons/").
-    If value is a file, then that file will be read. One can also use r"*"-notation
+    If value is a file, then that file will be read. One can also use \\*-notation
     in filename to read filtered list of files
-    (e.g. "share/results/polygons/r"*"faultlinesr"*"csv").
+    (e.g. "share/results/polygons/\\*faultlines\\*csv").
     Path is either given as relative to *runpath* or as an absolute path.
     If path is ambigious (e.g. with multi-realization runpath),
     only the first successful find is used.
@@ -72,7 +72,7 @@ class SeismicMisfit(WebvizPluginABC):
 
     ---
 
-    The input data consists of 2 different file types.<br>
+    a) The required input data consists of 2 different file types.<br>
 
     1) Observation and meta data csv file (one per attribute):
     This csv file must contain the 5 column headers "EAST" (or "X_UTME"),
@@ -103,6 +103,18 @@ class SeismicMisfit(WebvizPluginABC):
     the same data point. I.e. line number N+1 in obs/metadata file corresponds to
     line N in sim files. The +1 shift for the obs/metadata file
     is due to that file is the only one with a header.
+
+    b) Polygon data is optional to include. Polygons must be stored in
+    csv file(s) on the format shown below. A csv file can have multiple
+    polygons (e.g. fault polygons), identified with the POLY_ID value.
+    ```csv
+        X_UTME,Y_UTMN,Z_TVDSS,POLY_ID
+        460606.36,5935605.44,1676.49,0
+        460604.92,5935583.99,1674.84,0
+        460604.33,5935575.08,1674.16,2
+        ...
+        ...
+    ```
     """
 
     def __init__(
@@ -531,11 +543,15 @@ class SeismicMisfit(WebvizPluginABC):
                                         id=self.uuid("obsdata-obsmap-polygon"),
                                         optionHeight=60,
                                         options=[
-                                            {"label": polyname, "value": polyname}
+                                            {
+                                                "label": polyname.replace(
+                                                    ".csv", ""
+                                                ).replace("_", " "),
+                                                "value": polyname,
+                                            }
                                             for polyname in self.polygon_names
                                         ],
-                                        value=[self.polygon_names[0]],
-                                        multi=True,
+                                        multi=False,
                                         clearable=True,
                                         persistence=True,
                                         persistence_type="memory",
@@ -1448,8 +1464,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             {"label": polyname, "value": polyname}
                                             for polyname in self.polygon_names
                                         ],
-                                        value=[self.polygon_names[0]],
-                                        multi=True,
+                                        multi=False,
                                         clearable=True,
                                         persistence=True,
                                         persistence_type="memory",
@@ -1617,7 +1632,7 @@ class SeismicMisfit(WebvizPluginABC):
             obsmap_colorby: str,
             obsmap_scale_col_range: float,
             obsmap_marker_size: int,
-            obsmap_polygon: List[str],
+            obsmap_polygon: str,
         ) -> Tuple[px.scatter, px.scatter, dict, str]:
 
             if not regions:
@@ -1637,12 +1652,9 @@ class SeismicMisfit(WebvizPluginABC):
             # --- apply noise filter
             dframe_obs = dframe_obs[abs(dframe_obs.obs).ge(noise_filter)]
 
+            df_poly = pd.DataFrame()
             if self.df_polygons is not None:
-                df_poly = self.df_polygons.loc[
-                    self.df_polygons.name.isin(obsmap_polygon)
-                ]
-            else:
-                df_poly = pd.DataFrame()
+                df_poly = self.df_polygons[self.df_polygons.name == obsmap_polygon]
 
             # --- make graphs
             fig_map = update_obsdata_map(
@@ -1921,7 +1933,7 @@ class SeismicMisfit(WebvizPluginABC):
             slice_position: float,
             plot_coverage: int,
             marker_size: int,
-            map_plot_polygon: List[str],
+            map_plot_polygon: str,
         ) -> Tuple[Optional[Any], Optional[Any]]:
 
             if not regions:
@@ -1943,12 +1955,9 @@ class SeismicMisfit(WebvizPluginABC):
                 ]
             )
 
+            df_poly = pd.DataFrame()
             if self.df_polygons is not None:
-                df_poly = self.df_polygons.loc[
-                    self.df_polygons.name.isin(map_plot_polygon)
-                ]
-            else:
-                df_poly = pd.DataFrame()
+                df_poly = self.df_polygons[self.df_polygons.name == map_plot_polygon]
 
             fig_maps, fig_slice = update_obs_sim_map_plot(
                 dframe,
