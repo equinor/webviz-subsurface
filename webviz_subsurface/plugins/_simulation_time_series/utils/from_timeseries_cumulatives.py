@@ -41,10 +41,14 @@ def calculate_from_cumulative_vectors_df(
     shorter or equal to `sampling_frequency` (e.g. `resampling_frequency` = `yearly` is compatible
     with `sampling_frequency` = `monthly`, but the opposite is invalid).
 
+    `Input:`
+    * vectors_df: pd.Dataframe - Dataframe with columns:
+        ["DATE", "REAL", vector1, ..., vectorN]
+
     `TODO:`
     * Can sampled data be retrieved from ensemble providers? I.e. do not perform resampling
     inside this function
-    * IMPROVE FUNCTION NAME!
+    * IMPROVE FUNCTION NAME?
     """
     vectors_df = vectors_df.copy()
 

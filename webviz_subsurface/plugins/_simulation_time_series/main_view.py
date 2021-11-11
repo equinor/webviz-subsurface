@@ -207,6 +207,8 @@ def __delta_ensemble_creator_layout(
                 ],
                 style={"align-items": "flex-end"},
             ),
+            # TODO: Replace with dash_boostrap_components.Table?
+            # (https://dash-bootstrap-components.opensource.faculty.ai/docs/components/table/)
             dash_table.DataTable(
                 id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
                 columns=(
@@ -248,15 +250,8 @@ def __plot_options_layout(
                     id=get_uuid(ViewElements.PLOT_TRACE_OPTIONS_CHECKLIST),
                     options=[
                         {"label": "History", "value": TraceOptions.HISTORY.value},
-                        {
-                            "label": "Vector observations",
-                            "value": TraceOptions.VECTOR_OBSERVATIONS.value,
-                        },
                     ],
-                    value=[
-                        TraceOptions.HISTORY.value,
-                        TraceOptions.VECTOR_OBSERVATIONS.value,
-                    ],
+                    value=[TraceOptions.HISTORY.value],
                 ),
                 wcc.Checklist(
                     id=get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),

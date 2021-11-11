@@ -3,6 +3,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+import pandas as pd
 
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
@@ -13,24 +14,28 @@ from webviz_subsurface.plugins._simulation_time_series.provider_set import Provi
 
 from .types import (
     DeltaEnsembleNamePair,
+    DeltaEnsembleProvider,
     create_delta_ensemble_names,
     FanchartOptions,
     StatisticsOptions,
     TraceOptions,
     VisualizationOptions,
 )
-from .selected_provider_set_model import SelectedProviderSetModel
 from .graph_figure_builder import GraphFigureBuilder
 from .utils.trace_line_shape import get_simulation_line_shape
-from .utils.from_timeseries_cumulatives import (
-    get_cumulative_vector_name,
-    is_interval_or_average_vector,
-)
 
+from .selected_provider_set import (
+    create_selected_provider_set,
+    create_vector_plot_title,
+)
+from .assembled_vector_data_accessor import AssembledVectorDataAccessor
+from .utils.vector_statistics import create_vectors_statistics_df
+from .utils.history_vectors import create_history_vectors_df
 
 from .main_view import ViewElements
 
 
+# pylint: disable=too-many-arguments, too-many-statements
 def controller_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
@@ -38,7 +43,7 @@ def controller_callbacks(
     theme: WebvizConfigTheme,
     sampling: str,  # TODO: Remove and use only resampling_frequency?
     initial_selected_vectors: List[str],
-    observations: dict,
+    observations: dict,  # TODO: Improve typehint?
     resampling_frequency: Optional[Frequency],
     line_shape_fallback: str = "linear",
 ) -> None:
@@ -86,11 +91,16 @@ def controller_callbacks(
     ) -> dict:
         """Callback to update all graphs based on selections
 
+        * De-serialize from JSON serializable format to strongly typed and filtered format
+        * Business logic with SelectedProviderSet, ProviderVectorDataHandler and utility functions
+        with "strongly typed" and filtered input format
+        * Create/build prop serialization in FigureBuilder by use of business logic data
+
         TODO:
         - Should be a "pure" controller in model-view-control? I.e. pass into a "model"
         and retrieve states/arguments to pass on to a "view"?
         - Convert dash input/state to types, delegate to model and retreive data for providing
-        to  graphing
+        to graphing
         """
 
         # Convert from string values to enum types
@@ -108,25 +118,20 @@ def controller_callbacks(
             vectors = initial_selected_vectors
 
         # Filter selected delta ensembles
-        selected_ensembles_model = SelectedProviderSetModel(
-            input_provider_set,
-            selected_ensembles,
-            delta_ensembles,
-            resampling_frequency,
+        selected_provider_set = create_selected_provider_set(
+            input_provider_set, selected_ensembles, delta_ensembles
         )
 
         # Titles for subplots TODO: Verify vector existing?
         vector_titles: Dict[str, str] = {
-            elm: selected_ensembles_model.create_vector_plot_title(elm)
-            for elm in vectors
+            vector: create_vector_plot_title(selected_provider_set, vector)
+            for vector in vectors
         }
 
         # TODO: Create unique colors based on all ensembles, i.e. union of
         # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
         # Now color can change when changing selected ensembles?
-        ensemble_colors = unique_colors(
-            selected_ensembles_model.provider_names(), theme
-        )
+        ensemble_colors = unique_colors(selected_provider_set.names(), theme)
 
         figure_builder = GraphFigureBuilder(
             vectors, vector_titles, ensemble_colors, sampling, theme
@@ -137,112 +142,64 @@ def controller_callbacks(
             vector: get_simulation_line_shape(
                 line_shape_fallback,
                 vector,
-                selected_ensembles_model.vector_metadata(vector),
+                selected_provider_set.vector_metadata(vector),
             )
             for vector in vectors
         }
 
         # Plotting per ensemble
-        for ensemble in selected_ensembles_model.provider_names():
-            provider_vector_names = selected_ensembles_model.provider_vector_names(
-                ensemble
+        for name, provider in selected_provider_set.items():
+            vector_data_accessor = AssembledVectorDataAccessor(
+                name,
+                provider,
+                vectors,
+                expressions=None,
+                resampling_frequency=resampling_frequency,
             )
 
-            # Separate provider vectors and calculation vectors
-            # TODO: Consider creating selected_ensembles_model.set_selected_vectors(vectors: List[str])
-            # and let model handled ensemble vectors and cumulative vectors state internally.
-            provider_vectors = [
-                elm
-                for elm in vectors
-                if not is_interval_or_average_vector(elm)
-                and elm in provider_vector_names
-            ]
-            interval_and_average_vectors = [
-                elm
-                for elm in vectors
-                if is_interval_or_average_vector(elm)
-                and get_cumulative_vector_name(elm) in provider_vector_names
-            ]
-
-            if not provider_vectors and not interval_and_average_vectors:
-                continue
-
-            vectors_df = None
-            interval_and_average_vectors_df = None
-            if provider_vectors:
-                vectors_df = selected_ensembles_model.get_provider_vectors_df(
-                    ensemble, provider_vectors
-                )
-            if interval_and_average_vectors:
-                interval_and_average_vectors_df = (
-                    selected_ensembles_model.create_interval_and_average_vectors_df(
-                        ensemble, interval_and_average_vectors, sampling
+            vectors_df_list: List[pd.DataFrame] = []
+            if vector_data_accessor.has_provider_vectors():
+                vectors_df_list.append(vector_data_accessor.get_provider_vectors_df())
+            if vector_data_accessor.has_interval_and_average_vectors():
+                vectors_df_list.append(
+                    vector_data_accessor.create_interval_and_average_vectors_df(
+                        sampling
                     )
                 )
 
-            if visualization == VisualizationOptions.REALIZATIONS:
-                if vectors_df is not None:
+            for index, vectors_df in enumerate(vectors_df_list):
+                if visualization == VisualizationOptions.REALIZATIONS:
                     figure_builder.add_realizations_traces(
-                        vectors_df, ensemble, vector_line_shapes
-                    )
-                if interval_and_average_vectors_df is not None:
-                    figure_builder.add_realizations_traces(
-                        interval_and_average_vectors_df,
-                        ensemble,
+                        vectors_df,
+                        name,
                         vector_line_shapes,
-                        add_legend=not provider_vectors,
+                        add_legend=index == 0,
                     )
-            if visualization == VisualizationOptions.STATISTICS:
-                if vectors_df is not None:
-                    vectors_statistics_df = (
-                        selected_ensembles_model.create_statistics_df(vectors_df)
-                    )
+                if visualization == VisualizationOptions.STATISTICS:
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                     figure_builder.add_statistics_traces(
                         vectors_statistics_df,
-                        ensemble,
+                        name,
                         statistics_options,
                         vector_line_shapes,
+                        add_legend=index == 0,
                     )
-                if interval_and_average_vectors_df is not None:
-                    vectors_statistics_df = (
-                        selected_ensembles_model.create_statistics_df(
-                            interval_and_average_vectors_df
-                        )
-                    )
-                    figure_builder.add_statistics_traces(
-                        vectors_statistics_df,
-                        ensemble,
-                        statistics_options,
-                        vector_line_shapes,
-                        add_legend=not provider_vectors,
-                    )
-
-            if visualization == VisualizationOptions.FANCHART:
-                if vectors_df is not None:
-                    vectors_statistics_df = (
-                        selected_ensembles_model.create_statistics_df(vectors_df)
-                    )
+                if visualization == VisualizationOptions.FANCHART:
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                     figure_builder.add_fanchart_traces(
                         vectors_statistics_df,
-                        ensemble,
+                        name,
                         fanchart_options,
                         vector_line_shapes,
-                    )
-                if interval_and_average_vectors_df is not None:
-                    vectors_statistics_df = (
-                        selected_ensembles_model.create_statistics_df(
-                            interval_and_average_vectors_df
-                        )
-                    )
-                    figure_builder.add_fanchart_traces(
-                        vectors_statistics_df,
-                        ensemble,
-                        fanchart_options,
-                        vector_line_shapes,
-                        add_legend=not provider_vectors,
+                        add_legend=index == 0,
                     )
 
-        if TraceOptions.VECTOR_OBSERVATIONS in trace_options:
+        # Do not add observations if only delta ensembles are selected
+        is_only_delta_ensembles = all(
+            isinstance(elm, DeltaEnsembleProvider)
+            for elm in selected_provider_set.all_providers()
+        )
+        if observations and not is_only_delta_ensembles:
             for vector in vectors:
                 vector_observations = observations.get(vector)
                 if vector_observations:
@@ -250,17 +207,18 @@ def controller_callbacks(
 
         if (
             TraceOptions.HISTORY in trace_options
-            and len(selected_ensembles_model.provider_names()) > 0
+            and len(selected_provider_set.names()) > 0
         ):
             # NOTE: Retrieve historical vector from first ensemble
             # Name and provider from first selected ensemble
-            ensemble = selected_ensembles_model.provider_names()[0]
-            vector_names = selected_ensembles_model.provider_vector_names(ensemble)
+            name = selected_provider_set.names()[0]
+            provider = selected_provider_set.provider(name)
+            vector_names = provider.vector_names()
 
             provider_vectors = [elm for elm in vectors if elm in vector_names]
 
-            history_vectors_df = selected_ensembles_model.create_history_vectors_df(
-                ensemble, provider_vectors
+            history_vectors_df = create_history_vectors_df(
+                provider, provider_vectors, resampling_frequency
             )
             # TODO: Handle check of non-empty dataframe better!
             if not history_vectors_df.empty and "DATE" in history_vectors_df.columns:

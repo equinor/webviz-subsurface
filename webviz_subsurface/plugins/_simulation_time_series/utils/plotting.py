@@ -19,27 +19,39 @@ from ...._utils.statistics_plotting import (
 
 
 def create_vector_realization_traces(
-    ensemble_vectors_df: pd.DataFrame,
-    vector: str,
+    vector_df: pd.DataFrame,
     ensemble: str,
     color: str,
     line_shape: str,
     hovertemplate: str,
     show_legend: bool = True,
 ) -> List[dict]:
-    """Renders line trace for each realization, includes history line if present"""
+    """Renders line trace for each realization, includes history line if present
+
+    `Input:`
+    * vector_df: pd.DataFrame - Dataframe with vector data with following columns:\n
+    ["DATE", "REAL", vector]
+    * ensemble: str - Name of ensemble
+    """
+    vector_names = list(set(vector_df.columns) ^ set(["DATE", "REAL"]))
+    if len(vector_names) != 1:
+        raise ValueError(
+            f"Expected one vector column present in dataframe, got {len(vector_names)}!"
+        )
+
+    vector_name = vector_names[0]
     return [
         {
             "line": {"shape": line_shape},
             "x": list(real_df["DATE"]),
-            "y": list(real_df[vector]),
+            "y": list(real_df[vector_name]),
             "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
             "name": ensemble,
             "legendgroup": ensemble,
             "marker": {"color": color},
             "showlegend": real_no == 0 and show_legend,
         }
-        for real_no, (real, real_df) in enumerate(ensemble_vectors_df.groupby("REAL"))
+        for real_no, (real, real_df) in enumerate(vector_df.groupby("REAL"))
     ]
 
 
@@ -53,7 +65,15 @@ def create_vector_statistics_traces(
     hovertemplate: str = "(%{x}, %{y})<br>",
     show_legend: bool = True,
 ) -> List[Dict[str, Any]]:
-    """Renders a statistical lines for each vector"""
+    """Renders a statistical lines for each vector
+
+    `Input:`
+    * vector_statistics_df: pd.Dataframe - Dataframe with double column level:\n
+      [            vector1,                        ... vectorN
+        "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+
+    * statistics_options: List[StatisticsOptions] - List of statistic options to include
+    """
     low_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P90].values,
@@ -126,7 +146,15 @@ def create_vector_fanchart_traces(
     show_legend: bool = True,
     hovertemplate: str = "(%{x}, %{y})<br>",
 ) -> List[Dict[str, Any]]:
-    """Get statistical fanchart traces for vector"""
+    """Get statistical fanchart traces for vector
+
+    `Input:`
+    * vector_statistics_df: pd.Dataframe - Dataframe with double column level:\n
+      [            vector1,                        ... vectorN
+        "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+
+    * statistics_options: List[StatisticsOptions] - List of statistic options to include
+    """
 
     low_high_data = (
         LowHighData(

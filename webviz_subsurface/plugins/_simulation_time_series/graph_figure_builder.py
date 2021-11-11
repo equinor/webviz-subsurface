@@ -114,20 +114,24 @@ class GraphFigureBuilder:
         vector_line_shapes: Dict[str, str],
         add_legend: bool = True,
     ) -> None:
+        """Add realization traces to figure
+
+        `Input:`
+        * vectors_df: pd.Dataframe - Dataframe with columns:
+            ["DATE", "REAL", vector1, ..., vectorN]
+
+        """
         color = self._ensemble_colors.get(ensemble)
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')
 
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
-        vectors = [
-            col for col in vectors_df.columns.tolist() if col not in ["DATE", "REAL"]
-        ]
+        vectors: List[str] = list(set(vectors_df.columns) ^ set(["DATE", "REAL"]))
 
         for vector in set(vectors):
             vector_traces_set[vector] = create_vector_realization_traces(
-                ensemble_vectors_df=vectors_df,
-                vector=vector,
+                vector_df=vectors_df[["DATE", "REAL", vector]],
                 ensemble=ensemble,
                 color=color,
                 line_shape=vector_line_shapes.get(vector, self._line_shape_fallback),
@@ -154,6 +158,14 @@ class GraphFigureBuilder:
         vector_line_shapes: Dict[str, str],
         add_legend: bool = True,
     ) -> None:
+        """Add statistics traces to figure
+
+        `Input:`
+        * vector_statistics_df: pd.Dataframe - Dataframe with double column level:\n
+          [            vector1,                        ... vectorN
+            "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+
+        """
         color = self._ensemble_colors.get(ensemble)
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')

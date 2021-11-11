@@ -12,9 +12,9 @@ class DeltaEnsembleNamePair(TypedDict):
 
 
 # TODO: Place on class as staticmethod?
-def create_delta_ensemble_name(ensemble: DeltaEnsembleNamePair) -> str:
-    name_a = ensemble["ensemble_a"]
-    name_b = ensemble["ensemble_b"]
+def create_delta_ensemble_name(name_pair: DeltaEnsembleNamePair) -> str:
+    name_a = name_pair["ensemble_a"]
+    name_b = name_pair["ensemble_b"]
     return f"({name_a})-({name_b})"
 
 
@@ -23,11 +23,10 @@ def create_delta_ensemble_names(ensembles: List[DeltaEnsembleNamePair]) -> List[
     return [create_delta_ensemble_name(elm) for elm in ensembles]
 
 
-# TODO: Consider renaming class? DeltaEnsembleSummaryProvider/DeltaEnsembleProvider?
-class DeltaEnsemble(EnsembleSummaryProvider):
+class DeltaEnsembleProvider(EnsembleSummaryProvider):
     """
-    Delta ensemble object to define a delta ensemble which represent the
-    delta (subtraction) between two ensembles - A and B.
+    Class to define a delta ensemble provider which represent a delta calculation
+    (subtraction) between two ensembles - A and B.
 
     Base class is EnsembleSummaryProvider, utilized to provide one single
     interface for ensemble vectors.
