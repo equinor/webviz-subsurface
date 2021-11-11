@@ -75,6 +75,7 @@ setup(
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
             "WellLogViewer = webviz_subsurface.plugins:WellLogViewer",
         ],
+        "console_scripts": ["smry2arrow_batch=webviz_subsurface.smry2arrow_batch:main"],
     },
     install_requires=[
         "dash>=2.0.0",
@@ -82,7 +83,7 @@ setup(
         "dash-daq>=0.5.0",
         "dataclasses>=0.8; python_version<'3.7'",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.13.0; sys_platform=='linux'",
+        "ecl2df>=0.15.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "fmu-tools>=1.8",
         "jsonschema>=3.2.0",
