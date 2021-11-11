@@ -146,3 +146,13 @@ def create_figure_matrix(figures: List[go.Figure]) -> List[List[go.Figure]]:
     # extend figure list with None to fit size of matrix
     figures.extend([None] * (len_of_matrix - len(figures)))
     return [figures[i : i + figs_in_row] for i in range(0, len_of_matrix, figs_in_row)]
+
+
+def update_tornado_figures_xaxis(figures: List[go.Figure]) -> None:
+    """
+    Update the x-axis range for a list of tornado figures with the maximum absolute
+    x-value from all figures. Axis will be centered around 0.
+    """
+    x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
+    for fig in figures:
+        fig.update_layout(xaxis_range=[-x_absmax, x_absmax])
