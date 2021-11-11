@@ -3520,9 +3520,7 @@ def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
                             "(default is None)"
                         )
                     else:
-                        name = str(Path(poly_file).name)
-                        name = name.replace(".csv", "").replace("_", " ")
-                        df_polygon["name"] = name
+                        df_polygon["name"] = str(Path(poly_file).stem).replace("_", " ")
                         df_polygons = pd.concat([df_polygons, df_polygon])
                 logging.debug(f"Polygon dataframe:\n{df_polygons}")
                 return df_polygons
