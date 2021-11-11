@@ -75,11 +75,6 @@ setup(
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
             "WellLogViewer = webviz_subsurface.plugins:WellLogViewer",
         ],
-        "ert": ["webviz_subsurface_jobs = webviz_subsurface.ert_jobs.jobs"],
-        "console_scripts": [
-            "well_connection_status=webviz_subsurface.ert_jobs.well_connection_status:main",
-            "smry2arrow=webviz_subsurface.ert_jobs.smry2arrow:main",
-        ],
     },
     install_requires=[
         "dash>=2.0.0",
@@ -100,7 +95,7 @@ setup(
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.3.1",
         "webviz-core-components>=0.5.1",
-        "webviz-subsurface-components>=0.4.6",
+        "webviz-subsurface-components>=0.4.7",
         "xtgeo>=2.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},

@@ -221,7 +221,7 @@ class TornadoWidget:
                                             value=self.sensnames,
                                             multi=True,
                                             size=min(
-                                                5,
+                                                8,
                                                 len(self.sensnames),
                                             ),
                                         ),

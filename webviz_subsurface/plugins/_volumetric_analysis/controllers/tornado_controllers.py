@@ -13,7 +13,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 from ..utils.table_and_figure_utils import create_data_table, create_table_columns
 from ..utils.utils import update_relevant_components
-from ..views.tornado_view import tornado_plots_layout
+from ..views.tornado_view import tornado_error_layout, tornado_plots_layout
 
 
 # pylint: disable=too-many-locals
@@ -58,25 +58,28 @@ def tornado_controllers(
                 filters.update(SENSNAME=selections["Sensitivities"])
 
             dframe = volumemodel.get_df(filters=filters, groups=groups)
-            dframe.rename(columns={response: "VALUE"}, inplace=True)
 
-            df_groups = (
-                dframe.groupby(selections["Subplots"]) if subplots else [(None, dframe)]
-            )
-
-            for group, df in df_groups:
-                figure, table, columns = tornado_figure_and_table(
-                    df=df,
-                    response=response,
-                    selections=selections,
-                    theme=theme,
-                    sensitivity_colors=sens_colors(),
-                    font_size=max((20 - (0.4 * len(df_groups))), 10),
-                    group=group,
+            if not dframe.empty:
+                dframe.rename(columns={response: "VALUE"}, inplace=True)
+                df_groups = (
+                    dframe.groupby(selections["Subplots"])
+                    if subplots
+                    else [(None, dframe)]
                 )
-                figures.append(figure)
-                if selections["tornado_table"]:
-                    tables.append(table)
+                for group, df in df_groups:
+                    if selections["Reference"] in df["SENSNAME"].unique():
+                        figure, table, columns = tornado_figure_and_table(
+                            df=df,
+                            response=response,
+                            selections=selections,
+                            theme=theme,
+                            sensitivity_colors=sens_colors(),
+                            font_size=max((20 - (0.4 * len(df_groups))), 10),
+                            group=group,
+                        )
+                        figures.append(figure)
+                        if selections["tornado_table"]:
+                            tables.append(table)
 
         if selections["Shared axis"] and selections["Scale"] != "True":
             x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
@@ -96,6 +99,12 @@ def tornado_controllers(
                             height="42vh",
                             table_id={"table_id": f"{page_selected}-torntable"},
                         ),
+                    )
+                    if figures
+                    else tornado_error_layout(
+                        "No data left after filtering"
+                        if dframe.empty
+                        else f"Reference sensitivity '{selections['Reference']}' not in input data"
                     ),
                     "conditions": {"page": page_selected},
                 }
