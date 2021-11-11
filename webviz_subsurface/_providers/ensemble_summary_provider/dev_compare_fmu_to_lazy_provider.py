@@ -1,6 +1,7 @@
 import datetime
 import glob
 import logging
+import numpy as np
 import os
 import re
 from pathlib import Path
@@ -35,9 +36,14 @@ def _make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
 
     sampled_date_value = df["DATE"].values[0]
 
-    # Infer datatype (Pandas cannot answer it) based on the first element:
+    # Infer datatype based on the first element:
     if isinstance(sampled_date_value, pd.Timestamp):
-        df["DATE"] = pd.Series(pd.to_pydatetime(df["DATE"]), dtype="object")
+        df["DATE"] = pd.Series(
+            [ts.to_pydatetime() for ts in df["DATE"]], dtype="object"
+        )
+
+    elif isinstance(sampled_date_value, np.datetime64):
+        df["DATE"] = pd.Series(df["DATE"].dt.to_pydatetime(), dtype="object")
 
     elif isinstance(sampled_date_value, str):
         # Do not use pd.Series.apply() here, Pandas would try to convert it to
@@ -54,6 +60,9 @@ def _make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
             ],
             dtype="object",
         )
+
+    # sampled_after_conv = df["DATE"].values[0]
+    # print(f"sampled_after_conv={sampled_after_conv}   type={type(sampled_after_conv)}")
 
     return df
 
@@ -80,6 +89,7 @@ def _load_smry_dataframe_using_fmu(
 
     # Sort on real, then date to align with provider
     df.sort_values(by=["REAL", "DATE"], inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
     return df
 
@@ -132,6 +142,7 @@ def _load_smry_dataframe_using_ecl2df(
 
     # Sort on real, then date to align with provider
     df.sort_values(by=["REAL", "DATE"], inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
     return df
 
@@ -147,8 +158,8 @@ def _compare_reference_df_to_provider_get_vectors_df(
 
     print("## Getting data for all vectors from provider...")
     provider_df = provider.get_vectors_df(provider.vector_names(), frequency)
-    provider_df = provider_df.reset_index(drop=True)
     provider_df.sort_values(by=["REAL", "DATE"], inplace=True)
+    provider_df.reset_index(drop=True, inplace=True)
     # print(provider_df)
 
     print("## Running compare...")
@@ -157,7 +168,7 @@ def _compare_reference_df_to_provider_get_vectors_df(
         provider_df,
         df1_name="ref_df",
         df2_name="provider_df",
-        on_index=True,
+        join_columns=["REAL", "DATE"],
         abs_tol=ABS_TOLERANCE,
         rel_tol=REL_TOLERANCE,
     )
@@ -190,16 +201,17 @@ def _compare_reference_df_to_provider_get_vectors_for_date(
     lookup_date_arr.append(all_dates[num_dates - 1])
 
     for lookup_date in lookup_date_arr:
-        ref_res_df = reference_df.loc[reference_df["DATE"] == lookup_date]
-        ref_res_df = ref_res_df.drop(columns="DATE")
-        ref_res_df = ref_res_df.reset_index(drop=True)
+        # print(f"lookup_date={lookup_date}   type={type(lookup_date)}")
+        ref_res_df = reference_df.loc[reference_df["DATE"] == lookup_date].copy()
+        ref_res_df.drop(columns="DATE", inplace=True)
+        ref_res_df.reset_index(drop=True, inplace=True)
         # print("## Dumping ref_res_df:")
         # print(ref_res_df)
 
         provider_df = provider.get_vectors_for_date_df(
             lookup_date, provider.vector_names()
         )
-        provider_df = provider_df.reset_index(drop=True)
+        provider_df.reset_index(drop=True, inplace=True)
         # print("## Dumping provider_df:")
         # print(provider_df)
 
@@ -209,7 +221,7 @@ def _compare_reference_df_to_provider_get_vectors_for_date(
             provider_df,
             df1_name="ref_res_df",
             df2_name="provider_df",
-            on_index=True,
+            join_columns=["REAL"],
             abs_tol=ABS_TOLERANCE,
             rel_tol=REL_TOLERANCE,
         )
@@ -271,10 +283,13 @@ def main() -> None:
     # reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
     reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
 
-    print("## Comparing get_vectors...")
-    _compare_reference_df_to_provider_get_vectors_df(reference_df, provider, frequency)
+    print("## Comparing get_vectors()...")
+    resampling_frequency = frequency if provider.supports_resampling() else None
+    _compare_reference_df_to_provider_get_vectors_df(
+        reference_df, provider, resampling_frequency
+    )
 
-    print("## Comparing get_vectors_for date...")
+    print("## Comparing get_vectors_for date()...")
     _compare_reference_df_to_provider_get_vectors_for_date(reference_df, provider)
 
     print("## done")
