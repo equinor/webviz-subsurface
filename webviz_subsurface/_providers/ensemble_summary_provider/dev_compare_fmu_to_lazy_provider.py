@@ -258,7 +258,7 @@ def main() -> None:
     print("## frequency:", frequency)
     print()
 
-    print("## Creating provider...")
+    print("## Creating summary provider...")
     factory = EnsembleSummaryProviderFactory(
         root_storage_dir, allow_storage_writes=True
     )
@@ -266,8 +266,10 @@ def main() -> None:
     # provider = factory.create_from_arrow_unsmry_presampled(ensemble_path, frequency)
 
     print("## Loading data into reference DataFrame...")
-    reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
-    # reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
+    # Note that for version 2.13.0 and earlier of ecl, loading via FMU will not give the
+    # correct results. This was remedied in https://github.com/equinor/ecl/pull/837
+    # reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
+    reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
 
     print("## Comparing get_vectors...")
     _compare_reference_df_to_provider_get_vectors_df(reference_df, provider, frequency)
