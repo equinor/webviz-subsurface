@@ -134,7 +134,7 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
 def read_well_connection_status(
     ensemble_path: str, well_connection_status_file: str
 ) -> Optional[pd.DataFrame]:
-    """Reads parquet file with well connection status data from the scratch disk.
+    """Reads csv file with well connection status data from the scratch disk.
     Merges together files from all realizations, does some fixing of the column
     data types, and returns it as a pandas dataframe.
 
@@ -152,7 +152,7 @@ def read_well_connection_status(
 
     df = pd.DataFrame()
     for _, row in df_files.iterrows():
-        df_real = pd.read_parquet(row.FULLPATH)
+        df_real = pd.read_csv(row.FULLPATH)
         df_real["REAL"] = row.REAL
         df = pd.concat([df, df_real])
     df.I = pd.to_numeric(df.I)

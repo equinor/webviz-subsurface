@@ -1,7 +1,6 @@
 import io
 import itertools
 import json
-from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
@@ -20,10 +19,6 @@ from .._datainput.well_completions import (
     read_well_attributes,
     read_well_connection_status,
     read_zone_layer_mapping,
-)
-
-WELL_CONNECTION_STATUS_FILE = (
-    Path() / "share" / "results" / "tables" / "well_connection_status.parquet"
 )
 
 
@@ -49,12 +44,8 @@ class WellCompletions(WebvizPluginABC):
     **COMPDAT input**
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/tables/compdat.csv`).
-
-    The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
-    wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
-    installed).
-    [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+    `share/results/tables/compdat.csv`). This file can be exported to disk per realization by using
+    the `ECL2CSV` forward model in ERT with subcommand `compdat`. [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
     The connection status history of each cell is not necessarily complete in the `ecl2df` export,
     because status changes resulting from ACTIONs can't be extracted from the Eclipse input
@@ -65,12 +56,11 @@ class WellCompletions(WebvizPluginABC):
     **Well Connection status input**
 
     The `well_connection_status_file` is a path to a file stored per realization (e.g. in \
-    `share/results/tables/well_connection_status.parquet`.
+    `share/results/tables/wellconnstatus.csv`. This file can be exported to disk per realization
+    by using the `ECL2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to ecl2csv wellconnstatus documentation.](https://equinor.github.io/ecl2df/usage/wellconnstatus.html)
 
-    This file can be exported from the ERT workflow by a forward model: `WELL_CONNECTION_STATUS`.
-    This forward model uses the CPI summary data to create a well connection status history: for
+    This approach uses the CPI summary data to create a well connection status history: for
     each well connection cell there is one line for each time the connection is opened or closed.
-
     This data is sparse, but be aware that the CPI summary data can potentially become very large.
 
     **Zone layer mapping**
@@ -185,7 +175,7 @@ class WellCompletions(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         compdat_file: str = "share/results/tables/compdat.csv",
-        well_connection_status_file: str = str(WELL_CONNECTION_STATUS_FILE),
+        well_connection_status_file: str = "share/results/tables/wellconnstatus.csv",
         zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
