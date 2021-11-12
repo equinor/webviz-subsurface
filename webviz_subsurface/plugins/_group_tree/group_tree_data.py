@@ -433,7 +433,7 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
 
     # Recursively find well types of all leaf nodes connected to the group node
     # Deduce group node type from well types
-    nonleafs = nodes[nodes["IS_LEAF"].isin([False])]
+    nonleafs = nodes[~nodes["IS_LEAF"]]
     for _, node in nonleafs.iterrows():
         leafs_are_prod, leafs_are_inj, leafs_are_other = get_leafnode_types(
             node["CHILD"], nodes
