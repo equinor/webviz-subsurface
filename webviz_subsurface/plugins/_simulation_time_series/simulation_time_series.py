@@ -25,7 +25,7 @@ from ..._utils.simulation_timeseries import (
 
 
 class SimulationTimeSeries(WebvizPluginABC):
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-arguments
     def __init__(
         self,
         app: dash.Dash,

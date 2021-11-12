@@ -30,12 +30,18 @@ class StatisticsData:
     * `minimum` - Optional 1D np.array of minimum value data for statistics plot
     * `maximum` - Optional 1D np.array of maximum value data for statistics plot
     * `low` - Optional low percentile, name and 1D np.array data for statistics plot
-    * `mid` - Optional midle percentile, name and 1D np.array data for statistics plot
+    * `mid` - Optional middle percentile, name and 1D np.array data for statistics plot
     * `high` - Optional high percentile, name and 1D np.array data for statistics plot
 
     """
 
-    # TODO: Rename mid percentile, find better name?
+    # TODO:
+    # - Rename mid percentile, find better name?
+    # - Consider to replace all lines with List[LineData], where each free line must be
+    # named and provided data.
+    # - Can then be used for individual realization plots as well?
+    # - One suggestion: Create base class with: samples: list, free_lines: List[LineData]
+    # and inherit for "StatisticsData". Base class can be utilized for realization plots?
 
     samples: list = field(default_factory=list)
     free_line: Optional[LineData] = None
@@ -77,7 +83,7 @@ def validate_statistics_data(data: StatisticsData) -> None:
         )
     if data.mid is not None and len(data.samples) != len(data.mid.data):
         raise ValueError(
-            "Invalid statistics midle percentile value data length. len(data.samples) "
+            "Invalid statistics middle percentile value data length. len(data.samples) "
             "!= len(data.mid.data)"
         )
     if data.high is not None and len(data.samples) != len(data.high.data):
@@ -110,7 +116,7 @@ def create_statistics_traces(
     for each feature. Plotly plots traces from front to end of the list, thereby the last trace is
     plotted on top.
 
-    Note that the data is optional, which implies that only wanted statistical feauters needs to be
+    Note that the data is optional, which implies that only wanted statistical features needs to be
     provided for trace plot generation.
 
     The function provides a list of traces: [trace0, tract1, ..., traceN]

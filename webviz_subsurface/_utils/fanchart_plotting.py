@@ -10,7 +10,7 @@ from .colors import hex_to_rgba
 @dataclass
 class FreeLineData:
     """
-    Dataclass for defining statistics data for freee line trace in fanchart
+    Dataclass for defining statistics data for free line trace in fanchart
 
     `Attributes:`
     * `name` - Name of statistics data

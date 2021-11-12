@@ -95,12 +95,6 @@ def controller_callbacks(
         * Business logic with SelectedProviderSet, ProviderVectorDataHandler and utility functions
         with "strongly typed" and filtered input format
         * Create/build prop serialization in FigureBuilder by use of business logic data
-
-        TODO:
-        - Should be a "pure" controller in model-view-control? I.e. pass into a "model"
-        and retrieve states/arguments to pass on to a "view"?
-        - Convert dash input/state to types, delegate to model and retreive data for providing
-        to graphing
         """
 
         # Convert from string values to enum types
@@ -226,7 +220,7 @@ def controller_callbacks(
                     history_vectors_df, vector_line_shapes
                 )
 
-        return figure_builder.get_figure()
+        return figure_builder.get_serialized_figure()
 
     # TODO: Implement callback
     # @app.callback()
