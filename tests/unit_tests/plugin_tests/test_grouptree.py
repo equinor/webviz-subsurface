@@ -119,7 +119,5 @@ def test_add_nodetype(gruptree, smry, expected):
         "IS_OTHER",
     ]
     output = add_nodetype_for_ens(gruptree, smry)
-    print("output")
-    print(output)
 
     pd.testing.assert_frame_equal(output[columns_to_check], expected[columns_to_check])
