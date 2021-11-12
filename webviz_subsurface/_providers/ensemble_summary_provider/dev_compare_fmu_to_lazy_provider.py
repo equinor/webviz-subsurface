@@ -1,7 +1,6 @@
 import datetime
 import glob
 import logging
-import numpy as np
 import os
 import re
 from pathlib import Path
@@ -10,6 +9,7 @@ from typing import Optional
 import datacompy  # pylint: disable=import-error, useless-suppression
 import dateutil.parser  # type: ignore
 import ecl2df
+import numpy as np
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
