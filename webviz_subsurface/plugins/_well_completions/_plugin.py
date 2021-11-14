@@ -1,19 +1,9 @@
-import io
-import itertools
-import json
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Callable, List, Tuple
 
-import numpy as np
-import pandas as pd
-import webviz_core_components as wcc
-import webviz_subsurface_components
-from dash import Dash, Input, Output, html
+from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
 
-
-from ._layout import main_layout
+from ._layout import main_layout, layout_tour_steps
 from ._callbacks import plugin_callbacks
 from ._business_logic import WellCompletionsDataModel
 
@@ -181,6 +171,7 @@ class WellCompletions(WebvizPluginABC):
         super().__init__()
 
         self._wellcompletions_datamodel = WellCompletionsDataModel(
+            webviz_settings,
             ensembles,
             compdat_file,
             well_connection_status_file,
@@ -189,23 +180,22 @@ class WellCompletions(WebvizPluginABC):
             well_attributes_file,
             kh_unit,
             kh_decimal_places,
-            webviz_settings.theme
         )
 
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return self.wellcompletions_datamodel.get_webvizstore()
+        return self._wellcompletions_datamodel.get_webvizstore()
 
     @property
     def tour_steps(self) -> list:
         return layout_tour_steps(self.uuid)
 
     @property
-    def layout(self) -> Union[str, Type[Component]]:
+    def layout(self) -> html.Div:
         return main_layout(
             get_uuid=self.uuid,
-            ensembles=self._wellcompletions_datamodel.get_ensembles()
+            ensembles=self._wellcompletions_datamodel.get_ensembles(),
         )
 
     def set_callbacks(self, app: Dash) -> None:

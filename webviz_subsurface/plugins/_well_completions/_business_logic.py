@@ -1,25 +1,23 @@
 import io
 import itertools
 import json
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Optional
 
 import numpy as np
 import pandas as pd
-import webviz_core_components as wcc
-import webviz_subsurface_components
-from dash import Dash, Input, Output, html
-from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_csv
-from .._datainput.well_completions import (
+from ..._datainput.fmu_input import load_csv
+from ..._datainput.well_completions import (
     get_ecl_unit_system,
     read_stratigraphy,
     read_well_attributes,
     read_well_connection_status,
     read_zone_layer_mapping,
 )
+
 
 class WellCompletionsDataModel:
     def __init__(
@@ -31,9 +29,10 @@ class WellCompletionsDataModel:
         zone_layer_mapping_file: str,
         stratigraphy_file: str,
         well_attributes_file: str,
-        kh_unit: str,
+        kh_unit: Optional[str],
         kh_decimal_places: int,
     ) -> None:
+        # pylint: disable=too-many-arguments
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
         self.well_connection_status_file = well_connection_status_file
@@ -53,19 +52,18 @@ class WellCompletionsDataModel:
     def get_ensembles(self) -> list:
         return self.ensembles
 
-
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     @webvizstore
     def create_ensemble_dataset(self, ensemble_name: str) -> io.BytesIO:
-        # pylint: disable=too-many-arguments
-        # pylint: disable=too-many-locals
         """Creates the well completion data set for the WellCompletions component
 
         Returns a dictionary on a given format specified here:
         https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
         """
         ensemble_path = self.ens_paths[ensemble_name]
-        df = load_csv(ensemble_paths={ensemble_name: ensemble_path}, csv_file=self.compdat_file)
+        df = load_csv(
+            ensemble_paths={ensemble_name: ensemble_path}, csv_file=self.compdat_file
+        )
         df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
         df.DATE = pd.to_datetime(df.DATE).dt.date
 
@@ -84,8 +82,10 @@ class WellCompletionsDataModel:
             ensemble_path=ensemble_path,
             well_attributes_file=self.well_attributes_file,
         )
-        if kh_unit is None:
-            kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
+        if self.kh_unit is None:
+            self.kh_unit, self.kh_decimal_places = get_kh_unit(
+                ensemble_path=ensemble_path
+            )
 
         if df_connstatus is not None:
             df = merge_compdat_and_connstatus(df, df_connstatus)
@@ -104,9 +104,11 @@ class WellCompletionsDataModel:
 
         result = {
             "version": "1.1.0",
-            "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
+            "units": {
+                "kh": {"unit": self.kh_unit, "decimalPlaces": self.kh_decimal_places}
+            },
             "stratigraphy": extract_stratigraphy(
-                layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
+                layer_zone_mapping, stratigraphy, zone_color_mapping, self.theme_colors
             ),
             "timeSteps": [str(dte) for dte in time_steps],
             "wells": extract_wells(

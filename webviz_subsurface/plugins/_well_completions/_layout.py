@@ -1,9 +1,9 @@
-from typing import Callable, List
+from typing import Callable
 
 from dash import html
 import webviz_core_components as wcc
 
-
+# pylint: disable = too-few-public-methods
 class LayoutElements:
     LAYOUT = "layout"
     ENSEMBLE_DROPDOWN = "ensemble_dropdown"
