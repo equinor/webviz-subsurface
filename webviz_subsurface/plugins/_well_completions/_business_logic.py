@@ -21,168 +21,19 @@ from .._datainput.well_completions import (
     read_zone_layer_mapping,
 )
 
-
-class WellCompletions(WebvizPluginABC):
-    # pylint: disable=line-too-long
-    """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
-    Data is grouped per well and zone and can be filtered accoring to flexible well categories.
-
-    ---
-
-    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **`compdat_file`:** `.csv` file with compdat data per realization
-    * **`well_connection_status_file`:** `.parquet` file with well connection status per realization
-    * **`zone_layer_mapping_file`:** `.lyr` file specifying the zone ➔ layer mapping
-    * **`stratigraphy_file`:** `.json` file defining the stratigraphic levels
-    * **`well_attributes_file`:** `.json` file with categorical well attributes
-    * **`kh_unit`:** e.g. mD·m, will try to extract from eclipse files if defaulted
-    * **`kh_decimal_places`:**
-
-    ---
-    The minimum requirement is to define `ensembles`.
-
-    **COMPDAT input**
-
-    `compdat_file` is a path to a file stored per realization (e.g. in \
-    `share/results/tables/compdat.csv`). This file can be exported to disk per realization by using
-    the `ECL2CSV` forward model in ERT with subcommand `compdat`. [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
-
-    The connection status history of each cell is not necessarily complete in the `ecl2df` export,
-    because status changes resulting from ACTIONs can't be extracted from the Eclipse input
-    files. If the `ecl2df` export is good, it is recommended to use that. This will often be the
-    case for history runs. But if not, an alternative way of extracting the data is described in
-    the next section.
-
-    **Well Connection status input**
-
-    The `well_connection_status_file` is a path to a file stored per realization (e.g. in \
-    `share/results/tables/wellconnstatus.csv`. This file can be exported to disk per realization
-    by using the `ECL2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to ecl2csv wellconnstatus documentation.](https://equinor.github.io/ecl2df/usage/wellconnstatus.html)
-
-    This approach uses the CPI summary data to create a well connection status history: for
-    each well connection cell there is one line for each time the connection is opened or closed.
-    This data is sparse, but be aware that the CPI summary data can potentially become very large.
-
-    **Zone layer mapping**
-
-    The `zone_layer_mapping_file` file can be dumped to disk per realization by an internal \
-    RMS script as part of the FMU workflow. A sample python script should be available in the \
-    Drogon project.
-
-    The file needs to be on the lyr format used by ResInsight:
-    [Link to description of lyr format](https://resinsight.org/3d-main-window/formations/#formation-names-description-files-_lyr_).
-
-    Zone colors can be specified in the lyr file, but only 6 digit hexadecimal codes will be used.
-
-    If no file exists, layers will be used as zones.
-
-    **Stratigraphy file**
-
-    The `stratigraphy_file` file is intended to be generated per realization by an internal \
-    RMS script as part of the FMU workflow, but can also be set up manually and copied to each
-    realization. The stratigraphy is a tree structure, where each node has a name, an optional
-    `color` parameter, and an optional `subzones` parameter which itself is a list of the same format.
-    ```json
-    [
-        {
-            "name": "ZoneA",
-            "color": "#FFFFFF",
-            "subzones": [
-                {
-                    "name": "ZoneA.1"
-                },
-                {
-                    "name": "ZoneA.2"
-                }
-            ]
-        },
-        {
-            "name": "ZoneB",
-            "color": "#FFF000",
-            "subzones": [
-                {
-                    "name": "ZoneB.1",
-                    "color": "#FFF111"
-                },
-                {
-                    "name": "ZoneB.2",
-                    "subzones: {"name": "ZoneB.2.2"}
-                }
-            ]
-        },
-    ]
-    ```
-    The `stratigraphy_file` and the `zone_layer_mapping_file` will be combined to create the final \
-    stratigraphy. A node will be removed if the name or any of the subnode names are not \
-    present in the zone layer mapping. A Value Error is raised if any zones are present in the
-    zone layer mapping but not in the stratigraphy.
-
-    Colors can be supplied both trough the stratigraphy and through the zone_layer_mapping. \
-    The following prioritization will be applied:
-    1. Colors specified in the stratigraphy
-    2. Colors specified in the zone layer mapping lyr file
-    3. If none of the above is specified, theme colors will be added to the leaves of the tree
-
-    **Well Attributes file**
-
-    The `well_attributes_file` file is intended to be generated per realization by an internal \
-    RMS script as part of the FMU workflow. A sample script will be made available, but it is \
-    possible to manually set up the file and copy it to the correct folder on the scratch disk.\
-    The categorical well attributes are completely flexible.
-
-    The file should be a `.json` file on the following format:
-    ```json
-    {
-        "version" : "0.1",
-        "wells" : [
-            {
-                "alias" : {
-                    "eclipse" : "OP_1"
-                },
-                "attributes" : {
-                    "mlt_singlebranch" : "mlt",
-                    "structure" : "East",
-                    "welltype" : "producer"
-                },
-                "name" : "OP_1"
-            },
-            {
-                "alias" : {
-                    "eclipse" : "GI_1"
-                },
-                "attributes" : {
-                    "mlt_singlebranch" : "singlebranch",
-                    "structure" : "West",
-                    "welltype" : "gas injector"
-                },
-                "name" : "GI_1"
-            },
-        ]
-    }
-    ```
-
-    **KH unit**
-
-    If defaulted, the plugin will look for the unit system of the Eclipse deck in the DATA file. \
-    The kh unit will be deduced from the unit system, e.g. mD·m if METRIC.
-
-    """
-
+class WellCompletionsDataModel:
     def __init__(
-        # pylint: disable=too-many-arguments
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
-        compdat_file: str = "share/results/tables/compdat.csv",
-        well_connection_status_file: str = "share/results/tables/wellconnstatus.csv",
-        zone_layer_mapping_file: str = "rms/output/zone/simgrid_zone_layer_mapping.lyr",
-        stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
-        well_attributes_file: str = "rms/output/wells/well_attributes.json",
-        kh_unit: str = None,
-        kh_decimal_places: int = 2,
-    ):
-        super().__init__()
+        compdat_file: str,
+        well_connection_status_file: str,
+        zone_layer_mapping_file: str,
+        stratigraphy_file: str,
+        well_attributes_file: str,
+        kh_unit: str,
+        kh_decimal_places: int,
+    ) -> None:
         self.theme = webviz_settings.theme
         self.compdat_file = compdat_file
         self.well_connection_status_file = well_connection_status_file
@@ -199,187 +50,83 @@ class WellCompletions(WebvizPluginABC):
             for ens in ensembles
         }
 
-        self.set_callbacks(app)
+    def get_ensembles(self) -> list:
+        return self.ensembles
 
-    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+
+    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @webvizstore
+    def create_ensemble_dataset(self, ensemble_name: str) -> io.BytesIO:
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
+        """Creates the well completion data set for the WellCompletions component
+
+        Returns a dictionary on a given format specified here:
+        https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
+        """
+        ensemble_path = self.ens_paths[ensemble_name]
+        df = load_csv(ensemble_paths={ensemble_name: ensemble_path}, csv_file=self.compdat_file)
+        df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
+        df.DATE = pd.to_datetime(df.DATE).dt.date
+
+        df_connstatus = read_well_connection_status(
+            ensemble_path=ensemble_path,
+            well_connection_status_file=self.well_connection_status_file,
+        )
+        layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
+            ensemble_path=ensemble_path,
+            zone_layer_mapping_file=self.zone_layer_mapping_file,
+        )
+        stratigraphy = read_stratigraphy(
+            ensemble_path=ensemble_path, stratigraphy_file=self.stratigraphy_file
+        )
+        well_attributes = read_well_attributes(
+            ensemble_path=ensemble_path,
+            well_attributes_file=self.well_attributes_file,
+        )
+        if kh_unit is None:
+            kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
+
+        if df_connstatus is not None:
+            df = merge_compdat_and_connstatus(df, df_connstatus)
+
+        time_steps = sorted(df.DATE.unique())
+        realizations = list(sorted(df.REAL.unique()))
+        layers = np.sort(df.K1.unique())
+
+        if layer_zone_mapping is None:
+            # use layers as zones
+            layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
+
+        df["ZONE"] = df.K1.map(layer_zone_mapping)
+
+        zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
+
+        result = {
+            "version": "1.1.0",
+            "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
+            "stratigraphy": extract_stratigraphy(
+                layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
+            ),
+            "timeSteps": [str(dte) for dte in time_steps],
+            "wells": extract_wells(
+                df, zone_names, time_steps, realizations, well_attributes
+            ),
+        }
+        return io.BytesIO(json.dumps(result).encode())
+
+    def get_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (
-                create_ensemble_dataset,
+                self.create_ensemble_dataset,
                 [
                     {
                         "ensemble": ensemble,
-                        "ensemble_path": self.ens_paths[ensemble],
-                        "compdat_file": self.compdat_file,
-                        "well_connection_status_file": self.well_connection_status_file,
-                        "zone_layer_mapping_file": self.zone_layer_mapping_file,
-                        "stratigraphy_file": self.stratigraphy_file,
-                        "well_attributes_file": self.well_attributes_file,
-                        "theme_colors": self.theme_colors,
-                        "kh_unit": self.kh_unit,
-                        "kh_decimal_places": self.kh_decimal_places,
                     }
                     for ensemble in self.ensembles
                 ],
             ),
         ]
-
-    @property
-    def tour_steps(self) -> list:
-        return [
-            {
-                "id": self.uuid("layout"),
-                "content": "Dashboard vizualizing Eclipse well completion output.",
-            },
-            {"id": self.uuid("ensemble_dropdown"), "content": "Select ensemble."},
-            {
-                "id": self.uuid("well_completions_wrapper"),
-                "content": (
-                    "Visualization of the well completions. "
-                    "Time slider for selecting which time steps to display. "
-                    "Different vizualisation and filtering alternatives are available "
-                    "in the upper right corner."
-                ),
-            },
-        ]
-
-    @property
-    def layout(self) -> html.Div:
-        return html.Div(
-            id=self.uuid("layout"),
-            children=[
-                wcc.FlexBox(
-                    children=[
-                        wcc.Selectors(
-                            label="Ensemble",
-                            children=[
-                                wcc.Dropdown(
-                                    id=self.uuid("ensemble_dropdown"),
-                                    options=[
-                                        {"label": ens, "value": ens}
-                                        for ens in self.ensembles
-                                    ],
-                                    clearable=False,
-                                    value=self.ensembles[0],
-                                    persistence=True,
-                                    persistence_type="session",
-                                ),
-                            ],
-                        ),
-                        html.Div(style={"flex": 4}),
-                    ],
-                ),
-                html.Div(
-                    id=self.uuid("well_completions_wrapper"),
-                ),
-            ],
-        )
-
-    def set_callbacks(self, app: Dash) -> None:
-        @app.callback(
-            Output(self.uuid("well_completions_wrapper"), "children"),
-            Output(self.uuid("well_completions_wrapper"), "style"),
-            Input(self.uuid("ensemble_dropdown"), "value"),
-        )
-        def _render_well_completions(ensemble_name: str) -> list:
-
-            data = json.load(
-                create_ensemble_dataset(
-                    ensemble_name,
-                    self.ens_paths[ensemble_name],
-                    self.compdat_file,
-                    self.well_connection_status_file,
-                    self.zone_layer_mapping_file,
-                    self.stratigraphy_file,
-                    self.well_attributes_file,
-                    self.theme_colors,
-                    self.kh_unit,
-                    self.kh_decimal_places,
-                )
-            )
-            no_leaves = count_leaves(data["stratigraphy"])
-            return [
-                webviz_subsurface_components.WellCompletions(
-                    id="well_completions", data=data
-                ),
-                {
-                    "padding": "10px",
-                    "height": no_leaves * 50 + 180,
-                    "min-height": 500,
-                    "width": "98%",
-                },
-            ]
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def create_ensemble_dataset(
-    ensemble: str,
-    ensemble_path: str,
-    compdat_file: str,
-    well_connection_status_file: str,
-    zone_layer_mapping_file: str,
-    stratigraphy_file: str,
-    well_attributes_file: str,
-    theme_colors: list,
-    kh_unit: Optional[str],
-    kh_decimal_places: int,
-) -> io.BytesIO:
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-locals
-    """Creates the well completion data set for the WellCompletions component
-
-    Returns a dictionary on a given format specified here:
-    https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
-    """
-    df = load_csv(ensemble_paths={ensemble: ensemble_path}, csv_file=compdat_file)
-    df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
-    df.DATE = pd.to_datetime(df.DATE).dt.date
-
-    df_connstatus = read_well_connection_status(
-        ensemble_path=ensemble_path,
-        well_connection_status_file=well_connection_status_file,
-    )
-    layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
-        ensemble_path=ensemble_path,
-        zone_layer_mapping_file=zone_layer_mapping_file,
-    )
-    stratigraphy = read_stratigraphy(
-        ensemble_path=ensemble_path, stratigraphy_file=stratigraphy_file
-    )
-    well_attributes = read_well_attributes(
-        ensemble_path=ensemble_path,
-        well_attributes_file=well_attributes_file,
-    )
-    if kh_unit is None:
-        kh_unit, kh_decimal_places = get_kh_unit(ensemble_path=ensemble_path)
-
-    if df_connstatus is not None:
-        df = merge_compdat_and_connstatus(df, df_connstatus)
-
-    time_steps = sorted(df.DATE.unique())
-    realizations = list(sorted(df.REAL.unique()))
-    layers = np.sort(df.K1.unique())
-
-    if layer_zone_mapping is None:
-        # use layers as zones
-        layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
-
-    df["ZONE"] = df.K1.map(layer_zone_mapping)
-
-    zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
-
-    result = {
-        "version": "1.1.0",
-        "units": {"kh": {"unit": kh_unit, "decimalPlaces": kh_decimal_places}},
-        "stratigraphy": extract_stratigraphy(
-            layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
-        ),
-        "timeSteps": [str(dte) for dte in time_steps],
-        "wells": extract_wells(
-            df, zone_names, time_steps, realizations, well_attributes
-        ),
-    }
-    return io.BytesIO(json.dumps(result).encode())
 
 
 def merge_compdat_and_connstatus(
@@ -414,14 +161,6 @@ def merge_compdat_and_connstatus(
     df = df.reset_index(drop=True)
     df.KH = df.KH.fillna(0)
     return df
-
-
-def count_leaves(stratigraphy: List[Dict[str, Any]]) -> int:
-    """Counts the number of leaves in the stratigraphy tree"""
-    return sum(
-        count_leaves(zonedict["subzones"]) if "subzones" in zonedict else 1
-        for zonedict in stratigraphy
-    )
 
 
 def get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
