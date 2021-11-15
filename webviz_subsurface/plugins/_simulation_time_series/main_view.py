@@ -12,6 +12,9 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
+from .utils.sampling_frequency_utils import frequency_gte
+
+from ..._providers import Frequency
 
 
 # pylint: disable=too-few-public-methods
@@ -42,11 +45,19 @@ class ViewElements:
     PLOT_STATISTICS_OPTIONS_CHECKLIST = "plot_statistics_options_checklist"
     PLOT_TRACE_OPTIONS_CHECKLIST = "plot_trace_options_checklist"
 
+    RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
+
+    AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS = (
+        "average_and_interval_calculation_interval_radio_items"
+    )
+
 
 def main_view(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
+    disable_resampling_option: bool,
+    selected_resampling_frequency: Optional[Frequency],
     selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
@@ -60,6 +71,8 @@ def main_view(
                         get_uuid=get_uuid,
                         ensembles=ensemble_names,
                         vector_data=vector_selector_data,
+                        disable_resampling_option=disable_resampling_option,
+                        selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
                     ),
@@ -88,11 +101,38 @@ def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],
     vector_data: list,
+    disable_resampling_option: bool,
+    selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
         children=[
+            wcc.Selectors(
+                label="Resampling frequency",
+                children=[
+                    wcc.Dropdown(
+                        label="Selected resampling frequency",
+                        id=get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                        clearable=False,
+                        disabled=disable_resampling_option,
+                        options=[
+                            {
+                                "label": "None (Raw)",
+                                "value": None,
+                            }
+                        ]
+                        + [
+                            {
+                                "label": frequency.value,
+                                "value": frequency.value,
+                            }
+                            for frequency in Frequency
+                        ],
+                        value=selected_resampling_frequency,
+                    ),
+                ],
+            ),
             wcc.Selectors(
                 label="Ensembles",
                 children=[
@@ -165,6 +205,20 @@ def __settings_layout(
                     selected_visualization=selected_visualization,
                 ),
             ),
+            wcc.Selectors(
+                label="Calculations",
+                children=[
+                    __average_and_interval_calculation_interval_selection_layout(
+                        get_uuid=get_uuid,
+                        interval_options=[
+                            freq.value
+                            for freq in Frequency
+                            if frequency_gte(freq, selected_resampling_frequency)
+                        ],
+                        initial_disabled=False,  # Set enabled based on initial selected vectors
+                    )
+                ],
+            ),
         ]
     )
 
@@ -207,35 +261,38 @@ def __delta_ensemble_creator_layout(
                 ],
                 style={"align-items": "flex-end"},
             ),
-            # TODO: Replace with dash_boostrap_components.Table?
-            # (https://dash-bootstrap-components.opensource.faculty.ai/docs/components/table/)
-            dash_table.DataTable(
-                id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
-                columns=(
-                    [
-                        {
-                            "id": get_uuid(
-                                ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
-                            ),
-                            "name": "Created Delta (A-B)",
-                        }
-                    ]
-                ),
-                data=[],
-                fixed_rows={"headers": True},
-                style_as_list_view=True,
-                style_cell={"textAlign": "left"},
-                style_table={
-                    "maxHeight": "150px",
-                    "overflowY": "auto",
-                },
-                editable=False,
-            ),
+            __delta_ensemble_table_layout(get_uuid),
             dcc.Store(
                 id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLES),
                 data=[],
             ),  # TODO: Add predefined deltas?
         ]
+    )
+
+
+def __delta_ensemble_table_layout(get_uuid: Callable) -> dash_table.DataTable:
+    return dash_table.DataTable(
+        id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
+        columns=(
+            [
+                {
+                    "id": get_uuid(
+                        ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                    ),
+                    "name": "Created Delta (A-B)",
+                }
+            ]
+        ),
+        data=[],
+        fixed_rows={"headers": True},
+        style_as_list_view=True,
+        style_cell={"textAlign": "left"},
+        style_header={"fontWeight": "bold"},
+        style_table={
+            "maxHeight": "150px",
+            "overflowY": "auto",
+        },
+        editable=False,
     )
 
 
@@ -308,4 +365,40 @@ def __plot_options_layout(
                 ),
             ],
         ),
+    )
+
+
+def __average_and_interval_calculation_interval_selection_layout(
+    get_uuid: Callable, interval_options: List[str], initial_disabled: bool
+) -> html.Div:
+    return html.Div(
+        style=(
+            {} if interval_options and not initial_disabled else {"display": "none"}
+        ),
+        children=[
+            wcc.Label("Calculated from cumulative vectors:\n"),
+            wcc.Label(
+                "Average (AVG_) and interval (INTVL_) time series",
+                style={"font-style": "italic"},
+            ),
+            html.Div(
+                wcc.RadioItems(
+                    id=get_uuid(
+                        ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
+                    ),
+                    className="block-options",
+                    options=[
+                        {
+                            "label": (f"{elm.lower().capitalize()}"),
+                            "value": elm.lower(),
+                            "disabled": False,
+                        }
+                        for elm in interval_options
+                    ],
+                    value=interval_options[0].lower()
+                    if len(interval_options) > 0
+                    else None,
+                ),
+            ),
+        ],
     )

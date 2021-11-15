@@ -32,9 +32,10 @@ class SimulationTimeSeries(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         csvfile_path: Optional[Path] = None,
+        perform_presampling=False,
         obsfile: Path = None,
         options: dict = None,
-        sampling: str = "monthly",
+        sampling: str = "monthly",  # TODO: Rename to initial sampling?
         line_shape_fallback: str = "linear",
     ) -> None:
         super().__init__()
@@ -48,17 +49,28 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        self._resampling_frequency = Frequency.from_string_value(sampling)
+        self._sampling = Frequency.from_string_value(sampling)
+        self._presampled_frequency = None
+        # TODO: Add config param "raw/presampled" and create providers from factory with
+        # presampled/lazy accordingly
         if ensembles is not None:
-            ensemble_paths: Dict[str, Path] = {
-                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                    ensemble_name
-                ]
-                for ensemble_name in ensembles
-            }
+            if perform_presampling:
+                self._presampled_frequency = self._sampling
+                raise ValueError(
+                    "Configuration if presampled providers from ensemble paths not implemented yet!"
+                )
+            else:
+                ensemble_paths: Dict[str, Path] = {
+                    ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                        ensemble_name
+                    ]
+                    for ensemble_name in ensembles
+                }
 
-            self._input_provider_set = create_provider_set_from_paths(ensemble_paths)
-            self._input_provider_set.verify_consistent_vector_metadata()
+                self._input_provider_set = create_provider_set_from_paths(
+                    ensemble_paths
+                )
+                self._input_provider_set.verify_consistent_vector_metadata()
         elif self._csvfile_path is not None:
             raise NotImplementedError()
         else:
@@ -148,6 +160,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             get_uuid=self.uuid,
             ensemble_names=self._input_provider_set.names(),
             vector_selector_data=self._vector_selector_data,
+            disable_resampling_option=self._presampled_frequency is not None,
+            selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,
             selected_vectors=self._initial_vectors,
         )
@@ -158,10 +172,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             get_uuid=self.uuid,
             input_provider_set=self._input_provider_set,
             theme=self._theme,
-            sampling=self._sampling,
+            presampled_frequency=self._presampled_frequency,
             initial_selected_vectors=self._initial_vectors,
             observations=self._observations,
-            resampling_frequency=self._resampling_frequency,
             line_shape_fallback=self._line_shape_fallback,
         )
 

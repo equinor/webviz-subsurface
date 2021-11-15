@@ -30,7 +30,99 @@ def get_cumulative_vector_name(vector: str) -> str:
     raise ValueError(f"Expected {vector} to be a cumulative vector!")
 
 
-def calculate_from_cumulative_vectors_df(
+def calculate_from_resampled_cumulative_vectors_df(
+    vectors_df: pd.DataFrame,
+    as_rate_per_day: bool,
+) -> pd.DataFrame:
+    """
+    Calculates interval delta or average rate data for vector columns in provided dataframe.
+    This function assumes data is already resampled when retreived with ensemble summary
+    provider.
+
+    `Input:`
+    * vectors_df: pd.Dataframe - Dataframe with columns:
+        ["DATE", "REAL", vector1, ..., vectorN]
+
+    `Note:`
+    Dataframe has columns:
+    - "DATE": Series with dates on datetime.datetime format
+    - "REAL": Series of realization number identifier
+    - vector1, ..., vectorN: Series of vector data for vector of given column name
+
+    `TODO:`
+    * Can sampled data be retrieved from ensemble providers? I.e. do not perform resampling
+    inside this function
+    * IMPROVE FUNCTION NAME?
+    * Give e.g. a dict with info of "avg and intvl" calculation for each vector column?
+    Can thereby calculate everything for provided vector columns and no iterate column per
+    column?
+    """
+    vectors_df = vectors_df.copy()
+
+    column_keys = [elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]]
+
+    # Sort by realizations, thereafter dates
+    vectors_df.sort_values(by=["REAL", "DATE"], inplace=True)
+
+    # Create column of unique id for realizations. .diff() takes diff between an index
+    # and previous index in a column. Thereby if "realuid" is != 0, the .diff() is
+    # between two realizations.
+    # Could alternatively loop over ensembles and realizations, but this is quicker for
+    # larger datasets.
+    vectors_df["realuid"] = vectors_df["REAL"]
+
+    vectors_df.set_index(["REAL", "DATE"], inplace=True)
+
+    # Resample on DATE frequency
+    vectors_df.reset_index(level=["REAL"], inplace=True)
+
+    cumulative_name_map = {
+        vector: rename_vector_from_cumulative(vector, as_rate_per_day)
+        for vector in column_keys
+    }
+    cumulative_vectors = list(cumulative_name_map.values())
+
+    # Take diff of given column_keys indexes - preserve REAL
+    cumulative_vectors_df = pd.concat(
+        [
+            vectors_df[["REAL"]],
+            vectors_df[["realuid"] + column_keys]
+            .diff()
+            .shift(-1)
+            .rename(
+                mapper=cumulative_name_map,
+                axis=1,
+            ),
+        ],
+        axis=1,
+    )
+    cumulative_vectors_df[cumulative_vectors] = cumulative_vectors_df[
+        cumulative_vectors
+    ].fillna(value=0)
+
+    # Reset index (DATE becomes regular column)
+    cumulative_vectors_df.reset_index(inplace=True)
+
+    # Convert interval cumulative to daily average rate if requested
+    if as_rate_per_day:
+        days = cumulative_vectors_df["DATE"].diff().shift(-1).dt.days.fillna(value=0)
+        for vector in column_keys:
+            with np.errstate(invalid="ignore"):
+                cumulative_vector_name = cumulative_name_map[vector]
+                cumulative_vectors_df.loc[:, cumulative_vector_name] = (
+                    cumulative_vectors_df[cumulative_vector_name].values / days.values
+                )
+
+    # Find .diff() between two realizations and set value = 0
+    cumulative_vectors_df.loc[
+        cumulative_vectors_df["realuid"] != 0, cumulative_vectors
+    ] = 0
+    cumulative_vectors_df.drop("realuid", axis=1, inplace=True)
+
+    return cumulative_vectors_df
+
+
+def calculate_from_cumulative_vectors_with_resampling_df(
     vectors_df: pd.DataFrame,
     sampling_frequency: str,
     resampling_frequency: str,
