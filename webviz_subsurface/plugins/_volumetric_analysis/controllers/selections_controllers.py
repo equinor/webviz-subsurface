@@ -279,10 +279,14 @@ def selections_controllers(
         if selected_tab == "table" and page_selections["Group by"] is not None:
             selected_data = page_selections["Group by"]
         if selected_tab == "tornado":
-            selected_data = ["SENSNAME", page_selections["Subplots"]]
+            selected_data = ["SENSNAME_CASE", page_selections["Subplots"]]
+
+        # set "SENSNAME_CASE" multi also if "SENSNAME" OR "SENSCASE" is selected
+        if any(senscol in selected_data for senscol in ("SENSNAME", "SENSCASE")):
+            selected_data.append("SENSNAME_CASE")
 
         output = {}
-        for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
+        for selector in ["SOURCE", "ENSEMBLE", "SENSNAME_CASE"]:
             if selector not in page_filter_settings:
                 continue
             options = [x["value"] for x in page_filter_settings[selector]["options"]]
@@ -291,7 +295,7 @@ def selections_controllers(
             if not multi and selector_is_multi:
                 values = [
                     "rms_seed"
-                    if selector == "SENSNAME" and "rms_seed" in options
+                    if selector == "SENSNAME_CASE" and "rms_seed" in options
                     else options[0]
                 ]
             elif multi and not selector_is_multi:

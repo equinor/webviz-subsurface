@@ -11,6 +11,7 @@ class ParametersModel:
         "SENSNAME",
         "SENSCASE",
         "SENSTYPE",
+        "SENSNAME_CASE",
     ]
 
     def __init__(
@@ -112,9 +113,14 @@ class ParametersModel:
 
         # set senstype from senscase
         mc_mask = self._dataframe["SENSCASE"] == "p10_p90"
-        self._dataframe.loc[mc_mask, "SENSTYPE"] = "mc"
-        self._dataframe.loc[~mc_mask, "SENSTYPE"] = "scalar"
+        self._dataframe["SENSTYPE"] = np.where(mc_mask, "mc", "scalar")
 
+        # make combination column of sensname and senscase
+        self._dataframe["SENSNAME_CASE"] = np.where(
+            mc_mask,
+            self._dataframe["SENSNAME"],
+            self._dataframe[["SENSNAME", "SENSCASE"]].agg("--".join, axis=1),
+        )
         return not all(
             (
                 (df["SENSNAME"].nunique() == 1 and df["SENSTYPE"].unique() == ["mc"])
