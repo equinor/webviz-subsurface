@@ -1,7 +1,7 @@
 import io
 import itertools
 import json
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -49,8 +49,8 @@ class WellCompletionsDataModel:
             for ens in ensembles
         }
 
-    def get_ensembles(self) -> list:
-        return self.ensembles
+    def __repr__(self) -> str:
+        return "WellCompletionsDataModel"
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     @webvizstore
@@ -117,13 +117,15 @@ class WellCompletionsDataModel:
         }
         return io.BytesIO(json.dumps(result).encode())
 
-    def get_webvizstore(self) -> List[Tuple[Callable, list]]:
+    @property
+    def webviz_store(self) -> List[Tuple[Callable, list]]:
         return [
             (
                 self.create_ensemble_dataset,
                 [
                     {
-                        "ensemble": ensemble,
+                        "self": self,
+                        "ensemble_name": ensemble,
                     }
                     for ensemble in self.ensembles
                 ],

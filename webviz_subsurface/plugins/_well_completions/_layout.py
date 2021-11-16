@@ -1,7 +1,8 @@
 from typing import Callable
 
-from dash import html
 import webviz_core_components as wcc
+from dash import html
+
 
 # pylint: disable = too-few-public-methods
 class LayoutElements:

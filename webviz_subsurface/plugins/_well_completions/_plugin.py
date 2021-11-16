@@ -3,9 +3,9 @@ from typing import Callable, List, Tuple
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from ._layout import main_layout, layout_tour_steps
-from ._callbacks import plugin_callbacks
 from ._business_logic import WellCompletionsDataModel
+from ._callbacks import plugin_callbacks
+from ._layout import layout_tour_steps, main_layout
 
 
 class WellCompletions(WebvizPluginABC):
@@ -185,7 +185,7 @@ class WellCompletions(WebvizPluginABC):
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return self._wellcompletions_datamodel.get_webvizstore()
+        return self._wellcompletions_datamodel.webviz_store
 
     @property
     def tour_steps(self) -> list:
@@ -195,7 +195,7 @@ class WellCompletions(WebvizPluginABC):
     def layout(self) -> html.Div:
         return main_layout(
             get_uuid=self.uuid,
-            ensembles=self._wellcompletions_datamodel.get_ensembles(),
+            ensembles=self._wellcompletions_datamodel.ensembles,
         )
 
     def set_callbacks(self, app: Dash) -> None:

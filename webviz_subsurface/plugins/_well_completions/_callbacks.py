@@ -1,8 +1,8 @@
 import json
-from typing import Callable, List, Dict, Any
+from typing import Any, Callable, Dict, List
 
-from dash import Dash, Input, Output
 import webviz_subsurface_components as wsc
+from dash import Dash, Input, Output
 
 from ._business_logic import WellCompletionsDataModel
 from ._layout import LayoutElements
