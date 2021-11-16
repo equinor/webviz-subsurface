@@ -1,13 +1,8 @@
-from dataclasses import asdict
-import orjson as json
-import urllib
 import io
 
 import numpy as np
 import xtgeo
 from PIL import Image
-
-from ..classes.surface_context import SurfaceContext
 
 
 def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
@@ -17,16 +12,6 @@ def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
     bounds = [surface.xmin, surface.ymin, surface.xmax, surface.ymax]
     value_range = [np.nanmin(surface.values), np.nanmax(surface.values)]
     return {"mapBounds": bounds, "mapTarget": view_target, "mapRange": value_range}
-
-
-def surface_context_to_url(surface_context: SurfaceContext) -> str:
-    json_dump = json.dumps(asdict(surface_context))
-    return urllib.parse.quote_plus(json_dump)
-
-
-def surface_context_from_url(url_string: str) -> SurfaceContext:
-    json_loads = json.loads(urllib.parse.unquote_plus(url_string))
-    return SurfaceContext(**json_loads)
 
 
 def surface_to_rgba(surface: xtgeo.RegularSurface) -> io.BytesIO:

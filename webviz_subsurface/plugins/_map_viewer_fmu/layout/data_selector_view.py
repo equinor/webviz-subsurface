@@ -3,18 +3,18 @@ from enum import Enum
 from dash import html, dcc
 import webviz_core_components as wcc
 
-from webviz_subsurface._models import SurfaceSetModel
+from webviz_subsurface._models import WellSetModel
 from webviz_subsurface._private_plugins.surface_selector import format_date
 
 from ..utils.formatting import format_date
-from ..classes.surface_mode import SurfaceMode
+from ..models.surface_set_model import SurfaceMode, SurfaceSetModel
 
 
 class SurfaceSelectorLabel(Enum):
     WRAPPER = "Surface data"
-    ATTRIBUTE = "Attribute"
-    NAME = "Name"
-    DATE = "Timestep"
+    ATTRIBUTE = "Surface attribute"
+    NAME = "Surface name / zone"
+    DATE = "Surface time interval"
     ENSEMBLE = "Ensemble"
     MODE = "Mode"
     REALIZATIONS = "#Reals"
@@ -28,6 +28,17 @@ class SurfaceSelectorID(Enum):
     ENSEMBLE = "surface-ensemble"
     MODE = "surface-mode"
     REALIZATIONS = "surface-realizations"
+
+
+class WellSelectorLabel(str, Enum):
+    WRAPPER = "Well data"
+    WELLS = "Wells"
+    LOG = "Log"
+
+
+class WellSelectorID(str, Enum):
+    WELLS = "wells"
+    LOG = "log"
 
 
 def surface_selector_view(
@@ -95,5 +106,22 @@ def surface_selector_view(
                     ),
                 ],
             ),
+        ],
+    )
+
+
+def well_selector_view(get_uuid, well_set_model: WellSetModel) -> wcc.Selectors:
+    return wcc.Selectors(
+        label=WellSelectorLabel.WRAPPER,
+        children=[
+            wcc.SelectWithLabel(
+                label=WellSelectorLabel.WELLS,
+                id=get_uuid(WellSelectorID.WELLS),
+                options=[
+                    {"label": name, "value": name} for name in well_set_model.well_names
+                ],
+                value=well_set_model.well_names,
+                size=min(len(well_set_model.well_names), 10),
+            )
         ],
     )

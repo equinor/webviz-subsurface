@@ -1,0 +1,171 @@
+@startuml
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+!includeurl ICONURL/common.puml
+!includeurl ICONURL/devicons/react.puml
+!includeurl ICONURL/font-awesome-5/folder.puml
+allowmixing
+
+class SurfaceSetModel {
+  Contains a table of all surfaces
+  in a ScratchEnsemble.
+  Used to create SurfaceContext
+  ..
+  -realizations
+  -attributes
+  ~names_in_attribute()
+  ~dates_in_attribute()
+  --
+  Given a SurfaceContext loads realization 
+  surface or calculates statistical surface
+  ..
+  ~get_surface()
+  ~_get_surface_deckgl_spec()
+}
+class DeckGLMapController {
+  Helper class to handle updates of the
+  nested JSON structure of the DeckGLMap
+  prop.
+  ..
+  ~update_colormap_range()
+  ~clear_drawing_layer()
+  etc...
+}
+
+
+
+    class SurfaceContext {
+  Contains the context to get a 
+  unique surface
+  ..
+  -ensemble: str
+  -realizations: List[str]
+  -attribute: str
+  -name: str
+  -mode: str
+  -date: Optional[str]
+}
+
+namespace MapViewerFMU {
+    namespace Routes {
+        class map_routes {
+            Url endpoint for map images
+        }
+    
+    }
+    namespace Callbacks {
+        class deckgl_map_aio_callbacks {
+            ~set_stored_surface_geometry()
+            ~set_colormap()
+            --
+            To be added
+            ~set_well_data()
+            ~set_log_data()
+            ~set_grid_layer()
+            ~set_pie_chart_data()
+            ~set_fault_line_data()
+            ++
+            }
+        class surface_selector_callbacks {
+            Handles valid surface selection.
+            Updates a dcc.Store with a SurfaceContext
+        }
+    }
+    namespace Layout {
+        
+        class Settings {
+            -Colormap
+        }
+        class DeckGLMapAIO {}
+        class Sidebar {
+            -SurfaceSelector
+        }
+    }
+    namespace Enums {
+        
+        Enum SurfaceSelectorIds {
+            Used in layout and callbacks
+            --
+            NAME
+            ATTRIBUTE
+            DATE
+            ENSEMBLE
+            REALIZATIONS
+            
+        }
+        Enum SurfaceSelectorLabel {
+            Used in layout
+            --
+            WRAPPER = "Surface data"
+            ATTRIBUTE = "Attribute"
+            NAME = "Name"
+            DATE = "Timestep"
+            ENSEMBLE = "Ensemble"
+            MODE = "Mode"
+            REALIZATIONS = "#Reals"
+        }
+        
+    }
+    
+    
+}
+
+namespace GlobalEnums {
+    enum FMU {
+            ENSEMBLE
+            REALIZATION
+        }
+    enum FMUSurface {
+        ATTRIBUTE
+        NAME
+        DATE
+        MODE
+    }
+    enum Statistics {
+        MINIMUM
+        MAXIMUM
+        P10
+        P90
+        MEAN
+        STDDEV
+    }
+}
+
+namespace DeckGLMapAIO {
+    namespace Layout {
+        class Store {
+            -map_data
+            -colormap
+        }
+        class DeckGLMap {}
+    }
+    namespace Callbacks {
+        class update_resources {
+            Handles data props for 
+            the DeckGLComponent
+        
+        }
+        class update_spec {
+            Handles settings props
+            for the DeckGLComponent
+        }
+    }
+    
+}
+
+
+DEV_REACT(frontend)
+FA5_FOLDER(filesystem, <b>Surfaces on disk </b>\n realization-*/iter-*/share/results/surfaces/<attribute>-<name>-<date>.gri)
+filesystem -----> MapViewerFMU.init :find_surfaces()
+MapViewerFMU.init -> SurfaceSetModel :surface_table:pd.DataFrame()
+GlobalEnums --d--> SurfaceSetModel
+SurfaceContext -l-> SurfaceSetModel
+MapViewerFMU -u-> SurfaceSetModel
+SurfaceContext -d-> MapViewerFMU.Callbacks.deckgl_map_aio_callbacks
+SurfaceContext -d-> MapViewerFMU.Callbacks.surface_selector_callbacks
+MapViewerFMU.Callbacks --> DeckGLMapAIO.Callbacks
+DeckGLMapAIO.Callbacks.update_resources --d--> frontend
+MapViewerFMU.Routes.map_routes <--d--> frontend
+MapViewerFMU.Routes.map_routes <-u-> SurfaceContext
+MapViewerFMU.Routes.map_routes <-u-> SurfaceSetModel
+DeckGLMapAIO.Callbacks <-d-> DeckGLMapController
+@enduml

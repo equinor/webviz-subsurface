@@ -4,11 +4,9 @@ from dataclasses import asdict
 from dash import callback, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from webviz_subsurface._models import SurfaceSetModel
+from ..models.surface_set_model import SurfaceSetModel, SurfaceContext, SurfaceMode
 from ..utils.formatting import format_date
-from ..classes.surface_context import SurfaceContext
-from ..classes.surface_mode import SurfaceMode
-from ..layout.surface_selector_view import SurfaceSelectorID
+from ..layout.data_selector_view import SurfaceSelectorID
 
 
 def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetModel]):
