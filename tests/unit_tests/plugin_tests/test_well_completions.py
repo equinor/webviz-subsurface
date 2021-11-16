@@ -4,7 +4,7 @@ import pytest
 from pandas._testing import assert_frame_equal
 
 from webviz_subsurface._datainput.well_completions import remove_invalid_colors
-from webviz_subsurface.plugins._well_completions import (
+from webviz_subsurface.plugins._well_completions._business_logic import (
     extract_stratigraphy,
     merge_compdat_and_connstatus,
 )
