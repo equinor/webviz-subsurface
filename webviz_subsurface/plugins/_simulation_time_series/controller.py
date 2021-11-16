@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import dash
 from dash.exceptions import PreventUpdate
@@ -11,9 +11,6 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
 )
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface.plugins._simulation_time_series.provider_set import ProviderSet
-from webviz_subsurface.plugins._simulation_time_series.utils.sampling_frequency_utils import (
-    frequency_gte,
-)
 
 from .types import (
     DeltaEnsembleNamePair,
@@ -32,22 +29,21 @@ from .selected_provider_set import (
     create_vector_plot_title,
 )
 from .assembled_vector_data_accessor import AssembledVectorDataAccessor
-from .utils.from_timeseries_cumulatives import is_interval_or_average_vector
 from .utils.vector_statistics import create_vectors_statistics_df
 from .utils.history_vectors import create_history_vectors_df
 
 from .main_view import ViewElements
 
-
-# pylint: disable=too-many-arguments, too-many-statements
+# TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
+# providers are presampled. To keep track of sampling frequency, and not depend on dropdown
+# value for ViewElements.RESAMPLING_FREQUENCY_DROPDOWN (dropdown disabled when providers are
+# presampled)
+# pylint: disable = too-many-branches, too-many-locals, too-many-statements
 def controller_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
     input_provider_set: ProviderSet,
     theme: WebvizConfigTheme,
-    presampled_frequency: Optional[
-        Frequency
-    ],  # NOTE: For use when providers are presampled, to keep track of sampling freq
     initial_selected_vectors: List[str],
     observations: dict,  # TODO: Improve typehint?
     line_shape_fallback: str = "linear",
@@ -77,12 +73,6 @@ def controller_callbacks(
                 "value",
             ),
             Input(
-                get_uuid(
-                    ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
-                ),
-                "value",
-            ),
-            Input(
                 get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
@@ -101,7 +91,6 @@ def controller_callbacks(
         statistics_option_values: List[str],
         fanchart_option_values: List[str],
         trace_option_values: List[str],
-        average_and_interval_calculation_interval_value: str,
         resampling_frequency_value: str,
         delta_ensembles: List[DeltaEnsembleNamePair],
     ) -> dict:
@@ -120,9 +109,6 @@ def controller_callbacks(
         ]
         fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
         trace_options = [TraceOptions(elm) for elm in trace_option_values]
-        average_and_interval_calculation_sampling = Frequency(
-            average_and_interval_calculation_interval_value
-        )
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
 
         if not isinstance(selected_ensembles, list):
@@ -147,8 +133,11 @@ def controller_callbacks(
         # Now color can change when changing selected ensembles?
         ensemble_colors = unique_colors(selected_provider_set.names(), theme)
 
+        # TODO: Pass presampling_frequency when using presampled providers?
+        # NOTE: Dropdown value is equal to presampling_frequency when presampled providers
+        # are utilized.
         figure_builder = GraphFigureBuilder(
-            vectors, vector_titles, ensemble_colors, resampling_frequency.value, theme
+            vectors, vector_titles, ensemble_colors, resampling_frequency, theme
         )
 
         # TODO: How to handle vector metadata the best way?
@@ -178,9 +167,7 @@ def controller_callbacks(
                 vectors_df_list.append(vector_data_accessor.get_provider_vectors_df())
             if vector_data_accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    vector_data_accessor.create_interval_and_average_vectors_df(
-                        average_and_interval_calculation_sampling
-                    )
+                    vector_data_accessor.create_interval_and_average_vectors_df()
                 )
 
             for index, vectors_df in enumerate(vectors_df_list):
@@ -359,73 +346,6 @@ def controller_callbacks(
             ensemble_options.append({"label": elm, "value": elm})
 
         return (new_delta_ensembles, table_data, ensemble_options)
-
-    @app.callback(
-        Output(
-            get_uuid(
-                ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
-            ),
-            "options",
-        ),
-        [
-            Input(get_uuid(ViewElements.VECTOR_SELECTOR), "selectedNodes"),
-            Input(get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN), "value"),
-        ],
-        [
-            State(
-                get_uuid(
-                    ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
-                ),
-                "options",
-            ),
-            State(
-                get_uuid(
-                    ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
-                ),
-                "value",
-            ),
-        ],
-    )
-    def _modify_interval_radio_buttons(
-        selected_vectors: List[str],
-        resampling_frequency_value: str,
-        options: List[dict],
-        selected_calculation_frequency_value: str,
-    ) -> Tuple[List[dict], str]:
-        """Switch activate/deactivate radio buttons for selecting interval for
-        calculations from cumulative vectors"""
-        selected_calculation_frequency = Frequency.from_string_value(
-            selected_calculation_frequency_value
-        )
-        resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
-        frequency_options = (
-            [elm for elm in Frequency if frequency_gte(elm, resampling_frequency)]
-            if resampling_frequency is not None
-            else [elm for elm in Frequency]
-        )
-
-        actual_calculation_frequency = (
-            selected_calculation_frequency
-            if selected_calculation_frequency in frequency_options
-            else frequency_options[0]
-            if len(frequency_options) > 0
-            else None
-        )
-
-        for vector in selected_vectors:
-            if is_interval_or_average_vector(vector):
-                return [
-                    {
-                        "label": (f"{elm.value.lower().capitalize()}"),
-                        "value": elm.value.lower(),
-                        "disabled": False,
-                    }
-                    for elm in frequency_options
-                ]
-        return (
-            [dict(option, **{"disabled": True}) for option in options],
-            actual_calculation_frequency.value,
-        )
 
 
 def create_delta_ensemble_table_column_data(

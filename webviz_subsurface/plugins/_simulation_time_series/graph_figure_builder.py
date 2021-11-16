@@ -6,15 +6,18 @@ from plotly.subplots import make_subplots
 
 from webviz_config._theme_class import WebvizConfigTheme
 
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    Frequency,
+)
+
+from .utils.from_timeseries_cumulatives import is_interval_or_average_vector
+
 from ..._utils.fanchart_plotting import (
     get_fanchart_traces,
     FanchartData,
     FreeLineData,
     LowHighData,
     MinMaxData,
-)
-from ..._utils.simulation_timeseries import (
-    render_hovertemplate,
 )
 from ..._utils.statistics_plotting import (
     create_statistics_traces,
@@ -40,13 +43,13 @@ class GraphFigureBuilder:
         selected_vectors: List[str],
         vector_titles: Dict[str, str],
         ensemble_colors: dict,
-        sampling: str,
+        sampling_frequency: Optional[Frequency],
         theme: Optional[WebvizConfigTheme] = None,
         line_shape_fallback: str = "linear",
     ) -> None:
         self._selected_vectors = selected_vectors
         self._ensemble_colors = ensemble_colors
-        self._sampling = sampling
+        self._sampling_frequency = sampling_frequency
         self._figure = make_subplots(
             rows=max(1, len(self._selected_vectors)),
             cols=1,
@@ -102,7 +105,9 @@ class GraphFigureBuilder:
                 ensemble=ensemble,
                 color=color,
                 line_shape=vector_line_shapes.get(vector, self._line_shape_fallback),
-                hovertemplate=render_hovertemplate(vector, self._sampling),
+                hovertemplate=self._render_hovertemplate(
+                    vector, self._sampling_frequency
+                ),
                 show_legend=False,
             )
 
@@ -155,8 +160,8 @@ class GraphFigureBuilder:
                 color=color,
                 legend_group=ensemble,
                 line_shape=vector_line_shapes.get(vector, self._line_shape_fallback),
-                hovertemplate=render_hovertemplate(
-                    vector=vector, interval=self._sampling
+                hovertemplate=self._render_hovertemplate(
+                    vector=vector, sampling_frequency=self._sampling_frequency
                 ),
                 statistics_options=statistics_options,
                 show_legend=False,
@@ -226,8 +231,8 @@ class GraphFigureBuilder:
                 line_shape=vector_line_shapes.get(vector, self._line_shape_fallback),
                 fanchart_options=fanchart_options,
                 show_legend=False,
-                hovertemplate=render_hovertemplate(
-                    vector=vector, interval=self._sampling
+                hovertemplate=self._render_hovertemplate(
+                    vector=vector, sampling_frequency=self._sampling_frequency
                 ),
             )
 
@@ -596,3 +601,22 @@ class GraphFigureBuilder:
             "showlegend": show_legend,
             "legendgroup": "History",
         }
+
+    @staticmethod
+    def _render_hovertemplate(
+        vector: str, sampling_frequency: Optional[Frequency]
+    ) -> str:
+        """Based on render_hovertemplate(vector: str, interval: Optional[str]) in
+        webviz_subsurface/_utils/simulation_timeseries.py
+
+        Adjusted to use Frequency enum and handle "Raw" and "weekly" frequency.
+        """
+        if is_interval_or_average_vector(vector) and sampling_frequency:
+            if sampling_frequency in [Frequency.DAILY, Frequency.WEEKLY]:
+                return "(%{x|%b} %{x|%-d}, %{x|%Y}, %{y})<br>"
+            if sampling_frequency == Frequency.MONTHLY:
+                return "(%{x|%b} %{x|%Y}, %{y})<br>"
+            if sampling_frequency == Frequency.YEARLY:
+                return "(%{x|%Y}, %{y})<br>"
+            raise ValueError(f"Interval {sampling_frequency.value} is not supported.")
+        return "(%{x}, %{y})<br>"  # Plotly's default behavior

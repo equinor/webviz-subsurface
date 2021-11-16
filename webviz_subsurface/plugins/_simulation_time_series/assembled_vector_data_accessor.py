@@ -7,7 +7,6 @@ from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 
 from .utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
-    calculate_from_cumulative_vectors_with_resampling_df,
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
@@ -15,7 +14,6 @@ from .utils.from_timeseries_cumulatives import (
 from ..._utils.vector_calculator import (
     get_selected_expressions,
 )
-from .utils.sampling_frequency_utils import frequency_leq
 
 # TODO: Ensure good naming of class, suggestions listed:
 # - VectorDataAccessor
@@ -92,51 +90,18 @@ class AssembledVectorDataAccessor:
 
     def create_interval_and_average_vectors_df(
         self,
-        calculation_sample_frequency: Frequency,  # TODO: use Optional[Frequency]?
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         """Get dataframe with interval delta and average rate vector data for provided vectors.
 
         The returned dataframe contains columns with name of vector and corresponding interval delta
-        or average rate data
+        or average rate data.
+
+        Interval delta and average rate date is calculated with same sampling frequency as provider
+        is set with. I.e. resampling frequency is given for providers supporting resampling,
+        otherwise sampling frequency is fixed.
 
         `Input:`
-        * calculation_sample_frequency: Frequency - Sampling frequency for inteval delta and average
-        rate calculation
-        * realizations: Sequence[int] - Sequency of realization numbers to include in calculation
-
-        `Output:`
-        * dataframe with interval  vector names in columns and their cumulative data in rows.
-        `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
-
-        ---------------------
-        `TODO:`
-        * Verify calculation of cumulative
-        * IMPROVE FUNCTION NAME?
-        """
-
-        if self._provider.supports_resampling():
-            return self.__create_interval_and_average_vectors_df_from_ondemand_resampling_provider(
-                calculation_sample_frequency, realizations
-            )
-
-        return self.__create_interval_and_average_vectors_df_with_presampled_provider(
-            calculation_sample_frequency, realizations
-        )
-
-    def __create_interval_and_average_vectors_df_with_presampled_provider(
-        self,
-        calculation_sample_frequency: Frequency,  # TODO: use Optional[Frequency]?
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        """Get dataframe with interval delta and average rate vector data for provided vectors.
-
-        The returned dataframe contains columns with name of vector and corresponding interval delta
-        or average rate data
-
-        `Input:`
-        * calculation_sample_frequency: Frequency - Sampling frequency for inteval delta and average
-        rate calculation
         * realizations: Sequence[int] - Sequency of realization numbers to include in calculation
 
         `Output:`
@@ -162,110 +127,10 @@ class AssembledVectorDataAccessor:
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
         # TODO: Fetch vectors df with correct sampling and perform calculation.
-        # Ensure valid sampling and ensure correct AVG_ calucaltion (unit/day)
+        # Ensure valid sampling and ensure correct AVG_ calculation (unit/day)
         # calculation, i.e num days between sampling points
         vectors_df = self._provider.get_vectors_df(
             cumulative_vector_names, self._resampling_frequency, realizations
-        )
-
-        # Get the sampling frequency of dataframe
-        vector_df_sampling_frequency: str = (
-            str(self._resampling_frequency.value)
-            if self._resampling_frequency is not None
-            and self._resampling_frequency.value is not None
-            else calculation_sample_frequency.value
-        )
-
-        # Requested sampling frequency of the calculation
-        resampling_frequency_str = calculation_sample_frequency.value
-
-        interval_and_average_vectors_df = pd.DataFrame()
-        for vector_name in self._interval_and_average_vectors:
-            cumulative_vector_name = get_cumulative_vector_name(vector_name)
-            interval_and_average_vector_df = (
-                calculate_from_cumulative_vectors_with_resampling_df(
-                    vectors_df[["DATE", "REAL", cumulative_vector_name]],
-                    sampling_frequency=vector_df_sampling_frequency,
-                    resampling_frequency=resampling_frequency_str,
-                    as_rate_per_day=vector_name.startswith("AVG_"),
-                )
-            )
-            if interval_and_average_vectors_df.empty:
-                interval_and_average_vectors_df = interval_and_average_vector_df
-            else:
-                interval_and_average_vectors_df = pd.merge(
-                    interval_and_average_vectors_df,
-                    interval_and_average_vector_df,
-                    how="inner",
-                )
-
-        return interval_and_average_vectors_df
-
-    def __create_interval_and_average_vectors_df_from_ondemand_resampling_provider(
-        self,
-        calculation_sample_frequency: Frequency,  # TODO: use Optional[Frequency]?
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        """Get dataframe with interval delta and average rate vector data for provided vectors.
-
-        The returned dataframe contains columns with name of vector and corresponding interval delta
-        or average rate data
-
-        `Input:`
-        * calculation_sample_frequency: Frequency - Sampling frequency for inteval delta and average
-        rate calculation
-        * realizations: Sequence[int] - Sequency of realization numbers to include in calculation
-
-        `Output:`
-        * dataframe with interval  vector names in columns and their cumulative data in rows.
-        `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
-
-        ---------------------
-        `TODO:`
-        * Verify calculation of cumulative
-        * IMPROVE FUNCTION NAME!
-        """
-        if not self.has_interval_and_average_vectors():
-            raise ValueError(
-                f'Vector data handler for provider "{self._name}" has no interval delta '
-                "and average rate vector names"
-            )
-
-        def _verify_sampling_frequency_request(
-            provider_resampling_frequency: Optional[Frequency],
-            calculation_sample_frequency: Frequency,
-        ) -> None:
-            if provider_resampling_frequency is None:
-                # TODO: How to handle resampling with None as freq?
-                raise ValueError(
-                    "Provider is configured with {None} as resampling frequency, raw data not handled yet!"
-                )
-
-            if not frequency_leq(
-                provider_resampling_frequency, calculation_sample_frequency
-            ):
-                raise ValueError(
-                    f"The requested resampling frequency {calculation_sample_frequency.value} "
-                    "is higher than the resampling frequency for provider "
-                    f"{provider_resampling_frequency.value}."
-                )
-
-        _verify_sampling_frequency_request(
-            self._resampling_frequency, calculation_sample_frequency
-        )
-
-        cumulative_vector_names = [
-            get_cumulative_vector_name(elm)
-            for elm in self._interval_and_average_vectors
-            if is_interval_or_average_vector(elm)
-        ]
-        cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
-
-        # TODO: Fetch vectors df with correct sampling and perform calculation.
-        # Ensure valid sampling and ensure correct AVG_ calucaltion (unit/day)
-        # calculation, i.e num days between sampling points
-        vectors_df = self._provider.get_vectors_df(
-            cumulative_vector_names, calculation_sample_frequency, realizations
         )
 
         interval_and_average_vectors_df = pd.DataFrame()

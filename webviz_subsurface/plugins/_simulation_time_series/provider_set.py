@@ -4,6 +4,7 @@ from typing import Any, Dict, ItemsView, List, Optional
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
+    Frequency,
 )
 
 
@@ -108,11 +109,25 @@ class ProviderSet:
         return metadata
 
 
-def create_provider_set_from_paths(
+def create_lazy_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
 ) -> ProviderSet:
     provider_factory = EnsembleSummaryProviderFactory.instance()
     provider_dict: Dict[str, EnsembleSummaryProvider] = {}
     for name, path in name_path_dict.items():
         provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(str(path))
+    return ProviderSet(provider_dict)
+
+
+def create_presampled_provider_set_from_paths(
+    name_path_dict: Dict[str, Path],
+    presampling_frequency: Frequency,
+) -> ProviderSet:
+    # TODO: Make presampling_frequency: Optional[Frequency] when allowing raw data for plugin
+    provider_factory = EnsembleSummaryProviderFactory.instance()
+    provider_dict: Dict[str, EnsembleSummaryProvider] = {}
+    for name, path in name_path_dict.items():
+        provider_dict[name] = provider_factory.create_from_arrow_unsmry_presampled(
+            str(path), presampling_frequency
+        )
     return ProviderSet(provider_dict)

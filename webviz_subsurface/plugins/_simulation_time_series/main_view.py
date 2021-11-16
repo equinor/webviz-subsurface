@@ -12,7 +12,6 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-from .utils.sampling_frequency_utils import frequency_gte
 
 from ..._providers import Frequency
 
@@ -47,17 +46,13 @@ class ViewElements:
 
     RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
 
-    AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS = (
-        "average_and_interval_calculation_interval_radio_items"
-    )
-
 
 def main_view(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
-    disable_resampling_option: bool,
-    selected_resampling_frequency: Optional[Frequency],
+    disable_resampling_dropdown: bool,
+    selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
@@ -71,7 +66,7 @@ def main_view(
                         get_uuid=get_uuid,
                         ensembles=ensemble_names,
                         vector_data=vector_selector_data,
-                        disable_resampling_option=disable_resampling_option,
+                        disable_resampling_dropdown=disable_resampling_dropdown,
                         selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
@@ -101,7 +96,7 @@ def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],
     vector_data: list,
-    disable_resampling_option: bool,
+    disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
     selected_vectors: Optional[List[str]] = None,
@@ -115,14 +110,8 @@ def __settings_layout(
                         label="Selected resampling frequency",
                         id=get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN),
                         clearable=False,
-                        disabled=disable_resampling_option,
+                        disabled=disable_resampling_dropdown,
                         options=[
-                            {
-                                "label": "None (Raw)",
-                                "value": None,
-                            }
-                        ]
-                        + [
                             {
                                 "label": frequency.value,
                                 "value": frequency.value,
@@ -130,6 +119,12 @@ def __settings_layout(
                             for frequency in Frequency
                         ],
                         value=selected_resampling_frequency,
+                    ),
+                    wcc.Label(
+                        "NB: Disabled for presampled data",
+                        style={"font-style": "italic"}
+                        if disable_resampling_dropdown
+                        else {"display": "none"},
                     ),
                 ],
             ),
@@ -204,20 +199,6 @@ def __settings_layout(
                     get_uuid=get_uuid,
                     selected_visualization=selected_visualization,
                 ),
-            ),
-            wcc.Selectors(
-                label="Calculations",
-                children=[
-                    __average_and_interval_calculation_interval_selection_layout(
-                        get_uuid=get_uuid,
-                        interval_options=[
-                            freq.value
-                            for freq in Frequency
-                            if frequency_gte(freq, selected_resampling_frequency)
-                        ],
-                        initial_disabled=False,  # Set enabled based on initial selected vectors
-                    )
-                ],
             ),
         ]
     )
@@ -365,40 +346,4 @@ def __plot_options_layout(
                 ),
             ],
         ),
-    )
-
-
-def __average_and_interval_calculation_interval_selection_layout(
-    get_uuid: Callable, interval_options: List[str], initial_disabled: bool
-) -> html.Div:
-    return html.Div(
-        style=(
-            {} if interval_options and not initial_disabled else {"display": "none"}
-        ),
-        children=[
-            wcc.Label("Calculated from cumulative vectors:\n"),
-            wcc.Label(
-                "Average (AVG_) and interval (INTVL_) time series",
-                style={"font-style": "italic"},
-            ),
-            html.Div(
-                wcc.RadioItems(
-                    id=get_uuid(
-                        ViewElements.AVERAGE_AND_INTERVAL_CALCULATION_INTERVAL_RADIO_ITEMS
-                    ),
-                    className="block-options",
-                    options=[
-                        {
-                            "label": (f"{elm.lower().capitalize()}"),
-                            "value": elm.lower(),
-                            "disabled": False,
-                        }
-                        for elm in interval_options
-                    ],
-                    value=interval_options[0].lower()
-                    if len(interval_options) > 0
-                    else None,
-                ),
-            ),
-        ],
     )

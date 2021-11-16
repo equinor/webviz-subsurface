@@ -12,8 +12,13 @@ from webviz_subsurface._providers import Frequency
 
 from .main_view import main_view
 from .types import VisualizationOptions
-from .provider_set import create_provider_set_from_paths
+from .provider_set import (
+    create_lazy_provider_set_from_paths,
+    create_presampled_provider_set_from_paths,
+)
 from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
+
+from ..._providers import Frequency
 
 from .controller import controller_callbacks
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
@@ -32,46 +37,48 @@ class SimulationTimeSeries(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         csvfile_path: Optional[Path] = None,
-        perform_presampling=False,
+        perform_presampling: bool = False,
         obsfile: Path = None,
         options: dict = None,
-        sampling: str = "monthly",  # TODO: Rename to initial sampling?
+        sampling: str = Frequency.MONTHLY.value,  # TODO: Rename to initial sampling?
         line_shape_fallback: str = "linear",
     ) -> None:
         super().__init__()
 
         self._webviz_settings = webviz_settings
         self._csvfile_path = csvfile_path
-        self._sampling = sampling
         self._obsfile = obsfile
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
 
-        self._sampling = Frequency.from_string_value(sampling)
+        # Must defined valid freqency
+        self._sampling = Frequency(sampling)
         self._presampled_frequency = None
-        # TODO: Add config param "raw/presampled" and create providers from factory with
+        # TODO: Update functionality when allowing raw data and csv file input
+        # Add config param "presampled" and create providers from factory with
         # presampled/lazy accordingly
         if ensembles is not None:
+            ensemble_paths: Dict[str, Path] = {
+                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                    ensemble_name
+                ]
+                for ensemble_name in ensembles
+            }
             if perform_presampling:
                 self._presampled_frequency = self._sampling
-                raise ValueError(
-                    "Configuration if presampled providers from ensemble paths not implemented yet!"
+                self._input_provider_set = create_presampled_provider_set_from_paths(
+                    ensemble_paths, self._presampled_frequency
                 )
             else:
-                ensemble_paths: Dict[str, Path] = {
-                    ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                        ensemble_name
-                    ]
-                    for ensemble_name in ensembles
-                }
-
-                self._input_provider_set = create_provider_set_from_paths(
+                self._input_provider_set = create_lazy_provider_set_from_paths(
                     ensemble_paths
                 )
-                self._input_provider_set.verify_consistent_vector_metadata()
+            self._input_provider_set.verify_consistent_vector_metadata()
         elif self._csvfile_path is not None:
+            # NOTE: If csv is implemented-> handle/disable statistics, INTVL_, AVG_, delta
+            # ensemble, etc.
             raise NotImplementedError()
         else:
             raise ValueError(
@@ -99,7 +106,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         ]
 
         # NOTE: Initially: With set of vector names, the vector selector data is static
-        # If made dynamic, the vector selector data must be dynamic
+        # Can be made dynamic based on selected ensembles - i.e. vectors present among selected providers?
         self._vector_selector_data: list = []
         for vector in non_historical_vector_names:
             split = vector.split(":")
@@ -160,7 +167,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             get_uuid=self.uuid,
             ensemble_names=self._input_provider_set.names(),
             vector_selector_data=self._vector_selector_data,
-            disable_resampling_option=self._presampled_frequency is not None,
+            disable_resampling_dropdown=self._presampled_frequency is not None,
             selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,
             selected_vectors=self._initial_vectors,
@@ -172,7 +179,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             get_uuid=self.uuid,
             input_provider_set=self._input_provider_set,
             theme=self._theme,
-            presampled_frequency=self._presampled_frequency,
             initial_selected_vectors=self._initial_vectors,
             observations=self._observations,
             line_shape_fallback=self._line_shape_fallback,
