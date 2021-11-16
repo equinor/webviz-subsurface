@@ -321,8 +321,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         et_filter_ms = timer.lap_ms()
 
         if resampling_frequency is not None:
-            # table = resample_multi_real_table_NAIVE(table, resampling_frequency)
-            # table = resample_sorted_multi_real_table_NAIVE(table, resampling_frequency)
             table = resample_segmented_multi_real_table(table, resampling_frequency)
         et_resample_ms = timer.lap_ms()
 
