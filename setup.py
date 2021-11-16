@@ -7,7 +7,6 @@ TESTS_REQUIRE = [
     "bandit",
     "black>=21.4b0",
     "dash[testing]",
-    "ert",
     "flaky",
     "isort",
     "mypy",
