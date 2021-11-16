@@ -50,6 +50,7 @@ class WellCompletionsDataModel:
         }
 
     def __repr__(self) -> str:
+        """This is necessary for webvizstore to work"""
         return "WellCompletionsDataModel"
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -58,7 +59,7 @@ class WellCompletionsDataModel:
         """Creates the well completion data set for the WellCompletions component
 
         Returns a dictionary on a given format specified here:
-        https://github.com/equinor/webviz-subsurface-components/blob/master/inputSchema/wellCompletions.json
+        https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/lib/inputSchema/wellCompletions.json
         """
         ensemble_path = self.ens_paths[ensemble_name]
         df = load_csv(
