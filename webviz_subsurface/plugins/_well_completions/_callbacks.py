@@ -9,7 +9,7 @@ from ._layout import LayoutElements
 
 
 def plugin_callbacks(
-    app: Dash, get_uuid: Callable, data_model: WellCompletionsDataModel
+    app: Dash, get_uuid: Callable, data_models: Dict[str, WellCompletionsDataModel]
 ) -> None:
     @app.callback(
         Output(get_uuid(LayoutElements.WELL_COMPLETIONS_COMPONENT), "children"),
@@ -17,7 +17,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.ENSEMBLE_DROPDOWN), "value"),
     )
     def _render_well_completions(ensemble_name: str) -> list:
-        data = json.load(data_model.create_ensemble_dataset(ensemble_name))
+        data = json.load(data_models[ensemble_name].create_ensemble_dataset())
 
         no_leaves = count_leaves(data["stratigraphy"])
         return [

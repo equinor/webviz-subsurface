@@ -170,22 +170,41 @@ class WellCompletions(WebvizPluginABC):
     ):
         super().__init__()
 
-        self._wellcompletions_datamodel = WellCompletionsDataModel(
-            webviz_settings,
-            ensembles,
-            compdat_file,
-            well_connection_status_file,
-            zone_layer_mapping_file,
-            stratigraphy_file,
-            well_attributes_file,
-            kh_unit,
-            kh_decimal_places,
-        )
+        self._data_models = {
+            ensemble: WellCompletionsDataModel(
+                ensemble_name=ensemble,
+                ensemble_path=webviz_settings.shared_settings["scratch_ensembles"][
+                    ensemble
+                ],
+                compdat_file=compdat_file,
+                well_connection_status_file=well_connection_status_file,
+                zone_layer_mapping_file=zone_layer_mapping_file,
+                stratigraphy_file=stratigraphy_file,
+                well_attributes_file=well_attributes_file,
+                kh_unit=kh_unit,
+                kh_decimal_places=kh_decimal_places,
+                theme_colors=webviz_settings.theme.plotly_theme["layout"]["colorway"],
+            )
+            for ensemble in ensembles
+        }
+        # self._wellcompletions_datamodel = WellCompletionsDataModel(
+        #     webviz_settings,
+        #     ensembles,
+        #     compdat_file,
+        #     well_connection_status_file,
+        #     zone_layer_mapping_file,
+        #     stratigraphy_file,
+        #     well_attributes_file,
+        #     kh_unit,
+        #     kh_decimal_places,
+        # )
 
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return self._wellcompletions_datamodel.webviz_store
+        return [
+            data_model.webviz_store() for _, data_model in self._data_models.items()
+        ]
 
     @property
     def tour_steps(self) -> list:
@@ -195,8 +214,8 @@ class WellCompletions(WebvizPluginABC):
     def layout(self) -> html.Div:
         return main_layout(
             get_uuid=self.uuid,
-            ensembles=self._wellcompletions_datamodel.ensembles,
+            ensembles=list(self._data_models.keys()),
         )
 
     def set_callbacks(self, app: Dash) -> None:
-        plugin_callbacks(app, self.uuid, self._wellcompletions_datamodel)
+        plugin_callbacks(app, self.uuid, self._data_models)

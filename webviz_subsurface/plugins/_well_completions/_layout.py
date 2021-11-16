@@ -1,7 +1,7 @@
 from typing import Callable
 
 import webviz_core_components as wcc
-from dash import html
+from dash import dcc, html
 
 
 # pylint: disable = too-few-public-methods
@@ -15,6 +15,9 @@ def main_layout(get_uuid: Callable, ensembles: list) -> html.Div:
     return html.Div(
         id=get_uuid(LayoutElements.LAYOUT),
         children=[
+            dcc.Store(
+                id=get_uuid(LayoutElements.ENSEMBLE_DROPDOWN), storage_type="session"
+            ),
             wcc.FlexBox(
                 children=[
                     wcc.Selectors(

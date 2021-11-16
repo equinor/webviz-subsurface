@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
@@ -22,8 +21,8 @@ from ..._datainput.well_completions import (
 class WellCompletionsDataModel:
     def __init__(
         self,
-        webviz_settings: WebvizSettings,
-        ensembles: list,
+        ensemble_name: str,
+        ensemble_path: str,
         compdat_file: str,
         well_connection_status_file: str,
         zone_layer_mapping_file: str,
@@ -31,61 +30,63 @@ class WellCompletionsDataModel:
         well_attributes_file: str,
         kh_unit: Optional[str],
         kh_decimal_places: int,
+        theme_colors: Dict,
     ) -> None:
         # pylint: disable=too-many-arguments
-        self.theme = webviz_settings.theme
+
+        self.ensemble_name = ensemble_name
+        self.ensemble_path = ensemble_path
         self.compdat_file = compdat_file
         self.well_connection_status_file = well_connection_status_file
         self.zone_layer_mapping_file = zone_layer_mapping_file
         self.stratigraphy_file = stratigraphy_file
         self.well_attributes_file = well_attributes_file
-        self.ensembles = ensembles
         self.kh_unit = kh_unit
         self.kh_decimal_places = kh_decimal_places
+        self.theme_colors = theme_colors
 
-        self.theme_colors = self.theme.plotly_theme["layout"]["colorway"]
-        self.ens_paths = {
-            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
-        }
 
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work"""
-        return "WellCompletionsDataModel"
+        return f"""
+WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat_file}
+{self.well_connection_status_file} {self.zone_layer_mapping_file} {self.stratigraphy_file}
+{self.well_attributes_file}
+        """
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     @webvizstore
-    def create_ensemble_dataset(self, ensemble_name: str) -> io.BytesIO:
+    def create_ensemble_dataset(self) -> io.BytesIO:
         """Creates the well completion data set for the WellCompletions component
 
         Returns a dictionary on a given format specified here:
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/lib/inputSchema/wellCompletions.json
         """
-        ensemble_path = self.ens_paths[ensemble_name]
         df = load_csv(
-            ensemble_paths={ensemble_name: ensemble_path}, csv_file=self.compdat_file
+            ensemble_paths={self.ensemble_name: self.ensemble_path},
+            csv_file=self.compdat_file,
         )
         df = df[["REAL", "DATE", "WELL", "I", "J", "K1", "OP/SH", "KH"]]
         df.DATE = pd.to_datetime(df.DATE).dt.date
 
         df_connstatus = read_well_connection_status(
-            ensemble_path=ensemble_path,
+            ensemble_path=self.ensemble_path,
             well_connection_status_file=self.well_connection_status_file,
         )
         layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
-            ensemble_path=ensemble_path,
+            ensemble_path=self.ensemble_path,
             zone_layer_mapping_file=self.zone_layer_mapping_file,
         )
         stratigraphy = read_stratigraphy(
-            ensemble_path=ensemble_path, stratigraphy_file=self.stratigraphy_file
+            ensemble_path=self.ensemble_path, stratigraphy_file=self.stratigraphy_file
         )
         well_attributes = read_well_attributes(
-            ensemble_path=ensemble_path,
+            ensemble_path=self.ensemble_path,
             well_attributes_file=self.well_attributes_file,
         )
         if self.kh_unit is None:
             self.kh_unit, self.kh_decimal_places = get_kh_unit(
-                ensemble_path=ensemble_path
+                ensemble_path=self.ensemble_path
             )
 
         if df_connstatus is not None:
@@ -118,20 +119,16 @@ class WellCompletionsDataModel:
         }
         return io.BytesIO(json.dumps(result).encode())
 
-    @property
-    def webviz_store(self) -> List[Tuple[Callable, list]]:
-        return [
-            (
-                self.create_ensemble_dataset,
-                [
-                    {
-                        "self": self,
-                        "ensemble_name": ensemble,
-                    }
-                    for ensemble in self.ensembles
-                ],
-            ),
-        ]
+    # @property
+    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
+        return (
+            self.create_ensemble_dataset,
+            [
+                {
+                    "self": self,
+                }
+            ],
+        )
 
 
 def merge_compdat_and_connstatus(
