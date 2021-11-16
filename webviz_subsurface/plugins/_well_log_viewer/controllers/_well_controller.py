@@ -20,7 +20,12 @@ def well_controller(
     )
     def _update_log_data(well_name: str, template: str) -> Tuple[Any, Any]:
         well = well_set_model.get_well(well_name)
-        return xtgeo_well_logs_to_json_format(well), log_templates.get(template)
+        test = xtgeo_well_logs_to_json_format(well), log_templates.get(template)
+        import json
+
+        with open("/tmp/logs.json", "w") as f:
+            json.dump(test, f)
+        return test
 
 
 def xtgeo_well_logs_to_json_format(well: xtgeo.Well) -> List[Dict]:

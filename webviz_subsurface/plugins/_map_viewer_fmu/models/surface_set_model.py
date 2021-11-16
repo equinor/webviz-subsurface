@@ -1,22 +1,17 @@
 import io
+import json
 import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from enum import Enum
-from dataclasses import asdict
+from dataclasses import dataclass, asdict
+from urllib.parse import quote_plus, unquote_plus
 
 import numpy as np
 import pandas as pd
 import xtgeo
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
-
-from ..classes.surface_context import SurfaceContext
-from ..classes.surface_mode import SurfaceMode
-from ..utils.surface_utils import (
-    surface_context_to_url,
-    surface_to_deckgl_spec,
-)
 
 
 class FMU(str, Enum):
@@ -28,6 +23,34 @@ class FMUSurface(str, Enum):
     ATTRIBUTE = "attribute"
     NAME = "name"
     DATE = "date"
+
+
+class SurfaceMode(str, Enum):
+    REALIZATION = "Single realization"
+    MINIMUM = "Minimum"
+    MAXIMUM = "Maximum"
+    P10 = "P10"
+    P90 = "P90"
+    MEAN = "Mean"
+    STDDEV = "StdDev"
+
+
+@dataclass
+class SurfaceContext:
+    ensemble: str
+    realizations: List[int]
+    attribute: str
+    name: str
+    date: Optional[str]
+    mode: str
+
+    @classmethod
+    def from_url(cls, url_string: str) -> "SurfaceContext":
+        return cls(**json.loads(unquote_plus(url_string)))
+
+    def to_url(self) -> str:
+        json_dump = json.dumps(asdict(self))
+        return quote_plus(json_dump)
 
 
 class SurfaceSetModel:
@@ -69,13 +92,6 @@ class SurfaceSetModel:
         if len(dates) == 1 and dates[0] is None:
             dates = None
         return dates
-
-    def _get_surface_deckgl_spec(self, surface_context: SurfaceContext) -> Dict:
-        surface = self.get_surface(surface_context)
-        spec = surface_to_deckgl_spec(surface)
-        url = surface_context_to_url(surface_context)
-        spec.update({"mapImage": f"surface/{url}.png"})
-        return spec
 
     def get_surface(self, surface: SurfaceContext) -> xtgeo.RegularSurface:
         surface.mode = SurfaceMode(surface.mode)
