@@ -1,9 +1,8 @@
 import datetime
-import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -12,6 +11,7 @@ import pyarrow.compute as pc
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
+from ._field_metadata import create_vector_metadata_from_field_meta
 from ._resampling import (
     generate_normalized_sample_dates,
     resample_segmented_multi_real_table,
@@ -23,7 +23,11 @@ from ._table_utils import (
     find_min_max_for_numeric_table_columns,
     get_per_vector_min_max_from_schema_metadata,
 )
-from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
+from .ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+    Frequency,
+    VectorMetadata,
+)
 
 # Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
@@ -47,10 +51,11 @@ def _is_date_column_sorted(table: pa.Table) -> bool:
     return True
 
 
-# =============================================================================
 class ProviderImplArrowLazy(EnsembleSummaryProvider):
+    """This class implements an EnsembleSummaryProvider with lazy (on-demand)
+    resampling/interpolation.
+    """
 
-    # -------------------------------------------------------------------------
     def __init__(self, arrow_file_name: Path) -> None:
         self._arrow_file_name = str(arrow_file_name)
 
@@ -98,7 +103,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         if not self._vector_names:
             raise ValueError("Init from backing store failed NO vector_names")
 
-    # -------------------------------------------------------------------------
     @staticmethod
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
@@ -175,7 +179,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             f"write={elapsed.write_s:.2f}s)"
         )
 
-    # -------------------------------------------------------------------------
     @staticmethod
     def from_backing_store(
         storage_dir: Path, storage_key: str
@@ -187,7 +190,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
 
         return None
 
-    # -------------------------------------------------------------------------
     def _get_or_read_schema(self) -> pa.Schema:
         if self._cached_full_table:
             return self._cached_full_table.schema
@@ -197,7 +199,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         source = pa.memory_map(self._arrow_file_name, "r")
         return pa.ipc.RecordBatchFileReader(source).schema
 
-    # -------------------------------------------------------------------------
     def _get_or_read_table(self, columns: List[str]) -> pa.Table:
         if self._cached_full_table:
             return self._cached_full_table.select(columns)
@@ -208,11 +209,9 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         reader = pa.ipc.RecordBatchFileReader(source)
         return reader.read_all().select(columns)
 
-    # -------------------------------------------------------------------------
     def vector_names(self) -> List[str]:
         return self._vector_names
 
-    # -------------------------------------------------------------------------
     def vector_names_filtered_by_value(
         self,
         exclude_all_values_zero: bool = False,
@@ -251,26 +250,17 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
 
         return ret_vec_names
 
-    # -------------------------------------------------------------------------
     def realizations(self) -> List[int]:
         return self._realizations
 
-    # -------------------------------------------------------------------------
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         schema = self._get_or_read_schema()
         field = schema.field(vector_name)
-        if field.metadata:
-            meta_as_str = field.metadata.get(b"smry_meta")
-            if meta_as_str:
-                return json.loads(meta_as_str)
+        return create_vector_metadata_from_field_meta(field)
 
-        return None
-
-    # -------------------------------------------------------------------------
     def supports_resampling(self) -> bool:
         return True
 
-    # -------------------------------------------------------------------------
     def dates(
         self,
         resampling_frequency: Optional[Frequency],
@@ -308,7 +298,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
 
         return intersected_dates.astype(datetime.datetime).tolist()
 
-    # -------------------------------------------------------------------------
     def get_vectors_df(
         self,
         vector_names: Sequence[str],
@@ -332,8 +321,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         et_filter_ms = timer.lap_ms()
 
         if resampling_frequency is not None:
-            # table = resample_multi_real_table_NAIVE(table, resampling_frequency)
-            # table = resample_sorted_multi_real_table_NAIVE(table, resampling_frequency)
             table = resample_segmented_multi_real_table(table, resampling_frequency)
         et_resample_ms = timer.lap_ms()
 
@@ -353,7 +340,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
 
         return df
 
-    # -------------------------------------------------------------------------
     def get_vectors_for_date_df(
         self,
         date: datetime.datetime,

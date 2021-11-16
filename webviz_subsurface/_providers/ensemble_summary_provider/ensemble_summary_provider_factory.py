@@ -6,6 +6,7 @@ from typing import Optional
 
 from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
+from webviz_config.webviz_instance_info import WebvizRunMode
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -22,13 +23,10 @@ from .ensemble_summary_provider import EnsembleSummaryProvider
 LOGGER = logging.getLogger(__name__)
 
 
-# =============================================================================
 class EnsembleSummaryProviderFactory(WebvizFactory):
-
-    # -------------------------------------------------------------------------
-    def __init__(self, root_storage_folder: Path) -> None:
+    def __init__(self, root_storage_folder: Path, allow_storage_writes: bool) -> None:
         self._storage_dir = Path(root_storage_folder) / __name__
-        self._allow_storage_writes = True
+        self._allow_storage_writes = allow_storage_writes
 
         LOGGER.info(
             f"EnsembleSummaryProviderFactory init: storage_dir={self._storage_dir}"
@@ -37,27 +35,37 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         if self._allow_storage_writes:
             os.makedirs(self._storage_dir, exist_ok=True)
 
-    # -------------------------------------------------------------------------
     @staticmethod
     def instance() -> "EnsembleSummaryProviderFactory":
+        """Static method to access the singleton instance of the factory."""
+
         factory = WEBVIZ_FACTORY_REGISTRY.get_factory(EnsembleSummaryProviderFactory)
         if not factory:
             app_instance_info = WEBVIZ_FACTORY_REGISTRY.app_instance_info
             storage_folder = app_instance_info.storage_folder
+            allow_writes = app_instance_info.run_mode != WebvizRunMode.PORTABLE
 
-            factory = EnsembleSummaryProviderFactory(storage_folder)
+            factory = EnsembleSummaryProviderFactory(storage_folder, allow_writes)
 
-            # Store the factory object in the registry
+            # Store the factory object in the global factory registry
             WEBVIZ_FACTORY_REGISTRY.set_factory(EnsembleSummaryProviderFactory, factory)
 
         return factory
 
-    # -------------------------------------------------------------------------
     def create_from_ensemble_csv_file(
         self,
         csv_file: Path,
         ensemble_filter: Optional[str] = None,
     ) -> EnsembleSummaryProvider:
+        """Create EnsembleSummaryProvider from aggregated CSV file.
+        The CSV file is assumed to contain data for a single ensemble and must contain
+        columns for `REAL` and `DATE` in addition to the actual numeric vectors.
+        If the CSV file contains an `ENSEMBLE` column it will be ignored, but an exception
+        will be thrown if it is present and it contains multiple ensemble names.
+
+        Note that the returned summary provider does not support resampling, nor will it
+        be able to return vector metadata.
+        """
 
         timer = PerfTimer()
 
@@ -113,10 +121,14 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         return provider
 
-    # -------------------------------------------------------------------------
     def create_from_per_realization_csv_file(
         self, ens_path: str, csv_file_rel_path: str
     ) -> EnsembleSummaryProvider:
+        """Create EnsembleSummaryProvider from per realization CSV files.
+
+        Note that the returned summary provider does not support resampling, nor will it
+        be able to return vector metadata.
+        """
 
         timer = PerfTimer()
 
@@ -168,8 +180,11 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         return provider
 
-    # -------------------------------------------------------------------------
     def create_from_arrow_unsmry_lazy(self, ens_path: str) -> EnsembleSummaryProvider:
+        """Create EnsembleSummaryProvider from per-realization unsmry data in .arrow format.
+
+        The returned summary provider supports lazy resampling.
+        """
 
         timer = PerfTimer()
 
@@ -216,12 +231,19 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         return provider
 
-    # -------------------------------------------------------------------------
     def create_from_arrow_unsmry_presampled(
         self,
         ens_path: str,
         sampling_frequency: Optional[Frequency],
     ) -> EnsembleSummaryProvider:
+        """Create EnsembleSummaryProvider from per-realization unsmry data in .arrow format.
+
+        This factory method will sample the input data according to the specified
+        `sampling_frequency` during import.
+
+        The returned summary provider does not support lazy resampling, but will always
+        return data with the above specified frequency .
+        """
 
         timer = PerfTimer()
 
@@ -285,7 +307,6 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         return provider
 
 
-# -------------------------------------------------------------------------
 def _make_hash_string(string_to_hash: str) -> str:
     # There is no security risk here and chances of collision should be very slim
     return hashlib.md5(string_to_hash.encode()).hexdigest()  # nosec

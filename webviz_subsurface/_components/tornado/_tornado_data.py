@@ -210,6 +210,7 @@ class TornadoData:
 
         self._tornadotable = self._tornadotable.loc[
             ((self._tornadotable["low"] - self._tornadotable["high"]) != 0)
+            | (self._tornadotable["sensname"] == self._reference)
         ]
 
     def _sort_sensitivities_by_max(self) -> None:

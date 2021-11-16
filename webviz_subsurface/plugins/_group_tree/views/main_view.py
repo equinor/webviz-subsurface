@@ -4,6 +4,7 @@ import webviz_core_components as wcc
 from dash import html
 
 from .filters_view import filters_layout
+from .options_view import options_layout
 from .selections_view import selections_layout
 
 
@@ -19,6 +20,7 @@ def main_view(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
                         style={"height": "82vh"},
                         children=[
                             selections_layout(get_uuid, ensembles),
+                            options_layout(get_uuid),
                             filters_layout(get_uuid),
                         ],
                     )

@@ -4,18 +4,14 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import ALL, Dash, Input, Output, State, html, no_update
+from dash import ALL, Input, Output, State, callback, html, no_update
 from dash.exceptions import PreventUpdate
 from pandas.api.types import is_numeric_dtype
-from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._abbreviations.volume_terminology import (
     volume_description,
     volume_unit,
 )
-from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
-from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -29,12 +25,9 @@ from ..utils.utils import move_to_end_of_list, update_relevant_components
 
 # pylint: disable=too-many-statements, too-many-branches
 def distribution_controllers(
-    app: Dash,
-    get_uuid: Callable,
-    volumemodel: InplaceVolumesModel,
-    theme: WebvizConfigTheme,
+    get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("main-voldist"), "element": "graph", "page": ALL}, "figure"
         ),
@@ -171,7 +164,7 @@ def distribution_controllers(
             )
         )
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("main-table"), "wrapper": "table", "page": "table"},
             "children",
@@ -213,7 +206,7 @@ def distribution_controllers(
             selections=selections,
         )
 
-    @app.callback(
+    @callback(
         Output(
             {
                 "id": get_uuid("main-voldist"),
@@ -291,7 +284,7 @@ def distribution_controllers(
             output_figs.append(figs[fig_id["selector"]][fig_id["chart"]])
         return output_figs
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("main-voldist"), "element": "plot", "page": "conv"},
             "figure",
@@ -361,125 +354,6 @@ def distribution_controllers(
             if not selections["Y axis matches"]:
                 figure.update_yaxes(dict(matches=None))
         return figure
-
-    @app.callback(
-        Output(
-            {
-                "id": get_uuid("main-tornado"),
-                "element": "bulktornado",
-                "page": "tornado",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-tornado"),
-                "element": "inplacetornado",
-                "page": "tornado",
-            },
-            "figure",
-        ),
-        Output(
-            {
-                "id": get_uuid("main-tornado"),
-                "wrapper": "table",
-                "page": "tornado",
-            },
-            "children",
-        ),
-        Input(get_uuid("selections"), "data"),
-        State(get_uuid("page-selected"), "data"),
-    )
-    def _update_page_tornado(selections: dict, page_selected: str) -> go.Figure:
-
-        if page_selected != "tornado":
-            raise PreventUpdate
-
-        selections = selections[page_selected]
-        if not selections["update"]:
-            raise PreventUpdate
-
-        filters = selections["filters"].copy()
-
-        figures = []
-        tables = []
-        for plot_id in ["left", "right"]:
-            response = selections[f"Response {plot_id}"]
-            sensfilter = selections[f"Sensitivities {plot_id}"]
-
-            if selections["Reference"] not in sensfilter:
-                sensfilter.append(selections["Reference"])
-
-            filters.update(SENSNAME=sensfilter)
-
-            groups = ["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE", "SENSTYPE"]
-            df_for_tornado = volumemodel.get_df(filters=filters, groups=groups)
-            df_for_tornado.rename(columns={response: "VALUE"}, inplace=True)
-
-            tornado_data = TornadoData(
-                dframe=df_for_tornado,
-                reference=selections["Reference"],
-                response_name=response,
-                scale=selections["Scale"],
-                cutbyref=bool(selections["Remove no impact"]),
-            )
-            figure = TornadoBarChart(
-                tornado_data=tornado_data,
-                plotly_theme=theme.plotly_theme,
-                label_options=selections["labeloptions"],
-                number_format="#.3g",
-                use_true_base=selections["Scale"] == "True",
-                show_realization_points=bool(selections["real_scatter"]),
-            ).figure
-
-            figure.update_xaxes(
-                gridwidth=1,
-                gridcolor="whitesmoke",
-                showgrid=True,
-                side="bottom",
-                title=None,
-            ).update_layout(
-                title=dict(
-                    text=f"Tornadoplot for {response} <br>"
-                    + f"Fluid zone: {(' + ').join(selections['filters']['FLUID_ZONE'])}",
-                    font=dict(size=18),
-                ),
-                margin={"t": 70},
-                hovermode="closest",
-            ).update_traces(
-                hovertemplate="REAL: %{text}<extra></extra>",
-                selector={"type": "scatter"},
-            )
-
-            figures.append(figure)
-
-            tornado_table = TornadoTable(tornado_data=tornado_data)
-            table_data = tornado_table.as_plotly_table
-            for data in table_data:
-                data["Reference"] = tornado_data.reference_average
-            tables.append(table_data)
-
-        return (
-            figures[0],
-            figures[1],
-            html.Div(
-                children=[
-                    html.Div(
-                        style={"margin-top": "20px"},
-                        children=create_data_table(
-                            columns=tornado_table.columns
-                            + create_table_columns(
-                                columns=["Reference"], use_si_format=["Reference"]
-                            ),
-                            data=table,
-                            height="20vh",
-                            table_id={"table_id": f"{page_selected}-table{idx}"},
-                        ),
-                    )
-                    for idx, table in enumerate(tables)
-                ]
-            ),
-        )
 
 
 # pylint: disable=too-many-locals

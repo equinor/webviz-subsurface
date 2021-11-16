@@ -43,7 +43,6 @@ INPUT_DATA_STR = [
 # fmt: on
 
 
-# -------------------------------------------------------------------------
 @pytest.fixture(
     name="provider",
     params=[
@@ -73,7 +72,6 @@ def fixture_provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProv
     return new_provider
 
 
-# -------------------------------------------------------------------------
 def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
 
     all_vecnames = provider.vector_names()
@@ -93,19 +91,17 @@ def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
     assert non_zero_vec_names == ["A", "C"]
 
 
-# -------------------------------------------------------------------------
 def test_get_realizations(provider: EnsembleSummaryProvider) -> None:
 
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
 
-# -------------------------------------------------------------------------
 def test_get_dates(provider: EnsembleSummaryProvider) -> None:
 
-    all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 1
-    assert isinstance(all_dates[0], datetime)
+    intersection_of_dates = provider.dates(resampling_frequency=None)
+    assert len(intersection_of_dates) == 1
+    assert isinstance(intersection_of_dates[0], datetime)
 
     r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
     r1_dates = provider.dates(resampling_frequency=None, realizations=[1])
@@ -113,7 +109,6 @@ def test_get_dates(provider: EnsembleSummaryProvider) -> None:
     assert len(r1_dates) == 2
 
 
-# -------------------------------------------------------------------------
 def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 
     all_vecnames = provider.vector_names()
@@ -137,25 +132,35 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
     assert vecdf.columns.tolist() == ["DATE", "REAL", "C", "A"]
 
 
-# -------------------------------------------------------------------------
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
 
-    all_dates = provider.dates(resampling_frequency=None)
-    assert len(all_dates) == 1
+    intersection_of_dates = provider.dates(resampling_frequency=None)
+    assert len(intersection_of_dates) == 1
 
-    date_to_get = all_dates[0]
+    date_to_get = intersection_of_dates[0]
     assert isinstance(date_to_get, datetime)
 
     vecdf = provider.get_vectors_for_date_df(date_to_get, ["A"])
     assert vecdf.shape == (2, 2)
     assert vecdf.columns.tolist() == ["REAL", "A"]
 
-    date_to_get = all_dates[0]
+    date_to_get = intersection_of_dates[0]
     vecdf = provider.get_vectors_for_date_df(date_to_get, ["A", "C"], [0])
     assert vecdf.shape == (1, 3)
     assert vecdf.columns.tolist() == ["REAL", "A", "C"]
 
-    date_to_get = all_dates[0]
+    date_to_get = intersection_of_dates[0]
     vecdf = provider.get_vectors_for_date_df(date_to_get, ["A", "Z"], [0])
+    assert vecdf.shape == (1, 3)
+    assert vecdf.columns.tolist() == ["REAL", "A", "Z"]
+
+    real1_dates = provider.dates(resampling_frequency=None, realizations=[1])
+    assert len(real1_dates) == 2
+    date_to_get = real1_dates[0]
+    vecdf = provider.get_vectors_for_date_df(date_to_get, ["A", "Z"])
+    assert vecdf.shape == (2, 3)
+    assert vecdf.columns.tolist() == ["REAL", "A", "Z"]
+    date_to_get = real1_dates[1]
+    vecdf = provider.get_vectors_for_date_df(date_to_get, ["A", "Z"])
     assert vecdf.shape == (1, 3)
     assert vecdf.columns.tolist() == ["REAL", "A", "Z"]

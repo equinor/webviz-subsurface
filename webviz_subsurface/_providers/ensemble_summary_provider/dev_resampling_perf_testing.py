@@ -1,8 +1,8 @@
 import logging
 import time
 
-import pyarrow as pa
 import numpy as np
+import pyarrow as pa
 
 from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
     sample_segmented_multi_real_table_at_date,
@@ -43,13 +43,10 @@ def _create_table(
     num_rows = len(real_arr_np)
 
     for colnum in range(0, num_columns):
-        # metadata = None
-        # metadata = {b"smry_meta": b'{"is_rate": true}'}
-        # metadata = {b"smry_meta": b'{"is_rate": false}'}
         if (colnum % 2) == 0:
-            metadata = {b"smry_meta": b'{"is_rate": false}'}
+            metadata = {b"is_rate": b'{"is_rate": False}'}
         else:
-            metadata = {b"smry_meta": b'{"is_rate": true}'}
+            metadata = {b"is_rate": b'{"is_rate": True}'}
 
         field_list.append(pa.field(f"c_{colnum}", pa.float32(), metadata=metadata))
 
@@ -60,7 +57,6 @@ def _create_table(
     return pa.table(columndata_list, schema=schema)
 
 
-# -------------------------------------------------------------------------
 def main() -> None:
     print()
     print("## Running resampling performance tests")

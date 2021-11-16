@@ -1,9 +1,8 @@
 import datetime
-import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -14,13 +13,18 @@ from pyarrow import feather
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._dataframe_utils import make_date_column_datetime_object
+from ._field_metadata import create_vector_metadata_from_field_meta
 from ._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
     find_intersected_dates_between_realizations,
     find_min_max_for_numeric_table_columns,
     get_per_vector_min_max_from_schema_metadata,
 )
-from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
+from .ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+    Frequency,
+    VectorMetadata,
+)
 
 # Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
@@ -29,7 +33,6 @@ from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
 LOGGER = logging.getLogger(__name__)
 
 
-# -------------------------------------------------------------------------
 def _create_float_downcasting_schema(schema: pa.Schema) -> pa.Schema:
     dt_float64 = pa.float64()
     dt_float32 = pa.float32()
@@ -42,7 +45,6 @@ def _create_float_downcasting_schema(schema: pa.Schema) -> pa.Schema:
     return pa.schema(field_list)
 
 
-# -------------------------------------------------------------------------
 def _set_date_column_type_to_timestamp_ms(schema: pa.Schema) -> pa.Schema:
     dt_timestamp_ms = pa.timestamp("ms")
 
@@ -55,7 +57,6 @@ def _set_date_column_type_to_timestamp_ms(schema: pa.Schema) -> pa.Schema:
     return pa.schema(field_list)
 
 
-# -------------------------------------------------------------------------
 def _sort_table_on_date_then_real(table: pa.Table) -> pa.Table:
     indices = pc.sort_indices(
         table, sort_keys=[("DATE", "ascending"), ("REAL", "ascending")]
@@ -64,10 +65,9 @@ def _sort_table_on_date_then_real(table: pa.Table) -> pa.Table:
     return sorted_table
 
 
-# =============================================================================
 class ProviderImplArrowPresampled(EnsembleSummaryProvider):
+    """Implements an EnsembleSummaryProvider without any resampling or interpolation"""
 
-    # -------------------------------------------------------------------------
     def __init__(self, arrow_file_name: Path) -> None:
         self._arrow_file_name = str(arrow_file_name)
 
@@ -115,9 +115,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         if not self._vector_names:
             raise ValueError("Init from backing store failed NO vector_names")
 
-    # -------------------------------------------------------------------------
     @staticmethod
-    # @profile
     def write_backing_store_from_ensemble_dataframe(
         storage_dir: Path, storage_key: str, ensemble_df: pd.DataFrame
     ) -> None:
@@ -187,7 +185,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             f"write={elapsed.write_s:.2f}s)"
         )
 
-    # -------------------------------------------------------------------------
     @staticmethod
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
@@ -254,7 +251,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             f"write={elapsed.write_s:.2f}s)"
         )
 
-    # -------------------------------------------------------------------------
     @staticmethod
     def from_backing_store(
         storage_dir: Path, storage_key: str
@@ -266,7 +262,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
         return None
 
-    # -------------------------------------------------------------------------
     def _get_or_read_schema(self) -> pa.Schema:
         if self._cached_full_table:
             return self._cached_full_table.schema
@@ -276,7 +271,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         source = pa.memory_map(self._arrow_file_name, "r")
         return pa.ipc.RecordBatchFileReader(source).schema
 
-    # -------------------------------------------------------------------------
     def _get_or_read_table(self, columns: List[str]) -> pa.Table:
         if self._cached_full_table:
             return self._cached_full_table.select(columns)
@@ -287,11 +281,9 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         reader = pa.ipc.RecordBatchFileReader(source)
         return reader.read_all().select(columns)
 
-    # -------------------------------------------------------------------------
     def vector_names(self) -> List[str]:
         return self._vector_names
 
-    # -------------------------------------------------------------------------
     def vector_names_filtered_by_value(
         self,
         exclude_all_values_zero: bool = False,
@@ -345,26 +337,17 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
         # return ret_vec_names
 
-    # -------------------------------------------------------------------------
     def realizations(self) -> List[int]:
         return self._realizations
 
-    # -------------------------------------------------------------------------
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         schema = self._get_or_read_schema()
         field = schema.field(vector_name)
-        if field.metadata:
-            meta_as_str = field.metadata.get(b"smry_meta")
-            if meta_as_str:
-                return json.loads(meta_as_str)
+        return create_vector_metadata_from_field_meta(field)
 
-        return None
-
-    # -------------------------------------------------------------------------
     def supports_resampling(self) -> bool:
         return False
 
-    # -------------------------------------------------------------------------
     def dates(
         self,
         resampling_frequency: Optional[Frequency],
@@ -396,7 +379,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
         return intersected_dates.astype(datetime.datetime).tolist()
 
-    # -------------------------------------------------------------------------
     def get_vectors_df(
         self,
         vector_names: Sequence[str],
@@ -436,7 +418,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
 
         return df
 
-    # -------------------------------------------------------------------------
     def get_vectors_for_date_df(
         self,
         date: datetime.datetime,

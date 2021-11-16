@@ -1,12 +1,10 @@
-import json
 from dataclasses import dataclass
-from enum import Enum
-from typing import Dict, List
+from typing import Dict
 
 import numpy as np
 import pyarrow as pa
-import pyarrow.compute as pc
 
+from ._field_metadata import is_rate_from_field_meta
 from .ensemble_summary_provider import Frequency
 
 
@@ -14,21 +12,6 @@ def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
     # A bit hackish, utilizes the fact that datetime64 is relative to epoch
     # 1970-01-01 which is a Thursday
     return datetime_day.astype("datetime64[W]").astype("datetime64[D]") + 4
-
-
-def _is_rate_from_field_meta(field: pa.Field) -> bool:
-    """Determine if the field is a rate by querying for the "is_rate" keyword in the
-    field's metadata
-    """
-    # This is expensive wrt performance. Should avoid JSON parsing here
-    if field.metadata:
-        meta_as_str = field.metadata.get(b"smry_meta")
-        if meta_as_str:
-            meta_dict = json.loads(meta_as_str)
-            if meta_dict.get("is_rate") is True:
-                return True
-
-    return False
 
 
 def generate_normalized_sample_dates(
@@ -94,25 +77,6 @@ def interpolate_backfill(
 
     return ret_arr
 
-    # Naive approach that is way too slow
-    # valcount = len(x)
-    # y = np.zeros(valcount)
-    # idx = 0
-    # while idx < valcount:
-    #     insidx = bisect.bisect_left(xp, x[idx])
-    #     if insidx == 0 and x[idx] < xp[0]:
-    #         yval = yleft
-    #     elif insidx == len(xp):
-    #         yval = yright
-    #     else:
-    #         yval = yp[insidx]
-
-    #     y[idx] = yval
-
-    #     idx += 1
-
-    # return y
-
 
 def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     """Resample table that contains only a single realization.
@@ -147,7 +111,7 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
             )
         else:
             raw_numpy_arr = table.column(colname).to_numpy()
-            if _is_rate_from_field_meta(table.field(colname)):
+            if is_rate_from_field_meta(table.field(colname)):
                 i = interpolate_backfill(
                     sample_dates_np_as_uint, raw_dates_np_as_uint, raw_numpy_arr, 0, 0
                 )
@@ -161,48 +125,6 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     ret_table = pa.table(column_arrays, schema=schema)
 
     return ret_table
-
-
-def resample_multi_real_table_NAIVE(table: pa.Table, freq: Frequency) -> pa.Table:
-
-    unique_reals = table.column("REAL").unique().to_pylist()
-    # print("unique_reals:", unique_reals)
-
-    resampled_tables_list = []
-
-    for real in unique_reals:
-        # pylint: disable=no-member
-        mask = pc.is_in(table["REAL"], value_set=pa.array([real]))
-        real_table = table.filter(mask)
-
-        resampled_table = resample_single_real_table(real_table, freq)
-        resampled_tables_list.append(resampled_table)
-
-    full_resampled_table = pa.concat_tables(resampled_tables_list)
-    return full_resampled_table
-
-
-def resample_sorted_multi_real_table_NAIVE(
-    table: pa.Table, freq: Frequency
-) -> pa.Table:
-
-    real_arr_np = table.column("REAL").to_numpy()
-    unique_reals, first_occurence_idx, real_counts = np.unique(
-        real_arr_np, return_index=True, return_counts=True
-    )
-
-    resampled_tables_list = []
-
-    for i, _real in enumerate(unique_reals):
-        start_row_idx = first_occurence_idx[i]
-        row_count = real_counts[i]
-        real_table = table.slice(start_row_idx, row_count)
-
-        resampled_table = resample_single_real_table(real_table, freq)
-        resampled_tables_list.append(resampled_table)
-
-    full_resampled_table = pa.concat_tables(resampled_tables_list)
-    return full_resampled_table
 
 
 @dataclass
@@ -240,9 +162,10 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
     The segmentation is needed since interpolations must be done per realization
     and we utilize slicing on rows for speed.
     """
+    # pylint: disable=too-many-locals
 
     real_arr_np = table.column("REAL").to_numpy()
-    unique_reals, first_occurence_idx, real_counts = np.unique(
+    unique_reals, first_occurrence_idx, real_counts = np.unique(
         real_arr_np, return_index=True, return_counts=True
     )
 
@@ -254,12 +177,12 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
         if colname in ["DATE", "REAL"]:
             continue
 
-        is_rate = _is_rate_from_field_meta(table.field(colname))
+        is_rate = is_rate_from_field_meta(table.field(colname))
         raw_whole_numpy_arr = table.column(colname).to_numpy()
 
         vec_arr_list = []
         for i, real in enumerate(unique_reals):
-            start_row_idx = first_occurence_idx[i]
+            start_row_idx = first_occurrence_idx[i]
             row_count = real_counts[i]
 
             rii = real_interpolation_info_dict.get(real)
@@ -311,154 +234,14 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
     return ret_table
 
 
-# Input table is expected to contain data for only a single
-# realization and MUST be sorted on date
-def sample_single_real_table_at_date_NAIVE_SLOW(
-    table: pa.Table, np_datetime: np.datetime64
-) -> pa.Table:
-
+def _compute_interpolation_weight(
+    d: np.datetime64, d0: np.datetime64, d1: np.datetime64
+) -> float:
     # pylint: disable=invalid-name
-
-    raw_dates_np = table.column("DATE").to_numpy()
-
-    # last_insertion_index is the last legal insertion index of the queried value
-    last_insertion_index: int = np.searchsorted(
-        raw_dates_np, np_datetime, side="right"
-    ).item()
-
-    idx0 = -1
-    idx1 = -1
-    if last_insertion_index == len(raw_dates_np):
-        # Either an exact match or outside the range (query date is beyond our last date)
-        if raw_dates_np[last_insertion_index - 1] == np_datetime:
-            idx0 = idx1 = last_insertion_index - 1
-        else:
-            idx0 = last_insertion_index - 1
-            idx1 = -1
-    elif last_insertion_index == 0:
-        # Outside the range (query date is before our first date)
-        idx0 = -1
-        idx1 = 0
-    else:
-        assert raw_dates_np[last_insertion_index] > np_datetime
-        if raw_dates_np[last_insertion_index - 1] == np_datetime:
-            idx0 = idx1 = last_insertion_index - 1
-        else:
-            idx0 = last_insertion_index - 1
-            idx1 = last_insertion_index
-
-    # descr = "N/A"
-    # if idx0 == idx1:
-    #     assert idx0 >= 0
-    #     descr = "exact"
-    # elif idx0 == -1:
-    #     assert idx1 == 0
-    #     descr = "below"
-    # elif idx1 == -1:
-    #     assert idx0 == len(raw_dates_np) - 1
-    #     descr = "above"
-    # else:
-    #     descr = "INTERPOLATE"
-
-    # print(f"lookfor={np_datetime}   idx0={idx0}   idx1={idx1}   descr={descr}")
-
-    row_indices = []
-    if idx0 >= 0:
-        row_indices.append(idx0)
-    if idx1 >= 0 and idx1 != idx0:
-        row_indices.append(idx1)
-
-    records_table = table.take(row_indices)
-    # print(records_table.shape)
-    # print(type(records_table))
-
-    t = 0
-    if records_table.num_rows == 2:
-        d_as_uint = np_datetime.astype(np.uint64)
-        d0_as_uint = table.column("DATE").to_numpy()[0].astype(np.uint64)
-        d1_as_uint = table.column("DATE").to_numpy()[1].astype(np.uint64)
-        t = (d_as_uint - d0_as_uint) / (d1_as_uint - d0_as_uint)
-
-    column_arrays = []
-    for colname in table.schema.names:
-        if colname == "REAL":
-            column_arrays.append(np.array([table.column("REAL")[0].as_py()]))
-        elif colname == "DATE":
-            column_arrays.append(np.array([np_datetime]))
-        else:
-            # This is expensive wrt performance. Should optimize the function to avoid JSON parsing
-            is_rate = _is_rate_from_field_meta(table.field(colname))
-
-            if idx0 == idx1:
-                # Exact hit
-                column_arrays.append(
-                    pa.array([records_table.column(colname)[0].as_py()])
-                )
-            elif idx0 == -1 or idx1 == -1:
-                # below or above (0 for rate, else extrapolate)
-                assert records_table.num_rows == 1
-                if is_rate:
-                    column_arrays.append(pa.array([0.0]))
-                else:
-                    column_arrays.append(
-                        pa.array([records_table.column(colname)[0].as_py()])
-                    )
-            else:
-                # interpolate or backfill
-                assert records_table.num_rows == 2
-                if is_rate:
-                    column_arrays.append(
-                        pa.array([records_table.column(colname)[1].as_py()])
-                    )
-                else:
-                    v0 = records_table.column(colname)[0].as_py()
-                    v1 = records_table.column(colname)[1].as_py()
-                    if v0 is not None and v1 is not None:
-                        column_arrays.append(pa.array([v0 + t * (v1 - v0)]))
-                    else:
-                        column_arrays.append(pa.array([None], pa.float32()))
-
-    ret_table = pa.table(column_arrays, schema=table.schema)
-
-    return ret_table
-
-
-# Table must be sorted on real, and then date!!!
-def sample_sorted_multi_real_table_at_date_NAIVE_SLOW(
-    table: pa.Table, np_datetime: np.datetime64
-) -> pa.Table:
-
-    real_arr_np = table.column("REAL").to_numpy()
-    unique_reals, first_occurence_idx, real_counts = np.unique(
-        real_arr_np, return_index=True, return_counts=True
-    )
-
-    tables_list = []
-
-    for i, _real in enumerate(unique_reals):
-        start_row_idx = first_occurence_idx[i]
-        row_count = real_counts[i]
-        real_table = table.slice(start_row_idx, row_count)
-
-        single_row_table = sample_single_real_table_at_date_NAIVE_SLOW(
-            real_table, np_datetime
-        )
-        tables_list.append(single_row_table)
-
-    ret_table = pa.concat_tables(tables_list)
-    return ret_table
-
-
-class Classification(Enum):
-    MUST_INTERPOLATE = 0
-    EXACT_MATCH = 1
-    OUTSIDE_RANGE = 2
-
-
-@dataclass
-class SamplingParams:
-    classification: Classification
-    t: float  # pylint: disable=invalid-name
+    d_as_uint = d.astype(np.uint64)
+    d0_as_uint = d0.astype(np.uint64)
+    d1_as_uint = d1.astype(np.uint64)
+    return float(d_as_uint - d0_as_uint) / float(d1_as_uint - d0_as_uint)
 
 
 def sample_segmented_multi_real_table_at_date(
@@ -470,41 +253,59 @@ def sample_segmented_multi_real_table_at_date(
     realization are contiguous) and within each REAL segment, it must be
     sorted on DATE.
     """
-    # pylint: disable=invalid-name
+    # pylint: disable=too-many-locals
 
-    full_real_arr_np = table.column("REAL").to_numpy()
-    unique_reals, first_occurence_idx, real_counts = np.unique(
-        full_real_arr_np, return_index=True, return_counts=True
+    unique_reals_arr_np, first_occurrence_idx, real_counts = np.unique(
+        table.column("REAL").to_numpy(), return_index=True, return_counts=True
     )
 
     all_dates_arr_np = table.column("DATE").to_numpy()
 
+    # Will receive row indices into the full input table for the two values we should
+    # interpolate/blend between.
+    # To keep things simple we always add two indices for each realization even if
+    # we know that no interpolation will be needed (e.g. exact matches)
     row_indices = []
-    params_arr: List[SamplingParams] = []
 
-    for i, _real in enumerate(unique_reals):
-        start_row_idx = first_occurence_idx[i]
+    # Will receive the blending weights for doing interpolation
+    interpolate_t_arr = np.zeros(len(unique_reals_arr_np))
+
+    # Array with mask for selecting values when doing backfill. A value of 1 will select
+    # v1, while a value of 0 will yield a 0 value
+    backfill_mask_arr = np.ones(len(unique_reals_arr_np))
+
+    for i, _real in enumerate(unique_reals_arr_np):
+        # Starting row of this realization and number of rows belonging to realization
+        start_row_idx = first_occurrence_idx[i]
         row_count = real_counts[i]
 
         # Get slice of the dates for just this realization
         dates_arr_np = all_dates_arr_np[start_row_idx : start_row_idx + row_count]
         assert len(dates_arr_np) > 0
 
+        # OUTSIDE RANGE (query date is before our first date)
         if np_datetime < dates_arr_np[0]:
-            # Outside the range (query date is before our first date)
             row_indices.append(start_row_idx)
             row_indices.append(start_row_idx)
-            params_arr.append(SamplingParams(Classification.OUTSIDE_RANGE, 0))
+            # Extrapolate or just fill with 0 for rates
+            # interpolate_t_arr[i] = 0
+            backfill_mask_arr[i] = 0
 
-        elif np_datetime >= dates_arr_np[-1]:
-            # Either an exact match on the last date or outside the
-            # range (query date is beyond our last date)
+        # OUTSIDE RANGE (query date is beyond our last date)
+        elif np_datetime > dates_arr_np[-1]:
             row_indices.append(start_row_idx + row_count - 1)
             row_indices.append(start_row_idx + row_count - 1)
-            if np_datetime == dates_arr_np[-1]:
-                params_arr.append(SamplingParams(Classification.EXACT_MATCH, 0))
-            else:
-                params_arr.append(SamplingParams(Classification.OUTSIDE_RANGE, 0))
+            # Extrapolate or just fill with 0 for rates. For interpolation, t should
+            # really 1, but since the rows are duplicated it does not matter
+            # interpolate_t_arr[i] = 0
+            backfill_mask_arr[i] = 0
+
+        # EXACT MATCH on the LAST DATE
+        elif np_datetime == dates_arr_np[-1]:
+            row_indices.append(start_row_idx + row_count - 1)
+            row_indices.append(start_row_idx + row_count - 1)
+            # interpolate_t_arr[i] = 0
+            # backfill_mask_arr[i] = 1
 
         else:
             # Search for query date amongst the realization's dates.
@@ -518,58 +319,41 @@ def sample_segmented_multi_real_table_at_date(
             assert dates_arr_np[last_insertion_index] > np_datetime
 
             if dates_arr_np[last_insertion_index - 1] == np_datetime:
+                # Exact match
                 row_indices.append(start_row_idx + last_insertion_index - 1)
                 row_indices.append(start_row_idx + last_insertion_index - 1)
-                params_arr.append(SamplingParams(Classification.EXACT_MATCH, 0))
+                # interpolate_t_arr[i] = 0
+                # backfill_mask_arr[i] = 1
             else:
                 row_indices.append(start_row_idx + last_insertion_index - 1)
                 row_indices.append(start_row_idx + last_insertion_index)
-                d_as_uint = np_datetime.astype(np.uint64)
-                d0_as_uint = dates_arr_np[last_insertion_index - 1].astype(np.uint64)
-                d1_as_uint = dates_arr_np[last_insertion_index].astype(np.uint64)
-                t = (d_as_uint - d0_as_uint) / (d1_as_uint - d0_as_uint)
-                params_arr.append(SamplingParams(Classification.MUST_INTERPOLATE, t))
+                interpolate_t_arr[i] = _compute_interpolation_weight(
+                    np_datetime,
+                    dates_arr_np[last_insertion_index - 1],
+                    dates_arr_np[last_insertion_index],
+                )
+                # backfill_mask_arr[i] = 1
 
     column_arrays = []
+
     for colname in table.schema.names:
         if colname == "REAL":
-            column_arrays.append(unique_reals)
+            column_arrays.append(unique_reals_arr_np)
         elif colname == "DATE":
-            column_arrays.append(np.full(len(unique_reals), np_datetime))
+            column_arrays.append(np.full(len(unique_reals_arr_np), np_datetime))
         else:
-            is_rate = _is_rate_from_field_meta(table.field(colname))
+            records_np = table.column(colname).take(row_indices).to_numpy()
+            if is_rate_from_field_meta(table.field(colname)):
+                v1_arr = records_np[1::2]
+                interpolated_vec_values = v1_arr * backfill_mask_arr
+            else:
+                v0_arr = records_np[0::2]
+                v1_arr = records_np[1::2]
+                delta_arr = v1_arr - v0_arr
+                interpolated_vec_values = v0_arr + (delta_arr * interpolate_t_arr)
 
-            records = table.column(colname).take(row_indices)
-            records_np = records.to_numpy()
-
-            interp_vec_values = []
-
-            record_idx = 0
-            for iparams in params_arr:
-                v0 = records_np[record_idx]
-                v1 = records_np[record_idx + 1]
-                interp_val = None
-
-                if iparams.classification == Classification.MUST_INTERPOLATE:
-                    # Interpolate or backfill
-                    if is_rate:
-                        interp_val = v1
-                    else:
-                        if v0 is not None and v1 is not None:
-                            interp_val = v0 + iparams.t * (v1 - v0)
-                elif iparams.classification == Classification.EXACT_MATCH:
-                    interp_val = v0
-                elif iparams.classification == Classification.OUTSIDE_RANGE:
-                    # Extrapolate or just fill with 0 for rates
-                    if is_rate:
-                        interp_val = 0
-                    else:
-                        interp_val = v0
-
-                interp_vec_values.append(interp_val)
-                record_idx += 2
-
-            column_arrays.append(pa.array(interp_vec_values))
+            column_arrays.append(pa.array(interpolated_vec_values))
 
     ret_table = pa.table(column_arrays, schema=table.schema)
+
     return ret_table

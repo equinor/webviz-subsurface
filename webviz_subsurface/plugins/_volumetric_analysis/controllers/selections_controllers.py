@@ -1,19 +1,20 @@
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 import webviz_core_components as wcc
-from dash import ALL, Dash, Input, Output, State, callback_context, no_update
+from dash import ALL, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import InplaceVolumesModel
+from webviz_subsurface._utils.formatting import printable_int_list
 
-from ..utils.utils import create_range_string, update_relevant_components
+from ..utils.utils import update_relevant_components
 
 
 # pylint: disable=too-many-statements,too-many-arguments
 def selections_controllers(
-    app: Dash, get_uuid: Callable, volumemodel: InplaceVolumesModel
+    get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
-    @app.callback(
+    @callback(
         Output(get_uuid("selections"), "data"),
         Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
         Input(
@@ -21,7 +22,7 @@ def selections_controllers(
             "value",
         ),
         Input(
-            {"id": get_uuid("selections"), "tab": "voldist", "settings": "Colorscale"},
+            {"id": get_uuid("selections"), "tab": ALL, "settings": "Colorscale"},
             "colorscale",
         ),
         Input(get_uuid("initial-load-info"), "data"),
@@ -62,7 +63,7 @@ def selections_controllers(
             if id_value["tab"] == selected_tab
         }
 
-        page_selections.update(Colorscale=colorscale)
+        page_selections.update(Colorscale=colorscale[0] if colorscale else None)
         page_selections.update(ctx_clicked=ctx["prop_id"])
 
         # check if a page needs to be updated due to page refresh or
@@ -81,18 +82,32 @@ def selections_controllers(
         previous_selection[selected_page] = page_selections
         return previous_selection
 
-    @app.callback(
+    @callback(
         Output(get_uuid("initial-load-info"), "data"),
         Input(get_uuid("page-selected"), "data"),
+        Input({"id": get_uuid("selections"), "tab": ALL, "selector": ALL}, "value"),
+        Input(
+            {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": ALL},
+            "value",
+        ),
         State(get_uuid("initial-load-info"), "data"),
     )
-    def _store_initial_load_info(page_selected: str, initial_load: dict) -> dict:
+    def _store_initial_load_info(
+        page_selected: str,
+        _selectors_changed: list,
+        _filters_changed: list,
+        initial_load: dict,
+    ) -> Dict[str, bool]:
+        """
+        Store info (True/False) reagarding if a page is initally loaded.
+        Updating filters or selectors will set the value to False
+        """
         if initial_load is None:
             initial_load = {}
         initial_load[page_selected] = page_selected not in initial_load
         return initial_load
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL},
             "disabled",
@@ -115,9 +130,6 @@ def selections_controllers(
         State(
             {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "value"
         ),
-        State(
-            {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "options"
-        ),
         State({"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "id"),
         State(get_uuid("selections"), "data"),
         State(get_uuid("tabs"), "value"),
@@ -128,7 +140,6 @@ def selections_controllers(
         selected_page: str,
         selected_color_by: list,
         selector_values: list,
-        selector_options: list,
         selector_ids: list,
         previous_selection: Optional[dict],
         selected_tab: str,
@@ -141,26 +152,16 @@ def selections_controllers(
         ):
             raise PreventUpdate
 
-        initial_page_load = selected_page not in previous_selection
-        selections: Any = {}
-        if initial_page_load:
-            selections = {
-                id_value["selector"]: options[0]["value"]
-                if id_value["selector"] in ["Plot type", "X Response"]
-                else None
-                for id_value, options in zip(selector_ids, selector_options)
+        selections: Any = (
+            previous_selection.get(selected_page)
+            if "page-selected" in ctx["prop_id"] and selected_page in previous_selection
+            else {
+                id_value["selector"]: values
+                for id_value, values in zip(selector_ids, selector_values)
             }
-        else:
-            selections = (
-                previous_selection.get(selected_page)
-                if "page-selected" in ctx["prop_id"]
-                else {
-                    id_value["selector"]: values
-                    for id_value, values in zip(selector_ids, selector_values)
-                }
-            )
+        )
 
-        selectors_disable_in_pages = {
+        selectors_disable_in_pages: Dict[str, list] = {
             "Plot type": ["per_zr", "conv"],
             "Y Response": ["per_zr", "conv"],
             "X Response": [],
@@ -168,26 +169,22 @@ def selections_controllers(
             "Subplots": ["per_zr", "1p1t"],
         }
 
-        settings = {}
+        settings: Dict[str, dict] = {}
         for selector, disable_in_pages in selectors_disable_in_pages.items():
-            disable = selected_page in disable_in_pages  # type: ignore
+            disable = selected_page in disable_in_pages or (
+                selector == "Y Response"
+                and selections["Plot type"] in ["distribution", "histogram"]
+            )
             value = None if disable else selections.get(selector)
 
-            settings[selector] = {
-                "disable": disable,
-                "value": value,
-            }
-
-        if settings["Plot type"]["value"] in ["distribution", "histogram"]:
-            settings["Y Response"]["disable"] = True
-            settings["Y Response"]["value"] = None
+            settings[selector] = {"disable": disable, "value": value}
 
         # update dropdown options based on plot type
-        if settings["Plot type"]["value"] == "scatter":
+        if selections["Plot type"] == "scatter":
             y_elm = x_elm = (
                 volumemodel.responses + volumemodel.selectors + volumemodel.parameters
             )
-        elif settings["Plot type"]["value"] in ["box", "bar"]:
+        elif selections["Plot type"] in ["box", "bar"]:
             y_elm = x_elm = volumemodel.responses + volumemodel.selectors
             if selections.get("Y Response") is None:
                 settings["Y Response"]["value"] = selected_color_by
@@ -223,7 +220,7 @@ def selections_controllers(
             for prop in ["disable", "value", "options"]
         )
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": "undef"},
             "multi",
@@ -249,8 +246,9 @@ def selections_controllers(
             "id",
         ),
     )
+    # pylint: disable=too-many-locals
     def _update_filter_options(
-        _selected_page: str,
+        selected_page: str,
         selectors: list,
         selector_ids: list,
         selected_tab: str,
@@ -281,7 +279,7 @@ def selections_controllers(
         if selected_tab == "table" and page_selections["Group by"] is not None:
             selected_data = page_selections["Group by"]
         if selected_tab == "tornado":
-            selected_data = ["SENSNAME"]
+            selected_data = ["SENSNAME", page_selections["Subplots"]]
 
         output = {}
         for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
@@ -304,11 +302,9 @@ def selections_controllers(
 
         # filter tornado on correct fluid based on volume response chosen
         output["FLUID_ZONE"] = {}
-        if selected_tab == "tornado" and page_selections["mode"] == "locked":
+        if selected_page == "torn_bulk_inplace":
             output["FLUID_ZONE"] = {
-                "values": [
-                    "oil" if page_selections["Response right"] == "STOIIP" else "gas"
-                ]
+                "values": ["oil" if page_selections["Response"] == "STOIIP" else "gas"]
             }
 
         return (
@@ -334,7 +330,7 @@ def selections_controllers(
             ),
         )
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": "REAL"},
             "value",
@@ -367,9 +363,6 @@ def selections_controllers(
 
         if reals_ids[index]["component_type"] == "range":
             real_list = list(range(real_list[0], real_list[1] + 1))
-            text = f"{real_list[0]}-{real_list[-1]}"
-        else:
-            text = create_range_string(real_list)
 
         return (
             update_relevant_components(
@@ -380,11 +373,16 @@ def selections_controllers(
             ),
             update_relevant_components(
                 id_list=real_string_ids,
-                update_info=[{"new_value": text, "conditions": {"tab": selected_tab}}],
+                update_info=[
+                    {
+                        "new_value": printable_int_list(real_list),
+                        "conditions": {"tab": selected_tab},
+                    }
+                ],
             ),
         )
 
-    @app.callback(
+    @callback(
         Output(
             {
                 "id": get_uuid("filters"),
@@ -474,61 +472,7 @@ def selections_controllers(
             update_info=[{"new_value": component, "conditions": {"tab": selected_tab}}],
         )
 
-    @app.callback(
-        Output(
-            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "options"
-        ),
-        Output(
-            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "value"
-        ),
-        Output(
-            {"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"},
-            "disabled",
-        ),
-        Input(
-            {"id": get_uuid("selections"), "selector": "mode", "tab": "tornado"},
-            "value",
-        ),
-        State({"id": get_uuid("selections"), "selector": ALL, "tab": "tornado"}, "id"),
-    )
-    def _update_tornado_selections_from_mode(mode: str, selector_ids: list) -> tuple:
-        settings = {}
-        if mode == "custom":
-            responses = [x for x in volumemodel.responses if x not in ["BO", "BG"]]
-            settings["Response left"] = settings["Response right"] = {
-                "options": [{"label": i, "value": i} for i in responses],
-                "disabled": False,
-            }
-        else:
-            volume_options = [
-                x for x in ["STOIIP", "GIIP"] if x in volumemodel.responses
-            ]
-            settings["Response left"] = {
-                "options": [{"label": "BULK", "value": "BULK"}],
-                "value": "BULK",
-                "disabled": True,
-            }
-            settings["Response right"] = {
-                "options": [{"label": i, "value": i} for i in volume_options],
-                "value": volume_options[0],
-                "disabled": len(volume_options) == 1,
-            }
-
-        return tuple(
-            update_relevant_components(
-                id_list=selector_ids,
-                update_info=[
-                    {
-                        "new_value": values.get(prop, no_update),
-                        "conditions": {"selector": selector},
-                    }
-                    for selector, values in settings.items()
-                ],
-            )
-            for prop in ["options", "value", "disabled"]
-        )
-
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": "region"},
             "value",
@@ -624,7 +568,7 @@ def selections_controllers(
             ),
         )
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("selections"), "tab": "src-comp", "selector": "Ignore <"},
             "value",
@@ -638,7 +582,7 @@ def selections_controllers(
         """reset ignore value when new response is selected"""
         return 0
 
-    @app.callback(
+    @callback(
         Output(
             {"id": get_uuid("selections"), "tab": "ens-comp", "selector": "Ignore <"},
             "value",

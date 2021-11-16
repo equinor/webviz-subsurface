@@ -1,3 +1,4 @@
+import math
 from typing import List, Optional, Union
 
 import plotly.graph_objects as go
@@ -133,3 +134,15 @@ def add_correlation_line(figure: go.Figure, xy_min: float, xy_max: float) -> go.
         y1=xy_max,
         line=dict(color="black", width=2, dash="dash"),
     )
+
+
+def create_figure_matrix(figures: List[go.Figure]) -> List[List[go.Figure]]:
+    """Convert a list of figures into a matrix for display"""
+    figs_in_row = min(
+        min([x for x in range(100) if (x * (x + 1)) > len(figures)]),
+        20,
+    )
+    len_of_matrix = figs_in_row * math.ceil(len(figures) / figs_in_row)
+    # extend figure list with None to fit size of matrix
+    figures.extend([None] * (len_of_matrix - len(figures)))
+    return [figures[i : i + figs_in_row] for i in range(0, len_of_matrix, figs_in_row)]
