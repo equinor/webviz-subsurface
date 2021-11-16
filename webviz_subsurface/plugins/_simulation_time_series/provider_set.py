@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Any, Dict, ItemsView, List, Optional
+from typing import Dict, ItemsView, List, Optional
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
+    VectorMetadata,
 )
 
 
@@ -38,7 +39,7 @@ class ProviderSet:
         # Iterate through all vector names for provider set
         for vector_name in self._all_vector_names:
             # Store provider name and retrieved vector metadata for specific vector name
-            vector_provider_metadata_dict: Dict[str, Optional[Dict[str, Any]]] = {}
+            vector_provider_metadata_dict: Dict[str, Optional[VectorMetadata]] = {}
 
             # Retrieve vector metadata from providers
             for name, provider in self._provider_dict.items():
@@ -91,13 +92,13 @@ class ProviderSet:
         """Create list with the union of vector names among providers"""
         return self._all_vector_names
 
-    def vector_metadata(self, vector: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector: str) -> Optional[VectorMetadata]:
         """Get vector metadata from first occurrence among providers,
 
         `return:`
-        Vector metadata dict from first occurrence among providers, None if not existing
+        Vector metadata from first occurrence among providers, None if not existing
         """
-        metadata: Optional[Dict[str, Any]] = next(
+        metadata: Optional[VectorMetadata] = next(
             (
                 provider.vector_metadata(vector)
                 for provider in self._provider_dict.values()

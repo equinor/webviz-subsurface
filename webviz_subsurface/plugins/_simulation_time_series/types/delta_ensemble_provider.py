@@ -1,9 +1,13 @@
-from typing import Any, Dict, List, Optional, Sequence, TypedDict
+from typing import List, Optional, Sequence, TypedDict
 import datetime
 
 import pandas as pd
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    Frequency,
+    VectorMetadata,
+)
 
 
 class DeltaEnsembleNamePair(TypedDict):
@@ -122,7 +126,7 @@ class DeltaEnsembleProvider(EnsembleSummaryProvider):
             if elm in self.provider_b.realizations()
         ]
 
-    def vector_metadata(self, vector_name: str) -> Optional[Dict[str, Any]]:
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         """
         Get vector metadata for delta ensemble
 

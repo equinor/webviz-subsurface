@@ -31,11 +31,10 @@ def create_vector_plot_title(provider_set: ProviderSet, vector_name: str) -> str
     if metadata is None:
         return simulation_vector_description(vector_name)
 
-    unit = metadata.get("unit", "")
-    if unit:
+    if metadata.unit:
         return (
             f"{simulation_vector_description(vector_name)}"
-            f" [{simulation_unit_reformat(unit)}]"
+            f" [{simulation_unit_reformat(metadata.unit)}]"
         )
     return f"{simulation_vector_description(vector_name)}"
 

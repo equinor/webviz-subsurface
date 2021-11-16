@@ -106,7 +106,8 @@ class SimulationTimeSeries(WebvizPluginABC):
         ]
 
         # NOTE: Initially: With set of vector names, the vector selector data is static
-        # Can be made dynamic based on selected ensembles - i.e. vectors present among selected providers?
+        # Can be made dynamic based on selected ensembles - i.e. vectors present among
+        # selected providers?
         self._vector_selector_data: list = []
         for vector in non_historical_vector_names:
             split = vector.split(":")
@@ -121,7 +122,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 if self._input_provider_set
                 else None
             )
-            if metadata and metadata.get("is_total"):
+            if metadata and metadata.is_total:
                 # Get the likely name for equivalent rate vector and make dropdown options.
                 # Requires that the time_index was either defined or possible to infer.
                 avgrate_vec = rename_vector_from_cumulative(vector=vector, as_rate=True)
