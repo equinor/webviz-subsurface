@@ -30,7 +30,7 @@ class WellCompletionsDataModel:
         well_attributes_file: str,
         kh_unit: Optional[str],
         kh_decimal_places: int,
-        theme_colors: Dict,
+        theme_colors: List[str],
     ) -> None:
         # pylint: disable=too-many-arguments
 
@@ -44,7 +44,6 @@ class WellCompletionsDataModel:
         self.kh_unit = kh_unit
         self.kh_decimal_places = kh_decimal_places
         self.theme_colors = theme_colors
-
 
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work"""

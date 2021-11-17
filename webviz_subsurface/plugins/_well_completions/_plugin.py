@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -187,21 +187,10 @@ class WellCompletions(WebvizPluginABC):
             )
             for ensemble in ensembles
         }
-        # self._wellcompletions_datamodel = WellCompletionsDataModel(
-        #     webviz_settings,
-        #     ensembles,
-        #     compdat_file,
-        #     well_connection_status_file,
-        #     zone_layer_mapping_file,
-        #     stratigraphy_file,
-        #     well_attributes_file,
-        #     kh_unit,
-        #     kh_decimal_places,
-        # )
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             data_model.webviz_store() for _, data_model in self._data_models.items()
         ]
