@@ -6,40 +6,37 @@ from dash.dependencies import Input, Output, State
 import pandas as pd
 
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    Frequency,
-)
+from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
-from webviz_subsurface.plugins._simulation_time_series.provider_set import ProviderSet
+
+from ._layout import LayoutElements
+from ._property_serialization import GraphFigureBuilder
 
 from .types import (
+    AssortedVectorDataAccessor,
+    create_delta_ensemble_names,
     DeltaEnsembleNamePair,
     DeltaEnsembleProvider,
-    create_delta_ensemble_names,
     FanchartOptions,
     StatisticsOptions,
+    ProviderSet,
     TraceOptions,
     VisualizationOptions,
 )
-from .graph_figure_builder import GraphFigureBuilder
 from .utils.trace_line_shape import get_simulation_line_shape
-
-from .selected_provider_set import (
+from .utils.provider_set_utils import (
     create_selected_provider_set,
-    create_vector_plot_title,
+    create_vector_plot_title_from_provider_set,
 )
-from .assembled_vector_data_accessor import AssembledVectorDataAccessor
 from .utils.vector_statistics import create_vectors_statistics_df
 from .utils.history_vectors import create_history_vectors_df
-
-from .main_view import ViewElements
 
 # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
 # providers are presampled. To keep track of sampling frequency, and not depend on dropdown
 # value for ViewElements.RESAMPLING_FREQUENCY_DROPDOWN (dropdown disabled when providers are
 # presampled)
 # pylint: disable = too-many-branches, too-many-locals, too-many-statements
-def controller_callbacks(
+def plugin_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
     input_provider_set: ProviderSet,
@@ -49,37 +46,37 @@ def controller_callbacks(
     line_shape_fallback: str = "linear",
 ) -> None:
     @app.callback(
-        Output(get_uuid(ViewElements.GRAPH), "figure"),
+        Output(get_uuid(LayoutElements.GRAPH), "figure"),
         [
             Input(
-                get_uuid(ViewElements.VECTOR_SELECTOR),
+                get_uuid(LayoutElements.VECTOR_SELECTOR),
                 "selectedNodes",
             ),
-            Input(get_uuid(ViewElements.ENSEMBLES_DROPDOWN), "value"),
+            Input(get_uuid(LayoutElements.ENSEMBLES_DROPDOWN), "value"),
             Input(
-                get_uuid(ViewElements.VISUALIZATION_RADIO_ITEMS),
+                get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
                 "value",
             ),
             Input(
-                get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
+                get_uuid(LayoutElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
                 "value",
             ),
             Input(
-                get_uuid(ViewElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
+                get_uuid(LayoutElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
                 "value",
             ),
             Input(
-                get_uuid(ViewElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
                 "value",
             ),
             Input(
-                get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
         ],
         [
             State(
-                get_uuid(ViewElements.CREATED_DELTA_ENSEMBLES),
+                get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
             )
         ],
@@ -124,7 +121,9 @@ def controller_callbacks(
 
         # Titles for subplots TODO: Verify vector existing?
         vector_titles: Dict[str, str] = {
-            vector: create_vector_plot_title(selected_provider_set, vector)
+            vector: create_vector_plot_title_from_provider_set(
+                selected_provider_set, vector
+            )
             for vector in vectors
         }
 
@@ -152,7 +151,7 @@ def controller_callbacks(
 
         # Plotting per ensemble
         for name, provider in selected_provider_set.items():
-            vector_data_accessor = AssembledVectorDataAccessor(
+            vector_data_accessor = AssortedVectorDataAccessor(
                 name,
                 provider,
                 vectors,
@@ -243,17 +242,17 @@ def controller_callbacks(
     @app.callback(
         [
             Output(
-                get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
+                get_uuid(LayoutElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
                 "style",
             ),
             Output(
-                get_uuid(ViewElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
+                get_uuid(LayoutElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
                 "style",
             ),
         ],
         [
             Input(
-                get_uuid(ViewElements.VISUALIZATION_RADIO_ITEMS),
+                get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
                 "value",
             )
         ],
@@ -279,35 +278,35 @@ def controller_callbacks(
     @app.callback(
         [
             Output(
-                get_uuid(ViewElements.CREATED_DELTA_ENSEMBLES),
+                get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
             ),
             Output(
-                get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
+                get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
                 "data",
             ),
             Output(
-                get_uuid(ViewElements.ENSEMBLES_DROPDOWN),
+                get_uuid(LayoutElements.ENSEMBLES_DROPDOWN),
                 "options",
             ),
         ],
         [
             Input(
-                get_uuid(ViewElements.DELTA_ENSEMBLE_ADD_BUTTON),
+                get_uuid(LayoutElements.DELTA_ENSEMBLE_ADD_BUTTON),
                 "n_clicks",
             )
         ],
         [
             State(
-                get_uuid(ViewElements.CREATED_DELTA_ENSEMBLES),
+                get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
             ),
             State(
-                get_uuid(ViewElements.DELTA_ENSEMBLE_A_DROPDOWN),
+                get_uuid(LayoutElements.DELTA_ENSEMBLE_A_DROPDOWN),
                 "value",
             ),
             State(
-                get_uuid(ViewElements.DELTA_ENSEMBLE_B_DROPDOWN),
+                get_uuid(LayoutElements.DELTA_ENSEMBLE_B_DROPDOWN),
                 "value",
             ),
         ],
@@ -334,7 +333,7 @@ def controller_callbacks(
         new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
 
         table_data = create_delta_ensemble_table_column_data(
-            get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN),
+            get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN),
             new_delta_ensemble_names,
         )
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,14 +28,13 @@ from ..._utils.statistics_plotting import (
 from .types import FanchartOptions, StatisticsOptions
 
 
-class VectorLineShape(TypedDict):
-    vector: str
-    line_shape: str
-
-
 class GraphFigureBuilder:
     """
-    Building graph figure, where respective vector traces are added per ensemble
+    Figure builder for creating/building serializable Output property data
+    for the callback. Where vector traces are added per ensemble.
+
+    Contains functions for adding titles, graph data and retreving the serialized
+    data for callback Output property.
     """
 
     def __init__(

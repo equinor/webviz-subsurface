@@ -17,9 +17,9 @@ from ..._providers import Frequency
 
 
 # pylint: disable=too-few-public-methods
-class ViewElements:
+class LayoutElements:
     """
-    Definition of names of HTML-elements in view
+    Definition of names of HTML-elements in layout
 
     TODO: Consider ids as in AiO convention https://dash.plotly.com/all-in-one-components
     """
@@ -47,7 +47,7 @@ class ViewElements:
     RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
 
 
-def main_view(
+def main_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
@@ -83,7 +83,7 @@ def main_view(
                         color="white",
                         children=wcc.Graph(
                             style={"height": "85vh"},
-                            id=get_uuid(ViewElements.GRAPH),
+                            id=get_uuid(LayoutElements.GRAPH),
                         ),
                     )
                 ],
@@ -108,7 +108,7 @@ def __settings_layout(
                 children=[
                     wcc.Dropdown(
                         label="Selected resampling frequency",
-                        id=get_uuid(ViewElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                        id=get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                         clearable=False,
                         disabled=disable_resampling_dropdown,
                         options=[
@@ -133,7 +133,7 @@ def __settings_layout(
                 children=[
                     wcc.Dropdown(
                         label="Selected ensembles",
-                        id=get_uuid(ViewElements.ENSEMBLES_DROPDOWN),
+                        id=get_uuid(LayoutElements.ENSEMBLES_DROPDOWN),
                         clearable=False,
                         multi=True,
                         options=[
@@ -157,7 +157,7 @@ def __settings_layout(
                 label="Time Series",
                 children=[
                     wsc.VectorSelector(
-                        id=get_uuid(ViewElements.VECTOR_SELECTOR),
+                        id=get_uuid(LayoutElements.VECTOR_SELECTOR),
                         maxNumSelectedNodes=3,
                         data=vector_data,
                         persistence=True,
@@ -174,7 +174,7 @@ def __settings_layout(
                 label="Visualization",
                 children=[
                     wcc.RadioItems(
-                        id=get_uuid(ViewElements.VISUALIZATION_RADIO_ITEMS),
+                        id=get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
                         options=[
                             {
                                 "label": "Individual realizations",
@@ -215,7 +215,7 @@ def __delta_ensemble_creator_layout(
                         min_width="60px",
                         children=wcc.Dropdown(
                             label="Ensemble A",
-                            id=get_uuid(ViewElements.DELTA_ENSEMBLE_A_DROPDOWN),
+                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_A_DROPDOWN),
                             clearable=False,
                             options=[{"label": i, "value": i} for i in ensembles],
                             value=ensembles[0],
@@ -225,7 +225,7 @@ def __delta_ensemble_creator_layout(
                         min_width="60px",
                         children=wcc.Dropdown(
                             label="Ensemble B",
-                            id=get_uuid(ViewElements.DELTA_ENSEMBLE_B_DROPDOWN),
+                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_B_DROPDOWN),
                             clearable=False,
                             options=[{"label": i, "value": i} for i in ensembles],
                             value=ensembles[-1],
@@ -235,7 +235,7 @@ def __delta_ensemble_creator_layout(
                         min_width="20px",
                         children=html.Button(
                             "Add",
-                            id=get_uuid(ViewElements.DELTA_ENSEMBLE_ADD_BUTTON),
+                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_ADD_BUTTON),
                             n_clicks=0,
                         ),
                     ),
@@ -244,7 +244,7 @@ def __delta_ensemble_creator_layout(
             ),
             __delta_ensemble_table_layout(get_uuid),
             dcc.Store(
-                id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLES),
+                id=get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 data=[],
             ),  # TODO: Add predefined deltas?
         ]
@@ -253,12 +253,12 @@ def __delta_ensemble_creator_layout(
 
 def __delta_ensemble_table_layout(get_uuid: Callable) -> dash_table.DataTable:
     return dash_table.DataTable(
-        id=get_uuid(ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
+        id=get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
         columns=(
             [
                 {
                     "id": get_uuid(
-                        ViewElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                        LayoutElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
                     ),
                     "name": "Created Delta (A-B)",
                 }
@@ -285,14 +285,14 @@ def __plot_options_layout(
         html.Div(
             children=[
                 wcc.Checklist(
-                    id=get_uuid(ViewElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                    id=get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
                     options=[
                         {"label": "History", "value": TraceOptions.HISTORY.value},
                     ],
                     value=[TraceOptions.HISTORY.value],
                 ),
                 wcc.Checklist(
-                    id=get_uuid(ViewElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
+                    id=get_uuid(LayoutElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),
                     style={"display": "block"}
                     if VisualizationOptions.STATISTICS == selected_visualization
                     else {"display": "none"},
@@ -320,7 +320,7 @@ def __plot_options_layout(
                     ],
                 ),
                 wcc.Checklist(
-                    id=get_uuid(ViewElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
+                    id=get_uuid(LayoutElements.PLOT_FANCHART_OPTIONS_CHECKLIST),
                     style={"display": "block"}
                     if VisualizationOptions.FANCHART == selected_visualization
                     else {"display": "none"},

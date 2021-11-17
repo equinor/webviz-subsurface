@@ -5,30 +5,25 @@ import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 
-from .utils.from_timeseries_cumulatives import (
+from ..utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
 
-from ..._utils.vector_calculator import (
+from ...._utils.vector_calculator import (
     get_selected_expressions,
 )
 
 # TODO: Ensure good naming of class, suggestions listed:
 # - VectorDataAccessor
 # - AssembledVectorDataAccessor
-# - AuthoredVectorDataAccessor
-# - ConstructedVectorDataAccessor
-# - ExtendedVectorDataAccessor
-# - GeneratedVectorDataAccessor
-# - ManufacturedVectorDataAccessor
-# - ProducedVectorDataAccessor
+# - AssortedVectorDataAccessor
 # - Use "Provider" as ending instead? ...Provider
-class AssembledVectorDataAccessor:
+class AssortedVectorDataAccessor:
     """
-    Class to create and provide access to data for a set of vector types, for a given
-    ensemble summary provider.
+    Class to create and provide access to data for an assorted set of vector types, for a
+    given ensemble summary provider.
 
     A sequence of vector names are provided, and data is fetched or created based on which
     type of vectors are present in the sequence.

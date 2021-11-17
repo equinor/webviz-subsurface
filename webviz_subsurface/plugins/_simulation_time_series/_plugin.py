@@ -10,17 +10,15 @@ from webviz_subsurface._abbreviations.reservoir_simulation import historical_vec
 from webviz_subsurface._utils.webvizstore_functions import get_path
 from webviz_subsurface._providers import Frequency
 
-from .main_view import main_view
+from ._callbacks import plugin_callbacks
+from ._layout import main_layout
 from .types import VisualizationOptions
-from .provider_set import (
+from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
+from .utils.provider_set_utils import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
 
-from ..._providers import Frequency
-
-from .controller import controller_callbacks
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
 from ..._utils.vector_selector import add_vector_to_vector_selector_data
 from ..._utils.simulation_timeseries import (
@@ -164,7 +162,7 @@ class SimulationTimeSeries(WebvizPluginABC):
 
     @property
     def layout(self) -> wcc.FlexBox:
-        return main_view(
+        return main_layout(
             get_uuid=self.uuid,
             ensemble_names=self._input_provider_set.names(),
             vector_selector_data=self._vector_selector_data,
@@ -175,7 +173,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        controller_callbacks(
+        plugin_callbacks(
             app=app,
             get_uuid=self.uuid,
             input_provider_set=self._input_provider_set,
