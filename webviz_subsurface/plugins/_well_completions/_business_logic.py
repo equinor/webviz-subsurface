@@ -118,7 +118,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         }
         return io.BytesIO(json.dumps(result).encode())
 
-    # @property
+    @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
         return (
             self.create_ensemble_dataset,

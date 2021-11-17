@@ -192,7 +192,7 @@ class WellCompletions(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
-            data_model.webviz_store() for _, data_model in self._data_models.items()
+            data_model.webviz_store for _, data_model in self._data_models.items()
         ]
 
     @property
