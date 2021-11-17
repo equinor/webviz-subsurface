@@ -1,4 +1,5 @@
-from typing import List, Optional, Sequence, TypedDict
+import sys
+from typing import List, Optional, Sequence
 import datetime
 
 import pandas as pd
@@ -8,6 +9,11 @@ from webviz_subsurface._providers import (
     Frequency,
     VectorMetadata,
 )
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 
 class DeltaEnsembleNamePair(TypedDict):
