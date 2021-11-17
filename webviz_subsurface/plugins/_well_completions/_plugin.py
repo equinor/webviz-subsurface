@@ -191,9 +191,7 @@ class WellCompletions(WebvizPluginABC):
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-        return [
-            data_model.webviz_store for _, data_model in self._data_models.items()
-        ]
+        return [data_model.webviz_store for _, data_model in self._data_models.items()]
 
     @property
     def tour_steps(self) -> list:
