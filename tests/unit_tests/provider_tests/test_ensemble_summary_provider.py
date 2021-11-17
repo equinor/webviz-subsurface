@@ -1,6 +1,7 @@
 import datetime
 import os
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -101,7 +102,7 @@ def test_arrow_unsmry_lazy_vector_metadata(
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
 
-    meta = provider.vector_metadata("FOPR")
+    meta: Optional[VectorMetadata] = provider.vector_metadata("FOPR")
     assert meta is not None
     assert meta.unit == "SM3/DAY"
     assert meta.is_total is False
