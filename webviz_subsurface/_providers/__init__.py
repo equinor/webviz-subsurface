@@ -1,6 +1,7 @@
 from .ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
     Frequency,
+    VectorMetadata,
 )
 from .ensemble_summary_provider.ensemble_summary_provider_factory import (
     EnsembleSummaryProviderFactory,

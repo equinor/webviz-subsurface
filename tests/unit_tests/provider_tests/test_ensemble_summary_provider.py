@@ -5,7 +5,11 @@ from pathlib import Path
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from webviz_subsurface._providers import EnsembleSummaryProviderFactory, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProviderFactory,
+    Frequency,
+    VectorMetadata,
+)
 
 
 # Helper function for generating per-realization CSV files based on aggregated CSV file
