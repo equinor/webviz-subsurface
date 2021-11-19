@@ -1,11 +1,14 @@
+import copy
+import warnings
 from typing import Callable, Dict, List, Optional, Tuple
 from pathlib import Path
 
 import dash
-from webviz_config import WebvizPluginABC
-from webviz_config import WebvizSettings
+from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_core_components as wcc
 
+import webviz_subsurface
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
 from webviz_subsurface._utils.webvizstore_functions import get_path
 from webviz_subsurface._providers import Frequency
@@ -20,6 +23,11 @@ from .utils.provider_set_utils import (
 )
 
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
+from ..._utils.vector_calculator import (
+    add_expressions_to_vector_selector_data,
+    expressions_from_config,
+    validate_predefined_expression,
+)
 from ..._utils.vector_selector import add_vector_to_vector_selector_data
 from ..._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
@@ -38,10 +46,17 @@ class SimulationTimeSeries(WebvizPluginABC):
         perform_presampling: bool = False,
         obsfile: Path = None,
         options: dict = None,
-        sampling: str = Frequency.MONTHLY.value,  # TODO: Rename to initial sampling?
+        sampling: str = Frequency.MONTHLY.value,  # TODO: Rename to initial sampling? Set default to YEARLY
+        predefined_expressions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
         super().__init__()
+
+        # NOTE: Temporary css, pending on new wcc modal component.
+        # See: https://github.com/equinor/webviz-core-components/issues/163
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
+        )
 
         self._webviz_settings = webviz_settings
         self._csvfile_path = csvfile_path
@@ -106,11 +121,17 @@ class SimulationTimeSeries(WebvizPluginABC):
         # NOTE: Initially: With set of vector names, the vector selector data is static
         # Can be made dynamic based on selected ensembles - i.e. vectors present among
         # selected providers?
-        self._vector_selector_data: list = []
+        self._vector_selector_base_data: list = []
+        self._vector_calculator_data: list = []
         for vector in non_historical_vector_names:
             split = vector.split(":")
             add_vector_to_vector_selector_data(
-                self._vector_selector_data,
+                self._vector_selector_base_data,
+                vector,
+                simulation_vector_description(split[0]),
+            )
+            add_vector_to_vector_selector_data(
+                self._vector_calculator_data,
                 vector,
                 simulation_vector_description(split[0]),
             )
@@ -132,15 +153,44 @@ class SimulationTimeSeries(WebvizPluginABC):
                 interval_split = interval_vec.split(":")
 
                 add_vector_to_vector_selector_data(
-                    self._vector_selector_data,
+                    self._vector_selector_base_data,
                     avgrate_vec,
                     f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
                 )
                 add_vector_to_vector_selector_data(
-                    self._vector_selector_data,
+                    self._vector_selector_base_data,
                     interval_vec,
                     f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
                 )
+
+        # Retreive predefined expressions from configuration and validate
+        self._predefined_expressions_path = (
+            None
+            if predefined_expressions is None
+            else webviz_settings.shared_settings["predefined_expressions"][
+                predefined_expressions
+            ]
+        )
+        self._predefined_expressions = expressions_from_config(
+            get_path(self._predefined_expressions_path)
+            if self._predefined_expressions_path
+            else None
+        )
+        for expression in self._predefined_expressions:
+            valid, message = validate_predefined_expression(
+                expression, self._vector_selector_base_data
+            )
+            if not valid:
+                warnings.warn(message)
+            expression["isValid"] = valid
+
+        # Create initial vector selector data with predefined expressions
+        self._initial_vector_selector_data = copy.deepcopy(
+            self._vector_selector_base_data
+        )
+        add_expressions_to_vector_selector_data(
+            self._initial_vector_selector_data, self._predefined_expressions
+        )
 
         plot_options = options if options else {}
         self._initial_visualization_selection = VisualizationOptions(
@@ -165,7 +215,9 @@ class SimulationTimeSeries(WebvizPluginABC):
         return main_layout(
             get_uuid=self.uuid,
             ensemble_names=self._input_provider_set.names(),
-            vector_selector_data=self._vector_selector_data,
+            vector_selector_data=self._initial_vector_selector_data,
+            vector_calculator_data=self._vector_calculator_data,
+            predefined_expressions=self._predefined_expressions,
             disable_resampling_dropdown=self._presampled_frequency is not None,
             selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,
@@ -179,6 +231,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             input_provider_set=self._input_provider_set,
             theme=self._theme,
             initial_selected_vectors=self._initial_vectors,
+            vector_selector_base_data=self._vector_selector_base_data,
             observations=self._observations,
             line_shape_fallback=self._line_shape_fallback,
         )
@@ -187,4 +240,6 @@ class SimulationTimeSeries(WebvizPluginABC):
         functions: List[Tuple[Callable, list]] = []
         if self._obsfile:
             functions.append((get_path, [{"path": self._obsfile}]))
+        if self._predefined_expressions_path:
+            functions.append((get_path, [{"path": self._predefined_expressions_path}]))
         return functions

@@ -1,13 +1,17 @@
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
+import copy
 import dash
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 import pandas as pd
 
+import webviz_subsurface_components as wsc
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
+
+from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
 from ._layout import LayoutElements
 from ._property_serialization import GraphFigureBuilder
@@ -31,17 +35,25 @@ from .utils.provider_set_utils import (
 from .utils.vector_statistics import create_vectors_statistics_df
 from .utils.history_vectors import create_history_vectors_df
 
+from ..._utils.vector_calculator import (
+    add_expressions_to_vector_selector_data,
+    get_custom_vector_definitions_from_expressions,
+    get_selected_expressions,
+)
+from ..._utils.vector_selector import is_vector_name_in_vector_selector_data
+
 # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
 # providers are presampled. To keep track of sampling frequency, and not depend on dropdown
 # value for ViewElements.RESAMPLING_FREQUENCY_DROPDOWN (dropdown disabled when providers are
 # presampled)
-# pylint: disable = too-many-branches, too-many-locals, too-many-statements
+# pylint: disable = too-many-arguments, too-many-branches, too-many-locals, too-many-statements
 def plugin_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
     input_provider_set: ProviderSet,
     theme: WebvizConfigTheme,
     initial_selected_vectors: List[str],
+    vector_selector_base_data: list,
     observations: dict,  # TODO: Improve typehint?
     line_shape_fallback: str = "linear",
 ) -> None:
@@ -73,12 +85,20 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
+            Input(
+                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
         ],
         [
             State(
                 get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
-            )
+            ),
+            State(
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
         ],
     )
     def _update_graph(
@@ -89,7 +109,11 @@ def plugin_callbacks(
         fanchart_option_values: List[str],
         trace_option_values: List[str],
         resampling_frequency_value: str,
+        __selected_expressions_update: List[
+            ExpressionInfo
+        ],  # Only used to trig callback when expressions updates does not affect vectors
         delta_ensembles: List[DeltaEnsembleNamePair],
+        vector_calculator_expressions: List[ExpressionInfo],
     ) -> dict:
         """Callback to update all graphs based on selections
 
@@ -98,6 +122,13 @@ def plugin_callbacks(
         with "strongly typed" and filtered input format
         * Create/build prop serialization in FigureBuilder by use of business logic data
         """
+        if vectors is None:
+            vectors = initial_selected_vectors
+
+        # Retrieve the selected expressions
+        selected_expressions = get_selected_expressions(
+            vector_calculator_expressions, vectors
+        )
 
         # Convert from string values to enum types
         visualization = VisualizationOptions(visualization_value)
@@ -111,15 +142,13 @@ def plugin_callbacks(
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        if vectors is None:
-            vectors = initial_selected_vectors
-
         # Filter selected delta ensembles
         selected_provider_set = create_selected_provider_set(
             input_provider_set, selected_ensembles, delta_ensembles
         )
 
-        # Titles for subplots TODO: Verify vector existing?
+        # Titles for subplots
+        # TODO: ADD UNITS FOR CALCULATED VECTORS!
         vector_titles: Dict[str, str] = {
             vector: create_vector_plot_title_from_provider_set(
                 selected_provider_set, vector
@@ -155,7 +184,7 @@ def plugin_callbacks(
                 name,
                 provider,
                 vectors,
-                expressions=None,
+                expressions=selected_expressions,
                 resampling_frequency=resampling_frequency
                 if provider.supports_resampling()
                 else None,
@@ -167,6 +196,10 @@ def plugin_callbacks(
             if vector_data_accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
                     vector_data_accessor.create_interval_and_average_vectors_df()
+                )
+            if vector_data_accessor.has_vector_calculator_expressions():
+                vectors_df_list.append(
+                    vector_data_accessor.create_calculated_vectors_df()
                 )
 
             for index, vectors_df in enumerate(vectors_df_list):
@@ -332,7 +365,7 @@ def plugin_callbacks(
         # Create delta ensemble names
         new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
 
-        table_data = create_delta_ensemble_table_column_data(
+        table_data = _create_delta_ensemble_table_column_data(
             get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN),
             new_delta_ensemble_names,
         )
@@ -346,8 +379,164 @@ def plugin_callbacks(
 
         return (new_delta_ensembles, table_data, ensemble_options)
 
+    @app.callback(
+        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        [
+            Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON), "n_clicks"),
+        ],
+        [State(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open")],
+    )
+    def _toggle_vector_calculator_modal(n_open_clicks: int, is_open: bool) -> bool:
+        if n_open_clicks:
+            return not is_open
+        raise PreventUpdate
 
-def create_delta_ensemble_table_column_data(
+    @app.callback(
+        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR), "externalParseData"),
+        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR), "externalParseExpression"),
+    )
+    def _parse_vector_calculator_expression(
+        expression: ExpressionInfo,
+    ) -> ExternalParseData:
+        if expression is None:
+            raise PreventUpdate
+        return wsc.VectorCalculator.external_parse_data(expression)
+
+    @app.callback(
+        [
+            Output(
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
+            Output(
+                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
+            Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "data"),
+            Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "selectedTags"),
+            Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "customVectorDefinitions"),
+        ],
+        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        [
+            State(
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                "data",
+            ),
+            State(
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
+            State(
+                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
+            State(get_uuid(LayoutElements.VECTOR_SELECTOR), "selectedNodes"),
+            State(get_uuid(LayoutElements.VECTOR_SELECTOR), "customVectorDefinitions"),
+        ],
+    )
+    def _update_vector_calculator_expressions_on_modal_close(
+        is_modal_open: bool,
+        new_expressions: List[ExpressionInfo],
+        current_expressions: List[ExpressionInfo],
+        current_selected_expressions: List[ExpressionInfo],
+        current_selected_vectors: List[str],
+        current_custom_vector_definitions: dict,
+    ) -> list:
+        """Update vector calculator expressions, propagate expressions to VectorSelectors,
+        update current selections and trigger re-rendering of graphing if necessary
+        """
+        if is_modal_open or (new_expressions == current_expressions):
+            raise PreventUpdate
+
+        # Deep copy to prevent modifying vector_selector_base_data
+        new_vector_selector_data = copy.deepcopy(vector_selector_base_data)
+        add_expressions_to_vector_selector_data(
+            new_vector_selector_data, new_expressions
+        )
+
+        # Create new selected vectors - from new expressions
+        new_selected_vectors = _create_new_selected_vectors(
+            current_selected_vectors,
+            current_expressions,
+            new_expressions,
+            new_vector_selector_data,
+        )
+
+        # Get new selected expressions
+        new_selected_expressions = get_selected_expressions(
+            new_expressions, new_selected_vectors
+        )
+
+        # Get new custom vector definitions
+        new_custom_vector_definitions = get_custom_vector_definitions_from_expressions(
+            new_expressions
+        )
+
+        # Prevent updates if unchanged
+        if new_custom_vector_definitions == current_custom_vector_definitions:
+            new_custom_vector_definitions = dash.no_update
+
+        if new_selected_vectors == current_selected_vectors:
+            new_selected_vectors = dash.no_update
+
+        if new_selected_expressions == current_selected_expressions:
+            new_selected_expressions = dash.no_update
+
+        return [
+            new_expressions,
+            new_selected_expressions,
+            new_vector_selector_data,
+            new_selected_vectors,
+            new_custom_vector_definitions,
+        ]
+
+    @app.callback(
+        Output(
+            get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+            "data",
+        ),
+        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR), "expressions"),
+    )
+    def _update_vector_calculator_expressions_when_modal_open(
+        expressions: List[ExpressionInfo],
+    ) -> list:
+        new_expressions: List[ExpressionInfo] = [
+            elm for elm in expressions if elm["isValid"]
+        ]
+        return new_expressions
+
+
+def _create_delta_ensemble_table_column_data(
     column_name: str, ensemble_names: List[str]
 ) -> List[Dict[str, str]]:
     return [{column_name: elm} for elm in ensemble_names]
+
+
+def _create_new_selected_vectors(
+    existing_selected_vectors: List[str],
+    existing_expressions: List[ExpressionInfo],
+    new_expressions: List[ExpressionInfo],
+    new_vector_selector_data: list,
+) -> List[str]:
+    valid_selections: List[str] = []
+    for vector in existing_selected_vectors:
+        new_vector: Optional[str] = vector
+
+        # Get id if vector is among existing expressions
+        dropdown_id = next(
+            (elm["id"] for elm in existing_expressions if elm["name"] == vector),
+            None,
+        )
+        # Find id among new expressions to get new/edited name
+        if dropdown_id:
+            new_vector = next(
+                (elm["name"] for elm in new_expressions if elm["id"] == dropdown_id),
+                None,
+            )
+
+        # Append if vector name exist among data
+        if new_vector is not None and is_vector_name_in_vector_selector_data(
+            new_vector, new_vector_selector_data
+        ):
+            valid_selections.append(new_vector)
+    return valid_selections

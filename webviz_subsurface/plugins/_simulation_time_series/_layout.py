@@ -1,10 +1,12 @@
 from typing import Callable, List, Optional
 
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
+from webviz_subsurface_components import ExpressionInfo
 
 from .types import (
     FanchartOptions,
@@ -14,6 +16,7 @@ from .types import (
 )
 
 from ..._providers import Frequency
+from ..._utils.vector_calculator import get_custom_vector_definitions_from_expressions
 
 
 # pylint: disable=too-few-public-methods
@@ -28,6 +31,15 @@ class LayoutElements:
 
     ENSEMBLES_DROPDOWN = "ensembles_dropdown"
     VECTOR_SELECTOR = "vector_selector"
+
+    VECTOR_CALCULATOR = "vector_calculator"
+    VECTOR_CALCULATOR_MODAL = "vector_calculator_modal"
+    VECTOR_CALCULATOR_OPEN_BUTTON = "vector_calculator_open_button"
+    VECTOR_CALCULATOR_EXPRESSIONS = "vector_calculator_expressions"
+    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL = (
+        "vector_calculator_expressions_open_modal"
+    )
+    SELECTED_VECTOR_CALCULATOR_EXPRESSIONS = "selected_vector_calculator_expressions"
 
     DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
     DELTA_ENSEMBLE_B_DROPDOWN = "delta_ensemble_B_dropdown"
@@ -51,6 +63,8 @@ def main_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
     vector_selector_data: list,
+    vector_calculator_data: list,
+    predefined_expressions: List[ExpressionInfo],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
@@ -65,7 +79,9 @@ def main_layout(
                     children=__settings_layout(
                         get_uuid=get_uuid,
                         ensembles=ensemble_names,
-                        vector_data=vector_selector_data,
+                        vector_selector_data=vector_selector_data,
+                        vector_calculator_data=vector_calculator_data,
+                        predefined_expressions=predefined_expressions,
                         disable_resampling_dropdown=disable_resampling_dropdown,
                         selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
@@ -95,7 +111,9 @@ def main_layout(
 def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],
-    vector_data: list,
+    vector_selector_data: list,
+    vector_calculator_data: list,
+    predefined_expressions: List[ExpressionInfo],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
@@ -159,7 +177,7 @@ def __settings_layout(
                     wsc.VectorSelector(
                         id=get_uuid(LayoutElements.VECTOR_SELECTOR),
                         maxNumSelectedNodes=3,
-                        data=vector_data,
+                        data=vector_selector_data,
                         persistence=True,
                         persistence_type="session",
                         selectedTags=[]
@@ -167,6 +185,9 @@ def __settings_layout(
                         else selected_vectors,
                         numSecondsUntilSuggestionsAreShown=0.5,
                         lineBreakAfterTag=True,
+                        customVectorDefinitions=get_custom_vector_definitions_from_expressions(
+                            predefined_expressions
+                        ),
                     )
                 ],
             ),
@@ -200,7 +221,62 @@ def __settings_layout(
                     selected_visualization=selected_visualization,
                 ),
             ),
+            wcc.Selectors(
+                label="Vector Calculator",
+                children=[
+                    html.Button(
+                        "Vector Calculator",
+                        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON),
+                    ),
+                ],
+            ),
+            __vector_calculator_modal_layout(
+                get_uuid=get_uuid,
+                vector_data=vector_calculator_data,
+                predefined_expressions=predefined_expressions,
+            ),
+            dcc.Store(
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
+                data=predefined_expressions,
+            ),
+            dcc.Store(
+                # NOTE: Used to trigger graph update when selected expressions are edited. If name
+                # is not edited, the vector selectors does not trigger graph update callback.
+                id=get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
+                data=[],
+            ),
+            dcc.Store(
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                data=predefined_expressions,
+            ),
         ]
+    )
+
+
+def __vector_calculator_modal_layout(
+    get_uuid: Callable,
+    vector_data: list,
+    predefined_expressions: List[ExpressionInfo],
+) -> dbc.Modal:
+    return dbc.Modal(
+        style={"marginTop": "20vh", "width": "1300px"},
+        children=[
+            dbc.ModalHeader("Vector Calculator"),
+            dbc.ModalBody(
+                html.Div(
+                    children=[
+                        wsc.VectorCalculator(
+                            id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
+                            vectors=vector_data,
+                            expressions=predefined_expressions,
+                        )
+                    ],
+                ),
+            ),
+        ],
+        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL),
+        size="lg",
+        centered=True,
     )
 
 

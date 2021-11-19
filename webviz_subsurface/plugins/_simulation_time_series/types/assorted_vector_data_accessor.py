@@ -13,6 +13,7 @@ from ..utils.from_timeseries_cumulatives import (
 
 from ...._utils.vector_calculator import (
     get_selected_expressions,
+    create_calculated_vector_df,
 )
 
 # TODO: Ensure good naming of class, suggestions listed:
@@ -69,7 +70,7 @@ class AssortedVectorDataAccessor:
     def has_interval_and_average_vectors(self) -> bool:
         return len(self._interval_and_average_vectors) > 0
 
-    def has_vector_calculator_vectors(self) -> bool:
+    def has_vector_calculator_expressions(self) -> bool:
         return len(self._vector_calculator_expressions) > 0
 
     def get_provider_vectors_df(
@@ -148,10 +149,25 @@ class AssortedVectorDataAccessor:
 
         return interval_and_average_vectors_df
 
-    def create_vector_calculator_vectors_df(self) -> pd.DataFrame:
-        if not self.has_vector_calculator_vectors():
+    def create_calculated_vectors_df(
+        self, realizations: Optional[Sequence[int]] = None
+    ) -> pd.DataFrame:
+        if not self.has_vector_calculator_expressions():
             raise ValueError(
                 f'Assembled vector data accessor for provider "{self._name}"'
                 "has no vector calculator expressions"
             )
-        raise ValueError("Method not implemented!")
+        calculated_vectors_df = pd.DataFrame()
+        for expression in self._vector_calculator_expressions:
+            calculated_vector_df = create_calculated_vector_df(
+                expression, self._provider, realizations, self._resampling_frequency
+            )
+            if calculated_vectors_df.empty:
+                calculated_vectors_df = calculated_vector_df
+            else:
+                calculated_vectors_df = pd.merge(
+                    calculated_vectors_df,
+                    calculated_vector_df,
+                    how="inner",
+                )
+        return calculated_vectors_df

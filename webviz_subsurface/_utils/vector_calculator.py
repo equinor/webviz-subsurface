@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 from uuid import uuid4
 
 import numpy as np
@@ -13,8 +13,13 @@ from webviz_subsurface_components import (
     VariableVectorMapInfo,
     VectorCalculator,
 )
+from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 
-from .vector_selector import is_vector_name_in_vector_selector_data
+
+from .vector_selector import (
+    add_vector_to_vector_selector_data,
+    is_vector_name_in_vector_selector_data,
+)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -276,6 +281,46 @@ def get_calculated_vector_df(
     return df[columns + [name]]
 
 
+def create_calculated_vector_df(
+    expression: ExpressionInfo,
+    provider: EnsembleSummaryProvider,
+    realizations: Optional[Sequence[int]],
+    resampling_frequency: Optional[Frequency],
+) -> pd.DataFrame:
+    """Create dataframe with calculated vector from expression
+
+    If expression is not successfully evaluated, empty dataframe is returned
+
+    `Return:`
+    * Dataframe with calculated vector data made form expression - columns:\n
+        ["DATE","REAL", calculated_vector]
+    * Return empty dataframe if expression evaluation returns None
+    """
+    name: str = expression["name"]
+    expr: str = expression["expression"]
+
+    variable_vector_dict: Dict[str, str] = VectorCalculator.variable_vector_dict(
+        expression["variableVectorMap"]
+    )
+    vector_names = list(variable_vector_dict.values())
+
+    # Retrieve data for vectors in expression
+    vectors_df = provider.get_vectors_df(
+        vector_names, resampling_frequency, realizations
+    )
+
+    values: Dict[str, np.ndarray] = {}
+    for variable, vector in variable_vector_dict.items():
+        values[variable] = vectors_df[vector].values
+
+    evaluated_expression = VectorCalculator.evaluate_expression(expr, values)
+    if evaluated_expression is not None:
+        vectors_df[name] = evaluated_expression
+        return vectors_df[["DATE", "REAL", name]]
+
+    return pd.DataFrame()
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_calculated_units(
     expressions: List[ExpressionInfo],
@@ -308,3 +353,43 @@ def get_calculated_units(
         except ValueError:
             continue
     return calculated_units
+
+
+def add_calculated_vector_to_vector_selector_data(
+    vector_selector_data: list,
+    vector_name: str,
+    description: Optional[str] = None,
+) -> None:
+    """Add calculated vector name and descritpion to vector selector data
+
+    Description is optional, and will be added at last node
+    """
+    description_str = description if description is not None else ""
+    add_vector_to_vector_selector_data(
+        vector_selector_data=vector_selector_data,
+        vector=vector_name,
+        description=description_str,
+        description_at_last_node=True,
+    )
+
+
+def add_expressions_to_vector_selector_data(
+    vector_selector_data: list, expressions: List[ExpressionInfo]
+) -> None:
+    """Add expressions to vector selector data
+
+    Adds calculated vector name into node structure. Adds expression
+    description if existing.
+    """
+    for expression in expressions:
+        if not expression["isValid"]:
+            continue
+
+        name = expression["name"]
+        description = None
+        if "description" in expression.keys():
+            description = expression["description"]
+
+        add_calculated_vector_to_vector_selector_data(
+            vector_selector_data, name, description
+        )
