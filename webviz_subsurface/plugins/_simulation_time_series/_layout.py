@@ -28,6 +28,9 @@ class LayoutElements:
     """
 
     GRAPH = "graph"
+    GRAPH_DATA_HAS_CHANGED_TRIGGER = (
+        "graph_data_has_changed_trigger"  # NOTE: To force re-render of graph
+    )
 
     ENSEMBLES_DROPDOWN = "ensembles_dropdown"
     VECTOR_SELECTOR = "vector_selector"
@@ -39,7 +42,6 @@ class LayoutElements:
     VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL = (
         "vector_calculator_expressions_open_modal"
     )
-    SELECTED_VECTOR_CALCULATOR_EXPRESSIONS = "selected_vector_calculator_expressions"
 
     DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
     DELTA_ENSEMBLE_B_DROPDOWN = "delta_ensemble_B_dropdown"
@@ -97,10 +99,20 @@ def main_layout(
                         style={"height": "90vh"},
                         highlight=False,
                         color="white",
-                        children=wcc.Graph(
-                            style={"height": "85vh"},
-                            id=get_uuid(LayoutElements.GRAPH),
-                        ),
+                        children=[
+                            wcc.Graph(
+                                style={"height": "85vh"},
+                                id=get_uuid(LayoutElements.GRAPH),
+                            ),
+                            dcc.Store(
+                                # NOTE:Used to trigger graph update callback if data has changed, i.e.
+                                # no change of regular INPUT html-elements
+                                id=get_uuid(
+                                    LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                                ),
+                                data=0,
+                            ),
+                        ],
                     )
                 ],
             ),
@@ -237,12 +249,6 @@ def __settings_layout(
             dcc.Store(
                 id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 data=predefined_expressions,
-            ),
-            dcc.Store(
-                # NOTE: Used to trigger graph update when selected expressions are edited. If name
-                # is not edited, the vector selectors does not trigger graph update callback.
-                id=get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
-                data=[],
             ),
             dcc.Store(
                 id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),

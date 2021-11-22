@@ -86,7 +86,7 @@ def plugin_callbacks(
                 "value",
             ),
             Input(
-                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
+                get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
             ),
         ],
@@ -109,9 +109,7 @@ def plugin_callbacks(
         fanchart_option_values: List[str],
         trace_option_values: List[str],
         resampling_frequency_value: str,
-        __selected_expressions_update: List[
-            ExpressionInfo
-        ],  # Only used to trig callback when expressions updates does not affect vectors
+        __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsembleNamePair],
         vector_calculator_expressions: List[ExpressionInfo],
     ) -> dict:
@@ -121,6 +119,10 @@ def plugin_callbacks(
         * Business logic with SelectedProviderSet, ProviderVectorDataHandler and utility functions
         with "strongly typed" and filtered input format
         * Create/build prop serialization in FigureBuilder by use of business logic data
+
+        NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of graphs data
+        has changed and re-render of graph is necessary. E.g. when a selected expression from the VectorCalculator
+        gets edited, without changing the expression name - i.e. VectorSelector selectedNodes remain unchanged.
         """
         if vectors is None:
             vectors = initial_selected_vectors
@@ -408,13 +410,13 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
-            Output(
-                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
-                "data",
-            ),
             Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "data"),
             Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "selectedTags"),
             Output(get_uuid(LayoutElements.VECTOR_SELECTOR), "customVectorDefinitions"),
+            Output(
+                get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
+                "data",
+            ),
         ],
         Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
         [
@@ -426,21 +428,21 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
-            State(
-                get_uuid(LayoutElements.SELECTED_VECTOR_CALCULATOR_EXPRESSIONS),
-                "data",
-            ),
             State(get_uuid(LayoutElements.VECTOR_SELECTOR), "selectedNodes"),
             State(get_uuid(LayoutElements.VECTOR_SELECTOR), "customVectorDefinitions"),
+            State(
+                get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
+                "data",
+            ),
         ],
     )
     def _update_vector_calculator_expressions_on_modal_close(
         is_modal_open: bool,
         new_expressions: List[ExpressionInfo],
         current_expressions: List[ExpressionInfo],
-        current_selected_expressions: List[ExpressionInfo],
         current_selected_vectors: List[str],
         current_custom_vector_definitions: dict,
+        graph_data_has_changed_counter: int,
     ) -> list:
         """Update vector calculator expressions, propagate expressions to VectorSelectors,
         update current selections and trigger re-rendering of graphing if necessary
@@ -448,7 +450,12 @@ def plugin_callbacks(
         if is_modal_open or (new_expressions == current_expressions):
             raise PreventUpdate
 
-        # Deep copy to prevent modifying vector_selector_base_data
+        # Create current selected expressions for comparison - Deep copy!
+        current_selected_expressions = get_selected_expressions(
+            current_expressions, current_selected_vectors
+        )
+
+        # Create new vector selector data - Deep copy!
         new_vector_selector_data = copy.deepcopy(vector_selector_base_data)
         add_expressions_to_vector_selector_data(
             new_vector_selector_data, new_expressions
@@ -479,15 +486,21 @@ def plugin_callbacks(
         if new_selected_vectors == current_selected_vectors:
             new_selected_vectors = dash.no_update
 
-        if new_selected_expressions == current_selected_expressions:
-            new_selected_expressions = dash.no_update
+        # If selected expressions are edited - Only trigger graph data update property when needed,
+        # i.e. names are unchanged and selectedNodes for VectorSelector remains unchanged.
+        new_graph_data_has_changed_counter = dash.no_update
+        if (
+            new_selected_expressions != current_selected_expressions
+            and new_selected_vectors == dash.no_update
+        ):
+            new_graph_data_has_changed_counter = graph_data_has_changed_counter + 1
 
         return [
             new_expressions,
-            new_selected_expressions,
             new_vector_selector_data,
             new_selected_vectors,
             new_custom_vector_definitions,
+            new_graph_data_has_changed_counter,
         ]
 
     @app.callback(
