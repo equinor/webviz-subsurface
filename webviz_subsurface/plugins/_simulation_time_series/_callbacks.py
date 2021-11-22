@@ -30,7 +30,7 @@ from .types import (
 from .utils.trace_line_shape import get_simulation_line_shape
 from .utils.provider_set_utils import (
     create_selected_provider_set,
-    create_vector_plot_title_from_provider_set,
+    create_vector_plot_titles_from_provider_set,
 )
 from .utils.vector_statistics import create_vectors_statistics_df
 from .utils.history_vectors import create_history_vectors_df
@@ -120,9 +120,10 @@ def plugin_callbacks(
         with "strongly typed" and filtered input format
         * Create/build prop serialization in FigureBuilder by use of business logic data
 
-        NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of graphs data
-        has changed and re-render of graph is necessary. E.g. when a selected expression from the VectorCalculator
-        gets edited, without changing the expression name - i.e. VectorSelector selectedNodes remain unchanged.
+        NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
+        graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
+        from the VectorCalculatorgets edited, without changing the expression name - i.e.
+        VectorSelector selectedNodes remain unchanged.
         """
         if vectors is None:
             vectors = initial_selected_vectors
@@ -150,13 +151,9 @@ def plugin_callbacks(
         )
 
         # Titles for subplots
-        # TODO: ADD UNITS FOR CALCULATED VECTORS!
-        vector_titles: Dict[str, str] = {
-            vector: create_vector_plot_title_from_provider_set(
-                selected_provider_set, vector
-            )
-            for vector in vectors
-        }
+        vector_titles = create_vector_plot_titles_from_provider_set(
+            vectors, selected_expressions, selected_provider_set
+        )
 
         # TODO: Create unique colors based on all ensembles, i.e. union of
         # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
