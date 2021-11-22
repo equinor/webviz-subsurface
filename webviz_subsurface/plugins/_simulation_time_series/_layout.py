@@ -43,7 +43,7 @@ class LayoutElements:
 
     DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
     DELTA_ENSEMBLE_B_DROPDOWN = "delta_ensemble_B_dropdown"
-    DELTA_ENSEMBLE_ADD_BUTTON = "delta_ensemble_add_button"
+    DELTA_ENSEMBLE_CREATE_BUTTON = "delta_ensemble_create_button"
     CREATED_DELTA_ENSEMBLES = "created_delta_ensemble_names"
     CREATED_DELTA_ENSEMBLE_NAMES_TABLE = "created_delta_ensemble_names_table"
     CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
@@ -125,7 +125,6 @@ def __settings_layout(
                 label="Resampling frequency",
                 children=[
                     wcc.Dropdown(
-                        label="Selected resampling frequency",
                         id=get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                         clearable=False,
                         disabled=disable_resampling_dropdown,
@@ -285,38 +284,31 @@ def __delta_ensemble_creator_layout(
 ) -> html.Div:
     return html.Div(
         children=[
-            wcc.FlexBox(
-                children=[
-                    wcc.FlexColumn(
-                        min_width="60px",
-                        children=wcc.Dropdown(
-                            label="Ensemble A",
-                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_A_DROPDOWN),
-                            clearable=False,
-                            options=[{"label": i, "value": i} for i in ensembles],
-                            value=ensembles[0],
-                        ),
-                    ),
-                    wcc.FlexColumn(
-                        min_width="60px",
-                        children=wcc.Dropdown(
-                            label="Ensemble B",
-                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_B_DROPDOWN),
-                            clearable=False,
-                            options=[{"label": i, "value": i} for i in ensembles],
-                            value=ensembles[-1],
-                        ),
-                    ),
-                    wcc.FlexColumn(
-                        min_width="20px",
-                        children=html.Button(
-                            "Add",
-                            id=get_uuid(LayoutElements.DELTA_ENSEMBLE_ADD_BUTTON),
-                            n_clicks=0,
-                        ),
-                    ),
-                ],
-                style={"align-items": "flex-end"},
+            wcc.Dropdown(
+                label="Ensemble A",
+                id=get_uuid(LayoutElements.DELTA_ENSEMBLE_A_DROPDOWN),
+                clearable=False,
+                options=[{"label": i, "value": i} for i in ensembles],
+                value=ensembles[0],
+                style={"min-width": "60px"},
+            ),
+            wcc.Dropdown(
+                label="Ensemble B",
+                id=get_uuid(LayoutElements.DELTA_ENSEMBLE_B_DROPDOWN),
+                clearable=False,
+                options=[{"label": i, "value": i} for i in ensembles],
+                value=ensembles[-1],
+                style={"min-width": "60px"},
+            ),
+            html.Button(
+                "Create",
+                id=get_uuid(LayoutElements.DELTA_ENSEMBLE_CREATE_BUTTON),
+                n_clicks=0,
+                style={
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
+                    "min-width": "20px",
+                },
             ),
             __delta_ensemble_table_layout(get_uuid),
             dcc.Store(

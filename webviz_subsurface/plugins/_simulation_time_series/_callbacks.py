@@ -7,11 +7,11 @@ from dash.dependencies import Input, Output, State
 import pandas as pd
 
 import webviz_subsurface_components as wsc
+from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
 
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
 from ._layout import LayoutElements
 from ._property_serialization import GraphFigureBuilder
@@ -325,7 +325,7 @@ def plugin_callbacks(
         ],
         [
             Input(
-                get_uuid(LayoutElements.DELTA_ENSEMBLE_ADD_BUTTON),
+                get_uuid(LayoutElements.DELTA_ENSEMBLE_CREATE_BUTTON),
                 "n_clicks",
             )
         ],
