@@ -166,6 +166,17 @@ def plugin_callbacks(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
+        if df.empty:
+            return [
+                wcc.Graph(
+                    figure={
+                        "layout": {
+                            "title": "No data matching the given filter criterias"
+                        }
+                    }
+                )
+            ]
+
         return update_misfit_plot(df, datamodel.enscolors)
 
     @app.callback(
@@ -191,6 +202,16 @@ def plugin_callbacks(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
+        if df.empty:
+            return [
+                wcc.Graph(
+                    figure={
+                        "layout": {
+                            "title": "No data matching the given filter criterias"
+                        }
+                    }
+                )
+            ]
         return update_crossplot(df, sizeby, colorby)
 
     @app.callback(
@@ -209,4 +230,6 @@ def plugin_callbacks(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
+        if df.empty:
+            return {"layout": {"title": "No data matching the given filter criterias"}}
         return update_errorplot(df, datamodel.enscolors)
