@@ -64,6 +64,10 @@ def plugin_callbacks(
     def _update_formation_plot(
         well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
     ) -> Dict[str, Any]:
+
+        if not ensembles:
+            return {"layout": {"title": "No ensembles selected"}}
+
         if date not in datamodel.date_in_well(well):
             raise PreventUpdate
 
