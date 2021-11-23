@@ -1,14 +1,9 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
-import pandas as pd
 import webviz_core_components as wcc
 from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
-
-from webviz_subsurface._datainput.fmu_input import load_csv
 
 from ._business_logic import RftPlotterDataModel
 from ._callbacks import plugin_callbacks
@@ -105,107 +100,21 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         faultlines: Path = None,
     ) -> None:
         super().__init__()
-        self.formations = formations
-        self.faultlines = faultlines
-        self.obsdata = obsdata
-        self.csvfile_rft = csvfile_rft
-        self.csvfile_rft_ert = csvfile_rft_ert
-
-        self.simdf = read_csv(self.csvfile_rft) if csvfile_rft is not None else None
-        self.formationdf = read_csv(self.formations) if self.formations else None
-        self.faultlinesdf = read_csv(self.faultlines) if self.faultlines else None
-        self.obsdatadf = read_csv(self.obsdata) if self.obsdata else None
-
-        if csvfile_rft_ert and ensembles:
-            raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_rft_ert" or "ensembles"'
-            )
-
-        if csvfile_rft_ert is not None:
-            self.ertdatadf = read_csv(self.csvfile_rft_ert)
-
-        if ensembles:
-            self.ens_paths = (
-                {
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                }
-                if ensembles is not None
-                else None
-            )
-
-            try:
-                self.simdf = load_csv(self.ens_paths, "share/results/tables/rft.csv")
-            except (KeyError, OSError):
-                self.simdf = None
-
-            try:
-                self.ertdatadf = load_csv(
-                    self.ens_paths, "share/results/tables/rft_ert.csv"
-                )
-            except KeyError as exc:
-                raise KeyError(
-                    "CSV file for ERT RFT observations/simulations "
-                    "(share/results/tables/rft_ert.csv) not found!"
-                ) from exc
 
         self._datamodel = RftPlotterDataModel(
-            self.formations,
-            self.ertdatadf,
-            self.simdf,
-            self.formationdf,
-            self.faultlinesdf,
-            self.obsdatadf,
+            webviz_settings,
+            ensembles,
+            formations,
+            faultlines,
+            obsdata,
+            csvfile_rft,
+            csvfile_rft_ert,
         )
 
         self.set_callbacks(app)
 
-    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
-        functions: List[Tuple[Callable, List[Dict[str, Any]]]] = [
-            (
-                read_csv,
-                [
-                    {"csv_file": path}
-                    for path in [
-                        self.faultlines,
-                        self.formations,
-                        self.obsdata,
-                        self.csvfile_rft,
-                        self.csvfile_rft_ert,
-                    ]
-                    if path is not None
-                ],
-            )
-        ]
-        if self.csvfile_rft_ert is None:
-            functions.append(
-                (
-                    load_csv,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "csv_file": "share/results/tables/rft_ert.csv",
-                        },
-                    ],
-                )
-            )
-            try:
-                load_csv(self.ens_paths, "share/results/tables/rft.csv")
-                functions.append(
-                    (
-                        load_csv,
-                        [
-                            {
-                                "ensemble_paths": self.ens_paths,
-                                "csv_file": "share/results/tables/rft.csv",
-                            },
-                        ],
-                    )
-                )
-            except KeyError:
-                pass
-
-        return functions
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return self._datamodel.webviz_store
 
     @property
     def layout(self) -> wcc.Tabs:
@@ -213,9 +122,3 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def set_callbacks(self, app: Dash) -> None:
         plugin_callbacks(app, self.uuid, self._datamodel)
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def read_csv(csv_file: str) -> pd.DataFrame:
-    return pd.read_csv(csv_file)
