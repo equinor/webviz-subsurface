@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Added
+- [#721](https://github.com/equinor/webviz-subsurface/pull/721) - Added data provider for reading ensemble summary data through a unified interface, supporting optional lazy resampling/interpolation depending on data input format.
 - [#845](https://github.com/equinor/webviz-subsurface/pull/845) - Added realization plot colored by sensitivity to tornado tab in `VolumetricAnalysis`. 
 
 ### Changed
