@@ -52,7 +52,7 @@ def plugin_callbacks(
         return {"data": figure.traces, "layout": figure.layout}
 
     @app.callback(
-        Output(get_uuid("graph"), "figure"),
+        Output(get_uuid("formations-graph-wrapper"), "children"),
         [
             Input(get_uuid("well"), "value"),
             Input(get_uuid("date"), "value"),
@@ -63,10 +63,10 @@ def plugin_callbacks(
     )
     def _update_formation_plot(
         well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
-    ) -> Dict[str, Any]:
+    ) -> Union[str, List[wcc.Graph]]:
 
         if not ensembles:
-            return {"layout": {"title": "No ensembles selected"}}
+            return "No ensembles selected"
 
         if date not in datamodel.date_in_well(well):
             raise PreventUpdate
@@ -89,10 +89,7 @@ def plugin_callbacks(
         figure.add_additional_observations()
         figure.add_ert_observed()
 
-        return {
-            "data": figure.traces,
-            "layout": figure.layout,
-        }
+        return [wcc.Graph(figure={"data": figure.traces, "layout": figure.layout})]
 
     @app.callback(
         Output(get_uuid("linetype"), "options"),
@@ -161,21 +158,13 @@ def plugin_callbacks(
     )
     def _misfit_plot(
         wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
-    ) -> List[wcc.Graph]:
+    ) -> Union[str, List[wcc.Graph]]:
         df = filter_frame(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
         if df.empty:
-            return [
-                wcc.Graph(
-                    figure={
-                        "layout": {
-                            "title": "No data matching the given filter criterias"
-                        }
-                    }
-                )
-            ]
+            return "No data matching the given filter criterias"
 
         return update_misfit_plot(df, datamodel.enscolors)
 
@@ -197,25 +186,17 @@ def plugin_callbacks(
         ensembles: List[str],
         sizeby: str,
         colorby: str,
-    ) -> List[wcc.Graph]:
+    ) -> Union[str, List[wcc.Graph]]:
         df = filter_frame(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
         if df.empty:
-            return [
-                wcc.Graph(
-                    figure={
-                        "layout": {
-                            "title": "No data matching the given filter criterias"
-                        }
-                    }
-                )
-            ]
+            return "No data matching the given filter criterias"
         return update_crossplot(df, sizeby, colorby)
 
     @app.callback(
-        Output(get_uuid("errorplot-graph"), "figure"),
+        Output(get_uuid("errorplot-graph-wrapper"), "children"),
         [
             Input(get_uuid("well-errorplot"), "value"),
             Input(get_uuid("zone-errorplot"), "value"),
@@ -225,11 +206,11 @@ def plugin_callbacks(
     )
     def _errorplot(
         wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
-    ) -> Dict[str, Union[list, dict]]:
+    ) -> Union[str, List[wcc.Graph]]:
         df = filter_frame(
             datamodel.ertdatadf,
             {"WELL": wells, "ZONE": zones, "DATE": dates, "ENSEMBLE": ensembles},
         )
         if df.empty:
-            return {"layout": {"title": "No data matching the given filter criterias"}}
-        return update_errorplot(df, datamodel.enscolors)
+            return "No data matching the given filter criterias"
+        return [update_errorplot(df, datamodel.enscolors)]

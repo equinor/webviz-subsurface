@@ -48,7 +48,6 @@ class MapFigure:
                     "cmax": self.ertdf[colorby].quantile(0.9),
                     "colorscale": [[0, "#2584DE"], [1, "#E50000"]],
                     "showscale": True,
-                    "colorbar": {"x": -0.1},
                 },
             }
         )

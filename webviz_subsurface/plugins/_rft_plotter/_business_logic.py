@@ -44,15 +44,11 @@ class RftPlotterDataModel:
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
 
-        if ensembles:
-            self.ens_paths = (
-                {
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                }
-                if ensembles is not None
-                else None
-            )
+        if ensembles is not None:
+            self.ens_paths = {
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
 
             try:
                 self.simdf = load_csv(self.ens_paths, "share/results/tables/rft.csv")

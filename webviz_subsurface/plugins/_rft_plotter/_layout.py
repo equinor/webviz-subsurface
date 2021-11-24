@@ -33,17 +33,8 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
                                 style={"flex": 3, "height": "87vh"},
                                 color="white",
                                 highlight=False,
-                                children=wcc.Graph(
-                                    id=get_uuid("graph"),
-                                    figure={
-                                        "layout": {
-                                            "height": 800,
-                                            "margin": {"t": 50},
-                                            "xaxis": {"showgrid": False},
-                                            "yaxis": {"showgrid": False},
-                                        }
-                                    },
-                                ),
+                                id=get_uuid("formations-graph-wrapper"),
+                                children=[],
                             ),
                         ]
                     )
@@ -110,10 +101,12 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
                                 color="white",
                                 highlight=False,
                                 style={"flex": 6, "height": "87vh"},
-                                children=wcc.Graph(
-                                    style={"height": "84vh"},
-                                    id=get_uuid("errorplot-graph"),
-                                ),
+                                id=get_uuid("errorplot-graph-wrapper"),
+                                children=[]
+                                # children=wcc.Graph(
+                                #     style={"height": "84vh"},
+                                #     id=get_uuid("errorplot-graph"),
+                                # ),
                             ),
                         ],
                     ),
