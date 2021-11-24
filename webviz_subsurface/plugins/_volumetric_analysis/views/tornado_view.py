@@ -21,16 +21,16 @@ def tornado_main_layout(uuid: str) -> html.Div:
     )
 
 
-def tornado_plots_layout(figures: list, table: list) -> html.Div:
+def tornado_plots_layout(figures: list, bottom_display: list) -> html.Div:
     matrix = create_figure_matrix(figures)
-    max_height = 42 if table else 88
+    max_height = 42 if bottom_display else 88
 
     return html.Div(
         children=[
             wcc.Frame(
                 color="white",
                 highlight=False,
-                style={"height": "44vh" if table else "91vh"},
+                style={"height": "44vh" if bottom_display else "91vh"},
                 children=[
                     wcc.FlexBox(
                         children=[
@@ -53,8 +53,11 @@ def tornado_plots_layout(figures: list, table: list) -> html.Div:
             wcc.Frame(
                 color="white",
                 highlight=False,
-                style={"height": "44vh", "display": "block" if table else "none"},
-                children=html.Div(style={"margin-top": "20px"}, children=table),
+                style={
+                    "height": "44vh",
+                    "display": "block" if bottom_display else "none",
+                },
+                children=html.Div(bottom_display, style={"margin-top": "20px"}),
             ),
         ]
     )
@@ -120,6 +123,7 @@ def button(uuid: str, title: str, page_id: str) -> html.Button:
 def tornado_controls_layout(
     uuid: str, tab: str, volumemodel: InplaceVolumesModel
 ) -> wcc.Selectors:
+    sens_columns = ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE", "SENSNAME_CASE"]
     return [
         wcc.Dropdown(
             label="Response",
@@ -146,16 +150,22 @@ def tornado_controls_layout(
                 for i in [
                     x
                     for x in volumemodel.selectors
-                    if x not in ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE"]
+                    if x not in sens_columns and volumemodel.dataframe[x].nunique() > 1
                 ]
             ],
         ),
         html.Div(
             style={"margin-top": "10px"},
-            children=wcc.Checklist(
-                id={"id": uuid, "tab": tab, "selector": "tornado_table"},
-                options=[{"label": "Show tornado table", "value": "selected"}],
-                value=["selected"],
+            children=wcc.RadioItems(
+                label="Visualization below tornado:",
+                id={"id": uuid, "tab": tab, "selector": "bottom_viz"},
+                options=[
+                    {"label": "Table", "value": "table"},
+                    {"label": "Realization plot", "value": "realplot"},
+                    {"label": "None", "value": "none"},
+                ],
+                vertical=False,
+                value="table",
             ),
         ),
     ]
@@ -174,6 +184,7 @@ def checkboxes_settings(uuid: str, tab: str) -> html.Div:
                 ("Color by sensitivity", "color_by_sens", True),
                 ("Shared subplot X axis", "Shared axis", False),
                 ("Show realization points", "real_scatter", False),
+                ("Show reference on tornado", "torn_ref", True),
                 ("Remove sensitivities with no impact", "Remove no impact", True),
             ]
         ],
