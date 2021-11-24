@@ -106,10 +106,11 @@ class ParametersModel:
         if "SENSNAME" not in self._dataframe:
             return False
 
-        if self.dataframe["SENSNAME"].isnull().values.any():
-            raise ValueError(
-                "Ensembles with and without sensitivity data mixed - this is not supported!"
-            )
+        # if mix of gen_kw and sensitivity ensembles add
+        # dummy sensitivvity columns to gen_kw ensembles
+        gen_kw_mask = self._dataframe["SENSNAME"].isnull()
+        self._dataframe.loc[gen_kw_mask, "SENSNAME"] = "🎲"
+        self._dataframe.loc[gen_kw_mask, "SENSCASE"] = "p10_p90"
 
         # set senstype from senscase
         mc_mask = self._dataframe["SENSCASE"] == "p10_p90"
