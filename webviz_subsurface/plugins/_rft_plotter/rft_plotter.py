@@ -37,21 +37,21 @@ In addition, you need to have rft-files in your realizations stored at the local
 * **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations \
 defined in ERT \
 [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-reek_history_match/realization-0/iter-0/share/results/tables/rft_ert.csv).
+01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
 * **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files \
 using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
 [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-reek_history_match/realization-0/iter-0/share/results/tables/rft.csv). \
+01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). \
 Simulated RFT data can be visualized along MD if a "CONMD" column is present in \
 the dataframe and only for wells where each RFT datapoint has a unique MD.
 
 **Using aggregated data**
 
 * **`csvfile_rft`**: Aggregated version of `rft.csv` [(example file)](\
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv).
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/rft.csv).
 * **`csvfile_rft_ert`**: Aggregated version of `rft_ert.csv` [(example file)](\
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv).
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/rft_ert.csv).
 
 
 **Optional input for both input options**
@@ -63,17 +63,16 @@ Mandatory column names: `WELL`, `DATE` (yyyy-mm-dd), `DEPTH` and `PRESSURE`
 * **`formations`**: A csv file containing top and base values for each zone per well.
 Used to visualize zone boundaries together with simulated RFT.
 Mandatory column names: `WELL`, `ZONE`, `TOP_TVD`, `BASE_TVD` \
-[(example file))](\
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-reek_history_match/share/results/tables/formations.csv).
+[(example file))](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
+01_drogon_ahm/realization-0/iter-0/share/results/tables/formations.csv).
 
 * **`faultlines`**: A csv file containing faultpolygons to be visualized together with the map view.
 Export format from [xtgeo.xyz.polygons.dataframe](
 https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe
 ) \
 [(example file)](\
-https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
-reek_history_match/share/results/polygons/faultpolygons.csv).
+https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/\
+realization-0/iter-0/share/results/polygons/toptherys--gl_faultlines_extract_postprocess.csv).
 
 ---
 ?> Well name needs to be consistent with Eclipse well name.
