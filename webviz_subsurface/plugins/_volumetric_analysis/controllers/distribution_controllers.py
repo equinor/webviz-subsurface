@@ -23,7 +23,7 @@ from ..utils.table_and_figure_utils import (
 from ..utils.utils import move_to_end_of_list, update_relevant_components
 
 
-# pylint: disable=too-many-statements, too-many-branches
+# pylint: disable=too-many-statements
 def distribution_controllers(
     get_uuid: Callable, volumemodel: InplaceVolumesModel
 ) -> None:
@@ -58,26 +58,18 @@ def distribution_controllers(
         if not selections["update"]:
             raise PreventUpdate
 
+        selected_data = [
+            selections[x]
+            for x in ["Subplots", "Color by", "X Response", "Y Response"]
+            if selections[x] is not None
+        ]
         groups = ["REAL"]
         parameters = []
-        responses = []
-        for item in ["Subplots", "Color by", "X Response", "Y Response"]:
-            if selections[item] is not None:
-                if (
-                    selections[item] in volumemodel.selectors
-                    and selections[item] not in groups
-                ):
-                    groups.append(selections[item])
-                if (
-                    selections[item] in volumemodel.parameters
-                    and selections[item] not in parameters
-                ):
-                    parameters.append(selections[item])
-                if (
-                    item in ["X Response", "Y Response"]
-                    and selections[item] not in responses
-                ):
-                    responses.append(selections[item])
+        for item in selected_data:
+            if item in volumemodel.selectors and item not in groups:
+                groups.append(item)
+            if item in volumemodel.parameters and item not in parameters:
+                parameters.append(item)
 
         dframe = volumemodel.get_df(
             filters=selections["filters"], groups=groups, parameters=parameters
@@ -86,7 +78,9 @@ def distribution_controllers(
         if not (plot_table_select == "table" and page_selected == "custom"):
             df_for_figure = (
                 dframe
-                if not (selections["Plot type"] == "bar" and groups != ["REAL"])
+                if not (
+                    selections["Plot type"] == "bar" and not "REAL" in selected_data
+                )
                 else dframe.groupby([x for x in groups if x != "REAL"])
                 .mean()
                 .reset_index()
@@ -102,6 +96,7 @@ def distribution_controllers(
                 color_discrete_sequence=selections["Colorscale"],
                 color_continuous_scale=selections["Colorscale"],
                 barmode=selections["barmode"],
+                boxmode=selections["barmode"],
                 layout=dict(
                     title=dict(
                         text=(
@@ -138,7 +133,7 @@ def distribution_controllers(
         if not (plot_table_select == "graph" and page_selected == "custom"):
             table_wrapper_children = make_table_wrapper_children(
                 dframe=dframe,
-                responses=responses,
+                responses=list({selections["X Response"], selections["Y Response"]}),
                 groups=groups,
                 volumemodel=volumemodel,
                 page_selected=page_selected,
@@ -373,6 +368,7 @@ def make_table_wrapper_children(
     if table_type == "Statistics table":
         statcols = ["Mean", "Stddev", "P90", "P10", "Minimum", "Maximum"]
         groups = [x for x in groups if x != "REAL"]
+        responses = [x for x in responses if x != "REAL" and x is not None]
         df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
 
         data_properties = []

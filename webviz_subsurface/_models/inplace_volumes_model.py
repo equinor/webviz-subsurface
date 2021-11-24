@@ -22,6 +22,7 @@ class InplaceVolumesModel:
         "REGION",
         "FACIES",
         "LICENSE",
+        "SENSNAME_CASE",
         "SENSNAME",
         "SENSCASE",
         "SENSTYPE",
