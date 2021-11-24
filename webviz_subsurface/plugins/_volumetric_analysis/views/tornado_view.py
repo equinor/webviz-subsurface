@@ -120,6 +120,7 @@ def button(uuid: str, title: str, page_id: str) -> html.Button:
 def tornado_controls_layout(
     uuid: str, tab: str, volumemodel: InplaceVolumesModel
 ) -> wcc.Selectors:
+    sens_columns = ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE", "SENSNAME_CASE"]
     return [
         wcc.Dropdown(
             label="Response",
@@ -143,11 +144,7 @@ def tornado_controls_layout(
             clearable=True,
             options=[
                 {"label": i, "value": i}
-                for i in [
-                    x
-                    for x in volumemodel.selectors
-                    if x not in ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE"]
-                ]
+                for i in [x for x in volumemodel.selectors if x not in sens_columns]
             ],
         ),
         html.Div(

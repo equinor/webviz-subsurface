@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.7] - 2021-11-08
 
 ### Added
+- [#851](https://github.com/equinor/webviz-subsurface/pull/851) - Added new column 'SENSNAME_CASE' for improved plotting and filtering of sensitivity ensembles.
 - [#825](https://github.com/equinor/webviz-subsurface/pull/825) - Added options to create separate tornado's for e.g Region/Zone in `VolumetricAnalysis`. As well as various improvements to the tornado figure.
 - [#734](https://github.com/equinor/webviz-subsurface/pull/645) - New plugin, `SeismicMisfit`, for comparing observed and modelled seismic attributes. Multiple views, including misfit quantification and coverage plots.
 - [#809](https://github.com/equinor/webviz-subsurface/pull/809) - `GroupTree` - added more statistical options (P10, P90, P50/Median, Max, Min). Some improvements to the menu layout and behaviour
