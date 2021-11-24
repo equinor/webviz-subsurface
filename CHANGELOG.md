@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+- [#721](https://github.com/equinor/webviz-subsurface/pull/721) - Added data provider for reading ensemble summary data through a unified interface, supporting optional lazy resampling/interpolation depending on data input format.
+
 ### Changed
 - [#844](https://github.com/equinor/webviz-subsurface/pull/844) - `SeismicMisfit` improvements. Data ranges now follows selected attribute. User defined zooms are now kept during callbacks. New option in slice plot to show individual realizations. Prettyfied all hoverdata. New colorscales. Polygons sorted by name in drop down selector.
 
