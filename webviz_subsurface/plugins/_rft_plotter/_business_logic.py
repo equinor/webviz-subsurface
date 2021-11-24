@@ -137,7 +137,7 @@ class RftPlotterDataModel:
         idx_steps = np.linspace(
             start=0,
             stop=self.ertdatadf["DATE_IDX"].max(),
-            num=min(5, len(self.ertdatadf["DATE_IDX"].unique())),
+            num=min(4, len(self.ertdatadf["DATE_IDX"].unique())),
             dtype=int,
         )
         date_steps = self.ertdatadf.loc[self.ertdatadf["DATE_IDX"].isin(idx_steps)][
