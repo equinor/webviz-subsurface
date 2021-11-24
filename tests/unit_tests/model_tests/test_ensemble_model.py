@@ -44,7 +44,7 @@ def test_smry_load(testdata_folder):
     )
     smry = emodel.load_smry()
     assert len(smry.columns) == 933
-    assert len(smry["DATE"].unique()) == 2368
+    assert len(smry["DATE"].unique()) == 2369
 
 
 @pytest.mark.usefixtures("app")

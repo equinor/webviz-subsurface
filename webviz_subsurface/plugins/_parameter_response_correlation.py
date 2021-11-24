@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, dcc
+from dash import Input, Output, dcc, html
 from plotly.subplots import make_subplots
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -11,8 +11,10 @@ from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface._utils.parameter_response as parresp
 from webviz_subsurface._datainput.fmu_input import load_csv, load_parameters
+from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import (
     EnsembleSetModel,
+    ParametersModel,
     caching_ensemble_set_model_factory,
 )
 
@@ -116,7 +118,7 @@ individual realizations. You should therefore not have more than one `UNSMRY` fi
 folder, to avoid risk of not extracting the right data.
 """
 
-    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-arguments, too-many-locals
     def __init__(
         self,
         app,
@@ -155,7 +157,7 @@ folder, to avoid risk of not extracting the right data.
                     'Incorrect arguments. Either provide "csv files" or '
                     '"ensembles and response_file".'
                 )
-            self.parameterdf = read_csv(self.parameter_csv)
+            parameterdf = read_csv(self.parameter_csv)
             self.responsedf = read_csv(self.response_csv)
 
         elif ensembles:
@@ -163,7 +165,7 @@ folder, to avoid risk of not extracting the right data.
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            self.parameterdf = load_parameters(
+            parameterdf = load_parameters(
                 ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
             )
             if self.response_file:
@@ -186,6 +188,11 @@ folder, to avoid risk of not extracting the right data.
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
             )
+        pmodel = ParametersModel(
+            dataframe=parameterdf, keep_numeric_only=True, drop_constants=True
+        )
+        self.parameterdf = pmodel.dataframe
+        self.parameter_columns = pmodel.parameters
         parresp.check_runs(self.parameterdf, self.responsedf)
         parresp.check_response_filters(self.responsedf, self.response_filters)
 
@@ -196,9 +203,6 @@ folder, to avoid risk of not extracting the right data.
             column_include=response_include,
             filter_columns=self.response_filters.keys(),
         )
-
-        # Only select numerical parameters
-        self.parameter_columns = parresp.filter_numerical_columns(df=self.parameterdf)
 
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
@@ -282,6 +286,7 @@ folder, to avoid risk of not extracting the right data.
     @property
     def control_layout(self):
         """Layout to select e.g. iteration and response"""
+        max_params = len(self.parameter_columns)
         return [
             wcc.Dropdown(
                 label="Ensemble",
@@ -296,6 +301,17 @@ folder, to avoid risk of not extracting the right data.
                 options=[{"label": ens, "value": ens} for ens in self.response_columns],
                 clearable=False,
                 value=self.response_columns[0],
+            ),
+            html.Div(
+                wcc.Slider(
+                    label="Max number of parameters",
+                    id=self.uuid("max-params"),
+                    min=1,
+                    max=max_params,
+                    marks={"1": 1, str(max_params): max_params},
+                    value=max_params,
+                ),
+                style={"margin-top": "10px"},
             ),
         ]
 
@@ -357,6 +373,7 @@ folder, to avoid risk of not extracting the right data.
         callbacks = [
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
+            Input(self.uuid("max-params"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -385,7 +402,7 @@ folder, to avoid risk of not extracting the right data.
             ],
             self.correlation_input_callbacks,
         )
-        def _update_correlation_graph(ensemble, response, *filters):
+        def _update_correlation_graph(ensemble, response, max_parameters, *filters):
             """Callback to update correlation graph
 
             1. Filters and aggregates response dataframe per realization
@@ -412,7 +429,10 @@ folder, to avoid risk of not extracting the right data.
             corrdf = correlate(df, response=response, method=self.corr_method)
             try:
                 corr_response = (
-                    corrdf[response].dropna().drop(["REAL", response], axis=0)
+                    corrdf[response]
+                    .dropna()
+                    .drop(["REAL", response], axis=0)
+                    .tail(n=max_parameters)
                 )
 
                 return (
@@ -463,11 +483,7 @@ folder, to avoid risk of not extracting the right data.
                 filteroptions=filteroptions,
                 aggregation=self.aggregation,
             )
-            parameterdf = (
-                self.parameterdf.loc[  # PyCQA/pylint#4577 # pylint: disable=no-member
-                    self.parameterdf["ENSEMBLE"] == ensemble
-                ]
-            )
+            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
                 ["REAL", parameter, response]
             ]
@@ -539,10 +555,11 @@ def correlate(inputdf, response, method="pearson"):
 
 def make_correlation_plot(series, response, theme, corr_method):
     """Make Plotly trace for correlation plot"""
+    xaxis_range = max(abs(series.values)) * 1.1
     layout = {
         "barmode": "relative",
         "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
-        "xaxis": {"range": [-1, 1]},
+        "xaxis": {"range": [-xaxis_range, xaxis_range]},
         "title": f"Correlations ({corr_method}) between {response} and input parameters",
     }
     layout = theme.create_themed_layout(layout)
@@ -559,7 +576,6 @@ def make_distribution_plot(df, parameter, response, theme):
     """Make plotly traces for scatterplot and histograms for selected
     response and input parameter"""
 
-    real_text = [f"Realization:{r}" for r in df["REAL"]]
     fig = make_subplots(
         rows=4,
         cols=2,
@@ -570,18 +586,19 @@ def make_distribution_plot(df, parameter, response, theme):
             [None, None],
         ],
     )
-    fig.add_trace(
-        {
-            "type": "scatter",
-            "showlegend": False,
-            "mode": "markers",
-            "x": df[parameter],
-            "y": df[response],
-            "text": real_text,
-        },
-        1,
-        1,
-    )
+    scatter_trace, trendline = create_figure(
+        plot_type="scatter",
+        data_frame=df,
+        x=parameter,
+        y=response,
+        trendline="ols",
+        hover_data={"REAL": True},
+        color_discrete_sequence=["SteelBlue"],
+        marker={"size": 20, "opacity": 0.7},
+    ).data
+
+    fig.add_trace(scatter_trace, 1, 1)
+    fig.add_trace(trendline, 1, 1)
     fig.add_trace(
         {
             "type": "histogram",
