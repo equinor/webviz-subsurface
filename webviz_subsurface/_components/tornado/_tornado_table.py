@@ -1,4 +1,6 @@
-from typing import Dict, List
+from typing import Dict, List, Union
+
+from dash.dash_table.Format import Format
 
 from ._tornado_data import TornadoData
 
@@ -9,10 +11,13 @@ class TornadoTable:
     def __init__(
         self,
         tornado_data: TornadoData,
+        use_si_format: bool = True,
+        precision: int = 4,
     ) -> None:
         self._table = tornado_data.tornadotable.copy()
         self.scale = tornado_data.scale
-
+        self._use_si_format = use_si_format
+        self._precision = precision
         self._table["low_reals"] = self._table["low_reals"].apply(lambda x: str(len(x)))
         self._table["high_reals"] = self._table["high_reals"].apply(
             lambda x: str(len(x))
@@ -31,6 +36,16 @@ class TornadoTable:
             inplace=True,
         )
 
+    def set_column_format(self, col: str) -> Union[dict, Format]:
+        if "%" in col:
+            return {"specifier": ".1f"}
+        if self._use_si_format:
+            return {
+                "locale": {"symbol": ["", ""]},
+                "specifier": f"$.{self._precision}s",
+            }
+        return Format(precision=self._precision)
+
     @property
     def columns(self) -> List[Dict]:
         return [
@@ -38,14 +53,7 @@ class TornadoTable:
                 "name": col,
                 "id": col,
                 "type": "numeric",
-                "format": {
-                    "locale": {"symbol": ["", ""]},
-                    "specifier": "$.4s",
-                }
-                if not "%" in col
-                else {
-                    "specifier": ".1f",
-                },
+                "format": self.set_column_format(col),
             }
             for col in [
                 "Response",

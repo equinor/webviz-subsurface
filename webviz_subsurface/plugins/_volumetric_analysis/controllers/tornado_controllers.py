@@ -2,6 +2,7 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import pandas as pd
 import plotly.graph_objects as go
+import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
@@ -9,14 +10,19 @@ from webviz_config import WebvizConfigTheme
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
+from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import InplaceVolumesModel
 
-from ..utils.table_and_figure_utils import create_data_table, create_table_columns
+from ..utils.table_and_figure_utils import (
+    create_data_table,
+    create_table_columns,
+    update_tornado_figures_xaxis,
+)
 from ..utils.utils import update_relevant_components
 from ..views.tornado_view import tornado_error_layout, tornado_plots_layout
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, too-many-statements
 def tornado_controllers(
     get_uuid: Callable, volumemodel: InplaceVolumesModel, theme: WebvizConfigTheme
 ) -> None:
@@ -68,37 +74,65 @@ def tornado_controllers(
                 )
                 for group, df in df_groups:
                     if selections["Reference"] in df["SENSNAME"].unique():
-                        figure, table, columns = tornado_figure_and_table(
-                            df=df,
+                        tornado_data = TornadoData(
+                            dframe=df,
+                            reference=selections["Reference"],
+                            response_name=response,
+                            scale=selections["Scale"],
+                            cutbyref=bool(selections["Remove no impact"]),
+                        )
+                        figure, table_data, columns = tornado_figure_and_table(
+                            tornado_data=tornado_data,
                             response=response,
                             selections=selections,
                             theme=theme,
                             sensitivity_colors=sens_colors(),
                             font_size=max((20 - (0.4 * len(df_groups))), 10),
                             group=group,
+                            use_si_format=response in volumemodel.volume_columns,
                         )
                         figures.append(figure)
-                        if selections["tornado_table"]:
-                            tables.append(table)
+                        tables.append(table_data)
+
+                        if (
+                            response == selections["Response"]
+                            and selections["bottom_viz"] == "realplot"
+                            and not subplots
+                        ):
+                            realplot = create_realplot(
+                                df=tornado_data.real_df,
+                                sensitivity_colors=sens_colors(),
+                            )
 
         if selections["Shared axis"] and selections["Scale"] != "True":
-            x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
-            for fig in figures:
-                fig.update_layout(xaxis_range=[-x_absmax, x_absmax])
+            update_tornado_figures_xaxis(figures)
+
+        bottom_display: list = []
+        if selections["bottom_viz"] == "table" and figures:
+            bottom_display = create_data_table(
+                columns=columns,
+                selectors=[selections["Subplots"]] if subplots else [],
+                data=[x for table in tables for x in table],
+                height="41vh",
+                table_id={"table_id": f"{page_selected}-torntable"},
+            )
+        elif selections["bottom_viz"] == "realplot" and figures:
+            bottom_display = [
+                wcc.Graph(
+                    config={"displayModeBar": False},
+                    style={"height": "41vh"},
+                    figure=realplot,
+                )
+                if not subplots
+                else "Realization plot not available when `Subplots` is active"
+            ]
 
         return update_relevant_components(
             id_list=id_list,
             update_info=[
                 {
                     "new_value": tornado_plots_layout(
-                        figures=figures,
-                        table=create_data_table(
-                            columns=columns,
-                            selectors=[selections["Subplots"]] if subplots else [],
-                            data=[x for table in tables for x in table],
-                            height="42vh",
-                            table_id={"table_id": f"{page_selected}-torntable"},
-                        ),
+                        figures=figures, bottom_display=bottom_display
                     )
                     if figures
                     else tornado_error_layout(
@@ -172,7 +206,7 @@ def tornado_controllers(
                 "value": selections["Response"],
             }
 
-        settings["tornado_table"] = {"value": selections["tornado_table"]}
+        settings["bottom_viz"] = {"value": selections["bottom_viz"]}
 
         disable_subplots = selected_page != "torn_multi"
         settings["Subplots"] = {
@@ -215,32 +249,25 @@ def tornado_controllers(
 
 
 def tornado_figure_and_table(
-    df: pd.DataFrame,
+    tornado_data: TornadoData,
     response: str,
     selections: dict,
     theme: WebvizConfigTheme,
     sensitivity_colors: dict,
     font_size: float,
+    use_si_format: bool,
     group: Optional[str] = None,
 ) -> Tuple[go.Figure, List[dict], List[dict]]:
 
-    tornado_data = TornadoData(
-        dframe=df,
-        reference=selections["Reference"],
-        response_name=response,
-        scale=selections["Scale"],
-        cutbyref=bool(selections["Remove no impact"]),
-    )
     figure = TornadoBarChart(
         tornado_data=tornado_data,
         plotly_theme=theme.plotly_theme,
         label_options=selections["labeloptions"],
         number_format="#.3g",
+        locked_si_prefix=None if use_si_format else "",
         use_true_base=selections["Scale"] == "True",
         show_realization_points=bool(selections["real_scatter"]),
-        show_reference=not (
-            selections["Subplots"] is not None and selections["tornado_table"]
-        ),
+        show_reference=selections["torn_ref"],
         color_by_sensitivity=selections["color_by_sens"],
         sensitivity_color_map=sensitivity_colors,
     ).figure
@@ -255,15 +282,59 @@ def tornado_figure_and_table(
     )
 
     table_data, columns = create_tornado_table(
-        tornado_data, subplots=selections["Subplots"], group=group
+        tornado_data,
+        subplots=selections["Subplots"],
+        group=group,
+        use_si_format=use_si_format,
     )
     return figure, table_data, columns
 
 
+def create_realplot(df: pd.DataFrame, sensitivity_colors: dict) -> go.Figure:
+    senscasecolors = {
+        senscase: sensitivity_colors[sensname]
+        for senscase, sensname in zip(df["sensname_case"], df["sensname"])
+    }
+
+    return (
+        create_figure(
+            plot_type="bar",
+            data_frame=df,
+            x="REAL",
+            y="VALUE",
+            color="sensname_case",
+            color_discrete_map=senscasecolors,
+            barmode="overlay",
+            hover_data={"casetype": True},
+            yaxis={"range": [df["VALUE"].min() * 0.7, df["VALUE"].max() * 1.1]},
+            opacity=0.85,
+        )
+        .update_layout(legend={"orientation": "h", "yanchor": "bottom", "y": 1.02})
+        .update_layout(legend_title_text="")
+        .for_each_trace(
+            lambda t: (
+                t.update(marker_line_color="black")
+                if t["customdata"][0][0] == "high"
+                else t.update(marker_line_color="white", marker_line_width=2)
+            )
+            if t["customdata"][0][0] != "mc"
+            else None
+        )
+    )
+
+
 def create_tornado_table(
-    tornado_data: TornadoData, subplots: str, group: Optional[str]
+    tornado_data: TornadoData,
+    subplots: str,
+    group: Optional[str],
+    use_si_format: bool,
 ) -> Tuple[List[dict], List[dict]]:
-    tornado_table = TornadoTable(tornado_data=tornado_data)
+
+    tornado_table = TornadoTable(
+        tornado_data=tornado_data,
+        use_si_format=use_si_format,
+        precision=4 if use_si_format else 3,
+    )
     table_data = tornado_table.as_plotly_table
     for data in table_data:
         data["Reference"] = tornado_data.reference_average
@@ -273,6 +344,9 @@ def create_tornado_table(
     columns = create_table_columns(columns=[subplots]) if subplots is not None else []
     columns.extend(tornado_table.columns)
     columns.extend(
-        create_table_columns(columns=["Reference"], use_si_format=["Reference"])
+        create_table_columns(
+            columns=["Reference"],
+            use_si_format=["Reference"] if use_si_format else [],
+        )
     )
     return table_data, columns
