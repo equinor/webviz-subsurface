@@ -35,4 +35,6 @@ def update_errorplot(df: pd.DataFrame, enscolors: Dict[str, str]) -> wcc.Graph:
         "xaxis": {"title": "Difference in bar"},
     }
 
-    return wcc.Graph(figure={"data": traces, "layout": layout})
+    return wcc.Graph(
+        style={"height": "84vh"}, figure={"data": traces, "layout": layout}
+    )

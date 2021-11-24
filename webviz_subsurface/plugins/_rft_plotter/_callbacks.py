@@ -33,7 +33,7 @@ def plugin_callbacks(
         raise PreventUpdate
 
     @app.callback(
-        Output(get_uuid("map"), "figure"),
+        Output(get_uuid("map"), "children"),
         [
             Input(get_uuid("map_ensemble"), "value"),
             Input(get_uuid("map_size"), "value"),
@@ -43,13 +43,18 @@ def plugin_callbacks(
     )
     def _update_map(
         ensemble: str, sizeby: str, colorby: str, dates: List[float]
-    ) -> Dict[str, Any]:
+    ) -> Union[str, List[wcc.Graph]]:
         figure = MapFigure(datamodel.ertdatadf, ensemble)
         if datamodel.faultlinesdf is not None:
             figure.add_fault_lines(datamodel.faultlinesdf)
         figure.add_misfit_plot(sizeby, colorby, dates)
 
-        return {"data": figure.traces, "layout": figure.layout}
+        return [
+            wcc.Graph(
+                style={"height": "84vh"},
+                figure={"data": figure.traces, "layout": figure.layout},
+            )
+        ]
 
     @app.callback(
         Output(get_uuid("formations-graph-wrapper"), "children"),
@@ -89,7 +94,12 @@ def plugin_callbacks(
         figure.add_additional_observations()
         figure.add_ert_observed()
 
-        return [wcc.Graph(figure={"data": figure.traces, "layout": figure.layout})]
+        return [
+            wcc.Graph(
+                style={"height": "84vh"},
+                figure={"data": figure.traces, "layout": figure.layout},
+            )
+        ]
 
     @app.callback(
         Output(get_uuid("linetype"), "options"),

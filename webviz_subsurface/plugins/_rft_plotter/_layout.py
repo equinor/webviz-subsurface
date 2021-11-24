@@ -25,9 +25,11 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
                                 style={"flex": 3, "height": "87vh"},
                                 color="white",
                                 highlight=False,
-                                children=wcc.Graph(
-                                    id=get_uuid("map"),
-                                ),
+                                id=get_uuid("map"),
+                                children=[]
+                                # children=wcc.Graph(
+                                #     id=get_uuid("map"),
+                                # ),
                             ),
                             wcc.Frame(
                                 style={"flex": 3, "height": "87vh"},
@@ -102,11 +104,7 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
                                 highlight=False,
                                 style={"flex": 6, "height": "87vh"},
                                 id=get_uuid("errorplot-graph-wrapper"),
-                                children=[]
-                                # children=wcc.Graph(
-                                #     style={"height": "84vh"},
-                                #     id=get_uuid("errorplot-graph"),
-                                # ),
+                                children=[],
                             ),
                         ],
                     ),
