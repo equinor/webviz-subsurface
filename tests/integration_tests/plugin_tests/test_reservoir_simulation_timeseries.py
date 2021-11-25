@@ -27,4 +27,4 @@ def test_reservoir_simulation_timeseries(
             warnings.warn(log.get("message"))
         else:
             logs.append(log)
-    assert logs == []
+    assert not logs

@@ -42,7 +42,7 @@ class EnsembleModel:
                 self.filter_file
             )
         )
-        if ensemble.realizations == {}:
+        if not ensemble.realizations:
             raise ValueError(
                 f"No realizations found for ensemble {self.ensemble_name}, "
                 f"located at '{self.ensemble_path}'. "
