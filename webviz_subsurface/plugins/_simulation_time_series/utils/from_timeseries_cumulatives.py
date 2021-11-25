@@ -63,7 +63,7 @@ def calculate_from_resampled_cumulative_vectors_df(
     """
     vectors_df = vectors_df.copy()
 
-    column_keys = [elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]]
+    column_keys = list(set(vectors_df.columns) ^ set(["DATE", "REAL"]))
 
     # Sort by realizations, thereafter dates
     vectors_df.sort_values(by=["REAL", "DATE"], inplace=True)

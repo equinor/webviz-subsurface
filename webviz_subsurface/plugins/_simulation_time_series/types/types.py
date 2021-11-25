@@ -1,7 +1,22 @@
+import sys
 from enum import Enum
 
-# TODO: Move to main_view.py? Perhaps not if view should not depend on data,
-# but only fill based on initial callback?
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
+
+class DeltaEnsemble(TypedDict):
+    """Definition of delta ensemble
+
+    Pair of names representing a delta ensemble: A-B
+    """
+
+    ensemble_a: str
+    ensemble_b: str
+
+
 class FanchartOptions(str, Enum):
     """
     Type definition for statistical options for fanchart

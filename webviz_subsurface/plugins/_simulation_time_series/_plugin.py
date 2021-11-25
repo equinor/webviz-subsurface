@@ -34,9 +34,9 @@ from ..._utils.simulation_timeseries import (
     check_and_format_observations,
 )
 
-
+# pylint: disable = too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
-    # pylint: disable=too-many-locals,too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
     def __init__(
         self,
         app: dash.Dash,
@@ -46,7 +46,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         perform_presampling: bool = False,
         obsfile: Path = None,
         options: dict = None,
-        sampling: str = Frequency.MONTHLY.value,  # TODO: Rename to initial sampling? Set default to YEARLY
+        sampling: str = Frequency.MONTHLY.value,
         predefined_expressions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
@@ -228,6 +228,8 @@ class SimulationTimeSeries(WebvizPluginABC):
         plugin_callbacks(
             app=app,
             get_uuid=self.uuid,
+            get_data_output=self.plugin_data_output,
+            get_data_requested=self.plugin_data_requested,
             input_provider_set=self._input_provider_set,
             theme=self._theme,
             initial_selected_vectors=self._initial_vectors,

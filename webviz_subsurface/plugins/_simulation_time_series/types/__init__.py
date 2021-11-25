@@ -1,15 +1,13 @@
-from .assorted_vector_data_accessor import AssortedVectorDataAccessor
-
-from .delta_ensemble_provider import (
-    DeltaEnsembleProvider,
-    DeltaEnsembleNamePair,
-    create_delta_ensemble_name,
-    create_delta_ensemble_names,
+from .derived_vectors_accessor_interface import (
+    DerivedVectorsAccessorInterface,
 )
+from .derived_ensemble_vectors_accessor import DerivedEnsembleVectorsAccessor
+from .derived_delta_ensemble_vectors_accessor import DerivedDeltaEnsembleVectorsAccessor
 
 from .provider_set import ProviderSet
 
 from .types import (
+    DeltaEnsemble,
     FanchartOptions,
     StatisticsOptions,
     TraceOptions,

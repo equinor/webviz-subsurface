@@ -61,6 +61,7 @@ class LayoutElements:
     RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
 
 
+# pylint: disable = too-many-arguments
 def main_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
@@ -105,8 +106,8 @@ def main_layout(
                                 id=get_uuid(LayoutElements.GRAPH),
                             ),
                             dcc.Store(
-                                # NOTE:Used to trigger graph update callback if data has changed, i.e.
-                                # no change of regular INPUT html-elements
+                                # NOTE:Used to trigger graph update callback if data has
+                                # changed, i.e. no change of regular INPUT html-elements
                                 id=get_uuid(
                                     LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER
                                 ),
@@ -120,6 +121,7 @@ def main_layout(
     )
 
 
+# pylint: disable = too-many-arguments
 def __settings_layout(
     get_uuid: Callable,
     ensembles: List[str],

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import copy
 import dash
@@ -8,8 +8,12 @@ import pandas as pd
 
 import webviz_subsurface_components as wsc
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
+from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+)
 from webviz_subsurface._utils.unique_theming import unique_colors
 
 
@@ -17,19 +21,25 @@ from ._layout import LayoutElements
 from ._property_serialization import GraphFigureBuilder
 
 from .types import (
-    AssortedVectorDataAccessor,
-    create_delta_ensemble_names,
-    DeltaEnsembleNamePair,
-    DeltaEnsembleProvider,
+    DerivedVectorsAccessorInterface,
+    DerivedEnsembleVectorsAccessor,
+    DerivedDeltaEnsembleVectorsAccessor,
+    DeltaEnsemble,
     FanchartOptions,
     StatisticsOptions,
     ProviderSet,
     TraceOptions,
     VisualizationOptions,
 )
+
+from .utils.delta_ensemble_utils import (
+    create_delta_ensemble_names,
+    create_delta_ensemble_name_dict,
+    create_delta_ensemble_provider_pair,
+    is_delta_ensemble_providers_in_provider_set,
+)
 from .utils.trace_line_shape import get_simulation_line_shape
 from .utils.provider_set_utils import (
-    create_selected_provider_set,
     create_vector_plot_titles_from_provider_set,
 )
 from .utils.vector_statistics import create_vectors_statistics_df
@@ -42,14 +52,13 @@ from ..._utils.vector_calculator import (
 )
 from ..._utils.vector_selector import is_vector_name_in_vector_selector_data
 
-# TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
-# providers are presampled. To keep track of sampling frequency, and not depend on dropdown
-# value for ViewElements.RESAMPLING_FREQUENCY_DROPDOWN (dropdown disabled when providers are
-# presampled)
+
 # pylint: disable = too-many-arguments, too-many-branches, too-many-locals, too-many-statements
 def plugin_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
+    get_data_output: Output,
+    get_data_requested: Input,
     input_provider_set: ProviderSet,
     theme: WebvizConfigTheme,
     initial_selected_vectors: List[str],
@@ -57,6 +66,10 @@ def plugin_callbacks(
     observations: dict,  # TODO: Improve typehint?
     line_shape_fallback: str = "linear",
 ) -> None:
+    # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
+    # providers are presampled. To keep track of sampling frequency, and not depend on dropdown
+    # value for ViewElements.RESAMPLING_FREQUENCY_DROPDOWN (dropdown disabled when providers are
+    # presampled)
     @app.callback(
         Output(get_uuid(LayoutElements.GRAPH), "figure"),
         [
@@ -99,6 +112,7 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
+            State(get_uuid(LayoutElements.ENSEMBLES_DROPDOWN), "options"),
         ],
     )
     def _update_graph(
@@ -110,8 +124,9 @@ def plugin_callbacks(
         trace_option_values: List[str],
         resampling_frequency_value: str,
         __graph_data_has_changed_trigger: int,
-        delta_ensembles: List[DeltaEnsembleNamePair],
+        delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
+        ensemble_dropdown_options: List[dict],
     ) -> dict:
         """Callback to update all graphs based on selections
 
@@ -141,24 +156,50 @@ def plugin_callbacks(
         fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
         trace_options = [TraceOptions(elm) for elm in trace_option_values]
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+        all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
 
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        # Filter selected delta ensembles
-        selected_provider_set = create_selected_provider_set(
-            input_provider_set, selected_ensembles, delta_ensembles
-        )
+        # Create dict of ensemble data accessors
+        # TODO: Possible to refactor code?
+        derived_vectors_accessors: Dict[str, DerivedVectorsAccessorInterface] = {}
+        delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
+        for ensemble in selected_ensembles:
+            if ensemble in input_provider_set.names():
+                derived_vectors_accessors[ensemble] = DerivedEnsembleVectorsAccessor(
+                    ensemble,
+                    input_provider_set.provider(ensemble),
+                    vectors,
+                    selected_expressions,
+                    resampling_frequency,
+                )
+            elif (
+                ensemble in delta_ensemble_name_dict.keys()
+                and is_delta_ensemble_providers_in_provider_set(
+                    delta_ensemble_name_dict[ensemble], input_provider_set
+                )
+            ):
+                provider_pair = create_delta_ensemble_provider_pair(
+                    delta_ensemble_name_dict[ensemble], input_provider_set
+                )
+                derived_vectors_accessors[
+                    ensemble
+                ] = DerivedDeltaEnsembleVectorsAccessor(
+                    name=ensemble,
+                    provider_pair=provider_pair,
+                    vectors=vectors,
+                    expressions=selected_expressions,
+                    resampling_frequency=resampling_frequency,
+                )
 
         # Titles for subplots
         vector_titles = create_vector_plot_titles_from_provider_set(
-            vectors, selected_expressions, selected_provider_set
+            vectors, selected_expressions, input_provider_set
         )
 
-        # TODO: Create unique colors based on all ensembles, i.e. union of
-        # ensemble_set_model.ensemble_names() and create_delta_ensemble_names(delta_ensembles)
-        # Now color can change when changing selected ensembles?
-        ensemble_colors = unique_colors(selected_provider_set.names(), theme)
+        # Create unique colors based on all ensemble names
+        ensemble_colors = unique_colors(all_ensemble_names, theme)
 
         # TODO: Pass presampling_frequency when using presampled providers?
         # NOTE: Dropdown value is equal to presampling_frequency when presampled providers
@@ -168,44 +209,36 @@ def plugin_callbacks(
         )
 
         # TODO: How to handle vector metadata the best way?
+        # TODO: How to get metadata for calculated vector?
         vector_line_shapes: Dict[str, str] = {
             vector: get_simulation_line_shape(
                 line_shape_fallback,
                 vector,
-                selected_provider_set.vector_metadata(vector),
+                input_provider_set.vector_metadata(vector),
             )
             for vector in vectors
         }
 
         # Plotting per ensemble
-        for name, provider in selected_provider_set.items():
-            vector_data_accessor = AssortedVectorDataAccessor(
-                name,
-                provider,
-                vectors,
-                expressions=selected_expressions,
-                resampling_frequency=resampling_frequency
-                if provider.supports_resampling()
-                else None,
-            )
-
+        for ensemble, data_accessor in derived_vectors_accessors.items():
+            # TODO: Consider to remove list and use pd.concat to obtain one single
+            # dataframe with vector columns. NB: Assumes equal sampling rate
+            # for all vectors - i.e equal number of rows in dataframes
             vectors_df_list: List[pd.DataFrame] = []
-            if vector_data_accessor.has_provider_vectors():
-                vectors_df_list.append(vector_data_accessor.get_provider_vectors_df())
-            if vector_data_accessor.has_interval_and_average_vectors():
+            if data_accessor.has_provider_vectors():
+                vectors_df_list.append(data_accessor.get_provider_vectors_df())
+            if data_accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    vector_data_accessor.create_interval_and_average_vectors_df()
+                    data_accessor.create_interval_and_average_vectors_df()
                 )
-            if vector_data_accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(
-                    vector_data_accessor.create_calculated_vectors_df()
-                )
+            if data_accessor.has_vector_calculator_expressions():
+                vectors_df_list.append(data_accessor.create_calculated_vectors_df())
 
             for index, vectors_df in enumerate(vectors_df_list):
                 if visualization == VisualizationOptions.REALIZATIONS:
                     figure_builder.add_realizations_traces(
                         vectors_df,
-                        name,
+                        ensemble,
                         vector_line_shapes,
                         add_legend=index == 0,
                     )
@@ -213,7 +246,7 @@ def plugin_callbacks(
                     vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                     figure_builder.add_statistics_traces(
                         vectors_statistics_df,
-                        name,
+                        ensemble,
                         statistics_options,
                         vector_line_shapes,
                         add_legend=index == 0,
@@ -222,16 +255,25 @@ def plugin_callbacks(
                     vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                     figure_builder.add_fanchart_traces(
                         vectors_statistics_df,
-                        name,
+                        ensemble,
                         fanchart_options,
                         vector_line_shapes,
                         add_legend=index == 0,
                     )
 
+        # Retrieve first selected input provider - None if not selected
+        first_selected_input_provider: Optional[EnsembleSummaryProvider] = next(
+            (
+                provider
+                for name, provider in input_provider_set.items()
+                if name in selected_ensembles
+            ),
+            None,
+        )
+
         # Do not add observations if only delta ensembles are selected
-        is_only_delta_ensembles = all(
-            isinstance(elm, DeltaEnsembleProvider)
-            for elm in selected_provider_set.all_providers()
+        is_only_delta_ensembles = (
+            first_selected_input_provider is None and len(derived_vectors_accessors) > 0
         )
         if observations and not is_only_delta_ensembles:
             for vector in vectors:
@@ -239,14 +281,14 @@ def plugin_callbacks(
                 if vector_observations:
                     figure_builder.add_vector_observations(vector, vector_observations)
 
+        # Add history trace using first selected provider
         if (
             TraceOptions.HISTORY in trace_options
-            and len(selected_provider_set.names()) > 0
+            and first_selected_input_provider is not None
         ):
-            # NOTE: Retrieve historical vector from first ensemble
-            # Name and provider from first selected ensemble
-            name = selected_provider_set.names()[0]
-            provider = selected_provider_set.provider(name)
+            # NOTE: Retrieve historical vector from first ensemble - using first selected
+            # input provider
+            provider = first_selected_input_provider
             vector_names = provider.vector_names()
 
             provider_vectors = [elm for elm in vectors if elm in vector_names]
@@ -267,9 +309,168 @@ def plugin_callbacks(
         return figure_builder.get_serialized_figure()
 
     # TODO: Implement callback
-    # @app.callback()
-    # def _user_download_data() -> None:
-    #     raise NotImplementedError()
+    @app.callback(
+        get_data_output,
+        [get_data_requested],
+        [
+            State(
+                get_uuid(LayoutElements.VECTOR_SELECTOR),
+                "selectedNodes",
+            ),
+            State(get_uuid(LayoutElements.ENSEMBLES_DROPDOWN), "value"),
+            State(
+                get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
+                "value",
+            ),
+            State(
+                get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                "value",
+            ),
+            State(
+                get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
+                "data",
+            ),
+            State(
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
+                "data",
+            ),
+        ],
+    )
+    def _user_download_data(
+        data_requested: Union[int, None],
+        vectors: List[str],
+        selected_ensembles: List[str],
+        visualization_value: str,
+        resampling_frequency_value: str,
+        delta_ensembles: List[DeltaEnsemble],
+        vector_calculator_expressions: List[ExpressionInfo],
+    ) -> Union[EncodedFile, str]:
+        """Callback to download data based on selections
+
+        NOTE:
+        * No history vector
+        * No filtering on statistics selections
+        * No observation data
+        """
+        if data_requested is None:
+            raise PreventUpdate
+
+        if vectors is None:
+            vectors = initial_selected_vectors
+
+        # Retrieve the selected expressions
+        selected_expressions = get_selected_expressions(
+            vector_calculator_expressions, vectors
+        )
+
+        # Convert from string values to enum types
+        visualization = VisualizationOptions(visualization_value)
+        resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+
+        if not isinstance(selected_ensembles, list):
+            raise TypeError("ensembles should always be of type list")
+
+        # Create dict of ensemble data accessors
+        # TODO: Possible to refactor code?
+        ensemble_data_accessors: Dict[str, DerivedVectorsAccessorInterface] = {}
+        delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
+        for ensemble in selected_ensembles:
+            if ensemble in input_provider_set.names():
+                ensemble_data_accessors[ensemble] = DerivedEnsembleVectorsAccessor(
+                    ensemble,
+                    input_provider_set.provider(ensemble),
+                    vectors,
+                    selected_expressions,
+                    resampling_frequency,
+                )
+            elif (
+                ensemble in delta_ensemble_name_dict.keys()
+                and is_delta_ensemble_providers_in_provider_set(
+                    delta_ensemble_name_dict[ensemble], input_provider_set
+                )
+            ):
+                provider_pair = create_delta_ensemble_provider_pair(
+                    delta_ensemble_name_dict[ensemble], input_provider_set
+                )
+                ensemble_data_accessors[ensemble] = DerivedDeltaEnsembleVectorsAccessor(
+                    name=ensemble,
+                    provider_pair=provider_pair,
+                    vectors=vectors,
+                    expressions=selected_expressions,
+                    resampling_frequency=resampling_frequency,
+                )
+
+        # Dict with vector name as key and dataframe data as value
+        vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
+
+        # Operate per ensemble
+        for ensemble_name, vector_data_accessor in ensemble_data_accessors.items():
+            # Retrive data for vectors in provider
+            vectors_df_list: List[pd.DataFrame] = []
+            if vector_data_accessor.has_provider_vectors():
+                vectors_df_list.append(vector_data_accessor.get_provider_vectors_df())
+            if vector_data_accessor.has_interval_and_average_vectors():
+                vectors_df_list.append(
+                    vector_data_accessor.create_interval_and_average_vectors_df()
+                )
+            if vector_data_accessor.has_vector_calculator_expressions():
+                vectors_df_list.append(
+                    vector_data_accessor.create_calculated_vectors_df()
+                )
+
+            # Append data for each vector
+            for vectors_df in vectors_df_list:
+                vector_names = [
+                    elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
+                ]
+                for vector in vector_names:
+                    if visualization == VisualizationOptions.REALIZATIONS:
+                        vector_df = vectors_df[["DATE", "REAL", vector]]
+                        row_count = vector_df.shape[0]
+                        ensemble_name_list = [ensemble_name] * row_count
+                        vector_df.insert(
+                            loc=0, column="ENSEMBLE", value=ensemble_name_list
+                        )
+                        if vector_dataframe_dict.get(vector) is None:
+                            vector_dataframe_dict[vector] = vector_df
+                        else:
+                            vector_dataframe_dict[vector] = pd.concat(
+                                [vector_dataframe_dict[vector], vector_df],
+                                ignore_index=True,
+                                axis=0,
+                            )
+
+                    if visualization in [
+                        VisualizationOptions.STATISTICS,
+                        VisualizationOptions.FANCHART,
+                    ]:
+                        vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                        vector_statistics_df = vectors_statistics_df[["DATE", vector]]
+                        row_count = vector_statistics_df.shape[0]
+                        ensemble_name_list = [ensemble_name] * row_count
+                        vector_statistics_df.insert(
+                            loc=0, column="ENSEMBLE", value=ensemble_name_list
+                        )
+                        if vector_dataframe_dict.get(vector) is None:
+                            vector_dataframe_dict[vector] = vector_statistics_df
+                        else:
+                            vector_dataframe_dict[vector] = pd.concat(
+                                [vector_dataframe_dict[vector], vector_statistics_df],
+                                ignore_index=True,
+                                axis=0,
+                            )
+
+        # : is replaced with _ in filenames to stay within POSIX portable pathnames
+        # (e.g. : is not valid in a Windows path)
+        return WebvizPluginABC.plugin_data_compress(
+            [
+                {
+                    "filename": f"{vector.replace(':', '_')}.csv",
+                    "content": df.to_csv(index=False),
+                }
+                for vector, df in vector_dataframe_dict.items()
+            ]
+        )
 
     @app.callback(
         [
@@ -345,16 +546,14 @@ def plugin_callbacks(
     )
     def _update_created_delta_ensembles_names(
         n_clicks: int,
-        existing_delta_ensembles: List[DeltaEnsembleNamePair],
+        existing_delta_ensembles: List[DeltaEnsemble],
         ensemble_a: str,
         ensemble_b: str,
-    ) -> Tuple[List[DeltaEnsembleNamePair], List[Dict[str, str]], List[Dict[str, str]]]:
+    ) -> Tuple[List[DeltaEnsemble], List[Dict[str, str]], List[Dict[str, str]]]:
         if n_clicks is None or n_clicks <= 0:
             raise PreventUpdate
 
-        delta_ensemble = DeltaEnsembleNamePair(
-            ensemble_a=ensemble_a, ensemble_b=ensemble_b
-        )
+        delta_ensemble = DeltaEnsemble(ensemble_a=ensemble_a, ensemble_b=ensemble_b)
         if delta_ensemble in existing_delta_ensembles:
             raise PreventUpdate
 
