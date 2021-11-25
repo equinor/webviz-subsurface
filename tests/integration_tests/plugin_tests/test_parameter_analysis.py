@@ -22,4 +22,4 @@ def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
             warnings.warn(log.get("message"))
         else:
             logs.append(log)
-    assert logs == []
+    assert not logs
