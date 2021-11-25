@@ -28,9 +28,24 @@ from .routes import deckgl_map_routes
 from .callbacks import surface_selector_callbacks
 from .webviz_store import webviz_store_functions
 
+with open("/tmp/volve_wells.json", "r") as f:
+    WELLS = json.load(f)
+with open("/tmp/volve_logs.json", "r") as f:
+    LOGS = json.load(f)
+with open("/tmp/color-tables.json", "r") as f:
+    COLORTABLES = json.load(f)
+with open("/tmp/welllayer_template.json", "r") as f:
+    TEMPLATE = json.load(f)
+
 
 def tmp_set_wells_layer(wells, log=None, logtype="discrete"):
-    return WellsLayer(data=XtgeoWellsJson(wells).feature_collection)
+    # return WellsLayer(data=XtgeoWellsJson(wells).feature_collection)
+
+    with open("/tmp/drogon_wells.json", "w") as f:
+        json.dump(XtgeoWellsJson(wells).feature_collection, f)
+    with open("/tmp/drogon_logs.json", "w") as f:
+        json.dump([XtgeoLogsJson(well, log="Zone").data for well in wells], f)
+    return WellsLayer(data=WELLS, log_data=LOGS, log_run="BLOCKING", log_name="ZONELOG")
     # "logData": [XtgeoLogsJson(well, log="Zone").data for well in wells],
     # "logrunName": "log",
     # "logName": "PORO",

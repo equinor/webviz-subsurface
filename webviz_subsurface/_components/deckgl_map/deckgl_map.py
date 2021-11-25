@@ -41,6 +41,7 @@ class DeckGLMap(DeckGLMapBase):
         edited_data: Dict[str, Any] = DeckGLMapDefaultProps.edited_data,
         **kwargs,
     ) -> None:
+        print(edited_data)
         super().__init__(
             id=id,
             layers=[json.loads(layer.to_json()) for layer in layers],
@@ -102,7 +103,7 @@ class WellsLayer(pydeck.Layer):
         log_run=None,
         log_name=None,
         name: str = "Wells",
-        # selected_well: str = "",
+        selected_well: str = "@@#editedData.selectedWell",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -110,9 +111,9 @@ class WellsLayer(pydeck.Layer):
             id=LayerIds.WELL,
             data=data,
             logData=log_data,
-            logRun=log_run,
+            logrunName=log_run,
             logName=log_name,
             name=String(name),
-            # selectedWell=selected_well,
+            selectedWell=String(selected_well),
             **kwargs,
         )
