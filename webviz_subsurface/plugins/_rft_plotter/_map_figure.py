@@ -73,7 +73,7 @@ class MapFigure:
             "hovermode": "closest",
             "legend": {"itemsizing": "constant", "orientation": "h"},
             "colorway": ["red", "blue"],
-            "margin": {"t": 50, "l": 0, "r": 0},
+            "margin": {"t": 50, "l": 50},
             "xaxis": {"constrain": "domain", "showgrid": False},
             "yaxis": {"scaleanchor": "x", "showgrid": False},
         }
