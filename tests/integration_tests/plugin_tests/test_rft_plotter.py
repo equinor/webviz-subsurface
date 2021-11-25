@@ -26,5 +26,4 @@ def test_rft_plotter(dash_duo, app, shared_settings, testdata_folder) -> None:
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    print(dash_duo.get_logs())
     assert dash_duo.get_logs() == []
