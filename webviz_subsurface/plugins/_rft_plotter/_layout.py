@@ -26,10 +26,7 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
                                 color="white",
                                 highlight=False,
                                 id=get_uuid("map"),
-                                children=[]
-                                # children=wcc.Graph(
-                                #     id=get_uuid("map"),
-                                # ),
+                                children=[],
                             ),
                             wcc.Frame(
                                 style={"flex": 3, "height": "87vh"},
