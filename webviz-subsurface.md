@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.7` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.8rc0` of `webviz-subsurface`.
 
 
 
@@ -235,10 +235,8 @@ This plugin needs the following summary vectors to be exported:
 `gruptree_file` is a path to a file stored per realization (e.g. in     `share/results/tables/gruptree.csv"`).
 
 The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
-model with subcommand `gruptree`:
-[Link to ECL2CSV](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html).
-
-The forward model uses `ecl2df` to export a table representation of the Eclipse network:
+model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+representation of the Eclipse network:
 [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
 
 **time_index**
@@ -1856,14 +1854,14 @@ Several visualizations are available:
 
 In addition, you need to have rft-files in your realizations stored at the local path `share/results/tables`. The `rft_ert.csv` is required as input, while the `rft.csv` is optional:
 
-* **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft_ert.csv).
+* **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
-* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
+* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
 
 **Using aggregated data**
 
-* **`csvfile_rft`**: Aggregated version of `rft.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft.csv).
-* **`csvfile_rft_ert`**: Aggregated version of `rft_ert.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/rft_ert.csv).
+* **`csvfile_rft`**: Aggregated version of `rft.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/rft.csv).
+* **`csvfile_rft_ert`**: Aggregated version of `rft_ert.csv` [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_test_data/aggregated_data/rft_ert.csv).
 
 
 **Optional input for both input options**
@@ -1874,12 +1872,12 @@ Mandatory column names: `WELL`, `DATE` (yyyy-mm-dd), `DEPTH` and `PRESSURE`
 
 * **`formations`**: A csv file containing top and base values for each zone per well.
 Used to visualize zone boundaries together with simulated RFT.
-Mandatory column names: `WELL`, `ZONE`, `TOP_TVD`, `BASE_TVD` [(example file))](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/tables/formations.csv).
+Mandatory column names: `WELL`, `ZONE`, `TOP_TVD`, `BASE_TVD` [(example file))](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/formations.csv).
 
 * **`faultlines`**: A csv file containing faultpolygons to be visualized together with the map view.
 Export format from [xtgeo.xyz.polygons.dataframe](
 https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe
-) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/results/polygons/faultpolygons.csv).
+) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/polygons/toptherys--gl_faultlines_extract_postprocess.csv).
 
 
 
@@ -2978,12 +2976,8 @@ The minimum requirement is to define `ensembles`.
 
 **COMPDAT input**
 
-`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/tables/compdat.csv`).
-
-The `compdat_file` file can be dumped to disk per realization by a forward model in ERT that
-wraps the command `ecl2csv compdat input_file -o output_file` (requires that you have `ecl2df`
-installed).
-[Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+`compdat_file` is a path to a file stored per realization (e.g. in     `share/results/tables/compdat.csv`). This file can be exported to disk per realization by using
+the `ECL2CSV` forward model in ERT with subcommand `compdat`. [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
 
 The connection status history of each cell is not necessarily complete in the `ecl2df` export,
 because status changes resulting from ACTIONs can't be extracted from the Eclipse input
@@ -2993,12 +2987,11 @@ the next section.
 
 **Well Connection status input**
 
-The `well_connection_status_file` is a path to a file stored per realization (e.g. in     `share/results/tables/well_connection_status.parquet`.
+The `well_connection_status_file` is a path to a file stored per realization (e.g. in     `share/results/tables/wellconnstatus.csv`. This file can be exported to disk per realization
+by using the `ECL2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to ecl2csv wellconnstatus documentation.](https://equinor.github.io/ecl2df/usage/wellconnstatus.html)
 
-This file can be exported from the ERT workflow by a forward model: `WELL_CONNECTION_STATUS`.
-This forward model uses the CPI summary data to create a well connection status history: for
+This approach uses the CPI summary data to create a well connection status history: for
 each well connection cell there is one line for each time the connection is opened or closed.
-
 This data is sparse, but be aware that the CPI summary data can potentially become very large.
 
 **Zone layer mapping**
