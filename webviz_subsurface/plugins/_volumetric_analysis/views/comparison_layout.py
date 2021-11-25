@@ -109,7 +109,10 @@ def comparison_table_layout(
             html.Div(
                 style={"margin-bottom": "30px", "font-weight": "bold"},
                 children=[
-                    html.Div(f"From {selections['value1']} to {selections['value2']}"),
+                    html.Div(
+                        f"From {selections['value1'].replace('|', ':  ')} "
+                        f"to {selections['value2'].replace('|', ':  ')}"
+                    ),
                     html.Div(
                         f"{filter_info.capitalize()} {selections['filters'][filter_info][0]}"
                     ),
@@ -120,47 +123,56 @@ def comparison_table_layout(
     )
 
 
-def settings_layout(uuid: str, tab: str) -> wcc.Selectors:
-    return wcc.Selectors(
-        label="⚙️ SETTINGS",
-        open_details=False,
-        children=[
-            colorby_selector(uuid, tab),
-            axis_focus_selector(uuid, tab),
-            remove_zero_responses(uuid, tab),
-            remove_non_highlighted_data(uuid, tab),
-        ],
-    )
+def comparison_options(compare_on: str, volumemodel: InplaceVolumesModel) -> list:
+    if compare_on == "Ensemble" and "SENSNAME_CASE" in volumemodel.selectors:
+        elements = []
+        for ens in volumemodel.ensembles:
+            for sens in volumemodel.ensemble_sensitivities[ens]:
+                elements.append("|".join([ens, sens]))
+        return [{"label": i.replace("|", ":  "), "value": i} for i in elements]
+
+    if compare_on == "Source":
+        elements = volumemodel.sources
+    elif compare_on == "Ensemble":
+        elements = volumemodel.ensembles
+    elif compare_on == "Sensitivity":
+        elements = list(volumemodel.ensemble_sensitivities.values())[0]
+    return [{"label": i, "value": i} for i in elements]
 
 
 def comparison_selections(
     uuid: str, volumemodel: InplaceVolumesModel, tab: str, compare_on: str
 ) -> html.Div:
-    elements = volumemodel.sources if compare_on == "SOURCE" else volumemodel.ensembles
+    options = comparison_options(compare_on, volumemodel)
     return html.Div(
         children=[
             wcc.Selectors(
                 label="CONTROLS",
                 open_details=True,
                 children=[
-                    source_selector(
-                        uuid,
-                        tab,
-                        label=f"{compare_on.capitalize()} A",
-                        selector_label="value1",
-                        value=elements[0],
-                        elements=elements,
+                    wcc.Dropdown(
+                        id={"id": uuid, "tab": tab, "selector": "value1"},
+                        label=f"{compare_on} A",
+                        optionHeight=50,
+                        options=options,
+                        value=options[0]["value"],
+                        clearable=False,
                     ),
-                    source_selector(
-                        uuid,
-                        tab,
-                        label=f"{compare_on.capitalize()} B",
-                        selector_label="value2",
-                        value=elements[1] if compare_on == "SOURCE" else elements[-1],
-                        elements=elements,
+                    wcc.Dropdown(
+                        id={"id": uuid, "tab": tab, "selector": "value2"},
+                        optionHeight=50,
+                        label=f"{compare_on} B",
+                        options=options,
+                        value=options[-1]["value"],
+                        clearable=False,
+                    ),
+                    dcc.Input(
+                        style={"display": "none"},
+                        id={"id": uuid, "tab": tab, "selector": "compare_on"},
+                        value=compare_on,
                     ),
                     html.Div(
-                        f"Difference = {compare_on.capitalize()} B - {compare_on.capitalize()} A",
+                        f"Difference = {compare_on} B - {compare_on} A",
                         style={
                             "font-size": "15px",
                             "margin-top": "5px",
@@ -173,7 +185,16 @@ def comparison_selections(
                     highlight_controls(uuid, tab),
                 ],
             ),
-            settings_layout(uuid, tab),
+            wcc.Selectors(
+                label="⚙️ SETTINGS",
+                open_details=False,
+                children=[
+                    colorby_selector(uuid, tab),
+                    axis_focus_selector(uuid, tab),
+                    remove_zero_responses(uuid, tab),
+                    remove_non_highlighted_data(uuid, tab),
+                ],
+            ),
         ]
     )
 
@@ -253,24 +274,6 @@ def highlight_controls(uuid: str, tab: str) -> html.Div:
                 ]
             ),
         ],
-    )
-
-
-def source_selector(
-    uuid: str,
-    tab: str,
-    label: str,
-    selector_label: str,
-    value: str,
-    elements: list,
-) -> wcc.Dropdown:
-
-    return wcc.Dropdown(
-        label=label,
-        id={"id": uuid, "tab": tab, "selector": selector_label},
-        options=[{"label": src, "value": src} for src in elements],
-        value=value,
-        clearable=False,
     )
 
 
