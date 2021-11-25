@@ -56,7 +56,6 @@ class FormationFigure:
                     (self.pressure_range[1] + self.xaxis_extension),
                 ],
             },
-            "height": 800,
             "legend": {"orientation": "h"},
             "margin": {"t": 50},
             "hovermode": "closest",

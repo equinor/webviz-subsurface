@@ -72,7 +72,6 @@ class MapFigure:
         return {
             "hovermode": "closest",
             "legend": {"itemsizing": "constant", "orientation": "h"},
-            "height": 800,
             "colorway": ["red", "blue"],
             "margin": {"t": 50, "l": 0, "r": 0},
             "xaxis": {"constrain": "domain", "showgrid": False},
