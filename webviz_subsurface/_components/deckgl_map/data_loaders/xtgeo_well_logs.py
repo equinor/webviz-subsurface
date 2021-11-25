@@ -1,7 +1,14 @@
 from typing import Dict, Optional, Any
+from dataclasses import dataclass
 
 from xtgeo import Well
 
+
+@dataclass
+class DeckGLLogsContext:
+    well: str
+    log: str
+    logrun: str
 
 class XtgeoLogsJson:
     def __init__(
