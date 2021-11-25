@@ -1,6 +1,11 @@
 from typing import List, Dict
+from dataclasses import dataclass
 
 from xtgeo import Well
+
+@dataclass
+class DeckGLWellsContext:
+    well_names: List[str]
 
 # pylint: disable=too-few-public-methods
 class XtgeoWellsJson:

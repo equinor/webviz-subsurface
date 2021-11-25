@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from dash import (
     html,
     dcc,
@@ -73,11 +73,8 @@ class DeckGLMapAIO(html.Div):
 
     ids = ids
 
-    def __init__(self, aio_id, show_wells: bool = False, well_layer: pdk.Layer = None):
+    def __init__(self, aio_id, layers: List[pdk.Layer]):
         """"""
-        layers = [ColormapLayer(), Hillshading2DLayer()]
-        if show_wells and well_layer:
-            layers.append(well_layer)
         super().__init__(
             [
                 dcc.Store(data=[], id=self.ids.colormap_image(aio_id)),
@@ -133,7 +130,7 @@ class DeckGLMapAIO(html.Div):
         )
         layer_model.set_colormap_image(colormap_image)
         layer_model.set_colormap_range(colormap_range)
-        # if well_data is not None:
-        #     layer_model.set_well_data(well_data)
+        if well_data is not None:
+            layer_model.set_well_data(well_data)
 
         return layer_model.layers, propertymap_bounds

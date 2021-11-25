@@ -14,7 +14,11 @@ from webviz_subsurface._components.deckgl_map.data_loaders import (
     XtgeoWellsJson,
     XtgeoLogsJson,
 )
-from webviz_subsurface._components.deckgl_map.deckgl_map import WellsLayer
+from webviz_subsurface._components.deckgl_map.deckgl_map import (
+    WellsLayer,
+    ColormapLayer,
+    Hillshading2DLayer,
+)
 from .callbacks.deckgl_map_aio_callbacks import (
     deckgl_map_aio_callbacks,
 )
@@ -134,12 +138,11 @@ class MapViewerFMU(WebvizPluginABC):
                             children=[
                                 DeckGLMapAIO(
                                     aio_id=self.uuid("mapview"),
-                                    show_wells=True if self._well_set_model else False,
-                                    well_layer=tmp_set_wells_layer(
-                                        wells=list(self._well_set_model.wells.values())
-                                    )
-                                    if self._well_set_model
-                                    else None,
+                                    layers=[
+                                        ColormapLayer(),
+                                        Hillshading2DLayer(),
+                                        WellsLayer(data={}),
+                                    ],
                                 ),
                             ],
                         ),
@@ -170,7 +173,11 @@ class MapViewerFMU(WebvizPluginABC):
         )
 
     def set_routes(self, app) -> None:
-        deckgl_map_routes(app=app, surface_set_models=self._surface_ensemble_set_models)
+        deckgl_map_routes(
+            app=app,
+            surface_set_models=self._surface_ensemble_set_models,
+            well_set_model=self._well_set_model,
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
 

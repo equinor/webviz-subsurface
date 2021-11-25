@@ -6,6 +6,7 @@ from webviz_subsurface._components import DeckGLMapAIO
 from webviz_subsurface._components.deckgl_map.data_loaders import (
     surface_to_deckgl_spec,
     XtgeoWellsJson,
+    DeckGLWellsContext,
 )
 
 from webviz_config.utils._dash_component_utils import calculate_slider_step
@@ -52,10 +53,8 @@ def deckgl_map_aio_callbacks(
             Input(get_uuid(WellSelectorID.WELLS), "value"),
         )
         def _update_well_data(wells):
-            well_data = XtgeoWellsJson(
-                wells=[well_set_model.get_well(well) for well in wells]
-            )
-            return well_data.feature_collection
+            wells_context = DeckGLWellsContext(well_names=wells)
+            return url_for("_send_well_data_as_json", wells_context=wells_context)
 
     @callback(
         Output(DeckGLMapAIO.ids.colormap_range(get_uuid("mapview")), "data"),
