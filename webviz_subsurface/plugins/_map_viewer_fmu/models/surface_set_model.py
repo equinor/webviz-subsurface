@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from enum import Enum
 from dataclasses import dataclass, asdict
-from urllib.parse import quote_plus, unquote_plus
+
 
 import numpy as np
 import pandas as pd
@@ -43,14 +43,6 @@ class SurfaceContext:
     name: str
     date: Optional[str]
     mode: str
-
-    @classmethod
-    def from_url(cls, url_string: str) -> "SurfaceContext":
-        return cls(**json.loads(unquote_plus(url_string)))
-
-    def to_url(self) -> str:
-        json_dump = json.dumps(asdict(self))
-        return quote_plus(json_dump)
 
 
 class SurfaceSetModel:

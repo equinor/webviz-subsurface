@@ -1,4 +1,5 @@
 from typing import List, Callable, Optional
+from flask import url_for
 from dash import Input, Output, State, callback, callback_context, no_update
 
 from webviz_subsurface._components import DeckGLMapAIO
@@ -31,9 +32,11 @@ def deckgl_map_aio_callbacks(
         ensemble = selected_surface.ensemble
         surface = surface_set_models[ensemble].get_surface(selected_surface)
         spec = surface_to_deckgl_spec(surface)
-        url = f"surface/{selected_surface.to_url()}.png"
-
-        return url, spec["mapRange"], spec["mapBounds"]
+        return (
+            url_for("_send_surface_as_png", surface_context=selected_surface),
+            spec["mapRange"],
+            spec["mapBounds"],
+        )
 
     @callback(
         Output(DeckGLMapAIO.ids.colormap_image(get_uuid("mapview")), "data"),
