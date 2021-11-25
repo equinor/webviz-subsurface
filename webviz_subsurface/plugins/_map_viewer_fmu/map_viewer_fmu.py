@@ -39,7 +39,7 @@ with open("/tmp/welllayer_template.json", "r") as f:
 
 
 def tmp_set_wells_layer(wells, log=None, logtype="discrete"):
-    # return WellsLayer(data=XtgeoWellsJson(wells).feature_collection)
+    return WellsLayer(data=XtgeoWellsJson(wells).feature_collection)
 
     with open("/tmp/drogon_wells.json", "w") as f:
         json.dump(XtgeoWellsJson(wells).feature_collection, f)
