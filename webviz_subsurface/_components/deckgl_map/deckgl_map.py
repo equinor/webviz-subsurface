@@ -20,6 +20,8 @@ class LayerIds(str, Enum):
 
 
 class DeckGLMapDefaultProps:
+    """Default prop settings for DeckGLMap"""
+
     bounds: List[float] = [0, 0, 10000, 10000]
     value_range: List[float] = [0, 1]
     image: str = "/surface/UNDEF.png"
