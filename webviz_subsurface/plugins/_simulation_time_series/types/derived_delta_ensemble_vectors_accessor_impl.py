@@ -9,8 +9,8 @@ from webviz_subsurface._utils.vector_calculator import (
     get_selected_expressions,
 )
 
-from .derived_vectors_accessor_interface import (
-    DerivedVectorsAccessorInterface,
+from .derived_ensemble_vectors_accessor import (
+    DerivedEnsembleVectorsAccessor,
 )
 
 from ..utils.from_timeseries_cumulatives import (
@@ -20,7 +20,7 @@ from ..utils.from_timeseries_cumulatives import (
 )
 
 
-class DerivedDeltaEnsembleVectorsAccessor(DerivedVectorsAccessorInterface):
+class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
     """
     Class to create derived vector data and access these for a delta ensemble.
 

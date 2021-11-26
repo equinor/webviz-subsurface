@@ -21,9 +21,7 @@ from ._layout import LayoutElements
 from ._property_serialization import GraphFigureBuilder
 
 from .types import (
-    DerivedVectorsAccessorInterface,
     DerivedEnsembleVectorsAccessor,
-    DerivedDeltaEnsembleVectorsAccessor,
     DeltaEnsemble,
     FanchartOptions,
     StatisticsOptions,
@@ -32,11 +30,11 @@ from .types import (
     VisualizationOptions,
 )
 
+from .utils.derived_ensemble_vectors_accessor_utils import (
+    create_derived_ensemble_vectors_accessor_dict,
+)
 from .utils.delta_ensemble_utils import (
     create_delta_ensemble_names,
-    create_delta_ensemble_name_dict,
-    create_delta_ensemble_provider_pair,
-    is_delta_ensemble_providers_in_provider_set,
 )
 from .utils.trace_line_shape import get_simulation_line_shape
 from .utils.provider_set_utils import (
@@ -161,37 +159,17 @@ def plugin_callbacks(
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        # Create dict of ensemble data accessors
-        # TODO: Possible to refactor code?
-        derived_vectors_accessors: Dict[str, DerivedVectorsAccessorInterface] = {}
-        delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
-        for ensemble in selected_ensembles:
-            if ensemble in input_provider_set.names():
-                derived_vectors_accessors[ensemble] = DerivedEnsembleVectorsAccessor(
-                    ensemble,
-                    input_provider_set.provider(ensemble),
-                    vectors,
-                    selected_expressions,
-                    resampling_frequency,
-                )
-            elif (
-                ensemble in delta_ensemble_name_dict.keys()
-                and is_delta_ensemble_providers_in_provider_set(
-                    delta_ensemble_name_dict[ensemble], input_provider_set
-                )
-            ):
-                provider_pair = create_delta_ensemble_provider_pair(
-                    delta_ensemble_name_dict[ensemble], input_provider_set
-                )
-                derived_vectors_accessors[
-                    ensemble
-                ] = DerivedDeltaEnsembleVectorsAccessor(
-                    name=ensemble,
-                    provider_pair=provider_pair,
-                    vectors=vectors,
-                    expressions=selected_expressions,
-                    resampling_frequency=resampling_frequency,
-                )
+        # Create dict of derived ensemble vectors accessors for selected ensembles
+        derived_ensemble_vectors_accessors: Dict[
+            str, DerivedEnsembleVectorsAccessor
+        ] = create_derived_ensemble_vectors_accessor_dict(
+            ensembles=selected_ensembles,
+            vectors=vectors,
+            provider_set=input_provider_set,
+            expressions=selected_expressions,
+            delta_ensembles=delta_ensembles,
+            resampling_frequency=resampling_frequency,
+        )
 
         # Titles for subplots
         vector_titles = create_vector_plot_titles_from_provider_set(
@@ -220,19 +198,21 @@ def plugin_callbacks(
         }
 
         # Plotting per ensemble
-        for ensemble, data_accessor in derived_vectors_accessors.items():
+        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
             # TODO: Consider to remove list and use pd.concat to obtain one single
             # dataframe with vector columns. NB: Assumes equal sampling rate
             # for all vectors - i.e equal number of rows in dataframes
+
+            # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
-            if data_accessor.has_provider_vectors():
-                vectors_df_list.append(data_accessor.get_provider_vectors_df())
-            if data_accessor.has_interval_and_average_vectors():
+            if accessor.has_provider_vectors():
+                vectors_df_list.append(accessor.get_provider_vectors_df())
+            if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    data_accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df()
                 )
-            if data_accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(data_accessor.create_calculated_vectors_df())
+            if accessor.has_vector_calculator_expressions():
+                vectors_df_list.append(accessor.create_calculated_vectors_df())
 
             for index, vectors_df in enumerate(vectors_df_list):
                 if visualization == VisualizationOptions.REALIZATIONS:
@@ -261,7 +241,7 @@ def plugin_callbacks(
                         add_legend=index == 0,
                     )
 
-        # Retrieve first selected input provider - None if not selected
+        # Retrieve first selected input provider - None if none is selected
         first_selected_input_provider: Optional[EnsembleSummaryProvider] = next(
             (
                 provider
@@ -273,7 +253,8 @@ def plugin_callbacks(
 
         # Do not add observations if only delta ensembles are selected
         is_only_delta_ensembles = (
-            first_selected_input_provider is None and len(derived_vectors_accessors) > 0
+            first_selected_input_provider is None
+            and len(derived_ensemble_vectors_accessors) > 0
         )
         if observations and not is_only_delta_ensembles:
             for vector in vectors:
@@ -370,53 +351,33 @@ def plugin_callbacks(
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        # Create dict of ensemble data accessors
-        # TODO: Possible to refactor code?
-        ensemble_data_accessors: Dict[str, DerivedVectorsAccessorInterface] = {}
-        delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
-        for ensemble in selected_ensembles:
-            if ensemble in input_provider_set.names():
-                ensemble_data_accessors[ensemble] = DerivedEnsembleVectorsAccessor(
-                    ensemble,
-                    input_provider_set.provider(ensemble),
-                    vectors,
-                    selected_expressions,
-                    resampling_frequency,
-                )
-            elif (
-                ensemble in delta_ensemble_name_dict.keys()
-                and is_delta_ensemble_providers_in_provider_set(
-                    delta_ensemble_name_dict[ensemble], input_provider_set
-                )
-            ):
-                provider_pair = create_delta_ensemble_provider_pair(
-                    delta_ensemble_name_dict[ensemble], input_provider_set
-                )
-                ensemble_data_accessors[ensemble] = DerivedDeltaEnsembleVectorsAccessor(
-                    name=ensemble,
-                    provider_pair=provider_pair,
-                    vectors=vectors,
-                    expressions=selected_expressions,
-                    resampling_frequency=resampling_frequency,
-                )
+        # Create dict of derived ensemble vectors accessors for selected ensembles
+        derived_ensemble_vectors_accessors: Dict[
+            str, DerivedEnsembleVectorsAccessor
+        ] = create_derived_ensemble_vectors_accessor_dict(
+            ensembles=selected_ensembles,
+            vectors=vectors,
+            provider_set=input_provider_set,
+            expressions=selected_expressions,
+            delta_ensembles=delta_ensembles,
+            resampling_frequency=resampling_frequency,
+        )
 
         # Dict with vector name as key and dataframe data as value
         vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
 
-        # Operate per ensemble
-        for ensemble_name, vector_data_accessor in ensemble_data_accessors.items():
-            # Retrive data for vectors in provider
+        # Access per ensemble
+        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+            # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
-            if vector_data_accessor.has_provider_vectors():
-                vectors_df_list.append(vector_data_accessor.get_provider_vectors_df())
-            if vector_data_accessor.has_interval_and_average_vectors():
+            if accessor.has_provider_vectors():
+                vectors_df_list.append(accessor.get_provider_vectors_df())
+            if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    vector_data_accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df()
                 )
-            if vector_data_accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(
-                    vector_data_accessor.create_calculated_vectors_df()
-                )
+            if accessor.has_vector_calculator_expressions():
+                vectors_df_list.append(accessor.create_calculated_vectors_df())
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
@@ -427,7 +388,7 @@ def plugin_callbacks(
                     if visualization == VisualizationOptions.REALIZATIONS:
                         vector_df = vectors_df[["DATE", "REAL", vector]]
                         row_count = vector_df.shape[0]
-                        ensemble_name_list = [ensemble_name] * row_count
+                        ensemble_name_list = [ensemble] * row_count
                         vector_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
@@ -447,7 +408,7 @@ def plugin_callbacks(
                         vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                         vector_statistics_df = vectors_statistics_df[["DATE", vector]]
                         row_count = vector_statistics_df.shape[0]
-                        ensemble_name_list = [ensemble_name] * row_count
+                        ensemble_name_list = [ensemble] * row_count
                         vector_statistics_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
