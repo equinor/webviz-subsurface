@@ -11,10 +11,10 @@ from ..layout.data_selector_view import SurfaceSelectorID
 
 def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetModel]):
     @callback(
-        Output(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "options"),
-        Output(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.ENSEMBLE.value), "value"),
-        State(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "value"),
+        Output(get_uuid(SurfaceSelectorID.ATTRIBUTE), "options"),
+        Output(get_uuid(SurfaceSelectorID.ATTRIBUTE), "value"),
+        Input(get_uuid(SurfaceSelectorID.ENSEMBLE), "value"),
+        State(get_uuid(SurfaceSelectorID.ATTRIBUTE), "value"),
     )
     def _update_attribute(ensemble: str, current_attr: str):
         if surface_set_models.get(ensemble) is None:
@@ -25,12 +25,12 @@ def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetMode
         return options, attr
 
     @callback(
-        Output(get_uuid(SurfaceSelectorID.REALIZATIONS.value), "options"),
-        Output(get_uuid(SurfaceSelectorID.REALIZATIONS.value), "value"),
-        Output(get_uuid(SurfaceSelectorID.REALIZATIONS.value), "multi"),
-        Input(get_uuid(SurfaceSelectorID.ENSEMBLE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.MODE.value), "value"),
-        State(get_uuid(SurfaceSelectorID.REALIZATIONS.value), "value"),
+        Output(get_uuid(SurfaceSelectorID.REALIZATIONS), "options"),
+        Output(get_uuid(SurfaceSelectorID.REALIZATIONS), "value"),
+        Output(get_uuid(SurfaceSelectorID.REALIZATIONS), "multi"),
+        Input(get_uuid(SurfaceSelectorID.ENSEMBLE), "value"),
+        Input(get_uuid(SurfaceSelectorID.MODE), "value"),
+        State(get_uuid(SurfaceSelectorID.REALIZATIONS), "value"),
     )
     def _update_real(
         ensemble: str,
@@ -56,11 +56,11 @@ def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetMode
         return options, reals, multi
 
     @callback(
-        Output(get_uuid(SurfaceSelectorID.DATE.value), "options"),
-        Output(get_uuid(SurfaceSelectorID.DATE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "value"),
-        State(get_uuid(SurfaceSelectorID.DATE.value), "value"),
-        State(get_uuid(SurfaceSelectorID.ENSEMBLE.value), "value"),
+        Output(get_uuid(SurfaceSelectorID.DATE), "options"),
+        Output(get_uuid(SurfaceSelectorID.DATE), "value"),
+        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE), "value"),
+        State(get_uuid(SurfaceSelectorID.DATE), "value"),
+        State(get_uuid(SurfaceSelectorID.ENSEMBLE), "value"),
     )
     def _update_date(attribute: str, current_date: str, ensemble):
         if not isinstance(attribute, list):
@@ -73,11 +73,11 @@ def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetMode
         return options, date
 
     @callback(
-        Output(get_uuid(SurfaceSelectorID.NAME.value), "options"),
-        Output(get_uuid(SurfaceSelectorID.NAME.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "value"),
-        State(get_uuid(SurfaceSelectorID.NAME.value), "value"),
-        State(get_uuid(SurfaceSelectorID.ENSEMBLE.value), "value"),
+        Output(get_uuid(SurfaceSelectorID.NAME), "options"),
+        Output(get_uuid(SurfaceSelectorID.NAME), "value"),
+        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE), "value"),
+        State(get_uuid(SurfaceSelectorID.NAME), "value"),
+        State(get_uuid(SurfaceSelectorID.ENSEMBLE), "value"),
     )
     def _update_name(attribute: str, current_name: str, ensemble):
         if not isinstance(attribute, list):
@@ -88,13 +88,13 @@ def surface_selector_callbacks(get_uuid, surface_set_models: List[SurfaceSetMode
         return options, name
 
     @callback(
-        Output(get_uuid(SurfaceSelectorID.SELECTED_DATA.value), "data"),
-        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.NAME.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.DATE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.ENSEMBLE.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.REALIZATIONS.value), "value"),
-        Input(get_uuid(SurfaceSelectorID.MODE.value), "value"),
+        Output(get_uuid(SurfaceSelectorID.SELECTED_DATA), "data"),
+        Input(get_uuid(SurfaceSelectorID.ATTRIBUTE), "value"),
+        Input(get_uuid(SurfaceSelectorID.NAME), "value"),
+        Input(get_uuid(SurfaceSelectorID.DATE), "value"),
+        Input(get_uuid(SurfaceSelectorID.ENSEMBLE), "value"),
+        Input(get_uuid(SurfaceSelectorID.REALIZATIONS), "value"),
+        Input(get_uuid(SurfaceSelectorID.MODE), "value"),
     )
     def _update_stored_data(
         attribute: str,

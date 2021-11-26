@@ -26,7 +26,7 @@ def deckgl_map_aio_callbacks(
         Output(DeckGLMapAIO.ids.propertymap_image(get_uuid("mapview")), "data"),
         Output(DeckGLMapAIO.ids.propertymap_range(get_uuid("mapview")), "data"),
         Output(DeckGLMapAIO.ids.propertymap_bounds(get_uuid("mapview")), "data"),
-        Input(get_uuid(SurfaceSelectorID.SELECTED_DATA.value), "data"),
+        Input(get_uuid(SurfaceSelectorID.SELECTED_DATA), "data"),
     )
     def _update_property_map(surface_selected_data: str):
         selected_surface = SurfaceContext(**surface_selected_data)
@@ -41,7 +41,7 @@ def deckgl_map_aio_callbacks(
 
     @callback(
         Output(DeckGLMapAIO.ids.colormap_image(get_uuid("mapview")), "data"),
-        Input(get_uuid(ColorMapID.SELECT.value), "value"),
+        Input(get_uuid(ColorMapID.SELECT), "value"),
     )
     def _update_color_map(colormap):
         return f"/colormaps/{colormap}.png"
@@ -58,21 +58,21 @@ def deckgl_map_aio_callbacks(
 
     @callback(
         Output(DeckGLMapAIO.ids.colormap_range(get_uuid("mapview")), "data"),
-        Input(get_uuid(ColorMapID.RANGE.value), "value"),
+        Input(get_uuid(ColorMapID.RANGE), "value"),
     )
     def _update_colormap_range(colormap_range):
         return colormap_range
 
     @callback(
-        Output(get_uuid(ColorMapID.RANGE.value), "min"),
-        Output(get_uuid(ColorMapID.RANGE.value), "max"),
-        Output(get_uuid(ColorMapID.RANGE.value), "step"),
-        Output(get_uuid(ColorMapID.RANGE.value), "value"),
-        Output(get_uuid(ColorMapID.RANGE.value), "marks"),
+        Output(get_uuid(ColorMapID.RANGE), "min"),
+        Output(get_uuid(ColorMapID.RANGE), "max"),
+        Output(get_uuid(ColorMapID.RANGE), "step"),
+        Output(get_uuid(ColorMapID.RANGE), "value"),
+        Output(get_uuid(ColorMapID.RANGE), "marks"),
         Input(DeckGLMapAIO.ids.propertymap_range(get_uuid("mapview")), "data"),
-        Input(get_uuid(ColorMapID.KEEP_RANGE.value), "value"),
-        Input(get_uuid(ColorMapID.RESET_RANGE.value), "n_clicks"),
-        State(get_uuid(ColorMapID.RANGE.value), "value"),
+        Input(get_uuid(ColorMapID.KEEP_RANGE), "value"),
+        Input(get_uuid(ColorMapID.RESET_RANGE), "n_clicks"),
+        State(get_uuid(ColorMapID.RANGE), "value"),
     )
     def _update_colormap_range_slider(value_range, keep, reset, current_val):
         ctx = callback_context.triggered[0]["prop_id"]
@@ -80,7 +80,7 @@ def deckgl_map_aio_callbacks(
         max_val = value_range[1]
         if ctx == ".":
             value = no_update
-        if ColorMapID.RESET_RANGE.value in ctx or not keep or current_val is None:
+        if ColorMapID.RESET_RANGE in ctx or not keep or current_val is None:
             value = [min_val, max_val]
         else:
             value = current_val

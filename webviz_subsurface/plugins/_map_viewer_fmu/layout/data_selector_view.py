@@ -10,7 +10,7 @@ from ..utils.formatting import format_date
 from ..models.surface_set_model import SurfaceMode, SurfaceSetModel
 
 
-class SurfaceSelectorLabel(Enum):
+class SurfaceSelectorLabel(str, Enum):
     WRAPPER = "Surface data"
     ATTRIBUTE = "Surface attribute"
     NAME = "Surface name / zone"
@@ -20,7 +20,7 @@ class SurfaceSelectorLabel(Enum):
     REALIZATIONS = "#Reals"
 
 
-class SurfaceSelectorID(Enum):
+class SurfaceSelectorID(str, Enum):
     SELECTED_DATA = "surface-selected-data"
     ATTRIBUTE = "surface-attribute"
     NAME = "surface-name"
@@ -52,24 +52,24 @@ def surface_selector_view(
     return wcc.Selectors(
         label=SurfaceSelectorLabel.WRAPPER,
         children=[
-            dcc.Store(id=get_uuid(SurfaceSelectorID.SELECTED_DATA.value)),
+            dcc.Store(id=get_uuid(SurfaceSelectorID.SELECTED_DATA)),
             wcc.SelectWithLabel(
                 label=SurfaceSelectorLabel.ATTRIBUTE,
-                id=get_uuid(SurfaceSelectorID.ATTRIBUTE.value),
+                id=get_uuid(SurfaceSelectorID.ATTRIBUTE),
                 options=[{"label": attr, "value": attr} for attr in attributes],
                 value=[attributes[0]],
                 multi=False,
             ),
             wcc.SelectWithLabel(
                 label=SurfaceSelectorLabel.NAME,
-                id=get_uuid(SurfaceSelectorID.NAME.value),
+                id=get_uuid(SurfaceSelectorID.NAME),
                 options=[{"label": name, "value": name} for name in names],
                 value=[names[0]],
                 multi=False,
             ),
             wcc.SelectWithLabel(
                 label=SurfaceSelectorLabel.DATE,
-                id=get_uuid(SurfaceSelectorID.DATE.value),
+                id=get_uuid(SurfaceSelectorID.DATE),
                 options=[{"label": format_date(date), "value": date} for date in dates]
                 if dates
                 else None,
@@ -78,7 +78,7 @@ def surface_selector_view(
             ),
             wcc.SelectWithLabel(
                 label=SurfaceSelectorLabel.ENSEMBLE,
-                id=get_uuid(SurfaceSelectorID.ENSEMBLE.value),
+                id=get_uuid(SurfaceSelectorID.ENSEMBLE),
                 options=[
                     {"label": ensemble, "value": ensemble} for ensemble in ensembles
                 ],
@@ -89,7 +89,7 @@ def surface_selector_view(
                 style={"display": "grid", "gridTemplateColumns": "3fr 1fr"},
                 children=[
                     wcc.RadioItems(
-                        id=get_uuid(SurfaceSelectorID.MODE.value),
+                        id=get_uuid(SurfaceSelectorID.MODE),
                         label=SurfaceSelectorLabel.MODE,
                         options=[
                             {"label": mode, "value": mode} for mode in SurfaceMode
@@ -98,7 +98,7 @@ def surface_selector_view(
                     ),
                     wcc.SelectWithLabel(
                         label=SurfaceSelectorLabel.REALIZATIONS,
-                        id=get_uuid(SurfaceSelectorID.REALIZATIONS.value),
+                        id=get_uuid(SurfaceSelectorID.REALIZATIONS),
                         options=[
                             {"label": real, "value": real} for real in realizations
                         ],
