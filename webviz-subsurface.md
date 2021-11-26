@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.1.dev1+g2ce59ed` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.8rc0` of `webviz-subsurface`.
 
 
 
