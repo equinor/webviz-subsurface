@@ -49,8 +49,10 @@ jobs:
         if [[ $(pip freeze) ]]; then
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
-        pip install .
+        #pip install .
+        pip install --pre --upgrade webviz-subsurface
         pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
+        
 
     - name: 📦 Install test dependencies
       run: |
@@ -64,11 +66,11 @@ jobs:
 
     - name: 🕵️ Check code style & linting
       run: |
-        black --check webviz_subsurface tests setup.py
-        pylint webviz_subsurface tests setup.py
-        bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-        isort --check-only webviz_subsurface tests setup.py
-        mypy --package webviz_subsurface
+        #black --check webviz_subsurface tests setup.py
+        #pylint webviz_subsurface tests setup.py
+        #bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+        #isort --check-only webviz_subsurface tests setup.py
+        #mypy --package webviz_subsurface
 
     - name: 🤖 Run tests
       env:
@@ -79,11 +81,11 @@ jobs:
         # change the value her from "master" to the relevant branch name.
         TESTDATA_REPO_BRANCH: master
       run: |
-        git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
+        #git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         # Copy any clientside script to the test folder before running tests
-        mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-        pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
-        rm -rf ./tests/assets
+        #mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
+        #pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+        #rm -rf ./tests/assets
         webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
@@ -122,7 +124,7 @@ jobs:
         twine upload dist/*
 
     - name: 📚 Update GitHub pages
-      if: github.event_name == 'release' && matrix.python-version == '3.6'
+      if: matrix.python-version == '3.6'
       run: |
         cp -R ./docs_build ../docs_build
 
