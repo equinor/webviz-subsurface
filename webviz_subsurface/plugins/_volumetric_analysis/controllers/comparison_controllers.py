@@ -252,12 +252,12 @@ def create_comparison_df(
 ) -> pd.DataFrame:
 
     resp = selections["Response"]
-    possible_pivot_columns = ["SOURCE", "ENSEMBLE"] + (
-        ["SENSNAME_CASE"] if "SENSNAME_CASE" in volumemodel.selectors else []
-    )
-    df = volumemodel.get_df(
-        selections["filters"], groups=groups + possible_pivot_columns
-    )
+    adiitional_groups = [
+        x for x in ["SOURCE", "ENSEMBLE", "SENSNAME_CASE"] if x in volumemodel.selectors
+    ]
+    groups = groups + adiitional_groups
+    df = volumemodel.get_df(selections["filters"], groups=groups)
+
     # filter dataframe and set values to compare against
     if not "|" in selections["value1"]:
         value1, value2 = selections["value1"], selections["value2"]
@@ -279,8 +279,8 @@ def create_comparison_df(
     if df.empty or any(x not in df[compare_on].values for x in [value1, value2]):
         return pd.DataFrame()
 
-    df = df.loc[:, groups + possible_pivot_columns + responses].pivot_table(
-        columns=compare_on, index=groups
+    df = df.loc[:, groups + responses].pivot_table(
+        columns=compare_on, index=[x for x in groups if x != compare_on]
     )
     responses = [x for x in responses if x in df]
     for col in responses:
@@ -301,7 +301,7 @@ def create_comparison_df(
     # remove columns where all values are nan and drop SOURCE/ENSMEBLE column
     dropcols = [
         x for x in df.columns[df.isna().all()] if "diff" not in x
-    ] + possible_pivot_columns
+    ] + adiitional_groups
     df = df[[x for x in df.columns if x not in dropcols]]
 
     if rename_diff_col:
