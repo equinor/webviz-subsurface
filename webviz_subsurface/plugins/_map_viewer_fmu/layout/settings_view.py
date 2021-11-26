@@ -5,21 +5,21 @@ from dash import html
 import webviz_core_components as wcc
 
 
-class ColorMapID(Enum):
+class ColorMapID(str, Enum):
     SELECT = "colormap-select"
     RANGE = "colormap-range"
     KEEP_RANGE = "colormap-keep-range"
     RESET_RANGE = "colormap-reset-range"
 
 
-class ColorMapLabel(Enum):
+class ColorMapLabel(str, Enum):
     WRAPPER = "Surface coloring"
     SELECT = "Colormap"
     RANGE = "Value range"
     RESET_RANGE = "Reset range"
 
 
-class ColorMapKeepOptions(Enum):
+class ColorMapKeepOptions(str, Enum):
     KEEP = "Keep range"
 
 
@@ -29,7 +29,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
         children=[
             wcc.Dropdown(
                 label=ColorMapLabel.SELECT,
-                id=get_uuid(ColorMapID.SELECT.value),
+                id=get_uuid(ColorMapID.SELECT),
                 options=[
                     {"label": name, "value": name} for name in ["viridis_r", "seismic"]
                 ],
@@ -38,7 +38,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
             ),
             wcc.RangeSlider(
                 label=ColorMapLabel.RANGE,
-                id=get_uuid(ColorMapID.RANGE.value),
+                id=get_uuid(ColorMapID.RANGE),
                 updatemode="drag",
                 tooltip={
                     "always_visible": True,
@@ -46,7 +46,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
                 },
             ),
             wcc.Checklist(
-                id=get_uuid(ColorMapID.KEEP_RANGE.value),
+                id=get_uuid(ColorMapID.KEEP_RANGE),
                 options=[
                     {
                         "label": opt,
@@ -58,7 +58,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
             html.Button(
                 children=ColorMapLabel.RESET_RANGE,
                 style={"marginTop": "5px"},
-                id=get_uuid(ColorMapID.RESET_RANGE.value),
+                id=get_uuid(ColorMapID.RESET_RANGE),
             ),
         ],
     )
