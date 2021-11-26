@@ -12,14 +12,15 @@ class DeckGLMapLayersModel:
 
     def _update_layer_by_type(self, layer_type: Enum, layer_data: Dict):
         layers = list(filter(lambda x: x["@@type"] == layer_type, self._layers))
-        if not layers:
-            raise KeyError(f"No {layer_type} found in layer specification!")
-        if len(layers) > 1:
-            raise KeyError(
-                f"Multiple layers of type {layer_type} found in layer specification!"
-            )
-        layer_idx = self._layers.index(layers[0])
-        self._layers[layer_idx].update(layer_data)
+        # if not layers:
+        #     raise KeyError(f"No {layer_type} found in layer specification!")
+        # if len(layers) > 1:
+        #     raise KeyError(
+        #         f"Multiple layers of type {layer_type} found in layer specification!"
+        #     )
+        if len(layers) == 1:
+            layer_idx = self._layers.index(layers[0])
+            self._layers[layer_idx].update(layer_data)
 
     def set_propertymap(
         self,
