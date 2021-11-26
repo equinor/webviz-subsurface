@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 
 from dash import Dash, dcc, html
+import pydeck as pdk
 from webviz_config import WebvizPluginABC, WebvizSettings
 import webviz_core_components as wcc
 
@@ -32,29 +33,6 @@ from .routes import deckgl_map_routes
 from .callbacks import surface_selector_callbacks
 from .webviz_store import webviz_store_functions
 
-with open("/tmp/volve_wells.json", "r") as f:
-    WELLS = json.load(f)
-with open("/tmp/volve_logs.json", "r") as f:
-    LOGS = json.load(f)
-with open("/tmp/color-tables.json", "r") as f:
-    COLORTABLES = json.load(f)
-with open("/tmp/welllayer_template.json", "r") as f:
-    TEMPLATE = json.load(f)
-
-
-def tmp_set_wells_layer(wells, log=None, logtype="discrete"):
-    return WellsLayer(data=XtgeoWellsJson(wells).feature_collection)
-
-    with open("/tmp/drogon_wells.json", "w") as f:
-        json.dump(XtgeoWellsJson(wells).feature_collection, f)
-    with open("/tmp/drogon_logs.json", "w") as f:
-        json.dump([XtgeoLogsJson(well, log="Zone").data for well in wells], f)
-    return WellsLayer(data=WELLS, log_data=LOGS, log_run="BLOCKING", log_name="ZONELOG")
-    # "logData": [XtgeoLogsJson(well, log="Zone").data for well in wells],
-    # "logrunName": "log",
-    # "logName": "PORO",
-    # "selectedWell": wells[0].name,
-
 
 class MapViewerFMU(WebvizPluginABC):
     def __init__(
@@ -70,7 +48,8 @@ class MapViewerFMU(WebvizPluginABC):
     ):
 
         super().__init__()
-
+        with open("/tmp/drogon_well_picks.json", "r") as f:
+            self.jsondata = json.load(f)
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -142,6 +121,14 @@ class MapViewerFMU(WebvizPluginABC):
                                         ColormapLayer(),
                                         Hillshading2DLayer(),
                                         WellsLayer(data={}),
+                                        pdk.Layer(
+                                            "GeoJsonLayer",
+                                            self.jsondata,
+                                            visible=True,
+                                            # get_elevation="properties.valuePerSqm / 20",
+                                            # get_fill_color="[255, 255, properties.growth * 255]",
+                                            get_line_color=[255, 255, 255],
+                                        ),
                                     ],
                                 ),
                             ],
