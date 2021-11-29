@@ -6,10 +6,7 @@ from dash import html
 
 
 def fipfile_qc_main_layout(uuid: str) -> wcc.Frame:
-    return wcc.Frame(
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
+    return html.Div(
         children=[
             html.Div(
                 style={"margin-bottom": "20px"},

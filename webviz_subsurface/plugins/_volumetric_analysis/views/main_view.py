@@ -2,7 +2,7 @@ from typing import Callable, Optional
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import dcc, html
+from dash import dcc
 from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._models import InplaceVolumesModel
@@ -32,9 +32,7 @@ def main_view(
             label="Inplace distributions",
             value="voldist",
             children=tab_view_layout(
-                main_layout=distributions_main_layout(
-                    uuid=get_uuid("main-voldist"), volumemodel=volumemodel
-                ),
+                main_layout=distributions_main_layout(uuid=get_uuid("main-voldist")),
                 sidebar_layout=[
                     selections_layout(
                         uuid=get_uuid("selections"),
@@ -182,11 +180,13 @@ def tab_view_layout(main_layout: list, sidebar_layout: list) -> wcc.FlexBox:
     return wcc.FlexBox(
         children=[
             wcc.Frame(
-                style={"flex": 1, "height": "91vh"},
+                style={"flex": 1, "height": "87vh"},
                 children=sidebar_layout,
             ),
-            html.Div(
-                style={"flex": 6, "height": "91vh"},
+            wcc.Frame(
+                style={"flex": 6, "height": "87vh"},
+                color="white",
+                highlight=False,
                 children=main_layout,
             ),
         ]

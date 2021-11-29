@@ -46,7 +46,7 @@ def fipfile_qc_controller(get_uuid: Callable, disjoint_set_df: pd.DataFrame) -> 
                 children=create_data_table(
                     columns=create_table_columns(df.columns),
                     data=df.to_dict("records"),
-                    height="88vh",
+                    height="82vh",
                     table_id={"table_id": "disjointset-info"},
                     style_cell_conditional=[
                         {"if": {"column_id": ["SET", "FIPNUM"]}, "width": "10%"},

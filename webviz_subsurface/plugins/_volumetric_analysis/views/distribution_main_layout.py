@@ -1,164 +1,89 @@
+from typing import Optional
+
+import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import html
 
-from webviz_subsurface._models import InplaceVolumesModel
 
-
-def distributions_main_layout(uuid: str, volumemodel: InplaceVolumesModel) -> html.Div:
+def distributions_main_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
             html.Div(
                 id={"id": uuid, "page": "custom"},
-                style={"display": "none"},
-                children=custom_plotting_layout(uuid),
-            ),
-            html.Div(
-                id={"id": uuid, "page": "1p1t"},
                 style={"display": "block"},
-                children=one_plot_one_table_layout(uuid),
             ),
             html.Div(
                 id={"id": uuid, "page": "per_zr"},
                 style={"display": "none"},
-                children=plots_per_zone_region_layout(uuid, volumemodel),
             ),
             html.Div(
                 id={"id": uuid, "page": "conv"},
                 style={"display": "none"},
-                children=convergence_plot_layout(uuid),
             ),
         ]
     )
 
 
-def table_main_layout(uuid: str) -> html.Div:
-    return wcc.Frame(
-        id={"id": uuid, "wrapper": "table", "page": "table"},
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
-        children=[],
+def table_main_layout(uuid: str) -> wcc.Frame:
+    return html.Div(id={"id": uuid, "page": "table"})
+
+
+def convergence_plot_layout(figure: go.Figure) -> wcc.Graph:
+    return wcc.Graph(
+        config={"displayModeBar": False},
+        style={"height": "86vh"},
+        figure=figure,
     )
 
 
-def convergence_plot_layout(uuid: str) -> html.Div:
-    return wcc.Frame(
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
-        children=[
-            wcc.Graph(
-                id={"id": uuid, "element": "plot", "page": "conv"},
-                config={"displayModeBar": False},
-                style={"height": "85vh"},
-            )
-        ],
-    )
-
-
-def custom_plotting_layout(uuid: str) -> html.Div:
-    return wcc.Frame(
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
-        children=[
-            wcc.RadioItems(
-                id={"id": uuid, "element": "plot-table-select"},
-                options=[
-                    {"label": "Plot", "value": "graph"},
-                    {"label": "Table", "value": "table"},
-                ],
-                value="graph",
-                vertical=False,
-            ),
-            html.Div(
-                id={"id": uuid, "wrapper": "graph", "page": "custom"},
-                style={"display": "inline"},
-                children=wcc.Graph(
-                    id={"id": uuid, "element": "graph", "page": "custom"},
-                    config={"displayModeBar": False},
-                    style={"height": "85vh"},
-                ),
-            ),
-            html.Div(
-                id={"id": uuid, "wrapper": "table", "page": "custom"},
-                style={"display": "none"},
-            ),
-        ],
-    )
-
-
-def one_plot_one_table_layout(uuid: str) -> html.Div:
+def custom_plotting_layout(figure: go.Figure, tables: Optional[list]) -> html.Div:
+    tables = tables if tables is not None else []
     return html.Div(
         children=[
-            wcc.Frame(
-                color="white",
-                highlight=False,
-                style={"height": "44vh"},
-                children=wcc.Graph(
-                    id={"id": uuid, "element": "graph", "page": "1p1t"},
-                    config={"displayModeBar": False},
-                    style={"height": "44vh"},
-                ),
-            ),
-            wcc.Frame(
-                color="white",
-                highlight=False,
-                style={"height": "44vh"},
-                id={"id": uuid, "wrapper": "table", "page": "1p1t"},
-                children=[],
-            ),
+            wcc.Graph(
+                config={"displayModeBar": False},
+                style={"height": "45vh" if tables else "86vh"},
+                figure=figure,
+            )
         ]
+        + [html.Div(table, style={"margin-top": "20px"}) for table in tables]
     )
 
 
-def plots_per_zone_region_layout(
-    uuid: str, volumemodel: InplaceVolumesModel
-) -> html.Div:
-    selectors = [
-        x
-        for x in ["ZONE", "REGION", "FACIES", "FIPNUM", "SET"]
-        if x in volumemodel.selectors
-    ]
-    height = "42vh" if len(selectors) < 3 else "25vh"
-    layout = []
-    for selector in selectors:
-        layout.append(
-            wcc.Frame(
-                color="white",
-                highlight=False,
-                style={"height": height},
-                children=wcc.FlexBox(
-                    children=[
-                        html.Div(
-                            style={"flex": 1},
-                            children=wcc.Graph(
-                                id={
-                                    "id": uuid,
-                                    "chart": "pie",
-                                    "selector": selector,
-                                    "page": "per_zr",
-                                },
-                                config={"displayModeBar": False},
-                                style={"height": height},
-                            ),
-                        ),
-                        html.Div(
-                            style={"flex": 3},
-                            children=wcc.Graph(
-                                id={
-                                    "id": uuid,
-                                    "chart": "bar",
-                                    "selector": selector,
-                                    "page": "per_zr",
-                                },
-                                config={"displayModeBar": False},
-                                style={"height": height},
-                            ),
-                        ),
-                    ]
-                ),
+def plots_per_zone_region_layout(figures: list) -> list:
+    height = "42vh" if len(figures) < 3 else "28vh"
+    return html.Div(
+        children=[
+            html.Div(
+                "Pie chart available if no 'Color by' is selected",
+                style={"text-align": "right"},
             )
-        )
-
-    return html.Div(layout)
+        ]
+        + [
+            wcc.FlexBox(
+                style={"height": height},
+                children=[
+                    html.Div(
+                        style={"flex": 3},
+                        children=wcc.Graph(
+                            config={"displayModeBar": False},
+                            style={"height": height},
+                            figure=barfig,
+                        ),
+                    ),
+                    html.Div(
+                        style={
+                            "flex": 1,
+                            "display": "block" if piefig else "none",
+                        },
+                        children=wcc.Graph(
+                            config={"displayModeBar": False},
+                            style={"height": height},
+                            figure=piefig,
+                        ),
+                    ),
+                ],
+            )
+            for piefig, barfig in figures
+        ]
+    )

@@ -128,6 +128,10 @@ def selections_controllers(
             "value",
         ),
         State(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": "bottom_viz"},
+            "options",
+        ),
+        State(
             {"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "value"
         ),
         State({"id": get_uuid("selections"), "tab": "voldist", "selector": ALL}, "id"),
@@ -139,6 +143,7 @@ def selections_controllers(
         plot_type: str,
         selected_page: str,
         selected_color_by: list,
+        visualization_options: list,
         selector_values: list,
         selector_ids: list,
         previous_selection: Optional[dict],
@@ -165,8 +170,8 @@ def selections_controllers(
             "Plot type": ["per_zr", "conv"],
             "Y Response": ["per_zr", "conv"],
             "X Response": [],
-            "Color by": ["per_zr", "conv"],
-            "Subplots": ["per_zr", "1p1t"],
+            "Color by": ["conv"],
+            "Subplots": ["per_zr"],
         }
 
         settings: Dict[str, dict] = {}
@@ -195,7 +200,7 @@ def selections_controllers(
         colorby_elm = (
             list(volumemodel.dataframe.columns) + volumemodel.parameters
             if settings["Plot type"]["value"] == "scatter"
-            else volumemodel.selectors
+            else [x for x in volumemodel.selectors if x != "REAL"]
         )
         settings["Y Response"]["options"] = [
             {"label": elm, "value": elm} for elm in y_elm
@@ -212,6 +217,18 @@ def selections_controllers(
         settings["Color by"]["options"] = [
             {"label": elm, "value": elm} for elm in colorby_elm
         ]
+
+        # disable vizualisation radioitem for some pages
+        for x in visualization_options:
+            x["disabled"] = selected_page != "custom"
+
+        settings["bottom_viz"] = {
+            "options": visualization_options,
+            "value": "none"
+            if selected_page != "custom"
+            else selections.get("bottom_viz"),
+        }
+
         return tuple(
             update_relevant_components(
                 id_list=selector_ids,
