@@ -8,7 +8,6 @@ on:
 jobs:
   webviz-subsurface:
     # Run on all events defined above, except pushes which are neither to master nor with a substring [deploy test] in commit message
-    if: github.event_name != 'push' || github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy test]')
     runs-on: ubuntu-latest
     env:
       PYTHONWARNINGS: default  # We want to see e.g. DeprecationWarnings
