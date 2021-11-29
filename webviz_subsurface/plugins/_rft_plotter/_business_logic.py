@@ -7,8 +7,11 @@ from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._datainput.fmu_input import load_csv
 from webviz_subsurface._utils.unique_theming import unique_colors
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
 
 from ._processing import filter_frame
 
@@ -30,34 +33,39 @@ class RftPlotterDataModel:
         self.csvfile_rft = csvfile_rft
         self.csvfile_rft_ert = csvfile_rft_ert
 
+        if csvfile_rft_ert and ensembles:
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_rft_ert" or "ensembles"'
+            )
+
         self.simdf = read_csv(self.csvfile_rft) if csvfile_rft is not None else None
         self.formationdf = read_csv(self.formations) if self.formations else None
         self.faultlinesdf = read_csv(self.faultlines) if self.faultlines else None
         self.obsdatadf = read_csv(self.obsdata) if self.obsdata else None
         self.ertdatadf = pd.DataFrame()
 
-        if csvfile_rft_ert and ensembles:
-            raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_rft_ert" or "ensembles"'
-            )
-
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
 
         if ensembles is not None:
-            self.ens_paths = {
+            ens_paths = {
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths=ens_paths,
+                )
+            )
             try:
-                self.simdf = load_csv(self.ens_paths, "share/results/tables/rft.csv")
+                self.simdf = self.emodel.load_csv(Path("share/results/tables/rft.csv"))
             except (KeyError, OSError):
                 self.simdf = None
+            # parameters = self.emodel.load_parameters()
 
             try:
-                self.ertdatadf = load_csv(
-                    self.ens_paths, "share/results/tables/rft_ert.csv"
+                self.ertdatadf = self.emodel.load_csv(
+                    Path("share/results/tables/rft_ert.csv")
                 )
             except KeyError as exc:
                 raise KeyError(
@@ -169,33 +177,7 @@ class RftPlotterDataModel:
             )
         ]
         if self.csvfile_rft_ert is None:
-            functions.append(
-                (
-                    load_csv,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "csv_file": "share/results/tables/rft_ert.csv",
-                        },
-                    ],
-                )
-            )
-            try:
-                load_csv(self.ens_paths, "share/results/tables/rft.csv")
-                functions.append(
-                    (
-                        load_csv,
-                        [
-                            {
-                                "ensemble_paths": self.ens_paths,
-                                "csv_file": "share/results/tables/rft.csv",
-                            },
-                        ],
-                    )
-                )
-            except KeyError:
-                pass
-
+            functions.extend(self.emodel.webvizstore)
         return functions
 
 
