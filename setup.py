@@ -77,9 +77,6 @@ setup(
         "console_scripts": ["smry2arrow_batch=webviz_subsurface.smry2arrow_batch:main"],
     },
     install_requires=[
-        "ecl2df>=0.15.0; sys_platform=='linux'",
-        "fmu-ensemble>=1.2.3",
-        "fmu-tools>=1.8",
         "webviz-subsurface-components>=0.4.7",
         "xtgeo>=2.14",
     ],
