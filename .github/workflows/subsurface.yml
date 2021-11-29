@@ -7,31 +7,19 @@ on:
 
 jobs:
   webviz-subsurface:
-    # Run on all events defined above, except pushes which are neither to master nor with a substring [deploy test] in commit message
     runs-on: ubuntu-latest
-    env:
-      PYTHONWARNINGS: default  # We want to see e.g. DeprecationWarnings
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
-
     steps:
-
     - name: 📖 Checkout commit locally
       uses: actions/checkout@v2
 
-    - name: 🐍 Set up Python ${{ matrix.python-version }}
+    - name: 🐍 Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.6"
 
     - name: 📦 Install webviz-subsurface with dependencies
       run: |
         pip install --upgrade pip
-        if [[ $(pip freeze) ]]; then
-          pip freeze | grep -vw "pip" | xargs pip uninstall -y
-        fi
         pip install .
 
     - name: 🧾 List all installed packages
