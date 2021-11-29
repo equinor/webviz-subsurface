@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from ..._utils.fanchart_plotting import (
+from ...._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
     LowHighData,
@@ -11,7 +11,7 @@ from ..._utils.fanchart_plotting import (
     TraceDirection,
     get_fanchart_traces,
 )
-from ._processing import filter_frame, interpolate_depth
+from .._processing import filter_frame, interpolate_depth
 
 
 class FormationFigure:

@@ -7,11 +7,11 @@ from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._models import (
     EnsembleSetModel,
     caching_ensemble_set_model_factory,
 )
+from webviz_subsurface._utils.unique_theming import unique_colors
 
 from ._processing import filter_frame
 

@@ -5,12 +5,12 @@ from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from ._business_logic import RftPlotterDataModel
-from ._crossplot_figure import update_crossplot
-from ._errorplot_figure import update_errorplot
-from ._formation_figure import FormationFigure
-from ._map_figure import MapFigure
-from ._misfit_figure import update_misfit_plot
 from ._processing import filter_frame
+from .figures._crossplot_figure import update_crossplot
+from .figures._errorplot_figure import update_errorplot
+from .figures._formation_figure import FormationFigure
+from .figures._map_figure import MapFigure
+from .figures._misfit_figure import update_misfit_plot
 
 
 def plugin_callbacks(
