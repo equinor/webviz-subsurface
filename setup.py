@@ -79,7 +79,6 @@ setup(
     install_requires=[
         "ecl2df>=0.15.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
-        "fmu-tools>=1.8",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
