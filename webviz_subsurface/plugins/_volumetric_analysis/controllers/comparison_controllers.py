@@ -280,7 +280,8 @@ def create_comparison_df(
         return pd.DataFrame()
 
     df = df.loc[:, groups + responses].pivot_table(
-        columns=compare_on, index=[x for x in groups if x != compare_on]
+        columns=compare_on,
+        index=[x for x in groups if x not in [compare_on, "SENSNAME_CASE"]],
     )
     responses = [x for x in responses if x in df]
     for col in responses:
