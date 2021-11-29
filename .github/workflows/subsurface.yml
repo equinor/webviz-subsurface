@@ -33,7 +33,6 @@ jobs:
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
         pip install .
-        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
 
     - name: 🧾 List all installed packages
       run: pip freeze
