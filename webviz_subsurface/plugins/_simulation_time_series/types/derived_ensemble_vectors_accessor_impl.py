@@ -109,6 +109,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         `TODO:`
         * Verify calculation of cumulative
         * IMPROVE FUNCTION NAME!
+        * See TODO in calculate_from_resampled_cumulative_vectors_df()
         """
         if not self.has_interval_and_average_vectors():
             raise ValueError(

@@ -133,8 +133,8 @@ class GraphFigureBuilder:
 
         `Input:`
         * vector_statistics_df: pd.Dataframe - Dataframe with double column level:\n
-          [            vector1,                        ... vectorN
-            "DATE",    MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
+          [ "DATE",    vector1,                        ... vectorN
+                       MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
 
         """
         color = self._ensemble_colors.get(ensemble)
@@ -150,7 +150,7 @@ class GraphFigureBuilder:
             if name != "DATE"
         }
         for vector in set(vector_names):
-            # Create statistics DataFrame for vector
+            # Retrieve DATE and statistics columns for specific vector
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
                 vectors_statistics_df[vector]
             )
@@ -165,14 +165,6 @@ class GraphFigureBuilder:
                 statistics_options=statistics_options,
                 show_legend=False,
             )
-
-        # # Add legend for ensemble - utilize one trace dict
-        # if add_legend:
-        #     for traces in vector_traces_set.values():
-        #         if len(traces) > 0:
-        #             trace: dict = traces[-1] #
-        #             trace["showlegend"] = add_legend
-        #             break
 
         # Set show legend on last trace in last vector trace list (mean will be last
         # trace with solid line)
@@ -200,8 +192,8 @@ class GraphFigureBuilder:
 
         `Input:`
         * Dataframe with double column level:\n
-          [            vector1,                        ... vectorN
-            "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+          [ "DATE",    vector1,                        ... vectorN
+                       MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
         """
         # TODO: Add verification of format and raise value error - i.e required columns and
         # "dimension" of vectors_statistics_df
@@ -529,7 +521,7 @@ class GraphFigureBuilder:
 
         `Input:`
         * vector_statistics_df: pd.Dataframe - Dataframe with dates and vector statistics columns.
-          DataFrame columns: ["DATE", mean, min, max, p10, p90, p50]
+          DataFrame columns: ["DATE", MEAN, MIN, MAX, P10, P90, P50]
 
         * statistics_options: List[StatisticsOptions] - List of statistic options to include
         """

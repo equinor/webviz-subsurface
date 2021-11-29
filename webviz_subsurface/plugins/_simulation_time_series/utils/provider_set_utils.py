@@ -1,15 +1,11 @@
 from typing import Dict, List, Optional
-from pathlib import Path
+
 
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
     simulation_unit_reformat,
 )
-from webviz_subsurface._providers import (
-    EnsembleSummaryProvider,
-    EnsembleSummaryProviderFactory,
-    Frequency,
-)
+
 
 from webviz_subsurface._utils.vector_calculator import (
     ExpressionInfo,
@@ -18,30 +14,6 @@ from webviz_subsurface._utils.vector_calculator import (
 )
 
 from ..types import ProviderSet
-
-
-def create_lazy_provider_set_from_paths(
-    name_path_dict: Dict[str, Path],
-) -> ProviderSet:
-    provider_factory = EnsembleSummaryProviderFactory.instance()
-    provider_dict: Dict[str, EnsembleSummaryProvider] = {}
-    for name, path in name_path_dict.items():
-        provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(str(path))
-    return ProviderSet(provider_dict)
-
-
-def create_presampled_provider_set_from_paths(
-    name_path_dict: Dict[str, Path],
-    presampling_frequency: Frequency,
-) -> ProviderSet:
-    # TODO: Make presampling_frequency: Optional[Frequency] when allowing raw data for plugin
-    provider_factory = EnsembleSummaryProviderFactory.instance()
-    provider_dict: Dict[str, EnsembleSummaryProvider] = {}
-    for name, path in name_path_dict.items():
-        provider_dict[name] = provider_factory.create_from_arrow_unsmry_presampled(
-            str(path), presampling_frequency
-        )
-    return ProviderSet(provider_dict)
 
 
 def create_vector_plot_titles_from_provider_set(

@@ -19,8 +19,8 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     # TODO: Verify returned dataframe index format
     `Returns:`
     * Dataframe with double column level:\n
-      [            vector1,                        ... vectorN
-        "DATE",    mean, min, max, p10, p90, p50   ... mean, min, max, p10, p90, p50]
+      [ "DATE",     vector1,                        ... vectorN
+                    MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
     """
     # TODO: Add verification of format and raise value error - i.e required columns and
     # "dimension" of vectors_statistics_df?

@@ -16,11 +16,11 @@ from webviz_subsurface._providers import Frequency
 from ._callbacks import plugin_callbacks
 from ._layout import main_layout
 from .types import VisualizationOptions
-from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
-from .utils.provider_set_utils import (
+from .types.provider_set import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
+from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
 
 from ..._abbreviations.reservoir_simulation import simulation_vector_description
 from ..._utils.vector_calculator import (
@@ -34,7 +34,7 @@ from ..._utils.simulation_timeseries import (
     check_and_format_observations,
 )
 
-# pylint: disable = too-many-instance-attributes
+
 class SimulationTimeSeries(WebvizPluginABC):
     # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
     def __init__(
@@ -42,7 +42,6 @@ class SimulationTimeSeries(WebvizPluginABC):
         app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
-        csvfile_path: Optional[Path] = None,
         perform_presampling: bool = False,
         obsfile: Path = None,
         options: dict = None,
@@ -59,19 +58,19 @@ class SimulationTimeSeries(WebvizPluginABC):
         )
 
         self._webviz_settings = webviz_settings
-        self._csvfile_path = csvfile_path
         self._obsfile = obsfile
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
 
-        # Must defined valid freqency
+        # Must define valid freqency
         self._sampling = Frequency(sampling)
         self._presampled_frequency = None
+
         # TODO: Update functionality when allowing raw data and csv file input
-        # Add config param "presampled" and create providers from factory with
-        # presampled/lazy accordingly
+        # NOTE: If csv is implemented-> handle/disable statistics, INTVL_, AVG_, delta
+        # ensemble, etc.
         if ensembles is not None:
             ensemble_paths: Dict[str, Path] = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -89,10 +88,6 @@ class SimulationTimeSeries(WebvizPluginABC):
                     ensemble_paths
                 )
             self._input_provider_set.verify_consistent_vector_metadata()
-        elif self._csvfile_path is not None:
-            # NOTE: If csv is implemented-> handle/disable statistics, INTVL_, AVG_, delta
-            # ensemble, etc.
-            raise NotImplementedError()
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide a "csvfile" or "ensembles"'
