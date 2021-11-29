@@ -2,15 +2,8 @@ name: webviz-subsurface
 
 on:
   push:
-  pull_request:
     branches:
-      - master
-  release:
-    types:
-      - published
-  schedule:
-    # Run CI daily and check that tests are working with latest dependencies
-    - cron:  '0 0 * * *'
+      - debugxtgeo
 
 jobs:
   webviz-subsurface:
