@@ -19,7 +19,6 @@ jobs:
 
     - name: 📦 Install webviz-subsurface with dependencies
       run: |
-        pip install --upgrade pip
         pip install "fmu-tools>=1.8"
 
     - name: 🧾 List all installed packages
