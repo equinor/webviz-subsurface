@@ -221,9 +221,8 @@ class XSectionFigure:
             hvals_copy = ma.masked_where(zonevals != zone, hvals)
             color = self._surfacecolors[i % len(self._surfacecolors)]
             self._figure.add_trace(
-                {  # pylint: disable=no-member
+                {
                     "x": hvals_copy.compressed(),
-                    # pylint: disable=no-member
                     "y": zvals_copy.compressed(),
                     "line": {"width": 10, "color": color},
                     "fillcolor": color,
