@@ -3,9 +3,11 @@ from dataclasses import dataclass
 
 from xtgeo import Well
 
+
 @dataclass
 class DeckGLWellsContext:
     well_names: List[str]
+
 
 # pylint: disable=too-few-public-methods
 class XtgeoWellsJson:
@@ -28,7 +30,8 @@ class XtgeoWellsJson:
 
         header = self._generate_header(well.xpos, well.ypos)
         dframe = well.dataframe[["X_UTME", "Y_UTMN", "Z_TVDSS"]]
-        dframe["Z_TVDSS"] = dframe["Z_TVDSS"] * -1
+        # dframe.loc[:, "Z_TVDSS"] *= -1  # Negative elevation requires for DeckGL
+        dframe["Z_TVDSS"] *= -1
         trajectory = self._generate_trajectory(values=dframe.values.tolist())
 
         properties = self._generate_properties(
