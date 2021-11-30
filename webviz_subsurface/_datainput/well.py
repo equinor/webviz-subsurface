@@ -18,7 +18,7 @@ def load_well(
         lognames.append(zonelogname)
     if mdlogname is not None and mdlogname not in lognames:
         lognames.append(mdlogname)
-    well = xtgeo.Well(
+    well = xtgeo.well_from_file(
         wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname, lognames=lognames
     )
 
