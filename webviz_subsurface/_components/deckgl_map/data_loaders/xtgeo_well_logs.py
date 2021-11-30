@@ -6,11 +6,16 @@ from xtgeo import Well
 
 @dataclass
 class DeckGLLogsContext:
+    """Contains the log name for a given well and logrun"""
+
     well: str
     log: str
     logrun: str
 
+
 class XtgeoLogsJson:
+    """Converts a log for a given well, logrun and log to geojson"""
+
     def __init__(
         self,
         well: Well,

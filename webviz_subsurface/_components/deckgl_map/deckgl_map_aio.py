@@ -1,4 +1,6 @@
-from typing import Dict, List
+from typing import List
+from enum import Enum
+
 from dash import (
     html,
     dcc,
@@ -15,66 +17,62 @@ from .deckgl_map_layers_model import (
 )
 from .deckgl_map import (
     DeckGLMap,
-    Hillshading2DLayer,
-    ColormapLayer,
     DeckGLMapDefaultProps,
 )
 
 
+class DeckGLMapAIOIds(str, Enum):
+    """An enum for the internal ids used in the DeckGLMapAIO component"""
+
+    MAP = "map"
+    PROPERTYMAP_IMAGE = "propertymap_image"
+    PROPERTYMAP_RANGE = "propertymap_range"
+    PROPERTYMAP_BOUNDS = "propertymap_bounds"
+    COLORMAP_IMAGE = "colormap_image"
+    COLORMAP_RANGE = "colormap_range"
+    WELL_DATA = "well_data"
+    SELECTED_WELL = "selected_well"
+    EDITED_FEATURES = "edited_features"
+    SELECTED_FEATURES = "selected_features"
+
+
 class DeckGLMapAIO(html.Div):
+    """A Dash 'All-in-one component' that can be used for the wsc.DeckGLMap component. The main difference from using the
+    wsc.DeckGLMap component directly is that this AIO exposes more props so that different updates to the layer specification,
+    and reacting to selected data can be done in different callbacks in a webviz plugin.
+
+    The AIO component might have limitations for some use cases, if so use the wsc.DeckGLMap component directly.
+
+    To handle layer updates a separate class is used. This class - DeckGLMapLayersModel can also be used directly with the wsc.DeckGLMap.
+
+    As usage and functionality of DeckGLMap matures this component might be integrated in the React component directly.
+
+    To use this AIO component, initialize it in the layout of a webviz plugin.
+    """
+
     class ids:
-        map = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "map",
-            "aio_id": aio_id,
-        }
-        propertymap_image = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "propertymap_image",
-            "aio_id": aio_id,
-        }
-        propertymap_range = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "propertymap_range",
-            "aio_id": aio_id,
-        }
-        propertymap_bounds = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "propertymap_bounds",
-            "aio_id": aio_id,
-        }
+        """Namespace holding internal ids of the component. Each id is a lambda function set in the loop below."""
 
-        colormap_image = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "colormap_image",
-            "aio_id": aio_id,
-        }
-        colormap_range = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "colormap_range",
-            "aio_id": aio_id,
-        }
-        well_data = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "well_data",
-            "aio_id": aio_id,
-        }
+        pass
 
-        polylines = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "polylines",
-            "aio_id": aio_id,
-        }
-        selected_well = lambda aio_id: {
-            "component": "DeckGLMapAIO",
-            "subcomponent": "selected_well",
-            "aio_id": aio_id,
-        }
-
-    ids = ids
+    for id_name in DeckGLMapAIOIds:
+        setattr(
+            ids,
+            id_name,
+            lambda aio_id, id_name=id_name: {
+                "component": "DeckGLMapAIO",
+                "subcomponent": id_name,
+                "aio_id": aio_id,
+            },
+        )
 
     def __init__(self, aio_id, layers: List[pdk.Layer]):
-        """"""
+        """
+        The DeckGLMapAIO component should be initialized in the layout of a webviz plugin.
+        Args:
+            aio_id: unique id
+            layers: list of pydeck Layers
+        """
         super().__init__(
             [
                 dcc.Store(data=[], id=self.ids.colormap_image(aio_id)),
@@ -91,9 +89,10 @@ class DeckGLMapAIO(html.Div):
                     data=DeckGLMapDefaultProps.bounds,
                     id=self.ids.propertymap_bounds(aio_id),
                 ),
-                dcc.Store(data=[], id=self.ids.polylines(aio_id)),
                 dcc.Store(data=[], id=self.ids.selected_well(aio_id)),
                 dcc.Store(data={}, id=self.ids.well_data(aio_id)),
+                dcc.Store(data={}, id=self.ids.edited_features(aio_id)),
+                dcc.Store(data={}, id=self.ids.selected_features(aio_id)),
                 DeckGLMap(
                     id=self.ids.map(aio_id),
                     layers=layers,
@@ -121,6 +120,7 @@ class DeckGLMapAIO(html.Div):
         well_data,
         current_layers,
     ):
+        """Callback handling all updates to the layers prop of the Map component"""
 
         layer_model = DeckGLMapLayersModel(current_layers)
         layer_model.set_propertymap(
@@ -134,3 +134,17 @@ class DeckGLMapAIO(html.Div):
             layer_model.set_well_data(well_data)
 
         return layer_model.layers, propertymap_bounds
+
+    @callback(
+        Output(ids.edited_features(MATCH), "data"),
+        Output(ids.selected_features(MATCH), "data"),
+        Input(ids.map(MATCH), "editedData"),
+    )
+    def _get_edited_features(
+        edited_data,
+    ):
+        """Callback that stores any selected data in internal dcc.store components"""
+        if edited_data is not None:
+            from dash import no_update
+
+        return no_update

@@ -6,6 +6,7 @@ from PIL import Image
 
 
 def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
+    """Returns bounds, view target(x,y,z position at middle of view port) and value range"""
     width = surface.xmax - surface.xmin
     height = surface.ymax - surface.ymin
     view_target = [surface.xmin + width / 2, surface.ymin + height / 2, 0]
@@ -15,6 +16,7 @@ def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
 
 
 def surface_to_rgba(surface: xtgeo.RegularSurface) -> io.BytesIO:
+    """Converts a xtgeo Surface to RGBA array"""
     surface.unrotate()
     surface.fill(np.nan)
     values = surface.values

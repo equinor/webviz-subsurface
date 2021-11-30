@@ -19,6 +19,8 @@ from webviz_subsurface._components.deckgl_map.deckgl_map import (
     WellsLayer,
     ColormapLayer,
     Hillshading2DLayer,
+    DrawingLayer,
+    CustomLayer,
 )
 from .callbacks.deckgl_map_aio_callbacks import (
     deckgl_map_aio_callbacks,
@@ -101,6 +103,7 @@ class MapViewerFMU(WebvizPluginABC):
                     get_uuid=self.uuid, well_set_model=self._well_set_model
                 )
             )
+
         return html.Div(
             id=self.uuid("layout"),
             children=[
@@ -120,14 +123,16 @@ class MapViewerFMU(WebvizPluginABC):
                                     layers=[
                                         ColormapLayer(),
                                         Hillshading2DLayer(),
-                                        WellsLayer(data={}),
-                                        pdk.Layer(
-                                            "GeoJsonLayer",
-                                            self.jsondata,
+                                        WellsLayer(),
+                                        DrawingLayer(),
+                                        CustomLayer(
+                                            type="GeoJsonLayer",
+                                            name="Well picks",
+                                            id="well-picks-layer",
+                                            data=self.jsondata,
                                             visible=True,
-                                            # get_elevation="properties.valuePerSqm / 20",
-                                            # get_fill_color="[255, 255, properties.growth * 255]",
-                                            get_line_color=[255, 255, 255],
+                                            pickable=True,
+                                            lineWidthMinPixels=10,
                                         ),
                                     ],
                                 ),
