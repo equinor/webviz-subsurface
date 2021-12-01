@@ -44,125 +44,195 @@ class LayoutElements:
     }
     CROSSPLOT_COLOR_BY = "crossplot-color-by"
     CROSSPLOT_SIZE_BY = "crossplot-size-by"
+    CORRELATIONS_ENSEMBLE = "correlations-ensemble"
+    CORRELATIONS_WELL = "correlations-well"
+    CORRELATIONS_DATE = "correlations-date"
+    CORRELATIONS_ZONE = "correlations-zone"
+    CORRELATIONS_PARAM = "correlations-param"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
-    return wcc.Tabs(
-        children=[
-            wcc.Tab(
-                label="RFT Map",
-                children=[
-                    wcc.FlexBox(
-                        children=[
-                            wcc.Frame(
-                                style={"flex": 1, "height": "87vh"},
-                                children=[
-                                    map_plot_selectors(get_uuid, datamodel),
-                                    formation_plot_selectors(get_uuid, datamodel),
-                                ],
-                            ),
-                            wcc.Frame(
-                                style={"flex": 3, "height": "87vh"},
-                                color="white",
-                                highlight=False,
-                                id=get_uuid(LayoutElements.MAP),
-                                children=[],
-                            ),
-                            wcc.Frame(
-                                style={"flex": 3, "height": "87vh"},
-                                color="white",
-                                highlight=False,
-                                id=get_uuid(LayoutElements.FORMATIONS_GRAPH),
-                                children=[],
-                            ),
-                        ]
-                    )
-                ],
-            ),
-            wcc.Tab(
-                label="RFT misfit per real",
-                children=[
-                    wcc.FlexBox(
-                        children=[
-                            wcc.Frame(
-                                style={"flex": 1, "height": "87vh"},
-                                children=filter_layout(
-                                    get_uuid, datamodel, "misfitplot"
-                                ),
-                            ),
-                            wcc.Frame(
-                                style={"flex": 6, "height": "87vh"},
-                                color="white",
-                                highlight=False,
-                                id=get_uuid(LayoutElements.MISFITPLOT_GRAPH),
-                                children=[],
-                            ),
-                        ]
-                    )
-                ],
-            ),
-            wcc.Tab(
-                label="RFT crossplot - sim vs obs",
-                children=[
-                    wcc.FlexBox(
-                        children=[
-                            wcc.Frame(
-                                style={"flex": 1, "height": "87vh"},
-                                children=[
-                                    filter_layout(get_uuid, datamodel, "crossplot"),
-                                    size_color_layout(get_uuid),
-                                ],
-                            ),
-                            wcc.Frame(
-                                style={"flex": 6, "height": "87vh"},
-                                color="white",
-                                highlight=False,
-                                children=[
-                                    html.Div(
-                                        id=get_uuid(LayoutElements.CROSSPLOT_GRAPH)
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-            wcc.Tab(
-                label="RFT misfit per observation",
-                children=[
-                    wcc.FlexBox(
-                        children=[
-                            wcc.Frame(
-                                style={"flex": 1, "height": "87vh"},
-                                children=filter_layout(
-                                    get_uuid, datamodel, "errorplot"
-                                ),
-                            ),
-                            wcc.Frame(
-                                color="white",
-                                highlight=False,
-                                style={"flex": 6, "height": "87vh"},
-                                id=get_uuid(LayoutElements.ERRORPLOT_GRAPH),
-                                children=[],
-                            ),
-                        ],
-                    ),
-                ],
-            ),
+
+    tabs = [
+        wcc.Tab(
+            label="RFT Map",
+            children=[
+                wcc.FlexBox(
+                    children=[
+                        wcc.Frame(
+                            style={"flex": 1, "height": "87vh"},
+                            children=[
+                                map_plot_selectors(get_uuid, datamodel),
+                                formation_plot_selectors(get_uuid, datamodel),
+                            ],
+                        ),
+                        wcc.Frame(
+                            style={"flex": 3, "height": "87vh"},
+                            color="white",
+                            highlight=False,
+                            id=get_uuid(LayoutElements.MAP),
+                            children=[],
+                        ),
+                        wcc.Frame(
+                            style={"flex": 3, "height": "87vh"},
+                            color="white",
+                            highlight=False,
+                            id=get_uuid(LayoutElements.FORMATIONS_GRAPH),
+                            children=[],
+                        ),
+                    ]
+                )
+            ],
+        ),
+        wcc.Tab(
+            label="RFT misfit per real",
+            children=[
+                wcc.FlexBox(
+                    children=[
+                        wcc.Frame(
+                            style={"flex": 1, "height": "87vh"},
+                            children=filter_layout(get_uuid, datamodel, "misfitplot"),
+                        ),
+                        wcc.Frame(
+                            style={"flex": 6, "height": "87vh"},
+                            color="white",
+                            highlight=False,
+                            id=get_uuid(LayoutElements.MISFITPLOT_GRAPH),
+                            children=[],
+                        ),
+                    ]
+                )
+            ],
+        ),
+        wcc.Tab(
+            label="RFT crossplot - sim vs obs",
+            children=[
+                wcc.FlexBox(
+                    children=[
+                        wcc.Frame(
+                            style={"flex": 1, "height": "87vh"},
+                            children=[
+                                filter_layout(get_uuid, datamodel, "crossplot"),
+                                size_color_layout(get_uuid),
+                            ],
+                        ),
+                        wcc.Frame(
+                            style={"flex": 6, "height": "87vh"},
+                            color="white",
+                            highlight=False,
+                            children=[
+                                html.Div(id=get_uuid(LayoutElements.CROSSPLOT_GRAPH)),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        wcc.Tab(
+            label="RFT misfit per observation",
+            children=[
+                wcc.FlexBox(
+                    children=[
+                        wcc.Frame(
+                            style={"flex": 1, "height": "87vh"},
+                            children=filter_layout(get_uuid, datamodel, "errorplot"),
+                        ),
+                        wcc.Frame(
+                            color="white",
+                            highlight=False,
+                            style={"flex": 6, "height": "87vh"},
+                            id=get_uuid(LayoutElements.ERRORPLOT_GRAPH),
+                            children=[],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ]
+
+    #
+    if datamodel.param_model is not None:
+        tabs.append(
             wcc.Tab(
                 label="RFT correlations",
-                children=correlations_view(get_uuid=get_uuid, datamodel=datamodel),
+                children=correlations_layout(get_uuid=get_uuid, datamodel=datamodel),
+            )
+        )
+
+    return wcc.Tabs(children=tabs)
+
+
+def correlations_selector_layout(
+    get_uuid: Callable, datamodel: RftPlotterDataModel
+) -> wcc.Frame:
+    ensembles = datamodel.ensembles
+    well_names = datamodel.well_names
+    zone_names = datamodel.zone_names
+    dates_in_well = datamodel.date_in_well(well_names[0])
+    params = datamodel.parameters
+    # what if the lists are empty
+    # what if there are no parameters
+    return wcc.Frame(
+        style={
+            "height": "80vh",
+            "overflowY": "auto",
+            "font-size": "15px",
+        },
+        children=[
+            wcc.Selectors(
+                label="Selections",
+                children=[
+                    wcc.Dropdown(
+                        label="Ensemble",
+                        id=get_uuid(LayoutElements.CORRELATIONS_ENSEMBLE),
+                        options=[{"label": ens, "value": ens} for ens in ensembles],
+                        value=ensembles[0],
+                        clearable=False,
+                    ),
+                    wcc.Dropdown(
+                        label="Well",
+                        id=get_uuid(LayoutElements.CORRELATIONS_WELL),
+                        options=[{"label": well, "value": well} for well in well_names],
+                        value=well_names[0] if well_names else "",
+                        clearable=False,
+                    ),
+                    wcc.Dropdown(
+                        label="Date",
+                        id=get_uuid(LayoutElements.CORRELATIONS_DATE),
+                        options=[
+                            {"label": date, "value": date} for date in dates_in_well
+                        ],
+                        clearable=False,
+                        value=dates_in_well[0] if dates_in_well else "",
+                    ),
+                    wcc.Dropdown(
+                        label="Zone",
+                        id=get_uuid(LayoutElements.CORRELATIONS_ZONE),
+                        options=[{"label": zone, "value": zone} for zone in zone_names],
+                        clearable=False,
+                        value=zone_names[0] if zone_names else "",
+                    ),
+                    wcc.Dropdown(
+                        label="Parameter",
+                        id=get_uuid(LayoutElements.CORRELATIONS_PARAM),
+                        options=[{"label": param, "value": param} for param in params],
+                        clearable=False,
+                        value=params[0] if params else "",
+                    ),
+                ],
             ),
         ],
     )
 
 
-def correlations_view(
+def correlations_layout(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
         children=[
-            wcc.FlexColumn(flex=1, children=[]),
+            wcc.FlexColumn(
+                flex=1, children=correlations_selector_layout(get_uuid, datamodel)
+            ),
             wcc.FlexColumn(
                 flex=4,
                 children=wcc.FlexBox(
