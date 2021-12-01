@@ -44,11 +44,11 @@ class LayoutElements:
     }
     CROSSPLOT_COLOR_BY = "crossplot-color-by"
     CROSSPLOT_SIZE_BY = "crossplot-size-by"
-    CORRELATIONS_ENSEMBLE = "correlations-ensemble"
-    CORRELATIONS_WELL = "correlations-well"
-    CORRELATIONS_DATE = "correlations-date"
-    CORRELATIONS_ZONE = "correlations-zone"
-    CORRELATIONS_PARAM = "correlations-param"
+    PARAMETER_RESPONSE_ENSEMBLE = "parameter-response-ensemble"
+    PARAMETER_RESPONSE_WELL = "parameter-response-well"
+    PARAMETER_RESPONSE_DATE = "parameter-response-date"
+    PARAMETER_RESPONSE_ZONE = "parameter-response-zone"
+    PARAMETER_RESPONSE_PARAM = "parameter-response-param"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -154,15 +154,17 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
     if datamodel.param_model is not None:
         tabs.append(
             wcc.Tab(
-                label="RFT correlations",
-                children=correlations_layout(get_uuid=get_uuid, datamodel=datamodel),
+                label="RFT parameter response",
+                children=parameter_response_layout(
+                    get_uuid=get_uuid, datamodel=datamodel
+                ),
             )
         )
 
     return wcc.Tabs(children=tabs)
 
 
-def correlations_selector_layout(
+def parameter_response_selector_layout(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> wcc.Frame:
     ensembles = datamodel.ensembles
@@ -170,8 +172,6 @@ def correlations_selector_layout(
     zone_names = datamodel.zone_names
     dates_in_well = datamodel.date_in_well(well_names[0])
     params = datamodel.parameters
-    # what if the lists are empty
-    # what if there are no parameters
     return wcc.Frame(
         style={
             "height": "80vh",
@@ -184,21 +184,21 @@ def correlations_selector_layout(
                 children=[
                     wcc.Dropdown(
                         label="Ensemble",
-                        id=get_uuid(LayoutElements.CORRELATIONS_ENSEMBLE),
+                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_ENSEMBLE),
                         options=[{"label": ens, "value": ens} for ens in ensembles],
                         value=ensembles[0],
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Well",
-                        id=get_uuid(LayoutElements.CORRELATIONS_WELL),
+                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_WELL),
                         options=[{"label": well, "value": well} for well in well_names],
                         value=well_names[0] if well_names else "",
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Date",
-                        id=get_uuid(LayoutElements.CORRELATIONS_DATE),
+                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_DATE),
                         options=[
                             {"label": date, "value": date} for date in dates_in_well
                         ],
@@ -207,14 +207,14 @@ def correlations_selector_layout(
                     ),
                     wcc.Dropdown(
                         label="Zone",
-                        id=get_uuid(LayoutElements.CORRELATIONS_ZONE),
+                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_ZONE),
                         options=[{"label": zone, "value": zone} for zone in zone_names],
                         clearable=False,
                         value=zone_names[0] if zone_names else "",
                     ),
                     wcc.Dropdown(
                         label="Parameter",
-                        id=get_uuid(LayoutElements.CORRELATIONS_PARAM),
+                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_PARAM),
                         options=[{"label": param, "value": param} for param in params],
                         clearable=False,
                         value=params[0] if params else "",
@@ -225,13 +225,13 @@ def correlations_selector_layout(
     )
 
 
-def correlations_layout(
+def parameter_response_layout(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
-                flex=1, children=correlations_selector_layout(get_uuid, datamodel)
+                flex=1, children=parameter_response_selector_layout(get_uuid, datamodel)
             ),
             wcc.FlexColumn(
                 flex=4,
