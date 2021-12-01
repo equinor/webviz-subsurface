@@ -25,12 +25,9 @@ from webviz_subsurface._components.deckgl_map.deckgl_map import (
 from .callbacks.deckgl_map_aio_callbacks import (
     deckgl_map_aio_callbacks,
 )
-from webviz_subsurface.plugins._map_viewer_fmu.layout.data_selector_view import (
-    well_selector_view,
-)
 
 from .models import SurfaceSetModel
-from .layout import surface_selector_view, surface_settings_view
+from .layout import selector_view, settings_view, well_selector_view
 from .routes import deckgl_map_routes
 from .callbacks import surface_selector_callbacks
 from .webviz_store import webviz_store_functions
@@ -92,10 +89,10 @@ class MapViewerFMU(WebvizPluginABC):
     @property
     def layout(self) -> html.Div:
         selector_views = [
-            surface_selector_view(
+            selector_view(
                 get_uuid=self.uuid,
                 surface_set_models=self._surface_ensemble_set_models,
-            )
+            ),
         ]
         if self._well_set_model is not None:
             selector_views.append(
@@ -110,7 +107,7 @@ class MapViewerFMU(WebvizPluginABC):
                 wcc.FlexBox(
                     children=[
                         wcc.Frame(
-                            style={"flex": 1, "height": "90vh"},
+                            style={"flex": 3, "height": "90vh"},
                             children=selector_views,
                         ),
                         wcc.Frame(
@@ -139,12 +136,35 @@ class MapViewerFMU(WebvizPluginABC):
                             ],
                         ),
                         wcc.Frame(
-                            style={"flex": 1},
+                            style={
+                                "flex": 5,
+                            },
                             children=[
-                                surface_settings_view(
-                                    get_uuid=self.uuid,
+                                DeckGLMapAIO(
+                                    aio_id=self.uuid("mapview2"),
+                                    layers=[
+                                        ColormapLayer(),
+                                        Hillshading2DLayer(),
+                                        WellsLayer(),
+                                        DrawingLayer(),
+                                        CustomLayer(
+                                            type="GeoJsonLayer",
+                                            name="Well picks",
+                                            id="well-picks-layer",
+                                            data=self.jsondata,
+                                            visible=True,
+                                            pickable=True,
+                                            lineWidthMinPixels=10,
+                                        ),
+                                    ],
                                 ),
                             ],
+                        ),
+                        wcc.Frame(
+                            style={"flex": 1},
+                            children=settings_view(
+                                get_uuid=self.uuid,
+                            ),
                         ),
                         dcc.Store(
                             id=self.uuid("surface-geometry"),
