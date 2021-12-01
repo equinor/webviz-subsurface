@@ -23,13 +23,35 @@ class ColorMapKeepOptions(str, Enum):
     KEEP = "Keep range"
 
 
-def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
+class ColorLinkID(str, Enum):
+    COLORMAP = "colormap"
+    RANGE = "range"
+
+
+def settings_view(get_uuid: Callable) -> html.Div:
+    return make_link_checkboxes(get_uuid) + [
+        surface_settings_view(get_uuid, view="view1"),
+        surface_settings_view(get_uuid, view="view2"),
+    ]
+
+
+def make_link_checkboxes(get_uuid):
+    return [
+        wcc.Checklist(
+            id=get_uuid(link_id),
+            options=[{"label": f"Link {link_id}", "value": link_id}],
+        )
+        for link_id in ColorLinkID
+    ]
+
+
+def surface_settings_view(get_uuid: Callable, view: str) -> wcc.Selectors:
     return wcc.Selectors(
-        label=ColorMapLabel.WRAPPER,
+        label=f"{ColorMapLabel.WRAPPER} ({view})",
         children=[
             wcc.Dropdown(
                 label=ColorMapLabel.SELECT,
-                id=get_uuid(ColorMapID.SELECT),
+                id={"view": view, "id": get_uuid(ColorMapID.SELECT)},
                 options=[
                     {"label": name, "value": name} for name in ["viridis_r", "seismic"]
                 ],
@@ -38,7 +60,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
             ),
             wcc.RangeSlider(
                 label=ColorMapLabel.RANGE,
-                id=get_uuid(ColorMapID.RANGE),
+                id={"view": view, "id": get_uuid(ColorMapID.RANGE)},
                 updatemode="drag",
                 tooltip={
                     "always_visible": True,
@@ -46,7 +68,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
                 },
             ),
             wcc.Checklist(
-                id=get_uuid(ColorMapID.KEEP_RANGE),
+                id={"view": view, "id": get_uuid(ColorMapID.KEEP_RANGE)},
                 options=[
                     {
                         "label": opt,
@@ -58,7 +80,7 @@ def surface_settings_view(get_uuid: Callable) -> wcc.Selectors:
             html.Button(
                 children=ColorMapLabel.RESET_RANGE,
                 style={"marginTop": "5px"},
-                id=get_uuid(ColorMapID.RESET_RANGE),
+                id={"view": view, "id": get_uuid(ColorMapID.RESET_RANGE)},
             ),
         ],
     )
