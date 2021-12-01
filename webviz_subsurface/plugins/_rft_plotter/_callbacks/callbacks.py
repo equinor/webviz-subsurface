@@ -4,14 +4,14 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from ._business_logic import RftPlotterDataModel
-from ._layout import LayoutElements
-from ._processing import filter_frame
-from .figures._crossplot_figure import update_crossplot
-from .figures._errorplot_figure import update_errorplot
-from .figures._formation_figure import FormationFigure
-from .figures._map_figure import MapFigure
-from .figures._misfit_figure import update_misfit_plot
+from .._business_logic import RftPlotterDataModel
+from .._layout import LayoutElements
+from .._processing import filter_frame
+from .._figures._crossplot_figure import update_crossplot
+from .._figures._errorplot_figure import update_errorplot
+from .._figures._formation_figure import FormationFigure
+from .._figures._map_figure import MapFigure
+from .._figures._misfit_figure import update_misfit_plot
 
 
 def plugin_callbacks(
