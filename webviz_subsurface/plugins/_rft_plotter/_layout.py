@@ -44,11 +44,15 @@ class LayoutElements:
     }
     CROSSPLOT_COLOR_BY = "crossplot-color-by"
     CROSSPLOT_SIZE_BY = "crossplot-size-by"
-    PARAMETER_RESPONSE_ENSEMBLE = "parameter-response-ensemble"
-    PARAMETER_RESPONSE_WELL = "parameter-response-well"
-    PARAMETER_RESPONSE_DATE = "parameter-response-date"
-    PARAMETER_RESPONSE_ZONE = "parameter-response-zone"
-    PARAMETER_RESPONSE_PARAM = "parameter-response-param"
+    PARAMRESP_ENSEMBLE = "param-response-ensemble"
+    PARAMRESP_WELL = "param-response-well"
+    PARAMRESP_DATE = "param-response-date"
+    PARAMRESP_ZONE = "param-response-zone"
+    PARAMRESP_PARAM = "param-response-param"
+    PARAMRESP_RFT_VS_DEPTH_GRAPH = "paramresp-rft-vs-depth-graph"
+    PARAMRESP_RFT_VS_PARAM_GRAPH = "paramresp-rft-vs-param-graph"
+    PARAMRESP_PARAM_CORR_GRAPH = "paramresp-param-corr-graph"
+    PARAMRESP_RFT_CORR_GRAPH = "paramresp-rft-corr-graph"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -184,21 +188,21 @@ def parameter_response_selector_layout(
                 children=[
                     wcc.Dropdown(
                         label="Ensemble",
-                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_ENSEMBLE),
+                        id=get_uuid(LayoutElements.PARAMRESP_ENSEMBLE),
                         options=[{"label": ens, "value": ens} for ens in ensembles],
                         value=ensembles[0],
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Well",
-                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_WELL),
+                        id=get_uuid(LayoutElements.PARAMRESP_WELL),
                         options=[{"label": well, "value": well} for well in well_names],
                         value=well_names[0] if well_names else "",
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Date",
-                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_DATE),
+                        id=get_uuid(LayoutElements.PARAMRESP_DATE),
                         options=[
                             {"label": date, "value": date} for date in dates_in_well
                         ],
@@ -207,14 +211,14 @@ def parameter_response_selector_layout(
                     ),
                     wcc.Dropdown(
                         label="Zone",
-                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_ZONE),
+                        id=get_uuid(LayoutElements.PARAMRESP_ZONE),
                         options=[{"label": zone, "value": zone} for zone in zone_names],
                         clearable=False,
                         value=zone_names[0] if zone_names else "",
                     ),
                     wcc.Dropdown(
                         label="Parameter",
-                        id=get_uuid(LayoutElements.PARAMETER_RESPONSE_PARAM),
+                        id=get_uuid(LayoutElements.PARAMRESP_PARAM),
                         options=[{"label": param, "value": param} for param in params],
                         clearable=False,
                         value=params[0] if params else "",
