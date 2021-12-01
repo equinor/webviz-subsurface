@@ -11,6 +11,7 @@ from webviz_subsurface._models import (
     EnsembleSetModel,
     caching_ensemble_set_model_factory,
 )
+from webviz_subsurface._models.parameter_model import ParametersModel
 from webviz_subsurface._utils.unique_theming import unique_colors
 
 from ._processing import filter_frame
@@ -46,6 +47,7 @@ class RftPlotterDataModel:
 
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
+            self.param_model = None
 
         if ensembles is not None:
             ens_paths = {
@@ -61,7 +63,12 @@ class RftPlotterDataModel:
                 self.simdf = self.emodel.load_csv(Path("share/results/tables/rft.csv"))
             except (KeyError, OSError):
                 self.simdf = None
-            # parameters = self.emodel.load_parameters()
+
+            self.param_model = ParametersModel(
+                dataframe=self.emodel.load_parameters(),
+                drop_constants=True,
+                keep_numeric_only=True,
+            )
 
             try:
                 self.ertdatadf = self.emodel.load_csv(
@@ -135,6 +142,12 @@ class RftPlotterDataModel:
     @property
     def enscolors(self) -> dict:
         return unique_colors(self.ensembles)
+
+    @property
+    def parameters(self) -> dict:
+        if self.param_model is not None:
+            return self.param_model.parameters
+        return None
 
     def set_date_marks(self) -> Dict[str, Dict[str, Any]]:
         marks = {}
