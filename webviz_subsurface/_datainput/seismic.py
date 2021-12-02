@@ -5,7 +5,7 @@ from webviz_config.common_cache import CACHE
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def load_cube_data(cube_path: str) -> xtgeo.Cube:
-    return xtgeo.Cube(cube_path)
+    return xtgeo.cube_from_file(cube_path)
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
