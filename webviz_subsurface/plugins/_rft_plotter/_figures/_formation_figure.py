@@ -11,7 +11,7 @@ from ...._utils.fanchart_plotting import (
     TraceDirection,
     get_fanchart_traces,
 )
-from .._processing import filter_frame, interpolate_depth
+from .._business_logic import filter_frame, interpolate_depth
 
 
 class FormationFigure:

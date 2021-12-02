@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -13,8 +13,6 @@ from webviz_subsurface._models import (
 )
 from webviz_subsurface._models.parameter_model import ParametersModel
 from webviz_subsurface._utils.unique_theming import unique_colors
-
-from ._processing import filter_frame
 
 
 class RftPlotterDataModel:
@@ -198,3 +196,25 @@ class RftPlotterDataModel:
 @webvizstore
 def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)
+
+
+def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
+    df = (
+        df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
+        .interpolate(limit_direction="both")
+        .stack("REAL")
+    )
+    return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def filter_frame(
+    dframe: pd.DataFrame, column_values: Dict[str, Union[List[str], str]]
+) -> pd.DataFrame:
+    df = dframe.copy()
+    for column, value in column_values.items():
+        if isinstance(value, list):
+            df = df.loc[df[column].isin(value)]
+        else:
+            df = df.loc[df[column] == value]
+    return df
