@@ -1,8 +1,11 @@
-# pylint: disable=too-many-lines
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union  # Callable, Tuple,
+from .types.provider_set import (
+    create_lazy_provider_set_from_paths,
+    create_presampled_provider_set_from_paths,
+)
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import dash
 import numpy as np
@@ -11,8 +14,11 @@ import plotly.express as px
 import plotly.graph_objs as go
 import webviz_core_components as wcc
 
+from ._callbacks import plugin_callbacks
+from ._layout import main_layout
+
 # import webviz_subsurface_components as wsc
-from dash import Input, Output, html  # Dash, State, dcc,
+from dash import Input, Output  # , html  # Dash, State, dcc,
 
 # from dash.exceptions import PreventUpdate
 from fmu import ensemble
@@ -27,14 +33,6 @@ from webviz_subsurface._models import (
     caching_ensemble_set_model_factory,
 )
 from webviz_subsurface._providers import Frequency
-
-from _callbacks import plugin_callbacks
-from _layout import main_layout
-
-from .types.provider_set import (
-    create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
 
 # Color scales
 SYMMETRIC = [
@@ -69,325 +67,121 @@ class ProdMisfit(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
-        ensembles: list = None,
-        # sampling: Union[str, list] = "yearly",
+        ensembles: list,
+        # sampling: Union[str, list] # make it possible to add user specified date list?
         sampling: str = Frequency.YEARLY.value,  # "yearly"
-        perform_presampling: bool = True,
+        # perform_presampling: bool = True,
         excl_name_startswith: list = None,
         excl_name_contains: list = None,
-        misfit_weight_oil: float = 1.0,
-        misfit_weight_wat: float = 1.0,
-        misfit_weight_gas: float = 300.0,
+        weight_reduction_factor_oil: float = 1.0,
+        weight_reduction_factor_wat: float = 1.0,
+        weight_reduction_factor_gas: float = 300.0,
     ):
 
         super().__init__()
 
         start = time.time()
 
-        self.misfit_weight_oil = misfit_weight_oil
-        self.misfit_weight_wat = misfit_weight_wat
-        self.misfit_weight_gas = misfit_weight_gas
+        self.weight_reduction_factor_oil = weight_reduction_factor_oil
+        self.weight_reduction_factor_wat = weight_reduction_factor_wat
+        self.weight_reduction_factor_gas = weight_reduction_factor_gas
 
         # Must define valid freqency
         self._sampling = Frequency(sampling)
 
-        perform_presampling = True
+        ensemble_paths: Dict[str, Path] = {
+            ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                ensemble_name
+            ]
+            for ensemble_name in ensembles
+        }
 
-        if ensembles is not None:
-            ensemble_paths: Dict[str, Path] = {
-                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                    ensemble_name
-                ]
-                for ensemble_name in ensembles
-            }
+        self._input_provider_set = create_presampled_provider_set_from_paths(
+            ensemble_paths, self._sampling
+        )
+        # self._input_provider_set.verify_consistent_vector_metadata()
 
-            if perform_presampling:
-                self._input_provider_set = create_presampled_provider_set_from_paths(
-                    ensemble_paths, self._sampling
-                )
-            else:
-                self._input_provider_set = create_lazy_provider_set_from_paths(
-                    ensemble_paths
-                )
+        logging.debug(f"Created provider_set. Cummulative time: {time.time() - start}")
 
-            self._input_provider_set.verify_consistent_vector_metadata()
+        self.ensemble_names = self._input_provider_set.names()
 
-        else:
-            raise ValueError(
-                'Incorrect arguments. Either provide a "csvfile" or "ensembles"'
+        self.dates = {}
+        self.realizations = {}
+        self.wells = {}
+        self.vectors = {}
+        self.phases = {}
+
+        for ens_name in self.ensemble_names:
+            logging.info(f"Working with: {ens_name}")
+            ens_provider = self._input_provider_set.provider(ens_name)
+            self.realizations[ens_name] = ens_provider.realizations()
+            self.dates[ens_name] = ens_provider.dates(resampling_frequency=None)
+            # [_date.strftime("%Y-%m-%d") for _date in self.dates[ens_name]]
+
+            (  # from wopt/wwpt/wgpt: get lists of wells, vectors and phases
+                self.wells[ens_name],
+                self.vectors[ens_name],
+                self.phases[ens_name],
+            ) = _get_wells_vectors_phases(
+                ens_provider.vector_names(), excl_name_startswith, excl_name_contains
             )
 
-        logging.debug(f"Done reading summary. Cummulative time: {time.time() - start}")
+        # self.realizations = self._input_provider_set.all_realizations()
+        # all_vectors = self._input_provider_set.all_vector_names()
 
         # -----------------------------------------
-        # auto-remove columns/vectors with all zeros
-        # df_smry = df_smry.loc[:, (df_smry != 0).any(axis=0)]
 
-        # -----------------------------------------
-        # remove columns if in excl_name_startswith or excl_name_contains
-        df_smry = _get_filtered_df(df_smry, excl_name_startswith, excl_name_contains)
+        # df_smry = self._input_provider_set.provider(
+        #     self.ensemble_names[0]
+        # ).get_vectors_df(self.vectors, None, None)
+        # print(df_smry)
 
-        # Calculate statistics
-        self.df_stat = get_df_stat(df_smry)
+        # # Calculate statistics
+        # self.df_stat = get_df_stat(df_smry)
 
-        # Calculate diffs and diff statistics
-        self.df_diff = get_df_diff(df_smry)
-        self.df_diff_stat = get_df_diff_stat(self.df_diff)
-        logging.debug(f"Diff stat\n{self.df_diff_stat}")
+        # # Calculate diffs and diff statistics
+        # self.df_diff = get_df_diff(df_smry)
+        # self.df_diff_stat = get_df_diff_stat(self.df_diff)
+        # logging.debug(f"Diff stat\n{self.df_diff_stat}")
 
-        # get list of realizations
-        self.realizations = sorted(list(self.df_diff.REAL.unique()))
-
-        # get list of dates
-        self.dates = sorted(list(self.df_stat.DATE.unique()))
-
-        # get list of wells
-        self.wells = sorted(
-            list(self.df_stat[self.df_stat["VECTOR"].str.startswith("W")].WELL.unique())
-        )
-        logging.info(f"\nWells: {self.wells}")
-
-        # get list of groups
-        self.groups = sorted(
-            list(self.df_stat[self.df_stat["VECTOR"].str.startswith("G")].WELL.unique())
-        )
-        logging.info(f"\nGroups: {self.groups}")
-
-        # get list of phases
-        self.phases = ["Oil", "Water", "Gas"]
-        vectors = list(self.df_stat.VECTOR.unique())
-        if "WOPT" not in vectors:
-            self.phases.remove("Oil")
-        if "WWPT" not in vectors:
-            self.phases.remove("Water")
-        if "WGPT" not in vectors:
-            self.phases.remove("Gas")
+        # # get list of groups
+        # self.groups = sorted(
+        #     list(self.df_stat[self.df_stat["VECTOR"].str.startswith("G")].WELL.unique())
+        # )
+        # logging.info(f"\nGroups: {self.groups}")
 
         self.set_callbacks(app)
 
         logging.debug(f"Init done. Cummulative time: {time.time() - start}")
-        logging.debug(f"df_smry:\n{df_smry}")
-        logging.debug(f"df_stat:\n{self.df_stat}")
-        logging.debug(f"df_diff:\n{self.df_diff}")
-        logging.debug(f"df_diff_stat:\n{self.df_diff_stat}")
+
+        # logging.debug(f"df_smry:\n{df_smry}")
+        # logging.debug(f"df_stat:\n{self.df_stat}")
+        # logging.debug(f"df_diff:\n{self.df_diff}")
+        # logging.debug(f"df_diff_stat:\n{self.df_diff_stat}")
 
     @property
     def layout(self) -> wcc.Tabs:
         return main_layout(
             get_uuid=self.uuid,
-            ensemble_names=self._input_provider_set.names(),
+            ensemble_names=self.ensemble_names,
+            dates=self.dates,
+            phases=self.phases,
+            wells=self.wells,
+            realizations=self.realizations,
         )
 
     # ---------------------------------------------
     def set_callbacks(self, app: dash.Dash) -> None:
-
-        # --------------------------------------------
-        # --- prod misfit ---
-        # --------------------------------------------
-        @app.callback(
-            Output(self.uuid("prod_misfit-graph"), "children"),
-            Input(self.uuid("prod_misfit-ensemble_names"), "value"),
-            Input(self.uuid("prod_misfit-dates"), "value"),
-            Input(self.uuid("prod_misfit-phases"), "value"),
-            Input(self.uuid("prod_misfit-well_names"), "value"),
-            Input(self.uuid("prod_misfit-realizations"), "value"),
-            Input(self.uuid("prod_misfit-colorby"), "value"),
-            Input(self.uuid("prod_misfit-sorting"), "value"),
-            Input(self.uuid("prod_misfit-figheight"), "value"),
+        plugin_callbacks(
+            app=app,
+            get_uuid=self.uuid,
+            input_provider_set=self._input_provider_set,
+            ens_vectors=self.vectors,
+            ens_realizations=self.realizations,
+            weight_reduction_factor_oil=self.weight_reduction_factor_oil,
+            weight_reduction_factor_wat=self.weight_reduction_factor_wat,
+            weight_reduction_factor_gas=self.weight_reduction_factor_gas,
         )
-        def _update_prod_misfit_graph(
-            ensemble_names: List[str],
-            dates: list,
-            phases: list,
-            well_names: list,
-            realizations: List[Union[int, str]],
-            colorby: str,
-            sorting: str,
-            figheight: int,
-        ) -> List[wcc.Graph]:
-
-            dframe = self.df_diff
-
-            # --- apply date filter
-            dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-            # --- apply ensemble filter
-            dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-            # --- apply realization filter
-            dframe = dframe.loc[dframe["REAL"].isin(realizations)]
-
-            # --- apply well filter
-            dframe = _df_filter_wells(dframe, self.wells, well_names)
-
-            figures = update_prod_misfit_plot(
-                dframe,
-                phases,
-                colorby,
-                sorting,
-                figheight,
-                misfit_weight_oil=self.misfit_weight_oil,
-                misfit_weight_wat=self.misfit_weight_wat,
-                misfit_weight_gas=self.misfit_weight_gas,
-            )
-            return figures
-
-        # --------------------------------------------
-        # --- well coverage ---
-        # --------------------------------------------
-        @app.callback(
-            Output(self.uuid("well_coverage-graph"), "children"),
-            Input(self.uuid("well_coverage-ensemble_names"), "value"),
-            Input(self.uuid("well_coverage-dates"), "value"),
-            Input(self.uuid("well_coverage-phases"), "value"),
-            Input(self.uuid("well_coverage-well_names"), "value"),
-            Input(self.uuid("well_coverage-colorby"), "value"),
-            Input(self.uuid("well_coverage-plot_type"), "value"),
-        )
-        def _update_well_coverage_graph(
-            ensemble_names: List[str],
-            dates: list,
-            phases: list,
-            well_names: list,
-            colorby: str,
-            plot_type: str,
-        ) -> List[wcc.Graph]:
-
-            if plot_type == "boxplot":
-                dframe = self.df_diff.copy()
-            elif plot_type == "crossplot":
-                dframe = self.df_stat.copy()
-            else:
-                dframe = self.df_diff_stat.copy()
-
-            # --- apply date filter
-            dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-            # --- apply ensemble filter
-            dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-            # --- apply well filter
-            # dframe = dframe.loc[dframe["WELL"].isin(well_names)]
-
-            if plot_type == "boxplot":
-                figures = update_coverage_boxplot(
-                    dframe,
-                    phases,
-                    colorby,
-                    vector_type="well",
-                )
-            elif plot_type == "crossplot":
-                figures = update_coverage_crossplot(
-                    dframe,
-                    phases,
-                    colorby,
-                    vector_type="well",
-                )
-            else:
-                figures = update_coverage_diff_plot(
-                    dframe,
-                    phases,
-                    colorby,
-                    vector_type="well",
-                )
-            return figures
-
-        # --------------------------------------------
-        # --- group coverage ---
-        # --------------------------------------------
-        @app.callback(
-            Output(self.uuid("group_coverage-graph"), "children"),
-            Input(self.uuid("group_coverage-ensemble_names"), "value"),
-            Input(self.uuid("group_coverage-dates"), "value"),
-            Input(self.uuid("group_coverage-phases"), "value"),
-            Input(self.uuid("group_coverage-group_names"), "value"),
-            Input(self.uuid("group_coverage-colorby"), "value"),
-            Input(self.uuid("group_coverage-plot_type"), "value"),
-            # prevent_initial_call=True,
-        )
-        def _update_group_coverage_graph(
-            ensemble_names: List[str],
-            dates: list,
-            phases: list,
-            group_names: list,
-            colorby: str,
-            plot_type: str,
-        ) -> List[wcc.Graph]:
-
-            if plot_type == "crossplot":
-                dframe = self.df_stat.copy()
-            else:
-                dframe = self.df_diff_stat.copy()
-
-            # --- apply date filter
-            dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-            # --- apply ensemble filter
-            dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-            # --- apply group filter
-            dframe = dframe.loc[dframe["WELL"].isin(group_names)]
-
-            if plot_type == "crossplot":
-                figures = update_coverage_crossplot(
-                    dframe,
-                    phases,
-                    colorby,
-                    vector_type="group",
-                )
-            else:
-                figures = update_coverage_diff_plot(
-                    dframe,
-                    phases,
-                    colorby,
-                    vector_type="group",
-                )
-            return figures
-
-        # --------------------------------------------
-        # --- heatmap ---
-        # --------------------------------------------
-        @app.callback(
-            Output(self.uuid("heatmap-graph"), "children"),
-            Input(self.uuid("heatmap-ensemble_names"), "value"),
-            Input(self.uuid("heatmap-dates"), "value"),
-            Input(self.uuid("heatmap-phases"), "value"),
-            Input(self.uuid("heatmap-well_names"), "value"),
-            Input(self.uuid("heatmap-filter_largest"), "value"),
-            Input(self.uuid("heatmap-figheight"), "value"),
-            Input(self.uuid("heatmap-scale_col_range"), "value"),
-            # prevent_initial_call=True,
-        )
-        def _update_heatmap_graph(
-            ensemble_names: List[str],
-            dates: list,
-            phases: list,
-            well_names: list,
-            filter_largest: int,
-            figheight: int,
-            scale_col_range: float,
-        ) -> List[wcc.Graph]:
-
-            dframe = self.df_diff_stat.copy()
-
-            # --- apply date filter
-            dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-            # --- apply ensemble filter
-            dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-            # --- apply well filter
-            dframe = dframe.loc[dframe["WELL"].isin(well_names)]
-
-            figures = update_heatmap_plot(
-                dframe,
-                phases,
-                vector_type="well",
-                filter_largest=filter_largest,
-                figheight=figheight,
-                scale_col_range=scale_col_range,
-            )
-            return figures
 
 
 # -----------------------------------
@@ -406,59 +200,6 @@ def get_path(path: Path) -> Path:
 # ------------------------------------------------------------------------
 # plot, dataframe and support functions below here
 # ------------------------------------------------------------------------
-
-# -----------------------------------
-def _get_wellnames(
-    ensembles: list,
-    webviz_settings: WebvizSettings,
-    excl_startswith: tuple = (),
-    excl_contains: tuple = (),
-) -> list:
-    """
-    Return a union of all Eclipse Summary well names.
-
-    This local function is added to handle a deprecation of get_wellname.
-    If a better soution comes up, this function should be replaced.
-
-    The well names are extracted from the first realization
-    found in ensset that has an OK_FILE in runpath.
-    """
-
-    ok_file = "OK"
-    result: set = set()
-
-    for ens_name in ensembles:
-        path = webviz_settings.shared_settings["scratch_ensembles"][ens_name]
-        ensset = ensemble.EnsembleSet("ensset", frompath=path)
-        for ens in ensset._ensembles.values():
-            for realization in ens.realizations.values():
-                # logging.debug(realization.runpath())
-                if realization.contains(ok_file):
-                    eclsum = realization.get_eclsum()
-                    if eclsum:
-                        result = result.union(set(eclsum.wells()))
-                        break
-
-    well_list = [well for well in list(result) if not well.startswith(excl_startswith)]
-
-    for well in well_list:
-        for x in excl_contains:
-            if x in well:
-                well_list.remove(well)
-
-    return sorted(well_list)
-
-
-def _get_colkeys(well_list: list, smry_vectors: list) -> list:
-    """Read list of wells and return list of corresponding
-    smry keys for wopt, wwpt and wgpt)"""
-
-    column_keys = []
-    for vec in smry_vectors:
-        for well in well_list:
-            column_keys.append(vec + ":" + well)
-
-    return column_keys
 
 
 def _get_filtered_df(
@@ -503,120 +244,6 @@ def _calcualte_diff_at_date(
             )
 
     return dframe
-
-
-# -------------------------------
-def update_prod_misfit_plot(
-    df_diff: pd.DataFrame,
-    phases: list,
-    colorby: str,
-    sorting: str = None,
-    figheight: int = 450,
-    misfit_weight_oil: float = 1.0,
-    misfit_weight_wat: float = 1.0,
-    misfit_weight_gas: float = 300,
-    misfit_exponent: float = 1.0,
-    normalize: bool = False,
-) -> List[wcc.Graph]:
-    """Create plot of misfit per realization. One plot per ensemble.
-    Misfit is absolute value of |sim - obs|, weighted by obs_error"""
-
-    logging.debug("--- Updating production misfit plot ---")
-    max_misfit, min_misfit = 0, 0
-    figures = []
-
-    for ens_name, ensdf in df_diff.groupby("ENSEMBLE"):
-
-        # --- drop columns (realizations) with no data
-        ensdf = ensdf.dropna(axis="columns")
-
-        all_columns = list(ensdf)  # column names
-
-        df_misfit = ensdf[["ENSEMBLE", "DATE", "REAL"]].copy()
-        df_misfit = df_misfit.astype({"REAL": "string"})
-        df_misfit["TOTAL_MISFIT"] = 0
-
-        plot_phases = []
-        color_phases = {}
-
-        # -------------------------
-        if "Oil" in phases:
-            oil_columns = [x for x in all_columns if x.startswith("DIFF_WOPT")]
-            df_misfit["OIL_MISFIT"] = (
-                ensdf[oil_columns].abs().sum(axis=1) / misfit_weight_oil
-            )
-            df_misfit["TOTAL_MISFIT"] = (
-                df_misfit["TOTAL_MISFIT"] + df_misfit["OIL_MISFIT"]
-            )
-            plot_phases.append("OIL_MISFIT")
-            color_phases["OIL_MISFIT"] = "#2ca02c"
-        # -------------------------
-        if "Water" in phases:
-            wat_columns = [x for x in all_columns if x.startswith("DIFF_WWPT")]
-            df_misfit["WAT_MISFIT"] = (
-                ensdf[wat_columns].abs().sum(axis=1) / misfit_weight_wat
-            )
-            df_misfit["TOTAL_MISFIT"] = (
-                df_misfit["TOTAL_MISFIT"] + df_misfit["WAT_MISFIT"]
-            )
-            plot_phases.append("WAT_MISFIT")
-            color_phases["WAT_MISFIT"] = "#1f77b4"
-        # -------------------------
-        if "Gas" in phases:
-            gas_columns = [x for x in all_columns if x.startswith("DIFF_WGPT")]
-            df_misfit["GAS_MISFIT"] = (
-                ensdf[gas_columns].abs().sum(axis=1) / misfit_weight_gas
-            )
-            df_misfit["TOTAL_MISFIT"] = (
-                df_misfit["TOTAL_MISFIT"] + df_misfit["GAS_MISFIT"]
-            )
-            plot_phases.append("GAS_MISFIT")
-            color_phases["GAS_MISFIT"] = "#d62728"
-        # -------------------------
-
-        if (
-            max_misfit == min_misfit == 0
-        ):  # caclulate min-max ranges from first ensemble
-            for _, df_date in df_misfit.groupby("DATE"):
-                max_misfit = max_misfit + df_date["TOTAL_MISFIT"].max()
-                min_misfit = min_misfit + df_date["TOTAL_MISFIT"].min()
-        mean_misfit = df_misfit["TOTAL_MISFIT"].mean()
-
-        color: Any = px.NO_COLOR
-        color_discrete_map: Optional[dict] = None
-        if colorby == "misfit":
-            color = "TOTAL_MISFIT"
-        elif colorby == "Date":
-            color = "DATE"
-        elif colorby == "Phases":
-            color = None
-            color_discrete_map = color_phases
-
-        fig = px.bar(
-            df_misfit,
-            x="REAL",
-            y=plot_phases,
-            title=ens_name,
-            range_y=[min_misfit * 0.25, max_misfit * 1.05],
-            color=color,
-            color_discrete_map=color_discrete_map,
-            range_color=[min_misfit * 0.20, max_misfit * 1.00],
-            color_continuous_scale=px.colors.sequential.amp,
-        )
-        if sorting:
-            fig.update_layout(xaxis={"categoryorder": sorting})
-        fig.update_xaxes(showticklabels=False)
-        fig.update_xaxes(title_text="Realization (hover to see values)")
-        fig.update_yaxes(title_text="Cumulative misfit")
-        fig.add_hline(mean_misfit)
-        fig.add_annotation(average_arrow_annotation(mean_misfit))
-        fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        # fig.update_layout(coloraxis_colorbar_thickness=20)
-        # fig.update(layout_coloraxis_showscale=False)
-
-        figures.append(wcc.Graph(figure=fig, style={"height": figheight}))
-
-    return figures
 
 
 # -------------------------------
@@ -1177,25 +804,6 @@ def get_df_stat(df_smry: pd.DataFrame) -> pd.DataFrame:
 
 
 # --------------------------------
-def get_df_diff(df_smry: pd.DataFrame) -> pd.DataFrame:
-    """Return dataframe with diff (sim-obs) for all data.
-    Return empty dataframe if no realizations included."""
-
-    df_diff = df_smry[["ENSEMBLE", "DATE", "REAL"]].copy()
-
-    for col in df_smry.columns:
-        if "PT:" in col:
-            simvector = col
-            vectortype, wellname = simvector.split(":")[0], simvector.split(":")[1]
-            obsvector = vectortype + "H:" + wellname
-            diff_col_name = "DIFF_" + vectortype + ":" + wellname
-            df_diff[diff_col_name] = df_smry[simvector] - df_smry[obsvector]
-
-    df_diff = df_diff.astype({"DATE": "string"})
-    return df_diff
-
-
-# --------------------------------
 def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
     """Return dataframe with ensemble statistics of production
     difference per well across all realizations.
@@ -1250,52 +858,73 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
     return df_stat
 
 
-# --------------------------------
-def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[str, Any]:
-    decimals = 0
-    if mean_value < 0.001:
-        decimals = 5
-    elif mean_value < 0.01:
-        decimals = 4
-    elif mean_value < 0.1:
-        decimals = 3
-    elif mean_value < 10:
-        decimals = 2
-    elif mean_value < 100:
-        decimals = 1
+# # --------------------------------
+# def _df_filter_wells(
+#     dframe: pd.DataFrame, wells: list, keep_wells: list
+# ) -> pd.DataFrame:
+#     """Return dataframe without any of the wells not in keep_wells list"""
 
-    text = f"Total average: {mean_value:,.{decimals}f}"
-
-    return {
-        "x": 0.5,
-        "y": mean_value,
-        "xref": "paper",
-        "yref": yref,
-        "text": text,
-        "showarrow": True,
-        "align": "center",
-        "arrowhead": 2,
-        "arrowsize": 1,
-        "arrowwidth": 1,
-        "arrowcolor": "#636363",
-        "ax": 20,
-        "ay": -25,
-    }
+#     # --- apply well filter
+#     exclude_wells = set(wells) ^ set(keep_wells)
+#     drop_col = []
+#     for col in dframe.columns:
+#         if ":" in col:
+#             for well in exclude_wells:
+#                 if well == col.split(":")[1]:  # only drop exact matches
+#                     drop_col.append(col)
+#                     break
+#     return dframe.drop(drop_col, axis=1)
 
 
 # --------------------------------
-def _df_filter_wells(
-    dframe: pd.DataFrame, wells: list, keep_wells: list
-) -> pd.DataFrame:
-    """Return dataframe without any of the wells not in keep_wells list"""
+def _get_wells_vectors_phases(
+    vector_names: list, excl_name_startswith: list, excl_name_contains: list
+) -> Tuple[List, List, List]:
+    """Return lists of wells, vectors and phases."""
 
-    # --- apply well filter
-    exclude_wells = set(wells) ^ set(keep_wells)
-    drop_col = []
-    for col in dframe.columns:
-        if ":" in col:
-            for well in exclude_wells:
-                if well == col.split(":")[1]:  # only drop exact matches
-                    drop_col.append(col)
-                    break
-    return dframe.drop(drop_col, axis=1)
+    drop_list = []
+    wells, vectors = [], []
+    oil_phase, wat_phase, gas_phase = False, False, False
+    for vector in vector_names:
+        if vector.startswith(("WOPT:", "WWPT:", "WGPT:")):
+            well = vector.split(":")[1]
+            vector_type = vector.split(":")[0]
+            if well.startswith(tuple(excl_name_startswith)):
+                drop_list.append(well)
+                continue
+            for excl in excl_name_contains:
+                if excl in well:
+                    drop_list.append(well)
+                    continue
+            if well not in wells:
+                wells.append(well)
+            if vector not in vectors:
+                vectors.append(vector)
+                if vector_type == "WOPT":
+                    oil_phase = True
+                if vector_type == "WWPT":
+                    wat_phase = True
+                if vector_type == "WGPT":
+                    gas_phase = True
+    wells, vectors = sorted(wells), sorted(vectors)
+
+    if len(drop_list) > 0:
+        logging.info(f"\nDropping wells: {list(sorted(set(drop_list)))}")
+
+    if len(vectors) == 0:
+        RuntimeError("No WOPT, WWPT or WGPT vectors found.")
+
+    phases = ["Oil", "Water", "Gas"]
+    # remove phases not present
+    if not oil_phase:
+        phases.remove("Oil")
+    if not wat_phase:
+        phases.remove("Water")
+    if not gas_phase:
+        phases.remove("Gas")
+
+    logging.info(f"\nWells: {wells}")
+    logging.info(f"\nPhases: {phases}")
+    logging.info(f"\nVectors: {vectors}")
+
+    return wells, vectors, phases

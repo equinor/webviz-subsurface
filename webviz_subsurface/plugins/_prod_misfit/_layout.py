@@ -1,22 +1,21 @@
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
+from dash import dash_table, dcc
 from webviz_subsurface_components import ExpressionInfo
-
-from .types import (
-    FanchartOptions,
-    StatisticsOptions,
-    TraceOptions,
-    VisualizationOptions,
-)
 
 from ..._providers import Frequency
 from ..._utils.vector_calculator import get_custom_vector_definitions_from_expressions
+
+# from .types import (
+#     FanchartOptions,
+#     StatisticsOptions,
+#     TraceOptions,
+#     VisualizationOptions,
+# )
 
 
 # pylint: disable=too-few-public-methods
@@ -34,9 +33,9 @@ class LayoutElements:
     PROD_MISFIT_COLORBY = "prod_misfit_colorby"
     PROD_MISFIT_SORTING = "prod_misfit_sorting"
     PROD_MISFIT_FIGHEIGHT = "prod_misfit_figheight"
-    PROD_MISFIT_WEIGHT = "prod_misfit_weight"
+    PROD_MISFIT_OBS_ERROR_WEIGHT = "prod_misfit_obs_error_weight"
     PROD_MISFIT_EXPONENT = "prod_misfit_exponent"
-    PROD_MISFIT_NORMALIZATION = "prod_misfit_normalization"
+    # PROD_MISFIT_NORMALIZATION = "prod_misfit_normalization"
     PROD_MISFIT_GRAPH = "prod_misfit_graph"
 
     VECTOR_SELECTOR = "vector_selector"
@@ -71,7 +70,25 @@ class LayoutElements:
 def main_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
+    dates: Dict[str, List[str]],
+    phases: Dict[str, List[str]],
+    wells: Dict[str, List[str]],
+    realizations: Dict[str, List[int]],
 ) -> wcc.Tabs:
+
+    all_dates = []
+    all_phases = []
+    all_wells = []
+    all_realizations = []
+    for ens_name in ensemble_names:
+        all_dates.extend(dates[ens_name])
+        all_phases.extend(phases[ens_name])
+        all_wells.extend(wells[ens_name])
+        all_realizations.extend(realizations[ens_name])
+    all_dates = list(sorted(set(all_dates)))
+    all_phases = list(sorted(set(all_phases)))
+    all_wells = list(sorted(set(all_wells)))
+    all_realizations = list(sorted(set(all_realizations)))
 
     tabs_styles = {"height": "60px", "width": "100%"}
 
@@ -97,8 +114,12 @@ def main_layout(
                 style=tab_style,
                 selected_style=tab_selected_style,
                 children=_misfit_per_real_layout(
-                    get_uuid=get_uuid,
-                    ensemble_names=ensemble_names,
+                    get_uuid,
+                    ensemble_names,
+                    all_dates,
+                    all_phases,
+                    all_wells,
+                    all_realizations,
                 ),
             ),
             # wcc.Tab(
@@ -124,7 +145,14 @@ def main_layout(
 
 
 # --- layout functions ---
-def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> list:
+def _misfit_per_real_layout(
+    get_uuid: Callable,
+    ensemble_names: List[str],
+    dates: List[str],
+    phases: List[str],
+    wells: List[str],
+    realizations: List[int],
+) -> list:
     children = [
         wcc.FlexBox(
             id=get_uuid(LayoutElements.PROD_MISFIT_LAYOUT),
@@ -148,7 +176,7 @@ def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> li
                                         {"label": ens, "value": ens}
                                         for ens in ensemble_names
                                     ],
-                                    value=ensemble_names,
+                                    value=ensemble_names[:2],
                                     multi=True,
                                     clearable=False,
                                     persistence=True,
@@ -163,31 +191,33 @@ def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> li
                                     label="Date selector",
                                     id=get_uuid(LayoutElements.PROD_MISFIT_DATES),
                                     options=[
-                                        {"label": _date, "value": _date}
-                                        for _date in self.dates
+                                        {
+                                            "label": _date.strftime("%Y-%m-%d"),
+                                            "value": _date.strftime("%Y-%m-%d"),
+                                        }
+                                        for _date in dates
                                     ],
-                                    value=[self.dates[-1]],
-                                    size=min([len(self.dates), 5]),
+                                    value=[dates[-1].strftime("%Y-%m-%d")],
+                                    size=min([len(dates), 5]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Phase selector",
                                     id=get_uuid(LayoutElements.PROD_MISFIT_PHASES),
                                     options=[
                                         {"label": phase, "value": phase}
-                                        for phase in self.phases
+                                        for phase in phases
                                     ],
-                                    value=self.phases,
-                                    size=min([len(self.phases), 3]),
+                                    value=phases,
+                                    size=min([len(phases), 3]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Well selector",
                                     id=get_uuid(LayoutElements.PROD_MISFIT_WELL_NAMES),
                                     options=[
-                                        {"label": well, "value": well}
-                                        for well in self.wells
+                                        {"label": well, "value": well} for well in wells
                                     ],
-                                    value=self.wells,
-                                    size=min([len(self.wells), 9]),
+                                    value=wells,
+                                    size=min([len(wells), 9]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Realization selector",
@@ -196,10 +226,10 @@ def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> li
                                     ),
                                     options=[
                                         {"label": real, "value": real}
-                                        for real in self.realizations
+                                        for real in realizations
                                     ],
-                                    value=self.realizations,
-                                    size=min([len(self.wells), 5]),
+                                    value=realizations,
+                                    size=min([len(wells), 5]),
                                 ),
                             ],
                         ),
@@ -282,22 +312,29 @@ def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> li
                         ),
                         wcc.Selectors(
                             label="Misfit options",
-                            open_details=False,
+                            open_details=True,  # False,
                             children=[
                                 wcc.Dropdown(
                                     label="Misfit weight",
-                                    id=get_uuid(LayoutElements.PROD_MISFIT_WEIGHT),
+                                    id=get_uuid(
+                                        LayoutElements.PROD_MISFIT_OBS_ERROR_WEIGHT
+                                    ),
                                     options=[
                                         {
-                                            "label": "none",
-                                            "value": None,
+                                            "label": "Config weight reduction factors",
+                                            "value": -1.0,
+                                        },
+                                        {"label": "None", "value": 0.0},
+                                        {
+                                            "label": "10% obs error (min=1000)",
+                                            "value": 0.10,
                                         },
                                         {
-                                            "label": "Obs error",
-                                            "value": "obs_error",
+                                            "label": "20% obs error (min=1000)",
+                                            "value": 0.20,
                                         },
                                     ],
-                                    value="obs_error",
+                                    value=-1.0,
                                     clearable=False,
                                     persistence=True,
                                     persistence_type="memory",
@@ -315,31 +352,31 @@ def _misfit_per_real_layout(get_uuid: Callable, ensemble_names: List[str]) -> li
                                             "value": 2.0,
                                         },
                                     ],
-                                    value=2.0,
+                                    value=1.0,
                                     clearable=False,
                                     persistence=True,
                                     persistence_type="memory",
                                 ),
-                                wcc.Dropdown(
-                                    label="Misfit normalization",
-                                    id=get_uuid(
-                                        LayoutElements.PROD_MISFIT_NORMALIZATION
-                                    ),
-                                    options=[
-                                        {
-                                            "label": "Yes",
-                                            "value": True,
-                                        },
-                                        {
-                                            "label": "No",
-                                            "value": False,
-                                        },
-                                    ],
-                                    value=False,
-                                    clearable=False,
-                                    persistence=True,
-                                    persistence_type="memory",
-                                ),
+                                # wcc.Dropdown(
+                                #     label="Misfit normalization",
+                                #     id=get_uuid(
+                                #         LayoutElements.PROD_MISFIT_NORMALIZATION
+                                #     ),
+                                #     options=[
+                                #         {
+                                #             "label": "Yes",
+                                #             "value": True,
+                                #         },
+                                #         {
+                                #             "label": "No",
+                                #             "value": False,
+                                #         },
+                                #     ],
+                                #     value=False,
+                                #     clearable=False,
+                                #     persistence=True,
+                                #     persistence_type="memory",
+                                # ),
                             ],
                         ),
                     ],
