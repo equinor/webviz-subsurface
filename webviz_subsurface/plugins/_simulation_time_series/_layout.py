@@ -11,6 +11,7 @@ from webviz_subsurface_components import ExpressionInfo
 from .types import (
     FanchartOptions,
     StatisticsOptions,
+    SubplotGroupByOptions,
     TraceOptions,
     VisualizationOptions,
 )
@@ -57,6 +58,8 @@ class LayoutElements:
     PLOT_FANCHART_OPTIONS_CHECKLIST = "plot_fanchart_options_checklist"
     PLOT_STATISTICS_OPTIONS_CHECKLIST = "plot_statistics_options_checklist"
     PLOT_TRACE_OPTIONS_CHECKLIST = "plot_trace_options_checklist"
+
+    SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS = "subplot_owner_options_radio_items"
 
     RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
 
@@ -136,6 +139,25 @@ def __settings_layout(
     return html.Div(
         children=[
             wcc.Selectors(
+                label="Group By",
+                children=[
+                    wcc.RadioItems(
+                        id=get_uuid(LayoutElements.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),
+                        options=[
+                            {
+                                "label": "Time Series",
+                                "value": SubplotGroupByOptions.VECTOR.value,
+                            },
+                            {
+                                "label": "Ensemble",
+                                "value": SubplotGroupByOptions.ENSEMBLE.value,
+                            },
+                        ],
+                        value=SubplotGroupByOptions.VECTOR.value,
+                    ),
+                ],
+            ),
+            wcc.Selectors(
                 label="Resampling frequency",
                 children=[
                     wcc.Dropdown(
@@ -201,7 +223,15 @@ def __settings_layout(
                         customVectorDefinitions=get_custom_vector_definitions_from_expressions(
                             predefined_expressions
                         ),
-                    )
+                    ),
+                    html.Button(
+                        "Vector Calculator",
+                        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON),
+                        style={
+                            "margin-top": "5px",
+                            "margin-bottom": "5px",
+                        },
+                    ),
                 ],
             ),
             wcc.Selectors(
@@ -233,15 +263,6 @@ def __settings_layout(
                     get_uuid=get_uuid,
                     selected_visualization=selected_visualization,
                 ),
-            ),
-            wcc.Selectors(
-                label="Vector Calculator",
-                children=[
-                    html.Button(
-                        "Vector Calculator",
-                        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON),
-                    ),
-                ],
             ),
             __vector_calculator_modal_layout(
                 get_uuid=get_uuid,
@@ -364,8 +385,12 @@ def __plot_options_layout(
                     id=get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
                     options=[
                         {"label": "History", "value": TraceOptions.HISTORY.value},
+                        {
+                            "label": "Observation",
+                            "value": TraceOptions.OBSERVATIONS.value,
+                        },
                     ],
-                    value=[TraceOptions.HISTORY.value],
+                    value=[TraceOptions.HISTORY.value, TraceOptions.OBSERVATIONS.value],
                 ),
                 wcc.Checklist(
                     id=get_uuid(LayoutElements.PLOT_STATISTICS_OPTIONS_CHECKLIST),

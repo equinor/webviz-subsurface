@@ -11,20 +11,23 @@ from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    EnsembleSummaryProvider,
-)
 from webviz_subsurface._utils.unique_theming import unique_colors
 
 
 from ._layout import LayoutElements
-from ._property_serialization import GraphFigureBuilder
+
+from ._property_serialization import (
+    GraphFigureBuilderBase,
+    EnsembleSubplotBuilder,
+    VectorSubplotBuilder,
+)
 
 from .types import (
     DerivedEnsembleVectorsAccessor,
     DeltaEnsemble,
     FanchartOptions,
     StatisticsOptions,
+    SubplotGroupByOptions,
     ProviderSet,
     TraceOptions,
     VisualizationOptions,
@@ -93,6 +96,10 @@ def plugin_callbacks(
                 "value",
             ),
             Input(
+                get_uuid(LayoutElements.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),
+                "value",
+            ),
+            Input(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
@@ -120,6 +127,7 @@ def plugin_callbacks(
         statistics_option_values: List[str],
         fanchart_option_values: List[str],
         trace_option_values: List[str],
+        subplot_owner_options_value: str,
         resampling_frequency_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
@@ -153,6 +161,7 @@ def plugin_callbacks(
         ]
         fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
         trace_options = [TraceOptions(elm) for elm in trace_option_values]
+        subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
 
@@ -176,15 +185,7 @@ def plugin_callbacks(
             vectors, selected_expressions, input_provider_set
         )
 
-        # Create unique colors based on all ensemble names
-        ensemble_colors = unique_colors(all_ensemble_names, theme)
-
-        # TODO: Pass presampling_frequency when using presampled providers?
-        # NOTE: Dropdown value is equal to presampling_frequency when presampled providers
-        # are utilized.
-        figure_builder = GraphFigureBuilder(
-            vectors, vector_titles, ensemble_colors, resampling_frequency, theme
-        )
+        # Create unique colors based on all ensemble names to preserve consistent colors
 
         # TODO: How to handle vector metadata the best way?
         # TODO: How to get metadata for calculated vector?
@@ -196,6 +197,30 @@ def plugin_callbacks(
             )
             for vector in vectors
         }
+
+        figure_builder: GraphFigureBuilderBase
+        if subplot_owner is SubplotGroupByOptions.VECTOR:
+            ensemble_colors = unique_colors(all_ensemble_names, theme)
+            figure_builder = VectorSubplotBuilder(
+                vectors,
+                vector_titles,
+                ensemble_colors,
+                resampling_frequency,
+                vector_line_shapes,
+                theme,
+            )
+        elif subplot_owner is SubplotGroupByOptions.ENSEMBLE:
+            vector_colors = unique_colors(vectors, theme)
+            figure_builder = EnsembleSubplotBuilder(
+                vectors,
+                selected_ensembles,
+                vector_colors,
+                resampling_frequency,
+                vector_line_shapes,
+                theme,
+            )
+        else:
+            raise PreventUpdate
 
         # Plotting per ensemble
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
@@ -214,13 +239,11 @@ def plugin_callbacks(
             if accessor.has_vector_calculator_expressions():
                 vectors_df_list.append(accessor.create_calculated_vectors_df())
 
-            for index, vectors_df in enumerate(vectors_df_list):
+            for vectors_df in vectors_df_list:
                 if visualization == VisualizationOptions.REALIZATIONS:
                     figure_builder.add_realizations_traces(
                         vectors_df,
                         ensemble,
-                        vector_line_shapes,
-                        add_legend=index == 0,
                     )
                 if visualization == VisualizationOptions.STATISTICS:
                     vectors_statistics_df = create_vectors_statistics_df(vectors_df)
@@ -228,8 +251,6 @@ def plugin_callbacks(
                         vectors_statistics_df,
                         ensemble,
                         statistics_options,
-                        vector_line_shapes,
-                        add_legend=index == 0,
                     )
                 if visualization == VisualizationOptions.FANCHART:
                     vectors_statistics_df = create_vectors_statistics_df(vectors_df)
@@ -237,55 +258,74 @@ def plugin_callbacks(
                         vectors_statistics_df,
                         ensemble,
                         fanchart_options,
-                        vector_line_shapes,
-                        add_legend=index == 0,
                     )
 
-        # Retrieve first selected input provider - None if none is selected
-        first_selected_input_provider: Optional[EnsembleSummaryProvider] = next(
-            (
-                provider
+        # Retrieve selected input provider
+        selected_input_providers = ProviderSet(
+            {
+                name: provider
                 for name, provider in input_provider_set.items()
                 if name in selected_ensembles
-            ),
-            None,
+            }
         )
 
         # Do not add observations if only delta ensembles are selected
         is_only_delta_ensembles = (
-            first_selected_input_provider is None
+            len(selected_input_providers.names()) == 0
             and len(derived_ensemble_vectors_accessors) > 0
         )
-        if observations and not is_only_delta_ensembles:
+        if (
+            observations
+            and TraceOptions.OBSERVATIONS in trace_options
+            and not is_only_delta_ensembles
+        ):
             for vector in vectors:
                 vector_observations = observations.get(vector)
                 if vector_observations:
                     figure_builder.add_vector_observations(vector, vector_observations)
 
-        # Add history trace using first selected provider
-        if (
-            TraceOptions.HISTORY in trace_options
-            and first_selected_input_provider is not None
-        ):
-            # NOTE: Retrieve historical vector from first ensemble - using first selected
-            # input provider
-            provider = first_selected_input_provider
-            vector_names = provider.vector_names()
+        # Add history trace
+        if TraceOptions.HISTORY in trace_options:
+            if (
+                isinstance(figure_builder, VectorSubplotBuilder)
+                and len(selected_input_providers.names()) > 0
+            ):
+                # Add history trace using first selected ensemble
+                name = selected_input_providers.names()[0]
+                provider = selected_input_providers.provider(name)
+                vector_names = provider.vector_names()
 
-            provider_vectors = [elm for elm in vectors if elm in vector_names]
-
-            if provider_vectors:
-                history_vectors_df = create_history_vectors_df(
-                    provider, provider_vectors, resampling_frequency
-                )
-                # TODO: Handle check of non-empty dataframe better?
-                if (
-                    not history_vectors_df.empty
-                    and "DATE" in history_vectors_df.columns
-                ):
-                    figure_builder.add_history_traces(
-                        history_vectors_df, vector_line_shapes
+                provider_vectors = [elm for elm in vectors if elm in vector_names]
+                if provider_vectors:
+                    history_vectors_df = create_history_vectors_df(
+                        provider, provider_vectors, resampling_frequency
                     )
+                    # TODO: Handle check of non-empty dataframe better?
+                    if (
+                        not history_vectors_df.empty
+                        and "DATE" in history_vectors_df.columns
+                    ):
+                        figure_builder.add_history_traces(history_vectors_df)
+
+            if isinstance(figure_builder, EnsembleSubplotBuilder):
+                # Add history trace for each ensemble
+                for name, provider in selected_input_providers.items():
+                    vector_names = provider.vector_names()
+
+                    provider_vectors = [elm for elm in vectors if elm in vector_names]
+                    if provider_vectors:
+                        history_vectors_df = create_history_vectors_df(
+                            provider, provider_vectors, resampling_frequency
+                        )
+                        # TODO: Handle check of non-empty dataframe better?
+                        if (
+                            not history_vectors_df.empty
+                            and "DATE" in history_vectors_df.columns
+                        ):
+                            figure_builder.add_history_traces(
+                                history_vectors_df,
+                                name,
+                            )
 
         return figure_builder.get_serialized_figure()
 

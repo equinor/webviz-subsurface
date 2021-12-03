@@ -25,7 +25,11 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     # TODO: Add verification of format and raise value error - i.e required columns and
     # "dimension" of vectors_statistics_df?
 
-    vector_names: List[str] = list(set(vectors_df.columns) ^ set(["DATE", "REAL"]))
+    # Get vectors names, keep order
+    columns_list = list(vectors_df.columns)
+    vector_names = sorted(
+        (set(columns_list) ^ set(["DATE", "REAL"])), key=columns_list.index
+    )
 
     # Invert p10 and p90 due to oil industry convention.
     def p10(x: List[float]) -> List[float]:

@@ -108,6 +108,7 @@ def create_statistics_traces(
     hovertext: str = "",
     hovertemplate: Optional[str] = None,
     hovermode: Optional[str] = None,
+    legendrank: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
     Utility function for creating statistical plot traces
@@ -143,6 +144,8 @@ def create_statistics_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
+        if legendrank:
+            trace["legendrank"] = legendrank
         if not show_hoverinfo:
             trace["hoverinfo"] = "skip"
             return trace

@@ -12,6 +12,7 @@ from .types import (
     DeltaEnsemble,
     FanchartOptions,
     StatisticsOptions,
+    SubplotGroupByOptions,
     TraceOptions,
     VisualizationOptions,
 )

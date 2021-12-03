@@ -40,12 +40,22 @@ class StatisticsOptions(str, Enum):
     P50 = "P50"
 
 
+class SubplotGroupByOptions(str, Enum):
+    """
+    Type definition of options for subplots "group by" in graph for simulation time series
+    """
+
+    VECTOR = "vector"
+    ENSEMBLE = "ensemble"
+
+
 class TraceOptions(str, Enum):
     """
     Type definition for trace options in simulation time series
     """
 
     HISTORY = "history"
+    OBSERVATIONS = "observations"
 
 
 class VisualizationOptions(str, Enum):
