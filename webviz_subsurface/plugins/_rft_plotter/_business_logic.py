@@ -142,7 +142,7 @@ class RftPlotterDataModel:
         return unique_colors(self.ensembles)
 
     @property
-    def parameters(self) -> dict:
+    def parameters(self) -> Optional[List[Any]]:
         if self.param_model is not None:
             return self.param_model.parameters
         return None

@@ -6,7 +6,7 @@ from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ._business_logic import RftPlotterDataModel
-from ._callbacks import plugin_callbacks
+from ._callbacks import paramresp_callbacks, plugin_callbacks
 from ._layout import main_layout
 
 
@@ -121,3 +121,5 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def set_callbacks(self, app: Dash) -> None:
         plugin_callbacks(app, self.uuid, self._datamodel)
+        if self._datamodel.param_model is not None:
+            paramresp_callbacks(app, self.uuid, self._datamodel)

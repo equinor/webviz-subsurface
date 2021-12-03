@@ -175,7 +175,7 @@ def parameter_response_selector_layout(
     well_names = datamodel.well_names
     zone_names = datamodel.zone_names
     dates_in_well = datamodel.date_in_well(well_names[0])
-    params = datamodel.parameters
+    params = datamodel.parameters if not datamodel.parameters is None else []
     return wcc.Frame(
         style={
             "height": "80vh",
@@ -245,12 +245,18 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
+                                    id=get_uuid(
+                                        LayoutElements.PARAMRESP_RFT_VS_DEPTH_GRAPH
+                                    ),
                                     style={"height": "38.5vh"},
                                     color="white",
                                     highlight=False,
                                     children=[],  # timeseries_view(get_uuid=get_uuid),
                                 ),
                                 wcc.Frame(
+                                    id=get_uuid(
+                                        LayoutElements.PARAMRESP_RFT_VS_PARAM_GRAPH
+                                    ),
                                     style={"height": "38.5vh"},
                                     color="white",
                                     highlight=False,
@@ -262,12 +268,18 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
+                                    id=get_uuid(
+                                        LayoutElements.PARAMRESP_PARAM_CORR_GRAPH
+                                    ),
                                     color="white",
                                     highlight=False,
                                     style={"height": "38.5vh"},
                                     children=[],
                                 ),
                                 wcc.Frame(
+                                    id=get_uuid(
+                                        LayoutElements.PARAMRESP_RFT_CORR_GRAPH
+                                    ),
                                     color="white",
                                     highlight=False,
                                     style={"height": "38.5vh"},
