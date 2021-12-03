@@ -64,7 +64,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        # Must define valid freqency
+        # Must define valid freqency!
         self._sampling = Frequency(sampling)
         self._presampled_frequency = None
 
