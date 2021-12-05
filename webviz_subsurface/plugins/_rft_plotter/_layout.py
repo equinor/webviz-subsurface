@@ -174,7 +174,6 @@ def parameter_response_selector_layout(
     ensembles = datamodel.ensembles
     well_names = datamodel.well_names
     zone_names = datamodel.zone_names
-    dates_in_well = datamodel.date_in_well(well_names[0])
     params = datamodel.parameters if not datamodel.parameters is None else []
     return wcc.Frame(
         style={
@@ -203,11 +202,9 @@ def parameter_response_selector_layout(
                     wcc.Dropdown(
                         label="Date",
                         id=get_uuid(LayoutElements.PARAMRESP_DATE),
-                        options=[
-                            {"label": date, "value": date} for date in dates_in_well
-                        ],
+                        options=None,
+                        value=None,
                         clearable=False,
-                        value=dates_in_well[0] if dates_in_well else "",
                     ),
                     wcc.Dropdown(
                         label="Zone",
@@ -221,7 +218,7 @@ def parameter_response_selector_layout(
                         id=get_uuid(LayoutElements.PARAMRESP_PARAM),
                         options=[{"label": param, "value": param} for param in params],
                         clearable=False,
-                        value=params[0] if params else "",
+                        value=None,
                     ),
                 ],
             ),

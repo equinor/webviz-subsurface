@@ -45,7 +45,7 @@ class RftPlotterDataModel:
 
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
-            self.param_model = None
+            self.param_model = ParametersModel(pd.DataFrame())
 
         if ensembles is not None:
             ens_paths = {
@@ -142,10 +142,8 @@ class RftPlotterDataModel:
         return unique_colors(self.ensembles)
 
     @property
-    def parameters(self) -> Optional[List[Any]]:
-        if self.param_model is not None:
-            return self.param_model.parameters
-        return None
+    def parameters(self) -> List[str]:
+        return self.param_model.parameters
 
     def set_date_marks(self) -> Dict[str, Dict[str, Any]]:
         marks = {}
@@ -218,3 +216,17 @@ def filter_frame(
         else:
             df = df.loc[df[column] == value]
     return df
+
+
+def correlate(df: pd.DataFrame, response: str) -> pd.Series:
+    """Returns the correlation matrix for a dataframe
+
+    This function is the same as in ParameterAnalysis and should be generalized
+    """
+    df = df[df.columns[df.nunique() > 1]].copy()
+    if response not in df.columns:
+        df[response] = np.nan
+    series = df[response]
+    df = df.drop(columns=[response])
+    corrdf = df.corrwith(series)
+    return corrdf.reindex(corrdf.abs().sort_values().index)
